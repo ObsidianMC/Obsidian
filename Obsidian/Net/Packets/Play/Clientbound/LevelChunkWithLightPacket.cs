@@ -1,4 +1,6 @@
-﻿using Obsidian.Nbt;
+﻿using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.ChunkData;
+using Obsidian.Nbt;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Lighting;
 
@@ -18,6 +20,11 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
     [ThreadStatic]
     private static NetworkBuffer? sectionScratch;
 
+    // The heightmaps vanilla sends clients (those whose Heightmap.Types usage is CLIENT). Vanilla sends them as a
+    // hash map, in no particular order, so this order is Obsidian's.
+    private static readonly HeightmapType[] ClientHeightmaps =
+        [HeightmapType.WorldSurface, HeightmapType.MotionBlocking, HeightmapType.MotionBlockingNoLeaves];
+
     // A scratch grown past this by an unusually varied chunk is dropped rather than kept for the life of the thread.
     private const int MaxRetainedSectionScratch = 1024 * 1024;
 
@@ -31,18 +38,26 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
         var sections = sectionScratch ??= new NetworkBuffer();
         sections.Clear();
 
+        // Clients read every section of the level's height, like vanilla writes them.
         foreach (var section in Chunk.Sections)
         {
-            if (!section.BlockStateContainer.IsEmpty)
+            if (section.BlockStateContainer.IsEmpty)
             {
-                section.BlockStateContainer.WriteTo(sections);
-                section.BiomeContainer.WriteTo(sections);
+                WriteUnsetSection(sections, section.BiomeContainer);
+                continue;
             }
+
+            section.BlockStateContainer.WriteTo(sections);
+            section.BiomeContainer.WriteTo(sections);
         }
 
-        var heights = Chunk.Heightmaps.TryGetValue(HeightmapType.MotionBlocking, out var motionBlocking)
-            ? motionBlocking.GetDataArray()
-            : null;
+        // Like vanilla's, the heightmaps clients use, those the chunk has.
+        var heightmaps = new List<(HeightmapType Type, long[] Data)>(ClientHeightmaps.Length);
+        foreach (var type in ClientHeightmaps)
+        {
+            if (Chunk.Heightmaps.TryGetValue(type, out var heightmap))
+                heightmaps.Add((type, heightmap.GetDataArray()));
+        }
 
         // Like vanilla's, every block entity of a type clients know, with its update data. A plugin's block entity
         // sends what it gave last (see BlockEntity.ClientData), so that its code doesn't run on this thread.
@@ -56,7 +71,7 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
         if (writer is NetworkBuffer body)
         {
             body.EnsureWritable(FixedFieldsSize
-                + sizeof(long) * (heights?.Length ?? 0)
+                + heightmaps.Sum(heightmap => sizeof(long) * heightmap.Data.Length)
                 + sections.Size
                 + BlockEntitySize * blockEntities.Count
                 + this.light.MaxLightSize());
@@ -65,13 +80,14 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
         writer.WriteInt(Chunk.X);
         writer.WriteInt(Chunk.Z);
 
-        writer.WriteVarInt(1);
-        if (heights is not null)
+        writer.WriteVarInt(heightmaps.Count);
+        foreach (var (type, data) in heightmaps)
         {
-            writer.WriteVarInt(HeightmapType.MotionBlocking.GetHashCode());
-            writer.WriteVarInt(heights.Length);
+            // Vanilla's Heightmap.Types ids, which HeightmapType's values are.
+            writer.WriteVarInt((int)type);
+            writer.WriteVarInt(data.Length);
 
-            foreach (var height in heights)
+            foreach (var height in data)
                 writer.WriteLong(height);
         }
 
@@ -93,6 +109,27 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
 
         // Lighting
         this.light.WriteLight(writer);
+    }
+
+    /// <summary>
+    /// Writes a section no block was set in as air, like vanilla's empty sections, in its biomes, or vanilla's default
+    /// biome, plains, where none were set either.
+    /// </summary>
+    private static void WriteUnsetSection(NetworkBuffer writer, DataContainer<BiomeCodec> biomes)
+    {
+        writer.WriteShort(0);
+        writer.WriteShort(0);
+        writer.WriteByte(0);
+        writer.WriteVarInt(BlocksRegistry.Air.GetHashCode());
+
+        if (biomes.Palette is SingleValuePalette<BiomeCodec> { IsFull: false })
+        {
+            writer.WriteByte(0);
+            writer.WriteVarInt(CodecRegistry.Biomes.Plains.Id);
+            return;
+        }
+
+        biomes.WriteTo(writer);
     }
 
     /// <summary>

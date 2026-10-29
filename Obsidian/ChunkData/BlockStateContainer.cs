@@ -8,13 +8,13 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
 
 
 #if CACHE_VALID_BLOCKS
-    private readonly DirtyCache<short> validBlockCount;
+    private readonly DirtyCache<(short Blocks, short Fluids)> validBlockCount;
 #endif
 
     internal BlockStateContainer(byte bitsPerEntry = 0) : base(bitsPerEntry, 4, 8, 4096, ChunkData.PaletteFactory.DetermineBlockPalette)
     {
 #if CACHE_VALID_BLOCKS
-        validBlockCount = new(GetNonAirBlocks);
+        validBlockCount = new(CountBlocks);
 #endif
     }
 
@@ -24,7 +24,7 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
         DataArray = dataArray;
 
 #if CACHE_VALID_BLOCKS
-        validBlockCount = new(GetNonAirBlocks);
+        validBlockCount = new(CountBlocks);
 #endif
     }
 
@@ -169,44 +169,80 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
     public override void WriteTo(INetStreamWriter writer)
     {
 #if CACHE_VALID_BLOCKS
-        var validBlocks = validBlockCount.GetValue();
+        var (blocks, fluids) = validBlockCount.GetValue();
 #else
-        var validBlocks = GetNonAirBlocks();
+        var (blocks, fluids) = CountBlocks();
 #endif
 
-        writer.WriteShort(validBlocks);
+        // Like vanilla's LevelChunkSection.write: the non-air blocks, then (since 26.1) those holding a fluid.
+        writer.WriteShort(blocks);
+        writer.WriteShort(fluids);
+
+        if (this.BitsPerEntry > this.MaxBitsPerEntry && this.DataArray is DataArray data)
+        {
+            WriteGlobal(writer, data);
+            return;
+        }
 
         base.WriteTo(writer);
     }
 
-    private short GetNonAirBlocks()
+    /// <summary>
+    /// Writes the blocks as state ids without a palette, as vanilla's client reads a section of more than 8 bits:
+    /// each takes as many bits as the registry's states need (16 for 26.3's 35,723). Obsidian keeps such a section's
+    /// palette, which can grow past 8 bits.
+    /// </summary>
+    private void WriteGlobal(INetStreamWriter writer, DataArray data)
+    {
+        var bits = BlocksRegistry.GlobalBitsPerBlocks;
+        var ids = new DataArray(bits, this.MaxEntryCount);
+        var values = this.Palette is IndirectBlockPalette indirect ? indirect.Values : default;
+
+        for (var index = 0; index < this.MaxEntryCount; index++)
+            ids[index] = values.IsEmpty ? data[index] : values[data[index]];
+
+        writer.WriteByte((byte)bits);
+        writer.WriteLongArray(ids.storage);
+    }
+
+    /// <summary>
+    /// Counts the section's blocks the way vanilla's section does: blocks that aren't air, and of those, the ones
+    /// holding a fluid (water, lava, waterlogged blocks, kelp and the like).
+    /// </summary>
+    private (short Blocks, short Fluids) CountBlocks()
     {
         if (this.Palette is SingleValuePalette<IBlock> singleValuePalette)
-            return singleValuePalette.Value.IsAir ? (short)0 : (short)this.MaxEntryCount;
+        {
+            var kind = KindOf(singleValuePalette.Value);
+            var all = (short)this.MaxEntryCount;
+            return ((kind & 1) != 0 ? all : (short)0, (kind & 2) != 0 ? all : (short)0);
+        }
 
         var data = this.DataArray;
         if (data is null)
-            return 0;
+            return (0, 0);
 
-        int airIndex = this.Palette.TryGetId(BlocksRegistry.Air, out var air) ? air : -1;
-        int caveAirIndex = this.Palette.TryGetId(BlocksRegistry.CaveAir, out air) ? air : -1;
-        int voidAirIndex = this.Palette.TryGetId(BlocksRegistry.VoidAir, out air) ? air : -1;
+        // Each palette entry's kind, looked up once; a global palette's entries are state ids.
+        var palette = this.Palette;
+        var global = palette is GlobalBlockStatePalette;
+        Span<byte> kinds = global ? default : stackalloc byte[palette.Count];
+        for (var id = 0; id < kinds.Length; id++)
+            kinds[id] = palette.GetValueFromIndex(id) is IBlock block ? KindOf(block) : (byte)0;
 
-        // If no air variants exist in the palette, then all entries are non-air.
-        if (airIndex < 0 && caveAirIndex < 0 && voidAirIndex < 0)
-            return (short)this.MaxEntryCount;
-
-        int count = 0;
-
+        int blocks = 0, fluids = 0;
         for (int i = 0; i < this.MaxEntryCount; i++)
         {
             int index = data[i];
-            if (index != airIndex && index != caveAirIndex && index != voidAirIndex)
-                count++;
+            var kind = global ? KindOf(BlocksRegistry.Get(index)) : kinds[index];
+            blocks += kind & 1;
+            fluids += kind >> 1;
         }
 
-        return (short)count;
+        return ((short)blocks, (short)fluids);
     }
+
+    // Bit 0: the block isn't air. Bit 1: it also holds a fluid.
+    private static byte KindOf(IBlock block) => block.IsAir ? (byte)0 : block.HasFluid() ? (byte)3 : (byte)1;
 
     public override BlockStateContainer Clone() => new(this.Palette.Clone(), this.IsSingleValued ? null : this.DataArray.Clone());
 
