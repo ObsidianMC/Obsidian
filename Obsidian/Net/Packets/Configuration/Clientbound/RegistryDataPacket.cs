@@ -20,6 +20,12 @@ public partial class RegistryDataPacket
 
     public bool WriteCodecs { get; set; }
 
+    /// <summary>
+    /// The entries sent by id even with <see cref="WriteCodecs"/> set: vanilla's, which the client takes from the core
+    /// pack, like vanilla sends every entry of that pack.
+    /// </summary>
+    public IReadOnlySet<string>? KnownEntries { get; init; }
+
     public RegistryDataPacket(string registryId, IDictionary<string, ICodec> codecs)
     {
         this.RegistryId = registryId;
@@ -69,7 +75,7 @@ public partial class RegistryDataPacket
                 continue;
             }
 
-            var writeCodec = this.WriteCodecs && this.Codecs.ContainsKey(key);
+            var writeCodec = this.WriteCodecs && this.Codecs.ContainsKey(key) && this.KnownEntries?.Contains(key) != true;
             writer.WriteBoolean(writeCodec);
 
             if (writeCodec)
