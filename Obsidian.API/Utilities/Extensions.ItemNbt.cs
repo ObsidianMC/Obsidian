@@ -199,7 +199,7 @@ public partial class Extensions
             SimpleDataComponent<NbtCompound> data
                 when component.Type is DataComponentType.Lock or DataComponentType.ContainerLoot
                 && data.Value is not null => CopyCompound(name, data.Value),
-            SimpleDataComponent<ImmutableArray<Item>> decorations
+            SimpleDataComponent<ImmutableArray<ItemStack>> decorations
                 when component.Type == DataComponentType.PotDecorations =>
                 PotDecorationsToNbt(name, decorations.Value),
             // A plugin's component, saved with its type's codec when it was set, like vanilla's components.
@@ -252,13 +252,15 @@ public partial class Extensions
     }
 
     // Vanilla's PotDecorations codec: the back, left, right and front faces' items.
-    private static NbtList PotDecorationsToNbt(string name, ImmutableArray<Item> decorations)
-    {
-        var list = new NbtList(NbtTagType.String, name);
-        foreach (var item in decorations)
-            list.Add(new NbtTag<string>(string.Empty, item.UnlocalizedName));
+    private static readonly string[] PotFaces = ["back", "left", "right", "front"];
 
-        return list;
+    private static NbtCompound PotDecorationsToNbt(string name, ImmutableArray<ItemStack> decorations)
+    {
+        var result = new NbtCompound(name);
+        for (var i = 0; i < 4; i++)
+            if (decorations[i] is ItemStack stack)
+                result.Add(stack.ToNbt(PotFaces[i]));
+        return result;
     }
 
     private static NbtCompound CopyCompound(string name, NbtCompound value)
@@ -337,10 +339,11 @@ public partial class Extensions
                 return ComponentBuilder.Lock with { Value = CopyCompound(string.Empty, lockPredicate) };
             case "minecraft:container_loot" when tag is NbtCompound loot:
                 return ComponentBuilder.ContainerLoot with { Value = CopyCompound(string.Empty, loot) };
-            case "minecraft:pot_decorations" when tag is NbtList decorations:
+            case "minecraft:pot_decorations" when tag is NbtCompound decorations:
                 return ComponentBuilder.PotDecorations with
                 {
-                    Value = [.. decorations.OfType<NbtTag<string>>().Select(item => ItemsRegistry.Get(item.Value!))]
+                    Value = [.. PotFaces.Select(face => decorations.TryGetTag<NbtCompound>(face, out var value)
+                        ? value.ItemFromNbt()! : null!)]
                 };
             // A plugin's component, kept as saved whether or not its plugin is loaded. A type no plugin registered in
             // this process stays unmodeled.

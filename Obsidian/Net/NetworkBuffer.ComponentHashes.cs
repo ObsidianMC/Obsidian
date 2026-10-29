@@ -205,6 +205,8 @@ public partial class NetworkBuffer
     private static int Record(List<(string Key, int Value)> fields) => H.Record(fields.ToArray());
 
     private static readonly string[] RarityNames = ["common", "uncommon", "rare", "epic"];
+    private static readonly string[] ConsumeEffectNames = ["apply_effects", "remove_effects", "clear_all_effects", "teleport_randomly", "play_sound"];
+    private static readonly string[] PotFaceNames = ["back", "left", "right", "front"];
     private static readonly string[] SwingNames = ["none", "whack", "stab"];
     private static readonly string[] ExplosionNames = ["small_ball", "large_ball", "star", "creeper", "burst"];
     private static readonly string[] ModifierOperations = ["add_value", "add_multiplied_base", "add_multiplied_total"];
@@ -234,18 +236,19 @@ public partial class NetworkBuffer
                 return H.Int(this.ReadVarInt());
             case DataComponentType.DyedColor: return H.Int(this.ReadInt());
             case DataComponentType.MinimumAttackCharge: case DataComponentType.PotionDurationScale: return H.Float(this.ReadSingle());
-            case DataComponentType.Unbreakable: case DataComponentType.Glider: return H.Record();
+            case DataComponentType.Unbreakable: case DataComponentType.Glider: case DataComponentType.Waxed: return H.Record();
             case DataComponentType.EnchantmentGlintOverride: return H.Boolean(this.ReadBoolean());
             case DataComponentType.ItemModel: case DataComponentType.TooltipStyle: case DataComponentType.NoteBlockSound:
                 return H.String(this.ReadString());
             case DataComponentType.Rarity: return H.String(RarityNames[this.ReadVarInt()]);
+            case DataComponentType.Dye: case DataComponentType.CushionColor:
             case DataComponentType.BaseColor: case DataComponentType.WolfCollar: case DataComponentType.CatCollar:
             case DataComponentType.SheepColor: case DataComponentType.ShulkerColor:
             case DataComponentType.TropicalFishBaseColor: case DataComponentType.TropicalFishPatternColor:
                 return H.String(((Dye)this.ReadVarInt()).ToString().ToSnakeCase());
             case DataComponentType.Enchantable: return H.Record(("value", H.Int(this.ReadVarInt())));
-            case DataComponentType.DamageResistant: return H.Record(("types", H.String("#" + this.ReadString())));
-            case DataComponentType.ProvidesBannerPatterns: return H.String("#" + this.ReadString());
+            case DataComponentType.DamageResistant: return H.Record(("types", this.HashIdSet("minecraft:damage_type")));
+            case DataComponentType.ProvidesBannerPatterns: return this.HashIdSet("minecraft:banner_pattern");
             case DataComponentType.CustomName: case DataComponentType.ItemName: return this.HashNbt(true);
             case DataComponentType.Lore: return H.List(this.HashList(() => this.HashNbt(true)));
             case DataComponentType.CustomData: case DataComponentType.BucketEntityData: case DataComponentType.IntangibleProjectile:
@@ -381,16 +384,16 @@ public partial class NetworkBuffer
                     swing.Add(("duration", H.Int(ticks)));
 
                 return Record(swing);
-            case DataComponentType.UseRemainder: return this.HashStack() ?? throw new UnsupportedComponentHashException();
+            case DataComponentType.UseRemainder: return this.HashItemTemplate();
             case DataComponentType.ChargedProjectiles: case DataComponentType.BundleContents:
-                return H.List(this.HashList(() => this.HashStack() ?? throw new UnsupportedComponentHashException()));
+                return H.List(this.HashList(this.HashItemTemplate));
             case DataComponentType.Container:
                 var slots = new List<int>();
                 var slotCount = this.ReadComponentCount();
                 for (var i = 0; i < slotCount; i++)
                 {
-                    if (this.HashStack() is int item)
-                        slots.Add(H.Record(("slot", H.Int(i)), ("item", item)));
+                    if (this.ReadBoolean())
+                        slots.Add(H.Record(("slot", H.Int(i)), ("item", this.HashItemTemplate())));
                 }
 
                 return H.List(slots);
@@ -458,21 +461,157 @@ public partial class NetworkBuffer
                 return H.List(this.HashList(() => H.Record(("pattern", this.HashRegistryHolder("minecraft:banner_pattern")),
                     ("color", H.String(((Dye)this.ReadVarInt()).ToString().ToSnakeCase())))));
             case DataComponentType.Trim:
-                return H.Record(
-                    ("material", this.HashRegistryHolder("minecraft:trim_material")),
-                    ("pattern", this.HashRegistryHolder("minecraft:trim_pattern")));
-            case DataComponentType.PotDecorations: return H.List(this.HashList(() => this.RegistryHash("minecraft:item")));
+                return H.Record(("material", this.HashTrimMaterial()), ("pattern", this.HashTrimPattern()));
+            case DataComponentType.ProvidesTrimMaterial:
+                return this.HashTrimMaterial();
+            case DataComponentType.Instrument:
+                return this.HashInstrument();
+            case DataComponentType.Consumable:
+                var consumable = new List<(string, int)>();
+                var consumeSeconds = this.ReadSingle();
+                if (consumeSeconds != 1.6f)
+                    consumable.Add(("consume_seconds", H.Float(consumeSeconds)));
+                var consumeAnimation = this.ReadVarInt();
+                if (consumeAnimation != 1)
+                    consumable.Add(("animation", H.String(((ItemAnimation)consumeAnimation).ToString().ToSnakeCase())));
+                var consumeSound = this.HashSound();
+                if (consumeSound != H.String("minecraft:entity.generic.eat"))
+                    consumable.Add(("sound", consumeSound));
+                if (!this.ReadBoolean())
+                    consumable.Add(("has_consume_particles", H.Boolean(false)));
+                var consumeEffects = this.HashList(this.HashConsumeEffect);
+                if (consumeEffects.Length > 0)
+                    consumable.Add(("on_consume_effects", H.List(consumeEffects)));
+                return Record(consumable);
+            case DataComponentType.DeathProtection:
+                return H.Record(("death_effects", H.List(this.HashList(this.HashConsumeEffect))));
+            case DataComponentType.PotDecorations:
+                var faces = new List<(string, int)>();
+                foreach (var face in PotFaceNames)
+                    if (this.ReadBoolean())
+                        faces.Add((face, this.HashItemTemplate()));
+                return Record(faces);
+            case DataComponentType.SulfurCubeContent: return this.HashItemTemplate();
+            case DataComponentType.VillagerFood: return H.Record(("nutrition", H.Int(this.ReadVarInt())));
+            case DataComponentType.BlockTransformer: return this.RegistryHash("minecraft:block_transformer");
+            case DataComponentType.ProvidesPotteryPattern: return this.RegistryHash("minecraft:decorated_pot_pattern");
+            case DataComponentType.CatSoundVariant: return this.RegistryHash("minecraft:cat_sound_variant");
+            case DataComponentType.ChickenSoundVariant: return this.RegistryHash("minecraft:chicken_sound_variant");
+            case DataComponentType.CowSoundVariant: return this.RegistryHash("minecraft:cow_sound_variant");
+            case DataComponentType.PigSoundVariant: return this.RegistryHash("minecraft:pig_sound_variant");
+            case DataComponentType.Compostable: return H.Record(("layers", this.HashResolvable(false)));
+            case DataComponentType.CookingFuel: case DataComponentType.BrewingFuel:
+                return H.Record((type == DataComponentType.CookingFuel ? "burn_time" : "uses", this.HashResolvable(false)),
+                    ("speed_multiplier", this.HashResolvable(true)));
+            case DataComponentType.MobVisibility:
+                return H.Record(("targeting_entity_types", this.HashIdSet("minecraft:entity_type")),
+                    ("visibility", H.Float(this.ReadSingle())));
+            case DataComponentType.SignTextFront: case DataComponentType.SignTextBack:
+                var sign = new List<(string, int)> { ("messages", this.HashSignMessages()) };
+                if (this.ReadBoolean())
+                    sign.Add(("filtered_messages", this.HashSignMessages()));
+                sign.Add(("color", H.String(((Dye)this.ReadVarInt()).ToString().ToSnakeCase())));
+                sign.Add(("has_glowing_text", H.Boolean(this.ReadBoolean())));
+                return Record(sign);
             default: throw new UnsupportedComponentHashException();
         }
     }
 
-    private int? HashStack()
+    private int HashSound()
     {
-        var count = this.ReadVarInt();
-        if (count <= 0)
-            return null;
+        var holder = this.ReadVarInt();
+        if (holder != 0)
+            return H.String(this.RegistryName("minecraft:sound_event", holder - 1));
+        var fields = new List<(string, int)> { ("sound_id", H.String(this.ReadString())) };
+        if (this.ReadBoolean())
+            fields.Add(("range", H.Float(this.ReadSingle())));
+        return Record(fields);
+    }
 
-        var fields = new List<(string, int)> { ("id", this.RegistryHash("minecraft:item")), ("count", H.Int(count)) };
+    private int HashTrimMaterial()
+    {
+        var holder = this.ReadVarInt();
+        return holder != 0 ? H.String(this.RegistryName("minecraft:trim_material", holder - 1))
+            : H.Record(("palette_id", H.String(this.ReadString())), ("description", this.HashNbt(true)));
+    }
+
+    private int HashTrimPattern()
+    {
+        var holder = this.ReadVarInt();
+        if (holder != 0)
+            return H.String(this.RegistryName("minecraft:trim_pattern", holder - 1));
+        var fields = new List<(string, int)> { ("asset_id", H.String(this.ReadString())), ("description", this.HashNbt(true)) };
+        if (this.ReadBoolean())
+            fields.Add(("decal", H.Boolean(true)));
+        return Record(fields);
+    }
+
+    private int HashInstrument()
+    {
+        var holder = this.ReadVarInt();
+        if (holder != 0)
+            return H.String(this.RegistryName("minecraft:instrument", holder - 1));
+        var fields = new List<(string, int)>
+        {
+            ("sound_event", this.HashSound()), ("use_duration", H.Float(this.ReadSingle())), ("range", H.Float(this.ReadSingle()))
+        };
+        var damage = this.ReadVarInt();
+        if (damage != 0)
+            fields.Add(("durability_damage", H.Int(damage)));
+        fields.Add(("description", this.HashNbt(true)));
+        return Record(fields);
+    }
+
+    private int HashConsumeEffect()
+    {
+        var type = this.ReadVarInt();
+        var fields = new List<(string, int)> { ("type", H.String("minecraft:" + ConsumeEffectNames[type])) };
+        switch (type)
+        {
+            case 0:
+                fields.Add(("effects", H.List(this.HashList(() =>
+                {
+                    var id = this.RegistryHash("minecraft:mob_effect");
+                    var effect = this.HashEffectDetails();
+                    effect.Add(("id", id));
+                    return Record(effect);
+                }))));
+                var probability = this.ReadSingle();
+                if (probability != 1)
+                    fields.Add(("probability", H.Float(probability)));
+                break;
+            case 1: fields.Add(("effects", this.HashIdSet("minecraft:mob_effect"))); break;
+            case 3:
+                var diameter = this.ReadSingle();
+                if (diameter != 16)
+                    fields.Add(("diameter", H.Float(diameter)));
+                if (!this.ReadBoolean())
+                    fields.Add(("directional_particles", H.Boolean(false)));
+                break;
+            case 4: fields.Add(("sound", this.HashSound())); break;
+        }
+        return Record(fields);
+    }
+
+    private int HashResolvable(bool floating) => this.ReadBoolean()
+        ? floating ? H.Float(this.ReadSingle()) : H.Int(this.ReadInt())
+        : H.String(this.ReadString());
+
+    private int HashSignMessages() => H.List(Enumerable.Range(0, 4).Select(_ => this.HashNbt(true)).ToArray());
+
+    private int HashItemTemplate()
+    {
+        var item = this.RegistryHash("minecraft:item");
+        var count = this.ReadVarInt();
+        var fields = new List<(string, int)> { ("id", item) };
+        if (count != 1)
+            fields.Add(("count", H.Int(count)));
+        this.HashStackPatch(fields);
+        return Record(fields);
+    }
+
+    private void HashStackPatch(List<(string, int)> fields)
+    {
         var added = this.ReadComponentCount();
         var removed = this.ReadComponentCount();
         var patch = new List<(int, int)>();
@@ -487,8 +626,6 @@ public partial class NetworkBuffer
 
         if (patch.Count > 0)
             fields.Add(("components", H.Map(patch)));
-
-        return Record(fields);
     }
 
     private int HashRegistryHolder(string registry)

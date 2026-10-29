@@ -1,8 +1,6 @@
-using Obsidian.API.Registries;
-
 namespace Obsidian.API.Inventory.DataComponents;
 
-/// <summary>Instrument value, resource key, or holder ID in the current connection's registry.</summary>
+/// <summary>Inline instrument value or holder ID in the current connection's registry.</summary>
 public sealed record InstrumentDataComponent() : SimpleDataComponent<InstrumentData>(
     DataComponentType.Instrument, "minecraft:instrument", (_, _) => { }, _ => new())
 {
@@ -14,28 +12,12 @@ public sealed record InstrumentDataComponent() : SimpleDataComponent<InstrumentD
         init => this.registryId = value;
     }
 
-    private bool isResourceKey;
-
-    public bool IsResourceKey
-    {
-        get => this.isResourceKey;
-        init => this.isResourceKey = value;
-    }
-
     protected override void ReadCore(INetStreamReader reader)
     {
         this.registryId = null;
-        this.isResourceKey = !reader.ReadBoolean();
         this.value = new();
-        if (this.IsResourceKey)
-        {
-            this.value = new() { Identifier = reader.ReadString() };
-            return;
-        }
-
-        var holder = reader.ReadVarInt();
-        this.registryId = holder == 0 ? null : holder - 1;
-        if (holder != 0)
+        this.registryId = reader.ReadRegistryHolder("minecraft:instrument");
+        if (this.registryId is not null)
             return;
 
         this.value = new()
@@ -43,27 +25,23 @@ public sealed record InstrumentDataComponent() : SimpleDataComponent<InstrumentD
             SoundEvent = ComponentValueCodecs.ReadSoundHolder(reader),
             UseDuration = reader.ReadSingle(),
             Range = reader.ReadSingle(),
+            DurabilityDamage = reader.ReadVarInt(),
             Description = reader.ReadChat()
         };
     }
 
     public override void Write(INetStreamWriter writer)
     {
-        writer.WriteBoolean(!this.IsResourceKey);
-        if (this.IsResourceKey)
-        {
-            writer.WriteString(this.Value.Identifier!);
-            return;
-        }
-
-        var id = this.RegistryId ?? InstrumentsRegistry.All.FirstOrDefault(instrument => instrument.Identifier == this.Value.Identifier)?.Id;
-        writer.WriteVarInt(id is int value ? value + 1 : 0);
+        var id = this.RegistryId ?? (this.Value.Identifier is string name
+            ? ComponentRegistryNames.Id("minecraft:instrument", name) : (int?)null);
+        writer.WriteRegistryHolder("minecraft:instrument", id);
         if (id is not null)
             return;
 
         ComponentValueCodecs.WriteSoundHolder(this.Value.SoundEvent, writer);
         writer.WriteSingle(this.Value.UseDuration);
         writer.WriteSingle(this.Value.Range);
+        writer.WriteVarInt(this.Value.DurabilityDamage);
         writer.WriteChat(this.Value.Description);
     }
 }

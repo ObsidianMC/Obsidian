@@ -99,6 +99,9 @@ public interface INetStreamReader : INetStream
     public ItemStack? ReadItemStack();
     public ItemStack? ReadUntrustedItemStack();
     public ItemStack ReadRequiredItemStack();
+
+    /// <summary>Reads a nonempty item template (item ID, count, component patch), used by nested components.</summary>
+    public ItemStack ReadItemStackTemplate();
     public ItemStack?[] ReadItemStackList();
     public IHashedItemStack? ReadHashedItemStack();
     public Velocity ReadVelocity();

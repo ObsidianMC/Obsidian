@@ -15,13 +15,25 @@ public partial class Extensions
         var name = component.Identifier;
         return component switch
         {
+            SimpleDataComponent<int> when component.Type == DataComponentType.AdditionalTradeCost => null,
+            SimpleDataComponent<int> number when component.Type == DataComponentType.VillagerFood =>
+                new NbtCompound(name) { new NbtTag<int>("nutrition", number.Value) },
+            SimpleDataComponent<ComponentIntValue> compost => new NbtCompound(name) { ComponentIntToNbt("layers", compost.Value) },
+            SimpleDataComponent<MobVisibilityData> visibility => new NbtCompound(name)
+            {
+                SetToNbt("targeting_entity_types", visibility.Value!.TargetingEntityTypes, ComponentValueCodecs.EntityTypes),
+                new NbtTag<float>("visibility", visibility.Value.Visibility)
+            },
+            SimpleDataComponent<FuelComponentData> fuel => new NbtCompound(name)
+            {
+                ComponentIntToNbt(component.Type == DataComponentType.CookingFuel ? "burn_time" : "uses", fuel.Value!.Amount),
+                ComponentFloatToNbt("speed_multiplier", fuel.Value.SpeedMultiplier)
+            },
             SimpleDataComponent<int> number when component.Type == DataComponentType.Enchantable =>
                 new NbtCompound(name) { new NbtTag<int>("value", number.Value) },
             SimpleDataComponent<int> number => new NbtTag<int>(name, number.Value),
             SimpleDataComponent<bool> flag => new NbtTag<bool>(name, flag.Value),
             SimpleDataComponent marker => new NbtCompound(name),
-            SimpleDataComponent<string> text when component.Type == DataComponentType.DamageResistant =>
-                new NbtCompound(name) { new NbtTag<string>("types", "#" + text.Value!.TrimStart('#')) },
             SimpleDataComponent<string> text => new NbtTag<string>(name, text.Value),
             SimpleDataComponent<NbtCompound> data => CopyCompound(name, data.Value ?? new NbtCompound()),
             SimpleDataComponent<ItemRarity> rarity => new NbtTag<string>(name, rarity.Value.ToString().ToSnakeCase()),
@@ -41,7 +53,8 @@ public partial class Extensions
             SimpleDataComponent<FireworkExplosion> explosion => ExplosionToNbt(name, explosion.Value),
             SimpleDataComponent<IdSet> repairable => new NbtCompound(name)
             {
-                SetToNbt("items", repairable.Value, ComponentValueCodecs.Items)
+                SetToNbt(component.Type == DataComponentType.DamageResistant ? "types" : "items", repairable.Value,
+                    component.Type == DataComponentType.DamageResistant ? "minecraft:damage_type" : ComponentValueCodecs.Items)
             },
             SimpleDataComponent<ImmutableArray<IConsumeEffect>> protection => new NbtCompound(name)
             {
@@ -99,6 +112,18 @@ public partial class Extensions
         };
     }
 
+    private static INbtTag ComponentIntToNbt(string name, ComponentIntValue value) => value.Provider is string provider
+        ? new NbtTag<string>(name, provider) : new NbtTag<int>(name, value.Constant);
+
+    private static INbtTag ComponentFloatToNbt(string name, ComponentFloatValue value) => value.Provider is string provider
+        ? new NbtTag<string>(name, provider) : new NbtTag<float>(name, value.Constant);
+
+    private static ComponentIntValue ComponentIntFromNbt(INbtTag value) => value is NbtTag<string> provider
+        ? new(0, provider.Value) : new(((NbtTag<int>)value).Value);
+
+    private static ComponentFloatValue ComponentFloatFromNbt(INbtTag value) => value is NbtTag<string> provider
+        ? new(0, provider.Value) : new(((NbtTag<float>)value).Value);
+
     private static DataComponent? AdditionalComponentFromNbt(string name, INbtTag tag)
     {
         if (!componentTypesById.TryGetValue(name, out var type))
@@ -107,11 +132,24 @@ public partial class Extensions
         var prototype = ComponentBuilder.Create(type);
         if (prototype is SimpleDataComponent<int> integer)
         {
+            if (type == DataComponentType.AdditionalTradeCost)
+                return null;
+            if (type == DataComponentType.VillagerFood && tag is NbtCompound foodValue)
+                return integer with { Value = foodValue.GetInt("nutrition") };
             if (type == DataComponentType.Enchantable && tag is NbtCompound enchantable)
                 return integer with { Value = enchantable.GetInt("value") };
 
             return tag is NbtTag<int> value ? integer with { Value = value.Value } : null;
         }
+
+        if (prototype is SimpleDataComponent<MobVisibilityData> visibility && tag is NbtCompound visibilityValue)
+            return visibility with { Value = new(SetFromNbt(visibilityValue["targeting_entity_types"], ComponentValueCodecs.EntityTypes),
+                visibilityValue.GetFloat("visibility")) };
+        if (prototype is SimpleDataComponent<ComponentIntValue> compost && tag is NbtCompound compostValue)
+            return compost with { Value = ComponentIntFromNbt(compostValue["layers"]) };
+        if (prototype is SimpleDataComponent<FuelComponentData> fuel && tag is NbtCompound fuelValue)
+            return fuel with { Value = new(ComponentIntFromNbt(fuelValue[type == DataComponentType.CookingFuel ? "burn_time" : "uses"]),
+                ComponentFloatFromNbt(fuelValue["speed_multiplier"])) };
 
         if (prototype is SimpleDataComponent<bool> boolean)
             return boolean with { Value = ReadBoolean(tag) };
@@ -121,9 +159,6 @@ public partial class Extensions
 
         if (prototype is SimpleDataComponent<string> text)
         {
-            if (type == DataComponentType.DamageResistant && tag is NbtCompound resistant)
-                return text with { Value = resistant.SavedString("types")!.TrimStart('#') };
-
             return tag is NbtTag<string> value ? text with { Value = value.Value! } : null;
         }
 
@@ -155,7 +190,8 @@ public partial class Extensions
             return explosion with { Value = ExplosionFromNbt(firework) };
 
         if (prototype is SimpleDataComponent<IdSet> repairable && tag is NbtCompound repair)
-            return repairable with { Value = SetFromNbt(repair["items"], ComponentValueCodecs.Items) };
+            return repairable with { Value = SetFromNbt(repair[type == DataComponentType.DamageResistant ? "types" : "items"],
+                type == DataComponentType.DamageResistant ? "minecraft:damage_type" : ComponentValueCodecs.Items) };
 
         if (prototype is SimpleDataComponent<ImmutableArray<IConsumeEffect>> protection && tag is NbtCompound death)
             return protection with { Value = [.. Compounds(death, "death_effects").Select(ConsumeEffectFromNbt)] };

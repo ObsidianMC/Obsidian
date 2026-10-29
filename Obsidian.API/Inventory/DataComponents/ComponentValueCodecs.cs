@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace Obsidian.API.Inventory.DataComponents;
 
-// Correct 1.21.11 component encodings for shared API value types also used by older serializers.
+// Correct 26.3 component encodings for shared API value types also used by older serializers.
 internal static class ComponentValueCodecs
 {
     // The built-in registries whose ids components hold, which a connection may number differently

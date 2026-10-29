@@ -119,18 +119,27 @@ public partial class NetworkBuffer : INetStreamReader
     public ItemStack? ReadItemStack() => this.ReadItemStack(false);
 
     /// <summary>Reads the creative-slot codec when delimitedComponents is true.</summary>
-    public ItemStack? ReadItemStack(bool delimitedComponents)
+    public ItemStack? ReadItemStack(bool delimitedComponents) => this.ReadItemStack(delimitedComponents, false);
+
+    public ItemStack ReadItemStackTemplate() => this.ReadItemStack(false, true)!;
+
+    private ItemStack? ReadItemStack(bool delimitedComponents, bool template)
     {
         if (++this.componentDepth > 64)
             throw new InvalidDataException("Item nesting exceeds 64.");
 
         try
         {
+            var templateItem = template ? this.ReadItemId() : -1;
             var count = this.ReadVarInt();
             if (count <= 0)
+            {
+                if (template)
+                    throw new InvalidDataException("Expected a nonempty item template.");
                 return null;
+            }
 
-            var itemStack = new ItemStack(ItemsRegistry.Get(this.ReadItemId()), count);
+            var itemStack = new ItemStack(ItemsRegistry.Get(template ? templateItem : this.ReadItemId()), count);
             var added = this.ReadComponentCount();
             var removed = this.ReadComponentCount();
             for (var i = 0; i < added; i++)

@@ -121,7 +121,8 @@
       },
       {
         "type": "minecraft:teleport_randomly",
-        "diameter": 8
+        "diameter": 8,
+        "directional_particles": false
       },
       {
         "type": "minecraft:play_sound",
@@ -401,7 +402,7 @@
   "cat/collar": "red",
   "sheep/color": "red",
   "shulker/color": "red",
-  "additional_trade_cost": 3,
+  "additional_trade_cost": 131,
   "attack_animation": {
     "type": "whack",
     "duration": 8

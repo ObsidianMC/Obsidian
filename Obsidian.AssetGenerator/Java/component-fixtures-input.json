@@ -213,7 +213,8 @@
           },
           "use_duration": 2,
           "range": 32,
-          "description": "Test horn"
+          "description": "Test horn",
+          "durability_damage": 3
         },
         "minecraft:banner_patterns": [
           {
@@ -223,7 +224,11 @@
             },
             "color": "cyan"
           }
-        ]
+        ],
+        "minecraft:provides_trim_material": {
+          "palette_id": "minecraft:trim/test",
+          "description": "Provided trim"
+        }
       }
     }
   },
@@ -292,6 +297,210 @@
               "tail"
             ]
           }
+        ]
+      }
+    }
+  },
+  {
+    "name": "fuel_constants",
+    "stack": {
+      "id": "minecraft:stone",
+      "components": {
+        "minecraft:brewing_fuel": {
+          "uses": 7,
+          "speed_multiplier": 0.75
+        },
+        "minecraft:cooking_fuel": {
+          "burn_time": 123,
+          "speed_multiplier": "minecraft:cooking/speed_default"
+        },
+        "minecraft:compostable": {
+          "layers": 2
+        }
+      }
+    }
+  },
+  {
+    "name": "fuel_mixed",
+    "stack": {
+      "id": "minecraft:stone",
+      "components": {
+        "minecraft:brewing_fuel": {
+          "uses": "minecraft:brewing/uses_default",
+          "speed_multiplier": 1.25
+        },
+        "minecraft:cooking_fuel": {
+          "burn_time": "minecraft:cooking/time_coal",
+          "speed_multiplier": 2
+        }
+      }
+    }
+  },
+  {
+    "name": "pot_templates",
+    "stack": {
+      "id": "minecraft:decorated_pot",
+      "components": {
+        "minecraft:pot_decorations": {
+          "back": {
+            "id": "minecraft:brick",
+            "count": 2,
+            "components": {
+              "minecraft:custom_name": "Back",
+              "!minecraft:lore": {}
+            }
+          },
+          "front": {
+            "id": "minecraft:angler_pottery_sherd",
+            "components": {
+              "minecraft:damage": 4
+            }
+          }
+        },
+        "minecraft:sulfur_cube_content": {
+          "id": "minecraft:stone",
+          "count": 2,
+          "components": {
+            "minecraft:custom_name": "Absorbed"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "pot_empty",
+    "stack": {
+      "id": "minecraft:decorated_pot",
+      "components": {
+        "minecraft:pot_decorations": {}
+      }
+    }
+  },
+  {
+    "name": "sign_filtered",
+    "stack": {
+      "id": "minecraft:oak_sign",
+      "components": {
+        "minecraft:sign_text_front": {
+          "messages": [
+            "one",
+            "two",
+            "three",
+            "four"
+          ],
+          "filtered_messages": [
+            "a",
+            "b",
+            "c",
+            "d"
+          ]
+        },
+        "minecraft:mob_visibility": {
+          "targeting_entity_types": "#minecraft:skeletons",
+          "visibility": 0.25
+        }
+      }
+    }
+  },
+  {
+    "name": "teleport_options",
+    "stack": {
+      "id": "minecraft:chorus_fruit",
+      "components": {
+        "minecraft:consumable": {
+          "on_consume_effects": [
+            {
+              "type": "minecraft:teleport_randomly",
+              "directional_particles": false
+            }
+          ]
+        },
+        "minecraft:death_protection": {
+          "death_effects": [
+            {
+              "type": "minecraft:teleport_randomly",
+              "diameter": 4,
+              "directional_particles": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "network_diamond_sword",
+    "stack": {
+      "id": "minecraft:diamond_sword"
+    }
+  },
+  {
+    "name": "network_enchanted_book",
+    "stack": {
+      "id": "minecraft:enchanted_book",
+      "components": {
+        "minecraft:stored_enchantments": {
+          "minecraft:sharpness": 5
+        }
+      }
+    }
+  },
+  {
+    "name": "network_goat_horn",
+    "stack": {
+      "id": "minecraft:goat_horn",
+      "components": {
+        "minecraft:instrument": "minecraft:sing_goat_horn"
+      }
+    }
+  },
+  {
+    "name": "network_splash_potion",
+    "stack": {
+      "id": "minecraft:splash_potion",
+      "count": 3,
+      "components": {
+        "minecraft:potion_contents": {
+          "potion": "minecraft:long_night_vision",
+          "custom_color": 1193046,
+          "custom_effects": [
+            {
+              "id": "minecraft:speed",
+              "amplifier": 1,
+              "duration": 200,
+              "show_particles": true,
+              "show_icon": true
+            }
+          ],
+          "custom_name": "water"
+        }
+      }
+    }
+  },
+  {
+    "name": "network_map",
+    "stack": {
+      "id": "minecraft:map",
+      "components": {
+        "minecraft:item_name": {
+          "translate": "filled_map.buried_treasure"
+        }
+      }
+    }
+  },
+  {
+    "name": "holder_sets",
+    "stack": {
+      "id": "minecraft:stone",
+      "components": {
+        "minecraft:damage_resistant": {
+          "types": [
+            "minecraft:generic",
+            "minecraft:in_fire"
+          ]
+        },
+        "minecraft:provides_banner_patterns": [
+          "minecraft:creeper",
+          "minecraft:stripe_bottom"
         ]
       }
     }

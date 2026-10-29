@@ -34,15 +34,8 @@ public sealed record class JukeboxPlayableDataComponent : DataComponent
     {
         this.song = default;
         this.registryId = null;
-        if (!reader.ReadBoolean())
-        {
-            this.song = new(reader.ReadString());
-            return;
-        }
-
-        var holder = reader.ReadVarInt();
-        this.registryId = holder == 0 ? null : holder - 1;
-        if (holder == 0)
+        this.registryId = reader.ReadRegistryHolder("minecraft:jukebox_song");
+        if (this.registryId is null)
         {
             this.song = new(new JukeboxSong
             {
@@ -56,15 +49,10 @@ public sealed record class JukeboxPlayableDataComponent : DataComponent
 
     public override void Write(INetStreamWriter writer)
     {
-        writer.WriteBoolean(this.Song.Left is null);
-        if (this.Song.Left is string key)
-        {
-            writer.WriteString(key);
-            return;
-        }
-
-        writer.WriteVarInt(this.RegistryId is int id ? id + 1 : 0);
-        if (this.RegistryId is not null)
+        var id = this.RegistryId ?? (this.Song.Left is string key
+            ? ComponentRegistryNames.Id("minecraft:jukebox_song", key) : (int?)null);
+        writer.WriteRegistryHolder("minecraft:jukebox_song", id);
+        if (id is not null)
             return;
 
         var value = this.Song.Right!;

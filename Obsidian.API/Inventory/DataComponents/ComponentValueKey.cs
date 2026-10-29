@@ -113,12 +113,19 @@ internal sealed class ComponentValueKey : IEquatable<ComponentValueKey>
             explosion.HasTrail,
             explosion.HasTwinkle
         },
+        MobVisibilityData visibility => new object?[]
+        {
+            visibility.TargetingEntityTypes.TagName,
+            visibility.TargetingEntityTypes.Ids?.ToArray(),
+            visibility.Visibility
+        },
         InstrumentData instrument => new object?[]
         {
             instrument.Identifier,
             instrument.SoundEvent,
             instrument.UseDuration,
             instrument.Range,
+            instrument.DurabilityDamage,
             Key(instrument.Description)
         },
         ComponentConsumeEffect effect => new object?[]
@@ -128,6 +135,7 @@ internal sealed class ComponentValueKey : IEquatable<ComponentValueKey>
             effect.Probability,
             Key(effect.RemovedEffects),
             effect.Diameter,
+            effect.DirectionalParticles,
             effect.Sound
         },
         IEnumerable values => values.Cast<object?>().Select(Key).ToArray(),

@@ -153,13 +153,13 @@ internal sealed partial class BlockEntityComponents : IAsyncDisposable
 
             if (data.Id == "minecraft:decorated_pot")
             {
-                var decorations = item.GetComponent<SimpleDataComponent<ImmutableArray<Item>>>(
+                var decorations = item.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(
                     DataComponentType.PotDecorations);
                 if (decorations is not null)
                 {
                     var sherds = new NbtList(NbtTagType.String, "sherds");
                     foreach (var face in decorations.Value.Take(PotFaces))
-                        sherds.Add(new NbtTag<string>(string.Empty, face.UnlocalizedName));
+                        sherds.Add(new NbtTag<string>(string.Empty, (face?.Holder ?? ItemsRegistry.Brick).UnlocalizedName));
 
                     data.Set(sherds);
                 }
@@ -359,7 +359,7 @@ internal sealed partial class BlockEntityComponents : IAsyncDisposable
                     : ItemsRegistry.Brick)
                 .ToImmutableArray();
 
-            components.Add(ComponentBuilder.PotDecorations with { Value = faces });
+            components.Add(ComponentBuilder.PotDecorations with { Value = [.. faces.Select(face => new ItemStack(face))] });
             dynamic["minecraft:sherds"] = [.. faces.Select(face => new ItemStack(face))];
         }
 

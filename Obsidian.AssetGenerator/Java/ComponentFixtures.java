@@ -53,7 +53,7 @@ public class ComponentFixtures {
         }
         // Only registries used by the hash tests are included; their order is connection-specific in real clients.
         var hashRegistries = new JsonObject();
-        for (var key : List.of("minecraft:attribute", "minecraft:enchantment", "minecraft:potion", "minecraft:mob_effect", "minecraft:banner_pattern", "minecraft:trim_material", "minecraft:trim_pattern")) hashRegistries.add(key, registryNames.get(key));
+        for (var key : List.of("minecraft:attribute", "minecraft:enchantment", "minecraft:potion", "minecraft:mob_effect", "minecraft:banner_pattern", "minecraft:trim_material", "minecraft:trim_pattern", "minecraft:instrument", "minecraft:sound_event", "minecraft:entity_type", "minecraft:block_transformer", "minecraft:decorated_pot_pattern", "minecraft:cat_sound_variant", "minecraft:chicken_sound_variant", "minecraft:cow_sound_variant", "minecraft:pig_sound_variant", "minecraft:damage_type")) hashRegistries.add(key, registryNames.get(key));
         // Tool fixture uses stone (ID 1); retaining the prefix avoids committing the entire block registry.
         var blocks = new JsonArray();
         for (int id = 0; id <= 1; id++) blocks.add(registryNames.getAsJsonArray("minecraft:block").get(id));
@@ -61,7 +61,7 @@ public class ComponentFixtures {
         output.add("registries", hashRegistries);
         // Persistent item codecs need names for these holders even when they arrived as network IDs.
         var componentRegistries = new JsonObject();
-        for (var key : List.of("minecraft:banner_pattern", "minecraft:jukebox_song")) {
+        for (var key : List.of("minecraft:banner_pattern", "minecraft:jukebox_song", "minecraft:damage_type")) {
             componentRegistries.add(key, registryNames.get(key));
         }
         Files.writeString(Path.of(args[1]).resolveSibling("component_registry_ids.json"),
@@ -117,7 +117,11 @@ public class ComponentFixtures {
             try {
                 if (valueCodec != null) value = valueCodec.parse(ops, samples.get(name.substring(10))).getOrThrow();
                 else {
-                    var source = Unpooled.wrappedBuffer(new byte[]{0});
+                    var source = Unpooled.buffer();
+                    var sample = samples.get(name.substring(10));
+                    call("net.minecraft.network.VarInt", "write", null, new String[]{"io.netty.buffer.ByteBuf", "int"},
+                        source, sample != null && sample.isJsonPrimitive() && sample.getAsJsonPrimitive().isNumber()
+                            ? sample.getAsInt() : 0);
                     var friendly = Vanilla.create(Vanilla.constructor("net.minecraft.network.RegistryFriendlyByteBuf", "io.netty.buffer.ByteBuf", "net.minecraft.core.RegistryAccess"), source, access);
                     value = call("net.minecraft.network.codec.StreamDecoder", "decode", wireCodec, new String[]{"java.lang.Object"}, friendly);
                     source.release();
