@@ -111,6 +111,9 @@ internal sealed partial class PlayClientHandler : ClientHandler
             case SelectTradePacket.PacketId:
                 await HandleFromPoolAsync<SelectTradePacket>(data);
                 break;
+            case SetGameRulePacket.PacketId:
+                await HandleFromPoolAsync<SetGameRulePacket>(data);
+                break;
             case RenameItemPacket.PacketId:
                 await HandleFromPoolAsync<RenameItemPacket>(data);
                 break;
