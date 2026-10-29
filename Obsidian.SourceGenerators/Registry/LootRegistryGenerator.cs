@@ -55,12 +55,10 @@ public sealed class LootRegistryGenerator : IIncrementalGenerator
     /// </summary>
     private static string? GetAssetPath(string path)
     {
-        var normalized = path.Replace('\\', '/');
-        var index = normalized.LastIndexOf("/Assets/", StringComparison.Ordinal);
-        if (index < 0 || !normalized.EndsWith(".json", StringComparison.Ordinal))
+        var relative = AssetPaths.GetAssetRelativePath(path);
+        if (relative is null || !relative.EndsWith(".json", StringComparison.Ordinal))
             return null;
 
-        var relative = normalized.Substring(index + "/Assets/".Length);
         return relative.Substring(0, relative.Length - ".json".Length);
     }
 

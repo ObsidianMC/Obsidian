@@ -260,12 +260,12 @@ These changes don't depend on the version. They go into `26.3.x` before the bump
      also the manifest id, the cache folder and the `minecraft:core` known-pack version.
    - Set `DataVersion` to 5023 and the data pack format to `(121, 0)`.
    - Fix the dumpers for 26.3 renames as they fail.
-4. **Get it compiling.** Fix the churn in hand-written code from renamed or removed generated ids. Worldgen types that
-   no longer exist stop compiling. Gate the Mojang generator behind a temporary flat/void generator so the server
-   runs before Phase 5 lands. Mark parity tests that can't pass yet as skipped, with the phase that re-enables them.
+4. **Get it compiling.** Fix the churn in hand-written code from renamed or removed generated ids. Loot and worldgen
+   keep running on 1.21.11 data (decision 4), so the Mojang generator keeps working until Phase 5. Mark parity tests
+   that can't pass yet as skipped, with the phase that re-enables them.
 
-**Exit:** `dotnet build` regenerates 26.3 assets, the solution compiles, the server boots with the temporary
-generator, and the tests that don't depend on worldgen pass.
+**Exit:** `dotnet build` regenerates 26.3 assets, the solution compiles, the server boots, and every test passes or
+is skipped with the phase that re-enables it. The 1.21.11 worldgen and structure fixtures still pass.
 
 ### Phase 2: protocol 777, through to a real client joining
 
@@ -297,7 +297,7 @@ generator, and the tests that don't depend on worldgen pass.
    test, not one test per packet.
 
 **Exit:** a vanilla 26.3 client joins and can move, chat, break and place blocks, use its inventory, see entities and
-stay connected for 10 minutes on the temporary generator, with no disconnects or decode warnings in the client log. The
+stay connected for 10 minutes, with no disconnects or decode warnings in the client log. The
 load test bot is updated to match.
 
 ### Phase 3: save format and existing worlds
@@ -326,8 +326,8 @@ in the parts we model.
 
 ### Phase 4: data-driven systems
 
-1. **Loot.** The new dispatch keys, conjunctions and `modifier`. Re-capture `block_loot.json` and `entity_loot.json`
-   with the existing loot dumpers.
+1. **Loot.** The new dispatch keys, conjunctions and `modifier`. Switch the loot generator from the 1.21.11 tables to
+   26.3's (decision 4). Re-capture `block_loot.json` and `entity_loot.json` with the existing loot dumpers.
 2. **Context number providers** (int and float). Then `/compute` and `/data modify … compute` can use them.
 3. **Recipes:**
    - brewing recipes, replacing `BrewingRegistry`;
@@ -371,8 +371,9 @@ Re-capture with the Phase 0 harness first, then work in this order. Each step ha
 8. **Performance.** Re-record `WorldgenBench` and compare with the 1.21.x numbers in `worldgen-benchmarks.md`. Single
    precision may make generation faster.
 
-**Exit:** all re-captured `VanillaWorldGeneration` and `VanillaStructureGeneration` fixtures pass, the temporary
-generator is removed, and throughput is no worse than on 1.21.x.
+**Exit:** all re-captured `VanillaWorldGeneration` and `VanillaStructureGeneration` fixtures pass, the 1.21.11 data is
+gone (`LegacyMinecraftVersion`, `Assets/legacy-1.21.11`, the `obsidian_legacy` tags and the legacy state table), and
+throughput is no worse than on 1.21.x.
 
 ### Phase 6: content and gameplay
 
@@ -421,6 +422,12 @@ Phase 2.
 2. **`1.21.x` is frozen.** It takes only critical fixes from now on, and we merge those forward into `26.3.x`.
 3. **26.3 comes first.** 26.4 is in snapshots and probably ships in December. We finish 26.3, then start `26.4.x` from
    it. Phase 0 is meant to make later version bumps mostly regeneration.
+4. **Loot and worldgen run on 1.21.11 data until Phases 4 and 5.** 26.3's loot and worldgen data don't fit
+   Obsidian's models. The asset generator writes 1.21.11's loot tables, worldgen, structure tags, carvers, biome
+   spawns and biome parameters to `Assets/legacy-1.21.11`, which is embedded under the normal asset names, and the
+   server extracts 1.21.11's structure templates. Legacy worldgen reads 1.21.11 tag contents through
+   `obsidian_legacy` tags, which are never sent to clients. Everything else is 26.3. `LegacyMinecraftVersion` in
+   `Obsidian.csproj` names the version; Phases 4 and 5 remove it.
 
 ## Risks
 

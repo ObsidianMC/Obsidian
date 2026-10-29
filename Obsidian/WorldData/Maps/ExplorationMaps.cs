@@ -12,14 +12,6 @@ namespace Obsidian.WorldData.Maps;
 /// </summary>
 internal sealed class ExplorationMaps(AbstractLevel level, MojangGenerator generator) : IExplorationMapFactory
 {
-    // Decoration types with a map item color (vanilla's MapDecorationType.mapColor).
-    private static readonly Dictionary<MapDecorationType, int> decorationColors = new()
-    {
-        { MapDecorationType.Mansion, 5393476 },
-        { MapDecorationType.Monument, 3830373 },
-        { MapDecorationType.TrialChambers, 12741452 }
-    };
-
     /// <summary>
     /// The explorer map factory of a level, or <c>null</c> when its generator doesn't place vanilla structures.
     /// </summary>
@@ -77,9 +69,6 @@ internal sealed class ExplorationMaps(AbstractLevel level, MojangGenerator gener
                 }
             }
         };
-
-        if (decorationColors.TryGetValue(type, out var color))
-            map[DataComponentType.MapColor] = ComponentBuilder.MapColor with { Value = color };
 
         return map;
     }

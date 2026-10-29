@@ -6,7 +6,7 @@ using Obsidian.WorldData.Features.Tree;
 namespace Obsidian.WorldData.Redstone;
 
 /// <summary>
-/// Redstone wire (vanilla <c>RedStoneWireBlock</c>): the output it gives its neighbors, and its own power, which it recalculates
+/// Redstone wire (vanilla <c>RedstoneWireBlock</c>): the output it gives its neighbors, and its own power, which it recalculates
 /// whenever a neighbor changes. Its shape is kept by <see cref="ShapeUpdater"/>.
 /// </summary>
 /// <remarks>
@@ -16,7 +16,7 @@ namespace Obsidian.WorldData.Redstone;
 /// </remarks>
 internal sealed class RedstoneWire(RedstoneEngine engine) : IRedstoneBehavior, INeighborChangedBehavior, IPlacementBehavior
 {
-    public const string BlockClass = "RedStoneWireBlock";
+    public const string BlockClass = "RedstoneWireBlock";
 
     private static readonly BlockFace[] horizontal = [BlockFace.North, BlockFace.East, BlockFace.South, BlockFace.West];
 
@@ -32,7 +32,7 @@ internal sealed class RedstoneWire(RedstoneEngine engine) : IRedstoneBehavior, I
     }
 
     /// <summary>
-    /// Vanilla <c>RedStoneWireBlock.getSignal</c>: nothing below, nothing while the wire works out its power, full power above it, and
+    /// Vanilla <c>RedstoneWireBlock.getSignal</c>: nothing below, nothing while the wire works out its power, full power above it, and
     /// horizontally only toward a side it is connected to.
     /// </summary>
     public int GetSignal(IBlock state, Vector position, BlockFace direction, bool wiresGiveSignal)

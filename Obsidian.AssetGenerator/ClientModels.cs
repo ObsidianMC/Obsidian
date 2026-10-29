@@ -6,7 +6,7 @@ namespace Obsidian.AssetGenerator;
 /// <summary>Evaluates model layers using a developer's installed client, never downloading a game jar.</summary>
 internal static class ClientModels
 {
-    public static async Task DumpAsync(HttpClient http, VanillaServer server, string output)
+    public static async Task DumpAsync(VanillaServer server, string output)
     {
         var installation = Environment.GetEnvironmentVariable("MINECRAFT_DIR") ?? (OperatingSystem.IsWindows()
             ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft")
@@ -28,17 +28,6 @@ internal static class ClientModels
             if (!Convert.ToHexStringLower(await SHA1.HashDataAsync(input)).Equals(expected, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException("The installed client jar does not match the launcher's SHA-1.");
         }
-        var mappings = Path.Combine(server.Directory, "client.txt");
-        var download = version.RootElement.GetProperty("downloads").GetProperty("client_mappings");
-        var hash = download.GetProperty("sha1").GetString()!;
-        if (!File.Exists(mappings)
-            || !Convert.ToHexStringLower(SHA1.HashData(await File.ReadAllBytesAsync(mappings))).Equals(hash, StringComparison.OrdinalIgnoreCase))
-        {
-            var bytes = await http.GetByteArrayAsync(download.GetProperty("url").GetString()!);
-            if (!Convert.ToHexStringLower(SHA1.HashData(bytes)).Equals(hash, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidDataException("Client mappings SHA-1 mismatch.");
-            await File.WriteAllBytesAsync(mappings, bytes);
-        }
         var classpath = new List<string> { jar };
         foreach (var library in version.RootElement.GetProperty("libraries").EnumerateArray())
         {
@@ -51,7 +40,7 @@ internal static class ClientModels
         }
         Console.WriteLine("Dumping all installed-client model layers...");
         await VanillaServer.RunJavaAsync(server.Directory, "-Djava.awt.headless=true", "-cp", string.Join(Path.PathSeparator, classpath),
-            Path.Combine(AppContext.BaseDirectory, "Java", "ClientModelDumper.java"), mappings, Path.Combine(output, "client_models.json"));
-        await FixtureDumper.DumpClientAsync(server, classpath, mappings, output);
+            Path.Combine(AppContext.BaseDirectory, "Java", "ClientModelDumper.java"), Path.Combine(output, "client_models.json"));
+        await FixtureDumper.DumpClientAsync(server, classpath, output);
     }
 }

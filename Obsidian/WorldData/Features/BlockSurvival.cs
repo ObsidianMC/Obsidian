@@ -12,17 +12,17 @@ namespace Obsidian.WorldData.Features;
 /// </remarks>
 internal static class BlockSurvival
 {
-    private static readonly BlockSet dirt = new("#minecraft:dirt");
-    private static readonly BlockSet sand = new("#minecraft:sand");
-    private static readonly BlockSet mushroomGrowBlock = new("#minecraft:mushroom_grow_block");
-    private static readonly BlockSet dryVegetationMayPlaceOn = new("#minecraft:dry_vegetation_may_place_on");
-    private static readonly BlockSet smallDripleafPlaceable = new("#minecraft:small_dripleaf_placeable");
-    private static readonly BlockSet bigDripleafPlaceable = new("#minecraft:big_dripleaf_placeable");
-    private static readonly BlockSet bambooPlantableOn = new("#minecraft:bamboo_plantable_on");
-    internal static readonly BlockSet JungleLogs = new("#minecraft:jungle_logs");
-    private static readonly BlockSet snowLayerCannotSurviveOn = new("#minecraft:snow_layer_cannot_survive_on");
-    private static readonly BlockSet snowLayerCanSurviveOn = new("#minecraft:snow_layer_can_survive_on");
-    private static readonly BlockSet nylium = new("#minecraft:nylium");
+    private static readonly BlockSet dirt = LegacyWorldgenTags.Blocks("dirt");
+    private static readonly BlockSet sand = LegacyWorldgenTags.Blocks("sand");
+    private static readonly BlockSet mushroomGrowBlock = LegacyWorldgenTags.Blocks("mushroom_grow_block");
+    private static readonly BlockSet dryVegetationMayPlaceOn = LegacyWorldgenTags.Blocks("dry_vegetation_may_place_on");
+    private static readonly BlockSet smallDripleafPlaceable = LegacyWorldgenTags.Blocks("small_dripleaf_placeable");
+    private static readonly BlockSet bigDripleafPlaceable = LegacyWorldgenTags.Blocks("big_dripleaf_placeable");
+    private static readonly BlockSet bambooPlantableOn = LegacyWorldgenTags.Blocks("bamboo_plantable_on");
+    internal static readonly BlockSet JungleLogs = LegacyWorldgenTags.Blocks("jungle_logs");
+    private static readonly BlockSet snowLayerCannotSurviveOn = LegacyWorldgenTags.Blocks("snow_layer_cannot_survive_on");
+    private static readonly BlockSet snowLayerCanSurviveOn = LegacyWorldgenTags.Blocks("snow_layer_can_survive_on");
+    private static readonly BlockSet nylium = LegacyWorldgenTags.Blocks("nylium");
 
     /// <summary>
     /// Whether <paramref name="block"/> could stay at <paramref name="position"/>, like vanilla <c>BlockState.canSurvive</c>.
@@ -35,8 +35,8 @@ internal static class BlockSurvival
         "WitherRoseBlock" => WitherRoseMayPlaceOn(Below(level, position)),
         "AzaleaBlock" => Below(level, position).Is(BlockIds.Clay) || MayPlaceOnVegetation(Below(level, position)),
         "MangrovePropaguleBlock" => MangrovePropaguleCanSurvive(block, level, position),
-        "FungusBlock" => FungusMayPlaceOn(Below(level, position)),
-        "RootsBlock" or "NetherSproutsBlock" => NetherPlantMayPlaceOn(Below(level, position)),
+        "NetherFungusBlock" => FungusMayPlaceOn(Below(level, position)),
+        "NetherRootsBlock" or "NetherSproutsBlock" => NetherPlantMayPlaceOn(Below(level, position)),
         "DoublePlantBlock" or "TallFlowerBlock" => DoublePlantCanSurvive(block, level, position, MayPlaceOnVegetation),
         "TallSeagrassBlock" => TallSeagrassCanSurvive(block, level, position),
         "SeagrassBlock" => SeagrassMayPlaceOn(Below(level, position)),
@@ -71,7 +71,7 @@ internal static class BlockSurvival
         "PointedDripstoneBlock" => PointedDripstoneCanSurvive(block, level, position),
         "MultifaceBlock" or "GlowLichenBlock" or "SculkVeinBlock" => MultifaceCanSurvive(block, level, position),
         "VineBlock" => VineCanSurvive(block, level, position),
-        "WaterlilyBlock" => WaterlilyCanSurvive(level, position),
+        "LilyPadBlock" => WaterlilyCanSurvive(level, position),
         "LeafLitterBlock" => Below(level, position).IsFaceSturdy(BlockFace.Up),
         "TorchBlock" or "RedstoneTorchBlock" => Below(level, position).IsTopCenterSturdy(),
         "StemBlock" or "AttachedStemBlock" or "CropBlock" or "CarrotBlock" or "PotatoBlock" or "BeetrootBlock" =>

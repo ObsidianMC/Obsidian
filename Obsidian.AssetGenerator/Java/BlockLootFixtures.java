@@ -6,63 +6,59 @@ import java.util.function.Consumer;
 
 /**
  * Captures block loot and the next random draw from vanilla without starting a server.
- * Usage: mappings, generated vanilla data directory (containing minecraft/loot_table), output JSON.
+ * Usage: generated vanilla data directory (containing minecraft/loot_table), output JSON.
  * Use Java 25's source launcher with the vanilla jar and libraries on the classpath; the sibling dumper supplies
- * mapping and bootstrap support. Its source class loader keeps the probe separate from the signed game jar.
+ * the bootstrap. Its source class loader keeps the probe separate from the signed game jar.
  */
 public final class BlockLootFixtures {
-    private static VanillaDumper.Mojang mappings;
     private static DynamicOps<JsonElement> ops;
     private static Object access;
 
     private static Object call(String owner, String name, Object target, String[] types, Object... arguments) {
-        return VanillaDumper.Mojang.call(mappings.method(owner, name, types), target, arguments);
+        return Vanilla.call(Vanilla.method(owner, name, types), target, arguments);
     }
 
     @SuppressWarnings("unchecked")
     private static Object decode(String owner, String field, JsonElement json) {
-        return ((Codec<Object>) mappings.get(owner, field)).parse(ops, json).getOrThrow();
+        return ((Codec<Object>) Vanilla.get(owner, field)).parse(ops, json).getOrThrow();
     }
 
     @SuppressWarnings("unchecked")
     public static void main(String[] arguments) throws Exception {
-        mappings = VanillaDumper.Mojang.read(Path.of(arguments[0]));
-        var bootstrap = VanillaDumper.class.getDeclaredMethod("bootstrap", VanillaDumper.Mojang.class);
-        bootstrap.setAccessible(true);
-        bootstrap.invoke(null, mappings);
-        access = call("net.minecraft.data.registries.VanillaRegistries", "createLookup", null, new String[]{});
+        VanillaDumper.bootstrap();
+        access = VanillaDumper.vanillaRegistries();
         ops = (DynamicOps<JsonElement>) call("net.minecraft.resources.RegistryOps", "create", null,
             new String[]{"com.mojang.serialization.DynamicOps", "net.minecraft.core.HolderLookup$Provider"},
             JsonOps.INSTANCE, access);
         var rows = new JsonArray();
-        capture(rows, arguments[1], "stone", "air", null, 0, 1, null, true, Map.of());
-        capture(rows, arguments[1], "stone", "wooden_pickaxe", null, 0, 1, null, true, Map.of());
-        capture(rows, arguments[1], "stone", "diamond_pickaxe", "silk_touch", 1, 1, null, true, Map.of());
-        capture(rows, arguments[1], "diamond_ore", "wooden_pickaxe", null, 0, 1, null, true, Map.of());
-        capture(rows, arguments[1], "diamond_ore", "diamond_pickaxe", "fortune", 3, 1, null, true, Map.of());
-        capture(rows, arguments[1], "diamond_ore", "diamond_pickaxe", "fortune", 3, 42, null, true, Map.of());
-        capture(rows, arguments[1], "diamond_ore", "diamond_pickaxe", "fortune", 3, 5, null, true, Map.of());
-        capture(rows, arguments[1], "redstone_ore", "diamond_pickaxe", "fortune", 3, 1, null, true, Map.of());
-        capture(rows, arguments[1], "glass", "diamond_pickaxe", null, 0, 1, null, true, Map.of());
-        capture(rows, arguments[1], "glass", "diamond_pickaxe", "silk_touch", 1, 1, null, true, Map.of());
-        capture(rows, arguments[1], "oak_door", "air", null, 0, 1, null, true, Map.of("half", "lower"));
-        capture(rows, arguments[1], "oak_door", "air", null, 0, 1, null, true, Map.of("half", "upper"));
-        capture(rows, arguments[1], "wheat", "air", null, 0, 1, null, true, Map.of("age", "0"));
-        capture(rows, arguments[1], "wheat", "diamond_hoe", "fortune", 3, 1, null, true, Map.of("age", "7"));
-        capture(rows, arguments[1], "oak_leaves", "air", null, 0, 42, null, true, Map.of());
-        capture(rows, arguments[1], "wall_torch", "air", null, 0, 1, null, true, Map.of());
-        capture(rows, arguments[1], "stone", "air", null, 0, 1, 4f, false, Map.of());
-        capture(rows, arguments[1], "stone", "air", null, 0, 42, 4f, false, Map.of());
-        capture(rows, arguments[1], "redstone_ore", "air", null, 0, 42, 4f, false, Map.of());
-        capture(rows, arguments[1], "redstone_ore", "air", null, 0, 1, null, false, Map.of());
-        Files.writeString(Path.of(arguments[2]), new GsonBuilder().setPrettyPrinting().create().toJson(rows));
+        capture(rows, arguments[0], "stone", "air", null, 0, 1, null, true, Map.of());
+        capture(rows, arguments[0], "stone", "wooden_pickaxe", null, 0, 1, null, true, Map.of());
+        capture(rows, arguments[0], "stone", "diamond_pickaxe", "silk_touch", 1, 1, null, true, Map.of());
+        capture(rows, arguments[0], "diamond_ore", "wooden_pickaxe", null, 0, 1, null, true, Map.of());
+        capture(rows, arguments[0], "diamond_ore", "diamond_pickaxe", "fortune", 3, 1, null, true, Map.of());
+        capture(rows, arguments[0], "diamond_ore", "diamond_pickaxe", "fortune", 3, 42, null, true, Map.of());
+        capture(rows, arguments[0], "diamond_ore", "diamond_pickaxe", "fortune", 3, 5, null, true, Map.of());
+        capture(rows, arguments[0], "redstone_ore", "diamond_pickaxe", "fortune", 3, 1, null, true, Map.of());
+        capture(rows, arguments[0], "glass", "diamond_pickaxe", null, 0, 1, null, true, Map.of());
+        capture(rows, arguments[0], "glass", "diamond_pickaxe", "silk_touch", 1, 1, null, true, Map.of());
+        capture(rows, arguments[0], "oak_door", "air", null, 0, 1, null, true, Map.of("half", "lower"));
+        capture(rows, arguments[0], "oak_door", "air", null, 0, 1, null, true, Map.of("half", "upper"));
+        capture(rows, arguments[0], "wheat", "air", null, 0, 1, null, true, Map.of("age", "0"));
+        capture(rows, arguments[0], "wheat", "diamond_hoe", "fortune", 3, 1, null, true, Map.of("age", "7"));
+        capture(rows, arguments[0], "oak_leaves", "air", null, 0, 42, null, true, Map.of());
+        capture(rows, arguments[0], "wall_torch", "air", null, 0, 1, null, true, Map.of());
+        capture(rows, arguments[0], "stone", "air", null, 0, 1, 4f, false, Map.of());
+        capture(rows, arguments[0], "stone", "air", null, 0, 42, 4f, false, Map.of());
+        capture(rows, arguments[0], "redstone_ore", "air", null, 0, 42, 4f, false, Map.of());
+        capture(rows, arguments[0], "redstone_ore", "air", null, 0, 1, null, false, Map.of());
+        Files.writeString(Path.of(arguments[1]), new GsonBuilder().setPrettyPrinting().create().toJson(rows));
     }
 
     private static void capture(JsonArray rows, String data, String block, String item, String enchantment,
         int level, long seed, Float radius, boolean checkTool, Map<String, String> properties) throws Exception {
         var stateJson = new JsonObject();
-        stateJson.addProperty("Name", "minecraft:" + block);
-        stateJson.add("Properties", new Gson().toJsonTree(properties));
+        stateJson.addProperty("id", "minecraft:" + block);
+        stateJson.add("properties", new Gson().toJsonTree(properties));
         var state = decode("net.minecraft.world.level.block.state.BlockState", "CODEC", stateJson);
         var toolJson = new JsonObject();
         toolJson.addProperty("id", "minecraft:" + item);
@@ -74,7 +70,7 @@ public final class BlockLootFixtures {
             toolJson.add("components", components);
         }
 
-        var tool = item.equals("air") ? mappings.get("net.minecraft.world.item.ItemStack", "EMPTY")
+        var tool = item.equals("air") ? Vanilla.get("net.minecraft.world.item.ItemStack", "EMPTY")
             : decode("net.minecraft.world.item.ItemStack", "CODEC", toolJson);
         var random = call("net.minecraft.util.RandomSource", "create", null, new String[]{"long"}, seed);
         var correct = !(boolean) call("net.minecraft.world.level.block.state.BlockBehaviour$BlockStateBase",
@@ -82,20 +78,20 @@ public final class BlockLootFixtures {
             || (boolean) call("net.minecraft.world.item.ItemStack", "isCorrectToolForDrops", tool,
                 new String[]{"net.minecraft.world.level.block.state.BlockState"}, state);
         var params = new HashMap<Object, Object>();
-        params.put(mappings.get("net.minecraft.world.level.storage.loot.parameters.LootContextParams", "TOOL"), tool);
-        params.put(mappings.get("net.minecraft.world.level.storage.loot.parameters.LootContextParams",
+        params.put(Vanilla.get("net.minecraft.world.level.storage.loot.parameters.LootContextParams", "TOOL"), tool);
+        params.put(Vanilla.get("net.minecraft.world.level.storage.loot.parameters.LootContextParams",
             "BLOCK_STATE"), state);
         if (radius != null) {
-            params.put(mappings.get("net.minecraft.world.level.storage.loot.parameters.LootContextParams",
+            params.put(Vanilla.get("net.minecraft.world.level.storage.loot.parameters.LootContextParams",
                 "EXPLOSION_RADIUS"), radius);
         }
 
-        var map = VanillaDumper.Mojang.create(mappings.constructor("net.minecraft.util.context.ContextMap",
+        var map = Vanilla.create(Vanilla.constructor("net.minecraft.util.context.ContextMap",
             "java.util.Map"), params);
-        var lootParams = VanillaDumper.Mojang.create(mappings.constructor(
+        var lootParams = Vanilla.create(Vanilla.constructor(
             "net.minecraft.world.level.storage.loot.LootParams", "net.minecraft.server.level.ServerLevel",
             "net.minecraft.util.context.ContextMap", "java.util.Map", "float"), null, map, Map.of(), 0f);
-        var context = VanillaDumper.Mojang.create(mappings.constructor(
+        var context = Vanilla.create(Vanilla.constructor(
             "net.minecraft.world.level.storage.loot.LootContext", "net.minecraft.world.level.storage.loot.LootParams",
             "net.minecraft.util.RandomSource", "net.minecraft.core.HolderGetter$Provider"),
             lootParams, random, access);
@@ -117,7 +113,7 @@ public final class BlockLootFixtures {
 
                 var dropped = call("net.minecraft.world.item.ItemStack", "getItem", stack, new String[]{});
                 var name = call("net.minecraft.core.Registry", "getKey",
-                    mappings.get("net.minecraft.core.registries.BuiltInRegistries", "ITEM"),
+                    Vanilla.get("net.minecraft.core.registries.BuiltInRegistries", "ITEM"),
                     new String[]{"java.lang.Object"}, dropped).toString();
                 result.add(name + "*" + count);
             };

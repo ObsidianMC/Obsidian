@@ -73,11 +73,11 @@ internal static class PistonRules
 
             switch (PushReaction(state))
             {
-                case "BLOCK":
+                case "IMMOVEABLE":
                     return false;
-                case "DESTROY":
+                case "POPPED":
                     return allowDestroy;
-                case "PUSH_ONLY":
+                case "PUSH":
                     return direction == pistonDirection;
             }
         }

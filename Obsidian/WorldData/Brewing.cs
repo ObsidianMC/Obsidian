@@ -1,6 +1,7 @@
 using Obsidian.API.Containers;
 using Obsidian.API.Inventory;
 using Obsidian.Registries;
+using System.Text.Json;
 
 namespace Obsidian.WorldData;
 
@@ -10,6 +11,9 @@ namespace Obsidian.WorldData;
 /// </summary>
 internal static class Brewing
 {
+    // The items whose default components include minecraft:brewing_fuel (blaze powder in vanilla).
+    private static readonly HashSet<string> defaultFuels = LoadDefaultFuels();
+
     /// <summary>
     /// What a stand's tick changed, for the level to show.
     /// </summary>
@@ -88,9 +92,16 @@ internal static class Brewing
     }
 
     /// <summary>
-    /// Whether <paramref name="item"/> fuels brewing stands: vanilla's <c>#minecraft:brewing_fuel</c>, blaze powder.
+    /// Whether <paramref name="item"/> fuels brewing stands: whether it has vanilla's <c>minecraft:brewing_fuel</c>
+    /// component, by default (blaze powder) or set on the stack.
     /// </summary>
-    public static bool IsFuel(ItemStack item) => TagsRegistry.Item.BrewingFuel.Entries.Contains(item.Holder.Id);
+    /// <remarks>
+    /// The component's <c>uses</c> and <c>speed_multiplier</c> aren't read yet: every vanilla fuel uses the defaults,
+    /// <see cref="BrewingRegistry.FuelUses"/> brews at normal speed.
+    /// </remarks>
+    public static bool IsFuel(ItemStack item) =>
+        !item.RemoveComponents.Contains(DataComponentType.BrewingFuel) &&
+        (item.ContainsKey(DataComponentType.BrewingFuel) || defaultFuels.Contains(item.Holder.UnlocalizedName));
 
     /// <summary>
     /// Whether the slot of a brewing stand takes <paramref name="item"/>, like vanilla's brewing menu's slots: bottles
@@ -160,4 +171,14 @@ internal static class Brewing
     // Vanilla's crafting remainders of brewing ingredients: only dragon's breath has one among vanilla's.
     private static ItemStack? Remainder(Item ingredient) =>
         ingredient.Id == ItemIds.DragonBreath ? new ItemStack(ItemsRegistry.GlassBottle, 1) : null;
+
+    private static HashSet<string> LoadDefaultFuels()
+    {
+        using var stream = typeof(Brewing).Assembly.GetManifestResourceStream("Obsidian.Assets.item_components.json")!;
+        using var document = JsonDocument.Parse(stream);
+        return document.RootElement.EnumerateObject()
+            .Where(item => item.Value.GetProperty("components").TryGetProperty("minecraft:brewing_fuel", out _))
+            .Select(item => item.Name)
+            .ToHashSet();
+    }
 }

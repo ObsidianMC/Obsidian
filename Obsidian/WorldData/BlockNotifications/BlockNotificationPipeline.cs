@@ -190,9 +190,9 @@ internal sealed class BlockNotificationPipeline
             {
                 if (updated.IsAir && !state.IsAir)
                 {
-                    // BaseRailBlock and RedStoneWireBlock use dropResources/removeBlock (no 2001 event); ordinary
+                    // BaseRailBlock and RedstoneWireBlock use dropResources/removeBlock (no 2001 event); ordinary
                     // shape-destroyed blocks use Level.destroyBlock and do emit it.
-                    var playEffect = state.BlockClass() != "RedStoneWireBlock" && !Rails.IsRail(state);
+                    var playEffect = state.BlockClass() != "RedstoneWireBlock" && !Rails.IsRail(state);
                     this.world.DropAndRemove(work.Position, state, playEffect);
                 }
                 else

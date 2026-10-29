@@ -333,7 +333,9 @@ internal sealed record BiomeSpawns(IReadOnlyDictionary<string, IReadOnlyDictiona
 
     private static BiomeSpawns LoadVanilla()
     {
-        var resource = "Obsidian.Assets.Codecs.biomes.json";
+        // The legacy version's (Assets/legacy-1.21.11/biome_spawns.json), since 26.1 moved spawns out of the biome and
+        // worldgen runs on the legacy version's biomes for now.
+        var resource = "Obsidian.Assets.biome_spawns.json";
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resource)
             ?? throw new InvalidDataException("Missing biome spawn data.");
         using var document = JsonDocument.Parse(stream);

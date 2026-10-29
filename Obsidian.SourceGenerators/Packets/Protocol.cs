@@ -12,11 +12,13 @@ internal sealed class Protocol
     /// <summary>The namespace generated vanilla types are emitted into, in Obsidian.API.</summary>
     public const string TypesNamespace = "Obsidian.API";
 
-    // Vanilla names that read badly as C# types: a typo, and the name most developers know the type by.
+    // Vanilla names that read badly as C# types: a typo, and the names most developers know the types by (26.1 renamed
+    // ClickType, which Obsidian's container click events expose, to ContainerInput).
     private static readonly Dictionary<string, string> renames = new()
     {
         ["ChatVisiblity"] = "ChatVisibility",
         ["GameType"] = "GameMode",
+        ["ContainerInput"] = "ClickType",
     };
 
     public IReadOnlyList<ProtocolPacket> Packets { get; }

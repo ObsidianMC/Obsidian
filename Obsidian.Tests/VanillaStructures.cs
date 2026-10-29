@@ -17,7 +17,7 @@ internal static class VanillaStructures
     {
         using var httpClient = new HttpClient();
         var cache = Path.Combine(Path.GetTempPath(), "obsidian-tests", "cache");
-        var directory = VanillaServerJar.ExtractStructuresAsync(httpClient, cache, ServerConstants.ProtocolDescription, NullLogger.Instance)
+        var directory = VanillaServerJar.ExtractStructuresAsync(httpClient, cache, ServerConstants.LegacyVersion, NullLogger.Instance)
             .GetAwaiter().GetResult();
 
         StructureRegistry.Initialize(directory);

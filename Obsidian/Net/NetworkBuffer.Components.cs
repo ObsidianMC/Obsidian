@@ -273,7 +273,7 @@ public partial class NetworkBuffer
             case DataComponentType.CatCollar: case DataComponentType.SheepColor: case DataComponentType.ShulkerColor:
                 this.ReadVarInt();
                 break;
-            case DataComponentType.DyedColor: case DataComponentType.MapColor: case DataComponentType.MinimumAttackCharge:
+            case DataComponentType.DyedColor: case DataComponentType.MinimumAttackCharge:
             case DataComponentType.PotionDurationScale:
                 this.SkipBytes(4);
                 break;
@@ -433,7 +433,8 @@ public partial class NetworkBuffer
                 this.SkipOptional(this.SkipSound);
                 this.SkipOptional(this.SkipSound);
                 break;
-            case DataComponentType.SwingAnimation:
+            // 26.1 split swing_animation into these two, which keep its codec.
+            case DataComponentType.AttackAnimation: case DataComponentType.InteractAnimation:
                 this.ReadVarInt();
                 this.ReadVarInt();
                 break;

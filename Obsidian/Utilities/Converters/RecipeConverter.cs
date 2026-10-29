@@ -6,6 +6,10 @@ using System.Text.Json.Serialization;
 namespace Obsidian.Utilities.Converters;
 public sealed class RecipesConverter : JsonConverter<IRecipe[]>
 {
+    // Recipe types that 26.1 and later added, which Obsidian doesn't model yet. Phase 4 of the 26.3 port (data-driven
+    // systems) reads them; until then they're left out, and brewing keeps BrewingRegistry's own mixes.
+    private static readonly HashSet<string> unsupportedTypes = ["minecraft:brewing", "minecraft:crafting_dye", "minecraft:crafting_imbue"];
+
     //TODO PARSE SPECIAL RECIPES
     public override IRecipe[]? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
@@ -18,32 +22,39 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
             var recipeName = recipeElement.Name;
             var value = recipeElement.Value;
 
-            var type = value.GetProperty("type").GetString()!.TrimResourceTag();
+            var typeId = value.GetProperty("type").GetString()!;
+            var type = typeId.TrimResourceTag();
             var group = value.TryGetProperty("group", out var groupValue) ? groupValue.GetString()! : string.Empty;
 
+            if (unsupportedTypes.Contains(typeId))
+                continue;
+
             if (!Enum.TryParse<CraftingType>(type, true, out var craftingType))
-                throw new JsonException();
+                throw new JsonException($"Unknown recipe type '{type}' in {recipeName}.");
 
-            if (!value.TryGetProperty("result", out var resultValue))
+            if (craftingType == CraftingType.SmithingTrim)
             {
-                if (craftingType == CraftingType.SmithingTrim)
+                recipes.Add(new SmithingTrimRecipe
                 {
-                    recipes.Add(new SmithingTrimRecipe
-                    {
-                        Identifier = recipeName,
-                        Type = craftingType,
-                        Group = group,
-                        Template = value.GetProperty("template").Deserialize<Ingredient>(options)!,
-                        Addition = value.GetProperty("addition").Deserialize<Ingredient>(options)!,
-                        Base = value.GetProperty("base").Deserialize<Ingredient>(options)!,
-                        Pattern = value.TryGetProperty("pattern", out var pattern) ? pattern.GetString() : null
-                    });
-                }
-
+                    Identifier = recipeName,
+                    Type = craftingType,
+                    Group = group,
+                    Template = value.GetProperty("template").Deserialize<Ingredient>(options)!,
+                    Addition = value.GetProperty("addition").Deserialize<Ingredient>(options)!,
+                    Base = value.GetProperty("base").Deserialize<Ingredient>(options)!,
+                    Pattern = value.TryGetProperty("pattern", out var pattern) ? pattern.GetString() : null
+                });
                 continue;
             }
 
-            var result = resultValue.Deserialize<Ingredient>(options)!;
+            // Special recipes are built in code. Since 26.1 most of them name a result too, which isn't always an item
+            // (map extending's is empty), so only the types below read one.
+            if (craftingType is not (CraftingType.CraftingShaped or CraftingType.CraftingShapeless or CraftingType.Blasting
+                or CraftingType.Smelting or CraftingType.Smoking or CraftingType.CampfireCooking
+                or CraftingType.Stonecutting or CraftingType.SmithingTransform))
+                continue;
+
+            var result = value.GetProperty("result").Deserialize<Ingredient>(options)!;
 
             switch (craftingType)
             {
@@ -53,7 +64,7 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
                         Identifier = recipeName,
                         Type = craftingType,
                         Group = group,
-                        Category = Enum.Parse<CraftingBookCategory>(value.GetProperty("category").GetString()!, true),
+                        Category = CraftingCategory(value),
                         Key = value.GetProperty("key").Deserialize<Dictionary<char, Ingredient>>(options)!.AsReadOnly(),
                         Pattern = value.GetProperty("pattern").Deserialize<string[]>(options)!.AsReadOnly(),
                         Result = result
@@ -65,7 +76,7 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
                         Identifier = recipeName,
                         Type = craftingType,
                         Group = group,
-                        Category = Enum.Parse<CraftingBookCategory>(value.GetProperty("category").GetString()!, true),
+                        Category = CraftingCategory(value),
                         Ingredients = value.GetProperty("ingredients").Deserialize<Ingredient[]>(options)!,
                         Result = result
                     });
@@ -79,9 +90,11 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
                         Identifier = recipeName,
                         Type = craftingType,
                         Group = group,
-                        Category = Enum.Parse<CookingBookCategory>(value.GetProperty("category").GetString()!, true),
+                        Category = value.TryGetProperty("category", out var cooking)
+                            ? Enum.Parse<CookingBookCategory>(cooking.GetString()!, true)
+                            : CookingBookCategory.Misc,
                         CookingTime = value.GetProperty("cookingtime").GetInt32(),
-                        Experience = value.GetProperty("experience").GetSingle(),
+                        Experience = value.TryGetProperty("experience", out var experience) ? experience.GetSingle() : 0f,
                         Ingredient = value.GetProperty("ingredient").Deserialize<Ingredient>(options)!,
                         Result = result
                     });
@@ -117,6 +130,11 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
 
         return recipes.ToArray();
     }
+
+    // 26.1+ leaves out a crafting recipe's category when it's the default, misc.
+    private static CraftingBookCategory CraftingCategory(JsonElement recipe) => recipe.TryGetProperty("category", out var category)
+        ? Enum.Parse<CraftingBookCategory>(category.GetString()!, true)
+        : CraftingBookCategory.Misc;
 
     public override void Write(Utf8JsonWriter writer, IRecipe[] value, JsonSerializerOptions options) => throw new NotImplementedException();
 }

@@ -4,7 +4,7 @@ namespace Obsidian.AssetGenerator;
 
 /// <summary>
 /// Re-records the vanilla worldgen and structure references the parity tests replay
-/// (<c>Obsidian.Tests/Assets/vanilla_worldgen.json</c>), by running <c>Captures/WorldgenCaptures.java.template</c> against
+/// (<c>Obsidian.Tests/Assets/vanilla_worldgen.json</c>), by running <c>Captures/WorldgenCaptures.java</c> against
 /// the vanilla server. See <c>docs/vanilla-captures.md</c>.
 /// </summary>
 /// <remarks>
@@ -14,13 +14,18 @@ namespace Obsidian.AssetGenerator;
 /// </remarks>
 internal static class WorldgenCaptures
 {
+    internal const string UnavailableMessage = "The worldgen capture probe hasn't been adapted to 26.3 yet; see Phase 5 of docs/porting-26.3-plan.md.";
+
     // A world's server can hang rather than exit when it fails (the probe waits for it to become ready and for chunks to
     // load), so each run is killed after this long. A whole capture takes about a minute.
     private static readonly TimeSpan WorldTimeout = TimeSpan.FromMinutes(15);
 
     private static string Source(string name) => Path.Combine(AppContext.BaseDirectory, name);
 
-    public static async Task RunAsync(VanillaServer server, string fixturePath)
+    public static Task RunAsync(VanillaServer server, string fixturePath) => throw new NotSupportedException(UnavailableMessage);
+
+    // Kept for Phase 5, when the probe's chunk statuses and density-function APIs are adapted to 26.3.
+    private static async Task CaptureAsync(VanillaServer server, string fixturePath)
     {
         // Each world rewrites its own cases, so they're captured into a copy that replaces the fixture only once every
         // world succeeded. A failed capture never leaves a fixture mixing versions.
@@ -40,11 +45,7 @@ internal static class WorldgenCaptures
     private static async Task CaptureWorldsAsync(VanillaServer server, string fixturePath, string capturing)
     {
         var classpath = string.Join(Path.PathSeparator, server.ClassPath);
-
-        // Our probe source is name-resolved against the server's mappings like the other fixture dumpers' sources.
-        var source = Path.Combine(server.Directory, "fixture-sources", "WorldgenCaptures.java");
-        await VanillaServer.RunJavaAsync(server.Directory, "-cp", classpath, Source(Path.Combine("Java", "FixtureSource.java")),
-            server.MappingsPath, Source(Path.Combine("Captures", "WorldgenCaptures.java.template")), source);
+        var source = Source(Path.Combine("Captures", "WorldgenCaptures.java"));
 
         foreach (var seed in Seeds(fixturePath))
         {

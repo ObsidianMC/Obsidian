@@ -262,6 +262,7 @@ public sealed class WorldgenOverrides : IDisposable
     [Fact(DisplayName = "A data pack's overlays apply over its root, and its filter blocks earlier packs' files")]
     public void DataPacksApplyOverlaysAndFilters()
     {
+        var format = ServerConstants.DataPackFormat;
         var earlier = Path.Join(this.folder, "a_earlier", "data");
         Directory.CreateDirectory(Path.Join(earlier, "minecraft", "worldgen", "noise"));
         Directory.CreateDirectory(Path.Join(earlier, "ruby", "worldgen", "noise"));
@@ -271,14 +272,15 @@ public sealed class WorldgenOverrides : IDisposable
 
         this.Zip("b_later.zip", new()
         {
-            ["pack.mcmeta"] = """
+            // "current" covers exactly the server's format (major and minor) and "older" the formats before it.
+            ["pack.mcmeta"] = $$"""
                 {
-                  "pack": { "description": "", "min_format": 94, "max_format": 94 },
+                  "pack": { "description": "", "min_format": {{format.Major}}, "max_format": {{format.Major}} },
                   "filter": { "block": [{ "namespace": "^minecraft$", "path": "noise/block" }] },
                   "overlays": {
                     "entries": [
-                      { "directory": "current", "min_format": [94, 1], "max_format": 94 },
-                      { "directory": "older", "min_format": 82, "max_format": 93 }
+                      { "directory": "current", "min_format": [{{format.Major}}, {{format.Minor}}], "max_format": {{format.Major}} },
+                      { "directory": "older", "min_format": 82, "max_format": {{format.Major - 1}} }
                     ]
                   }
                 }

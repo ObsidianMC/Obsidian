@@ -8,6 +8,12 @@ test case.
 
 ## Re-recording
 
+**Unavailable on 26.3:** the build target and direct `capture-worldgen` command fail immediately, before downloading
+or changing fixtures. The worldgen capture probe hasn't been adapted to 26.3 yet; see Phase 5 of
+`docs/porting-26.3-plan.md`. Its old `SURFACE`/`CARVERS` statuses and density-function APIs need adapting to the new
+terrain pipeline. The instructions below describe the capture workflow to restore in Phase 5; the existing fixtures
+remain 1.21.11 references.
+
 ```sh
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen
 ```
@@ -27,9 +33,9 @@ reference needs a section, a capture in the harness and a test.
 
 ## How it captures
 
-`Obsidian.AssetGenerator/Captures/WorldgenCaptures.java.template` is a Java probe. Its vanilla symbols are resolved
-through the server's Mojang mappings by `Java/FixtureSource.java`, the same resolver the other fixture dumpers use, so
-no names are hard-coded. It is not an asset input, so editing it doesn't regenerate the assets.
+`Obsidian.AssetGenerator/Captures/WorldgenCaptures.java` is a Java probe, run from source against the server jar by
+vanilla's own names (the jars aren't obfuscated since 26.1). It is not an asset input, so editing it doesn't regenerate
+the assets.
 
 For each seed in the fixture, with structures off and then on, `WorldgenCaptures.cs`:
 

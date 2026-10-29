@@ -27,7 +27,6 @@ public static partial class ComponentBuilder
         DataComponentType.TooltipStyle => TooltipStyle,
         DataComponentType.StoredEnchantments => StoredEnchantments,
         DataComponentType.DyedColor => DyedColor,
-        DataComponentType.MapColor => MapColor,
         DataComponentType.MapId => MapId,
         DataComponentType.MapPostProcessing => MapPostProcessing,
         DataComponentType.ChargedProjectiles => ChargedProjectiles,

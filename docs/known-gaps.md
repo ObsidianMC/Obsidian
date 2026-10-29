@@ -407,3 +407,61 @@ Continue in `Obsidian/Progress`, `Player.Progress.cs`, and the three registries 
 custom statistics. Existing gameplay files only contain small calls into that runtime. The three tests in
 `Obsidian.Tests/Progress.cs` replay captured vanilla 1.21.11 packet/save fixtures and exercise reward idempotence
 and plugin unload/reload.
+
+## Tilling and other block transformers
+
+**Status:** disabled during the 26.3 port; Phase 4 of [the porting plan](porting-26.3-plan.md) re-enables it.
+
+26.1 replaced `HoeItem.TILLABLES` (and the axe's and shovel's tables) with the data-driven `minecraft:block_transformer`
+item component: rule-based block state providers with tag and offset predicates, sounds, item damage and loot
+tables. The old dump can't be made from 26.3, so hoes no longer till; `ItemUseOnBehaviors` has no counterparts and
+the hoe test is skipped.
+
+**Where to start:** read vanilla's `data/minecraft/block_transformer` files (`hoe`, `axe`, `shovel`) and run them from
+the item's `block_transformer` component in `UseItemOnPacket`, then re-enable `Farmland.HoeTills`.
+
+## Saplings that 26.3 added
+
+**Status:** open until Phase 6 of [the porting plan](porting-26.3-plan.md).
+
+Since 26.1 a `TreeGrower` picks from weighted feature lists. `sapling_growers.json` keeps the old shape (a feature,
+a secondary one and a secondary chance), which every 1.21.11 sapling fits; a grower that doesn't fit, like the
+poplar's three trees, is left out, so that sapling doesn't grow. Saplings also grow 1.21.11's configured features,
+since worldgen runs on 1.21.11's data for now.
+
+**Where to start:** give `TreeGrower` weighted lists like vanilla's, dumped as they are by `VanillaDumper`.
+
+## Players' arm swings
+
+**Status:** disabled during the 26.3 port; Phase 2 of [the porting plan](porting-26.3-plan.md) re-enables it.
+
+26.3 removed the serverbound `swing` packet; the client now sends `punch` and a separate `attack` instead. Obsidian
+handles neither yet, so other players don't see a player's arm swing. Mobs' own swings are still sent.
+
+**Where to start:** handle `punch` (and `attack`, which also drives melee) and send `animate` to nearby players, as
+the removed `SwingPacket` did.
+
+## Bubble columns started by water
+
+**Status:** disabled during the 26.3 port; Phase 6 of [the porting plan](porting-26.3-plan.md) re-enables it.
+
+Since 26.1 soul sand and magma no longer start bubble columns themselves. The water above them does: `LiquidBlock`'s
+`onPlace`, `neighborChanged` and `updateShape` (from below) schedule a 20-tick check when the block below is in
+`#enables_bubble_column_push_up` or `#enables_bubble_column_drag_down`, and its `tick` updates the column. Obsidian's
+soul sand and magma behaviors no longer bind to an owner, so new columns don't form; existing columns still tick. The
+five bubble column tests that start a column are skipped.
+
+**Where to start:** give water the same hooks (Obsidian's fluid ticks handle water today, so keep its spreading path)
+and replace `SoulSandBlock` and `MagmaBlock` in `BlockOwnerBehaviors` with them, then re-enable the skipped tests in
+`BubbleColumns`.
+
+## Cooking speed from fuel
+
+**Status:** open until Phase 4 of [the porting plan](porting-26.3-plan.md).
+
+26.1 gives blasting and smoking recipes the same 200 ticks as smelting; a furnace now cooks at the speed multiplier of
+the fuel it lit with, saved as `speed_multiplier`. Obsidian still reads each recipe's cooking time as is, so blast
+furnaces and smokers cook at a furnace's speed for now, and the cooking test is skipped.
+
+**Where to start:** replace `FurnaceFuels` with the fuel component's burn time and speed multiplier, as Phase 4 lists,
+then re-enable `Cooking.MachinesCookAcrossSaveAndAutomationAndAwardExperience`.

@@ -20,10 +20,10 @@
 		<!-- Capture source inputs before the build adds generated assembly attributes under obj. -->
 		<!-- The capture driver only runs on request (CaptureVanillaWorldgen), so editing it doesn't regenerate the assets. -->
 		<VanillaGeneratorInput Include="@(Compile)" Exclude="WorldgenCaptures.cs" />
-		<VanillaDumperInput Include="Java\**\*.java;Java\**\*.json;Java\**\*.template" />
+		<VanillaDumperInput Include="Java\**\*.java;Java\**\*.json" />
 		<None Update="@(VanillaDumperInput)" CopyToOutputDirectory="PreserveNewest" />
 		<!-- On-request captures (CaptureVanillaWorldgen); not asset inputs, so editing them doesn't regenerate the assets. -->
-		<None Update="Captures\**\*.template" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Captures\**\*.java" CopyToOutputDirectory="PreserveNewest" />
 		<UpToDateCheckOutput Include="$(VanillaAssetsDirectory)collision_shapes.json" />
 	</ItemGroup>
 
@@ -33,8 +33,14 @@
 			<Output TaskParameter="Result" PropertyName="MinecraftVersion" />
 		</XmlPeek>
 		<Error Condition="'$(MinecraftVersion)' == ''" Text="Obsidian.csproj doesn't set MinecraftVersion." />
+		<XmlPeek XmlInputPath="$(MSBuildThisFileDirectory)..\Obsidian\Obsidian.csproj"
+		         Query="/Project/PropertyGroup/LegacyMinecraftVersion/text()">
+			<Output TaskParameter="Result" PropertyName="LegacyMinecraftVersion" />
+		</XmlPeek>
+		<Error Condition="'$(LegacyMinecraftVersion)' == ''" Text="Obsidian.csproj doesn't set LegacyMinecraftVersion." />
 		<PropertyGroup>
-			<VanillaAssetsStamp>$(VanillaAssetsDirectory).generated-$(MinecraftVersion)</VanillaAssetsStamp>
+			<VanillaAssetsStamp>$(VanillaAssetsDirectory).generated-$(MinecraftVersion)-legacy-$(LegacyMinecraftVersion)</VanillaAssetsStamp>
+			<VanillaLegacyAssetsDirectory>$(VanillaAssetsDirectory)legacy-$(LegacyMinecraftVersion)\</VanillaLegacyAssetsDirectory>
 		</PropertyGroup>
 		<ItemGroup>
 			<VanillaAssetsOutput Include="$(VanillaAssetsStamp)" />
@@ -49,8 +55,9 @@
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)collision_shapes.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)block_sounds.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)block_loot_tables.json" />
-			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\blocks.json" />
-			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\entities.json" />
+			<VanillaAssetsOutput Include="$(VanillaLegacyAssetsDirectory)loot_table\blocks.json" />
+			<VanillaAssetsOutput Include="$(VanillaLegacyAssetsDirectory)loot_table\entities.json" />
+			<VanillaAssetsOutput Include="$(VanillaLegacyAssetsDirectory)block_states.json" />
 		</ItemGroup>
 	</Target>
 
@@ -60,7 +67,7 @@
 	        Inputs="$(MSBuildProjectFullPath);@(VanillaGeneratorInput);@(VanillaDumperInput)"
 	        Outputs="@(VanillaAssetsOutput)">
 		<PropertyGroup>
-			<VanillaAssetsCommand>dotnet &quot;$(TargetPath)&quot; $(MinecraftVersion)</VanillaAssetsCommand>
+			<VanillaAssetsCommand>dotnet &quot;$(TargetPath)&quot; $(MinecraftVersion) $(LegacyMinecraftVersion)</VanillaAssetsCommand>
 			<VanillaAssetsCommand>$(VanillaAssetsCommand) &quot;$(VanillaWorkDirectory).&quot;</VanillaAssetsCommand>
 			<VanillaAssetsCommand>$(VanillaAssetsCommand) &quot;$(VanillaAssetsDirectory).&quot;</VanillaAssetsCommand>
 		</PropertyGroup>
@@ -70,20 +77,14 @@
 		<Touch Files="$(VanillaAssetsStamp)" AlwaysCreate="true" />
 	</Target>
 
-	<!-- Re-records the vanilla worldgen and structure references the parity tests replay, in place, with the Minecraft
-	     version's server (docs/vanilla-captures.md). Slow, so only on request:
+	<!-- Disabled until Phase 5 adapts the probe to 26.3's terrain pipeline (docs/vanilla-captures.md).
+	     Once restored, re-records the vanilla worldgen and structure references in place, only on request:
 	     dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen -->
 	<PropertyGroup>
 		<VanillaWorldgenFixture>$(MSBuildThisFileDirectory)..\Obsidian.Tests\Assets\vanilla_worldgen.json</VanillaWorldgenFixture>
 	</PropertyGroup>
 
-	<Target Name="CaptureVanillaWorldgen" DependsOnTargets="Build;ReadMinecraftVersion">
-		<PropertyGroup>
-			<VanillaCaptureCommand>dotnet &quot;$(TargetPath)&quot; capture-worldgen $(MinecraftVersion)</VanillaCaptureCommand>
-			<VanillaCaptureCommand>$(VanillaCaptureCommand) &quot;$(VanillaWorkDirectory).&quot;</VanillaCaptureCommand>
-			<VanillaCaptureCommand>$(VanillaCaptureCommand) &quot;$(VanillaWorldgenFixture)&quot;</VanillaCaptureCommand>
-		</PropertyGroup>
-
-		<Exec IgnoreStandardErrorWarningFormat="true" Command="$(VanillaCaptureCommand)" />
+	<Target Name="CaptureVanillaWorldgen">
+		<Error Text="The worldgen capture probe hasn't been adapted to 26.3 yet; see Phase 5 of docs/porting-26.3-plan.md." />
 	</Target>
 </Project>

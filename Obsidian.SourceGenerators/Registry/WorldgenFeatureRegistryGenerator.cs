@@ -41,6 +41,11 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
     private static readonly DiagnosticDescriptor unknownReference = new("OBSWG003", "Unknown feature reference",
         "Unknown {0} '{1}' (used by {2})", "WorldgenFeatures", DiagnosticSeverity.Error, true);
 
+    // Errors, like unknown properties: a value whose JSON doesn't fit its C# type (vanilla changed its format) is
+    // emitted as default.
+    private static readonly DiagnosticDescriptor mismatchedJson = new("OBSWG005", "Mismatched worldgen JSON",
+        "{0} can't be read from {1} JSON {2} ({3}) (used by {4})", "WorldgenFeatures", DiagnosticSeverity.Error, true);
+
     public void Initialize(IncrementalGeneratorInitializationContext ctx)
     {
         var jsonFiles = ctx.AdditionalTextsProvider
@@ -48,7 +53,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
             .Where(static file => file.path is not null && (file.path.StartsWith("features/") || file.path.StartsWith("placed_features/")
                 || file.path.StartsWith("processor_lists/") || file.path.StartsWith("structures/") || file.path.StartsWith("structure_sets/")
                 || file.path.StartsWith("template_pools/")
-                || file.path == "biome_features" || file.path == "tags"))
+                || file.path == "biome_features" || file.path == "structure_tags"))
             .Select(static (file, ct) => (path: file.path!, json: file.text.GetText(ct)!.ToString()));
 
         var classDeclarations = ctx.SyntaxProvider
@@ -67,13 +72,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
     /// </summary>
     private static string? GetWorldgenPath(string path)
     {
-        var normalized = path.Replace('\\', '/');
-
-        // The tags of every registry; the structure tags are emitted here since structures only exist in this assembly.
-        if (normalized.EndsWith("/Assets/tags.json", StringComparison.Ordinal))
-            return "tags";
-
-        var relative = AssetPaths.GetWorldgenRelativePath(normalized);
+        var relative = AssetPaths.GetWorldgenRelativePath(path);
         if (relative is null || !relative.EndsWith(".json", StringComparison.Ordinal))
             return null;
 
@@ -137,7 +136,8 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         if (templatePools.Count > 0)
             context.AddSource("TemplatePools.g.cs", emitter.EmitTemplatePools());
 
-        var tagsJson = files.FirstOrDefault(file => file.path == "tags").json;
+        // The structure tags are emitted here since structures only exist in this assembly.
+        var tagsJson = files.FirstOrDefault(file => file.path == "structure_tags").json;
         if (structures.Count > 0 && tagsJson is not null)
             context.AddSource("StructureTags.g.cs", emitter.EmitStructureTags(tagsJson));
     }
@@ -252,7 +252,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         }
 
         /// <summary>
-        /// Emits the structure tags (<c>worldgen/structure</c> in <c>Assets/tags.json</c>) as lists of the structures they hold,
+        /// Emits the structure tags (<c>Assets/worldgen/structure_tags.json</c>) as lists of the structures they hold,
         /// with nested tags resolved.
         /// </summary>
         public string EmitStructureTags(string tagsJson)
@@ -284,7 +284,7 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
 
             var builder = Header();
             builder.AppendLine("/// <summary>");
-            builder.AppendLine("/// Vanilla structure tags (e.g. <c>minecraft:on_treasure_maps</c>), generated from <c>Assets/tags.json</c>.");
+            builder.AppendLine("/// Vanilla structure tags (e.g. <c>minecraft:on_treasure_maps</c>), generated from <c>Assets/worldgen/structure_tags.json</c>.");
             builder.AppendLine("/// </summary>");
             builder.AppendLine("public static partial class StructureTags");
             builder.AppendLine("{");
@@ -690,9 +690,25 @@ public sealed partial class WorldgenFeatureRegistryGenerator : IIncrementalGener
         }
 
         /// <summary>
-        /// Emits <paramref name="json"/> as an expression of type <paramref name="target"/>.
+        /// Emits <paramref name="json"/> as an expression of type <paramref name="target"/>, or reports it and emits
+        /// <c>default</c> when the JSON doesn't have the shape the type reads.
         /// </summary>
         private string EmitValue(ITypeSymbol target, JsonElement json)
+        {
+            try
+            {
+                return this.EmitValueOf(target, json);
+            }
+            catch (Exception exception) when (exception is InvalidOperationException or KeyNotFoundException or FormatException)
+            {
+                var text = json.GetRawText();
+                this.Report(mismatchedJson, FullName(target), json.ValueKind, text.Length > 80 ? text.Substring(0, 80) + "..." : text,
+                    exception.Message);
+                return "default!";
+            }
+        }
+
+        private string EmitValueOf(ITypeSymbol target, JsonElement json)
         {
             if (target is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable)
                 target = nullable.TypeArguments[0];

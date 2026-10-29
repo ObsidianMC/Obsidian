@@ -22,18 +22,18 @@ internal static class DatagenAssets
         ["archaeology", "blocks", "chests", "dispensers", "pots", "spawners", "entities", "gameplay"];
 
     /// <param name="generatedDirectory">The data generators' output (<c>data</c> and <c>reports</c>).</param>
-    /// <param name="worldgenGroupsPath">The Java dumper's vanilla classes declaring each feature (see <see cref="WorldgenAssets"/>).</param>
     /// <param name="packetFieldsPath">The Java dumper's fields of each packet (see <see cref="JavaDumper.PacketFieldsPath"/>).</param>
     /// <param name="outputDirectory">The assets directory to write into.</param>
-    public static void Write(string generatedDirectory, string worldgenGroupsPath, string packetFieldsPath, string outputDirectory)
+    /// <remarks>Loot tables and worldgen come from the legacy version for now (see <see cref="WriteLegacy"/>).</remarks>
+    public static void Write(string generatedDirectory, string packetFieldsPath, string outputDirectory)
     {
         var reports = Path.Combine(generatedDirectory, "reports");
         var data = Path.Combine(generatedDirectory, "data", "minecraft");
 
         File.Copy(Path.Combine(reports, "blocks.json"), Path.Combine(outputDirectory, "blocks.json"), overwrite: true);
-        File.Copy(Path.Combine(reports, "items.json"), Path.Combine(outputDirectory, "item_components.json"), overwrite: true);
-        CopyDirectory(Path.Combine(reports, "biome_parameters", "minecraft"), Path.Combine(outputDirectory, "biome_parameters"));
-        CopyDirectory(Path.Combine(data, "worldgen", "configured_carver"), Path.Combine(outputDirectory, "configured_carver"));
+        // Each item's default components, { "minecraft:stone": { "components": { ... } } }, from one report per item.
+        WriteJson(Path.Combine(outputDirectory, "item_components.json"),
+            Combine(Path.Combine(reports, "minecraft", "components", "item"), ToId));
 
         WriteRegistries(ReadObject(Path.Combine(reports, "registries.json")), outputDirectory);
         WritePackets(ReadObject(Path.Combine(reports, "packets.json")), ReadObject(packetFieldsPath), outputDirectory);
@@ -43,6 +43,59 @@ internal static class DatagenAssets
         WriteJson(Path.Combine(outputDirectory, "enchantments.json"), Combine(Path.Combine(data, "enchantment"), ToId));
         WriteJson(Path.Combine(outputDirectory, "dialogs.json"), Combine(Path.Combine(data, "dialog"), ToId));
         WriteJson(Path.Combine(outputDirectory, "instruments.json"), Combine(Path.Combine(data, "instrument"), ToId));
+
+        WriteTags(Path.Combine(data, "tags"), outputDirectory);
+        CodecAssets.Write(data, outputDirectory);
+    }
+
+    /// <summary>
+    /// Writes the loot and worldgen assets from an older vanilla version's data generators into
+    /// <paramref name="outputDirectory"/> (<c>Assets/legacy-1.21.11</c>), in the layout the current version's would have:
+    /// <c>loot_table</c>, <c>worldgen</c> (see <see cref="WorldgenAssets"/>), <c>configured_carver</c>,
+    /// <c>biome_parameters</c> and <c>biome_spawns.json</c>.
+    /// </summary>
+    /// <remarks>
+    /// Temporary: the current version's loot and worldgen data don't fit Obsidian's models yet, so those systems run on
+    /// the older version's. Phase 4 (loot) and Phase 5 (worldgen) of <c>docs/porting-26.3-plan.md</c> move them to the
+    /// current version and remove this. LegacyTags keeps worldgen tag references (including the worldgen helpers' tags)
+    /// in the temporary obsidian_legacy namespace, with legacy contents and current registry ids, excluded from client
+    /// sync. Remove that bridge with LegacyMinecraftVersion when both phases are complete.
+    /// </remarks>
+    /// <param name="generatedDirectory">The legacy data generators' output (<c>data</c> and <c>reports</c>).</param>
+    /// <param name="worldgenGroupsPath">
+    /// The Java dumper's vanilla classes declaring each feature, of the current version: the legacy jar is obfuscated,
+    /// so the dumper can't read it (see <see cref="WorldgenAssets"/>).
+    /// </param>
+    public static void WriteLegacy(string generatedDirectory, string worldgenGroupsPath,
+        string outputDirectory)
+    {
+        var reports = Path.Combine(generatedDirectory, "reports");
+        var data = Path.Combine(generatedDirectory, "data", "minecraft");
+
+        CopyDirectory(Path.Combine(reports, "biome_parameters", "minecraft"), Path.Combine(outputDirectory, "biome_parameters"));
+
+        // Test-only ids for the 1.21.11 worldgen captures. Phase 5 re-records them on the current version and removes
+        // this table with the legacy assets. --all already includes the legacy blocks report.
+        var states = ReadObject(Path.Combine(reports, "blocks.json"))
+            .SelectMany(block => block.Value!["states"]!.AsArray().Select(state =>
+            {
+                var properties = state!["properties"]?.AsObject();
+                var key = properties is null || properties.Count == 0 ? block.Key
+                    : $"{block.Key}[{string.Join(',', properties.OrderBy(property => property.Key, StringComparer.Ordinal)
+                        .Select(property => $"{property.Key}={property.Value!.GetValue<string>()}"))}]";
+                return (Id: state["id"]!.GetValue<int>(), Key: key);
+            }))
+            .OrderBy(state => state.Id).ToArray();
+        for (var id = 0; id < states.Length; id++)
+        {
+            if (states[id].Id != id)
+                throw new InvalidDataException($"Legacy block state ids are not contiguous at {id}.");
+        }
+
+        WriteJson(Path.Combine(outputDirectory, "block_states.json"), new JsonArray([.. states.Select(state => (JsonNode?)state.Key)]));
+
+        foreach (var (path, carver) in ReadAll(Path.Combine(data, "worldgen", "configured_carver")))
+            WriteJson(Path.Combine(outputDirectory, "configured_carver", path + ".json"), carver);
 
         foreach (var category in lootTableCategories)
         {
@@ -65,9 +118,25 @@ internal static class DatagenAssets
             WriteJson(Path.Combine(outputDirectory, "loot_table", $"{category}.json"), tables);
         }
 
-        WriteTags(Path.Combine(data, "tags"), outputDirectory);
-        CodecAssets.Write(data, outputDirectory);
+        // Each biome's mob spawn settings, which 26.1 moved out of the biome: { "value": [{ "name", "element" }] } in the
+        // biomes' order, like the biome codec they used to be read from.
+        var spawns = new JsonArray();
+        foreach (var (path, biome) in ReadAll(Path.Combine(data, "worldgen", "biome")))
+        {
+            var element = new JsonObject();
+            foreach (var property in new[] { "creature_spawn_probability", "spawners", "spawn_costs" })
+            {
+                if (biome[property] is { } value)
+                    element[property] = value.DeepClone();
+            }
+
+            spawns.Add(new JsonObject { ["name"] = ToId(path), ["element"] = element });
+        }
+
+        WriteJson(Path.Combine(outputDirectory, "biome_spawns.json"), new JsonObject { ["value"] = spawns });
+
         WorldgenAssets.Write(data, reports, worldgenGroupsPath, outputDirectory);
+        LegacyTags.Write(data, outputDirectory);
     }
 
     /// <summary>A resource location of the <c>minecraft</c> namespace from its path.</summary>

@@ -31,7 +31,7 @@ internal sealed partial class LevelBlockUpdates
     private static readonly BlockFace[] horizontal = [BlockFace.North, BlockFace.East, BlockFace.South, BlockFace.West];
 
     /// <summary>
-    /// Vanilla's <c>RedStoneWireBlock.shouldSignal</c>: off while dust works out its own power, so that it only
+    /// Vanilla's <c>RedstoneWireBlock.shouldSignal</c>: off while dust works out its own power, so that it only
     /// counts the power of other blocks.
     /// </summary>
     internal bool WiresGiveSignal { get; set; } = true;

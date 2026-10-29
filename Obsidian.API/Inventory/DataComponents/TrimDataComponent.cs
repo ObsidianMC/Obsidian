@@ -80,14 +80,11 @@ public sealed record class TrimDataComponent : DataComponent
         this.materialRegistryId = material == 0 ? null : material - 1;
         if (material == 0)
         {
-            var asset = reader.ReadString();
-            var overrides = reader.ReadLengthPrefixedArray(() => (Key: reader.ReadString(), Value: reader.ReadString()))
-                .ToDictionary(pair => pair.Key, pair => pair.Value);
+            var palette = reader.ReadString();
             this.materialDescription = reader.ReadChat();
             this.material = new()
             {
-                AssetName = asset,
-                OverrideArmorAssets = overrides,
+                PaletteId = palette,
                 Description = LegacyDescription(this.MaterialDescription)
             };
         }
@@ -112,17 +109,7 @@ public sealed record class TrimDataComponent : DataComponent
         writer.WriteVarInt(this.MaterialRegistryId is int material ? material + 1 : 0);
         if (this.MaterialRegistryId is null)
         {
-            writer.WriteString(this.Material.AssetName);
-            writer.WriteVarInt(this.Material.OverrideArmorAssets?.Count ?? 0);
-            if (this.Material.OverrideArmorAssets is not null)
-            {
-                foreach (var (key, value) in this.Material.OverrideArmorAssets)
-                {
-                    writer.WriteString(key);
-                    writer.WriteString(value);
-                }
-            }
-
+            writer.WriteString(this.Material.PaletteId);
             writer.WriteChat(this.MaterialDescription ?? ChatDescription(this.Material.Description));
         }
 

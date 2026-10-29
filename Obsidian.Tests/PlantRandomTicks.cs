@@ -33,8 +33,8 @@ public sealed class PlantRandomTicks
         Assert.Same(RandomTickBehaviors.BambooStalkBlock, BlocksRegistry.GetRandomTickBehavior(BlockIds.Bamboo));
         Assert.Same(RandomTickBehaviors.BambooSaplingBlock, BlocksRegistry.GetRandomTickBehavior(BlockIds.BambooSapling));
         Assert.Same(RandomTickBehaviors.ChorusFlowerBlock, BlocksRegistry.GetRandomTickBehavior(BlockIds.ChorusFlower));
-        Assert.Same(RandomTickBehaviors.SpreadingSnowyDirtBlock, BlocksRegistry.GetRandomTickBehavior(BlockIds.GrassBlock));
-        Assert.Same(RandomTickBehaviors.SpreadingSnowyDirtBlock, BlocksRegistry.GetRandomTickBehavior(BlockIds.Mycelium));
+        Assert.Same(RandomTickBehaviors.SpreadingSnowyBlock, BlocksRegistry.GetRandomTickBehavior(BlockIds.GrassBlock));
+        Assert.Same(RandomTickBehaviors.SpreadingSnowyBlock, BlocksRegistry.GetRandomTickBehavior(BlockIds.Mycelium));
         Assert.Null(BlocksRegistry.GetRandomTickBehavior(BlockIds.Dirt));
     }
 
@@ -98,7 +98,7 @@ public sealed class PlantRandomTicks
         var grass = Base + Vector.Down;
         Held(world).SetBlock(Base, BlocksRegistry.GetDefault(BlockIds.Stone));
         Assert.Equal(BlockIds.GrassBlock, Held(world).GetBlock(grass).RegistryId);
-        RandomTickBehaviors.SpreadingSnowyDirtBlock.RandomTick(world, grass, Held(world).GetBlock(grass), new LegacyRandomSource(1));
+        RandomTickBehaviors.SpreadingSnowyBlock.RandomTick(world, grass, Held(world).GetBlock(grass), new LegacyRandomSource(1));
 
         Assert.Equal(BlockIds.Dirt, Held(world).GetBlock(grass).RegistryId);
         await world.DoWorldTickAsync();

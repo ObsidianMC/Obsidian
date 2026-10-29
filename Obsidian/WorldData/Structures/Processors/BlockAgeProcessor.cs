@@ -13,9 +13,9 @@ namespace Obsidian.WorldData.Structures.Processors;
 public sealed class BlockAgeProcessor : StructureProcessor
 {
     private static readonly BlockSet fullStone = new("minecraft:stone_bricks", "minecraft:stone", "minecraft:chiseled_stone_bricks");
-    private static readonly BlockSet stairs = new("#minecraft:stairs");
-    private static readonly BlockSet slabs = new("#minecraft:slabs");
-    private static readonly BlockSet walls = new("#minecraft:walls");
+    private static readonly BlockSet stairs = LegacyWorldgenTags.Blocks("stairs");
+    private static readonly BlockSet slabs = LegacyWorldgenTags.Blocks("slabs");
+    private static readonly BlockSet walls = LegacyWorldgenTags.Blocks("walls");
 
     private static readonly IBlock[] nonMossyReplacements =
         [BlockStateProperties.GetState("minecraft:stone_slab"), BlockStateProperties.GetState("minecraft:stone_brick_slab")];

@@ -289,17 +289,9 @@ public partial class Extensions
                 "material", ComponentRegistryNames.Name("minecraft:trim_material", materialId))
             : new NbtCompound("material")
             {
-                new NbtTag<string>("asset_name", trim.Material.AssetName),
+                new NbtTag<string>("palette_id", trim.Material.PaletteId),
                 TrimText(trim.MaterialDescription, trim.Material.Description).ToNbt("description")
             };
-        if (material is NbtCompound inline && trim.Material.OverrideArmorAssets is not null)
-        {
-            var overrides = new NbtCompound("override_armor_assets");
-            foreach (var (key, value) in trim.Material.OverrideArmorAssets)
-                overrides.Add(new NbtTag<string>(key, value));
-
-            inline.Add(overrides);
-        }
 
         var pattern = trim.PatternRegistryId is int patternId
             ? (INbtTag)new NbtTag<string>("pattern", ComponentRegistryNames.Name("minecraft:trim_pattern", patternId))
@@ -344,10 +336,8 @@ public partial class Extensions
                 ? ComponentRegistryNames.Id("minecraft:trim_pattern", patternName.Value!) : null,
             Material = material is NbtCompound data ? new()
             {
-                AssetName = data.SavedString("asset_name")!,
-                Description = TrimDescriptionFromNbt(data["description"]),
-                OverrideArmorAssets = data.TryGetTag<NbtCompound>("override_armor_assets", out var overrides)
-                    ? overrides.ToDictionary(pair => pair.Key, pair => ((NbtTag<string>)pair.Value).Value!) : null
+                PaletteId = data.SavedString("palette_id")!,
+                Description = TrimDescriptionFromNbt(data["description"])
             } : null!,
             MaterialDescription = material is NbtCompound materialData
                 ? materialData["description"].TextFromNbt() : null,

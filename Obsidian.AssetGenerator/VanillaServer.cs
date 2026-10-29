@@ -6,12 +6,11 @@ using System.Text.Json;
 namespace Obsidian.AssetGenerator;
 
 /// <summary>
-/// A vanilla server of one version, downloaded from Mojang with its mappings and with its data generators run.
+/// A vanilla server of one version, downloaded from Mojang and with its data generators run.
 /// </summary>
 /// <param name="Directory">The version's work directory, which the server's bundler extracts its jars into.</param>
 /// <param name="ClassPath">The unbundled server jar and its libraries.</param>
-/// <param name="MappingsPath">Mojang's ProGuard mappings of the server (from Mojang names to obfuscated ones).</param>
-internal sealed record VanillaServer(string Version, string Directory, IReadOnlyList<string> ClassPath, string MappingsPath)
+internal sealed record VanillaServer(string Version, string Directory, IReadOnlyList<string> ClassPath)
 {
     private const string ManifestUrl = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
 
@@ -23,7 +22,7 @@ internal sealed record VanillaServer(string Version, string Directory, IReadOnly
     public string GeneratedDirectory => Path.Combine(Directory, "generated");
 
     /// <summary>
-    /// Downloads the server jar and mappings of <paramref name="version"/> into <paramref name="directory"/> and runs
+    /// Downloads the server jar of <paramref name="version"/> into <paramref name="directory"/> and runs
     /// the data generators, unless an earlier run already did.
     /// </summary>
     public static async Task<VanillaServer> PrepareAsync(HttpClient httpClient, string version, string directory)
@@ -32,7 +31,6 @@ internal sealed record VanillaServer(string Version, string Directory, IReadOnly
         System.IO.Directory.CreateDirectory(directory);
 
         var jarPath = Path.Combine(directory, "server.jar");
-        var mappingsPath = Path.Combine(directory, "server.txt");
 
         // Written once the data generators finished, so an interrupted run starts over.
         var marker = Path.Combine(directory, "datagen.complete");
@@ -40,7 +38,6 @@ internal sealed record VanillaServer(string Version, string Directory, IReadOnly
         {
             var downloads = await GetDownloadsAsync(httpClient, version);
             await DownloadAsync(httpClient, downloads.GetProperty("server"), jarPath);
-            await DownloadAsync(httpClient, downloads.GetProperty("server_mappings"), mappingsPath);
 
             var generated = Path.Combine(directory, "generated");
             if (System.IO.Directory.Exists(generated))
@@ -51,7 +48,7 @@ internal sealed record VanillaServer(string Version, string Directory, IReadOnly
             await File.WriteAllTextAsync(marker, string.Empty);
         }
 
-        return new VanillaServer(version, directory, GetClassPath(jarPath, directory), mappingsPath);
+        return new VanillaServer(version, directory, GetClassPath(jarPath, directory));
     }
 
     /// <summary>

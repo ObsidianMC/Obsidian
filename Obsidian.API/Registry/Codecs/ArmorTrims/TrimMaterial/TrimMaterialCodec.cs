@@ -18,17 +18,7 @@ public sealed class TrimMaterialCodec : ICodec
             new NbtTag<string>("color", this.Element.Description.Color!)
         };
 
-        if (this.Element.OverrideArmorAssets is Dictionary<string, string> overrideArmorMats)
-        {
-            var overrideArmorAssets = new NbtCompound("override_armor_assets");
-
-            foreach (var (type, replacement) in overrideArmorMats)
-                overrideArmorAssets.Add(new NbtTag<string>(type, replacement));
-
-            writer.WriteTag(overrideArmorAssets);
-        }
-
-        writer.WriteString("asset_name", this.Element.AssetName);
+        writer.WriteString("palette_id", this.Element.PaletteId);
         writer.WriteTag(description);
     }
 }

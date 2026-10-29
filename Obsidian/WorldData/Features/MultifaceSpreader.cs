@@ -30,7 +30,7 @@ internal sealed class MultifaceSpreader
     private const int SculkVeinBit = 1 << 19;
     private const int KnownBit = 1 << 30;
 
-    private static readonly BlockSet fire = new("#minecraft:fire");
+    private static readonly BlockSet fire = LegacyWorldgenTags.Blocks("fire");
 
     // Info of each block state, indexed by state id and computed on first use; 0 until then.
     private static readonly int[] infos = new int[BlocksRegistry.StateToNumeric.Length];

@@ -408,7 +408,7 @@ internal static class BlockPhysics
     public static bool HasPostProcess(int state) => (uint)state < (uint)data.Value.PostProcess.Length && data.Value.PostProcess[state];
 
     /// <summary>
-    /// Vanilla's <c>getPistonPushReaction</c> for a state: how a piston treats it (NORMAL, DESTROY, BLOCK, IGNORE, PUSH_ONLY).
+    /// Vanilla's <c>getPistonPushReaction</c> for a state: how a piston treats it (PUSH_PULL, PUSH, POPPED, IMMOVEABLE, IGNORE_ENTITY).
     /// </summary>
     public static string PistonPushReaction(int state) => data.Value.PushReactionNames[data.Value.PushReactions[state]];
 

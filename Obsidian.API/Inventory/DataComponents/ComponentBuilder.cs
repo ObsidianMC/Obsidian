@@ -221,13 +221,6 @@ public static partial class ComponentBuilder
         ShearingSound = new SoundEvent { ResourceLocation = "minecraft:item.shears.snip" }
     };
 
-    public static SimpleDataComponent<int> MapColor =>
-        BuildSimpleComponent(
-            DataComponentType.MapColor,
-            "minecraft:map_color",
-       (writer, value) => writer.WriteInt(value),
-       reader => reader.ReadInt());
-
     public static SimpleDataComponent<int> MapId =>
         BuildSimpleComponent(
             DataComponentType.MapId,

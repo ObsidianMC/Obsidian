@@ -348,9 +348,9 @@ internal sealed class FluidLevel
 
         var state = this.GetBlock(position);
         var fluid = this.GetFluid(position).CreateLegacyBlock();
-        // RedStoneWireBlock and BaseRailBlock use dropResources/removeBlock rather than Level.destroyBlock,
+        // RedstoneWireBlock and BaseRailBlock use dropResources/removeBlock rather than Level.destroyBlock,
         // so their support-loss removal does not emit level event 2001.
-        var playEffect = state.BlockClass() != "RedStoneWireBlock" && !Rails.IsRail(state);
+        var playEffect = state.BlockClass() != "RedstoneWireBlock" && !Rails.IsRail(state);
         if (this.access.TryQueueDestruction(position, fluid, dropItems, playEffect,
             stillUnsupported: current => this.IsUnsupported(position, current)))
             return true;

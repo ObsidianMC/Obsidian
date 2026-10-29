@@ -53,7 +53,7 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateW
     void IBlockChangeWorld.DropAndRemove(Vector position, IBlock block, bool playEffect)
     {
         // Wire and rails are removed through dropResources/removeBlock, which emits no break effect.
-        if (block.BlockClass() == "RedStoneWireBlock" || Rails.IsRail(block))
+        if (block.BlockClass() == "RedstoneWireBlock" || Rails.IsRail(block))
             playEffect = false;
 
         this.QueueBlockDestruction(position, true, null, replacement: null, playEffect,
@@ -85,7 +85,7 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateW
         if (block.IsAir)
             return;
 
-        if (block.BlockClass() == "RedStoneWireBlock" || Rails.IsRail(block))
+        if (block.BlockClass() == "RedstoneWireBlock" || Rails.IsRail(block))
             playEffect = false;
 
         try

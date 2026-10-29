@@ -33,7 +33,7 @@ public sealed class DripstoneClusterFeature : ConfiguredFeatureBase
 
     public required int MaxDistanceFromCenterAffectingHeightBias { get; init; }
 
-    private static readonly BlockSet baseStoneOverworld = new("#minecraft:base_stone_overworld");
+    private static readonly BlockSet baseStoneOverworld = LegacyWorldgenTags.Blocks("base_stone_overworld");
 
     private static IBlock Water => field ??= BlocksRegistry.Water;
 

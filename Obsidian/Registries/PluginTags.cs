@@ -453,9 +453,19 @@ internal static partial class PluginTags
             ?? throw new InvalidOperationException("Missing tags asset.");
         using var document = JsonDocument.Parse(stream);
 
+        // Temporary until Phase 5: structures run on legacy worldgen, so resolve their tags from the same data.
+        // Current tags name structures (e.g. abandoned camps) that aren't in the legacy registry. Keep normal missing
+        // entry errors for plugins/data packs; only the built-in structure definitions come from the legacy asset.
+        using var structureStream = typeof(PluginTags).Assembly.GetManifestResourceStream("Obsidian.Assets.worldgen.structure_tags.json")
+            ?? throw new InvalidOperationException("Missing legacy structure tags asset.");
+        using var structures = JsonDocument.Parse(structureStream);
+
         var files = new List<TagFile>();
 
-        foreach (var tag in document.RootElement.EnumerateObject())
+        var definitions = document.RootElement.EnumerateObject()
+            .Where(tag => !tag.Name.StartsWith($"{Structure}/", StringComparison.Ordinal))
+            .Concat(structures.RootElement.EnumerateObject());
+        foreach (var tag in definitions)
         {
             var registry = Registries.FirstOrDefault(name => tag.Name.StartsWith($"{name}/", StringComparison.Ordinal));
             if (registry is null)

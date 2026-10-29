@@ -12,13 +12,13 @@ namespace Obsidian.WorldData.Features;
 /// </remarks>
 public abstract class CoralFeatureBase : ConfiguredFeatureBase
 {
-    private static readonly BlockSet coralsTag = new("#minecraft:corals");
+    private static readonly BlockSet coralsTag = LegacyWorldgenTags.Blocks("corals");
 
-    private static IBlock[] CoralBlocks => field ??= Resolve(TagsRegistry.Block.CoralBlocks);
+    private static IBlock[] CoralBlocks => field ??= Resolve(LegacyWorldgenTags.Block("coral_blocks"));
 
-    private static IBlock[] Corals => field ??= Resolve(TagsRegistry.Block.Corals);
+    private static IBlock[] Corals => field ??= Resolve(LegacyWorldgenTags.Block("corals"));
 
-    private static IBlock[] WallCorals => field ??= Resolve(TagsRegistry.Block.WallCorals);
+    private static IBlock[] WallCorals => field ??= Resolve(LegacyWorldgenTags.Block("wall_corals"));
 
     private static IBlock SeaPickle => field ??= BlocksRegistry.SeaPickle;
 

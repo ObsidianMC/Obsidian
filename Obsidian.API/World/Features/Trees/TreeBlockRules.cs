@@ -1,3 +1,4 @@
+using Obsidian.API.Registries;
 using Obsidian.API.World.Generator;
 
 namespace Obsidian.API.World.Features.Trees;
@@ -8,11 +9,11 @@ namespace Obsidian.API.World.Features.Trees;
 /// </summary>
 internal static class TreeBlockRules
 {
-    public static readonly BlockSet Logs = new("#minecraft:logs");
+    public static readonly BlockSet Logs = LegacyWorldgenTags.Blocks("logs");
 
-    private static readonly BlockSet replaceableByTrees = new("#minecraft:replaceable_by_trees");
+    private static readonly BlockSet replaceableByTrees = LegacyWorldgenTags.Blocks("replaceable_by_trees");
 
-    private static readonly BlockSet dirt = new("#minecraft:dirt");
+    private static readonly BlockSet dirt = LegacyWorldgenTags.Blocks("dirt");
 
     private static readonly BlockSet grassOrMycelium = new("minecraft:grass_block", "minecraft:mycelium");
 

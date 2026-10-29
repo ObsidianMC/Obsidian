@@ -5,58 +5,54 @@ import java.util.*;
 import java.util.function.Consumer;
 
 /** Captures entity loot and its next draw from the pinned vanilla jar without a running server.
- * Usage: mappings, generated data directory (containing minecraft/loot_table), output JSON.
+ * Usage: generated data directory (containing minecraft/loot_table), output JSON.
  * Missing entity parameters represent environmental kills with no fire or equipment; a player marker is used
  * only for killed_by_player (no entity methods are called on it). These captures intentionally use looting zero.
  */
 public final class EntityLootFixtures {
-    private static VanillaDumper.Mojang mappings;
     private static DynamicOps<JsonElement> ops;
     private static Object access;
 
     private static Object call(String owner, String name, Object target, String[] types, Object... arguments) {
-        return VanillaDumper.Mojang.call(mappings.method(owner, name, types), target, arguments);
+        return Vanilla.call(Vanilla.method(owner, name, types), target, arguments);
     }
 
     @SuppressWarnings("unchecked")
     private static Object decode(String owner, String field, JsonElement json) {
-        return ((Codec<Object>) mappings.get(owner, field)).parse(ops, json).getOrThrow();
+        return ((Codec<Object>) Vanilla.get(owner, field)).parse(ops, json).getOrThrow();
     }
 
     @SuppressWarnings("unchecked")
     public static void main(String[] arguments) throws Exception {
-        mappings = VanillaDumper.Mojang.read(Path.of(arguments[0]));
-        var bootstrap = VanillaDumper.class.getDeclaredMethod("bootstrap", VanillaDumper.Mojang.class);
-        bootstrap.setAccessible(true);
-        bootstrap.invoke(null, mappings);
-        access = call("net.minecraft.data.registries.VanillaRegistries", "createLookup", null, new String[]{});
+        VanillaDumper.bootstrap();
+        access = VanillaDumper.vanillaRegistries();
         ops = (DynamicOps<JsonElement>) call("net.minecraft.resources.RegistryOps", "create", null,
             new String[]{"com.mojang.serialization.DynamicOps", "net.minecraft.core.HolderLookup$Provider"},
             JsonOps.INSTANCE, access);
         var rows = new JsonArray();
-        capture(rows, arguments[1], "pig", 42, false);
-        capture(rows, arguments[1], "cow", 1, false);
-        capture(rows, arguments[1], "skeleton", 42, false);
-        capture(rows, arguments[1], "spider", 1, true);
-        capture(rows, arguments[1], "blaze", 42, false);
-        capture(rows, arguments[1], "blaze", 42, true);
-        Files.writeString(Path.of(arguments[2]), new GsonBuilder().setPrettyPrinting().create().toJson(rows));
+        capture(rows, arguments[0], "pig", 42, false);
+        capture(rows, arguments[0], "cow", 1, false);
+        capture(rows, arguments[0], "skeleton", 42, false);
+        capture(rows, arguments[0], "spider", 1, true);
+        capture(rows, arguments[0], "blaze", 42, false);
+        capture(rows, arguments[0], "blaze", 42, true);
+        Files.writeString(Path.of(arguments[1]), new GsonBuilder().setPrettyPrinting().create().toJson(rows));
     }
 
     private static void capture(JsonArray rows, String data, String name, long seed, boolean player) throws Exception {
         var params = new HashMap<Object, Object>();
         if (player) {
-            params.put(mappings.get("net.minecraft.world.level.storage.loot.parameters.LootContextParams",
+            params.put(Vanilla.get("net.minecraft.world.level.storage.loot.parameters.LootContextParams",
                 "LAST_DAMAGE_PLAYER"), new Object());
         }
 
-        var map = VanillaDumper.Mojang.create(mappings.constructor("net.minecraft.util.context.ContextMap",
+        var map = Vanilla.create(Vanilla.constructor("net.minecraft.util.context.ContextMap",
             "java.util.Map"), params);
-        var lootParams = VanillaDumper.Mojang.create(mappings.constructor(
+        var lootParams = Vanilla.create(Vanilla.constructor(
             "net.minecraft.world.level.storage.loot.LootParams", "net.minecraft.server.level.ServerLevel",
             "net.minecraft.util.context.ContextMap", "java.util.Map", "float"), null, map, Map.of(), 0f);
         var random = call("net.minecraft.util.RandomSource", "create", null, new String[]{"long"}, seed);
-        var context = VanillaDumper.Mojang.create(mappings.constructor(
+        var context = Vanilla.create(Vanilla.constructor(
             "net.minecraft.world.level.storage.loot.LootContext", "net.minecraft.world.level.storage.loot.LootParams",
             "net.minecraft.util.RandomSource", "net.minecraft.core.HolderGetter$Provider"),
             lootParams, random, access);
@@ -72,7 +68,7 @@ public final class EntityLootFixtures {
 
             var item = call("net.minecraft.world.item.ItemStack", "getItem", stack, new String[]{});
             var id = call("net.minecraft.core.Registry", "getKey",
-                mappings.get("net.minecraft.core.registries.BuiltInRegistries", "ITEM"),
+                Vanilla.get("net.minecraft.core.registries.BuiltInRegistries", "ITEM"),
                 new String[]{"java.lang.Object"}, item).toString();
             drops.add(id + "*" + count);
         };

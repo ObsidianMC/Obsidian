@@ -154,7 +154,7 @@ internal static class PistonBehaviors
             var canPull = type == EventRetract
                 && !pulledState.IsAir
                 && PistonRules.IsPushable(pulledState, level, pulled, facing.Opposite(), false, facing)
-                && (PistonRules.PushReaction(pulledState) == "NORMAL" || PistonRules.IsBase(pulledState));
+                && (PistonRules.PushReaction(pulledState) == "PUSH_PULL" || PistonRules.IsBase(pulledState));
             if (!canPull)
             {
                 await level.WriteAsync(headPosition, BlocksRegistry.GetDefault(BlockIds.Air), notifyNeighbors: true);
@@ -244,7 +244,7 @@ internal static class PistonBehaviors
             var originals = toPush.Select(position => level.GetLoadedBlock(position) ?? BlocksRegistry.VoidAir).ToList();
             var vacated = new HashSet<Vector>(toPush);
 
-            // Breaks the blocks whose push reaction is DESTROY, furthest first.
+            // Breaks the blocks whose push reaction is POPPED, furthest first.
             foreach (var position in resolver.ToDestroy.Reverse())
             {
                 var state = level.GetLoadedBlock(position) ?? BlocksRegistry.VoidAir;

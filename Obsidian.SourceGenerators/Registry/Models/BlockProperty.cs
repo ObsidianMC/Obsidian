@@ -28,9 +28,15 @@ internal class BlockProperty
         IsEnum = type != BooleanName && type != IntegerName;
     }
 
-    public static BlockProperty Get(JsonProperty property)
+    /// <param name="stateName">The name of the block's state struct (<c>PotentSulfurState</c>).</param>
+    public static BlockProperty Get(JsonProperty property, string stateName)
     {
         string name = property.Name.RemoveNamespace().ToPascalCase();
+
+        // A property named after its block's state (potent_sulfur's potent_sulfur_state) can't be a member of the state
+        // struct of the same name.
+        if (name == stateName)
+            name = "State";
 
         string[] values = property.Value
             .EnumerateArray()

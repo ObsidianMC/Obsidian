@@ -9,8 +9,8 @@ public class Animal : AgeableMob
     // Vanilla Animal: fire is a danger to walk near (16) and damages when stood in (-1).
     public Animal()
     {
-        SetPathfindingMalus(PathType.DANGER_FIRE, 16f);
-        SetPathfindingMalus(PathType.DAMAGE_FIRE, -1f);
+        SetPathfindingMalus(PathType.FIRE_IN_NEIGHBOR, 16f);
+        SetPathfindingMalus(PathType.FIRE, -1f);
     }
 
     public int LoveTicks { get; internal set; }

@@ -52,7 +52,7 @@ internal sealed class Block : ITaggable, IHasName, IRegistryItem
         string name = property.Name.RemoveNamespace().ToPascalCase();
 
         (int baseId, int defaultId, int statesCount, var stateValues) = GetIds(property);
-        BlockProperty[] properties = GetBlockProperties(property).ToArray();
+        BlockProperty[] properties = GetBlockProperties(property, $"{name.SanitizeBlockName()}State").ToArray();
 
         return new Block(name, property.Name, baseId, defaultId, id, statesCount, placementClass, overrideClasses, properties, stateValues, treeGrower, fireOdds, ignitedByLava, isTnt);
     }
@@ -93,13 +93,13 @@ internal sealed class Block : ITaggable, IHasName, IRegistryItem
         return (baseId, defaultId, stateCount, props);
     }
 
-    private static IEnumerable<BlockProperty> GetBlockProperties(JsonProperty block)
+    private static IEnumerable<BlockProperty> GetBlockProperties(JsonProperty block, string stateName)
     {
         if (block.Value.TryGetProperty("properties", out JsonElement properties))
         {
             foreach (JsonProperty property in properties.EnumerateObject())
             {
-                yield return BlockProperty.Get(property);
+                yield return BlockProperty.Get(property, stateName);
             }
         }
     }

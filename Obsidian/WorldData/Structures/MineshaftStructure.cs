@@ -130,7 +130,7 @@ internal static class MineshaftPieces
 /// </summary>
 public abstract class MineshaftPiece : StructurePiece
 {
-    private static readonly BiomeSet blockingBiomes = new("#minecraft:mineshaft_blocking");
+    private static readonly BiomeSet blockingBiomes = LegacyWorldgenTags.Biomes("mineshaft_blocking");
 
     protected static readonly IBlock caveAir = BlocksRegistry.CaveAir;
 
