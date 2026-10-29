@@ -48,6 +48,7 @@
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)item-components-$(MinecraftVersion).json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)client-entity-metadata-$(MinecraftVersion).json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)client-screens-$(MinecraftVersion).json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)client-movement-$(MinecraftVersion).json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)item_stacked_on_classes.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)item_other_stacked_on_classes.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)item_container_fit_classes.json" />

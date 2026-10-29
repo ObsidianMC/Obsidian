@@ -14,6 +14,8 @@ internal static class FixtureDumper
             Path.Combine(output, $"client-entity-metadata-{server.Version}.json"));
         await VanillaServer.RunJavaAsync(server.Directory, "-cp", classpath, Source("ScreenFixtures.java"),
             Path.Combine(output, $"client-screens-{server.Version}.json"));
+        await VanillaServer.RunJavaAsync(server.Directory, "-cp", classpath, Source("MovementFixtures.java"),
+            Path.Combine(output, $"client-movement-{server.Version}.json"));
     }
 
     public static async Task DumpClientAsync(VanillaServer server, IReadOnlyList<string> classpath, string output)
