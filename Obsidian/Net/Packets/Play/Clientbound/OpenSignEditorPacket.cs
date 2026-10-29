@@ -8,16 +8,16 @@ public partial class OpenSignEditorPacket
     /// <summary>
     /// The location of the sign to edit.
     /// </summary>
-    public VectorF Location { get; set; }
+    public Vector Position { get; init; }
 
     /// <summary>
-    /// True if the editor is opened for the front text, false for the back text.
+    /// The side of the sign the editor opens on.
     /// </summary>
-    public bool IsFrontText { get; set; }
+    public SignTextSlot Slot { get; init; }
 
     public override void Serialize(INetStreamWriter writer)
     {
-        writer.WritePositionF(Location);
-        writer.WriteBoolean(IsFrontText);
+        writer.WritePosition(this.Position);
+        writer.WriteVarInt((int)this.Slot);
     }
 }
