@@ -42,10 +42,11 @@ public static partial class TagsRegistry
         TryGet(registry, identifier, out var tag) && tag.Entries.Contains(id);
 
     /// <summary>
-    /// Every tag clients are sent, by registry: vanilla's, with plugins' entries, and plugins' own.
+    /// Every tag, by registry: vanilla's, with plugins' entries, and plugins' own.
     /// </summary>
     /// <remarks>
-    /// Of the worldgen registries, vanilla syncs only biomes, so only their tags are sent, as <c>worldgen/biome</c>.
+    /// Of the worldgen registries, vanilla syncs only biomes, so only their tags are here, as <c>worldgen/biome</c>.
+    /// The server leaves out other registries clients don't have (like <c>villager_trade</c>) when it sends them.
     /// </remarks>
     internal static Dictionary<string, Tag[]> GetCategories()
     {

@@ -24,6 +24,14 @@ internal static class VanillaSyncedRegistries
             ? Array.IndexOf(found.Entries, entry)
             : -1;
 
+    /// <summary>
+    /// Whether clients have <paramref name="registry"/> (like <c>minecraft:item</c>): it's built in, or a data pack
+    /// registry vanilla syncs. Vanilla sends only these registries' tags; a client sent tags for another, like 26.3's
+    /// <c>minecraft:villager_trade</c>, disconnects when configuration finishes.
+    /// </summary>
+    public static bool IsKnownToClients(string registry) =>
+        VanillaRegistryIds.All.ContainsKey(registry) || Array.Exists(registries.Value, synced => synced.Name == registry);
+
     private static Registry[] Load()
     {
         using var stream = typeof(VanillaSyncedRegistries).Assembly
