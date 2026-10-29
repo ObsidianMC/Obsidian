@@ -121,7 +121,7 @@ public sealed partial class Sheep : FarmAnimal
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.Byte);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.Byte);
         writer.WriteByte((byte)(Color | (Sheared ? 16 : 0)));
     }
 }

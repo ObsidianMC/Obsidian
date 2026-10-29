@@ -158,11 +158,11 @@ public sealed partial class Goat : FarmAnimal
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.Boolean);
         writer.WriteBoolean(Screaming);
-        writer.WriteEntityMetadataType(18, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 1, EntityMetadataType.Boolean);
         writer.WriteBoolean(!IsBaby && HasLeftHorn);
-        writer.WriteEntityMetadataType(19, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 2, EntityMetadataType.Boolean);
         writer.WriteBoolean(!IsBaby && HasRightHorn);
     }
 

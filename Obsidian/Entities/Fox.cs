@@ -114,13 +114,13 @@ public sealed partial class Fox : FarmAnimal
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.VarInt);
         writer.WriteVarInt(Variant);
-        writer.WriteEntityMetadataType(18, EntityMetadataType.Byte);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 1, EntityMetadataType.Byte);
         writer.WriteByte(Sleeping ? (byte)32 : (byte)0);
-        writer.WriteEntityMetadataType(19, EntityMetadataType.OptionalLivingEntityReference);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 2, EntityMetadataType.OptionalLivingEntityReference);
         writer.WriteOptional(TrustedPlayer == Guid.Empty ? (Guid?)null : TrustedPlayer);
-        writer.WriteEntityMetadataType(20, EntityMetadataType.OptionalLivingEntityReference);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 3, EntityMetadataType.OptionalLivingEntityReference);
         writer.WriteOptional(SecondTrustedPlayer == Guid.Empty ? (Guid?)null : SecondTrustedPlayer);
     }
 

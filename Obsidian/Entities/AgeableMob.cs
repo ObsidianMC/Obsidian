@@ -4,8 +4,12 @@ namespace Obsidian.Entities;
 
 public class AgeableMob : PathfinderMob, IAgeable
 {
+    // Base-layout counts keep inherited offsets aligned without a mutable cursor during concurrent writes.
+    protected const byte AgeableMetadataCount = MobMetadataCount + 2;
+
     private bool legacyBaby;
     public int Age { get; internal set; }
+    public bool AgeLocked { get; set; }
     public virtual bool IsBaby
     {
         get => HasAi ? Age < 0 : legacyBaby;
@@ -31,8 +35,11 @@ public class AgeableMob : PathfinderMob, IAgeable
     {
         base.Write(writer);
 
-        writer.WriteEntityMetadataType(16, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(MobMetadataCount, EntityMetadataType.Boolean);
         writer.WriteBoolean(IsBaby);
+
+        writer.WriteEntityMetadataType(MobMetadataCount + 1, EntityMetadataType.Boolean);
+        writer.WriteBoolean(AgeLocked);
     }
 
     internal override void WriteNbt(NbtCompound tag)

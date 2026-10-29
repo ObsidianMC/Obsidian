@@ -136,9 +136,9 @@ public sealed partial class Strider : FarmAnimal, IItemSteerable
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.VarInt);
         writer.WriteVarInt(boostDuration);
-        writer.WriteEntityMetadataType(18, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 1, EntityMetadataType.Boolean);
         writer.WriteBoolean(cold);
     }
 

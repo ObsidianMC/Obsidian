@@ -121,6 +121,11 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
         EntityType.ItemFrame => new ItemFrame { Level = level },
         EntityType.GlowItemFrame => new GlowItemFrame { Level = level },
         EntityType.TextDisplay => new TextDisplay { Level = level },
+        EntityType.BlockDisplay or EntityType.ItemDisplay => new DisplayEntity { Level = level, Type = type },
+        EntityType.Cushion => new Cushion { Level = level },
+        EntityType.Interaction => new Interaction { Level = level },
+        EntityType.OminousItemSpawner => new OminousItemSpawner { Level = level },
+        EntityType.Marker or EntityType.WindCharge => new Entity { Level = level, Type = type },
         EntityType.Painting => new Painting { Level = level },
         EntityType.LeashKnot => new LeashKnot { Level = level },
         EntityType.ExperienceBottle => new ThrownExperienceBottle { Level = level },
@@ -144,6 +149,7 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
     internal static Mob? CreateMob(ILevel level, EntityType? type) => type switch
     {
         EntityType.Breeze => new Breeze { Level = level },
+        EntityType.SulfurCube => new SulfurCube { Level = level, Type = type },
         EntityType.CamelHusk => new CamelHusk { Level = level },
         EntityType.Creaking => new Creaking { Level = level },
         EntityType.Giant => new Giant { Level = level },

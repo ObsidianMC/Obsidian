@@ -107,9 +107,9 @@ public sealed partial class Frog : FarmAnimal
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.FrogVariant);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.FrogVariant);
         writer.WriteVarInt(Variant);
-        writer.WriteEntityMetadataType(18, EntityMetadataType.OptionalUnsignedVarInt);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 1, EntityMetadataType.OptionalUnsignedVarInt);
         writer.WriteVarInt(AttackTarget == null ? 0 : AttackTarget.EntityId + 1);
     }
 

@@ -8,6 +8,8 @@ namespace Obsidian.Entities;
 
 public partial class Living : Entity, ILiving
 {
+    protected const byte LivingMetadataCount = 15;
+
     internal CombatDamageKind? IncomingDamageKind { get; private set; }
     internal ItemStack? IncomingWeapon { get; private set; }
     internal IEntity? IncomingDirectSource { get; private set; }

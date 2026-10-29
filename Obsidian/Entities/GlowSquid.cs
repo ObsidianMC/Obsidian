@@ -30,7 +30,7 @@ public sealed partial class GlowSquid : Squid
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.VarInt);
         writer.WriteVarInt(DarkTicks);
     }
     protected override void WriteAdditionalSave(INbtWriter writer) => writer.WriteInt("DarkTicksRemaining", DarkTicks);

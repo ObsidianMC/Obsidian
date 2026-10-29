@@ -247,10 +247,14 @@ public sealed partial class Villager : AgeableMob
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(18, EntityMetadataType.VillagerData);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.VarInt);
+        writer.WriteVarInt(0); // No unhappy animation is active.
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 1, EntityMetadataType.VillagerData);
         writer.WriteVarInt(VillagerType);
         writer.WriteVarInt(VillagerProfession);
         writer.WriteVarInt(VillagerLevel);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 2, EntityMetadataType.Boolean);
+        writer.WriteBoolean(false);
     }
 
     protected override void WriteAdditionalSave(INbtWriter writer)

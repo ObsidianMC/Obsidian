@@ -89,7 +89,7 @@ public sealed partial class Mooshroom : Cow
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.VarInt);
         writer.WriteVarInt(Brown ? 1 : 0);
     }
 }

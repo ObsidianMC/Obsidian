@@ -3,6 +3,8 @@ namespace Obsidian.Entities;
 [MinecraftEntity("minecraft:cow")]
 public partial class Cow : FarmAnimal
 {
+    public int SoundVariant { get; set; }
+
     public Cow() => Type = EntityType.Cow;
     public int Variant { get; set; } = 1;
     protected override string? SoundName => "cow";
@@ -44,8 +46,10 @@ public partial class Cow : FarmAnimal
         base.Write(writer);
         if (Type == EntityType.Cow)
         {
-            writer.WriteEntityMetadataType(17, EntityMetadataType.CowVariant);
+            writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.CowVariant);
             writer.WriteVarInt(Variant);
+            writer.WriteEntityMetadataType(AgeableMetadataCount + 1, EntityMetadataType.CowSoundVariant);
+            writer.WriteVarInt(SoundVariant);
         }
     }
 }

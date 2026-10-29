@@ -5,6 +5,8 @@ namespace Obsidian.Entities;
 [MinecraftEntity("minecraft:pig")]
 public sealed partial class Pig : Animal, IItemSteerable
 {
+    public int SoundVariant { get; set; } = 1; // minecraft:classic follows minecraft:big in the 26.3 registry.
+
     private int boostTicks;
     public Pig() => Type = EntityType.Pig;
 
@@ -138,9 +140,11 @@ public sealed partial class Pig : Animal, IItemSteerable
     {
         base.Write(writer);
 
-        writer.WriteEntityMetadataType(17, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.VarInt);
         writer.WriteVarInt(TotalTimeBoost);
-        writer.WriteEntityMetadataType(18, EntityMetadataType.PigVariant);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 1, EntityMetadataType.PigVariant);
         writer.WriteVarInt(Variant);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 2, EntityMetadataType.PigSoundVariant);
+        writer.WriteVarInt(SoundVariant);
     }
 }

@@ -10,6 +10,13 @@ public sealed partial class WanderingTrader : AgeableMob
     public int DespawnDelay { get; set; } = 48000;
     public Vector? WanderTarget { get; set; }
     public WanderingTrader() => Type = EntityType.WanderingTrader;
+    public override void Write(INetStreamWriter writer)
+    {
+        base.Write(writer);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.VarInt);
+        writer.WriteVarInt(0); // No unhappy animation is active.
+    }
+
     protected override bool UsesAi => true;
     protected override bool CanDespawn => false;
     protected override string? SoundName => "wandering_trader";

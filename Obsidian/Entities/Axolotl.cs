@@ -119,11 +119,11 @@ public sealed partial class Axolotl : FarmAnimal
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.VarInt);
         writer.WriteVarInt(Variant);
-        writer.WriteEntityMetadataType(18, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 1, EntityMetadataType.Boolean);
         writer.WriteBoolean(PlayingDeadTicks > 0);
-        writer.WriteEntityMetadataType(19, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 2, EntityMetadataType.Boolean);
         writer.WriteBoolean(FromBucket);
     }
 

@@ -93,7 +93,7 @@ public sealed partial class PolarBear : Animal
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.Boolean);
         writer.WriteBoolean(standing);
     }
 }

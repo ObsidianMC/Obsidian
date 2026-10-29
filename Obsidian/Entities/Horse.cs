@@ -28,7 +28,7 @@ public partial class Horse : AbstractHorse
     {
         base.Write(writer);
 
-        writer.WriteEntityMetadataType(18, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(HorseMetadataCount, EntityMetadataType.VarInt);
         writer.WriteVarInt(Variant);
     }
 }

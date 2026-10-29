@@ -5,6 +5,8 @@ namespace Obsidian.Entities;
 [MinecraftEntity("minecraft:chicken")]
 public sealed partial class Chicken : FarmAnimal
 {
+    public int SoundVariant { get; set; }
+
     public Chicken() => Type = EntityType.Chicken;
     public int Variant { get; set; } = 1;
     public int EggLayTime { get; internal set; } = Random.Shared.Next(6000, 12000);
@@ -54,7 +56,9 @@ public sealed partial class Chicken : FarmAnimal
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.ChickenVariant);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.ChickenVariant);
         writer.WriteVarInt(Variant);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 1, EntityMetadataType.ChickenSoundVariant);
+        writer.WriteVarInt(SoundVariant);
     }
 }

@@ -178,17 +178,17 @@ public sealed partial class Panda : FarmAnimal
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.VarInt);
         writer.WriteVarInt(UnhappyTicks);
-        writer.WriteEntityMetadataType(18, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 1, EntityMetadataType.VarInt);
         writer.WriteVarInt(SneezeTicks);
-        writer.WriteEntityMetadataType(19, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 2, EntityMetadataType.VarInt);
         writer.WriteVarInt(EatingTicks);
-        writer.WriteEntityMetadataType(20, EntityMetadataType.Byte);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 3, EntityMetadataType.Byte);
         writer.WriteByte(MainGene);
-        writer.WriteEntityMetadataType(21, EntityMetadataType.Byte);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 4, EntityMetadataType.Byte);
         writer.WriteByte(HiddenGene);
-        writer.WriteEntityMetadataType(22, EntityMetadataType.Byte);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 5, EntityMetadataType.Byte);
         writer.WriteByte((byte)((EatingTicks > 0 ? 8 : 0) | (SneezeTicks > 0 ? 2 : 0) | (Rolling ? 4 : 0)));
     }
 

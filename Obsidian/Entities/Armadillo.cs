@@ -119,7 +119,7 @@ public sealed partial class Armadillo : FarmAnimal
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.ArmadilloState);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.ArmadilloState);
         writer.WriteVarInt(state);
     }
 

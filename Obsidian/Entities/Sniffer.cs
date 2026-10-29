@@ -97,9 +97,9 @@ public sealed partial class Sniffer : FarmAnimal
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.SnifferState);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.SnifferState);
         writer.WriteVarInt(State);
-        writer.WriteEntityMetadataType(18, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 1, EntityMetadataType.VarInt);
         writer.WriteVarInt(DropSeedAt);
     }
 

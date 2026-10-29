@@ -7,6 +7,8 @@ namespace Obsidian.Entities;
 [MinecraftEntity("minecraft:cat")]
 public sealed partial class Cat : Animal
 {
+    public int SoundVariant { get; set; }
+
     internal static readonly string[] VariantNames = ["all_black", "black", "british_shorthair", "calico", "jellie", "persian",
         "ragdoll", "red", "siamese", "tabby", "white"];
     internal static readonly string[] DyeNames = ["white", "orange", "magenta", "light_blue", "yellow", "lime", "pink", "gray",
@@ -139,18 +141,20 @@ public sealed partial class Cat : Animal
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        writer.WriteEntityMetadataType(17, EntityMetadataType.Byte);
+        writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.Byte);
         writer.WriteByte((byte)((Tamed ? 4 : 0) | (IsSitting ? 1 : 0)));
-        writer.WriteEntityMetadataType(18, EntityMetadataType.OptionalLivingEntityReference);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 1, EntityMetadataType.OptionalLivingEntityReference);
         writer.WriteOptional(Tamed ? (Guid?)Owner : null);
-        writer.WriteEntityMetadataType(19, EntityMetadataType.CatVariant);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 2, EntityMetadataType.CatVariant);
         writer.WriteVarInt(Variant);
-        writer.WriteEntityMetadataType(20, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 3, EntityMetadataType.Boolean);
         writer.WriteBoolean(IsLying);
-        writer.WriteEntityMetadataType(21, EntityMetadataType.Boolean);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 4, EntityMetadataType.Boolean);
         writer.WriteBoolean(IsRelaxing);
-        writer.WriteEntityMetadataType(22, EntityMetadataType.VarInt);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 5, EntityMetadataType.VarInt);
         writer.WriteVarInt(CollarColor);
+        writer.WriteEntityMetadataType(AgeableMetadataCount + 6, EntityMetadataType.CatSoundVariant);
+        writer.WriteVarInt(SoundVariant);
     }
 }
 

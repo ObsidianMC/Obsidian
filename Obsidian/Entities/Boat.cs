@@ -31,6 +31,8 @@ public partial class Boat : VehicleEntity
 
     private static readonly Dictionary<EntityType, int> items = new()
     {
+        [EntityType.PoplarBoat] = ItemIds.PoplarBoat,
+        [EntityType.PoplarChestBoat] = ItemIds.PoplarChestBoat,
         [EntityType.OakBoat] = ItemIds.OakBoat,
         [EntityType.SpruceBoat] = ItemIds.SpruceBoat,
         [EntityType.BirchBoat] = ItemIds.BirchBoat,
