@@ -274,8 +274,7 @@ public partial class Mob
 
     protected internal virtual async ValueTask PerformMeleeAttackAsync(IEntity target)
     {
-        PacketBroadcaster.QueuePacketToLevelInRange(Level, Position,
-            new AnimatePacket { EntityId = EntityId, Animation = EntityAnimationType.SwingMainArm }, EntityId);
+        SwingForAttack(InteractionHand.MainHand);
         var damage = AttackDamage;
         if (ActivePotionEffects.TryGetValue((int)PotionEffect.Strength - 1, out var stronger)) damage += 3 * (stronger.EffectData.Amplifier + 1);
         if (ActivePotionEffects.TryGetValue((int)PotionEffect.Weakness - 1, out var weaker)) damage = Math.Max(0, damage - 4 * (weaker.EffectData.Amplifier + 1));
@@ -423,9 +422,9 @@ public partial class Mob
         {
             if (delta.X is < short.MinValue or > short.MaxValue || delta.Y is < short.MinValue or > short.MaxValue || delta.Z is < short.MinValue or > short.MaxValue)
             {
-                PacketBroadcaster.BroadcastToLevelInRange(Level, Position, new TeleportEntityPacket
+                PacketBroadcaster.BroadcastToLevelInRange(Level, Position, new EntityPositionSyncPacket
                 {
-                    EntityId = EntityId, Position = Position, Delta = Motion, Yaw = Yaw, Pitch = Pitch,
+                    EntityId = EntityId, Position = Position, Yaw = Yaw, Pitch = Pitch,
                     OnGround = MovementFlags.HasFlag(MovementFlags.OnGround)
                 }, EntityId);
                 lastSentPosition = Position;

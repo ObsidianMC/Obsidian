@@ -130,7 +130,7 @@ public partial class PlayerBase
         this.PacketBroadcaster.QueuePacketToLevel(this.Level, new AnimatePacket
         {
             EntityId = this.EntityId,
-            Animation = EntityAnimationType.LeaveBed
+            Animation = EntityAnimationType.WakeUp
         });
         this.SyncFoodMetadata();
 
