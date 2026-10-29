@@ -771,8 +771,7 @@ public abstract partial class PlayerBase : Avatar, IPlayer
     {
         // Vanilla 1.21.11 sends the shared world's GlobalPos spawn, including while in a child dimension.
         var sharedSpawn = destination is IDimension child ? child.ParentWorld : destination;
-        var time = destination.LevelData;
-        await this.QueuePacketAsync(new SetTimePacket(time.Time, time.DayTime, true));
+        await this.QueuePacketAsync(SetTimePacket.Of(destination.LevelData));
         await this.QueuePacketAsync(new SetDefaultSpawnPositionPacket(new()
         {
             Dimension = sharedSpawn.DimensionName,
@@ -907,23 +906,11 @@ public abstract partial class PlayerBase : Avatar, IPlayer
                 Level.TryAddEntity(this);
             }
 
-            var codec = Level.DimensionType;
-
             Log.ChangingLevel(this.Logger, this.Username, this.Level.Name);
 
             await this.QueuePacketAsync(new RespawnPacket
             {
-                CommonPlayerSpawnInfo = new()
-                {
-                    DimensionType = codec.Id,
-                    DimensionName = Level.DimensionName,
-                    GameMode = GameMode,
-                    PreviousGamemode = GameMode,
-                    HashedSeed = 0,
-                    Flat = false,
-                    Debug = false,
-                    PortalCooldown = this.portalCooldown,
-                },
+                CommonPlayerSpawnInfo = this.CreateSpawnInfo(),
                 DataKept = dataKept,
             });
 

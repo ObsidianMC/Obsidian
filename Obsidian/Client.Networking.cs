@@ -415,6 +415,7 @@ public partial class Client
             this.SendPacket(new LoginFinishedPacket(Player.Uuid, Player.Username)
             {
                 SkinProperties = this.Player.SkinProperties,
+                SessionId = this.SessionId,
             });
 
             this.loginPending = false;

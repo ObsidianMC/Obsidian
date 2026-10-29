@@ -13,6 +13,12 @@ public partial class LoginFinishedPacket(Guid uuid, string username)
     [Field(3)]
     public List<SkinProperty> SkinProperties { get; init; } = [];
 
+    /// <summary>
+    /// The server's session, which every client connected at the same time shares (26.2).
+    /// </summary>
+    [Field(4)]
+    public Guid SessionId { get; init; }
+
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WriteUuid(Uuid);
@@ -26,5 +32,7 @@ public partial class LoginFinishedPacket(Guid uuid, string username)
 
             writer.WriteOptional(skinProperty.Signature);
         }
+
+        writer.WriteUuid(this.SessionId);
     }
 }

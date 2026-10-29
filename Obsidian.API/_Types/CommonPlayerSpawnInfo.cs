@@ -6,7 +6,11 @@ public readonly record struct CommonPlayerSpawnInfo : INetworkSerializable<Commo
     public required string DimensionName { get; init; }
     public long HashedSeed { get; init; }
     public GameMode GameMode { get; init; }
-    public GameMode PreviousGamemode { get; init; }
+
+    /// <summary>
+    /// The game mode the player had before this one, if any, which the client's game mode switcher starts from.
+    /// </summary>
+    public GameMode? PreviousGamemode { get; init; }
 
     public bool Debug { get; init; }
 
@@ -25,8 +29,8 @@ public readonly record struct CommonPlayerSpawnInfo : INetworkSerializable<Commo
 
         HashedSeed = reader.ReadLong(),
         
-        GameMode = reader.ReadUnsignedByte<GameMode>(),
-        PreviousGamemode = reader.ReadUnsignedByte<GameMode>(),
+        GameMode = (GameMode)reader.ReadVarInt(),
+        PreviousGamemode = reader.ReadVarInt() is var previous and > 0 ? (GameMode)(previous - 1) : null,
 
         Debug = reader.ReadBoolean(),
         Flat = reader.ReadBoolean(),
@@ -43,8 +47,9 @@ public readonly record struct CommonPlayerSpawnInfo : INetworkSerializable<Commo
 
         writer.WriteLong(value.HashedSeed);
 
-        writer.WriteByte(value.GameMode);
-        writer.WriteByte(value.PreviousGamemode);
+        // Since 26.3, game modes are VarInts, and the previous one is an optional VarInt: its id plus one, or zero.
+        writer.WriteVarInt((int)value.GameMode);
+        writer.WriteVarInt(value.PreviousGamemode is GameMode previous ? (int)previous + 1 : 0);
 
         writer.WriteBoolean(value.Debug);
         writer.WriteBoolean(value.Flat);

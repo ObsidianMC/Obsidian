@@ -247,10 +247,11 @@ internal sealed class Bot(int index, BotOptions options, LoadStats stats)
         var teleportId = data.ReadVarInt();
         var (tx, ty, tz) = (data.ReadDouble(), data.ReadDouble(), data.ReadDouble());
         data.ReadDouble(); data.ReadDouble(); data.ReadDouble(); // velocity
-        data.ReadFloat(); data.ReadFloat(); // rotation
+        var (yaw, pitch) = (data.ReadFloat(), data.ReadFloat());
         var relative = data.ReadInt();
 
         bool first;
+        double ax, ay, az;
         lock (this.positionLock)
         {
             this.x = (relative & 1) != 0 ? this.x + tx : tx;
@@ -274,9 +275,21 @@ internal sealed class Bot(int index, BotOptions options, LoadStats stats)
                 this.cruiseY = this.y + options.Altitude;
                 this.heading = this.random.NextDouble() * Math.Tau;
             }
+
+            (ax, ay, az) = (this.x, this.y, this.z);
         }
 
-        this.Send(Ids.Play.AcceptTeleportation, writer => writer.WriteVarInt(teleportId));
+        // Since 26.3, a client accepting a teleport says where it ended up, and facing which way.
+        this.Send(Ids.Play.AcceptTeleportation, writer =>
+        {
+            writer.WriteVarInt(teleportId);
+            writer.WriteDouble(ax);
+            writer.WriteDouble(ay);
+            writer.WriteDouble(az);
+            // The bot doesn't keep a rotation, so a relative one is taken from facing straight ahead.
+            writer.WriteFloat(yaw);
+            writer.WriteFloat(pitch);
+        });
         this.SendPosition();
         if (!first)
             return;

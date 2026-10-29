@@ -100,77 +100,84 @@ internal sealed partial class ConfigurationClientHandler : ClientHandler
     {
         this.configurationSent = true;
 
-        this.SendPacket(new SelectKnownPacksPacket
-        {
-            KnownPacks =
-            [
-                new()
-                {
-                    Id = "core",
-                    Version = ServerConstants.ProtocolDescription,
-                    Namespace = "minecraft"
-                }
-            ]
-        });
+        this.SendPacket(KnownPacksPacket());
 
-        //This is very inconvenient
         var dialogs = this.Server.CreateDialogConfiguration();
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.Dialog.CodecKey, dialogs.Codecs) { WriteCodecs = true });
-        // Plugins' dimension types, biomes and damage types, and vanilla's that files override, are sent with their
-        // data, which vanilla clients accept like a data pack's; vanilla's others by name from the core pack.
-        this.SendPacket(new RegistryDataPacket(
-            CodecRegistry.Dimensions.CodecKey,
-            CodecRegistry.Dimensions.Table.NetworkEntries));
-        this.SendPacket(new RegistryDataPacket(
-            CodecRegistry.Biomes.CodecKey,
-            CodecRegistry.Biomes.Table.NetworkEntries));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.ChatType.CodecKey, ById(CodecRegistry.ChatType.All)));
-        this.SendPacket(new RegistryDataPacket(
-            CodecRegistry.DamageType.CodecKey,
-            CodecRegistry.DamageType.Table.NetworkEntries));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimPattern.CodecKey,
-            ById(CodecRegistry.TrimPattern.All)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.TrimMaterial.CodecKey,
-            ById(CodecRegistry.TrimMaterial.All)));
+        foreach (var registry in RegistryPackets(dialogs.Codecs))
+            this.SendPacket(registry);
 
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.CatVariant.CodecKey,
-            CodecRegistry.CatVariant.All.Values.OrderBy(variant => variant.Id).Select(variant => variant.Name)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.ChickenVariant.CodecKey,
-            CodecRegistry.ChickenVariant.All.Values.OrderBy(variant => variant.Id).Select(variant => variant.Name)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.CowVariant.CodecKey,
-            CodecRegistry.CowVariant.All.Values.OrderBy(variant => variant.Id).Select(variant => variant.Name)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.FrogVariant.CodecKey,
-            CodecRegistry.FrogVariant.All.Values.OrderBy(variant => variant.Id).Select(variant => variant.Name)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.PigVariant.CodecKey,
-            CodecRegistry.PigVariant.All.Values.OrderBy(variant => variant.Id).Select(variant => variant.Name)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.ZombieNautilusVariant.CodecKey,
-            CodecRegistry.ZombieNautilusVariant.All.Values
-                .OrderBy(variant => variant.Id)
-                .Select(variant => variant.Name)));
-
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfVariant.CodecKey,
-            CodecRegistry.WolfVariant.All.Values.OrderBy(variant => variant.Id).Select(variant => variant.Name)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.WolfSoundVariant.CodecKey,
-            CodecRegistry.WolfSoundVariant.All.Values.OrderBy(variant => variant.Id).Select(variant => variant.Name)));
-        this.SendPacket(new RegistryDataPacket(CodecRegistry.PaintingVariant.CodecKey,
-            ById(CodecRegistry.PaintingVariant.All)));
-
-        // Item components refer to these by network id (the index of the entry sent here), e.g. an item's
-        // enchantments.
-        var enchantments = EnchantmentsRegistry.All.Select(enchantment => enchantment.Identifier);
-        var instruments = InstrumentsRegistry.All.Select(instrument => instrument.Identifier);
-
-        this.SendPacket(new RegistryDataPacket("minecraft:enchantment", enchantments));
-        this.SendPacket(new RegistryDataPacket("minecraft:instrument", instruments));
-        this.SendPacket(new RegistryDataPacket("minecraft:jukebox_song", JukeboxSongsRegistry.Identifiers));
-        // Before the tags: the loom's tags and dimension types' timeline tags are numbered by these registries.
-        this.SendPacket(new RegistryDataPacket(BannerPatternsRegistry.CodecKey, BannerPatternsRegistry.Identifiers));
-        this.SendPacket(new RegistryDataPacket(TimelinesRegistry.CodecKey, TimelinesRegistry.Identifiers));
-
+        // After the registries: the loom's tags and dimension types' timeline tags are numbered by them.
         this.SendPacket(UpdateTagsPacket.ClientboundConfiguration with { Tags = dialogs.Tags });
 
         this.SendPacket(FinishConfigurationPacket.Default);
     }
+
+    /// <summary>
+    /// The packs the server shares with clients: vanilla's <c>minecraft:core</c>, whose version is the game version's
+    /// id, like vanilla's <c>KnownPack.vanilla</c>.
+    /// </summary>
+    internal static SelectKnownPacksPacket KnownPacksPacket() => new()
+    {
+        KnownPacks =
+        [
+            new()
+            {
+                Id = "core",
+                Version = ServerConstants.ProtocolDescription,
+                Namespace = "minecraft"
+            }
+        ]
+    };
+
+    /// <summary>
+    /// The registry data for every registry vanilla synchronizes, in vanilla's order. Registries Obsidian models are
+    /// sent from its own tables, whose order gives the ids the rest of the server uses; the others are vanilla's, from
+    /// <see cref="VanillaSyncedRegistries"/>. Like vanilla, entries of the core pack are sent by id; plugins' dimension
+    /// types, biomes, damage types and dialogs, and vanilla's that files override, go with their data, which vanilla
+    /// clients accept like a data pack's.
+    /// </summary>
+    /// <param name="dialogs">The server's dialogs, vanilla's first (see <see cref="Server.CreateDialogConfiguration"/>).</param>
+    internal static IEnumerable<RegistryDataPacket> RegistryPackets(IDictionary<string, ICodec> dialogs)
+    {
+        foreach (var registry in VanillaSyncedRegistries.All)
+        {
+            yield return registry.Name switch
+            {
+                CodecRegistry.Biomes.CodecKey => new(registry.Name, CodecRegistry.Biomes.Table.NetworkEntries),
+                CodecRegistry.ChatType.CodecKey => new(registry.Name, ById(CodecRegistry.ChatType.All)),
+                CodecRegistry.TrimPattern.CodecKey => new(registry.Name, ById(CodecRegistry.TrimPattern.All)),
+                CodecRegistry.TrimMaterial.CodecKey => new(registry.Name, ById(CodecRegistry.TrimMaterial.All)),
+                CodecRegistry.WolfVariant.CodecKey => new(registry.Name, Names(CodecRegistry.WolfVariant.All.Values)),
+                CodecRegistry.WolfSoundVariant.CodecKey => new(registry.Name, Names(CodecRegistry.WolfSoundVariant.All.Values)),
+                CodecRegistry.PigVariant.CodecKey => new(registry.Name, Names(CodecRegistry.PigVariant.All.Values)),
+                CodecRegistry.FrogVariant.CodecKey => new(registry.Name, Names(CodecRegistry.FrogVariant.All.Values)),
+                CodecRegistry.CatVariant.CodecKey => new(registry.Name, Names(CodecRegistry.CatVariant.All.Values)),
+                CodecRegistry.CowVariant.CodecKey => new(registry.Name, Names(CodecRegistry.CowVariant.All.Values)),
+                CodecRegistry.ChickenVariant.CodecKey => new(registry.Name, Names(CodecRegistry.ChickenVariant.All.Values)),
+                CodecRegistry.ZombieNautilusVariant.CodecKey =>
+                    new(registry.Name, Names(CodecRegistry.ZombieNautilusVariant.All.Values)),
+                CodecRegistry.PaintingVariant.CodecKey => new(registry.Name, ById(CodecRegistry.PaintingVariant.All)),
+                CodecRegistry.Dimensions.CodecKey => new(registry.Name, CodecRegistry.Dimensions.Table.NetworkEntries),
+                CodecRegistry.DamageType.CodecKey => new(registry.Name, CodecRegistry.DamageType.Table.NetworkEntries),
+                BannerPatternsRegistry.CodecKey => new(registry.Name, BannerPatternsRegistry.Identifiers),
+                // Item components refer to these by network id, e.g. an item's enchantments.
+                "minecraft:enchantment" => new(registry.Name, EnchantmentsRegistry.All.Select(enchantment => enchantment.Identifier)),
+                "minecraft:jukebox_song" => new(registry.Name, JukeboxSongsRegistry.Identifiers),
+                "minecraft:instrument" => new(registry.Name, InstrumentsRegistry.All.Select(instrument => instrument.Identifier)),
+                CodecRegistry.Dialog.CodecKey => new(registry.Name, dialogs)
+                {
+                    WriteCodecs = true,
+                    KnownEntries = CodecRegistry.Dialog.All.Keys.ToHashSet()
+                },
+                TimelinesRegistry.CodecKey => new(registry.Name, TimelinesRegistry.Identifiers),
+                _ => new(registry.Name, registry.Entries)
+            };
+        }
+    }
+
+    // A variant registry's names, by id.
+    private static IEnumerable<string> Names<TCodec>(IEnumerable<TCodec> variants) where TCodec : ICodec =>
+        variants.OrderBy(variant => variant.Id).Select(variant => variant.Name);
 
     private static partial class Log
     {

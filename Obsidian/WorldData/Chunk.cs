@@ -612,9 +612,7 @@ public sealed class Chunk : IChunk
                 bs.SetBit(i, hasLight);
             }
         }
-        writer.WriteVarInt(bs.DataStorage.Length);
-        if (bs.DataStorage.Length != 0)
-            writer.WriteLongArray(bs.DataStorage.ToArray());
+        Net.Packets.Play.Clientbound.LightUpdatePacket.WriteMask(writer, bs);
     }
 
     public void WriteEmptyLightMaskTo(INetStreamWriter writer, LightType lt)
@@ -632,9 +630,7 @@ public sealed class Chunk : IChunk
                 bs.SetBit(i, !hasLight);
             }
         }
-        writer.WriteVarInt(bs.DataStorage.Length);
-        if (bs.DataStorage.Length != 0)
-            writer.WriteLongArray(bs.DataStorage.ToArray());
+        Net.Packets.Play.Clientbound.LightUpdatePacket.WriteMask(writer, bs);
     }
 
     public void WriteLightTo(INetStreamWriter writer, LightType lt)

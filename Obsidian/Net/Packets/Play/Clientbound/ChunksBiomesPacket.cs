@@ -12,8 +12,9 @@ public partial class ChunksBiomesPacket
 
         foreach(var chunkBiome in ChunkBiomes)
         {
-            writer.WriteInt(chunkBiome.X);
+            // Vanilla's ChunkPos.pack as a long: z in the high half, so z comes first.
             writer.WriteInt(chunkBiome.Z);
+            writer.WriteInt(chunkBiome.X);
 
             writer.WriteVarInt(chunkBiome.Data.Length);
             writer.WriteByteArray(chunkBiome.Data.Span);

@@ -13,8 +13,11 @@ public partial class LoginPacket
     [Field(2)]
     public required List<string> DimensionNames { get; init; }
 
+    /// <summary>
+    /// The server's player limit, which vanilla sends but clients ignore.
+    /// </summary>
     [Field(3), VarLength]
-    private const int MaxPlayers = 0;
+    public int MaxPlayers { get; init; }
 
     [Field(4), VarLength]
     public int ViewDistance { get; init; } = 32;
@@ -34,7 +37,13 @@ public partial class LoginPacket
     [Field(9)]
     public required CommonPlayerSpawnInfo CommonPlayerSpawnInfo { get; init; }
 
+    /// <summary>
+    /// Whether the server authenticates players with Mojang (26.2).
+    /// </summary>
     [Field(10)]
+    public bool OnlineMode { get; init; }
+
+    [Field(11)]
     public bool EnforcesSecureChat { get; init; }
 
     public override void Serialize(INetStreamWriter writer)
@@ -46,7 +55,7 @@ public partial class LoginPacket
         foreach (var dimName in this.DimensionNames)
             writer.WriteString(dimName);
 
-        writer.WriteVarInt(MaxPlayers);
+        writer.WriteVarInt(this.MaxPlayers);
         writer.WriteVarInt(this.ViewDistance);
         writer.WriteVarInt(this.SimulationDistance);
 
@@ -56,6 +65,7 @@ public partial class LoginPacket
 
         CommonPlayerSpawnInfo.Write(this.CommonPlayerSpawnInfo, writer);
 
+        writer.WriteBoolean(this.OnlineMode);
         writer.WriteBoolean(this.EnforcesSecureChat);
     }
 }

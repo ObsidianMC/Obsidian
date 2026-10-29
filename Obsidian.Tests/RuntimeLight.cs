@@ -186,10 +186,11 @@ public sealed class RuntimeLightTests
         using var reader = new NetworkBuffer(Serialize(dark));
         Assert.Equal(0, reader.ReadVarInt());
         Assert.Equal(0, reader.ReadVarInt());
-        Assert.Empty(reader.ReadLongArray()); // Sky data mask.
-        Assert.Empty(reader.ReadLongArray()); // Block data mask.
-        Assert.Empty(reader.ReadLongArray()); // Sky empty mask: sky did not change.
-        Assert.Equal([6L], reader.ReadLongArray()); // Only sections 0 and 1 became dark (bits 1 and 2).
+        Assert.Empty(reader.ReadByteArray()); // Sky data mask.
+        Assert.Empty(reader.ReadByteArray()); // Block data mask.
+        Assert.Empty(reader.ReadByteArray()); // Sky empty mask: sky did not change.
+        // Only sections 0 and 1 became dark (bits 1 and 2); masks are byte arrays since 26.3.
+        Assert.Equal([(byte)6], reader.ReadByteArray());
         Assert.Equal(0, reader.ReadVarInt());
         Assert.Equal(0, reader.ReadVarInt());
         Assert.Empty(engine.TakeUpdates());

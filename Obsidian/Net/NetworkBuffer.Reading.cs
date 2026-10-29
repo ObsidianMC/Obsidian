@@ -437,7 +437,8 @@ public partial class NetworkBuffer : INetStreamReader
     public byte[] ReadByteArray()
     {
         var length = ReadVarInt();
-        return ReadUInt8Array(length);
+        // ReadUInt8Array takes a length of 0 to mean one comes next, and ReadUntil throws at the end for no bytes.
+        return length == 0 ? [] : ReadUInt8Array(length);
     }
 
     /// <summary>Reads a VarInt length, then that many bytes; throws when the length is over <paramref name="maxLength"/>.</summary>

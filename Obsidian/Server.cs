@@ -1175,6 +1175,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
     private async Task TickWorldsOnceAsync()
     {
         TickStage = "ticking worlds";
+        this.EndIdleSession();
         var tickStart = Stopwatch.GetTimestamp();
         Volatile.Write(ref this.tickStarted, tickStart);
         try
