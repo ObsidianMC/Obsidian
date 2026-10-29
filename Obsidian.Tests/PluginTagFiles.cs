@@ -190,10 +190,19 @@ public class PluginTagFiles
     public void StructureTags()
     {
         const string treasure = "minecraft:on_treasure_maps";
+        var logger = new PluginFeatureFiles.ListLogger();
 
         try
         {
-            PluginTags.Apply([], NullLogger.Instance);
+            PluginTags.Apply([], logger);
+            Assert.Empty(logger.Messages);
+            // Built-in tags must agree with the legacy structure registry until Phase 5, including nested tags whose
+            // current contents may name new structures (such as abandoned camps).
+            foreach (var (identifier, structures) in Registries.StructureTags.All)
+            {
+                Assert.True(PluginTags.TryGetIdentifiers(PluginTags.Structure, identifier, out var resolved));
+                Assert.Equal(structures.Select(structure => structure.Identifier), resolved.AsEnumerable());
+            }
             Assert.True(PluginTags.TryGetIdentifiers(PluginTags.Structure, treasure, out var vanilla));
             Assert.Equal(["minecraft:buried_treasure"], vanilla.AsEnumerable());
 
@@ -204,9 +213,10 @@ public class PluginTagFiles
                     File(PluginTags.Structure, treasure, """{ "values": ["ruby:tower"] }"""),
                     File(PluginTags.Structure, "minecraft:village", """{ "values": ["ruby:missing"] }""")
                 ],
-                NullLogger.Instance,
+                logger,
                 [(PluginTags.Structure, "ruby:tower")]);
 
+            Assert.Contains(logger.Messages, message => message.Contains("ruby:missing"));
             Assert.True(PluginTags.TryGetIdentifiers(PluginTags.Structure, treasure, out var added));
             Assert.Equal(["minecraft:buried_treasure", "ruby:tower"], added.AsEnumerable());
             Assert.True(PluginTags.TryGetIdentifiers(PluginTags.Structure, "minecraft:village", out var village));
