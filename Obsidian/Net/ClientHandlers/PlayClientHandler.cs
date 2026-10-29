@@ -34,6 +34,9 @@ internal sealed partial class PlayClientHandler : ClientHandler
             case ChatCommandPacket.PacketId:
                 await HandleFromPoolAsync<ChatCommandPacket>(data);
                 break;
+            case ChatCommandSignedPacket.PacketId:
+                await HandleFromPoolAsync<ChatCommandSignedPacket>(data);
+                break;
             case ChatPacket.PacketId:
                 await HandleFromPoolAsync<ChatPacket>(data);
                 break;

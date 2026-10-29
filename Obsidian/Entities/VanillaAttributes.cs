@@ -4,7 +4,7 @@ namespace Obsidian.Entities;
 /// The ranges of vanilla's attributes and whether clients are sent them.
 /// </summary>
 /// <remarks>
-/// Matches 1.21.11's <c>Attributes</c> registrations (each <c>RangedAttribute</c>'s minimum and maximum and its
+/// Matches 26.3's <c>Attributes</c> registrations (each <c>RangedAttribute</c>'s minimum and maximum and its
 /// <c>setSyncable</c> flag): clients compute the same values from <c>UpdateAttributes</c>, so the server must clamp
 /// as they do and send the attributes they expect. Protocol ids come from the registries report.
 /// </remarks>
@@ -14,13 +14,16 @@ internal static class VanillaAttributes
 
     private static readonly Dictionary<string, Range> ranges = new()
     {
+        ["minecraft:air_drag_modifier"] = new(0, 2048, true),
         ["minecraft:armor"] = new(0, 30, true),
         ["minecraft:armor_toughness"] = new(0, 20, true),
         ["minecraft:attack_damage"] = new(0, 2048, false),
         ["minecraft:attack_knockback"] = new(0, 5, false),
         ["minecraft:attack_speed"] = new(0, 1024, true),
+        ["minecraft:below_name_distance"] = new(0, 512, true),
         ["minecraft:block_break_speed"] = new(0, 1024, true),
         ["minecraft:block_interaction_range"] = new(0, 64, true),
+        ["minecraft:bounciness"] = new(0, 1, true),
         ["minecraft:burning_time"] = new(0, 1024, true),
         ["minecraft:camera_distance"] = new(0, 32, true),
         ["minecraft:explosion_knockback_resistance"] = new(0, 1, true),
@@ -28,15 +31,17 @@ internal static class VanillaAttributes
         ["minecraft:fall_damage_multiplier"] = new(0, 100, true),
         ["minecraft:flying_speed"] = new(0, 1024, true),
         ["minecraft:follow_range"] = new(0, 2048, false),
+        ["minecraft:friction_modifier"] = new(0, 2048, true),
         ["minecraft:gravity"] = new(-1, 1, true),
         ["minecraft:jump_strength"] = new(0, 32, true),
-        ["minecraft:knockback_resistance"] = new(0, 1, false),
+        ["minecraft:knockback_resistance"] = new(-2, 1, false),
         ["minecraft:luck"] = new(-1024, 1024, true),
         ["minecraft:max_absorption"] = new(0, 2048, true),
         ["minecraft:max_health"] = new(1, 1024, true),
         ["minecraft:mining_efficiency"] = new(0, 1024, true),
         ["minecraft:movement_efficiency"] = new(0, 1, true),
         ["minecraft:movement_speed"] = new(0, 1024, true),
+        ["minecraft:name_tag_distance"] = new(0, 512, true),
         ["minecraft:oxygen_bonus"] = new(0, 1024, true),
         ["minecraft:safe_fall_distance"] = new(-1024, 1024, true),
         ["minecraft:scale"] = new(0.0625, 16, true),

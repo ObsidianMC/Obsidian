@@ -5,6 +5,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound;
 
 public partial class ChatPacket
 {
+    public ChatMessageTypes.ChatAcknowledgement Acknowledgement { get; private set; }
     [Field(0)]
     public string Message { get; private set; } = default!;
 
@@ -31,19 +32,13 @@ public partial class ChatPacket
 
     public override void Populate(INetStreamReader reader)
     {
-        this.Message = reader.ReadString();
+        this.Message = reader.ReadString(256);
         this.Timestamp = reader.ReadDateTimeOffset();
         this.Salt = reader.ReadLong();
 
         var isSigned = reader.ReadBoolean();
-        if (isSigned)
-            this.Signature = reader.ReadUInt8Array(256);
-
-        //var lastSeenMessagesLength = reader.ReadVarInt();
-        //this.LastSeenMessages = new List<SignedMessage>(lastSeenMessagesLength);
-
-        //for (int i = 0; i < lastSeenMessagesLength; i++)
-        //    this.LastSeenMessages[i] = reader.ReadSignedMessage();
+        this.Signature = isSigned ? reader.ReadUInt8Array(256) : ReadOnlyMemory<byte>.Empty;
+        this.Acknowledgement = ChatMessageTypes.ChatAcknowledgement.Read(reader);
     }
 }
 

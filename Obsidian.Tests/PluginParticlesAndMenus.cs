@@ -59,7 +59,7 @@ public sealed class PluginParticlesAndMenus
             ParticleCount = 4,
             Data = spark
         });
-        Assert.Equal(Write(writer => writer.WriteVarInt(spark.Id)), particles[^VarIntSize(spark.Id)..]);
+        Assert.Equal(Write(writer => writer.WriteVarInt(spark.Id)), particles[..VarIntSize(spark.Id)]);
 
         var container = new MenuContainer(pouch, "Pouch");
         var screen = Written(new OpenScreenPacket(container, 3));

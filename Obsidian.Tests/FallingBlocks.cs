@@ -59,6 +59,8 @@ public sealed class FallingBlocks
         }
 
         Assert.Equal(BlocksRegistry.Sand.UnlocalizedName, (await world.GetBlockAsync(column))!.UnlocalizedName);
+        Assert.Contains(((TestClient)player.Client).SentPackets.OfType<Net.Packets.Play.Clientbound.AddTransientBlockPacket>(),
+            packet => packet.Position == column && packet.BlockState == BlocksRegistry.Sand.DefaultId);
     }
 
     [Fact(DisplayName = "Sand landing on a torch drops as an item and leaves the torch in place",

@@ -29,7 +29,7 @@ public partial class DamageEventPacket
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WriteVarInt(this.EntityId);
-        writer.WriteRegistryHolder("minecraft:damage_type", CodecRegistry.DamageType.All[this.DamageType].Id);
+        writer.WriteRegistryId("minecraft:damage_type", CodecRegistry.DamageType.All[this.DamageType].Id);
         writer.WriteVarInt(this.SourceCauseEntityId is int cause ? cause + 1 : 0);
         writer.WriteVarInt(this.SourceDirectEntityId is int direct ? direct + 1 : 0);
         writer.WriteBoolean(this.SourcePosition is VectorD position);

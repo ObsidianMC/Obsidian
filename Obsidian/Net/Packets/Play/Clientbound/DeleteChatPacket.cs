@@ -6,9 +6,10 @@ public partial class DeleteChatPacket
     [Field(1)]
     public required ReadOnlyMemory<byte> Signature { get; init; }
 
+    public int? SignatureIndex { get; init; }
+
     public override void Serialize(INetStreamWriter writer)
     {
-        writer.WriteVarInt(this.Signature.Length);
-        writer.WriteByteArray(this.Signature.Span);
+        new ChatMessageTypes.PackedChatSignature(this.SignatureIndex ?? -1, this.Signature).Write(writer);
     }
 }

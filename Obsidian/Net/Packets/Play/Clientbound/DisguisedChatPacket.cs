@@ -21,7 +21,7 @@ public partial class DisguisedChatPacket
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WriteChat(this.Message);
-        writer.WriteVarInt(this.ChatType);
+        writer.WriteRegistryHolder("minecraft:chat_type", this.ChatType);
         writer.WriteChat(this.SenderName);
         writer.WriteOptional(this.TargetName);
     }

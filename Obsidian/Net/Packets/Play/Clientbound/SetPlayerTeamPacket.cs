@@ -1,5 +1,4 @@
 ﻿using Obsidian.Serialization.Attributes;
-using System.Text.Json;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
@@ -33,7 +32,7 @@ public partial class SetPlayerTeamPacket
     [Field(8), Condition("Mode == TeamModeOption.UpdateTeam || Mode == TeamModeOption.CreateTeam")]
     public ChatMessage? TeamSuffix { get; set; }
 
-    [Field(9), Condition("Mode != TeamModeOption.RemoveTeam || Mode != TeamModeOption.UpdateTeam")]
+    [Field(9), Condition("Mode == TeamModeOption.CreateTeam || Mode == TeamModeOption.AddEntities || Mode == TeamModeOption.RemoveEntities")]
     public HashSet<string> Entities { get; set; } = [];
 
     public override void Serialize(INetStreamWriter writer)
@@ -44,15 +43,31 @@ public partial class SetPlayerTeamPacket
         if (this.Mode == TeamModeOption.UpdateTeam || this.Mode == TeamModeOption.CreateTeam)
         {
             writer.WriteChat(this.TeamDisplayName!);
-            writer.WriteByte((sbyte)this.FriendlyFlags);
-            writer.WriteString(JsonNamingPolicy.CamelCase.ConvertName(this.NameTagVisibility.ToString()));
-            writer.WriteString(JsonNamingPolicy.CamelCase.ConvertName(this.CollisionRule.ToString()));
-            writer.WriteVarInt((int)this.TeamColor);
             writer.WriteChat(this.TeamPrefix ?? "");
             writer.WriteChat(this.TeamSuffix ?? "");
+            // Vanilla's team visibility/collision ids differ from the public API's enum order.
+            writer.WriteVarInt(this.NameTagVisibility switch
+            {
+                NameTagVisibility.Never => 1,
+                NameTagVisibility.HideForOtherTeams => 2,
+                NameTagVisibility.HideForOwnTeam => 3,
+                _ => 0
+            });
+            writer.WriteVarInt(this.CollisionRule switch
+            {
+                CollisionRule.Never => 1,
+                CollisionRule.PushOtherTeams => 2,
+                CollisionRule.PushOwnTeam => 3,
+                _ => 0
+            });
+            var hasColor = (int)this.TeamColor is >= 0 and < 16;
+            writer.WriteBoolean(hasColor);
+            if (hasColor)
+                writer.WriteVarInt((int)this.TeamColor);
+            writer.WriteByte((sbyte)this.FriendlyFlags);
         }
 
-        if (this.Mode != TeamModeOption.RemoveTeam || this.Mode != TeamModeOption.UpdateTeam)
+        if (this.Mode is TeamModeOption.CreateTeam or TeamModeOption.AddEntities or TeamModeOption.RemoveEntities)
         {
             writer.WriteVarInt(this.Entities.Count);
             foreach (var entity in this.Entities)

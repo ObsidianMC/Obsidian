@@ -210,7 +210,9 @@ public sealed class Progress
             };
             var bytes = new NetworkBuffer();
             packet.Serialize(bytes);
-            Assert.Equal(Read("progress-advancements.bin"), bytes.AsSpan(0, bytes.Size).ToArray());
+            using var protocol = PlayPayloads.ReadFixture();
+            Assert.Equal(Convert.FromHexString(protocol.RootElement.GetProperty("progress_advancements").GetString()!),
+                bytes.AsSpan(0, bytes.Size).ToArray());
             Assert.True(await player.Advancements.GrantAsync("probe:progress", "second"));
             Assert.True(player.Advancements.IsDone("probe:progress"));
             Assert.True(player.Advancements.Revoke("probe:progress", "first"));

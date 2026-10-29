@@ -16,13 +16,13 @@ internal static class RegistryIds
 
     private static readonly Lazy<FrozenSet<string>> particleTypes = new(ReadParticleTypes);
 
-    // Vanilla 1.21.11's particle types whose options are more than their type (vanilla's ParticleTypes registers
+    // Vanilla 26.3's particle types whose options are more than their type (vanilla's ParticleTypes registers
     // them with an options codec), which plugins' files can't give yet.
     private static readonly FrozenSet<string> particlesWithOptions = new[]
     {
         "block", "block_marker", "block_crumble", "dragon_breath", "dust", "dust_color_transition", "dust_pillar",
         "effect", "entity_effect", "falling_dust", "flash", "instant_effect", "item", "sculk_charge", "shriek",
-        "tinted_leaves", "trail", "vibration"
+        "tinted_leaves", "trail", "vibration", "geyser", "geyser_plume", "geyser_base", "geyser_poof"
     }.Select(name => $"minecraft:{name}").ToFrozenSet();
 
     // Vanilla 1.21.11's activities (its Activity registry), which villagers' environment attributes take.

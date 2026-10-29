@@ -2,7 +2,7 @@ using Obsidian.API.Advancements;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-/// <summary>Vanilla 1.21.11 definitions, removals and independent per-player criterion progress.</summary>
+/// <summary>Positioned definitions, removals and independent per-player criterion progress.</summary>
 public partial class UpdateAdvancementsPacket
 {
     public bool Reset { get; set; }
@@ -19,6 +19,8 @@ public partial class UpdateAdvancementsPacket
         {
             writer.WriteString(advancement.Identifier);
             writer.WriteAdvancement(advancement);
+            writer.WriteSingle(advancement.Display?.XCoord ?? 0);
+            writer.WriteSingle(advancement.Display?.YCoord ?? 0);
         }
 
         writer.WriteVarInt(this.Removed.Count);
