@@ -12,6 +12,9 @@ public class EntityInteractEventArgs : EntityEventArgs
     /// </summary>
     public bool Sneaking { get; }
 
+    /// <summary>
+    /// Where on the entity the player clicked, relative to the entity's position, when a client interacted.
+    /// </summary>
     public VectorF? TargetPosition { get; set; }
 
     public InteractionHand? Hand { get; set; }

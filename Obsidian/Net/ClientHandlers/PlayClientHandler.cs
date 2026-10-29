@@ -25,6 +25,9 @@ internal sealed partial class PlayClientHandler : ClientHandler
             case AcceptTeleportationPacket.PacketId:
                 await HandleFromPoolAsync<AcceptTeleportationPacket>(data);
                 break;
+            case AttackPacket.PacketId:
+                await HandleFromPoolAsync<AttackPacket>(data);
+                break;
             case BundleItemSelectedPacket.PacketId:
                 await HandleFromPoolAsync<BundleItemSelectedPacket>(data);
                 break;
@@ -96,6 +99,9 @@ internal sealed partial class PlayClientHandler : ClientHandler
             case PlayerLoadedPacket.PacketId:
                 await HandleFromPoolAsync<PlayerLoadedPacket>(data);
                 break;
+            case PunchPacket.PacketId:
+                await HandleFromPoolAsync<PunchPacket>(data);
+                break;
             case RecipeBookChangeSettingsPacket.PacketId:
                 await HandleFromPoolAsync<RecipeBookChangeSettingsPacket>(data);
                 break;
@@ -116,6 +122,9 @@ internal sealed partial class PlayClientHandler : ClientHandler
                 break;
             case SetCreativeModeSlotPacket.PacketId:
                 await HandleFromPoolAsync<SetCreativeModeSlotPacket>(data);
+                break;
+            case SpectatorActionPacket.PacketId:
+                await HandleFromPoolAsync<SpectatorActionPacket>(data);
                 break;
             case UseItemOnPacket.PacketId:
                 await HandleFromPoolAsync<UseItemOnPacket>(data);
