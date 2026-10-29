@@ -7,7 +7,7 @@ namespace Obsidian.Net;
 
 public partial class NetworkBuffer
 {
-    // Wire shapes from vanilla 1.21.11 DataComponents and its stream codecs. These consume values without
+    // Wire shapes from vanilla 26.3 DataComponents and its stream codecs. These consume values without
     // resolving server-owned registries. A holder ID belongs to the connection, not Obsidian's registry order.
     // Keeping framing separate from the display models also preserves NBT/chat encodings the models don't express.
     private static readonly ConditionalWeakTable<DataComponent, ComponentEncoding> ComponentEncodings = new();
@@ -154,11 +154,6 @@ public partial class NetworkBuffer
     private void SkipTrimMaterial() => this.SkipHolder(() =>
     {
         this.SkipString();
-        this.SkipList(() =>
-        {
-            this.SkipString();
-            this.SkipString();
-        });
         this.SkipNbt();
     });
 
@@ -214,7 +209,7 @@ public partial class NetworkBuffer
             case 2:
                 break;
             case 3:
-                this.SkipBytes(4);
+                this.SkipBytes(5);
                 break;
             case 4:
                 this.SkipSound();
@@ -259,7 +254,14 @@ public partial class NetworkBuffer
                 this.SkipNbt();
                 break;
             case DataComponentType.Unbreakable: case DataComponentType.CreativeSlotLock: case DataComponentType.Glider:
+            case DataComponentType.Waxed:
                 break;
+            case DataComponentType.DamageType: case DataComponentType.ChickenVariant: case DataComponentType.ZombieNautilusVariant:
+            case DataComponentType.AdditionalTradeCost: case DataComponentType.VillagerFood:
+            case DataComponentType.Dye: case DataComponentType.CushionColor:
+            case DataComponentType.BlockTransformer: case DataComponentType.ProvidesPotteryPattern:
+            case DataComponentType.CatSoundVariant: case DataComponentType.ChickenSoundVariant:
+            case DataComponentType.CowSoundVariant: case DataComponentType.PigSoundVariant:
             case DataComponentType.MaxStackSize: case DataComponentType.MaxDamage: case DataComponentType.Damage:
             case DataComponentType.Rarity: case DataComponentType.RepairCost: case DataComponentType.Enchantable:
             case DataComponentType.MapId: case DataComponentType.MapPostProcessing: case DataComponentType.OminousBottleAmplifier:
@@ -280,11 +282,8 @@ public partial class NetworkBuffer
             case DataComponentType.UseEffects:
                 this.SkipBytes(6);
                 break;
-            case DataComponentType.DamageType: case DataComponentType.ChickenVariant: case DataComponentType.ZombieNautilusVariant:
-                this.SkipEither(this.SkipVarInt, this.SkipString);
-                break;
-            case DataComponentType.ItemModel: case DataComponentType.DamageResistant: case DataComponentType.TooltipStyle:
-            case DataComponentType.ProvidesBannerPatterns: case DataComponentType.NoteBlockSound:
+            case DataComponentType.ItemModel: case DataComponentType.TooltipStyle:
+            case DataComponentType.NoteBlockSound:
                 this.SkipString();
                 break;
             case DataComponentType.Lore:
@@ -361,7 +360,7 @@ public partial class NetworkBuffer
                 this.SkipList(this.SkipConsumeEffect);
                 break;
             case DataComponentType.UseRemainder:
-                this.SkipRequiredStack();
+                this.SkipItemTemplate();
                 break;
             case DataComponentType.UseCooldown:
                 this.SkipBytes(4);
@@ -394,7 +393,7 @@ public partial class NetworkBuffer
                 this.SkipBytes(5);
                 this.SkipSound();
                 break;
-            case DataComponentType.Repairable:
+            case DataComponentType.Repairable: case DataComponentType.DamageResistant: case DataComponentType.ProvidesBannerPatterns:
                 this.SkipIdSet();
                 break;
             case DataComponentType.DeathProtection:
@@ -439,10 +438,10 @@ public partial class NetworkBuffer
                 this.ReadVarInt();
                 break;
             case DataComponentType.ChargedProjectiles: case DataComponentType.BundleContents:
-                this.SkipList(this.SkipRequiredStack);
+                this.SkipList(this.SkipItemTemplate);
                 break;
             case DataComponentType.Container:
-                this.SkipList(this.SkipStack);
+                this.SkipList(() => this.SkipOptional(this.SkipItemTemplate));
                 break;
             case DataComponentType.PotionContents:
                 this.SkipOptional(this.SkipVarInt);
@@ -481,24 +480,25 @@ public partial class NetworkBuffer
                 this.SkipNbt();
                 break;
             case DataComponentType.Instrument:
-                this.SkipEither(() => this.SkipHolder(() =>
+                this.SkipHolder(() =>
                 {
                     this.SkipSound();
                     this.SkipBytes(8);
+                    this.ReadVarInt();
                     this.SkipNbt();
-                }), this.SkipString);
+                });
                 break;
             case DataComponentType.ProvidesTrimMaterial:
-                this.SkipEither(this.SkipTrimMaterial, this.SkipString);
+                this.SkipTrimMaterial();
                 break;
             case DataComponentType.JukeboxPlayable:
-                this.SkipEither(() => this.SkipHolder(() =>
+                this.SkipHolder(() =>
                 {
                     this.SkipSound();
                     this.SkipNbt();
                     this.SkipBytes(4);
                     this.ReadVarInt();
-                }), this.SkipString);
+                });
                 break;
             case DataComponentType.LodestoneTracker:
                 this.SkipOptional(() =>
@@ -547,7 +547,28 @@ public partial class NetworkBuffer
                 });
                 break;
             case DataComponentType.PotDecorations:
-                this.SkipList(this.SkipVarInt);
+                for (var i = 0; i < 4; i++)
+                    this.SkipOptional(this.SkipItemTemplate);
+                break;
+            case DataComponentType.SulfurCubeContent:
+                this.SkipItemTemplate();
+                break;
+            case DataComponentType.Compostable:
+                this.SkipEither(() => this.SkipBytes(4), this.SkipString);
+                break;
+            case DataComponentType.CookingFuel: case DataComponentType.BrewingFuel:
+                this.SkipEither(() => this.SkipBytes(4), this.SkipString);
+                this.SkipEither(() => this.SkipBytes(4), this.SkipString);
+                break;
+            case DataComponentType.MobVisibility:
+                this.SkipIdSet();
+                this.SkipBytes(4);
+                break;
+            case DataComponentType.SignTextFront: case DataComponentType.SignTextBack:
+                this.SkipSignMessages();
+                this.SkipOptional(this.SkipSignMessages);
+                this.ReadVarInt();
+                this.SkipBytes(1);
                 break;
             case DataComponentType.BlockState:
                 this.SkipList(() =>
@@ -583,32 +604,28 @@ public partial class NetworkBuffer
                 this.ReadDataComponent(type);
                 break;
             default:
-                throw new InvalidDataException($"Unknown 1.21.11 component ID {(int)type}.");
+                throw new InvalidDataException($"Unknown 26.3 component ID {(int)type}.");
         }
     }
 
-    private void SkipRequiredStack() => this.SkipStack(true);
-
-    private void SkipStack() => this.SkipStack(false);
-
-    private void SkipStack(bool required)
+    private void SkipSignMessages()
     {
-        if (this.ReadVarInt() <= 0)
-        {
-            if (required)
-                throw new InvalidDataException("Expected a nonempty nested stack.");
+        for (var i = 0; i < 4; i++)
+            this.SkipNbt();
+    }
 
-            return;
-        }
-
+    // ItemStackTemplate puts the item ID before count and has no empty-stack sentinel.
+    private void SkipItemTemplate()
+    {
         this.ReadVarInt();
+        if (this.ReadVarInt() <= 0)
+            throw new InvalidDataException("Expected a nonempty nested item template.");
         var added = this.ReadComponentCount();
         var removed = this.ReadComponentCount();
         for (var i = 0; i < added; i++)
             this.SkipComponent(this.ReadComponentType());
-
         for (var i = 0; i < removed; i++)
-            this.ReadVarInt();
+            this.ReadComponentType();
     }
 
     private void SkipNbt() => this.SkipNbtPayload(this.ReadByte(), 0);

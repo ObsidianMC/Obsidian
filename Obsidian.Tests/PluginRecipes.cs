@@ -141,7 +141,7 @@ public sealed class PluginRecipes
         Assert.Equal(writer.Size, reader.Offset);
     }
 
-    [Fact(Skip = "Phase 2: update-recipes.bin is a 1.21.11 capture, with 1.21.11's item ids")]
+    [Fact(Skip = "Phase 4: recipe slot displays now encode ItemStackTemplate instead of ItemStack; recapture and adapt recipe formats")]
     public void UpdateRecipesMatchesVanillaCapture()
     {
         // Captured from 1.21.11 ClientboundUpdateRecipesPacket.STREAM_CODEC, using a raw-iron input for

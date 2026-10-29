@@ -42,12 +42,23 @@ public class ItemComponentWire
             ];
     }
 
-    [Fact(Skip = "Phase 2: Obsidian's component codecs are 1.21.11's; 26.3 added, removed and changed components")]
+    [Fact]
     public void ItemComponentsMatchVanillaCapture()
     {
+        var failures = new List<string>();
         foreach (var row in Stacks())
-            AssertVanillaStackRoundTrip((string)row[0], (string)row[1], (string)row[2]);
+        {
+            try
+            {
+                AssertVanillaStackRoundTrip((string)row[0], (string)row[1], (string)row[2]);
+            }
+            catch (Exception error)
+            {
+                failures.Add($"{row[0]}: {error.Message}");
+            }
+        }
 
+        Assert.True(failures.Count == 0, string.Join("\n", failures));
         AssertSupportedHashesMatchVanilla();
         AssertModeledComponentsSurviveSaving();
         AssertMerchantOffersMatchVanilla();
@@ -71,6 +82,26 @@ public class ItemComponentWire
             {
                 if (ComponentBuilder.Create(component.Type) is DataComponent model)
                     Assert.Equal(model.GetType(), component.GetType());
+            }
+
+            // These models express the complete payload. Check their writers without the original-byte cache too.
+            foreach (var component in stack.Patch)
+            {
+                if (component.Type is not (DataComponentType.PotDecorations or DataComponentType.Container
+                    or DataComponentType.BundleContents or DataComponentType.ChargedProjectiles or DataComponentType.UseRemainder
+                    or DataComponentType.SulfurCubeContent or DataComponentType.CookingFuel or DataComponentType.BrewingFuel
+                    or DataComponentType.Compostable or DataComponentType.MobVisibility or DataComponentType.DamageResistant
+                    or DataComponentType.AdditionalTradeCost or DataComponentType.VillagerFood
+                    or DataComponentType.Dye or DataComponentType.CushionColor or DataComponentType.Waxed
+                    or DataComponentType.Instrument or DataComponentType.JukeboxPlayable or DataComponentType.DeathProtection
+                    or DataComponentType.Consumable))
+                    continue;
+                using var original = new NetworkBuffer();
+                using var modeled = new NetworkBuffer();
+                original.WriteDataComponent(component);
+                component.Write(modeled);
+                Assert.True(original.AsSpan(0, original.Size).SequenceEqual(modeled.AsSpan(0, modeled.Size)),
+                    $"{name}: {component.Identifier} model changed the payload.");
             }
 
             var writer = new NetworkBuffer();
@@ -101,7 +132,20 @@ public class ItemComponentWire
             }
         }
 
-        Assert.Equal(64, supported.Count);
+        Assert.Equal(85, supported.Count);
+        // Every 26.3 addition with a persistent codec must be hashable. additional_trade_cost is network-only.
+        DataComponentType[] addedTypes =
+        [
+            DataComponentType.AttackAnimation, DataComponentType.InteractAnimation, DataComponentType.BlockTransformer,
+            DataComponentType.VillagerFood, DataComponentType.Dye, DataComponentType.SulfurCubeContent,
+            DataComponentType.Compostable, DataComponentType.CookingFuel, DataComponentType.BrewingFuel,
+            DataComponentType.MobVisibility, DataComponentType.PigSoundVariant, DataComponentType.CowSoundVariant,
+            DataComponentType.ChickenSoundVariant, DataComponentType.CatSoundVariant, DataComponentType.ProvidesPotteryPattern,
+            DataComponentType.SignTextFront, DataComponentType.SignTextBack, DataComponentType.Waxed, DataComponentType.CushionColor,
+            DataComponentType.Consumable, DataComponentType.DeathProtection, DataComponentType.Instrument, DataComponentType.ProvidesTrimMaterial
+        ];
+        foreach (var added in addedTypes)
+            Assert.Contains(added, supported);
         DataComponentType[] requiredTypes =
         [
             DataComponentType.Damage,
@@ -131,7 +175,7 @@ public class ItemComponentWire
             foreach (var component in stack.Patch)
             {
                 if (ComponentBuilder.Create(component.Type) is null
-                    || component.Type is DataComponentType.CreativeSlotLock or DataComponentType.MapPostProcessing)
+                    || component.Type is DataComponentType.CreativeSlotLock or DataComponentType.MapPostProcessing or DataComponentType.AdditionalTradeCost)
                 {
                     continue;
                 }
@@ -170,7 +214,12 @@ public class ItemComponentWire
     {
         using var fixture = Fixture();
         var names = fixture.RootElement.GetProperty("componentTypes").EnumerateArray().ToArray();
+        Assert.Equal(122, names.Length);
         Assert.Equal(names.Length, Enum.GetValues<DataComponentType>().Length);
+        var captured = fixture.RootElement.GetProperty("cases").EnumerateArray()
+            .Select(row => row.GetProperty("name").GetString()!).ToHashSet();
+        foreach (var name in names)
+            Assert.Contains(name.GetString()!, captured);
         for (var id = 0; id < names.Length; id++)
             Assert.Equal(names[id].GetString(), OpaqueDataComponent.GetIdentifier((DataComponentType)id));
     }
@@ -216,7 +265,7 @@ public class ItemComponentWire
         }
     }
 
-    [Fact(Skip = "Phase 2: its malformed stacks use 1.21.11's component ids")]
+    [Fact]
     public void EmptyRequiredListsCopiesAndMalformedValues()
     {
         var empty = new NetworkBuffer();
@@ -227,7 +276,10 @@ public class ItemComponentWire
         Assert.Null(empty.ReadHashedItemStack());
 
         Assert.Throws<InvalidDataException>(() => new NetworkBuffer([0]).ReadRequiredItemStack());
-        Assert.Throws<InvalidDataException>(() => new NetworkBuffer([1, 1, 1, 0, 104]).ReadItemStack());
+        Assert.Throws<InvalidDataException>(() => new NetworkBuffer([1, 0, 0, 0]).ReadItemStackTemplate());
+        Assert.Throws<InvalidDataException>(() => new NetworkBuffer().WriteItemStackTemplate(ItemStack.Air));
+        Assert.False(new NetworkBuffer().TryHashDataComponent(ComponentBuilder.AdditionalTradeCost with { Value = 131 }, out _));
+        Assert.Throws<InvalidDataException>(() => new NetworkBuffer([1, 1, 1, 0, 122]).ReadItemStack());
         Assert.Throws<InvalidDataException>(
             () => new NetworkBuffer([1, 1, 1, 0, 3, 2, 12, 0]).ReadUntrustedItemStack());
 

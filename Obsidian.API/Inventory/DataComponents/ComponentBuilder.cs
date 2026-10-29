@@ -123,19 +123,20 @@ public static partial class ComponentBuilder
         BuildSimpleComponent(
             DataComponentType.UseRemainder,
             "minecraft:use_remainder",
-            (writer, value) => writer.WriteRequiredItemStack(value!),
-            reader => reader.ReadRequiredItemStack(),
+            (writer, value) => writer.WriteItemStackTemplate(value!),
+            reader => reader.ReadItemStackTemplate(),
             ComponentCopies.Stack);
 
     /// <summary>
     /// Marks this item as damage resistant.
     /// The client won't render the item as being on-fire if this component is present.
     /// </summary>
-    public static SimpleDataComponent<string> DamageResistant =>
+    public static SimpleDataComponent<IdSet> DamageResistant =>
         BuildSimpleComponent(
             DataComponentType.DamageResistant,
             "minecraft:damage_resistant",
-            (writer, value) => writer.WriteString(value), reader => reader.ReadString());
+            (writer, value) => IdSet.Write(value, writer, "minecraft:damage_type"),
+            reader => IdSet.Read(reader, "minecraft:damage_type"));
 
     public static SimpleDataComponent<int> Enchantable =>
         BuildSimpleComponent(
@@ -239,16 +240,16 @@ public static partial class ComponentBuilder
         BuildSimpleComponent(
             DataComponentType.ChargedProjectiles,
             "minecraft:charged_projectiles",
-            (writer, values) => writer.WriteLengthPrefixedArray(writer.WriteRequiredItemStack, values.AsSpan()),
-            reader => reader.ReadLengthPrefixedArray(() => reader.ReadRequiredItemStack()).ToImmutableArray(),
+            (writer, values) => writer.WriteLengthPrefixedArray(writer.WriteItemStackTemplate, values.AsSpan()),
+            reader => reader.ReadLengthPrefixedArray(reader.ReadItemStackTemplate).ToImmutableArray(),
             ComponentCopies.Stacks);
 
     public static SimpleDataComponent<ImmutableArray<ItemStack>> BundleContents =>
         BuildSimpleComponent(
             DataComponentType.BundleContents,
             "minecraft:bundle_contents",
-            (writer, values) => writer.WriteLengthPrefixedArray(writer.WriteRequiredItemStack, values.AsSpan()),
-            reader => reader.ReadLengthPrefixedArray(() => reader.ReadRequiredItemStack()).ToImmutableArray(),
+            (writer, values) => writer.WriteLengthPrefixedArray(writer.WriteItemStackTemplate, values.AsSpan()),
+            reader => reader.ReadLengthPrefixedArray(reader.ReadItemStackTemplate).ToImmutableArray(),
             ComponentCopies.Stacks);
 
     public static SimpleDataComponent<ImmutableArray<SuspiciousStewEffect>> SuspiciousStewEffects =>
@@ -360,19 +361,36 @@ public static partial class ComponentBuilder
             (writer, value) => writer.WriteInt(value),
             reader => reader.ReadInt());
 
-    public static SimpleDataComponent<ImmutableArray<Item>> PotDecorations =>
-        BuildSimpleComponent(
-            DataComponentType.PotDecorations,
-            "minecraft:pot_decorations",
-            (writer, values) => writer.WriteLengthPrefixedArray((value) => Item.Write(value, writer), values.AsSpan()),
-            reader => reader.ReadLengthPrefixedArray(() => Item.Read(reader)).ToImmutableArray());
+    /// <summary>Back, left, right and front templates; absent faces are null.</summary>
+    public static SimpleDataComponent<ImmutableArray<ItemStack>> PotDecorations =>
+        BuildSimpleComponent(DataComponentType.PotDecorations, "minecraft:pot_decorations",
+            (writer, values) =>
+            {
+                if (values.Length != 4)
+                    throw new ArgumentException("Pot decorations require four faces.", nameof(values));
+                foreach (var value in values)
+                {
+                    writer.WriteBoolean(value is not null);
+                    if (value is not null)
+                        writer.WriteItemStackTemplate(value);
+                }
+            }, reader => Enumerable.Range(0, 4)
+                .Select(_ => reader.ReadBoolean() ? reader.ReadItemStackTemplate() : null!)
+                .ToImmutableArray(), ComponentCopies.Stacks);
 
     public static SimpleDataComponent<ImmutableArray<ItemStack>> Container =>
         BuildSimpleComponent(
             DataComponentType.Container,
             "minecraft:container",
-            (writer, values) => writer.WriteLengthPrefixedArray(writer.WriteItemStack, values.AsSpan()),
-             reader => reader.ReadLengthPrefixedArray(() => reader.ReadItemStack()).ToImmutableArray(),
+            (writer, values) => writer.WriteLengthPrefixedArray(value =>
+            {
+                var present = value is not null && !value.IsAir && value.Count > 0;
+                writer.WriteBoolean(present);
+                if (present)
+                    writer.WriteItemStackTemplate(value!);
+            }, values.AsSpan()),
+            reader => reader.ReadLengthPrefixedArray(() => reader.ReadBoolean()
+                ? reader.ReadItemStackTemplate() : null!).ToImmutableArray(),
             ComponentCopies.Stacks);
 
     public static SimpleDataComponent<ImmutableArray<BlockStateProperty>> BlockState =>

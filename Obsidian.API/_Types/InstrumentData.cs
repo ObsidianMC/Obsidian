@@ -15,20 +15,17 @@ public sealed record class InstrumentData : INetworkSerializable<InstrumentData>
 
     public float Range { get; init; }
 
+    public int DurabilityDamage { get; init; }
+
     public ChatMessage Description
     {
         get => Inventory.DataComponents.ComponentCopies.Chat(field)!;
         init => field = Inventory.DataComponents.ComponentCopies.Chat(value)!;
     }
 
-    // Vanilla's InstrumentComponent: an either (true = holder, false = resource key) of an instrument holder, which is
-    // its registry id + 1, or 0 followed by the instrument. The registry id indexes the instrument registry sent during
-    // configuration, in InstrumentsRegistry order.
+    // Instrument holders use registry ID + 1, or zero followed by the inline definition.
     public static InstrumentData Read(INetStreamReader reader)
     {
-        if (!reader.ReadBoolean())
-            return FromRegistry(reader.ReadString());
-
         var holder = reader.ReadVarInt();
         if (holder > 0)
             return FromRegistry(InstrumentsRegistry.All[holder - 1].Identifier);
@@ -42,14 +39,13 @@ public sealed record class InstrumentData : INetworkSerializable<InstrumentData>
                 : new SoundEvent { ResourceLocation = string.Empty, RegistryId = soundHolder - 1 },
             UseDuration = reader.ReadSingle(),
             Range = reader.ReadSingle(),
+            DurabilityDamage = reader.ReadVarInt(),
             Description = reader.ReadChat()
         };
     }
 
     public static void Write(InstrumentData value, INetStreamWriter writer)
     {
-        writer.WriteBoolean(true);
-
         var registered = InstrumentsRegistry.All.FirstOrDefault(instrument => instrument.Identifier == value.Identifier);
         if (registered is not null)
         {
@@ -70,6 +66,7 @@ public sealed record class InstrumentData : INetworkSerializable<InstrumentData>
 
         writer.WriteSingle(value.UseDuration);
         writer.WriteSingle(value.Range);
+        writer.WriteVarInt(value.DurabilityDamage);
         writer.WriteChat(value.Description);
     }
 

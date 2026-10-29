@@ -63,6 +63,9 @@ public interface INetStreamWriter : INetStream
     /// <summary>Writes a villager trade like vanilla's <c>MerchantOffer</c> stream codec.</summary>
     public void WriteMerchantOffer(TradeEntry value);
     public void WriteRequiredItemStack(ItemStack itemStack);
+
+    /// <summary>Writes a nonempty item template (item ID, count, component patch), used by nested components.</summary>
+    public void WriteItemStackTemplate(ItemStack itemStack);
     public void WriteItemStackList(params ReadOnlySpan<ItemStack?> values);
     public void WriteDateTimeOffset(DateTimeOffset date);
     public void WriteSoundEvent(SoundEvent soundEvent);

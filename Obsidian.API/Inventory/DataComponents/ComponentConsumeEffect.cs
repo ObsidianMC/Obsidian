@@ -2,7 +2,7 @@ using Obsidian.API.Effects;
 
 namespace Obsidian.API.Inventory.DataComponents;
 
-/// <summary>The five 1.21.11 consume-effect payloads, selected by their registry ID.</summary>
+/// <summary>The five 26.3 consume-effect payloads, selected by their registry ID.</summary>
 public sealed record ComponentConsumeEffect : IConsumeEffect
 {
     private static readonly string[] Names = ["apply_effects", "remove_effects", "clear_all_effects", "teleport_randomly", "play_sound"];
@@ -38,6 +38,14 @@ public sealed record ComponentConsumeEffect : IConsumeEffect
     {
         get => this.diameter;
         init => this.diameter = value;
+    }
+
+    private bool directionalParticles = true;
+
+    public bool DirectionalParticles
+    {
+        get => this.directionalParticles;
+        init => this.directionalParticles = value;
     }
 
     private SoundEvent sound;
@@ -94,6 +102,7 @@ public sealed record ComponentConsumeEffect : IConsumeEffect
                 break;
             case 3:
                 this.diameter = reader.ReadSingle();
+                this.directionalParticles = reader.ReadBoolean();
                 break;
             case 4:
                 this.sound = ComponentValueCodecs.ReadSoundHolder(reader);
@@ -119,6 +128,7 @@ public sealed record ComponentConsumeEffect : IConsumeEffect
                 break;
             case 3:
                 writer.WriteSingle(this.Diameter);
+                writer.WriteBoolean(this.DirectionalParticles);
                 break;
             case 4:
                 ComponentValueCodecs.WriteSoundHolder(this.Sound, writer);

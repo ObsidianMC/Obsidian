@@ -38,6 +38,7 @@ public partial class Extensions
                 break;
             case 3:
                 tag.Add(new NbtTag<float>("diameter", effect.Diameter));
+                tag.Add(new NbtTag<bool>("directional_particles", effect.DirectionalParticles));
                 break;
             case 4:
                 tag.Add(SoundToNbt("sound", effect.Sound));
@@ -66,7 +67,8 @@ public partial class Extensions
         "minecraft:teleport_randomly" => new ComponentConsumeEffect
         {
             Id = 3,
-            Diameter = SavedFloat(tag, "diameter", 16)
+            Diameter = SavedFloat(tag, "diameter", 16),
+            DirectionalParticles = SavedBool(tag, "directional_particles", true)
         },
         "minecraft:play_sound" => new ComponentConsumeEffect
         {
@@ -127,6 +129,7 @@ public partial class Extensions
             SoundToNbt("sound_event", instrument.Value.SoundEvent),
             new NbtTag<float>("use_duration", instrument.Value.UseDuration),
             new NbtTag<float>("range", instrument.Value.Range),
+            new NbtTag<int>("durability_damage", instrument.Value.DurabilityDamage),
             instrument.Value.Description.ToNbt("description")
         };
     }
@@ -139,7 +142,6 @@ public partial class Extensions
             return new InstrumentDataComponent
             {
                 RegistryId = registered?.Id,
-                IsResourceKey = registered is null,
                 Value = registered is not null ? registered.ToInstrumentData() : new() { Identifier = name.Value }
             };
         }
@@ -152,6 +154,7 @@ public partial class Extensions
                 SoundEvent = SoundFromNbt(value["sound_event"]),
                 UseDuration = value.GetFloat("use_duration"),
                 Range = value.GetFloat("range"),
+                DurabilityDamage = SavedInt(value, "durability_damage", 0),
                 Description = value["description"].TextFromNbt()!
             }
         };

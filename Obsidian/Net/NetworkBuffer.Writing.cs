@@ -416,7 +416,9 @@ public partial class NetworkBuffer : INetStreamWriter
         this.Write(encoded.data.AsSpan(0, encoded.Offset));
     }
 
-    private void WriteItemStackPatch(ItemStack? value, bool delimitedComponents)
+    public void WriteItemStackTemplate(ItemStack value) => this.WriteItemStackPatch(value, false, true);
+
+    private void WriteItemStackPatch(ItemStack? value, bool delimitedComponents, bool template = false)
     {
         value ??= ItemStack.Air;
 
@@ -426,12 +428,13 @@ public partial class NetworkBuffer : INetStreamWriter
         var itemId = this.RemoteItemId(item.Id);
         if (value.Count <= 0 || value.IsAir || itemId < 0)
         {
+            if (template)
+                throw new InvalidDataException("Expected an available, nonempty item template.");
             this.WriteVarInt(0);
             return;
         }
-        WriteVarInt(value.Count);
-
-        WriteVarInt(itemId);
+        WriteVarInt(template ? itemId : value.Count);
+        WriteVarInt(template ? value.Count : itemId);
 
         // Like vanilla's DataComponentPatch: only the components set on the stack. The client knows the item's defaults,
         // and Obsidian's placeholders for them (e.g. a max stack size of 64) would override them.

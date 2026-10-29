@@ -69,6 +69,16 @@ public static partial class ComponentBuilder
         DataComponentType.BlockEntityData => BlockEntityData,
         DataComponentType.Bees => Bees,
         DataComponentType.Recipes => Recipes,
+        DataComponentType.AdditionalTradeCost => AdditionalTradeCost,
+        DataComponentType.VillagerFood => VillagerFood,
+        DataComponentType.Dye => Dye,
+        DataComponentType.CushionColor => CushionColor,
+        DataComponentType.Waxed => Waxed,
+        DataComponentType.Compostable => Compostable,
+        DataComponentType.MobVisibility => MobVisibility,
+        DataComponentType.CookingFuel => CookingFuel,
+        DataComponentType.BrewingFuel => BrewingFuel,
+        DataComponentType.SulfurCubeContent => SulfurCubeContent,
         _ => null
     };
 }

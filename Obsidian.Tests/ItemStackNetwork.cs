@@ -11,22 +11,29 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Item stacks as Obsidian sends them, against vanilla 1.21.11's <c>ItemStack.OPTIONAL_STREAM_CODEC</c> encoding of the
+/// Item stacks as Obsidian sends them, against vanilla 26.3's <c>ItemStack.OPTIONAL_STREAM_CODEC</c> encoding of the
 /// same stacks (with the enchantment and instrument registries in the order Obsidian sends them).
 /// </summary>
 public class ItemStackNetwork
 {
-    public static TheoryData<string, string> Stacks => new()
+    public static TheoryData<string, string> Stacks
     {
-        // Obsidian's placeholder components (max stack size, rarity, ...) would override the item's own on the client.
-        { "diamond_sword", "01a8070000" },
-        { "enchanted_book", "01dc09010029012105" },
-        { "goat_horn", "01c80a01003b0105" },
-        { "splash_potion", "038b0a01003101050100123456010001c8010001010001057761746572" },
-        { "map", "01cf090100090a0800097472616e736c617465001a66696c6c65645f6d61702e6275726965645f747265617375726500" }
-    };
+        get
+        {
+            using var fixture = ItemComponentWire.Fixture();
+            var rows = new TheoryData<string, string>();
+            foreach (var row in fixture.RootElement.GetProperty("cases").EnumerateArray())
+            {
+                var name = row.GetProperty("name").GetString()!;
+                if (name.StartsWith("network_", StringComparison.Ordinal))
+                    rows.Add(name["network_".Length..], row.GetProperty("wire").GetString()!);
+            }
+            Assert.Equal(5, rows.Count);
+            return rows;
+        }
+    }
 
-    [Theory(Skip = "Phase 2: the expected encodings are 1.21.11's, with its item and component ids")]
+    [Theory]
     [MemberData(nameof(Stacks))]
     public void StacksMatchVanilla(string stack, string expected) => Assert.Equal(expected, Encode(Create(stack)));
 
@@ -39,8 +46,9 @@ public class ItemStackNetwork
                 EnchantmentHelper.Enchant(book, EnchantmentsRegistry.Sharpness, 5);
                 return book;
             case "goat_horn":
+                // Use a nondefault instrument so vanilla retains the explicit component patch.
                 return new ItemStack(ItemsRegistry.GoatHorn, 1,
-                    ComponentBuilder.Instrument with { Value = InstrumentsRegistry.PonderGoatHorn.ToInstrumentData() });
+                    ComponentBuilder.Instrument with { Value = InstrumentsRegistry.SingGoatHorn.ToInstrumentData() });
             case "splash_potion":
                 return new ItemStack(ItemsRegistry.SplashPotion, 3, new PotionContentsDataComponent
                 {

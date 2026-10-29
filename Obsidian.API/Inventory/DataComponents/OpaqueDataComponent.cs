@@ -14,7 +14,8 @@ public sealed record OpaqueDataComponent(DataComponentType ComponentType, Immuta
             return plugin.Identifier;
 
         var name = type.ToString().ToSnakeCase();
-        if ((int)type >= 79)
+        if (type is >= DataComponentType.VillagerVariant and <= DataComponentType.ShulkerColor
+            or DataComponentType.CushionColor)
         {
             var split = name.IndexOf('_');
             if (type == DataComponentType.TropicalFishPattern || type == DataComponentType.TropicalFishBaseColor
