@@ -61,7 +61,9 @@ public sealed partial class Server
             quickActions.Add(id);
         }
 
-        var tags = TagsRegistry.GetCategories();
+        var tags = TagsRegistry.GetCategories()
+            .Where(category => VanillaSyncedRegistries.IsKnownToClients($"minecraft:{category.Key}"))
+            .ToDictionary();
         var dialogTags = tags.GetValueOrDefault("dialog") ?? [];
         tags["dialog"] = [.. dialogTags.Where(x => x.Name is not ("quick_actions" or "pause_screen_additions")),
             MergeTag("quick_actions", quickActions), MergeTag("pause_screen_additions", pauseScreen)];

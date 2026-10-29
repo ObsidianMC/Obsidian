@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Nodes;
+using System.Threading.Tasks;
 using Obsidian.API;
 using Obsidian.API.Registries;
 using Obsidian.Entities;
@@ -11,6 +12,7 @@ using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Login.Clientbound;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
+using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
 using Xunit;
 
@@ -67,6 +69,18 @@ public class JoinPayloads
         }
 
         Assert.Equal(expected, actual);
+    }
+
+    // Clients disconnect when configuration finishes if a tag's registry isn't one they have, like villager_trade.
+    [Fact]
+    public async Task TagsAreOnlyForClientRegistries()
+    {
+        await using var context = TestServerFactory.CreateServer($"join-tags-{Guid.NewGuid():N}");
+        var registries = context.Server.CreateDialogConfiguration().Tags.Keys;
+
+        Assert.DoesNotContain("villager_trade", registries);
+        Assert.Contains("item", registries);
+        Assert.Contains("worldgen/biome", registries);
     }
 
     // Plugins' entries keep their ids for the life of the process, so registries other tests added to have those after
