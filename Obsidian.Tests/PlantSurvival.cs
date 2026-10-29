@@ -33,49 +33,31 @@ public sealed class PlantSurvival
         Assert.Same(ShapeUpdateBehaviors.BambooStalkBlock, BlocksRegistry.GetShapeUpdateBehavior(BlockIds.Bamboo));
     }
 
-    [Fact(DisplayName = "Breaking the bottom sugar cane breaks the stalks above it", Timeout = TestServerFactory.TestTimeout)]
-    public async Task BreakingTheBottomSugarCaneBreaksTheStack()
+    [Theory(DisplayName = "Breaking the bottom of a stack breaks every plant above it", Timeout = TestServerFactory.TestTimeout)]
+    [InlineData(BlockIds.SugarCane, 3, true)]
+    [InlineData(BlockIds.Bamboo, 3, false)]
+    [InlineData(BlockIds.Cactus, 2, false)]
+    public async Task BreakingTheBottomBreaksTheStack(int plant, int height, bool needsWater)
     {
-        await using var context = TestServerFactory.CreateServer($"plant-cane-{Guid.NewGuid():N}");
+        await using var context = TestServerFactory.CreateServer($"plant-stack-{Guid.NewGuid():N}");
         var world = context.World;
         AddChunks(world);
         // Chunks only tick while something simulates them; a chunk ticket keeps this one ticking.
         using var ticket = world.AddChunkTicket(0, 0);
 
-        // Sand with water beside it: the bottom stalk can stand there.
+        // Sand (with water beside it for sugar cane): the bottom plant can stand there.
         Held(world).SetBlock(Base + Vector.Down, BlocksRegistry.GetDefault(BlockIds.Sand));
-        Held(world).SetBlock(Base + Vector.Down + Vector.East, BlocksRegistry.GetDefault(BlockIds.Water));
-        for (var height = 0; height < 3; height++)
-            Held(world).SetBlock(Base + new Vector(0, height, 0), BlocksRegistry.GetDefault(BlockIds.SugarCane));
+        if (needsWater)
+            Held(world).SetBlock(Base + Vector.Down + Vector.East, BlocksRegistry.GetDefault(BlockIds.Water));
+        for (var y = 0; y < height; y++)
+            Held(world).SetBlock(Base + new Vector(0, y, 0), BlocksRegistry.GetDefault(plant));
 
         Assert.True(world.BlockUpdates.RemoveBlock(Base));
         for (var tick = 0; tick < 3; tick++)
             await world.DoWorldTickAsync();
 
-        Assert.True(world.BlockUpdates.GetBlock(Base).IsAir);
-        Assert.True(world.BlockUpdates.GetBlock(Base + Vector.Up).IsAir);
-        Assert.True(world.BlockUpdates.GetBlock(Base + new Vector(0, 2, 0)).IsAir);
-    }
-
-    [Fact(DisplayName = "Breaking the bottom bamboo breaks the stalks above it", Timeout = TestServerFactory.TestTimeout)]
-    public async Task BreakingTheBottomBambooBreaksTheStack()
-    {
-        await using var context = TestServerFactory.CreateServer($"plant-bamboo-{Guid.NewGuid():N}");
-        var world = context.World;
-        AddChunks(world);
-        using var ticket = world.AddChunkTicket(0, 0);
-
-        Held(world).SetBlock(Base + Vector.Down, BlocksRegistry.GetDefault(BlockIds.Sand));
-        for (var height = 0; height < 3; height++)
-            Held(world).SetBlock(Base + new Vector(0, height, 0), BlocksRegistry.GetDefault(BlockIds.Bamboo));
-
-        Assert.True(world.BlockUpdates.RemoveBlock(Base));
-        for (var tick = 0; tick < 3; tick++)
-            await world.DoWorldTickAsync();
-
-        Assert.True(world.BlockUpdates.GetBlock(Base).IsAir);
-        Assert.True(world.BlockUpdates.GetBlock(Base + Vector.Up).IsAir);
-        Assert.True(world.BlockUpdates.GetBlock(Base + new Vector(0, 2, 0)).IsAir);
+        for (var y = 0; y < height; y++)
+            Assert.True(world.BlockUpdates.GetBlock(Base + new Vector(0, y, 0)).IsAir);
     }
 
     [Fact(DisplayName = "A sugar cane stalk on sand beside water stays when its neighbours change", Timeout = TestServerFactory.TestTimeout)]
@@ -96,25 +78,6 @@ public sealed class PlantSurvival
 
         Assert.Equal(BlockIds.SugarCane, world.BlockUpdates.GetBlock(Base).RegistryId);
         Assert.Equal(BlockIds.SugarCane, world.BlockUpdates.GetBlock(Base + Vector.Up).RegistryId);
-    }
-
-    [Fact(DisplayName = "Breaking the bottom cactus breaks the cactus above it", Timeout = TestServerFactory.TestTimeout)]
-    public async Task BreakingTheBottomCactusBreaksTheStack()
-    {
-        await using var context = TestServerFactory.CreateServer($"plant-cactus-{Guid.NewGuid():N}");
-        var world = context.World;
-        AddChunks(world);
-        using var ticket = world.AddChunkTicket(0, 0);
-
-        Held(world).SetBlock(Base + Vector.Down, BlocksRegistry.GetDefault(BlockIds.Sand));
-        for (var height = 0; height < 2; height++)
-            Held(world).SetBlock(Base + new Vector(0, height, 0), BlocksRegistry.GetDefault(BlockIds.Cactus));
-
-        Assert.True(world.BlockUpdates.RemoveBlock(Base));
-        for (var tick = 0; tick < 3; tick++)
-            await world.DoWorldTickAsync();
-
-        Assert.True(world.BlockUpdates.GetBlock(Base + Vector.Up).IsAir);
     }
 
     [Fact(DisplayName = "Bamboo placed on grass becomes a sapling, and on bamboo a stalk")]

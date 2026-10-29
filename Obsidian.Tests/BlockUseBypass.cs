@@ -7,25 +7,18 @@ namespace Obsidian.Tests;
 
 public class BlockUseBypassTests
 {
-    [Fact]
-    public void SneakingWithAnItemInEitherHandBypassesBlockUse()
+    // Vanilla: sneaking with an item in either hand skips the block's use, but with nothing in hand (or an empty
+    // stack) a lever still toggles.
+    [Theory]
+    [InlineData(true, 1, null, true)]
+    [InlineData(true, null, 1, true)]
+    [InlineData(true, null, null, false)]
+    [InlineData(true, 0, null, false)]
+    [InlineData(false, 1, null, false)]
+    public void SneakingWithAnItemBypassesBlockUse(bool sneaking, int? mainHand, int? offHand, bool bypasses)
     {
-        var stone = new ItemStack(ItemsRegistry.Apple, 1);
-        Assert.True(UseItemOnPacket.BypassesBlockUse(true, stone, null));
-        Assert.True(UseItemOnPacket.BypassesBlockUse(true, null, stone));
-    }
+        Assert.Equal(bypasses, UseItemOnPacket.BypassesBlockUse(sneaking, Apples(mainHand), Apples(offHand)));
 
-    [Fact]
-    public void SneakingWithEmptyHandsStillUsesTheBlock()
-    {
-        // Vanilla: a lever toggles when sneaking with nothing in hand.
-        Assert.False(UseItemOnPacket.BypassesBlockUse(true, null, null));
-        Assert.False(UseItemOnPacket.BypassesBlockUse(true, new ItemStack(ItemsRegistry.Apple, 0), null));
-    }
-
-    [Fact]
-    public void NotSneakingNeverBypassesBlockUse()
-    {
-        Assert.False(UseItemOnPacket.BypassesBlockUse(false, new ItemStack(ItemsRegistry.Apple, 1), null));
+        static ItemStack Apples(int? count) => count is int value ? new ItemStack(ItemsRegistry.Apple, value) : null;
     }
 }

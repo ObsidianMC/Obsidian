@@ -40,9 +40,14 @@ public sealed class MobSwimming
         Assert.Equal(0, mob.Motion.Z);
     }
 
+    // Vanilla constructors of Goat, Sniffer, Armadillo and Warden call setCanFloat(true) as well.
     [Theory]
     [InlineData(EntityType.Chicken, true)]
     [InlineData(EntityType.Turtle, false)]
+    [InlineData(EntityType.Goat, true)]
+    [InlineData(EntityType.Sniffer, true)]
+    [InlineData(EntityType.Armadillo, true)]
+    [InlineData(EntityType.Warden, true)]
     public async Task FloatGoalOwnsNavigatorCanFloat(EntityType type, bool canFloat)
     {
         await using var context = TestServerFactory.CreateServer($"can-float-{Guid.NewGuid():N}");
@@ -101,14 +106,21 @@ public sealed class MobSwimming
         chicken.InitializeAi(false);
         var navigator = Assert.IsType<Navigator>(chicken.Navigator);
         var pathfinder = Assert.IsAssignableFrom<IPathfinder>(navigator);
+        var target = new VectorD(11.5, 67, 8.5);
 
-        var path = pathfinder.FindPath(new VectorD(11.5, 67, 8.5));
+        var path = pathfinder.FindPath(target);
 
         Assert.NotNull(path);
         Assert.True(path.ReachedTarget);
-        Assert.Equal(new VectorD(11.5, 67, 8.5), path.Nodes[^1]);
+        Assert.Equal(target, path.Nodes[^1]);
         Assert.False(navigator.IsNavigating);
         Assert.Throws<ArgumentOutOfRangeException>(() => pathfinder.FindPath(new VectorD(double.NaN, 67, 8.5)));
+
+        // A plugin body standing in for the chicken gets the same path.
+        var fromBody = PathSearch.For(new ChickenBody(chicken, navigator)).FindPath(target);
+        Assert.NotNull(fromBody);
+        Assert.Equal(path.Nodes, fromBody.Nodes);
+        Assert.Equal(path.ReachedTarget, fromBody.ReachedTarget);
     }
 
     [Fact]
@@ -137,29 +149,6 @@ public sealed class MobSwimming
         public bool InWater => chicken.InWater;
         public float Malus(PathNodeType type) => chicken.GetPathfindingMalus(PathNodeMapping.ToInternal(type));
         public float NodeCost(Vector feetPosition, IBlock feet, IBlock floor) => chicken.PathBody.NodeCost(feetPosition, feet, floor);
-    }
-
-    [Fact]
-    public async Task PathSearchForPluginBodyMatchesTheMobsPath()
-    {
-        await using var context = TestServerFactory.CreateServer($"path-body-{Guid.NewGuid():N}");
-        var chunk = CreatePool();
-        for (var x = 8; x <= 13; x++)
-            for (var z = 2; z <= 13; z++)
-                chunk.SetBlock(x, 66, z, BlocksRegistry.Stone);
-        context.World.LoadRegionByChunk(0, 0).SetChunk(chunk);
-        var chicken = new Chicken { EntityId = 1, Level = context.World, Position = new VectorD(6.5, 66.7, 8.5) };
-        chicken.InitializeAi(false);
-        var navigator = Assert.IsType<Navigator>(chicken.Navigator);
-        var target = new VectorD(11.5, 67, 8.5);
-
-        var fromMob = Assert.IsAssignableFrom<IPathfinder>(navigator).FindPath(target);
-        var fromBody = PathSearch.For(new ChickenBody(chicken, navigator)).FindPath(target);
-
-        Assert.NotNull(fromMob);
-        Assert.NotNull(fromBody);
-        Assert.Equal(fromMob.Nodes, fromBody.Nodes);
-        Assert.Equal(fromMob.ReachedTarget, fromBody.ReachedTarget);
     }
 
     [Fact]
@@ -282,20 +271,6 @@ public sealed class MobSwimming
         Assert.Equal(4f, Obsidian.Entities.AI.PathTypeMalus.Get(Obsidian.Entities.AI.PathType.BREACH));
         Assert.Equal(-1f, Obsidian.Entities.AI.PathTypeMalus.Get(Obsidian.Entities.AI.PathType.LAVA));
         Assert.Equal(0f, Obsidian.Entities.AI.PathTypeMalus.Get(Obsidian.Entities.AI.PathType.OPEN));
-    }
-
-    [Theory]
-    [InlineData(EntityType.Goat)]
-    [InlineData(EntityType.Sniffer)]
-    [InlineData(EntityType.Armadillo)]
-    [InlineData(EntityType.Warden)]
-    public async Task VanillaCanFloatSpeciesEnableNavigatorCanFloat(EntityType type)
-    {
-        // Vanilla constructors of Goat, Sniffer, Armadillo and Warden call setCanFloat(true).
-        await using var context = TestServerFactory.CreateServer($"canfloat-{Guid.NewGuid():N}");
-        var mob = Obsidian.Entities.Factories.EntitySpawner.CreateMob(context.World, type)!;
-        mob.InitializeAi(false);
-        Assert.True(Assert.IsType<Navigator>(mob.Navigator).CanFloat);
     }
 
     [Fact]

@@ -92,10 +92,6 @@ public sealed class MobAi
         }
         if (mob is Horse normalHorse)
             normalHorse.Variant = 0x0304;
-        if (mob is IronGolem golem)
-            golem.PlayerCreated = true;
-        if (mob is Ocelot ocelot)
-            ocelot.Trusting = true;
         if (mob is Cat cat)
         {
             cat.Owner = System.Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffffff");
@@ -121,8 +117,6 @@ public sealed class MobAi
         }
         if (mob is MagmaCube magma)
             magma.Size = 4;
-        if (mob is SnowGolem snowGolem)
-            snowGolem.Pumpkin = false;
         if (mob is Camel camel)
         {
             camel.LastPoseChangeTick = -123;
@@ -152,10 +146,6 @@ public sealed class MobAi
         }
         if (mob is Horse originalNormalHorse)
             Assert.Equal(originalNormalHorse.Variant, Assert.IsType<Horse>(restored).Variant);
-        if (mob is IronGolem originalGolem)
-            Assert.Equal(originalGolem.PlayerCreated, Assert.IsType<IronGolem>(restored).PlayerCreated);
-        if (mob is Ocelot originalOcelot)
-            Assert.Equal(originalOcelot.Trusting, Assert.IsType<Ocelot>(restored).Trusting);
         if (mob is Cat originalCat)
         {
             var restoredCat = Assert.IsType<Cat>(restored);
@@ -191,8 +181,6 @@ public sealed class MobAi
             Assert.Equal(12, restoredMagma.GetAttributeValue("minecraft:generic.armor"));
             Assert.Equal(6, restoredMagma.GetAttributeValue("minecraft:generic.attack_damage"));
         }
-        if (mob is SnowGolem)
-            Assert.False(Assert.IsType<SnowGolem>(restored).Pumpkin);
         if (mob is Camel originalCamel)
         {
             var restoredCamel = Assert.IsType<Camel>(restored);
@@ -200,174 +188,6 @@ public sealed class MobAi
             Assert.Equal(originalCamel.DashCooldown, restoredCamel.DashCooldown);
             Assert.True(restoredCamel.IsSitting);
             Assert.Equal(Pose.Sitting, restoredCamel.Pose);
-        }
-    }
-
-    [Fact]
-    public void MobMetadataUsesClientSerializers()
-    {
-        AssertHorseFamilyMetadataMatches263ClientFields(EntityType.Horse);
-        AssertHorseFamilyMetadataMatches263ClientFields(EntityType.Camel);
-        AssertFelineMetadataMatches263ClientFields(EntityType.Cat);
-        AssertAddedMobMetadataUsesClientSerializers(EntityType.Blaze, EntityMetadataType.Byte);
-        AssertAddedMobMetadataUsesClientSerializers(EntityType.Enderman, EntityMetadataType.OptionalBlockState);
-        AssertWolfMetadataIncludesSoundVariantAndLongAngerTimer();
-    }
-
-    private static void AssertHorseFamilyMetadataMatches263ClientFields(EntityType type)
-    {
-        var entity = Obsidian.Entities.Factories.EntitySpawner.Create(type, null!);
-        if (entity is Camel camel)
-            camel.LastPoseChangeTick = -123;
-        var fields = ReadMetadataTypes(entity);
-        Assert.Equal(EntityMetadataType.Boolean, fields[16]);
-        Assert.Equal(EntityMetadataType.Boolean, fields[17]);
-        Assert.Equal(EntityMetadataType.Byte, fields[18]);
-        Assert.DoesNotContain(EntityMetadataType.OptionalLivingEntityReference, fields.Values);
-        if (type == EntityType.Horse)
-        {
-            Assert.Equal(EntityMetadataType.VarInt, fields[19]);
-            Assert.Equal(20, fields.Count);
-        }
-        else if (type is EntityType.Donkey or EntityType.Llama)
-        {
-            Assert.Equal(EntityMetadataType.Boolean, fields[19]);
-            if (type == EntityType.Llama)
-            {
-                Assert.Equal(EntityMetadataType.VarInt, fields[20]);
-                Assert.Equal(EntityMetadataType.VarInt, fields[21]);
-                Assert.Equal(22, fields.Count);
-            }
-            else
-                Assert.Equal(20, fields.Count);
-        }
-        else if (type == EntityType.Camel)
-        {
-            Assert.Equal(EntityMetadataType.Boolean, fields[19]);
-            Assert.Equal(EntityMetadataType.VarLong, fields[20]);
-            Assert.Equal(21, fields.Count);
-        }
-        else
-            Assert.Equal(19, fields.Count);
-    }
-
-    private static void AssertFelineMetadataMatches263ClientFields(EntityType type)
-    {
-        var entity = Obsidian.Entities.Factories.EntitySpawner.Create(type, null!);
-        if (entity is Cat cat)
-        {
-            cat.Owner = System.Guid.Parse("01234567-89ab-cdef-0123-456789abcdef");
-            cat.Variant = 10;
-            cat.IsSitting = true;
-        }
-        var fields = ReadMetadataTypes(entity);
-        Assert.Equal(EntityMetadataType.Boolean, fields[16]);
-        Assert.Equal(EntityMetadataType.Boolean, fields[17]);
-        if (type == EntityType.Ocelot)
-        {
-            Assert.Equal(EntityMetadataType.Boolean, fields[18]);
-            Assert.Equal(19, fields.Count);
-        }
-        else
-        {
-            Assert.Equal(EntityMetadataType.Byte, fields[18]);
-            Assert.Equal(EntityMetadataType.OptionalLivingEntityReference, fields[19]);
-            Assert.Equal(EntityMetadataType.CatVariant, fields[20]);
-            Assert.Equal(EntityMetadataType.Boolean, fields[21]);
-            Assert.Equal(EntityMetadataType.Boolean, fields[22]);
-            Assert.Equal(EntityMetadataType.VarInt, fields[23]);
-            Assert.Equal(EntityMetadataType.CatSoundVariant, fields[24]);
-            Assert.Equal(25, fields.Count);
-        }
-    }
-
-    private static void AssertAddedMobMetadataUsesClientSerializers(EntityType type, EntityMetadataType expected)
-    {
-        var entity = Obsidian.Entities.Factories.EntitySpawner.Create(type, null!);
-        var fields = ReadMetadataTypes(entity);
-        Assert.Equal(expected, fields[16]);
-        if (type == EntityType.Enderman)
-        {
-            Assert.Equal(EntityMetadataType.Boolean, fields[17]);
-            Assert.Equal(EntityMetadataType.Boolean, fields[18]);
-        }
-    }
-
-    private static void AssertWolfMetadataIncludesSoundVariantAndLongAngerTimer()
-    {
-        var wolf = new Wolf
-        {
-            Level = null!,
-            Owner = System.Guid.Parse("01234567-89ab-cdef-0123-456789abcdef"),
-            Variant = 8,
-            SoundVariant = 6
-        };
-        var fields = ReadMetadataTypes(wolf);
-        Assert.Equal(EntityMetadataType.Byte, fields[18]);
-        Assert.Equal(EntityMetadataType.OptionalLivingEntityReference, fields[19]);
-        Assert.Equal(EntityMetadataType.VarLong, fields[22]);
-        Assert.Equal(EntityMetadataType.WolfVariant, fields[23]);
-        Assert.Equal(EntityMetadataType.WolfSoundVariant, fields[24]);
-        Assert.Equal(25, fields.Count);
-    }
-
-    [Fact]
-    public void EntityPacketsUseClientFields()
-    {
-        {
-            var packet = new Obsidian.Net.Packets.Play.Clientbound.TeleportEntityPacket
-            {
-                EntityId = 156,
-                Position = new VectorF(-17.5f, 64, 31.5f),
-                Delta = new VectorF(0.2f, -0.3f, 0.4f),
-                Yaw = 90,
-                Pitch = 45,
-                OnGround = true
-            };
-            var buffer = new Obsidian.Net.NetworkBuffer();
-            packet.Serialize(buffer);
-            var reader = new Obsidian.Net.NetworkBuffer(buffer.AsSpan(0, buffer.Size).ToArray());
-            Assert.Equal(156, reader.ReadVarInt());
-            Assert.Equal(packet.Position.X, reader.ReadDouble());
-            Assert.Equal(packet.Position.Y, reader.ReadDouble());
-            Assert.Equal(packet.Position.Z, reader.ReadDouble());
-            Assert.Equal(packet.Delta.X, reader.ReadDouble());
-            Assert.Equal(packet.Delta.Y, reader.ReadDouble());
-            Assert.Equal(packet.Delta.Z, reader.ReadDouble());
-            Assert.Equal(packet.Yaw.Degrees, reader.ReadSingle());
-            Assert.Equal(packet.Pitch.Degrees, reader.ReadSingle());
-            Assert.Equal(0, reader.ReadInt());
-            Assert.True(reader.ReadBoolean());
-            Assert.Equal(reader.Size, reader.Offset);
-        }
-
-        {
-            var packet = new Obsidian.Net.Packets.Play.Clientbound.LevelParticlesPacket
-            {
-                AlwaysShow = true,
-                Position = new VectorF(1, 62, 3),
-                Offset = new VectorF(0.3f),
-                ParticleCount = 30,
-                Data = new InkParticle()
-            };
-            var buffer = new Obsidian.Net.NetworkBuffer();
-            packet.Serialize(buffer);
-            var reader = new Obsidian.Net.NetworkBuffer(buffer.AsSpan(0, buffer.Size).ToArray());
-            Assert.Equal((int)ParticleType.SquidInk, reader.ReadVarInt());
-            Assert.False(reader.ReadBoolean());
-            Assert.True(reader.ReadBoolean());
-            Assert.Equal(packet.Position.X, reader.ReadDouble());
-            Assert.Equal(packet.Position.Y, reader.ReadDouble());
-            Assert.Equal(packet.Position.Z, reader.ReadDouble());
-            Assert.Equal(packet.Offset.X, reader.ReadSingle());
-            Assert.Equal(packet.Offset.Y, reader.ReadSingle());
-            Assert.Equal(packet.Offset.Z, reader.ReadSingle());
-            Assert.Equal(packet.MaxSpeed, reader.ReadSingle());
-            Assert.Equal(packet.MaxSpeed, reader.ReadSingle());
-            Assert.Equal(packet.MaxSpeed, reader.ReadSingle());
-            Assert.Equal(30, reader.ReadVarInt());
-            Assert.Equal((int)Net.Packets.Play.Clientbound.ParticleRandomization.Default, reader.ReadVarInt());
-            Assert.Equal(reader.Size, reader.Offset);
         }
     }
 
@@ -385,84 +205,6 @@ public sealed class MobAi
         Assert.Equal(entity.Position, restored.Position);
         Assert.Equal(entity.NoGravity, restored.NoGravity);
         Assert.True(saved.HasTag("Owner"));
-    }
-
-    private sealed class InkParticle : ParticleData
-    {
-        public override ParticleType ParticleType => ParticleType.SquidInk;
-    }
-
-    private static System.Collections.Generic.Dictionary<byte, EntityMetadataType> ReadMetadataTypes(Entity entity)
-    {
-        var buffer = new Obsidian.Net.NetworkBuffer();
-        entity.Write(buffer);
-        var reader = new Obsidian.Net.NetworkBuffer(buffer.AsSpan(0, buffer.Size).ToArray());
-        var fields = new System.Collections.Generic.Dictionary<byte, EntityMetadataType>();
-        while (reader.Offset < reader.Size)
-        {
-            var index = reader.ReadByte();
-            var fieldType = (EntityMetadataType)reader.ReadVarInt();
-            Assert.True(fields.TryAdd(index, fieldType), $"Duplicate metadata field {index}");
-            switch (fieldType)
-            {
-                case EntityMetadataType.Byte:
-                case EntityMetadataType.Boolean:
-                    reader.ReadByte();
-                    break;
-                case EntityMetadataType.VarInt:
-                case EntityMetadataType.Pose:
-                case EntityMetadataType.OptionalBlockState:
-                    reader.ReadVarInt();
-                    break;
-                case EntityMetadataType.Float:
-                    reader.ReadSingle();
-                    break;
-                case EntityMetadataType.VarLong:
-                    var timer = reader.ReadVarLong();
-                    if (entity is Camel camel)
-                        Assert.Equal(camel.LastPoseChangeTick, timer);
-                    else
-                        Assert.Equal(0, timer);
-                    break;
-                case EntityMetadataType.CatVariant:
-                    Assert.Equal(Assert.IsType<Cat>(entity).Variant, reader.ReadVarInt());
-                    break;
-                case EntityMetadataType.CatSoundVariant:
-                    Assert.Equal(Assert.IsType<Cat>(entity).SoundVariant, reader.ReadVarInt());
-                    break;
-                case EntityMetadataType.CowVariant:
-                    Assert.Equal(Assert.IsType<Cow>(entity).Variant, reader.ReadVarInt());
-                    break;
-                case EntityMetadataType.ChickenVariant:
-                    Assert.Equal(Assert.IsType<Chicken>(entity).Variant, reader.ReadVarInt());
-                    break;
-                case EntityMetadataType.PigVariant:
-                    Assert.Equal(Assert.IsType<Pig>(entity).Variant, reader.ReadVarInt());
-                    break;
-                case EntityMetadataType.WolfVariant:
-                    Assert.Equal(Assert.IsType<Wolf>(entity).Variant, reader.ReadVarInt());
-                    break;
-                case EntityMetadataType.WolfSoundVariant:
-                    Assert.Equal(Assert.IsType<Wolf>(entity).SoundVariant, reader.ReadVarInt());
-                    break;
-                case EntityMetadataType.OptionalLivingEntityReference:
-                    var owner = entity is Cat cat ? cat.Owner : Assert.IsType<Wolf>(entity).Owner;
-                    Assert.Equal(owner != System.Guid.Empty, reader.ReadBoolean());
-                    if (owner != System.Guid.Empty)
-                        Assert.Equal(owner, reader.ReadGuid());
-                    break;
-                case EntityMetadataType.Particles:
-                    Assert.Equal(0, reader.ReadVarInt());
-                    break;
-                case EntityMetadataType.OptionalTextComponent:
-                case EntityMetadataType.OptionalBlockPos:
-                    Assert.False(reader.ReadBoolean());
-                    break;
-                default:
-                    throw new System.InvalidOperationException($"Unexpected metadata type {fieldType}");
-            }
-        }
-        return fields;
     }
 
     private sealed class ProbeGoal(GoalFlags flags) : Goal

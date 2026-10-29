@@ -158,32 +158,13 @@ public class BlockNotifications
         reactions = 0;
 
         // Like a fluid change under the fluid lock: the change is committed and queued, but nothing runs yet.
-        world.Pipeline.Enqueue(world.Commit(new Vector(0, 64, 1), BlocksRegistry.Get(Stone)));
-        Assert.Equal(0, reactions);
-
-        await world.Pipeline.DrainAsync();
-        Assert.Equal(1, reactions);
-    }
-
-    [Fact]
-    public async Task PendingDuplicatesAreCoalesced()
-    {
-        var world = new RedstoneTestWorld();
-        world.Load(0, 2, 62, 66, 0, 2);
-        var reactions = 0;
-        world.Neighbors.Register(Dirt, new Recorder((_, _) =>
-        {
-            reactions++;
-            return ValueTask.CompletedTask;
-        }));
-        await world.Place(new Vector(1, 64, 1), BlocksRegistry.Get(Dirt));
-        reactions = 0;
-
+        // Queuing the same change twice before the drain still reacts once.
         var change = world.Commit(new Vector(0, 64, 1), BlocksRegistry.Get(Stone));
         world.Pipeline.Enqueue(change);
         world.Pipeline.Enqueue(change);
-        await world.Pipeline.DrainAsync();
+        Assert.Equal(0, reactions);
 
+        await world.Pipeline.DrainAsync();
         Assert.Equal(1, reactions);
     }
 

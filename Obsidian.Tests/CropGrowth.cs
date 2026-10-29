@@ -158,12 +158,6 @@ public sealed class CropGrowth
 
         // The level may have replaced the chunk object while ticking, so read the chunk the level holds now.
         chunk = world.GetLoadedChunk(0, 0)!;
-        var grown = Enumerable.Range(0, 16)
-            .SelectMany(x => Enumerable.Range(64, 16).SelectMany(y => Enumerable.Range(0, 16).Select(z => (x, y, z))))
-            .Select(at => chunk.GetBlock(at.x, at.y, at.z))
-            .Where(block => int.Parse(block.GetProperty("age")!) > 0)
-            .ToList();
-
 
         // Each growth went out through the block-change path as the block the chunk holds afterwards.
         var updates = client.SentPackets.OfType<BlockUpdatePacket>().ToList();

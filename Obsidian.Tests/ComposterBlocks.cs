@@ -4,11 +4,13 @@ using Obsidian.API.BlockEntities;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
 using Obsidian.ChunkData;
+using Obsidian.Entities;
 using Obsidian.API.ChunkData;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -151,6 +153,9 @@ public class ComposterBlocks
         await BlockUpdates.UseOn(position, BlockFace.Up).HandleAsync(context.Server, player);
 
         Assert.Equal("0", context.World.BlockUpdates.GetBlock(position).GetProperty("level"));
+        var drop = Assert.Single(context.World.GetEntitiesInRange((VectorD)position, 4).OfType<ItemEntity>());
+        Assert.Equal(ItemIds.BoneMeal, drop.Item.Holder.Id);
+        Assert.Equal(1, drop.Item.Count);
     }
 
     // Vanilla's ComposterBlock.getContainer: from above the composter takes items while not full, and from below it
