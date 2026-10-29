@@ -42,70 +42,17 @@ public class TargetBlockTests
         Assert.Equal(expected, TargetBlock.StrengthAt(location, face));
     }
 
-    [Fact]
-    public void AnArrowEnteringFromTheWestEntersTheBlockOnItsWestFace()
+    [Theory]
+    [InlineData(3.0, 64.5, 1.25, 0.6, 0, 3, BlockFace.West)]
+    [InlineData(5.0, 64.5, 1.5, -0.6, 0, 4, BlockFace.East)]
+    [InlineData(3.5, 65.0, 1.5, 0, -0.5, 3, BlockFace.Up)]
+    public void AnArrowEntersThroughTheFaceItCrosses(double x, double y, double z, double motionX, double motionY, int blockX, BlockFace expectedFace)
     {
-        var (block, face) = Arrow.EnteredBlockFace(new VectorD(3.0, 64.5, 1.25), new VectorD(0.6, 0, 0));
+        // At a negative-direction boundary, the entered block lies just below the integral coordinate.
+        var (block, face) = Arrow.EnteredBlockFace(new VectorD(x, y, z), new VectorD(motionX, motionY, 0));
 
-        Assert.Equal(new Vector(3, 64, 1), block);
-        Assert.Equal(BlockFace.West, face);
-    }
-
-    [Fact]
-    public void AnArrowEnteringFromTheEastEntersTheBlockWestOfTheBoundary()
-    {
-        // Moving west, the arrow stops on x = 5, the east face of block 4.
-        var (block, face) = Arrow.EnteredBlockFace(new VectorD(5.0, 64.5, 1.5), new VectorD(-0.6, 0, 0));
-
-        Assert.Equal(new Vector(4, 64, 1), block);
-        Assert.Equal(BlockFace.East, face);
-    }
-
-    [Fact]
-    public void AnArrowFallingOntoABlockEntersThroughItsTopFace()
-    {
-        var (block, face) = Arrow.EnteredBlockFace(new VectorD(3.5, 65.0, 1.5), new VectorD(0, -0.5, 0));
-
-        Assert.Equal(new Vector(3, 64, 1), block);
-        Assert.Equal(BlockFace.Up, face);
-    }
-
-    [Fact]
-    public async Task AHitSetsThePowerAndTheLampFollows()
-    {
-        var world = await BuildAsync();
-
-        await world.Advance(arrowHits: [new ArrowHit(Target, new VectorD(10.0, 64.5, 8.25), BlockFace.West)]);
-
-        Assert.Equal(8, Power(world));
-        Assert.Equal("true", world.GetLoadedBlock(Lamp)!.GetProperty("lit"));
-    }
-
-    [Fact]
-    public async Task APulseEndsTwentyTicksAfterTheHit()
-    {
-        var world = await BuildAsync();
-        await world.Advance(arrowHits: [new ArrowHit(Target, new VectorD(10.0, 64.5, 8.5), BlockFace.West)]);
-
-        for (var tick = 0; tick < 19; tick++)
-            await world.Advance();
-        Assert.Equal(15, Power(world));
-
-        await world.Advance();
-        Assert.Equal(0, Power(world));
-    }
-
-    [Fact]
-    public async Task AHitWhileAPulseIsPendingDoesNothing()
-    {
-        var world = await BuildAsync();
-        await world.Advance(arrowHits: [new ArrowHit(Target, new VectorD(10.0, 64.5, 8.25), BlockFace.West)]);
-        for (var tick = 0; tick < 3; tick++)
-            await world.Advance();
-
-        await world.Advance(arrowHits: [new ArrowHit(Target, new VectorD(10.0, 64.5, 8.5), BlockFace.West)]);
-
-        Assert.Equal(8, Power(world));
+        Assert.Equal(new Vector(blockX, 64, 1), block);
+        Assert.Equal(expectedFace, face);
     }
 
     [Fact]

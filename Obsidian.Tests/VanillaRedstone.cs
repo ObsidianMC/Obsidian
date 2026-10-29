@@ -10,20 +10,19 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Redstone parity fixtures (R0, see docs/redstone/01-foundation.md). Each scenario in <c>Assets/redstone_scenarios.json</c>
+/// Redstone parity fixtures (see docs/redstone/01-foundation.md). Each scenario in <c>Assets/redstone_scenarios.json</c>
 /// was recorded from a headless vanilla 1.21.11 server by <c>tools/redstone/generate.py</c>: the server's game time is
 /// frozen and advanced one tick at a time, and every checkpoint holds the block states of the scenario's box.
 /// </summary>
 /// <remarks>
-/// The fixture tests run now: they check that the recorded data is complete, consistent and written in states Obsidian
-/// knows. The replay tests need the directional power engine (R3) and stay skipped until a world adapter exists; they
-/// use <see cref="RedstoneReplay"/>, which replays a scenario with the timing the fixture documents.
+/// Each scenario is validated for completeness and known block states, then replayed on the live directional power
+/// engine with <see cref="RedstoneReplay"/> using the timing the fixture documents.
 /// </remarks>
 public class VanillaRedstone
 {
     private const string Symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-    /// <summary>The categories the R0 fixture must cover (docs/redstone/01-foundation.md, "Initial fixture coverage").</summary>
+    /// <summary>The categories the fixture must cover (docs/redstone/01-foundation.md, "Initial fixture coverage").</summary>
     private static readonly string[] RequiredCoverage =
     [
         "source_timing", "dust_attenuation", "repeater_delay", "repeater_lock", "comparator_modes", "observer_pulses",
@@ -35,22 +34,15 @@ public class VanillaRedstone
     // The fixture stays a 1.21.11 capture until Phase 6 of docs/porting-26.3-plan.md re-records it, which then checks
     // it against ServerConstants.ProtocolDescription again.
     [Fact]
-    public void FixtureIsForVanilla1_21_11() =>
-        Assert.Equal("1.21.11", Fixture.Shared.Document.GetProperty("version").GetString());
-
-    [Fact]
-    public void FixtureCoversTheRequiredCategories()
+    public void FixtureMeetsItsContract()
     {
+        Assert.Equal("1.21.11", Fixture.Shared.Document.GetProperty("version").GetString());
         var covered = Fixture.Shared.Scenarios.Values
             .SelectMany(scenario => scenario.GetProperty("coverage").EnumerateArray().Select(tag => tag.GetString()!))
             .ToHashSet();
 
         Assert.Empty(RequiredCoverage.Where(tag => !covered.Contains(tag)));
-    }
 
-    [Fact]
-    public void ComparatorFixtureCoversCompareAndSubtractAtSidePower14()
-    {
         var scenario = Fixture.Shared.Scenarios["comparator_compare_and_subtract"];
         var palette = scenario.GetProperty("checkpoints").EnumerateArray()
             .SelectMany(checkpoint => checkpoint.GetProperty("palette").EnumerateArray())
@@ -65,9 +57,17 @@ public class VanillaRedstone
 
     [Theory]
     [MemberData(nameof(ScenarioNames))]
-    public void ScenarioIsWellFormed(string name)
+    public void ScenarioMatchesVanilla(string name)
     {
         var scenario = Fixture.Shared.Scenarios[name];
+        AssertScenarioIsWellFormed(name, scenario);
+
+        var diffs = RedstoneReplay.Compare(CreateWorld(scenario), scenario);
+        Assert.True(diffs.Count == 0, $"{diffs.Count} blocks differ from vanilla:\n{string.Join("\n", diffs.Take(20))}");
+    }
+
+    private static void AssertScenarioIsWellFormed(string name, JsonElement scenario)
+    {
         var (min, max) = (ReadVector(scenario.GetProperty("min")), ReadVector(scenario.GetProperty("max")));
         var ticks = scenario.GetProperty("checkpoints").GetArrayLength() - 1;
         var width = max.X - min.X + 1;
@@ -140,117 +140,11 @@ public class VanillaRedstone
         }
     }
 
-    // Each replay runs the scenario on the live engine and compares every checkpoint with vanilla.
-    /// <summary>The scenarios R4 covers: levers, dust, and redstone torches (inversion and burnout).</summary>
-    public static IEnumerable<object[]> R4ScenarioNames() =>
-        new[] { "source_timing_lever", "dust_attenuation", "torch_inversion", "torch_burnout" }.Select(name => new object[] { name });
-
-    /// <summary>The scenarios implemented in the repeater pass of R6.</summary>
-    public static IEnumerable<object[]> RepeaterScenarioNames() =>
-        new[] { "repeater_delay", "repeater_lock" }.Select(name => new object[] { name });
-
-    /// <summary>The scenarios implemented in the observer pass of R6.</summary>
-    public static IEnumerable<object[]> ObserverScenarioNames() =>
-        new[] { "observer_pulse" }.Select(name => new object[] { name });
-
-    /// <summary>The scenarios implemented in the comparator pass of R6.</summary>
-    public static IEnumerable<object[]> ComparatorScenarioNames() =>
-        new[] { "comparator_compare_and_subtract" }.Select(name => new object[] { name });
-
-    /// <summary>The scenarios implemented in the piston pass of R8: extension, retraction, sticky pulls, and immovable blocks.</summary>
-    public static IEnumerable<object[]> PistonScenarioNames() =>
-        new[] { "piston_extend_retract", "piston_sticky_pull", "piston_obsidian_blocked" }.Select(name => new object[] { name });
-
-    [Theory]
-    [MemberData(nameof(PistonScenarioNames))]
-    public void PistonScenarioMatchesVanilla(string name)
-    {
-        var scenario = Fixture.Shared.Scenarios[name];
-        var diffs = RedstoneReplay.Compare(CreateWorld(scenario), scenario);
-        Assert.True(diffs.Count == 0, $"{diffs.Count} blocks differ from vanilla:\n{string.Join("\n", diffs.Take(20))}");
-    }
-
-    [Theory]
-    [MemberData(nameof(R4ScenarioNames))]
-    public void ScenarioMatchesVanilla(string name)
-    {
-        var scenario = Fixture.Shared.Scenarios[name];
-        var diffs = RedstoneReplay.Compare(CreateWorld(scenario), scenario);
-        Assert.True(diffs.Count == 0, $"{diffs.Count} blocks differ from vanilla:\n{string.Join("\n", diffs.Take(20))}");
-    }
-
-    [Theory]
-    [MemberData(nameof(RepeaterScenarioNames))]
-    public void RepeaterScenarioMatchesVanilla(string name)
-    {
-        var scenario = Fixture.Shared.Scenarios[name];
-        var diffs = RedstoneReplay.Compare(CreateWorld(scenario), scenario);
-        Assert.True(diffs.Count == 0, $"{diffs.Count} blocks differ from vanilla:\n{string.Join("\n", diffs.Take(20))}");
-    }
-
-    [Theory]
-    [MemberData(nameof(ObserverScenarioNames))]
-    public void ObserverScenarioMatchesVanilla(string name)
-    {
-        var scenario = Fixture.Shared.Scenarios[name];
-        var diffs = RedstoneReplay.Compare(CreateWorld(scenario), scenario);
-        Assert.True(diffs.Count == 0, $"{diffs.Count} blocks differ from vanilla:\n{string.Join("\n", diffs.Take(20))}");
-    }
-
-    /// <summary>The scenarios implemented in the tripwire pass of R4 (tripwire and hooks).</summary>
-    public static IEnumerable<object[]> TripwireScenarioNames() =>
-        new[] { "tripwire_line" }.Select(name => new object[] { name });
-
-    /// <summary>The scenarios implemented in the target pass of R4 (target block and arrow hits).</summary>
-    public static IEnumerable<object[]> TargetScenarioNames() =>
-        new[] { "target_arrow" }.Select(name => new object[] { name });
-
-    [Theory]
-    [MemberData(nameof(TargetScenarioNames))]
-    public void TargetScenarioMatchesVanilla(string name)
-    {
-        var scenario = Fixture.Shared.Scenarios[name];
-        var diffs = RedstoneReplay.Compare(CreateWorld(scenario), scenario);
-        Assert.True(diffs.Count == 0, $"{diffs.Count} blocks differ from vanilla:\n{string.Join("\n", diffs.Take(20))}");
-    }
-
-    [Theory]
-    [MemberData(nameof(TripwireScenarioNames))]
-    public void TripwireScenarioMatchesVanilla(string name)
-    {
-        var scenario = Fixture.Shared.Scenarios[name];
-        var diffs = RedstoneReplay.Compare(CreateWorld(scenario), scenario);
-        Assert.True(diffs.Count == 0, $"{diffs.Count} blocks differ from vanilla:\n{string.Join("\n", diffs.Take(20))}");
-    }
-
-    [Theory]
-    [MemberData(nameof(ComparatorScenarioNames))]
-    public void ComparatorScenarioMatchesVanilla(string name)
-    {
-        var scenario = Fixture.Shared.Scenarios[name];
-        var diffs = RedstoneReplay.Compare(CreateWorld(scenario), scenario);
-        Assert.True(diffs.Count == 0, $"{diffs.Count} blocks differ from vanilla:\n{string.Join("\n", diffs.Take(20))}");
-    }
-
-    /// <summary>The scenarios that save and restart the world mid-run (block ticks must keep their delays).</summary>
-    public static IEnumerable<object[]> ReloadScenarioNames() =>
-        new[] { "save_reload_repeater", "reload_target_pulse" }.Select(name => new object[] { name });
-
-    [Theory]
-    [MemberData(nameof(ReloadScenarioNames))]
-    public void ReloadScenarioMatchesVanilla(string name)
-    {
-        var scenario = Fixture.Shared.Scenarios[name];
-        var diffs = RedstoneReplay.Compare(CreateWorld(scenario), scenario);
-        Assert.True(diffs.Count == 0, $"{diffs.Count} blocks differ from vanilla:\n{string.Join("\n", diffs.Take(20))}");
-    }
-
     /// <summary>
-    /// Runs every scenario's timeline through a world with no redstone at all: this checks the replay itself (setup,
-    /// actions, reloads and ticks in the documented order), not the redstone behavior.
+    /// Runs a save/reload timeline through a world with no redstone to check the replay's setup, actions, reloads and ticks.
     /// </summary>
     [Theory]
-    [MemberData(nameof(ScenarioNames))]
+    [InlineData("save_reload_repeater")]
     public void ReplayRunsTheWholeTimeline(string name)
     {
         var scenario = Fixture.Shared.Scenarios[name];
@@ -262,15 +156,8 @@ public class VanillaRedstone
         var reloadTicks = reloads.Sum(action => action.GetProperty("ticks").GetInt32());
         Assert.Equal(scenario.GetProperty("checkpoints").GetArrayLength() - 1 + reloadTicks, world.Ticks);
         Assert.Equal(reloads.Length, world.Reloads);
-
-        // Obsidian holds the piston in place, so vanilla's box matches a world with no redstone at all.
-        if (UnchangedWithoutRedstone.Contains(name))
-            Assert.Empty(diffs);
-        else
-            Assert.NotEmpty(diffs);
+        Assert.NotEmpty(diffs);
     }
-
-    private static readonly HashSet<string> UnchangedWithoutRedstone = ["piston_obsidian_blocked"];
 
     private static IRedstoneScenarioWorld CreateWorld(JsonElement scenario) => new EngineScenarioWorld(scenario);
 

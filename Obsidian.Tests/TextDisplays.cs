@@ -1,10 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Obsidian.API;
 using Obsidian.Entities;
 using Obsidian.Entities.Factories;
-using Obsidian.Net;
 using Obsidian.Nbt;
+using Obsidian.Net;
+using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Tests.Fakes;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -151,22 +155,38 @@ public class TextDisplays
         Assert.Null(EntityNbt.Save(display));
     }
 
-    [Fact(DisplayName = "Changing a text display's text sends it to players tracking the display")]
-    public void ChangedTextIsSentToTrackingPlayers()
+    [Fact(DisplayName = "Changing a text display's text sends it to players tracking the display", Timeout = TestServerFactory.TestTimeout)]
+    public async Task ChangedTextIsSentToTrackingPlayers()
     {
-        var display = new TextDisplay { Level = null!, EntityId = 42 };
+        await using var context = TestServerFactory.CreateServer($"text-display-{Guid.NewGuid():N}");
+        WorldBlockEntities.AddEmptyChunk(context.World);
+        var position = new VectorD(8, 64, 8);
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "DisplayWatcher", position);
+        await TestServerFactory.JoinConnectedPlayerAsync(context.Server, player);
+        player.LoadedChunks.Add(0L);
+        var display = Assert.IsType<TextDisplay>(context.World.SpawnEntity(position, EntityType.TextDisplay));
+        Assert.Equal(display.Uuid, player.TrackedEntities[display.EntityId]);
+        var client = (TestClient)player.Client;
+        client.ClearPackets();
 
-        // With no level, a change is kept without a broadcast; the packet below is what a tracked display sends.
         display.Text = ChatMessage.Simple("Updated");
-        var packet = display.CreateMetadataPacket();
 
-        Assert.Equal(42, packet.EntityId);
+        var packet = Assert.Single(client.SentPackets.OfType<SetEntityDataPacket>());
+        Assert.Equal(display.EntityId, packet.EntityId);
         Assert.Same(display, packet.Entity);
 
         using var writer = new NetworkBuffer();
         packet.Serialize(writer);
-        Assert.True(writer.Size > 0);
-        Assert.Equal("Updated", display.Text.Text);
+        using var reader = new NetworkBuffer(writer.AsSpan(0, writer.Size).ToArray());
+        Assert.Equal(display.EntityId, reader.ReadVarInt());
+        for (var index = 0; index < ExpectedTypes.Length; index++)
+        {
+            Assert.Equal(index, reader.ReadByte());
+            Assert.Equal((int)ExpectedTypes[index], reader.ReadVarInt());
+            var value = ReadValue(reader, index, ExpectedTypes[index]);
+            if (index == 23)
+                Assert.Equal("Updated", Assert.IsType<ChatMessage>(value).Text);
+        }
     }
 
     [Fact(DisplayName = "A text display rejects an empty text, which the client can't read")]

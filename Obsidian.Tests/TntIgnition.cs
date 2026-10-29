@@ -16,55 +16,36 @@ public class TntIgnitionTests
 
     private static IBlock TntBlock => BlocksRegistry.GetDefault(BlockIds.Tnt);
 
-    [Fact]
-    public async Task PlacingTntBesidePowerPrimesItAndClearsTheBlock()
+    [Theory]
+    [InlineData(true, true, true)]
+    [InlineData(false, true, true)]
+    [InlineData(false, false, true)]
+    [InlineData(true, true, false)]
+    public async Task TntPrimesOnlyWhenPoweredAndTheRuleAllowsIt(bool sourceFirst, bool powered, bool tntExplodes)
     {
-        var world = new RedstoneTestWorld();
+        var world = new RedstoneTestWorld { TntExplodes = tntExplodes };
         world.Load(0, 15, 62, 66, 0, 15);
-        await world.Place(Source, RedstoneBlock);
+        if (sourceFirst)
+            await world.Place(Source, RedstoneBlock);
 
         await world.Place(Tnt, TntBlock);
+        if (!sourceFirst)
+        {
+            Assert.Equal(BlockIds.Tnt, world.GetLoadedBlock(Tnt)!.RegistryId);
+            Assert.Empty(world.PrimedTnt);
+            if (powered)
+                await world.Place(Source, RedstoneBlock);
+        }
 
-        Assert.Equal(BlocksRegistry.Air.RegistryId, world.GetLoadedBlock(Tnt)!.RegistryId);
-        Assert.Equal([Tnt], world.PrimedTnt);
-    }
-
-    [Fact]
-    public async Task PowerArrivingAtPlacedTntPrimesIt()
-    {
-        var world = new RedstoneTestWorld();
-        world.Load(0, 15, 62, 66, 0, 15);
-        await world.Place(Tnt, TntBlock);
-        Assert.Empty(world.PrimedTnt);
-
-        await world.Place(Source, RedstoneBlock);
-
-        Assert.Equal(BlocksRegistry.Air.RegistryId, world.GetLoadedBlock(Tnt)!.RegistryId);
-        Assert.Equal([Tnt], world.PrimedTnt);
-    }
-
-    [Fact]
-    public async Task UnpoweredTntStaysPut()
-    {
-        var world = new RedstoneTestWorld();
-        world.Load(0, 15, 62, 66, 0, 15);
-
-        await world.Place(Tnt, TntBlock);
-
-        Assert.Equal(BlockIds.Tnt, world.GetLoadedBlock(Tnt)!.RegistryId);
-        Assert.Empty(world.PrimedTnt);
-    }
-
-    [Fact]
-    public async Task TntRuleOffKeepsPoweredTntInPlace()
-    {
-        var world = new RedstoneTestWorld { TntExplodes = false };
-        world.Load(0, 15, 62, 66, 0, 15);
-        await world.Place(Source, RedstoneBlock);
-
-        await world.Place(Tnt, TntBlock);
-
-        Assert.Equal(BlockIds.Tnt, world.GetLoadedBlock(Tnt)!.RegistryId);
-        Assert.Empty(world.PrimedTnt);
+        if (powered && tntExplodes)
+        {
+            Assert.Equal(BlocksRegistry.Air.RegistryId, world.GetLoadedBlock(Tnt)!.RegistryId);
+            Assert.Equal([Tnt], world.PrimedTnt);
+        }
+        else
+        {
+            Assert.Equal(BlockIds.Tnt, world.GetLoadedBlock(Tnt)!.RegistryId);
+            Assert.Empty(world.PrimedTnt);
+        }
     }
 }

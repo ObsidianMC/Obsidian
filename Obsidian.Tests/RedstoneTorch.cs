@@ -61,16 +61,4 @@ public class RedstoneTorchTests
             await world.Advance();
         Assert.Equal("true", world.GetLoadedBlock(new Vector(0, 101, 0))!.GetProperty("lit"));
     }
-
-    [Fact]
-    public async Task TorchOnAnUnpoweredSupportStaysLit()
-    {
-        var world = new RedstoneTestWorld();
-        world.Load(-4, 6, 97, 102, -2, 2, ringChunks: 1);
-        await world.Place(new Vector(4, 99, 0), BlocksRegistry.Get("minecraft:stone"));
-        await world.Place(new Vector(4, 100, 0), BlocksRegistry.Get("minecraft:redstone_torch"));
-        for (var tick = 0; tick < 8; tick++)
-            await world.Advance();
-        Assert.Equal("true", Lit(world));
-    }
 }

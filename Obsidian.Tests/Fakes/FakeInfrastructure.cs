@@ -21,13 +21,11 @@ internal sealed class TestOptionsMonitor<T>(T currentValue) : IOptionsMonitor<T>
         public void Dispose() { }
     }
 
-    public T CurrentValue { get; private set; } = currentValue;
+    public T CurrentValue { get; } = currentValue;
 
     public T Get(string? name) => this.CurrentValue;
 
     public IDisposable OnChange(Action<T, string?> listener) => new NoopDisposable();
-
-    public void Set(T value) => this.CurrentValue = value;
 }
 
 internal sealed class FakePacketBroadcaster : IPacketBroadcaster
