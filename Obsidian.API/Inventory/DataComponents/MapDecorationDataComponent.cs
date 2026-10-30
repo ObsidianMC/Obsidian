@@ -6,6 +6,17 @@ namespace Obsidian.API.Inventory.DataComponents;
 
 public sealed record class MapDecorationDataComponent : DataComponent
 {
+    private ComponentValueKey Comparison => new(new object?[]
+    {
+        this.decorations.OrderBy(entry => entry.Key, StringComparer.Ordinal)
+    });
+
+    public bool Equals(MapDecorationDataComponent? other) => ReferenceEquals(this, other)
+        || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
+
+    public override int GetHashCode() =>
+        HashCode.Combine(base.GetHashCode(), this.Comparison);
+
     public override DataComponentType Type => DataComponentType.MapDecorations;
 
     public override string Identifier => "minecraft:map_decorations";

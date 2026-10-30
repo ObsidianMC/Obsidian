@@ -1,9 +1,10 @@
 using Obsidian.Nbt;
 using System.Collections;
+using System.Runtime.CompilerServices;
 
 namespace Obsidian.API.Inventory.DataComponents;
 
-// Built once, lazily, for immutable payloads. Hashes only reject mismatches; equality still checks every value.
+// Structural snapshots for component payloads. Hashes only reject mismatches; equality checks every value.
 internal sealed class ComponentValueKey : IEquatable<ComponentValueKey>
 {
     private readonly object? key;
@@ -23,10 +24,22 @@ internal sealed class ComponentValueKey : IEquatable<ComponentValueKey>
 
     public override int GetHashCode() => this.hash;
 
+    // A default immutable array has no backing storage; compare it like an empty sequence without enumerating it.
+    public static object Sequence<T>(ImmutableArray<T> values) => values.IsDefault ? ImmutableArray<T>.Empty : values;
+
+    public static object? Sequence<T>(ImmutableArray<T>? values) => values.HasValue ? Sequence(values.Value) : null;
+
     private static object? Key(object? value) => value switch
     {
         null => null,
         string => value,
+        ITuple tuple => Enumerable.Range(0, tuple.Length).Select(index => Key(tuple[index])).ToArray(),
+        SkinProperty property => new object?[]
+        {
+            property.Name,
+            property.Value,
+            property.Signature
+        },
         NbtCompound compound => new object?[]
         {
             compound.Type,
@@ -103,13 +116,13 @@ internal sealed class ComponentValueKey : IEquatable<ComponentValueKey>
         {
             set.Type,
             set.TagName,
-            Key(set.Ids)
+            Key(Sequence(set.Ids))
         },
         FireworkExplosion explosion => new object?[]
         {
             explosion.Shape,
-            Key(explosion.Colors),
-            Key(explosion.FadeColors),
+            Key(Sequence(explosion.Colors)),
+            Key(Sequence(explosion.FadeColors)),
             explosion.HasTrail,
             explosion.HasTwinkle
         },
@@ -131,7 +144,7 @@ internal sealed class ComponentValueKey : IEquatable<ComponentValueKey>
         ComponentConsumeEffect effect => new object?[]
         {
             effect.Id,
-            Key(effect.Effects),
+            Key(Sequence(effect.Effects)),
             effect.Probability,
             Key(effect.RemovedEffects),
             effect.Diameter,

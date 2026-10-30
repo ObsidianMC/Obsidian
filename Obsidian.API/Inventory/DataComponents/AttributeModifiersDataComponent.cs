@@ -4,6 +4,17 @@ namespace Obsidian.API.Inventory.DataComponents;
 public sealed record AttributeModifiersDataComponent() : SimpleDataComponent<ImmutableArray<AttributeModifier>>(
     DataComponentType.AttributeModifiers, "minecraft:attribute_modifiers", (_, _) => { }, _ => [])
 {
+    private ComponentValueKey Comparison => new(new object?[]
+    {
+        ComponentValueKey.Sequence(this.displays)
+    });
+
+    public bool Equals(AttributeModifiersDataComponent? other) => ReferenceEquals(this, other)
+        || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
+
+    public override int GetHashCode() =>
+        HashCode.Combine(base.GetHashCode(), this.Comparison);
+
     private ImmutableArray<(int Type, ChatMessage? Text)> displays = [];
 
     public ImmutableArray<(int Type, ChatMessage? Text)> Displays

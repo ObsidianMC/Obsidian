@@ -5,6 +5,19 @@ namespace Obsidian.API.Inventory.DataComponents;
 /// <summary>Entity or block-entity type registry ID followed by its custom NBT.</summary>
 public sealed record EntityDataComponent(DataComponentType ComponentType) : DataComponent
 {
+    private ComponentValueKey Comparison => new(new object?[]
+    {
+        this.ComponentType,
+        this.registryId,
+        this.data
+    });
+
+    public bool Equals(EntityDataComponent? other) => ReferenceEquals(this, other)
+        || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
+
+    public override int GetHashCode() =>
+        HashCode.Combine(base.GetHashCode(), this.Comparison);
+
     public override DataComponentType Type => this.ComponentType;
     public override string Identifier => OpaqueDataComponent.GetIdentifier(this.Type);
     private int registryId;
@@ -43,6 +56,17 @@ public sealed record EntityDataComponent(DataComponentType ComponentType) : Data
 
 public sealed record BeesDataComponent : DataComponent
 {
+    private ComponentValueKey Comparison => new(new object?[]
+    {
+        ComponentValueKey.Sequence(this.occupants)
+    });
+
+    public bool Equals(BeesDataComponent? other) => ReferenceEquals(this, other)
+        || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
+
+    public override int GetHashCode() =>
+        HashCode.Combine(base.GetHashCode(), this.Comparison);
+
     public override DataComponentType Type => DataComponentType.Bees;
     public override string Identifier => "minecraft:bees";
     private ImmutableArray<(EntityDataComponent Entity, int TicksInHive, int MinTicksInHive)> occupants = [];

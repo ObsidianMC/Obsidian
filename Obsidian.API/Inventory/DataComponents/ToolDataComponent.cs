@@ -4,6 +4,20 @@ namespace Obsidian.API.Inventory.DataComponents;
 
 public sealed record class ToolDataComponent : DataComponent
 {
+    private ComponentValueKey Comparison => new(new object?[]
+    {
+        ComponentValueKey.Sequence(this.rules),
+        this.defaultMiningSpeed,
+        this.damagePerBlock,
+        this.canDestroyBlocksInCreative
+    });
+
+    public bool Equals(ToolDataComponent? other) => ReferenceEquals(this, other)
+        || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
+
+    public override int GetHashCode() =>
+        HashCode.Combine(base.GetHashCode(), this.Comparison);
+
     public override DataComponentType Type => DataComponentType.Tool;
 
     public override string Identifier => "minecraft:tool";
@@ -95,6 +109,17 @@ public readonly record struct ToolRule : INetworkSerializable<ToolRule>
 /// </summary>
 public readonly record struct IdSet : INetworkSerializable<IdSet>
 {
+    private ComponentValueKey Comparison => new(new object?[]
+    {
+        this.Type,
+        this.TagName,
+        ComponentValueKey.Sequence(this.Ids)
+    });
+
+    public bool Equals(IdSet other) => this.Comparison.Equals(other.Comparison);
+
+    public override int GetHashCode() => this.Comparison.GetHashCode();
+
     /// <summary>
     /// Value used to determine the data that follows. 
     /// It can be either: 

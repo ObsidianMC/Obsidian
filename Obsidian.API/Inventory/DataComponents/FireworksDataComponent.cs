@@ -4,6 +4,18 @@ namespace Obsidian.API.Inventory.DataComponents;
 
 public sealed record class FireworksDataComponent : DataComponent
 {
+    private ComponentValueKey Comparison => new(new object?[]
+    {
+        this.flightDuration,
+        ComponentValueKey.Sequence(this.explosions)
+    });
+
+    public bool Equals(FireworksDataComponent? other) => ReferenceEquals(this, other)
+        || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
+
+    public override int GetHashCode() =>
+        HashCode.Combine(base.GetHashCode(), this.Comparison);
+
     public override DataComponentType Type => DataComponentType.Fireworks;
 
     public override string Identifier => "minecraft:fireworks";

@@ -2,6 +2,22 @@ namespace Obsidian.API.Inventory.DataComponents;
 
 public sealed record WrittenBookDataComponent : DataComponent
 {
+    private ComponentValueKey Comparison => new(new object?[]
+    {
+        this.title,
+        this.filteredTitle,
+        this.author,
+        this.generation,
+        ComponentValueKey.Sequence(this.pages),
+        this.resolved
+    });
+
+    public bool Equals(WrittenBookDataComponent? other) => ReferenceEquals(this, other)
+        || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
+
+    public override int GetHashCode() =>
+        HashCode.Combine(base.GetHashCode(), this.Comparison);
+
     public override DataComponentType Type => DataComponentType.WrittenBookContent;
     public override string Identifier => "minecraft:written_book_content";
     private string title = "";

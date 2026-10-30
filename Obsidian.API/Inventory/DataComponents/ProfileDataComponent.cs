@@ -3,6 +3,24 @@ namespace Obsidian.API.Inventory.DataComponents;
 
 public sealed record class ProfileDataComponent : DataComponent
 {
+    private ComponentValueKey Comparison => new(new object?[]
+    {
+        this.isComplete,
+        this.bodyTexture,
+        this.capeTexture,
+        this.elytraTexture,
+        this.model,
+        this.username,
+        this.id,
+        ComponentValueKey.Sequence(this.properties)
+    });
+
+    public bool Equals(ProfileDataComponent? other) => ReferenceEquals(this, other)
+        || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
+
+    public override int GetHashCode() =>
+        HashCode.Combine(base.GetHashCode(), this.Comparison);
+
     public override DataComponentType Type => DataComponentType.Profile;
 
     public override string Identifier => "minecraft:profile";
