@@ -51,6 +51,10 @@ public final class BlockLootFixtures {
         capture(rows, arguments[0], "stone", "air", null, 0, 42, 4f, false, Map.of());
         capture(rows, arguments[0], "redstone_ore", "air", null, 0, 42, 4f, false, Map.of());
         capture(rows, arguments[0], "redstone_ore", "air", null, 0, 1, null, false, Map.of());
+        capture(rows, arguments[0], "poplar_log", "air", null, 0, 1, null, true, Map.of());
+        capture(rows, arguments[0], "poplar_slab", "air", null, 0, 1, null, true, Map.of("type", "double"));
+        capture(rows, arguments[0], "white_wool_slab", "air", null, 0, 1, null, true, Map.of("type", "double"));
+        capture(rows, arguments[0], "straw_bed", "air", null, 0, 1, null, true, Map.of("part", "head"));
         Files.writeString(Path.of(arguments[1]), new GsonBuilder().setPrettyPrinting().create().toJson(rows));
     }
 

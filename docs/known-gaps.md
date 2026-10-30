@@ -3,6 +3,18 @@
 Gaps found during the mod-system work that don't limit what mods can do: vanilla parity, test plumbing and a
 contract left weaker on purpose. Each entry says what's missing, why it was left and where to start.
 
+## Context number provider commands and world sources
+
+**Status:** the shared 26.3 int/float provider evaluator and built-in definitions are available in
+`Obsidian.API.Data`. Loot uses it, including arithmetic and conditional providers; captured replays check results
+and subsequent random draws. `/compute` and `/data modify … compute` are not wired yet. Environment attributes,
+command storage and score reads have typed `NumberContext` callbacks for their owning systems to supply.
+Provider holder-set tags and non-constant/non-linear enchantment-level values are not implemented.
+
+**Where to start:** use `ContextNumberProviders.ReadInt`/`ReadFloat` (or the string `ParseInt`/`ParseFloat` overloads)
+with a per-evaluation `NumberContext`. Command support needs resource-or-inline argument parsing, the command's
+context parameters and the existing data-command mutation path; do not create a separate arithmetic evaluator.
+
 ## Low disk space notifications
 
 **Status:** the 26.3 `low_disk_space_warning` packet is available, but the server does not monitor free disk space.
@@ -362,8 +374,9 @@ mob's equipment.
   pillagers, vindicators, evokers, ravagers, piglins and piglin brutes, striders, wardens and withers.
   Horses and their relatives, happy ghasts, nautiluses, allays and copper golems keep their equipment or special
   drops; the dragon keeps its separate death sequence. `Mob.Loot.cs` holds the explicit migrated type list.
-- Loot `entity_properties` supports flags, type/tag, equipment and player vehicle predicates. Sheep components and
-  type-specific predicates (sheep, slime and raider), and `damage_source_properties`, remain unsupported; the
+- Loot uses 26.3 tables and namespaced entity predicate maps. `entity_properties` supports flags, entity type/tag,
+  equipment, vehicle and fishing-hook open-water predicates. Sheep components and type-specific predicates
+  (sheep, cube mob and raider), and `damage_source_properties`, remain unsupported; the
   generator excludes sheep, slime, magma cube, pillager, ghast and turtle root tables rather than relaxing their
   conditions. Damage sources still name the vanilla damage type closest to Obsidian's damage kinds.
 - `IEntityBehavior` has no hook for a player getting on or off. A behaviour that reacts to mounting takes the

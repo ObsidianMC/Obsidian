@@ -1,0 +1,3566 @@
+[
+  {
+    "kind": "int",
+    "provider": 0,
+    "seed": 1,
+    "value": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": 0,
+    "seed": 42,
+    "value": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": 7,
+    "seed": 1,
+    "value": 7,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": 7,
+    "seed": 42,
+    "value": 7,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": -9,
+    "seed": 1,
+    "value": -9,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": -9,
+    "seed": 42,
+    "value": -9,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:constant",
+      "value": 6
+    },
+    "seed": 1,
+    "value": 6,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:constant",
+      "value": 6
+    },
+    "seed": 42,
+    "value": 6,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:add",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    },
+    "seed": 1,
+    "value": 4,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:add",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    },
+    "seed": 42,
+    "value": 4,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:add",
+      "inputs": []
+    },
+    "seed": 1,
+    "value": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:add",
+      "inputs": []
+    },
+    "seed": 42,
+    "value": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:add",
+      "inputs": [
+        17
+      ]
+    },
+    "seed": 1,
+    "value": 17,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:add",
+      "inputs": [
+        17
+      ]
+    },
+    "seed": 42,
+    "value": 17,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:mul",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    },
+    "seed": 1,
+    "value": -168,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:mul",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    },
+    "seed": 42,
+    "value": -168,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:mul",
+      "inputs": []
+    },
+    "seed": 1,
+    "value": 1,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:mul",
+      "inputs": []
+    },
+    "seed": 42,
+    "value": 1,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:mul",
+      "inputs": [
+        17
+      ]
+    },
+    "seed": 1,
+    "value": 17,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:mul",
+      "inputs": [
+        17
+      ]
+    },
+    "seed": 42,
+    "value": 17,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:avg",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    },
+    "seed": 1,
+    "value": 1,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:avg",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    },
+    "seed": 42,
+    "value": 1,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:avg",
+      "inputs": []
+    },
+    "seed": 1,
+    "value": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:avg",
+      "inputs": []
+    },
+    "seed": 42,
+    "value": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:avg",
+      "inputs": [
+        17
+      ]
+    },
+    "seed": 1,
+    "value": 17,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:avg",
+      "inputs": [
+        17
+      ]
+    },
+    "seed": 42,
+    "value": 17,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:min",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    },
+    "seed": 1,
+    "value": -7,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:min",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    },
+    "seed": 42,
+    "value": -7,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:min",
+      "inputs": []
+    },
+    "seed": 1,
+    "value": 2147483647,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:min",
+      "inputs": []
+    },
+    "seed": 42,
+    "value": 2147483647,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:min",
+      "inputs": [
+        17
+      ]
+    },
+    "seed": 1,
+    "value": 17,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:min",
+      "inputs": [
+        17
+      ]
+    },
+    "seed": 42,
+    "value": 17,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:max",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    },
+    "seed": 1,
+    "value": 8,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:max",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    },
+    "seed": 42,
+    "value": 8,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:max",
+      "inputs": []
+    },
+    "seed": 1,
+    "value": -2147483648,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:max",
+      "inputs": []
+    },
+    "seed": 42,
+    "value": -2147483648,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:max",
+      "inputs": [
+        17
+      ]
+    },
+    "seed": 1,
+    "value": 17,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:max",
+      "inputs": [
+        17
+      ]
+    },
+    "seed": 42,
+    "value": 17,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:sub",
+      "left": -7,
+      "right": 3
+    },
+    "seed": 1,
+    "value": -10,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:sub",
+      "left": -7,
+      "right": 3
+    },
+    "seed": 42,
+    "value": -10,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:sub",
+      "left": 7,
+      "right": -3
+    },
+    "seed": 1,
+    "value": 10,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:sub",
+      "left": 7,
+      "right": -3
+    },
+    "seed": 42,
+    "value": 10,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:sub",
+      "left": 7,
+      "right": 0
+    },
+    "seed": 1,
+    "value": 7,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:sub",
+      "left": 7,
+      "right": 0
+    },
+    "seed": 42,
+    "value": 7,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:div",
+      "left": -7,
+      "right": 3
+    },
+    "seed": 1,
+    "value": -2,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:div",
+      "left": -7,
+      "right": 3
+    },
+    "seed": 42,
+    "value": -2,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:div",
+      "left": 7,
+      "right": -3
+    },
+    "seed": 1,
+    "value": -2,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:div",
+      "left": 7,
+      "right": -3
+    },
+    "seed": 42,
+    "value": -2,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:div",
+      "left": 7,
+      "right": 0
+    },
+    "seed": 1,
+    "value": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:div",
+      "left": 7,
+      "right": 0
+    },
+    "seed": 42,
+    "value": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:mod",
+      "left": -7,
+      "right": 3
+    },
+    "seed": 1,
+    "value": -1,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:mod",
+      "left": -7,
+      "right": 3
+    },
+    "seed": 42,
+    "value": -1,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:mod",
+      "left": 7,
+      "right": -3
+    },
+    "seed": 1,
+    "value": 1,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:mod",
+      "left": 7,
+      "right": -3
+    },
+    "seed": 42,
+    "value": 1,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:mod",
+      "left": 7,
+      "right": 0
+    },
+    "seed": 1,
+    "value": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:mod",
+      "left": 7,
+      "right": 0
+    },
+    "seed": 42,
+    "value": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:abs",
+      "input": -7
+    },
+    "seed": 1,
+    "value": 7,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:abs",
+      "input": -7
+    },
+    "seed": 42,
+    "value": 7,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:negate",
+      "input": -7
+    },
+    "seed": 1,
+    "value": 7,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:negate",
+      "input": -7
+    },
+    "seed": 42,
+    "value": 7,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 2,
+      "exponent": 10
+    },
+    "seed": 1,
+    "value": 1024,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 2,
+      "exponent": 10
+    },
+    "seed": 42,
+    "value": 1024,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 0,
+      "exponent": 0
+    },
+    "seed": 1,
+    "value": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 0,
+      "exponent": 0
+    },
+    "seed": 42,
+    "value": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": -2,
+      "exponent": 3
+    },
+    "seed": 1,
+    "value": -8,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": -2,
+      "exponent": 3
+    },
+    "seed": 42,
+    "value": -8,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 3,
+      "exponent": -2
+    },
+    "seed": 1,
+    "value": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 3,
+      "exponent": -2
+    },
+    "seed": 42,
+    "value": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:uniform",
+      "min": 1,
+      "max": 5
+    },
+    "seed": 1,
+    "value": 1,
+    "nextInt": 431529176
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:uniform",
+      "min": 1,
+      "max": 5
+    },
+    "seed": 42,
+    "value": 1,
+    "nextInt": 234785527
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:uniform",
+      "min": 3,
+      "max": 3
+    },
+    "seed": 1,
+    "value": 3,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:uniform",
+      "min": 3,
+      "max": 3
+    },
+    "seed": 42,
+    "value": 3,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:uniform",
+      "min": 5,
+      "max": 1
+    },
+    "seed": 1,
+    "value": 5,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:uniform",
+      "min": 5,
+      "max": 1
+    },
+    "seed": 42,
+    "value": 5,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:conditional",
+      "condition": {
+        "type": "minecraft:all_of",
+        "terms": []
+      },
+      "on_true": {
+        "type": "minecraft:uniform",
+        "min": 1,
+        "max": 5
+      },
+      "on_false": -2
+    },
+    "seed": 1,
+    "value": 1,
+    "nextInt": 431529176
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:conditional",
+      "condition": {
+        "type": "minecraft:all_of",
+        "terms": []
+      },
+      "on_true": {
+        "type": "minecraft:uniform",
+        "min": 1,
+        "max": 5
+      },
+      "on_false": -2
+    },
+    "seed": 42,
+    "value": 1,
+    "nextInt": 234785527
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:conditional",
+      "condition": {
+        "type": "minecraft:any_of",
+        "terms": []
+      },
+      "on_true": {
+        "type": "minecraft:uniform",
+        "min": 1,
+        "max": 5
+      },
+      "on_false": -2
+    },
+    "seed": 1,
+    "value": -2,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:conditional",
+      "condition": {
+        "type": "minecraft:any_of",
+        "terms": []
+      },
+      "on_true": {
+        "type": "minecraft:uniform",
+        "min": 1,
+        "max": 5
+      },
+      "on_false": -2
+    },
+    "seed": 42,
+    "value": -2,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:number_dispatcher",
+      "cases": [
+        {
+          "condition": {
+            "type": "minecraft:any_of",
+            "terms": []
+          },
+          "value": 20
+        },
+        {
+          "condition": {
+            "type": "minecraft:all_of",
+            "terms": []
+          },
+          "value": {
+            "type": "minecraft:uniform",
+            "min": 1,
+            "max": 5
+          }
+        }
+      ],
+      "default": 0
+    },
+    "seed": 1,
+    "value": 1,
+    "nextInt": 431529176
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:number_dispatcher",
+      "cases": [
+        {
+          "condition": {
+            "type": "minecraft:any_of",
+            "terms": []
+          },
+          "value": 20
+        },
+        {
+          "condition": {
+            "type": "minecraft:all_of",
+            "terms": []
+          },
+          "value": {
+            "type": "minecraft:uniform",
+            "min": 1,
+            "max": 5
+          }
+        }
+      ],
+      "default": 0
+    },
+    "seed": 42,
+    "value": 1,
+    "nextInt": 234785527
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:weighted_list",
+      "distribution": [
+        {
+          "data": 9,
+          "weight": 1
+        }
+      ]
+    },
+    "seed": 1,
+    "value": 9,
+    "nextInt": 431529176
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:weighted_list",
+      "distribution": [
+        {
+          "data": 9,
+          "weight": 1
+        }
+      ]
+    },
+    "seed": 42,
+    "value": 9,
+    "nextInt": 234785527
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:weighted_list",
+      "distribution": [
+        {
+          "data": 1,
+          "weight": 30
+        },
+        {
+          "data": 0,
+          "weight": 70
+        }
+      ]
+    },
+    "seed": 1,
+    "value": 0,
+    "nextInt": 431529176
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:weighted_list",
+      "distribution": [
+        {
+          "data": 1,
+          "weight": 30
+        },
+        {
+          "data": 0,
+          "weight": 70
+        }
+      ]
+    },
+    "seed": 42,
+    "value": 0,
+    "nextInt": 234785527
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:weighted_list",
+      "distribution": [
+        {
+          "data": 3,
+          "weight": 0
+        },
+        {
+          "data": 4,
+          "weight": 2
+        }
+      ]
+    },
+    "seed": 1,
+    "value": 4,
+    "nextInt": 431529176
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:weighted_list",
+      "distribution": [
+        {
+          "data": 3,
+          "weight": 0
+        },
+        {
+          "data": 4,
+          "weight": 2
+        }
+      ]
+    },
+    "seed": 42,
+    "value": 4,
+    "nextInt": 234785527
+  },
+  {
+    "kind": "float",
+    "provider": 0,
+    "seed": 1,
+    "bits": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": 0,
+    "seed": 42,
+    "bits": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": 7,
+    "seed": 1,
+    "bits": 1088421888,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": 7,
+    "seed": 42,
+    "bits": 1088421888,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": -9,
+    "seed": 1,
+    "bits": -1055916032,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": -9,
+    "seed": 42,
+    "bits": -1055916032,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:constant",
+      "value": 6
+    },
+    "seed": 1,
+    "bits": 1086324736,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:constant",
+      "value": 6
+    },
+    "seed": 42,
+    "bits": 1086324736,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:add",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    },
+    "seed": 1,
+    "bits": 1082130432,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:add",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    },
+    "seed": 42,
+    "bits": 1082130432,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:add",
+      "inputs": []
+    },
+    "seed": 1,
+    "bits": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:add",
+      "inputs": []
+    },
+    "seed": 42,
+    "bits": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:add",
+      "inputs": [
+        17
+      ]
+    },
+    "seed": 1,
+    "bits": 1099431936,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:add",
+      "inputs": [
+        17
+      ]
+    },
+    "seed": 42,
+    "bits": 1099431936,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:mul",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    },
+    "seed": 1,
+    "bits": -1020788736,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:mul",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    },
+    "seed": 42,
+    "bits": -1020788736,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:mul",
+      "inputs": []
+    },
+    "seed": 1,
+    "bits": 1065353216,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:mul",
+      "inputs": []
+    },
+    "seed": 42,
+    "bits": 1065353216,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:mul",
+      "inputs": [
+        17
+      ]
+    },
+    "seed": 1,
+    "bits": 1099431936,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:mul",
+      "inputs": [
+        17
+      ]
+    },
+    "seed": 42,
+    "bits": 1099431936,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:avg",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    },
+    "seed": 1,
+    "bits": 1068149419,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:avg",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    },
+    "seed": 42,
+    "bits": 1068149419,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:avg",
+      "inputs": []
+    },
+    "seed": 1,
+    "bits": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:avg",
+      "inputs": []
+    },
+    "seed": 42,
+    "bits": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:avg",
+      "inputs": [
+        17
+      ]
+    },
+    "seed": 1,
+    "bits": 1099431936,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:avg",
+      "inputs": [
+        17
+      ]
+    },
+    "seed": 42,
+    "bits": 1099431936,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:min",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    },
+    "seed": 1,
+    "bits": -1059061760,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:min",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    },
+    "seed": 42,
+    "bits": -1059061760,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:min",
+      "inputs": []
+    },
+    "seed": 1,
+    "bits": 2139095039,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:min",
+      "inputs": []
+    },
+    "seed": 42,
+    "bits": 2139095039,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:min",
+      "inputs": [
+        17
+      ]
+    },
+    "seed": 1,
+    "bits": 1099431936,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:min",
+      "inputs": [
+        17
+      ]
+    },
+    "seed": 42,
+    "bits": 1099431936,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:max",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    },
+    "seed": 1,
+    "bits": 1090519040,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:max",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    },
+    "seed": 42,
+    "bits": 1090519040,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:max",
+      "inputs": []
+    },
+    "seed": 1,
+    "bits": -8388609,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:max",
+      "inputs": []
+    },
+    "seed": 42,
+    "bits": -8388609,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:max",
+      "inputs": [
+        17
+      ]
+    },
+    "seed": 1,
+    "bits": 1099431936,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:max",
+      "inputs": [
+        17
+      ]
+    },
+    "seed": 42,
+    "bits": 1099431936,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sub",
+      "left": -7,
+      "right": 3
+    },
+    "seed": 1,
+    "bits": -1054867456,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sub",
+      "left": -7,
+      "right": 3
+    },
+    "seed": 42,
+    "bits": -1054867456,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sub",
+      "left": 7,
+      "right": -3
+    },
+    "seed": 1,
+    "bits": 1092616192,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sub",
+      "left": 7,
+      "right": -3
+    },
+    "seed": 42,
+    "bits": 1092616192,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sub",
+      "left": 7,
+      "right": 0
+    },
+    "seed": 1,
+    "bits": 1088421888,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sub",
+      "left": 7,
+      "right": 0
+    },
+    "seed": 42,
+    "bits": 1088421888,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:div",
+      "left": -7,
+      "right": 3
+    },
+    "seed": 1,
+    "bits": -1072343723,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:div",
+      "left": -7,
+      "right": 3
+    },
+    "seed": 42,
+    "bits": -1072343723,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:div",
+      "left": 7,
+      "right": -3
+    },
+    "seed": 1,
+    "bits": -1072343723,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:div",
+      "left": 7,
+      "right": -3
+    },
+    "seed": 42,
+    "bits": -1072343723,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:div",
+      "left": 7,
+      "right": 0
+    },
+    "seed": 1,
+    "bits": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:div",
+      "left": 7,
+      "right": 0
+    },
+    "seed": 42,
+    "bits": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:mod",
+      "left": -7,
+      "right": 3
+    },
+    "seed": 1,
+    "bits": -1082130432,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:mod",
+      "left": -7,
+      "right": 3
+    },
+    "seed": 42,
+    "bits": -1082130432,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:mod",
+      "left": 7,
+      "right": -3
+    },
+    "seed": 1,
+    "bits": 1065353216,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:mod",
+      "left": 7,
+      "right": -3
+    },
+    "seed": 42,
+    "bits": 1065353216,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:mod",
+      "left": 7,
+      "right": 0
+    },
+    "seed": 1,
+    "bits": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:mod",
+      "left": 7,
+      "right": 0
+    },
+    "seed": 42,
+    "bits": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:abs",
+      "input": -7
+    },
+    "seed": 1,
+    "bits": 1088421888,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:abs",
+      "input": -7
+    },
+    "seed": 42,
+    "bits": 1088421888,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:negate",
+      "input": -7
+    },
+    "seed": 1,
+    "bits": 1088421888,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:negate",
+      "input": -7
+    },
+    "seed": 42,
+    "bits": 1088421888,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 2,
+      "exponent": 10
+    },
+    "seed": 1,
+    "bits": 1149239296,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 2,
+      "exponent": 10
+    },
+    "seed": 42,
+    "bits": 1149239296,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 0,
+      "exponent": 0
+    },
+    "seed": 1,
+    "bits": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 0,
+      "exponent": 0
+    },
+    "seed": 42,
+    "bits": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": -2,
+      "exponent": 3
+    },
+    "seed": 1,
+    "bits": -1056964608,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": -2,
+      "exponent": 3
+    },
+    "seed": 42,
+    "bits": -1056964608,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 3,
+      "exponent": -2
+    },
+    "seed": 1,
+    "bits": 1038323257,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 3,
+      "exponent": -2
+    },
+    "seed": 42,
+    "bits": 1038323257,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:uniform",
+      "min": 1,
+      "max": 5
+    },
+    "seed": 1,
+    "bits": 1081809621,
+    "nextInt": 431529176
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:uniform",
+      "min": 1,
+      "max": 5
+    },
+    "seed": 42,
+    "bits": 1081754013,
+    "nextInt": 234785527
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:uniform",
+      "min": 3,
+      "max": 3
+    },
+    "seed": 1,
+    "bits": 1077936128,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:uniform",
+      "min": 3,
+      "max": 3
+    },
+    "seed": 42,
+    "bits": 1077936128,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:uniform",
+      "min": 5,
+      "max": 1
+    },
+    "seed": 1,
+    "bits": 1084227584,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:uniform",
+      "min": 5,
+      "max": 1
+    },
+    "seed": 42,
+    "bits": 1084227584,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:conditional",
+      "condition": {
+        "type": "minecraft:all_of",
+        "terms": []
+      },
+      "on_true": {
+        "type": "minecraft:uniform",
+        "min": 1,
+        "max": 5
+      },
+      "on_false": -2
+    },
+    "seed": 1,
+    "bits": 1081809621,
+    "nextInt": 431529176
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:conditional",
+      "condition": {
+        "type": "minecraft:all_of",
+        "terms": []
+      },
+      "on_true": {
+        "type": "minecraft:uniform",
+        "min": 1,
+        "max": 5
+      },
+      "on_false": -2
+    },
+    "seed": 42,
+    "bits": 1081754013,
+    "nextInt": 234785527
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:conditional",
+      "condition": {
+        "type": "minecraft:any_of",
+        "terms": []
+      },
+      "on_true": {
+        "type": "minecraft:uniform",
+        "min": 1,
+        "max": 5
+      },
+      "on_false": -2
+    },
+    "seed": 1,
+    "bits": -1073741824,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:conditional",
+      "condition": {
+        "type": "minecraft:any_of",
+        "terms": []
+      },
+      "on_true": {
+        "type": "minecraft:uniform",
+        "min": 1,
+        "max": 5
+      },
+      "on_false": -2
+    },
+    "seed": 42,
+    "bits": -1073741824,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:number_dispatcher",
+      "cases": [
+        {
+          "condition": {
+            "type": "minecraft:any_of",
+            "terms": []
+          },
+          "value": 20
+        },
+        {
+          "condition": {
+            "type": "minecraft:all_of",
+            "terms": []
+          },
+          "value": {
+            "type": "minecraft:uniform",
+            "min": 1,
+            "max": 5
+          }
+        }
+      ],
+      "default": 0
+    },
+    "seed": 1,
+    "bits": 1081809621,
+    "nextInt": 431529176
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:number_dispatcher",
+      "cases": [
+        {
+          "condition": {
+            "type": "minecraft:any_of",
+            "terms": []
+          },
+          "value": 20
+        },
+        {
+          "condition": {
+            "type": "minecraft:all_of",
+            "terms": []
+          },
+          "value": {
+            "type": "minecraft:uniform",
+            "min": 1,
+            "max": 5
+          }
+        }
+      ],
+      "default": 0
+    },
+    "seed": 42,
+    "bits": 1081754013,
+    "nextInt": 234785527
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:weighted_list",
+      "distribution": [
+        {
+          "data": 9,
+          "weight": 1
+        }
+      ]
+    },
+    "seed": 1,
+    "bits": 1091567616,
+    "nextInt": 431529176
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:weighted_list",
+      "distribution": [
+        {
+          "data": 9,
+          "weight": 1
+        }
+      ]
+    },
+    "seed": 42,
+    "bits": 1091567616,
+    "nextInt": 234785527
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:weighted_list",
+      "distribution": [
+        {
+          "data": 1,
+          "weight": 30
+        },
+        {
+          "data": 0,
+          "weight": 70
+        }
+      ]
+    },
+    "seed": 1,
+    "bits": 0,
+    "nextInt": 431529176
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:weighted_list",
+      "distribution": [
+        {
+          "data": 1,
+          "weight": 30
+        },
+        {
+          "data": 0,
+          "weight": 70
+        }
+      ]
+    },
+    "seed": 42,
+    "bits": 0,
+    "nextInt": 234785527
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:weighted_list",
+      "distribution": [
+        {
+          "data": 3,
+          "weight": 0
+        },
+        {
+          "data": 4,
+          "weight": 2
+        }
+      ]
+    },
+    "seed": 1,
+    "bits": 1082130432,
+    "nextInt": 431529176
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:weighted_list",
+      "distribution": [
+        {
+          "data": 3,
+          "weight": 0
+        },
+        {
+          "data": 4,
+          "weight": 2
+        }
+      ]
+    },
+    "seed": 42,
+    "bits": 1082130432,
+    "nextInt": 234785527
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:floor_div",
+      "left": -7,
+      "right": 3
+    },
+    "seed": 1,
+    "value": -3,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:floor_div",
+      "left": -7,
+      "right": 3
+    },
+    "seed": 42,
+    "value": -3,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:floor_div",
+      "left": 7,
+      "right": -3
+    },
+    "seed": 1,
+    "value": -3,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:floor_div",
+      "left": 7,
+      "right": -3
+    },
+    "seed": 42,
+    "value": -3,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:floor_div",
+      "left": -2147483648,
+      "right": -1
+    },
+    "seed": 1,
+    "value": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:floor_div",
+      "left": -2147483648,
+      "right": -1
+    },
+    "seed": 42,
+    "value": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:floor_mod",
+      "left": -7,
+      "right": 3
+    },
+    "seed": 1,
+    "value": 2,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:floor_mod",
+      "left": -7,
+      "right": 3
+    },
+    "seed": 42,
+    "value": 2,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:floor_mod",
+      "left": 7,
+      "right": -3
+    },
+    "seed": 1,
+    "value": -2,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:floor_mod",
+      "left": 7,
+      "right": -3
+    },
+    "seed": 42,
+    "value": -2,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:floor_mod",
+      "left": -2147483648,
+      "right": -1
+    },
+    "seed": 1,
+    "value": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:floor_mod",
+      "left": -2147483648,
+      "right": -1
+    },
+    "seed": 42,
+    "value": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:add",
+      "inputs": [
+        2147483647,
+        1
+      ]
+    },
+    "seed": 1,
+    "value": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:add",
+      "inputs": [
+        2147483647,
+        1
+      ]
+    },
+    "seed": 42,
+    "value": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:mul",
+      "inputs": [
+        2147483647,
+        2147483647,
+        0
+      ]
+    },
+    "seed": 1,
+    "value": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:mul",
+      "inputs": [
+        2147483647,
+        2147483647,
+        0
+      ]
+    },
+    "seed": 42,
+    "value": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:avg",
+      "inputs": [
+        2147483647,
+        2147483647
+      ]
+    },
+    "seed": 1,
+    "value": 2147483647,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:avg",
+      "inputs": [
+        2147483647,
+        2147483647
+      ]
+    },
+    "seed": 42,
+    "value": 2147483647,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:abs",
+      "input": -2147483648
+    },
+    "seed": 1,
+    "value": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:abs",
+      "input": -2147483648
+    },
+    "seed": 42,
+    "value": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:negate",
+      "input": -2147483648
+    },
+    "seed": 1,
+    "value": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:negate",
+      "input": -2147483648
+    },
+    "seed": 42,
+    "value": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:from_float",
+      "input": -2.9
+    },
+    "seed": 1,
+    "value": -2,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:from_float",
+      "input": -2.9
+    },
+    "seed": 42,
+    "value": -2,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:from_float",
+      "input": 2.9
+    },
+    "seed": 1,
+    "value": 2,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:from_float",
+      "input": 2.9
+    },
+    "seed": 42,
+    "value": 2,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:from_float",
+      "input": 2147483648.0
+    },
+    "seed": 1,
+    "value": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:from_float",
+      "input": 2147483648.0
+    },
+    "seed": 42,
+    "value": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:binomial",
+      "n": 4,
+      "p": 0
+    },
+    "seed": 1,
+    "value": 0,
+    "nextInt": 892128508
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:binomial",
+      "n": 4,
+      "p": 0
+    },
+    "seed": 42,
+    "value": 0,
+    "nextInt": 1325939940
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:binomial",
+      "n": 4,
+      "p": 0.4
+    },
+    "seed": 1,
+    "value": 1,
+    "nextInt": 892128508
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:binomial",
+      "n": 4,
+      "p": 0.4
+    },
+    "seed": 42,
+    "value": 2,
+    "nextInt": 1325939940
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:binomial",
+      "n": 4,
+      "p": 1
+    },
+    "seed": 1,
+    "value": 4,
+    "nextInt": 892128508
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:binomial",
+      "n": 4,
+      "p": 1
+    },
+    "seed": 42,
+    "value": 4,
+    "nextInt": 1325939940
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:floor",
+      "input": -2.5
+    },
+    "seed": 1,
+    "bits": -1069547520,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:floor",
+      "input": -2.5
+    },
+    "seed": 42,
+    "bits": -1069547520,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:floor",
+      "input": -0.0
+    },
+    "seed": 1,
+    "bits": -2147483648,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:floor",
+      "input": -0.0
+    },
+    "seed": 42,
+    "bits": -2147483648,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:floor",
+      "input": 0.5
+    },
+    "seed": 1,
+    "bits": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:floor",
+      "input": 0.5
+    },
+    "seed": 42,
+    "bits": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:floor",
+      "input": 2.9
+    },
+    "seed": 1,
+    "bits": 1073741824,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:floor",
+      "input": 2.9
+    },
+    "seed": 42,
+    "bits": 1073741824,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:ceil",
+      "input": -2.5
+    },
+    "seed": 1,
+    "bits": -1073741824,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:ceil",
+      "input": -2.5
+    },
+    "seed": 42,
+    "bits": -1073741824,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:ceil",
+      "input": -0.0
+    },
+    "seed": 1,
+    "bits": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:ceil",
+      "input": -0.0
+    },
+    "seed": 42,
+    "bits": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:ceil",
+      "input": 0.5
+    },
+    "seed": 1,
+    "bits": 1065353216,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:ceil",
+      "input": 0.5
+    },
+    "seed": 42,
+    "bits": 1065353216,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:ceil",
+      "input": 2.9
+    },
+    "seed": 1,
+    "bits": 1077936128,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:ceil",
+      "input": 2.9
+    },
+    "seed": 42,
+    "bits": 1077936128,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:round",
+      "input": -2.5
+    },
+    "seed": 1,
+    "bits": -1073741824,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:round",
+      "input": -2.5
+    },
+    "seed": 42,
+    "bits": -1073741824,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:round",
+      "input": -0.0
+    },
+    "seed": 1,
+    "bits": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:round",
+      "input": -0.0
+    },
+    "seed": 42,
+    "bits": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:round",
+      "input": 0.5
+    },
+    "seed": 1,
+    "bits": 1065353216,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:round",
+      "input": 0.5
+    },
+    "seed": 42,
+    "bits": 1065353216,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:round",
+      "input": 2.9
+    },
+    "seed": 1,
+    "bits": 1077936128,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:round",
+      "input": 2.9
+    },
+    "seed": 42,
+    "bits": 1077936128,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:truncate",
+      "input": -2.5
+    },
+    "seed": 1,
+    "bits": -1073741824,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:truncate",
+      "input": -2.5
+    },
+    "seed": 42,
+    "bits": -1073741824,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:truncate",
+      "input": -0.0
+    },
+    "seed": 1,
+    "bits": -2147483648,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:truncate",
+      "input": -0.0
+    },
+    "seed": 42,
+    "bits": -2147483648,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:truncate",
+      "input": 0.5
+    },
+    "seed": 1,
+    "bits": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:truncate",
+      "input": 0.5
+    },
+    "seed": 42,
+    "bits": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:truncate",
+      "input": 2.9
+    },
+    "seed": 1,
+    "bits": 1073741824,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:truncate",
+      "input": 2.9
+    },
+    "seed": 42,
+    "bits": 1073741824,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sqrt",
+      "input": -2.5
+    },
+    "seed": 1,
+    "bits": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sqrt",
+      "input": -2.5
+    },
+    "seed": 42,
+    "bits": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sqrt",
+      "input": -0.0
+    },
+    "seed": 1,
+    "bits": -2147483648,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sqrt",
+      "input": -0.0
+    },
+    "seed": 42,
+    "bits": -2147483648,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sqrt",
+      "input": 0.5
+    },
+    "seed": 1,
+    "bits": 1060439283,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sqrt",
+      "input": 0.5
+    },
+    "seed": 42,
+    "bits": 1060439283,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sqrt",
+      "input": 2.9
+    },
+    "seed": 1,
+    "bits": 1071249893,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sqrt",
+      "input": 2.9
+    },
+    "seed": 42,
+    "bits": 1071249893,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sin",
+      "input": -2.5
+    },
+    "seed": 1,
+    "bits": -1088865733,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sin",
+      "input": -2.5
+    },
+    "seed": 42,
+    "bits": -1088865733,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sin",
+      "input": -0.0
+    },
+    "seed": 1,
+    "bits": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sin",
+      "input": -0.0
+    },
+    "seed": 42,
+    "bits": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sin",
+      "input": 0.5
+    },
+    "seed": 1,
+    "bits": 1056273710,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sin",
+      "input": 0.5
+    },
+    "seed": 42,
+    "bits": 1056273710,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sin",
+      "input": 2.9
+    },
+    "seed": 1,
+    "bits": 1047855142,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sin",
+      "input": 2.9
+    },
+    "seed": 42,
+    "bits": 1047855142,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:cos",
+      "input": -2.5
+    },
+    "seed": 1,
+    "bits": -1085467599,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:cos",
+      "input": -2.5
+    },
+    "seed": 42,
+    "bits": -1085467599,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:cos",
+      "input": -0.0
+    },
+    "seed": 1,
+    "bits": 1065353216,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:cos",
+      "input": -0.0
+    },
+    "seed": 42,
+    "bits": 1065353216,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:cos",
+      "input": 0.5
+    },
+    "seed": 1,
+    "bits": 1063299538,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:cos",
+      "input": 0.5
+    },
+    "seed": 42,
+    "bits": 1063299538,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:cos",
+      "input": 2.9
+    },
+    "seed": 1,
+    "bits": -1082617711,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:cos",
+      "input": 2.9
+    },
+    "seed": 42,
+    "bits": -1082617711,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:length",
+      "inputs": [
+        3,
+        4
+      ]
+    },
+    "seed": 1,
+    "bits": 1084227584,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:length",
+      "inputs": [
+        3,
+        4
+      ]
+    },
+    "seed": 42,
+    "bits": 1084227584,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:from_int",
+      "input": 16777217
+    },
+    "seed": 1,
+    "bits": 1266679808,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:from_int",
+      "input": 16777217
+    },
+    "seed": 42,
+    "bits": 1266679808,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:div",
+      "left": 1,
+      "right": {
+        "type": "minecraft:div",
+        "left": 1,
+        "right": 0
+      }
+    },
+    "seed": 1,
+    "bits": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:div",
+      "left": 1,
+      "right": {
+        "type": "minecraft:div",
+        "left": 1,
+        "right": 0
+      }
+    },
+    "seed": 42,
+    "bits": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:brewing/uses_default",
+    "seed": 1,
+    "value": 20,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:brewing/uses_default",
+    "seed": 42,
+    "value": 20,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": "minecraft:brewing/speed_default",
+    "seed": 1,
+    "bits": 1065353216,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": "minecraft:brewing/speed_default",
+    "seed": 42,
+    "bits": 1065353216,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:cooking/time_bamboo",
+    "block": {
+      "id": "minecraft:furnace"
+    },
+    "seed": 1,
+    "value": 50,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:cooking/time_bamboo",
+    "block": {
+      "id": "minecraft:furnace"
+    },
+    "seed": 42,
+    "value": 50,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:cooking/time_bamboo",
+    "block": {
+      "id": "minecraft:blast_furnace"
+    },
+    "seed": 1,
+    "value": 25,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:cooking/time_bamboo",
+    "block": {
+      "id": "minecraft:blast_furnace"
+    },
+    "seed": 42,
+    "value": 25,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:cooking/time_dried_kelp_block",
+    "block": {
+      "id": "minecraft:furnace"
+    },
+    "seed": 1,
+    "value": 4001,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:cooking/time_dried_kelp_block",
+    "block": {
+      "id": "minecraft:furnace"
+    },
+    "seed": 42,
+    "value": 4001,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:cooking/time_dried_kelp_block",
+    "block": {
+      "id": "minecraft:blast_furnace"
+    },
+    "seed": 1,
+    "value": 2000,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:cooking/time_dried_kelp_block",
+    "block": {
+      "id": "minecraft:blast_furnace"
+    },
+    "seed": 42,
+    "value": 2000,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:cooking/time_wool_carpets",
+    "block": {
+      "id": "minecraft:furnace"
+    },
+    "seed": 1,
+    "value": 67,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:cooking/time_wool_carpets",
+    "block": {
+      "id": "minecraft:furnace"
+    },
+    "seed": 42,
+    "value": 67,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:cooking/time_wool_carpets",
+    "block": {
+      "id": "minecraft:blast_furnace"
+    },
+    "seed": 1,
+    "value": 33,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:cooking/time_wool_carpets",
+    "block": {
+      "id": "minecraft:blast_furnace"
+    },
+    "seed": 42,
+    "value": 33,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/low",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "0"
+      }
+    },
+    "seed": 1,
+    "value": 1,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/low",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "0"
+      }
+    },
+    "seed": 42,
+    "value": 1,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/low",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "1"
+      }
+    },
+    "seed": 1,
+    "value": 0,
+    "nextInt": 431529176
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/low",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "1"
+      }
+    },
+    "seed": 42,
+    "value": 0,
+    "nextInt": 234785527
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/low_medium",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "0"
+      }
+    },
+    "seed": 1,
+    "value": 1,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/low_medium",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "0"
+      }
+    },
+    "seed": 42,
+    "value": 1,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/low_medium",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "1"
+      }
+    },
+    "seed": 1,
+    "value": 0,
+    "nextInt": 431529176
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/low_medium",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "1"
+      }
+    },
+    "seed": 42,
+    "value": 1,
+    "nextInt": 234785527
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/medium",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "0"
+      }
+    },
+    "seed": 1,
+    "value": 1,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/medium",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "0"
+      }
+    },
+    "seed": 42,
+    "value": 1,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/medium",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "1"
+      }
+    },
+    "seed": 1,
+    "value": 0,
+    "nextInt": 431529176
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/medium",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "1"
+      }
+    },
+    "seed": 42,
+    "value": 1,
+    "nextInt": 234785527
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/medium_high",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "0"
+      }
+    },
+    "seed": 1,
+    "value": 1,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/medium_high",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "0"
+      }
+    },
+    "seed": 42,
+    "value": 1,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/medium_high",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "1"
+      }
+    },
+    "seed": 1,
+    "value": 0,
+    "nextInt": 431529176
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/medium_high",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "1"
+      }
+    },
+    "seed": 42,
+    "value": 1,
+    "nextInt": 234785527
+  },
+  {
+    "kind": "float",
+    "provider": "minecraft:cooking/speed_default",
+    "block": {
+      "id": "minecraft:furnace"
+    },
+    "seed": 1,
+    "bits": 1065353216,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": "minecraft:cooking/speed_default",
+    "block": {
+      "id": "minecraft:furnace"
+    },
+    "seed": 42,
+    "bits": 1065353216,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "float",
+    "provider": "minecraft:cooking/speed_default",
+    "block": {
+      "id": "minecraft:smoker"
+    },
+    "seed": 1,
+    "bits": 1073741824,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "float",
+    "provider": "minecraft:cooking/speed_default",
+    "block": {
+      "id": "minecraft:smoker"
+    },
+    "seed": 42,
+    "bits": 1073741824,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": 1.5,
+    "seed": 1,
+    "value": 1,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": 1.5,
+    "seed": 42,
+    "value": 1,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": 1.0,
+    "seed": 1,
+    "value": 1,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": 1.0,
+    "seed": 42,
+    "value": 1,
+    "nextInt": -1170105035
+  },
+  {
+    "kind": "int",
+    "provider": 2147483648,
+    "seed": 1,
+    "value": -2147483648,
+    "nextInt": -1155869325
+  },
+  {
+    "kind": "int",
+    "provider": 2147483648,
+    "seed": 42,
+    "value": -2147483648,
+    "nextInt": -1170105035
+  }
+]

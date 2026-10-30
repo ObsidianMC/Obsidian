@@ -325,9 +325,15 @@ in the parts we model.
 
 ### Phase 4: data-driven systems
 
-1. **Loot.** The new dispatch keys, conjunctions and `modifier`. Switch the loot generator from the 1.21.11 tables to
-   26.3's (decision 4). Re-capture `block_loot.json` and `entity_loot.json` with the existing loot dumpers.
-2. **Context number providers** (int and float). Then `/compute` and `/data modify … compute` can use them.
+1. **Loot — complete.** Loot uses 26.3 tables, `type`, a single `condition` (including explicit conjunctions), and
+   object/array `modifier` values. Named built-in predicates and namespaced entity predicate maps are read; existing
+   unsupported entity predicates remain excluded. Plugin loot files use the new schema. `block_loot.json` and
+   `entity_loot.json` are re-captured on 26.3, with additional container and typed-number replays.
+2. **Context number providers — shared component complete.** `Obsidian.API.Data.ContextNumberProviders` reads separate
+   int/float expressions, arithmetic, conversions, distributions, conditional dispatch and registry references.
+   `NumberContext` supplies the random stream, predicates and optional world-dependent sources. The built-in provider
+   definitions are generated from 26.3 data; loot uses typed adapters to keep the programmatic plugin API compatible.
+   `/compute` and `/data modify … compute` remain follow-up command work; both can use this component.
 3. **Recipes:**
    - brewing recipes, replacing `BrewingRegistry`;
    - required cooking times, with speed from fuel components, replacing `FurnaceFuels`;
@@ -337,7 +343,7 @@ in the parts we model.
    point and needs a capture.
 5. **Other systems:**
    - World clocks and timelines
-   - Entity sub-predicates
+   - Entity sub-predicates: namespaced map format complete with loot (step 1); unsupported predicate kinds remain gaps.
    - Trim palettes
    - Pottery patterns
    - Block transformers
@@ -435,12 +441,11 @@ Phase 2.
 2. **`1.21.x` is frozen.** It takes only critical fixes from now on, and we merge those forward into `26.3.x`.
 3. **26.3 comes first.** 26.4 is in snapshots and probably ships in December. We finish 26.3, then start `26.4.x` from
    it. Phase 0 is meant to make later version bumps mostly regeneration.
-4. **Loot and worldgen run on 1.21.11 data until Phases 4 and 5.** 26.3's loot and worldgen data don't fit
-   Obsidian's models. The asset generator writes 1.21.11's loot tables, worldgen, structure tags, carvers, biome
-   spawns and biome parameters to `Assets/legacy-1.21.11`, which is embedded under the normal asset names, and the
-   server extracts 1.21.11's structure templates. Legacy worldgen reads 1.21.11 tag contents through
-   `obsidian_legacy` tags, which are never sent to clients. Everything else is 26.3. `LegacyMinecraftVersion` in
-   `Obsidian.csproj` names the version; Phases 4 and 5 remove it.
+4. **Worldgen runs on 1.21.11 data until Phase 5; loot now uses 26.3.** Phase 4 removed loot from the legacy asset
+   writer and embedding. The asset generator still writes 1.21.11 worldgen, structure tags, carvers, biome spawns and
+   biome parameters to `Assets/legacy-1.21.11`, embedded under the normal asset names, and the server extracts
+   1.21.11 structure templates. Legacy worldgen reads 1.21.11 tag contents through `obsidian_legacy` tags, which are
+   never sent to clients. `LegacyMinecraftVersion` in `Obsidian.csproj` remains until Phase 5 removes that bridge.
 
 ## Risks
 

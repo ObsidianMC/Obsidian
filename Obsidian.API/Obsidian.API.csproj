@@ -49,7 +49,7 @@
 
 			<AdditionalFiles Include="..\Obsidian\Assets\Codecs\**\*.json" LinkBase="Assets\Codecs\" />
 
-			<!-- Temporary: loot and worldgen come from the legacy version (LegacyMinecraftVersion in Obsidian.csproj). -->
+			<!-- Temporary: worldgen comes from the legacy version (LegacyMinecraftVersion in Obsidian.csproj). -->
 			<AdditionalFiles Include="..\Obsidian\Assets\legacy-*\worldgen\**\*.*" LinkBase="Assets\worldgen\" />
 			<AdditionalFiles Include="..\Obsidian\Assets\enums.json" Link="Assets\enums.json" />
 			<AdditionalFiles Include="..\Obsidian\Assets\item_components.json" Link="Assets\item_components.json" />
@@ -57,7 +57,10 @@
 			                  LogicalName="Obsidian.API.registry_ids.json" />
 			<EmbeddedResource Include="..\Obsidian\Assets\component_registry_ids.json"
 			                  LogicalName="Obsidian.API.component_registry_ids.json" />
-			<AdditionalFiles Include="..\Obsidian\Assets\legacy-*\loot_table\*.json" LinkBase="Assets\loot_table\" />
+			<AdditionalFiles Include="..\Obsidian\Assets\loot_table\*.json" LinkBase="Assets\loot_table\" />
+			<AdditionalFiles Include="..\Obsidian\Assets\predicate.json" Link="Assets\predicate.json" />
+			<AdditionalFiles Include="..\Obsidian\Assets\context_int_provider.json" Link="Assets\context_int_provider.json" />
+			<AdditionalFiles Include="..\Obsidian\Assets\context_float_provider.json" Link="Assets\context_float_provider.json" />
 			<AdditionalFiles Include="..\Obsidian\Assets\enchantments.json" Link="Assets\enchantments.json" />
 			<AdditionalFiles Include="..\Obsidian\Assets\instruments.json" Link="Assets\instruments.json" />
 			<AdditionalFiles Include="..\Obsidian\Assets\packet_types.json" Link="Assets\packet_types.json" />

@@ -1,0 +1,649 @@
+[
+  {
+    "table": "minecraft:chests/simple_dungeon",
+    "seed": 1,
+    "slots": {
+      "0": {
+        "id": "minecraft:gunpowder",
+        "count": 1
+      },
+      "2": {
+        "id": "minecraft:string",
+        "count": 3
+      },
+      "3": {
+        "id": "minecraft:gunpowder",
+        "count": 1
+      },
+      "5": {
+        "id": "minecraft:string",
+        "count": 1
+      },
+      "8": {
+        "id": "minecraft:bone",
+        "count": 1
+      },
+      "9": {
+        "id": "minecraft:string",
+        "count": 2
+      },
+      "10": {
+        "id": "minecraft:gunpowder",
+        "count": 1
+      },
+      "12": {
+        "id": "minecraft:bucket",
+        "count": 1
+      },
+      "20": {
+        "id": "minecraft:gunpowder",
+        "count": 3
+      },
+      "22": {
+        "id": "minecraft:golden_apple",
+        "count": 1
+      },
+      "25": {
+        "id": "minecraft:iron_ingot",
+        "count": 1
+      },
+      "26": {
+        "id": "minecraft:bone",
+        "count": 1
+      }
+    },
+    "nextInt": 45889196
+  },
+  {
+    "table": "minecraft:chests/shipwreck_map",
+    "seed": -1,
+    "slots": {
+      "8": {
+        "id": "minecraft:book",
+        "count": 2
+      },
+      "11": {
+        "id": "minecraft:book",
+        "count": 1
+      },
+      "12": {
+        "id": "minecraft:paper",
+        "count": 1
+      },
+      "14": {
+        "id": "minecraft:book",
+        "count": 2
+      },
+      "16": {
+        "id": "minecraft:book",
+        "count": 1
+      },
+      "24": {
+        "id": "minecraft:paper",
+        "count": 8
+      }
+    },
+    "nextInt": -529170671
+  },
+  {
+    "table": "minecraft:archaeology/desert_well",
+    "seed": 5086654115216342560,
+    "slots": {
+      "8": {
+        "id": "minecraft:suspicious_stew",
+        "count": 1,
+        "components": {
+          "minecraft:suspicious_stew_effects": [
+            {
+              "id": "minecraft:weakness",
+              "duration": 140
+            }
+          ]
+        }
+      }
+    },
+    "nextInt": 577492040
+  },
+  {
+    "table": "minecraft:chests/trial_chambers/reward_ominous",
+    "seed": -6169532649852302182,
+    "slots": {
+      "2": {
+        "id": "minecraft:emerald",
+        "count": 1
+      },
+      "4": {
+        "id": "minecraft:ominous_bottle",
+        "count": 1,
+        "components": {
+          "minecraft:ominous_bottle_amplifier": 2
+        }
+      },
+      "6": {
+        "id": "minecraft:diamond",
+        "count": 1
+      },
+      "8": {
+        "id": "minecraft:emerald",
+        "count": 5
+      },
+      "9": {
+        "id": "minecraft:diamond",
+        "count": 1
+      },
+      "10": {
+        "id": "minecraft:iron_block",
+        "count": 1
+      },
+      "13": {
+        "id": "minecraft:music_disc_creator",
+        "count": 1
+      },
+      "15": {
+        "id": "minecraft:emerald",
+        "count": 1
+      }
+    },
+    "nextInt": -343562709
+  },
+  {
+    "table": "minecraft:chests/trial_chambers/reward_ominous_rare",
+    "seed": -7912908803613548926,
+    "slots": {
+      "9": {
+        "id": "minecraft:enchanted_book",
+        "count": 1,
+        "components": {
+          "minecraft:stored_enchantments": {
+            "minecraft:wind_burst": 1
+          }
+        }
+      }
+    },
+    "nextInt": 242555302
+  },
+  {
+    "table": "minecraft:chests/simple_dungeon",
+    "seed": 0,
+    "slots": {
+      "1": {
+        "id": "minecraft:iron_ingot",
+        "count": 1
+      },
+      "3": {
+        "id": "minecraft:enchanted_book",
+        "count": 1,
+        "components": {
+          "minecraft:stored_enchantments": {
+            "minecraft:blast_protection": 1
+          }
+        }
+      },
+      "6": {
+        "id": "minecraft:coal",
+        "count": 1
+      },
+      "7": {
+        "id": "minecraft:bone",
+        "count": 1
+      },
+      "8": {
+        "id": "minecraft:iron_ingot",
+        "count": 1
+      },
+      "10": {
+        "id": "minecraft:gunpowder",
+        "count": 2
+      },
+      "11": {
+        "id": "minecraft:bucket",
+        "count": 1
+      },
+      "12": {
+        "id": "minecraft:gunpowder",
+        "count": 1
+      },
+      "13": {
+        "id": "minecraft:coal",
+        "count": 1
+      },
+      "14": {
+        "id": "minecraft:music_disc_13",
+        "count": 1
+      },
+      "17": {
+        "id": "minecraft:bone",
+        "count": 2
+      },
+      "18": {
+        "id": "minecraft:gunpowder",
+        "count": 1
+      },
+      "19": {
+        "id": "minecraft:gunpowder",
+        "count": 1
+      },
+      "21": {
+        "id": "minecraft:iron_ingot",
+        "count": 1
+      },
+      "23": {
+        "id": "minecraft:enchanted_golden_apple",
+        "count": 1
+      },
+      "26": {
+        "id": "minecraft:bone",
+        "count": 1
+      }
+    },
+    "nextInt": -543270831
+  },
+  {
+    "table": "minecraft:chests/ancient_city",
+    "seed": -1,
+    "slots": {
+      "0": {
+        "id": "minecraft:compass",
+        "count": 1
+      },
+      "1": {
+        "id": "minecraft:book",
+        "count": 1
+      },
+      "5": {
+        "id": "minecraft:iron_leggings",
+        "count": 1,
+        "components": {
+          "minecraft:enchantments": {
+            "minecraft:protection": 4,
+            "minecraft:unbreaking": 3,
+            "minecraft:vanishing_curse": 1
+          }
+        }
+      },
+      "6": {
+        "id": "minecraft:sculk_sensor",
+        "count": 1
+      },
+      "9": {
+        "id": "minecraft:bone",
+        "count": 1
+      },
+      "10": {
+        "id": "minecraft:book",
+        "count": 1
+      },
+      "11": {
+        "id": "minecraft:echo_shard",
+        "count": 1
+      },
+      "12": {
+        "id": "minecraft:sculk_sensor",
+        "count": 1
+      },
+      "13": {
+        "id": "minecraft:sculk_sensor",
+        "count": 1
+      },
+      "14": {
+        "id": "minecraft:book",
+        "count": 3
+      },
+      "15": {
+        "id": "minecraft:diamond_hoe",
+        "count": 1,
+        "components": {
+          "minecraft:damage": 125,
+          "minecraft:enchantments": {
+            "minecraft:efficiency": 5,
+            "minecraft:unbreaking": 3,
+            "minecraft:silk_touch": 1
+          }
+        }
+      },
+      "16": {
+        "id": "minecraft:enchanted_book",
+        "count": 1,
+        "components": {
+          "minecraft:stored_enchantments": {
+            "minecraft:swift_sneak": 3
+          }
+        }
+      },
+      "17": {
+        "id": "minecraft:book",
+        "count": 1
+      },
+      "18": {
+        "id": "minecraft:enchanted_book",
+        "count": 1,
+        "components": {
+          "minecraft:stored_enchantments": {
+            "minecraft:silk_touch": 1
+          }
+        }
+      },
+      "19": {
+        "id": "minecraft:bone",
+        "count": 1
+      },
+      "20": {
+        "id": "minecraft:sculk_sensor",
+        "count": 1
+      },
+      "21": {
+        "id": "minecraft:book",
+        "count": 1
+      },
+      "22": {
+        "id": "minecraft:echo_shard",
+        "count": 1
+      },
+      "23": {
+        "id": "minecraft:book",
+        "count": 1
+      },
+      "24": {
+        "id": "minecraft:bone",
+        "count": 1
+      },
+      "26": {
+        "id": "minecraft:bone",
+        "count": 8
+      }
+    },
+    "nextInt": 959981161
+  },
+  {
+    "table": "minecraft:chests/bastion_treasure",
+    "seed": 1,
+    "slots": {
+      "0": {
+        "id": "minecraft:diamond_leggings",
+        "count": 1,
+        "components": {
+          "minecraft:damage": 95,
+          "minecraft:enchantments": {
+            "minecraft:unbreaking": 2
+          }
+        }
+      },
+      "1": {
+        "id": "minecraft:gilded_blackstone",
+        "count": 11
+      },
+      "3": {
+        "id": "minecraft:netherite_upgrade_smithing_template",
+        "count": 1
+      },
+      "6": {
+        "id": "minecraft:spectral_arrow",
+        "count": 10
+      },
+      "7": {
+        "id": "minecraft:spectral_arrow",
+        "count": 1
+      },
+      "8": {
+        "id": "minecraft:gilded_blackstone",
+        "count": 1
+      },
+      "9": {
+        "id": "minecraft:diamond_helmet",
+        "count": 1,
+        "components": {
+          "minecraft:damage": 42,
+          "minecraft:enchantments": {
+            "minecraft:binding_curse": 1
+          }
+        }
+      },
+      "10": {
+        "id": "minecraft:spectral_arrow",
+        "count": 1
+      },
+      "11": {
+        "id": "minecraft:gilded_blackstone",
+        "count": 3
+      },
+      "17": {
+        "id": "minecraft:gold_block",
+        "count": 1
+      },
+      "18": {
+        "id": "minecraft:gold_block",
+        "count": 1
+      },
+      "19": {
+        "id": "minecraft:spectral_arrow",
+        "count": 2
+      },
+      "20": {
+        "id": "minecraft:netherite_scrap",
+        "count": 1
+      },
+      "25": {
+        "id": "minecraft:gilded_blackstone",
+        "count": 2
+      },
+      "26": {
+        "id": "minecraft:gilded_blackstone",
+        "count": 2
+      }
+    },
+    "nextInt": -662903833
+  },
+  {
+    "table": "minecraft:chests/pillager_outpost",
+    "seed": 1,
+    "slots": {
+      "0": {
+        "id": "minecraft:arrow",
+        "count": 1
+      },
+      "1": {
+        "id": "minecraft:goat_horn",
+        "count": 1,
+        "components": {
+          "minecraft:instrument": "minecraft:feel_goat_horn"
+        }
+      },
+      "2": {
+        "id": "minecraft:arrow",
+        "count": 1
+      },
+      "3": {
+        "id": "minecraft:arrow",
+        "count": 1
+      },
+      "4": {
+        "id": "minecraft:dark_oak_log",
+        "count": 1
+      },
+      "5": {
+        "id": "minecraft:dark_oak_log",
+        "count": 2
+      },
+      "6": {
+        "id": "minecraft:carrot",
+        "count": 2
+      },
+      "7": {
+        "id": "minecraft:potato",
+        "count": 1
+      },
+      "8": {
+        "id": "minecraft:carrot",
+        "count": 1
+      },
+      "9": {
+        "id": "minecraft:dark_oak_log",
+        "count": 1
+      },
+      "10": {
+        "id": "minecraft:sentry_armor_trim_smithing_template",
+        "count": 1
+      },
+      "11": {
+        "id": "minecraft:dark_oak_log",
+        "count": 1
+      },
+      "13": {
+        "id": "minecraft:dark_oak_log",
+        "count": 1
+      },
+      "14": {
+        "id": "minecraft:carrot",
+        "count": 1
+      },
+      "16": {
+        "id": "minecraft:crossbow",
+        "count": 1
+      },
+      "17": {
+        "id": "minecraft:dark_oak_log",
+        "count": 1
+      },
+      "18": {
+        "id": "minecraft:dark_oak_log",
+        "count": 1
+      },
+      "19": {
+        "id": "minecraft:sentry_armor_trim_smithing_template",
+        "count": 1
+      },
+      "20": {
+        "id": "minecraft:dark_oak_log",
+        "count": 1
+      },
+      "23": {
+        "id": "minecraft:arrow",
+        "count": 2
+      },
+      "25": {
+        "id": "minecraft:potato",
+        "count": 1
+      },
+      "26": {
+        "id": "minecraft:potato",
+        "count": 1
+      }
+    },
+    "nextInt": -472838325
+  },
+  {
+    "table": "minecraft:chests/abandoned_camp_common_chest",
+    "seed": 42,
+    "slots": {
+      "0": {
+        "id": "minecraft:arrow",
+        "count": 1
+      },
+      "2": {
+        "id": "minecraft:lead",
+        "count": 1
+      },
+      "6": {
+        "id": "minecraft:leather",
+        "count": 1
+      },
+      "7": {
+        "id": "minecraft:arrow",
+        "count": 2
+      },
+      "8": {
+        "id": "minecraft:copper_axe",
+        "count": 1
+      },
+      "9": {
+        "id": "minecraft:compass",
+        "count": 1
+      },
+      "11": {
+        "id": "minecraft:map",
+        "count": 1
+      },
+      "13": {
+        "id": "minecraft:lead",
+        "count": 1
+      },
+      "14": {
+        "id": "minecraft:leather",
+        "count": 1
+      },
+      "15": {
+        "id": "minecraft:white_candle",
+        "count": 2
+      },
+      "16": {
+        "id": "minecraft:white_candle",
+        "count": 1
+      },
+      "19": {
+        "id": "minecraft:copper_axe",
+        "count": 1
+      },
+      "20": {
+        "id": "minecraft:lead",
+        "count": 1
+      },
+      "21": {
+        "id": "minecraft:arrow",
+        "count": 1
+      },
+      "23": {
+        "id": "minecraft:leather",
+        "count": 1
+      }
+    },
+    "nextInt": -1735665707
+  },
+  {
+    "table": "minecraft:chests/abandoned_camp_secret_chest",
+    "seed": 42,
+    "slots": {
+      "0": {
+        "id": "minecraft:iron_boots",
+        "count": 1
+      },
+      "2": {
+        "id": "minecraft:diamond",
+        "count": 1
+      },
+      "7": {
+        "id": "minecraft:copper_ingot",
+        "count": 1
+      },
+      "9": {
+        "id": "minecraft:gold_ingot",
+        "count": 1
+      },
+      "11": {
+        "id": "minecraft:potion",
+        "count": 1,
+        "components": {
+          "minecraft:potion_contents": {
+            "potion": "minecraft:night_vision"
+          }
+        }
+      },
+      "13": {
+        "id": "minecraft:copper_ingot",
+        "count": 1
+      },
+      "15": {
+        "id": "minecraft:copper_ingot",
+        "count": 1
+      },
+      "20": {
+        "id": "minecraft:map",
+        "count": 1
+      },
+      "23": {
+        "id": "minecraft:copper_ingot",
+        "count": 1
+      }
+    },
+    "nextInt": 134940315
+  }
+]

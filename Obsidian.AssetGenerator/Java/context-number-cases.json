@@ -1,0 +1,1319 @@
+[
+  {
+    "kind": "int",
+    "provider": 0
+  },
+  {
+    "kind": "int",
+    "provider": 7
+  },
+  {
+    "kind": "int",
+    "provider": -9
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:constant",
+      "value": 6
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:add",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:add",
+      "inputs": []
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:add",
+      "inputs": [
+        17
+      ]
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:mul",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:mul",
+      "inputs": []
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:mul",
+      "inputs": [
+        17
+      ]
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:avg",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:avg",
+      "inputs": []
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:avg",
+      "inputs": [
+        17
+      ]
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:min",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:min",
+      "inputs": []
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:min",
+      "inputs": [
+        17
+      ]
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:max",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:max",
+      "inputs": []
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:max",
+      "inputs": [
+        17
+      ]
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:sub",
+      "left": -7,
+      "right": 3
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:sub",
+      "left": 7,
+      "right": -3
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:sub",
+      "left": 7,
+      "right": 0
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:div",
+      "left": -7,
+      "right": 3
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:div",
+      "left": 7,
+      "right": -3
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:div",
+      "left": 7,
+      "right": 0
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:mod",
+      "left": -7,
+      "right": 3
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:mod",
+      "left": 7,
+      "right": -3
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:mod",
+      "left": 7,
+      "right": 0
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:abs",
+      "input": -7
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:negate",
+      "input": -7
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 2,
+      "exponent": 10
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 0,
+      "exponent": 0
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": -2,
+      "exponent": 3
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 3,
+      "exponent": -2
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:uniform",
+      "min": 1,
+      "max": 5
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:uniform",
+      "min": 3,
+      "max": 3
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:uniform",
+      "min": 5,
+      "max": 1
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:conditional",
+      "condition": {
+        "type": "minecraft:all_of",
+        "terms": []
+      },
+      "on_true": {
+        "type": "minecraft:uniform",
+        "min": 1,
+        "max": 5
+      },
+      "on_false": -2
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:conditional",
+      "condition": {
+        "type": "minecraft:any_of",
+        "terms": []
+      },
+      "on_true": {
+        "type": "minecraft:uniform",
+        "min": 1,
+        "max": 5
+      },
+      "on_false": -2
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:number_dispatcher",
+      "cases": [
+        {
+          "condition": {
+            "type": "minecraft:any_of",
+            "terms": []
+          },
+          "value": 20
+        },
+        {
+          "condition": {
+            "type": "minecraft:all_of",
+            "terms": []
+          },
+          "value": {
+            "type": "minecraft:uniform",
+            "min": 1,
+            "max": 5
+          }
+        }
+      ],
+      "default": 0
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:weighted_list",
+      "distribution": [
+        {
+          "data": 9,
+          "weight": 1
+        }
+      ]
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:weighted_list",
+      "distribution": [
+        {
+          "data": 1,
+          "weight": 30
+        },
+        {
+          "data": 0,
+          "weight": 70
+        }
+      ]
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:weighted_list",
+      "distribution": [
+        {
+          "data": 3,
+          "weight": 0
+        },
+        {
+          "data": 4,
+          "weight": 2
+        }
+      ]
+    }
+  },
+  {
+    "kind": "float",
+    "provider": 0
+  },
+  {
+    "kind": "float",
+    "provider": 7
+  },
+  {
+    "kind": "float",
+    "provider": -9
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:constant",
+      "value": 6
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:add",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:add",
+      "inputs": []
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:add",
+      "inputs": [
+        17
+      ]
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:mul",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:mul",
+      "inputs": []
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:mul",
+      "inputs": [
+        17
+      ]
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:avg",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:avg",
+      "inputs": []
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:avg",
+      "inputs": [
+        17
+      ]
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:min",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:min",
+      "inputs": []
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:min",
+      "inputs": [
+        17
+      ]
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:max",
+      "inputs": [
+        -7,
+        3,
+        8
+      ]
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:max",
+      "inputs": []
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:max",
+      "inputs": [
+        17
+      ]
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sub",
+      "left": -7,
+      "right": 3
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sub",
+      "left": 7,
+      "right": -3
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sub",
+      "left": 7,
+      "right": 0
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:div",
+      "left": -7,
+      "right": 3
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:div",
+      "left": 7,
+      "right": -3
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:div",
+      "left": 7,
+      "right": 0
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:mod",
+      "left": -7,
+      "right": 3
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:mod",
+      "left": 7,
+      "right": -3
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:mod",
+      "left": 7,
+      "right": 0
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:abs",
+      "input": -7
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:negate",
+      "input": -7
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 2,
+      "exponent": 10
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 0,
+      "exponent": 0
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": -2,
+      "exponent": 3
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 3,
+      "exponent": -2
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:uniform",
+      "min": 1,
+      "max": 5
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:uniform",
+      "min": 3,
+      "max": 3
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:uniform",
+      "min": 5,
+      "max": 1
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:conditional",
+      "condition": {
+        "type": "minecraft:all_of",
+        "terms": []
+      },
+      "on_true": {
+        "type": "minecraft:uniform",
+        "min": 1,
+        "max": 5
+      },
+      "on_false": -2
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:conditional",
+      "condition": {
+        "type": "minecraft:any_of",
+        "terms": []
+      },
+      "on_true": {
+        "type": "minecraft:uniform",
+        "min": 1,
+        "max": 5
+      },
+      "on_false": -2
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:number_dispatcher",
+      "cases": [
+        {
+          "condition": {
+            "type": "minecraft:any_of",
+            "terms": []
+          },
+          "value": 20
+        },
+        {
+          "condition": {
+            "type": "minecraft:all_of",
+            "terms": []
+          },
+          "value": {
+            "type": "minecraft:uniform",
+            "min": 1,
+            "max": 5
+          }
+        }
+      ],
+      "default": 0
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:weighted_list",
+      "distribution": [
+        {
+          "data": 9,
+          "weight": 1
+        }
+      ]
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:weighted_list",
+      "distribution": [
+        {
+          "data": 1,
+          "weight": 30
+        },
+        {
+          "data": 0,
+          "weight": 70
+        }
+      ]
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:weighted_list",
+      "distribution": [
+        {
+          "data": 3,
+          "weight": 0
+        },
+        {
+          "data": 4,
+          "weight": 2
+        }
+      ]
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:floor_div",
+      "left": -7,
+      "right": 3
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:floor_div",
+      "left": 7,
+      "right": -3
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:floor_div",
+      "left": -2147483648,
+      "right": -1
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:floor_mod",
+      "left": -7,
+      "right": 3
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:floor_mod",
+      "left": 7,
+      "right": -3
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:floor_mod",
+      "left": -2147483648,
+      "right": -1
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:add",
+      "inputs": [
+        2147483647,
+        1
+      ]
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:mul",
+      "inputs": [
+        2147483647,
+        2147483647,
+        0
+      ]
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:avg",
+      "inputs": [
+        2147483647,
+        2147483647
+      ]
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:abs",
+      "input": -2147483648
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:negate",
+      "input": -2147483648
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:from_float",
+      "input": -2.9
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:from_float",
+      "input": 2.9
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:from_float",
+      "input": 2147483648.0
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:binomial",
+      "n": 4,
+      "p": 0
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:binomial",
+      "n": 4,
+      "p": 0.4
+    }
+  },
+  {
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:binomial",
+      "n": 4,
+      "p": 1
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:floor",
+      "input": -2.5
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:floor",
+      "input": -0.0
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:floor",
+      "input": 0.5
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:floor",
+      "input": 2.9
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:ceil",
+      "input": -2.5
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:ceil",
+      "input": -0.0
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:ceil",
+      "input": 0.5
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:ceil",
+      "input": 2.9
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:round",
+      "input": -2.5
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:round",
+      "input": -0.0
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:round",
+      "input": 0.5
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:round",
+      "input": 2.9
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:truncate",
+      "input": -2.5
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:truncate",
+      "input": -0.0
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:truncate",
+      "input": 0.5
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:truncate",
+      "input": 2.9
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sqrt",
+      "input": -2.5
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sqrt",
+      "input": -0.0
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sqrt",
+      "input": 0.5
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sqrt",
+      "input": 2.9
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sin",
+      "input": -2.5
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sin",
+      "input": -0.0
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sin",
+      "input": 0.5
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sin",
+      "input": 2.9
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:cos",
+      "input": -2.5
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:cos",
+      "input": -0.0
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:cos",
+      "input": 0.5
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:cos",
+      "input": 2.9
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:length",
+      "inputs": [
+        3,
+        4
+      ]
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:from_int",
+      "input": 16777217
+    }
+  },
+  {
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:div",
+      "left": 1,
+      "right": {
+        "type": "minecraft:div",
+        "left": 1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:brewing/uses_default"
+  },
+  {
+    "kind": "float",
+    "provider": "minecraft:brewing/speed_default"
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:cooking/time_bamboo",
+    "block": {
+      "id": "minecraft:furnace"
+    }
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:cooking/time_bamboo",
+    "block": {
+      "id": "minecraft:blast_furnace"
+    }
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:cooking/time_dried_kelp_block",
+    "block": {
+      "id": "minecraft:furnace"
+    }
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:cooking/time_dried_kelp_block",
+    "block": {
+      "id": "minecraft:blast_furnace"
+    }
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:cooking/time_wool_carpets",
+    "block": {
+      "id": "minecraft:furnace"
+    }
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:cooking/time_wool_carpets",
+    "block": {
+      "id": "minecraft:blast_furnace"
+    }
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/low",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "0"
+      }
+    }
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/low",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "1"
+      }
+    }
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/low_medium",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "0"
+      }
+    }
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/low_medium",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "1"
+      }
+    }
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/medium",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "0"
+      }
+    }
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/medium",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "1"
+      }
+    }
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/medium_high",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "0"
+      }
+    }
+  },
+  {
+    "kind": "int",
+    "provider": "minecraft:compostable/medium_high",
+    "block": {
+      "id": "minecraft:composter",
+      "properties": {
+        "level": "1"
+      }
+    }
+  },
+  {
+    "kind": "float",
+    "provider": "minecraft:cooking/speed_default",
+    "block": {
+      "id": "minecraft:furnace"
+    }
+  },
+  {
+    "kind": "float",
+    "provider": "minecraft:cooking/speed_default",
+    "block": {
+      "id": "minecraft:smoker"
+    }
+  },
+  {
+    "kind": "int",
+    "provider": 1.5
+  },
+  {
+    "kind": "int",
+    "provider": 1.0
+  },
+  {
+    "kind": "int",
+    "provider": 2147483648
+  }
+]

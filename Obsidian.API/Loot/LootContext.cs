@@ -1,4 +1,5 @@
 using Obsidian.API.Registries;
+using Obsidian.API.Data;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
@@ -18,6 +19,21 @@ public sealed class LootContext
     private readonly HashSet<LootTable> visitedTables = [];
 
     public required IRandomSource Random { get; init; }
+
+    private NumberContext? numbers;
+
+    /// <summary>
+    /// The shared provider context, using the same random stream and predicates as this loot evaluation.
+    /// </summary>
+    public NumberContext Numbers => this.numbers ??= new NumberContext
+    {
+        Random = this.Random,
+        TestCondition = condition => LootTableJson.ReadCondition(condition).Test(this),
+        EnchantmentLevel = this.EnchantmentLevel
+    };
+
+    /// <summary>The enchantment-level context parameter, when evaluating an enchantment's data.</summary>
+    public int? EnchantmentLevel { get; init; }
 
     /// <summary>
     /// Raises the weight of entries with a quality and adds bonus rolls. For containers this is the opening player's
@@ -57,8 +73,8 @@ public sealed class LootContext
     internal Func<IEntity, bool>? EntityIsBaby { get; init; }
 
     /// <summary>
-    /// Whether the entity is a fishing hook in open water (vanilla's <c>type_specific</c> <c>in_open_water</c>), or null
-    /// when it is not a fishing hook.
+    /// Whether the entity is a fishing hook in open water (the <c>minecraft:type_specific/fishing_hook</c> predicate),
+    /// or null when it is not a fishing hook.
     /// </summary>
     internal Func<IEntity, bool?>? EntityFishingOpenWater { get; init; }
 

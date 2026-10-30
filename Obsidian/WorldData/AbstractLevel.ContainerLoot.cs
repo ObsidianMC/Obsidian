@@ -60,6 +60,7 @@ public abstract partial class AbstractLevel
                         Random = random,
                         Origin = new VectorD(position.X + 0.5, position.Y + 0.5, position.Z + 0.5),
                         ThisEntity = opener,
+                        OriginBiome = this.LootOriginBiome,
                         ResolveTable = resolver,
                         ExplorationMaps = ExplorationMaps.For(this)
                     });
@@ -125,6 +126,7 @@ public abstract partial class AbstractLevel
                 Random = random,
                 Origin = origin,
                 ThisEntity = opener,
+                OriginBiome = this.LootOriginBiome,
                 ResolveTable = resolver,
                 ExplorationMaps = ExplorationMaps.For(this)
             });
@@ -143,6 +145,15 @@ public abstract partial class AbstractLevel
             vehicle.LootTable = null;
             vehicle.LootTableSeed = 0;
         }
+    }
+
+    private string? LootOriginBiome(VectorD origin)
+    {
+        var x = (int)Math.Floor(origin.X);
+        var y = (int)Math.Floor(origin.Y);
+        var z = (int)Math.Floor(origin.Z);
+        var chunk = this.GetLoadedChunk(x >> 4, z >> 4);
+        return chunk?.GetBiome(x, y, z).Name;
     }
 
     // A host-owned buffer accepts every container size without inheriting its plugin's slot behavior.

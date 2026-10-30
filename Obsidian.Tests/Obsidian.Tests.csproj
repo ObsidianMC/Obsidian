@@ -26,6 +26,8 @@
 		<EmbeddedResource Include="Assets\vanilla_worldgen.json" />
 		<EmbeddedResource Include="Assets\block_loot.json" />
 		<EmbeddedResource Include="Assets\entity_loot.json" />
+		<EmbeddedResource Include="Assets\context_numbers.json" />
+		<EmbeddedResource Include="Assets\container_loot.json" />
 		<EmbeddedResource Include="Assets\progress-*.*" Exclude="Assets\progress-reference.md" />
 	</ItemGroup>
 
