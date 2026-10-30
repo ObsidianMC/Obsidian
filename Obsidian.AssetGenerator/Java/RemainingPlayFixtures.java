@@ -28,7 +28,29 @@ class RemainingPlayFixtures extends ScreenFixtures {
         SharedConstants.tryDetectVersion();
         Bootstrap.bootStrap();
         access = RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY);
+
         var output = new JsonObject();
+        output.add("set_player_team", teams());
+        output.add("level_particles", levelParticles());
+        output.add("explode", explosions());
+
+        var transientBlocks = new JsonArray();
+        var stone = net.minecraft.world.level.block.Blocks.STONE.defaultBlockState();
+        capture(transientBlocks, new ClientboundAddTransientBlockPacket(new BlockPos(-12, 70, 23), stone));
+        output.add("add_transient_block", transientBlocks);
+        var disk = new JsonArray();
+        capture(disk, ClientboundLowDiskSpaceWarningPacket.INSTANCE);
+        output.add("low_disk_space_warning", disk);
+
+        gameRules(output);
+        attributes(output);
+        output.add("update_advancements", advancements());
+        extraPackets(output);
+        recipePackets(output);
+        Files.writeString(Path.of(args[0]), new GsonBuilder().setPrettyPrinting().create().toJson(output));
+    }
+
+    static JsonArray teams() {
         var teams = new JsonArray();
         var scoreboard = new Scoreboard();
         var team = scoreboard.addPlayerTeam("fixture");
@@ -41,93 +63,123 @@ class RemainingPlayFixtures extends ScreenFixtures {
         team.setSeeFriendlyInvisibles(true);
         team.setColor(Optional.of(TeamColor.RED));
         scoreboard.addPlayerToTeam("Alex", team);
+
         capture(teams, ClientboundSetPlayerTeamPacket.createAddOrModifyPacket(team, true));
         capture(teams, ClientboundSetPlayerTeamPacket.createAddOrModifyPacket(team, false));
         capture(teams, ClientboundSetPlayerTeamPacket.createRemovePacket(team));
-        capture(teams, ClientboundSetPlayerTeamPacket.createPlayerPacket(team, "Steve", ClientboundSetPlayerTeamPacket.Action.ADD));
-        capture(teams, ClientboundSetPlayerTeamPacket.createPlayerPacket(team, "Alex", ClientboundSetPlayerTeamPacket.Action.REMOVE));
+        var add = ClientboundSetPlayerTeamPacket.Action.ADD;
+        var remove = ClientboundSetPlayerTeamPacket.Action.REMOVE;
+        capture(teams, ClientboundSetPlayerTeamPacket.createPlayerPacket(team, "Steve", add));
+        capture(teams, ClientboundSetPlayerTeamPacket.createPlayerPacket(team, "Alex", remove));
+
         team.setColor(Optional.empty());
         team.setNameTagVisibility(Team.Visibility.NEVER);
         team.setCollisionRule(Team.CollisionRule.PUSH_OWN_TEAM);
         capture(teams, ClientboundSetPlayerTeamPacket.createAddOrModifyPacket(team, false));
-        output.add("set_player_team", teams);
+        return teams;
+    }
 
+    static JsonArray levelParticles() {
         var particles = new JsonArray();
         // Every options-free type is exercised, including all types emitted by gameplay and /particle.
         for (var type : BuiltInRegistries.PARTICLE_TYPE) {
             if (!(type instanceof SimpleParticleType simple)) continue;
+
             var row = new JsonObject();
             row.addProperty("id", BuiltInRegistries.PARTICLE_TYPE.getId(type));
             row.addProperty("name", BuiltInRegistries.PARTICLE_TYPE.getKey(type).toString());
             var wires = new JsonArray();
-            for (var randomization : ClientboundLevelParticlesPacket.RandomizationType.values())
+            for (var randomization : ClientboundLevelParticlesPacket.RandomizationType.values()) {
                 capture(wires, new ClientboundLevelParticlesPacket(simple, true, false, -12.25, 64.5, 31.875,
                     .25f, .5f, .75f, 1f, 2f, 3f, 301, randomization));
+            }
             row.add("wire", wires);
             particles.add(row);
         }
-        output.add("level_particles", particles);
+        return particles;
+    }
+
+    static JsonArray explosions() {
         var explosions = new JsonArray();
-        var sound = net.minecraft.core.Holder.direct(SoundEvent.createFixedRangeEvent(Identifier.parse("fixture:boom"), 24f));
-        var debris = WeightedList.<ExplosionParticleInfo>builder().add(new ExplosionParticleInfo(ParticleTypes.SMOKE, .5f, .75f), 3).build();
+        var boom = SoundEvent.createFixedRangeEvent(Identifier.parse("fixture:boom"), 24f);
+        var sound = net.minecraft.core.Holder.direct(boom);
+        var smoke = new ExplosionParticleInfo(ParticleTypes.SMOKE, .5f, .75f);
+        var debris = WeightedList.<ExplosionParticleInfo>builder().add(smoke, 3).build();
         capture(explosions, new ClientboundExplodePacket(new Vec3(-12.25, 64.5, 31.875), 4f, 301,
             Optional.of(new Vec3(.25, -.5, 1.5)), ParticleTypes.EXPLOSION_EMITTER, sound, debris, true));
         capture(explosions, new ClientboundExplodePacket(new Vec3(-12.25, 64.5, 31.875), 4f, 0,
             Optional.empty(), ParticleTypes.EXPLOSION_EMITTER, sound, WeightedList.of(), false));
-        output.add("explode", explosions);
-        var transientBlocks = new JsonArray();
-        capture(transientBlocks, new ClientboundAddTransientBlockPacket(new BlockPos(-12, 70, 23), net.minecraft.world.level.block.Blocks.STONE.defaultBlockState()));
-        output.add("add_transient_block", transientBlocks);
-        var disk = new JsonArray();
-        capture(disk, ClientboundLowDiskSpaceWarningPacket.INSTANCE);
-        output.add("low_disk_space_warning", disk);
+        return explosions;
+    }
 
+    static void gameRules(JsonObject output) {
         var rules = new GameRules(BuiltInRegistries.GAME_RULE.stream().toList());
         var values = new LinkedHashMap<ResourceKey<GameRule<?>>, String>();
         var bounds = new JsonObject();
         var parsing = new JsonArray();
-        for (var rule : BuiltInRegistries.GAME_RULE.stream().sorted(Comparator.comparing(r -> r.getIdentifier().toString())).toList()) {
+        var sorted = BuiltInRegistries.GAME_RULE.stream()
+            .sorted(Comparator.comparing(r -> r.getIdentifier().toString()))
+            .toList();
+        var inputs = List.of("true", "false", "TRUE", "1", "-1", "0", "+1", "2147483647", "2147483648", "1 ", " 1");
+        for (var rule : sorted) {
             var key = ResourceKey.create(Registries.GAME_RULE, rule.getIdentifier());
             values.put(key, rules.getAsString(rule));
             if (rule.argument() instanceof com.mojang.brigadier.arguments.IntegerArgumentType integer) {
-                var limits = new JsonArray(); limits.add(integer.getMinimum()); limits.add(integer.getMaximum());
+                var limits = new JsonArray();
+                limits.add(integer.getMinimum());
+                limits.add(integer.getMaximum());
                 bounds.add(rule.id(), limits);
             }
-            for (String value : List.of("true", "false", "TRUE", "1", "-1", "0", "+1", "2147483647", "2147483648", "1 ", " 1")) {
-                var row = new JsonArray(); row.add(rule.getIdentifier().toString()); row.add(value);
-                row.add(rule.deserialize(value).result().isPresent()); parsing.add(row);
+            for (String value : inputs) {
+                var row = new JsonArray();
+                row.add(rule.getIdentifier().toString());
+                row.add(value);
+                row.add(rule.deserialize(value).result().isPresent());
+                parsing.add(row);
             }
         }
+
         var ruleWires = new JsonArray();
         capture(ruleWires, new ClientboundGameRuleValuesPacket(values));
         output.add("game_rule_values", ruleWires);
         output.add("game_rule_parsing", parsing);
         output.add("game_rule_bounds", bounds);
+
+        var keepInventory = ResourceKey.create(Registries.GAME_RULE, Identifier.parse("minecraft:keep_inventory"));
+        var randomTickSpeed = ResourceKey.create(Registries.GAME_RULE, Identifier.parse("minecraft:random_tick_speed"));
         var edits = new JsonArray();
         capture(edits, new ServerboundSetGameRulePacket(List.of(
-            new ServerboundSetGameRulePacket.Entry(ResourceKey.create(Registries.GAME_RULE, Identifier.parse("minecraft:keep_inventory")), "true"),
-            new ServerboundSetGameRulePacket.Entry(ResourceKey.create(Registries.GAME_RULE, Identifier.parse("minecraft:random_tick_speed")), "17"))));
+            new ServerboundSetGameRulePacket.Entry(keepInventory, "true"),
+            new ServerboundSetGameRulePacket.Entry(randomTickSpeed, "17"))));
         output.add("set_game_rule", edits);
+    }
 
+    static void attributes(JsonObject output) {
         var attributes = new ArrayList<ClientboundUpdateAttributesPacket.AttributeSnapshot>();
         var ranges = new JsonArray();
         for (var attribute : BuiltInRegistries.ATTRIBUTE) {
-            var ranged = (RangedAttribute)attribute;
-            var row = new JsonArray(); row.add(BuiltInRegistries.ATTRIBUTE.getKey(attribute).toString());
-            row.add(ranged.getMinValue()); row.add(ranged.getMaxValue()); row.add(ranged.isClientSyncable()); row.add(ranged.getDefaultValue()); ranges.add(row);
-            attributes.add(new ClientboundUpdateAttributesPacket.AttributeSnapshot(BuiltInRegistries.ATTRIBUTE.wrapAsHolder(attribute), ranged.getDefaultValue(), List.of(
+            var ranged = (RangedAttribute) attribute;
+            var row = new JsonArray();
+            row.add(BuiltInRegistries.ATTRIBUTE.getKey(attribute).toString());
+            row.add(ranged.getMinValue());
+            row.add(ranged.getMaxValue());
+            row.add(ranged.isClientSyncable());
+            row.add(ranged.getDefaultValue());
+            ranges.add(row);
+
+            var modifiers = List.of(
                 new AttributeModifier(Identifier.parse("fixture:add"), 1.5, AttributeModifier.Operation.ADD_VALUE),
                 new AttributeModifier(Identifier.parse("fixture:base"), -.25, AttributeModifier.Operation.ADD_MULTIPLIED_BASE),
-                new AttributeModifier(Identifier.parse("fixture:total"), .75, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL))));
+                new AttributeModifier(Identifier.parse("fixture:total"), .75, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+            var holder = BuiltInRegistries.ATTRIBUTE.wrapAsHolder(attribute);
+            attributes.add(new ClientboundUpdateAttributesPacket.AttributeSnapshot(holder, ranged.getDefaultValue(), modifiers));
         }
+
         var attributeWires = new JsonArray();
-        capture(attributeWires, make(GAME + "ClientboundUpdateAttributesPacket", new String[]{"int", "java.util.List"}, 301, attributes));
+        var packet = make(GAME + "ClientboundUpdateAttributesPacket", new String[]{"int", "java.util.List"}, 301, attributes);
+        capture(attributeWires, packet);
         output.add("update_attributes", attributeWires);
         output.add("attribute_ranges", ranges);
-        output.add("update_advancements", advancements());
-        extraPackets(output);
-        recipePackets(output);
-        Files.writeString(Path.of(args[0]), new GsonBuilder().setPrettyPrinting().create().toJson(output));
     }
 
     static void extraPackets(JsonObject output) throws Exception {
@@ -135,14 +187,19 @@ class RemainingPlayFixtures extends ScreenFixtures {
         capture(picks, new ServerboundPickItemFromBlockPacket(new BlockPos(-12, 70, 23), true));
         output.add("pick_item_from_block", picks);
         var bytes = new byte[256];
-        for (int i = 0; i < bytes.length; i++) bytes[i] = (byte)i;
+        for (int i = 0; i < bytes.length; i++) {
+            bytes[i] = (byte) i;
+        }
         var signature = new net.minecraft.network.chat.MessageSignature(bytes);
         var packed = new net.minecraft.network.chat.MessageSignature.Packed(signature);
         var deletes = new JsonArray();
         capture(deletes, new ClientboundDeleteChatPacket(packed));
         capture(deletes, new ClientboundDeleteChatPacket(new net.minecraft.network.chat.MessageSignature.Packed(301)));
         output.add("delete_chat", deletes);
-        var bits = new BitSet(); bits.set(0); bits.set(3); bits.set(19);
+        var bits = new BitSet();
+        bits.set(0);
+        bits.set(3);
+        bits.set(19);
         var seen = new net.minecraft.network.chat.LastSeenMessages.Update(301, bits, (byte)77);
         var instant = java.time.Instant.ofEpochMilli(1767000123456L);
         var chats = new JsonArray();
@@ -166,7 +223,8 @@ class RemainingPlayFixtures extends ScreenFixtures {
         var damageRegistry = new net.minecraft.core.MappedRegistry<net.minecraft.world.damagesource.DamageType>(Registries.DAMAGE_TYPE, com.mojang.serialization.Lifecycle.stable());
         var damageType = damageRegistry.register(net.minecraft.world.damagesource.DamageTypes.ARROW,
             new net.minecraft.world.damagesource.DamageType("arrow", .1f), net.minecraft.core.RegistrationInfo.BUILT_IN);
-        damageRegistry.freeze(); registries.add(damageRegistry);
+        damageRegistry.freeze();
+        registries.add(damageRegistry);
         access = new RegistryAccess.ImmutableRegistryAccess(registries);
         var damage = new JsonArray();
         capture(damage, new ClientboundDamageEventPacket(301, damageType, 2, 3, Optional.of(new Vec3(-12.25, 64.5, 31.875))));
@@ -177,8 +235,7 @@ class RemainingPlayFixtures extends ScreenFixtures {
         for (int i = 0; i < 3; i++) {
             var body = new net.minecraft.network.chat.SignedMessageBody.Packed("Hello", instant, -918273645L,
                 new net.minecraft.network.chat.LastSeenMessages.Packed(List.of(packed, new net.minecraft.network.chat.MessageSignature.Packed(301))));
-            var mask = i == 0 ? net.minecraft.network.chat.FilterMask.PASS_THROUGH : i == 1 ? net.minecraft.network.chat.FilterMask.FULLY_FILTERED : new net.minecraft.network.chat.FilterMask(80);
-            if (i == 2) { mask.setFiltered(1); mask.setFiltered(63); mask.setFiltered(70); }
+            var mask = filterMask(i);
             var bound = new net.minecraft.network.chat.ChatType.Bound(chatType, Component.literal("Alex"), i == 0 ? Optional.empty() : Optional.of(Component.literal("Steve")));
             if (i < 2) capture(disguised, new ClientboundDisguisedChatPacket(Component.literal("Hello"), bound));
             capture(playerChats, new ClientboundPlayerChatPacket(7, UUID.fromString("01234567-89ab-cdef-0123-456789abcdef"), 301,
@@ -190,7 +247,9 @@ class RemainingPlayFixtures extends ScreenFixtures {
 
         var ops = RegistryOps.create(JsonOps.INSTANCE, (RegistryAccess)access);
         var advancement = Advancement.CODEC.parse(ops, JsonParser.parseString("{\"criteria\":{\"alternate\":{\"trigger\":\"minecraft:impossible\"},\"first\":{\"trigger\":\"minecraft:impossible\"},\"second\":{\"trigger\":\"minecraft:impossible\"}},\"requirements\":[[\"first\",\"alternate\"],[\"second\"]],\"sends_telemetry_event\":true}")).getOrThrow();
-        var progress = new AdvancementProgress(); progress.update(advancement.requirements()); progress.grantProgress("first");
+        var progress = new AdvancementProgress();
+        progress.update(advancement.requirements());
+        progress.grantProgress("first");
         Vanilla.field("net.minecraft.advancements.CriterionProgress", "obtained").set(progress.getCriterion("first"), java.time.Instant.parse("2026-01-02T03:04:05Z"));
         var id = Identifier.parse("probe:progress");
         output.addProperty("progress_advancements", encode(ClientboundUpdateAdvancementsPacket.class.getName(), "STREAM_CODEC",
@@ -240,6 +299,24 @@ class RemainingPlayFixtures extends ScreenFixtures {
         output.add("recipe_book_add", book);
     }
 
+    /** The player chat fixture's filter mask: nothing filtered, everything, then 3 of 80 characters. */
+    static net.minecraft.network.chat.FilterMask filterMask(int fixture) {
+        if (fixture == 0) {
+            return net.minecraft.network.chat.FilterMask.PASS_THROUGH;
+        }
+        if (fixture == 1) {
+            return net.minecraft.network.chat.FilterMask.FULLY_FILTERED;
+        }
+
+        var mask = new net.minecraft.network.chat.FilterMask(80);
+        if (fixture == 2) {
+            mask.setFiltered(1);
+            mask.setFiltered(63);
+            mask.setFiltered(70);
+        }
+        return mask;
+    }
+
     static JsonArray advancements() {
         var captures = new JsonArray();
         var random = new Random(777);
@@ -274,7 +351,9 @@ class RemainingPlayFixtures extends ScreenFixtures {
                 definition.addProperty("id", node.holder().id().toString());
                 definition.addProperty("parent", node.parent() == null ? "" : node.parent().holder().id().toString());
                 definition.addProperty("display", node.advancement().display().isPresent());
-                definition.addProperty("x", node.x()); definition.addProperty("y", node.y()); definitions.add(definition);
+                definition.addProperty("x", node.x());
+                definition.addProperty("y", node.y());
+                definitions.add(definition);
             }
             row.add("definitions", definitions);
             var positioned = ordered.stream().map(ClientboundUpdateAdvancementsPacket.PositionedAdvancement::fromNode).toList();

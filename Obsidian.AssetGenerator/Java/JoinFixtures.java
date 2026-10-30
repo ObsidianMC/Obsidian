@@ -60,8 +60,10 @@ class JoinFixtures {
         var resources = new MultiPackResourceManager(PackType.SERVER_DATA, List.of(pack));
         var loadTags = Vanilla.method("net.minecraft.tags.TagLoader", "loadPendingTags",
             "net.minecraft.server.packs.resources.ResourceManager", "net.minecraft.core.Registry");
-        for (var registry : base)
-            ((Optional<?>) Vanilla.call(loadTags, null, resources, registry)).ifPresent(tags -> ((Registry.PendingTags<?>) tags).apply());
+        for (var registry : base) {
+            var pending = (Optional<?>) Vanilla.call(loadTags, null, resources, registry);
+            pending.ifPresent(tags -> ((Registry.PendingTags<?>) tags).apply());
+        }
         var loaded = RegistryDataLoader.load(resources, new ArrayList<HolderLookup.RegistryLookup<?>>(base),
             RegistryDataLoader.WORLD_REGISTRIES, Runnable::run).join();
         var all = new ArrayList<Registry<?>>(base);
@@ -94,10 +96,13 @@ class JoinFixtures {
         // What a client that shares the core pack is sent, in vanilla's order.
         var registryPackets = new JsonArray();
         var synced = new JsonArray();
-        RegistrySynchronization.packRegistries(RegistryOps.create(NbtOps.INSTANCE, access), access, Set.of(core), (key, entries) -> {
-            if (entries.stream().anyMatch(entry -> entry.data().isPresent()))
+        var nbtOps = RegistryOps.create(NbtOps.INSTANCE, access);
+        RegistrySynchronization.packRegistries(nbtOps, access, Set.of(core), (key, entries) -> {
+            if (entries.stream().anyMatch(entry -> entry.data().isPresent())) {
                 throw new IllegalStateException(key + " has entries outside the core pack");
-            registryPackets.add(hex(ClientboundRegistryDataPacket.STREAM_CODEC, new ClientboundRegistryDataPacket(key, entries)));
+            }
+            var packet = new ClientboundRegistryDataPacket(key, entries);
+            registryPackets.add(hex(ClientboundRegistryDataPacket.STREAM_CODEC, packet));
             var ids = new JsonArray();
             entries.forEach(entry -> ids.add(entry.id().toString()));
             var registry = new JsonObject();
@@ -109,25 +114,36 @@ class JoinFixtures {
 
         var dimensionTypes = Registries.DIMENSION_TYPE;
         // The seed clients get is the level seed's hash.
-        var joinInfo = new CommonPlayerSpawnInfo(holder(dimensionTypes, BuiltinDimensionTypes.OVERWORLD), Level.OVERWORLD,
-            net.minecraft.world.level.biome.BiomeManager.obfuscateSeed(1234567890123L), GameType.CREATIVE, Optional.of(GameType.SURVIVAL), false, true,
-            Optional.of(GlobalPos.of(Level.NETHER, new BlockPos(-5, 70, 12))), 7, 63);
+        var joinInfo = new CommonPlayerSpawnInfo(
+            holder(dimensionTypes, BuiltinDimensionTypes.OVERWORLD),
+            Level.OVERWORLD,
+            net.minecraft.world.level.biome.BiomeManager.obfuscateSeed(1234567890123L),
+            GameType.CREATIVE,
+            Optional.of(GameType.SURVIVAL),
+            false,
+            true,
+            Optional.of(GlobalPos.of(Level.NETHER, new BlockPos(-5, 70, 12))),
+            7,
+            63);
         var levels = new LinkedHashSet<>(List.of(Level.OVERWORLD, Level.NETHER, Level.END));
         output.addProperty("login", hex(ClientboundLoginPacket.STREAM_CODEC,
             new ClientboundLoginPacket(301, true, levels, 20, 10, 8, false, true, false, joinInfo, true, false)));
         var respawnInfo = new CommonPlayerSpawnInfo(holder(dimensionTypes, BuiltinDimensionTypes.END), Level.END,
             -42L, GameType.SPECTATOR, Optional.empty(), false, false, Optional.empty(), 0, 0);
-        output.addProperty("respawn", hex(ClientboundRespawnPacket.STREAM_CODEC, new ClientboundRespawnPacket(respawnInfo, (byte) 3)));
+        var respawn = new ClientboundRespawnPacket(respawnInfo, (byte) 3);
+        output.addProperty("respawn", hex(ClientboundRespawnPacket.STREAM_CODEC, respawn));
 
         output.addProperty("change_difficulty", hex(ClientboundChangeDifficultyPacket.STREAM_CODEC,
             new ClientboundChangeDifficultyPacket(Difficulty.HARD, true)));
+        var spawn = LevelData.RespawnData.of(Level.OVERWORLD, new BlockPos(8, 64, -24), 90f, -12.5f);
         output.addProperty("set_default_spawn_position", hex(ClientboundSetDefaultSpawnPositionPacket.STREAM_CODEC,
-            new ClientboundSetDefaultSpawnPositionPacket(LevelData.RespawnData.of(Level.OVERWORLD, new BlockPos(8, 64, -24), 90f, -12.5f))));
+            new ClientboundSetDefaultSpawnPositionPacket(spawn)));
 
         var clocks = new LinkedHashMap<Holder<WorldClock>, ClockNetworkState>();
         clocks.put(holder(Registries.WORLD_CLOCK, WorldClocks.OVERWORLD), new ClockNetworkState(30000L, 0f, 1f));
         clocks.put(holder(Registries.WORLD_CLOCK, WorldClocks.THE_END), new ClockNetworkState(777L, 0f, 0f));
-        output.addProperty("set_time", hex(ClientboundSetTimePacket.STREAM_CODEC, new ClientboundSetTimePacket(123456789L, clocks)));
+        var time = new ClientboundSetTimePacket(123456789L, clocks);
+        output.addProperty("set_time", hex(ClientboundSetTimePacket.STREAM_CODEC, time));
 
         // A raining level's weather, then the chunk wait, as vanilla's PlayerList.sendLevelInfo sends them.
         var events = new JsonArray();
@@ -135,8 +151,9 @@ class JoinFixtures {
             new ClientboundGameEventPacket(ClientboundGameEventPacket.START_RAINING, 0f),
             new ClientboundGameEventPacket(ClientboundGameEventPacket.RAIN_LEVEL_CHANGE, 1f),
             new ClientboundGameEventPacket(ClientboundGameEventPacket.THUNDER_LEVEL_CHANGE, 0.5f),
-            new ClientboundGameEventPacket(ClientboundGameEventPacket.LEVEL_CHUNKS_LOAD_START, 0f)))
+            new ClientboundGameEventPacket(ClientboundGameEventPacket.LEVEL_CHUNKS_LOAD_START, 0f))) {
             events.add(hex(ClientboundGameEventPacket.STREAM_CODEC, event));
+        }
         output.add("game_event", events);
 
         var abilities = new Abilities();
@@ -145,23 +162,29 @@ class JoinFixtures {
         abilities.instabuild = true;
         abilities.setFlyingSpeed(0.05f);
         abilities.setWalkingSpeed(0.1f);
-        output.addProperty("player_abilities", hex(ClientboundPlayerAbilitiesPacket.STREAM_CODEC, new ClientboundPlayerAbilitiesPacket(abilities)));
+        var abilitiesPacket = new ClientboundPlayerAbilitiesPacket(abilities);
+        output.addProperty("player_abilities", hex(ClientboundPlayerAbilitiesPacket.STREAM_CODEC, abilitiesPacket));
 
-        output.addProperty("post_effects", hex(ClientboundPostEffectsPacket.STREAM_CODEC, new ClientboundPostEffectsPacket(List.of())));
+        var postEffects = new ClientboundPostEffectsPacket(List.of());
+        output.addProperty("post_effects", hex(ClientboundPostEffectsPacket.STREAM_CODEC, postEffects));
 
         chunk(output);
 
         // Light packets' section masks: none, one section, a whole level's 26 and one past the first long.
         var masks = new JsonArray();
-        for (var bits : List.of(new int[0], new int[]{1}, java.util.stream.IntStream.range(0, 26).toArray(), new int[]{3, 70})) {
+        var wholeLevel = java.util.stream.IntStream.range(0, 26).toArray();
+        for (var bits : List.of(new int[0], new int[]{1}, wholeLevel, new int[]{3, 70})) {
             var mask = new BitSet();
-            for (var bit : bits) mask.set(bit);
+            for (var bit : bits) {
+                mask.set(bit);
+            }
             masks.add(hex(net.minecraft.network.codec.ByteBufCodecs.BIT_SET, mask));
         }
         output.add("light_masks", masks);
 
-        output.addProperty("chunks_biomes", hex(ClientboundChunksBiomesPacket.STREAM_CODEC, new ClientboundChunksBiomesPacket(
-            List.of(new ClientboundChunksBiomesPacket.ChunkBiomeData(new ChunkPos(3, -2), new byte[]{1, 2, 3})))));
+        var biomes = new ClientboundChunksBiomesPacket.ChunkBiomeData(new ChunkPos(3, -2), new byte[]{1, 2, 3});
+        var chunksBiomes = new ClientboundChunksBiomesPacket(List.of(biomes));
+        output.addProperty("chunks_biomes", hex(ClientboundChunksBiomesPacket.STREAM_CODEC, chunksBiomes));
 
         var json = new GsonBuilder().setPrettyPrinting().create();
         Files.writeString(Path.of(args[0]), json.toJson(output));
@@ -183,13 +206,18 @@ class JoinFixtures {
         java.util.function.BiConsumer<BlockPos, Integer> place = (pos, state) -> {
             chunk.setBlockState(pos, states.byId(state), 0);
             var row = new JsonArray();
-            row.add(pos.getX()); row.add(pos.getY()); row.add(pos.getZ()); row.add(state);
+            row.add(pos.getX());
+            row.add(pos.getY());
+            row.add(pos.getZ());
+            row.add(state);
             placements.add(row);
         };
         java.util.function.Function<String, Integer> id = name ->
             states.getId(BuiltInRegistries.BLOCK.getValue(Identifier.parse(name)).defaultBlockState());
 
-        for (int y = 60; y <= 62; y++) place.accept(new BlockPos(0, y, 0), id.apply("minecraft:stone"));
+        for (int y = 60; y <= 62; y++) {
+            place.accept(new BlockPos(0, y, 0), id.apply("minecraft:stone"));
+        }
         place.accept(new BlockPos(0, 63, 0), id.apply("minecraft:water"));
         place.accept(new BlockPos(1, 70, 0), id.apply("minecraft:oak_leaves"));
         place.accept(new BlockPos(1, 69, 0), id.apply("minecraft:oak_log"));
@@ -201,31 +229,40 @@ class JoinFixtures {
         place.accept(new BlockPos(4, 100, 0), id.apply("minecraft:glass"));
         place.accept(new BlockPos(5, -64, 5), id.apply("minecraft:bedrock"));
         // States 1 to 300 in the section from y 16, which takes a 16-bit global palette with 35,723 states.
-        for (int state = 1; state <= 300; state++)
+        for (int state = 1; state <= 300; state++) {
             place.accept(new BlockPos(state & 15, 16 + (state >> 8), (state >> 4) & 15), state);
+        }
 
         Heightmap.primeHeightmaps(chunk, EnumSet.of(Heightmap.Types.WORLD_SURFACE, Heightmap.Types.MOTION_BLOCKING,
             Heightmap.Types.MOTION_BLOCKING_NO_LEAVES));
         // Each heightmap's heights by x + z * 16, so that the test gives the chunk vanilla's heights.
         var heightmaps = new LinkedHashMap<Heightmap.Types, long[]>();
         var heights = new JsonObject();
-        for (var type : List.of(Heightmap.Types.WORLD_SURFACE, Heightmap.Types.MOTION_BLOCKING, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES)) {
+        var types = List.of(
+            Heightmap.Types.WORLD_SURFACE,
+            Heightmap.Types.MOTION_BLOCKING,
+            Heightmap.Types.MOTION_BLOCKING_NO_LEAVES);
+        for (var type : types) {
             var heightmap = chunk.getOrCreateHeightmapUnprimed(type);
             heightmaps.put(type, heightmap.getRawData());
             var column = new JsonArray();
-            for (int i = 0; i < 256; i++) column.add(heightmap.getFirstAvailable(i & 15, i >> 4));
+            for (int i = 0; i < 256; i++) {
+                column.add(heightmap.getFirstAvailable(i & 15, i >> 4));
+            }
             heights.add(type.getSerializationKey(), column);
         }
 
         var sections = Unpooled.buffer();
         var friendly = new RegistryFriendlyByteBuf(sections, access);
-        for (var section : chunk.getSections())
+        for (var section : chunk.getSections()) {
             section.write(friendly);
+        }
         var buffer = new byte[sections.readableBytes()];
         sections.readBytes(buffer);
         sections.release();
 
-        var constructor = ClientboundLevelChunkPacketData.class.getDeclaredConstructor(Map.class, byte[].class, List.class);
+        var constructor = ClientboundLevelChunkPacketData.class
+            .getDeclaredConstructor(Map.class, byte[].class, List.class);
         constructor.setAccessible(true);
         var data = constructor.newInstance(heightmaps, buffer, List.of());
 
