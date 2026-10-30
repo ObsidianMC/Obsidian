@@ -10,6 +10,7 @@ using Obsidian.API.Registries;
 using Obsidian.API.Utilities;
 using Obsidian.Entities;
 using Obsidian.Nbt;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Tests.Fakes;
 using System;
 using System.Collections.Generic;
@@ -77,6 +78,104 @@ public sealed class VillagerTrades
 
         Assert.Equal(offers.Select(Describe), restored.Select(Describe));
         Assert.Equal(offers.Select(Progress), restored.Select(Progress));
+    }
+
+    [Theory(Timeout = TestServerFactory.TestTimeout)]
+    [InlineData("disconnect")]
+    [InlineData("server_close")]
+    [InlineData("dimension_change")]
+    [InlineData("replacement")]
+    public async Task MerchantInputsSurviveEveryWindowExit(string exit)
+    {
+        await using var context = TestServerFactory.CreateServer($"trade-exit-{Guid.NewGuid():N}");
+        await using var destination = TestServerFactory.CreateServer($"trade-target-{Guid.NewGuid():N}");
+        var nether = AddNether(destination);
+        AddTravelChunks(nether);
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Customer");
+        await player.LoadAsync(loadFromPersistentWorld: false);
+        context.World.TryAddPlayer(player);
+        context.World.TryAddEntity(player);
+        player.Inventory.SetItem(9, new ItemStack(ItemsRegistry.Emerald, 64));
+        player.Inventory.SetItem(10, new ItemStack(ItemsRegistry.Book, 3));
+        var villager = NewVillager(context.World, player.Position);
+        var offer = LibrarianOffers(seed: 12345).First(offer => offer.SecondInput.Count > 0);
+        await MerchantTrading.OpenAsync(villager, player, [offer], 1, 0, canRestock: true);
+        var merchant = Assert.IsType<MerchantContainer>(player.OpenedContainer);
+        await merchant.SelectAsync(0);
+        Assert.Equal(0, Count(player, ItemsRegistry.Emerald));
+        Assert.Equal(0, Count(player, ItemsRegistry.Book));
+
+        switch (exit)
+        {
+            case "disconnect":
+                await player.DisconnectAsync(ChatMessage.Simple("Leaving"));
+                await context.EventDispatcher.ExecuteEventAsync(new Obsidian.API.Events.PlayerLeaveEventArgs(
+                    player, context.Server, DateTimeOffset.UtcNow));
+                break;
+            case "server_close":
+                await ((IPlayer)player).CloseContainerAsync(null);
+                break;
+            case "dimension_change":
+                await player.TeleportAsync(nether, new VectorD(0.5, 64, 0.5));
+                Assert.Same(nether, player.Level);
+                break;
+            case "replacement":
+                await player.OpenInventoryAsync(new Container(9));
+                break;
+        }
+
+        Assert.Equal(64, Count(player, ItemsRegistry.Emerald));
+        Assert.Equal(3, Count(player, ItemsRegistry.Book));
+        Assert.Null(merchant.GetItem(0));
+        Assert.Null(merchant.GetItem(1));
+        if (exit == "server_close")
+        {
+            var inventory = ((TestClient)player.Client).SentPackets.OfType<ContainerSetContentPacket>()
+                .Last(packet => packet.ContainerId == 0);
+            Assert.Equal(64, inventory.Items[9]?.Count);
+            Assert.Equal(3, inventory.Items[10]?.Count);
+        }
+
+        // Closing again must not duplicate items, and recovery must precede the disconnect/travel save.
+        await merchant.CloseAsync(player);
+        if (exit is "server_close" or "replacement")
+            await player.SaveAsync();
+
+        var world = player.Level is Obsidian.API.IDimension dimension
+            ? dimension.ParentWorld
+            : Assert.IsAssignableFrom<IWorld>(player.Level);
+        var restored = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Customer", uuid: player.Uuid);
+        await restored.LoadAsync(loadFromPersistentWorld: false);
+        Assert.Equal(64, Count(restored, ItemsRegistry.Emerald));
+        Assert.Equal(3, Count(restored, ItemsRegistry.Book));
+    }
+
+    private static Obsidian.WorldData.Dimension AddNether(RealServerContext context)
+    {
+        var dimension = new Obsidian.WorldData.Dimension(
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<Obsidian.WorldData.Dimension>.Instance,
+            context.Broadcaster,
+            new TestOptionsMonitor<Obsidian.API.Configuration.ServerConfiguration>(context.World.Configuration),
+            context.EventDispatcher,
+            new Obsidian.WorldData.Generators.EmptyWorldGenerator(),
+            "minecraft:the_nether",
+            context.World);
+        dimension.Initialize(CodecRegistry.Dimensions.All["minecraft:the_nether"]);
+        context.World.RegisterDimension(dimension);
+        return dimension;
+    }
+
+    private static void AddTravelChunks(Obsidian.WorldData.AbstractLevel world)
+    {
+        for (var x = -3; x <= 3; x++)
+        {
+            for (var z = -3; z <= 3; z++)
+            {
+                var chunk = new Obsidian.WorldData.Chunk(x, z, world.MinY, world.Height,
+                    ChunkGenStage.full);
+                world.LoadRegionByChunk(x, z).SetChunk(chunk);
+            }
+        }
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]

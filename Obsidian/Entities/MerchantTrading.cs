@@ -13,8 +13,6 @@ internal static class MerchantTrading
             merchant.Level != player.Level || !merchant.IsInRange(player, 4) || offers.IsEmpty ||
             merchant.Level.GetPlayersInRange(merchant.Position, 16).Any(other => other.OpenedContainer is MerchantContainer menu && ReferenceEquals(menu.Merchant, merchant)))
             return;
-        if (player.OpenedContainer is MerchantContainer previous)
-            await previous.CloseAsync(player);
         var container = new MerchantContainer(merchant, player, offers, level, experience, canRestock, completed);
         await player.OpenInventoryAsync(container);
         await container.SyncAsync();
@@ -121,7 +119,7 @@ internal sealed class MerchantContainer : BaseContainer
                 return;
             if (!Merchant.Alive || Merchant.Level != player.Level || !Merchant.IsInRange(player, 8))
             {
-                await CloseAsync(player);
+                await CloseUnderLockAsync(player, notify: true);
                 return;
             }
             if (packet.StateId != state)
@@ -170,7 +168,14 @@ internal sealed class MerchantContainer : BaseContainer
             else if (slot is >= 0 and < 39 && packet.ClickType == ClickType.QuickMove)
             {
                 if (slot < 2)
-                { if (items[slot] != null) { StoreInInventory(items[slot]!); if (items[slot]!.Count <= 0) items[slot] = null; } }
+                {
+                    if (items[slot] is ItemStack input)
+                    {
+                        StoreInInventory(input);
+                        if (input.Count <= 0)
+                            items[slot] = null;
+                    }
+                }
                 else
                 {
                     var mapped = GetSlot(slot);
@@ -239,21 +244,23 @@ internal sealed class MerchantContainer : BaseContainer
     private void StoreInInventory(ItemStack stack)
     {
         for (var pass = 0; pass < 2 && stack.Count > 0; pass++)
-        for (var index = 9; index <= 44 && stack.Count > 0; index++)
         {
-            var target = customer.Inventory.GetItem(index);
-            if (pass == 0 && target == stack && target != null)
+            for (var index = 9; index <= 44 && stack.Count > 0; index++)
+            {
+                var target = customer.Inventory.GetItem(index);
+                if (pass == 0 && target == stack && target is not null)
                 {
                     var amount = Math.Min(stack.Count, target.MaxStackSize - target.Count);
                     target.Count += amount;
                     stack.Count -= amount;
                 }
-            else if (pass == 1 && (target == null || target.IsAir || target.Count <= 0))
+                else if (pass == 1 && (target is null || target.IsAir || target.Count <= 0))
                 {
                     var amount = Math.Min(stack.Count, stack.MaxStackSize);
                     customer.Inventory.SetItem(index, new ItemStack(stack, amount));
                     stack.Count -= amount;
                 }
+            }
         }
     }
 
@@ -261,25 +268,63 @@ internal sealed class MerchantContainer : BaseContainer
     {
         for (var slot = 0; slot < 2; slot++)
         {
-            if (items[slot] is not { } stack)
+            if (items[slot] is not ItemStack stack)
                 continue;
+
             StoreInInventory(stack);
             if (stack.Count > 0)
+            {
                 Merchant.Level.SpawnEntity(new ItemEntity
-            { Level = Merchant.Level, EntityId = Server.GetNextEntityId(), Position = customer.Position, Item = stack });
+                {
+                    Level = Merchant.Level,
+                    EntityId = Server.GetNextEntityId(),
+                    Position = customer.Position,
+                    Item = stack
+                });
+            }
+
             items[slot] = null;
         }
     }
 
-    internal async ValueTask CloseAsync(IPlayer player)
+    internal async ValueTask CloseAsync(IPlayer player, bool notify = true)
+    {
+        await using var transaction = DeferredInventoryWork.Begin(this.CustomerLogger);
+        await clicks.WaitAsync();
+        try
+        {
+            await CloseUnderLockAsync(player, notify);
+        }
+        finally
+        {
+            clicks.Release();
+        }
+    }
+
+    private async ValueTask CloseUnderLockAsync(IPlayer player, bool notify)
     {
         if (closed)
             return;
+
+        // Like vanilla's removed menu, recover both inputs before the window is detached or the player is saved.
         closed = true;
         ReturnInputs();
+        if (!ReferenceEquals(player.OpenedContainer, this))
+            return;
+
         player.OpenedContainer = null;
-        await player.QueuePacketAsync(new Obsidian.Net.Packets.Play.Clientbound.ContainerClosePacket { ContainerId = player.CurrentContainerId });
-        await player.QueuePacketAsync(new ContainerSetContentPacket(0, player.Inventory.ToList()) { CarriedItem = player.CarriedItem });
+        if (notify)
+        {
+            await player.QueuePacketAsync(new Obsidian.Net.Packets.Play.Clientbound.ContainerClosePacket
+            {
+                ContainerId = player.CurrentContainerId
+            });
+        }
+
+        await player.QueuePacketAsync(new ContainerSetContentPacket(0, player.Inventory.ToList())
+        {
+            CarriedItem = player.CarriedItem
+        });
     }
 
     /// <summary>
