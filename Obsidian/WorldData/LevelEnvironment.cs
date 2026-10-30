@@ -150,6 +150,9 @@ internal static class LevelEnvironment
     // The attribute maps of plugins' and data packs' dimension types and biomes, by their elements.
     private static readonly ConditionalWeakTable<object, EnvironmentAttributeMap> attributeMaps = new();
 
+    internal static EnvironmentAttributeMap? AttributesOf(object element) =>
+        attributeMaps.TryGetValue(element, out var attributes) ? attributes : null;
+
     /// <summary>
     /// Attaches a dimension type's attribute map, read from its file, to its element.
     /// </summary>

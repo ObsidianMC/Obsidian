@@ -8,7 +8,6 @@ namespace Obsidian.WorldData.Generators.Mojang;
 /// </summary>
 internal sealed class BiomeParameterTree<T>
 {
-    private const int ChildrenPerNode = 6;
     private const int Dimensions = 7;
 
     private readonly Node root;
@@ -16,12 +15,14 @@ internal sealed class BiomeParameterTree<T>
     // Vanilla starts each search from the previous result on the same thread; it only matters for exact ties.
     private readonly ThreadLocal<Leaf?> lastResult = new();
 
-    public BiomeParameterTree(IReadOnlyList<(ParameterPoint Point, T Value)> values)
+    /// <param name="childrenPerNode">6 for the live legacy pipeline, 19 for 26.3.</param>
+    public BiomeParameterTree(IReadOnlyList<(ParameterPoint Point, T Value)> values, int childrenPerNode = 6)
     {
         if (values.Count == 0)
             throw new ArgumentException("Need at least one value to build the search tree.", nameof(values));
 
-        this.root = Build(values.Select(value => (Node)new Leaf(value.Point.ParameterSpace(), value.Value)).ToList());
+        var leaves = values.Select(value => (Node)new Leaf(value.Point.ParameterSpace(), value.Value)).ToList();
+        this.root = Build(leaves, childrenPerNode);
     }
 
     public T Search(TargetPoint target)
@@ -35,12 +36,12 @@ internal sealed class BiomeParameterTree<T>
         return leaf.Value;
     }
 
-    private static Node Build(List<Node> children)
+    private static Node Build(List<Node> children, int childrenPerNode)
     {
         if (children.Count == 1)
             return children[0];
 
-        if (children.Count <= ChildrenPerNode)
+        if (children.Count <= childrenPerNode)
         {
             // Enumerable.OrderBy is stable like Java's List.sort, which keeps the tree identical to vanilla's.
             var sorted = children.OrderBy(child => child.ParameterSpace.Sum(parameter => Math.Abs(parameter.Midpoint))).ToList();
@@ -55,7 +56,7 @@ internal sealed class BiomeParameterTree<T>
         {
             // Vanilla sorts the same list in place for every axis, so full ties keep the previous axis' order.
             children = Sort(children, axis, absolute: false);
-            var buckets = Bucketize(children);
+            var buckets = Bucketize(children, childrenPerNode);
             var cost = buckets.Sum(bucket => Cost(bucket.ParameterSpace));
 
             if (bestCost > cost)
@@ -67,7 +68,7 @@ internal sealed class BiomeParameterTree<T>
         }
 
         return new SubTree(Sort(bestBuckets!.Cast<Node>(), bestAxis, absolute: true)
-            .Select(bucket => Build([.. ((SubTree)bucket).Children]))
+            .Select(bucket => Build([.. ((SubTree)bucket).Children], childrenPerNode))
             .ToList());
     }
 
@@ -90,11 +91,12 @@ internal sealed class BiomeParameterTree<T>
         return absolute ? Math.Abs(midpoint) : midpoint;
     }
 
-    private static List<SubTree> Bucketize(List<Node> nodes)
+    private static List<SubTree> Bucketize(List<Node> nodes, int childrenPerNode)
     {
         var buckets = new List<SubTree>();
         var current = new List<Node>();
-        var bucketSize = (int)Math.Pow(6.0, Math.Floor(Math.Log(nodes.Count - 0.01) / Math.Log(6.0)));
+        var exponent = Math.Floor(Math.Log(nodes.Count - 0.01) / Math.Log(childrenPerNode));
+        var bucketSize = (int)Math.Pow(childrenPerNode, exponent);
 
         foreach (var node in nodes)
         {
