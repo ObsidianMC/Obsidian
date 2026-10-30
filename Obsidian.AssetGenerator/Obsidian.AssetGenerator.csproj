@@ -77,6 +77,7 @@
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\entities.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)predicate.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)context_int_provider.json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)commands-$(MinecraftVersion).json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)context_float_provider.json" />
 			<VanillaAssetsOutput Include="$(VanillaLegacyAssetsDirectory)block_states.json" />
 		</ItemGroup>

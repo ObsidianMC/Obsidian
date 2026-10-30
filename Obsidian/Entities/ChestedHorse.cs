@@ -124,8 +124,8 @@ public partial class Llama : ChestedHorse
     protected override void ReadAdditionalSave(Obsidian.Nbt.NbtCompound tag)
     {
         base.ReadAdditionalSave(tag);
-        Strength = Math.Clamp((tag.TryGetTagValue<int>("Strength", out var savedStrength) ? savedStrength : 0), 1, 5);
-        Variant = (LlamaVariant)Math.Clamp((tag.TryGetTagValue<int>("Variant", out var savedVariant) ? savedVariant : 0), 0, 3);
+        Strength = Math.Clamp((tag.TryGetNumber<int>("Strength", out var savedStrength) ? savedStrength : 0), 1, 5);
+        Variant = (LlamaVariant)Math.Clamp((tag.TryGetNumber<int>("Variant", out var savedVariant) ? savedVariant : 0), 0, 3);
     }
 
     public int CarpetColor

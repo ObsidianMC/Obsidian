@@ -249,8 +249,8 @@ public sealed partial class Piglin : PathfinderMob, IAgeable
     {
         IsBaby = tag.TryGetBool("IsBaby", out var baby) && baby;
         IsImmuneToZombification = tag.TryGetBool("IsImmuneToZombification", out var immune) && immune;
-        TimeInOverworld = Math.Max(0, tag.TryGetTagValue<int>("TimeInOverworld", out var ticks) ? ticks : 0);
-        admireTicks = Math.Clamp(tag.TryGetTagValue<int>("ObsidianAdmireTicks", out var admire) ? admire : 0, 0, 120);
+        TimeInOverworld = Math.Max(0, tag.TryGetNumber<int>("TimeInOverworld", out var ticks) ? ticks : 0);
+        admireTicks = Math.Clamp(tag.TryGetNumber<int>("ObsidianAdmireTicks", out var admire) ? admire : 0, 0, 120);
     }
 
     internal bool Admiring => admireTicks > 0;

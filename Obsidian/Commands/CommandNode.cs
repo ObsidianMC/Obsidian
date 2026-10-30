@@ -9,6 +9,8 @@ public class CommandNode
 
     public int Index { get; set; }
 
+    public int RedirectIndex { get; set; }
+
     public BaseArgumentParser? Parser { get; set; }
 
     public CommandNodeType Type { get; set; }
@@ -25,7 +27,7 @@ public class CommandNode
 
         if (Type.HasFlag(CommandNodeType.HasRedirect))
         {
-            writer.WriteVarInt(Index);
+            writer.WriteVarInt(RedirectIndex);
         }
 
         if (Type.HasFlag(CommandNodeType.Literal) || Type.HasFlag(CommandNodeType.Argument))

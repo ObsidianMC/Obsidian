@@ -1,3 +1,4 @@
+using Obsidian.Commands.Framework;
 using Obsidian.API.Commands;
 using Obsidian.Integrated;
 
@@ -9,6 +10,20 @@ namespace Obsidian.Commands.Modules;
 public sealed class IntegratedCommandModule(IntegratedServerService integratedServer) : CommandModuleBase
 {
     private const string Usage = "/publish [<allowCommands>] [<gamemode>] [<port>]";
+
+    [Command("unpublish")]
+    [RequirePermissionLevel(4)]
+    public async Task<int> UnpublishAsync()
+    {
+        if (!await integratedServer.UnpublishAsync())
+        {
+            await this.CommandContext.FailAsync("The world is not open to LAN");
+            return 0;
+        }
+
+        await this.Sender.SendMessageAsync(Translatable("commands.unpublish.success"));
+        return 1;
+    }
 
     [Command("publish")]
     [CommandInfo("Opens the world to LAN.", Usage)]
@@ -28,19 +43,27 @@ public sealed class IntegratedCommandModule(IntegratedServerService integratedSe
     [CommandOverload]
     public async Task PublishAsync(bool allowCommands, string gamemode, int port)
     {
+        if (port is < 0 or > 65535)
+        {
+            await this.CommandContext.FailAsync("Port must be between 0 and 65535");
+            return;
+        }
+
         if (!IntegratedServerService.TryParseGameMode(gamemode, out var gameMode))
         {
-            await this.Sender.SendMessageAsync($"{ChatColor.Red}Unknown game mode {gamemode}. Usage: {Usage}");
+            await this.CommandContext.FailAsync($"Unknown game mode {gamemode}. Usage: {Usage}");
             return;
         }
 
         if (((Server)this.Server).Integrated?.IsPublished == true)
         {
+            this.CommandContext.SetResult(false);
             await this.Sender.SendMessageAsync(Translatable("commands.publish.alreadyPublished"));
             return;
         }
 
         var publishedPort = await integratedServer.PublishAsync(port, gameMode, allowCommands);
+        this.CommandContext.SetResult(publishedPort.HasValue, publishedPort ?? 0);
 
         var message = publishedPort is int boundPort
             ? Translatable("commands.publish.started").AddChatComponent(ChatMessage.Simple(boundPort.ToString()))

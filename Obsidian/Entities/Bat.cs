@@ -60,5 +60,5 @@ public sealed partial class Bat : Ambient
         writer.WriteByte(IsHanging ? (byte)1 : (byte)0);
     }
     protected override void WriteAdditionalSave(Obsidian.Nbt.Interfaces.INbtWriter writer) => writer.WriteByte("BatFlags", IsHanging ? (byte)1 : (byte)0);
-    protected override void ReadAdditionalSave(Obsidian.Nbt.NbtCompound tag) => IsHanging = tag.TryGetTagValue<byte>("BatFlags", out var flags) && (flags & 1) != 0;
+    protected override void ReadAdditionalSave(Obsidian.Nbt.NbtCompound tag) => IsHanging = tag.TryGetNumber<byte>("BatFlags", out var flags) && (flags & 1) != 0;
 }

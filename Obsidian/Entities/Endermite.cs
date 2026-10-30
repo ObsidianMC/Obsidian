@@ -30,5 +30,5 @@ public sealed partial class Endermite : PathfinderMob
     protected override ValueTask TickMobAsync() => !PersistenceRequired && ++Lifetime >= MaximumLifetime ? RemoveAsync() : default;
     protected override void WriteAdditionalSave(INbtWriter writer) => writer.WriteInt("Lifetime", Lifetime);
     protected override void ReadAdditionalSave(NbtCompound tag) =>
-        Lifetime = Math.Max(0, tag.TryGetTagValue<int>("Lifetime", out var lifetime) ? lifetime : 0);
+        Lifetime = Math.Max(0, tag.TryGetNumber<int>("Lifetime", out var lifetime) ? lifetime : 0);
 }

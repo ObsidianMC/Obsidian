@@ -297,12 +297,12 @@ internal sealed class MobProjectile : Entity
     internal override void ReadNbt(NbtCompound tag)
     {
         base.ReadNbt(tag);
-        SplashEffect = tag.TryGetTagValue<int>("ObsidianSplashEffect", out var effect) ? effect : -1;
-        var duration = tag.TryGetTagValue<int>("ObsidianSplashDuration", out var savedDuration) ? savedDuration : 0;
+        SplashEffect = tag.TryGetNumber<int>("ObsidianSplashEffect", out var effect) ? effect : -1;
+        var duration = tag.TryGetNumber<int>("ObsidianSplashDuration", out var savedDuration) ? savedDuration : 0;
         SplashDuration = Math.Max(0, duration);
-        var amplifier = tag.TryGetTagValue<int>("ObsidianSplashAmplifier", out var savedAmplifier) ? savedAmplifier : 0;
+        var amplifier = tag.TryGetNumber<int>("ObsidianSplashAmplifier", out var savedAmplifier) ? savedAmplifier : 0;
         SplashAmplifier = Math.Clamp(amplifier, 0, 10);
-        if (tag.TryGetTagValue<int>("ObsidianLife", out var life))
+        if (tag.TryGetNumber<int>("ObsidianLife", out var life))
             age = Math.Clamp(life, 0, 600);
 
         var hasAcceleration = EntityNbt.TryReadVector(tag, "ObsidianAcceleration", out acceleration);

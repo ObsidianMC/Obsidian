@@ -196,7 +196,7 @@ public partial class Entity
             if (!VanillaAttributes.TryGetProtocolId(VanillaName(name), out _))
                 continue;
 
-            if (entry.TryGetTagValue<double>("base", out var value) && double.IsFinite(value))
+            if (entry.TryGetNumber<double>("base", out var value) && double.IsFinite(value))
                 this.Attributes[name] = (float)value;
 
             if (!this.Attributes.ContainsKey(name))
@@ -217,7 +217,7 @@ public partial class Entity
                 {
                     if (!modifier.TryGetTagValue<string>("id", out var modifierId)
                         || string.IsNullOrWhiteSpace(modifierId)
-                        || !modifier.TryGetTagValue<double>("amount", out var amount)
+                        || !modifier.TryGetNumber<double>("amount", out var amount)
                         || !double.IsFinite(amount)
                         || !modifier.TryGetTagValue<string>("operation", out var operation))
                     {

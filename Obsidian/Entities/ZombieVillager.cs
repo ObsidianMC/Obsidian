@@ -114,13 +114,13 @@ public sealed partial class ZombieVillager : Zombie
 
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
-        ConversionTime = tag.TryGetTagValue<int>("ConversionTime", out var ticks) ? ticks : -1;
-        VillagerXp = tag.TryGetTagValue<int>("Xp", out var xp) ? xp : 0;
+        ConversionTime = tag.TryGetNumber<int>("ConversionTime", out var ticks) ? ticks : -1;
+        VillagerXp = tag.TryGetNumber<int>("Xp", out var xp) ? xp : 0;
         if (tag.TryGetTag<NbtArray<int>>("ConversionPlayer", out var starter) && starter.Count == 4)
             ConversionStarter = EntityNbt.UuidFromInts(starter.GetArray());
         if (tag.TryGetTag<NbtCompound>("VillagerData", out var data))
         {
-            if (data.TryGetTagValue<int>("level", out var level))
+            if (data.TryGetNumber<int>("level", out var level))
                 VillagerLevel = Math.Clamp(level, 1, 5);
             if (data.TryGetTagValue<string>("type", out var type))
                 VillagerType = Math.Max(0, Array.IndexOf(Villager.BiomeTypes, type.Replace("minecraft:", "")));

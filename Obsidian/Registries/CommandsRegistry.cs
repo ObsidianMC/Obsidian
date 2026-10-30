@@ -37,6 +37,13 @@ public static class CommandsRegistry
 
     private static void Register(Server server, Command command, IEnumerable<Command> commands, CommandNode node, ref int index)
     {
+        if (command.Parent is null && VanillaCommandTree.Owns(command, commands)
+            && VanillaCommandTree.Create(command.Name, ref index) is { } vanilla)
+        {
+            node.AddChild(vanilla);
+            return;
+        }
+
         var nodeType = command.Overloads.Any(overload => overload.GetParameters().Length == 0)
             ? CommandNodeType.IsExecutable | CommandNodeType.Literal
             : CommandNodeType.Literal;

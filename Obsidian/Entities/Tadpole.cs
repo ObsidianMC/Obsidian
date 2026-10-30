@@ -88,7 +88,7 @@ public sealed partial class Tadpole : PathfinderMob
 
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
-        Age = Math.Clamp((tag.TryGetTagValue<int>("Age", out var savedAge) ? savedAge : 0), 0, MaturationTicks);
+        Age = Math.Clamp((tag.TryGetNumber<int>("Age", out var savedAge) ? savedAge : 0), 0, MaturationTicks);
         FromBucket = tag.TryGetBool("FromBucket", out var bucket) && bucket;
         PersistenceRequired |= FromBucket;
     }

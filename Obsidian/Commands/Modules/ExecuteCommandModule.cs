@@ -23,16 +23,27 @@ public sealed class ExecuteCommandModule : CommandModuleBase
     [CommandInfo("Runs a command as other entities, elsewhere, or under conditions.", "/execute <subcommands…> [run <command>]")]
     public async Task ExecuteAsync([Remaining, ExecuteSuggestions] string subcommands)
     {
+        try
+        {
+            await this.ExecuteCoreAsync(subcommands);
+        }
+        catch (FormatException exception)
+        {
+            await this.CommandContext.FailAsync(exception.Message);
+        }
+    }
+
+    private async Task ExecuteCoreAsync(string subcommands)
+    {
         // The line as typed, so that run's command keeps its quotes and spacing.
         var message = this.CommandContext.Message;
         var line = message.IndexOf(' ') is var space and >= 0 ? message[(space + 1)..] : subcommands;
 
-        var words = CommandParser.SplitWords(line);
-        if (words[^1].Value.Length == 0)
-            words.RemoveAt(words.Count - 1);
+        var words = CommandInput.Words(line);
 
         List<CommandContext> contexts = [this.CommandContext];
         var index = 0;
+        var countedCondition = false;
 
         while (index < words.Count)
         {
@@ -49,15 +60,27 @@ public sealed class ExecuteCommandModule : CommandModuleBase
 
                 var command = line[words[index].Start..];
                 var handler = (CommandHandler)this.Server.CommandHandler;
+                var successes = 0;
+                var result = 0;
 
                 foreach (var context in contexts)
                 {
-                    await handler.ProcessCommand(context.Derive($"{CommandHelpers.DefaultPrefix}{command}", context.Executor,
-                        context.Origin, context.Level, context.Rotation));
+                    var child = context.Derive($"{CommandHelpers.DefaultPrefix}{command}", context.Executor,
+                        context.Origin, context.Level, context.Rotation);
+                    await handler.ProcessCommand(child);
+                    if (child.Succeeded)
+                    {
+                        successes++;
+                        result += child.Result;
+                    }
                 }
 
+                this.CommandContext.SetResult(successes > 0, result);
                 return;
             }
+
+            countedCondition = keyword is "if" or "unless" && index < words.Count
+                && words[index].Value is "slots" or "items";
 
             var next = keyword switch
             {
@@ -86,9 +109,15 @@ public sealed class ExecuteCommandModule : CommandModuleBase
 
         // Without run, /execute reports whether its conditions held.
         if (contexts.Count == 0)
+        {
             await this.CommandContext.FailAsync("Test failed");
+        }
         else
+        {
             await this.CommandContext.SuccessAsync(contexts.Count == 1 ? "Test passed" : $"Test passed, count: {contexts.Count}");
+            var result = countedCondition ? contexts.Sum(context => context.Result) : contexts.Count;
+            this.CommandContext.SetResult(true, result);
+        }
     }
 
     // One context for each entity a selector selects in each context.
@@ -193,6 +222,45 @@ public sealed class ExecuteCommandModule : CommandModuleBase
 
         switch (kind)
         {
+            case "slots" or "items":
+            {
+                var sourceKind = Take(words, ref index);
+                var source = sourceKind == "block"
+                    ? TakeWords(words, ref index, 3)
+                    : Take(words, ref index);
+                var slots = Take(words, ref index);
+                var predicate = kind == "items" ? Take(words, ref index) : null;
+                if (sourceKind is not ("entity" or "block") || source is null || slots is null
+                    || kind == "items" && predicate is null)
+                {
+                    return null;
+                }
+
+                foreach (var context in contexts)
+                {
+                    try
+                    {
+                        var input = new CommandInput($"{sourceKind} {source} {slots}");
+                        var selected = await CommandSlots.ReadAsync(context, input);
+                        var count = predicate is null ? CommandSlots.CountVisible(selected) : selected
+                            .Select(slot => slot.Get())
+                            .Where(stack => CommandSlots.Matches(stack, predicate))
+                            .Sum(stack => stack!.Count);
+                        if (count > 0 == expected)
+                        {
+                            context.SetResult(true, expected ? count : 1);
+                            kept.Add(context);
+                        }
+                    }
+                    catch (Exception exception) when (ComputeCommandModule.IsInputError(exception))
+                    {
+                        await this.CommandContext.FailAsync(exception.Message);
+                        return null;
+                    }
+                }
+
+                break;
+            }
             case "entity":
             {
                 if (!EntitySelector.TryParse(Take(words, ref index) ?? string.Empty, out var selector))

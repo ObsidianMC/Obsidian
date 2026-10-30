@@ -88,10 +88,10 @@ public sealed partial class WanderingTrader : AgeableMob
 
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
-        DespawnDelay = tag.TryGetTagValue<int>("DespawnDelay", out var delay) ? delay : 48000;
+        DespawnDelay = tag.TryGetNumber<int>("DespawnDelay", out var delay) ? delay : 48000;
         offers = MerchantOffers.Read(tag);
-        if (tag.TryGetTag<NbtCompound>("WanderTarget", out var target) && target.TryGetTagValue<int>("X", out var x) &&
-            target.TryGetTagValue<int>("Y", out var y) && target.TryGetTagValue<int>("Z", out var z))
+        if (tag.TryGetTag<NbtCompound>("WanderTarget", out var target) && target.TryGetNumber<int>("X", out var x) &&
+            target.TryGetNumber<int>("Y", out var y) && target.TryGetNumber<int>("Z", out var z))
         {
             WanderTarget = new Vector(x, y, z);
         }

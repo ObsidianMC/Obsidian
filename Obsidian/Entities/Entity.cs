@@ -260,17 +260,18 @@ public partial class Entity : IEquatable<Entity>, IEntity
             this.Motion = motion;
 
         if (tag.TryGetTag<NbtList>("Rotation", out var rotation) && rotation.Count >= 2
-            && rotation[0] is NbtTag<float> yaw && rotation[1] is NbtTag<float> pitch)
+            && rotation[0].TryGetNumber(out float yaw)
+            && rotation[1].TryGetNumber(out float pitch))
         {
-            this.Yaw = yaw.Value;
-            this.Pitch = pitch.Value;
+            this.Yaw = yaw;
+            this.Pitch = pitch;
         }
 
-        if (tag.TryGetTag<NbtTag<short>>("Air", out var air))
-            this.Air = air.Value;
+        if (tag.TryGetNumber<short>("Air", out var air))
+            this.Air = air;
         if (tag.TryGetBool("OnGround", out var onGround) && onGround)
             this.MovementFlags |= MovementFlags.OnGround;
-        if (tag.TryGetTagValue<int>("TicksFrozen", out var frozen)) PowderedSnowTicks = Math.Clamp(frozen, 0, 140);
+        if (tag.TryGetNumber<int>("TicksFrozen", out var frozen)) PowderedSnowTicks = Math.Clamp(frozen, 0, 140);
         if (this.ReadsSavedUuid && tag.TryGetTag<NbtArray<int>>("UUID", out var uuid) && uuid.Count == 4)
             this.Uuid = EntityNbt.UuidFromInts(uuid.GetArray());
         if (tag.TryGetTag("CustomName", out var customName))

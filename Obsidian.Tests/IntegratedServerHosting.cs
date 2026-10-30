@@ -57,6 +57,39 @@ public sealed class IntegratedServerHosting : IDisposable
         Assert.Equal(Path.Combine(this.root, "plugins"), ServerConstants.PluginsPath);
     }
 
+    [Fact]
+    public async Task UnpublishClosesOnlyTheLanListenerAndAllowsRepublishing()
+    {
+        var world = Path.Combine(this.root, "saves", "Publication");
+        using var running = this.StartServer(world);
+        var ready = await running.WaitForEventAsync(
+            line => line.Contains("\"event\":\"ready\"", StringComparison.Ordinal));
+        using var readyData = JsonDocument.Parse(ready["@obsidian:".Length..]);
+        var localPort = readyData.RootElement.GetProperty("port").GetInt32();
+        var service = running.Services.GetRequiredService<IntegratedServerService>();
+        var session = running.Services.GetRequiredService<IntegratedSession>();
+        var firstPort = await service.PublishAsync(0, null, false);
+        Assert.NotNull(firstPort);
+
+        var unpublished = await service.UnpublishAsync();
+        var repeated = await service.UnpublishAsync();
+        using var local = new TcpClient();
+        await local.ConnectAsync("127.0.0.1", localPort);
+        using var closed = new TcpClient();
+        var connectionFailure = await Record.ExceptionAsync(() => closed.ConnectAsync("127.0.0.1", firstPort.Value));
+        var republished = await service.PublishAsync(0, null, false);
+        var reopened = session.IsPublished;
+        running.Input.Send("@obsidian:{\"command\":\"stop\"}");
+        await running.Run.WaitAsync(TimeSpan.FromMinutes(1));
+
+        Assert.True(unpublished);
+        Assert.False(repeated);
+        Assert.IsType<SocketException>(connectionFailure);
+        Assert.True(local.Connected);
+        Assert.True(reopened);
+        Assert.NotNull(republished);
+    }
+
     /// <summary>
     /// Creates a world in a vanilla save folder, stops, and starts again: the save has vanilla 26.3's layout, level.dat
     /// and saved data files, what Obsidian doesn't model in level.dat survives its saves, and only the local player with
@@ -305,6 +338,8 @@ public sealed class IntegratedServerHosting : IDisposable
         private readonly List<string> events = [];
 
         public Task Run { get; } = run;
+
+        public IServiceProvider Services => host.Services;
 
         public LineReader Input { get; } = input;
 

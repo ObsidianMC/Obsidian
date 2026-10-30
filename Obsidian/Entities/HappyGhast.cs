@@ -168,7 +168,7 @@ public sealed partial class HappyGhast : FarmAnimal, IRideable
 
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
-        stillTimeout = tag.TryGetTagValue<int>("still_timeout", out var timeout) ? Math.Clamp(timeout, 0, 60) : 0;
+        stillTimeout = tag.TryGetNumber<int>("still_timeout", out var timeout) ? Math.Clamp(timeout, 0, 60) : 0;
         if (tag.TryGetTag<NbtArray<int>>("ObsidianHome", out var saved) && saved.Count == 3)
         {
             var values = saved.GetArray();

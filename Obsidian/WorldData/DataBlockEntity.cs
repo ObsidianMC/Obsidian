@@ -47,7 +47,7 @@ public sealed class DataBlockEntity : BlockEntity
     {
         var data = this.SnapshotData();
         if (!data.TryGetTag<NbtCompound>("obsidian:container", out var policy)
-            || !policy.TryGetTagValue<int>("size", out var size)
+            || !policy.TryGetNumber<int>("size", out var size)
             || size < 0 || size > short.MaxValue)
         {
             return null;

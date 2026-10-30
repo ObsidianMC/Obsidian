@@ -100,7 +100,7 @@ public sealed partial class Illusioner : Skeleton
     }
 
     protected override void WriteAdditionalSave(INbtWriter writer) => writer.WriteInt("SpellTicks", spellTicks);
-    protected override void ReadAdditionalSave(NbtCompound tag) => spellTicks = Math.Clamp(tag.TryGetTagValue<int>("SpellTicks", out var ticks) ? ticks : 0, 0, 20);
+    protected override void ReadAdditionalSave(NbtCompound tag) => spellTicks = Math.Clamp(tag.TryGetNumber<int>("SpellTicks", out var ticks) ? ticks : 0, 0, 20);
 }
 
 internal sealed class IllusionerCastingGoal(Illusioner illusioner) : Goal

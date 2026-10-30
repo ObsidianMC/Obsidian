@@ -63,6 +63,9 @@ public sealed class ContextIntProvider
 
     internal int Evaluate(NumberContext context) => this.evaluate(context);
 
+    /// <summary>Evaluates a command expression, preserving arithmetic failures for command feedback.</summary>
+    public int GetIntOrThrow(NumberContext context) => this.Evaluate(context);
+
     public int GetInt(NumberContext context)
     {
         try
@@ -86,6 +89,18 @@ public sealed class ContextFloatProvider
     internal ContextFloatProvider(Func<NumberContext, float> evaluate) => this.evaluate = evaluate;
 
     internal float Evaluate(NumberContext context) => this.evaluate(context);
+
+    /// <summary>
+    /// Evaluates a command expression, preserving arithmetic failures and rejecting non-finite output.
+    /// </summary>
+    public float GetFloatOrThrow(NumberContext context)
+    {
+        var value = this.Evaluate(context);
+        if (!float.IsFinite(value))
+            throw new ArithmeticException("The provider returned a non-finite value.");
+
+        return value;
+    }
 
     public float GetFloat(NumberContext context)
     {

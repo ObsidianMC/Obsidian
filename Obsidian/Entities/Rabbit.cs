@@ -90,7 +90,7 @@ public sealed partial class Rabbit : FarmAnimal
 
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
-        var saved = tag.TryGetTagValue<int>("RabbitType", out var value) ? value : 0;
+        var saved = tag.TryGetNumber<int>("RabbitType", out var value) ? value : 0;
         Variant = saved == 99 ? 99 : Math.Clamp(saved, 0, 5);
     }
 }

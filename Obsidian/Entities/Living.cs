@@ -262,10 +262,10 @@ public partial class Living : Entity, ILiving
 
         this.LoadAttributes(tag);
 
-        if (tag.TryGetTag<NbtTag<float>>("Health", out var health))
-            this.Health = health.Value;
-        if (tag.TryGetTag<NbtTag<float>>("AbsorptionAmount", out var absorption))
-            this.AbsorptionHealth = float.IsFinite(absorption.Value) ? Math.Max(0, absorption.Value) : 0;
+        if (tag.TryGetNumber<float>("Health", out var health))
+            this.Health = health;
+        if (tag.TryGetNumber<float>("AbsorptionAmount", out var absorption))
+            this.AbsorptionHealth = float.IsFinite(absorption) ? Math.Max(0, absorption) : 0;
 
         this.PersistenceRequired = tag.TryGetBool("PersistenceRequired", out var persistent) && persistent;
     }

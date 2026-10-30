@@ -636,7 +636,7 @@ public partial class PlayerBase
         this.ReadRespawnPoint(tag);
         this.portalCooldown = Math.Max(0, Read("PortalCooldown", 0));
         this.TimeSinceRest = Math.Max(0, Read("ObsidianTimeSinceRest", 0));
-        if (tag.TryGetTagValue<int>("XpSeed", out var enchantmentSeed))
+        if (tag.TryGetNumber<int>("XpSeed", out var enchantmentSeed))
             this.EnchantmentSeed = enchantmentSeed;
 
         this.HurtTime = Read<short>("HurtTime", 0);
@@ -724,7 +724,7 @@ public partial class PlayerBase
             if (compound.ItemFromNbt() is not ItemStack stack)
                 continue;
 
-            var slot = compound.TryGetTag<NbtTag<byte>>("Slot", out var slotTag) ? slotTag.Value : 0;
+            var slot = compound.TryGetNumber<byte>("Slot", out var slotTag) ? slotTag : 0;
             yield return (slot, stack, compound.HasTag("Count"));
         }
     }

@@ -321,19 +321,19 @@ public sealed partial class Villager : AgeableMob
                 VillagerType = Math.Max(0, Array.IndexOf(BiomeTypes, type.Replace("minecraft:", "")));
             if (data.TryGetTagValue<string>("profession", out var profession))
                 VillagerProfession = Math.Max(0, Array.IndexOf(Professions, profession.Replace("minecraft:", "")));
-            if (data.TryGetTagValue<int>("level", out var level))
+            if (data.TryGetNumber<int>("level", out var level))
                 VillagerLevel = Math.Clamp(level, 1, 5);
         }
-        VillagerXp = tag.TryGetTagValue<int>("Xp", out var xp) ? Math.Max(0, xp) : 0;
+        VillagerXp = tag.TryGetNumber<int>("Xp", out var xp) ? Math.Max(0, xp) : 0;
         offers = MerchantOffers.Read(tag);
-        if (tag.TryGetTagValue<int>("ObsidianTradingLevel", out var unlocked))
+        if (tag.TryGetNumber<int>("ObsidianTradingLevel", out var unlocked))
             tradingLevel = Math.Clamp(unlocked, 0, 5);
         else
             tradingLevel = tag.HasTag("ObsidianOffers") || tag.HasTag("Offers") ? VillagerLevel : 0;
-        restocks = tag.TryGetTagValue<int>("RestocksToday", out var stock) ? Math.Clamp(stock, 0, 2) : 0;
-        if (tag.TryGetTagValue<long>("LastRestock", out var last))
+        restocks = tag.TryGetNumber<int>("RestocksToday", out var stock) ? Math.Clamp(stock, 0, 2) : 0;
+        if (tag.TryGetNumber<long>("LastRestock", out var last))
             lastRestock = last;
-        if (tag.TryGetTagValue<long>("ObsidianRestockDay", out var day))
+        if (tag.TryGetNumber<long>("ObsidianRestockDay", out var day))
             restockDay = day;
         if (tag.TryGetTag<NbtArray<int>>("ObsidianHome", out var home) && home.Count == 3)
         {

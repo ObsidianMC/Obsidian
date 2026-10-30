@@ -206,7 +206,7 @@ public sealed partial class Parrot : Animal
 
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
-        Variant = Math.Clamp((tag.TryGetTagValue<int>("Variant", out var savedVariant) ? savedVariant : 0), 0, 4);
+        Variant = Math.Clamp((tag.TryGetNumber<int>("Variant", out var savedVariant) ? savedVariant : 0), 0, 4);
         OrderedToSit = tag.TryGetBool("Sitting", out var sitting) && sitting;
         if (tag.TryGetTag<NbtArray<int>>("Owner", out var owner) && owner.Count == 4)
             Owner = EntityNbt.UuidFromInts(owner.GetArray());

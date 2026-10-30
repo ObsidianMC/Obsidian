@@ -33,7 +33,7 @@ public sealed partial class TraderLlama : Llama
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         base.ReadAdditionalSave(tag);
-        DespawnDelay = tag.TryGetTagValue<int>("DespawnDelay", out var delay) ? delay : 47999;
+        DespawnDelay = tag.TryGetNumber<int>("DespawnDelay", out var delay) ? delay : 47999;
         if (tag.TryGetTag<NbtArray<int>>("ObsidianTrader", out var trader) && trader.Count == 4) TraderUuid = EntityNbt.UuidFromInts(trader.GetArray());
         else if (tag.TryGetTag<NbtCompound>("leash", out var leash) && leash.TryGetTag<NbtArray<int>>("UUID", out var owner) && owner.Count == 4)
             TraderUuid = EntityNbt.UuidFromInts(owner.GetArray());

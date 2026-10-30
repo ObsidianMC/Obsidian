@@ -84,6 +84,6 @@ public sealed partial class PiglinBrute : PathfinderMob
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         IsImmuneToZombification = tag.TryGetBool("IsImmuneToZombification", out var immune) && immune;
-        TimeInOverworld = Math.Max(0, tag.TryGetTagValue<int>("TimeInOverworld", out var ticks) ? ticks : 0);
+        TimeInOverworld = Math.Max(0, tag.TryGetNumber<int>("TimeInOverworld", out var ticks) ? ticks : 0);
     }
 }

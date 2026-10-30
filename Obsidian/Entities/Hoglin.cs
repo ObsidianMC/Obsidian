@@ -78,7 +78,7 @@ public sealed partial class Hoglin : FarmAnimal
     {
         IsImmuneToZombification = tag.TryGetBool("IsImmuneToZombification", out var immune) && immune;
         CannotBeHunted = tag.TryGetBool("CannotBeHunted", out var hunted) && hunted;
-        TimeInOverworld = Math.Max(0, tag.TryGetTagValue<int>("TimeInOverworld", out var ticks) ? ticks : 0);
+        TimeInOverworld = Math.Max(0, tag.TryGetNumber<int>("TimeInOverworld", out var ticks) ? ticks : 0);
     }
 }
 

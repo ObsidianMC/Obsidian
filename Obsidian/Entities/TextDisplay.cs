@@ -317,9 +317,9 @@ public sealed partial class TextDisplay : Entity, ITextDisplay
         base.ReadNbt(tag);
 
         this.text = tag.TryGetTag("text", out var text) && text.TextFromNbt() is { } message ? message : ChatMessage.Simple(string.Empty);
-        this.lineWidth = tag.TryGetTag<NbtTag<int>>("line_width", out var lineWidthTag) ? lineWidthTag.Value : DefaultLineWidth;
-        this.backgroundColor = tag.TryGetTag<NbtTag<int>>("background", out var background) ? background.Value : DefaultBackgroundColor;
-        this.textOpacity = tag.TryGetTag<NbtTag<byte>>("text_opacity", out var opacity) ? opacity.Value : (byte)0xFF;
+        this.lineWidth = tag.TryGetNumber<int>("line_width", out var lineWidthTag) ? lineWidthTag : DefaultLineWidth;
+        this.backgroundColor = tag.TryGetNumber<int>("background", out var background) ? background : DefaultBackgroundColor;
+        this.textOpacity = tag.TryGetNumber<byte>("text_opacity", out var opacity) ? opacity : (byte)0xFF;
         this.shadow = tag.TryGetBool("shadow", out var shadowFlag) && shadowFlag;
         this.seeThrough = tag.TryGetBool("see_through", out var seeThroughFlag) && seeThroughFlag;
         this.defaultBackground = tag.TryGetBool("default_background", out var defaultFlag) && defaultFlag;
@@ -353,18 +353,18 @@ public sealed partial class TextDisplay : Entity, ITextDisplay
                 this.rightRotation = new Rotation(right[0], right[1], right[2], right[3]);
         }
 
-        this.interpolationDuration = tag.TryGetTag<NbtTag<int>>("interpolation_duration", out var interpolation) ? interpolation.Value : 0;
-        this.positionInterpolationDuration = tag.TryGetTag<NbtTag<int>>("teleport_duration", out var teleport) ? teleport.Value : 0;
+        this.interpolationDuration = tag.TryGetNumber<int>("interpolation_duration", out var interpolation) ? interpolation : 0;
+        this.positionInterpolationDuration = tag.TryGetNumber<int>("teleport_duration", out var teleport) ? teleport : 0;
         this.viewRange = ReadFloat(tag, "view_range", 1f);
         this.shadowRadius = ReadFloat(tag, "shadow_radius", 0f);
         this.shadowStrength = ReadFloat(tag, "shadow_strength", 1f);
         this.width = ReadFloat(tag, "width", 0f);
         this.height = ReadFloat(tag, "height", 0f);
-        this.glowColorOverride = tag.TryGetTag<NbtTag<int>>("glow_color_override", out var glow) ? glow.Value : -1;
+        this.glowColorOverride = tag.TryGetNumber<int>("glow_color_override", out var glow) ? glow : -1;
 
         this.brightnessOverride = tag.TryGetTag<NbtCompound>("brightness", out var brightness)
-            && brightness.TryGetTag<NbtTag<int>>("block", out var block) && brightness.TryGetTag<NbtTag<int>>("sky", out var sky)
-            ? (Math.Clamp(block.Value, 0, 15) << 4) | (Math.Clamp(sky.Value, 0, 15) << 20)
+            && brightness.TryGetNumber<int>("block", out var block) && brightness.TryGetNumber<int>("sky", out var sky)
+            ? (Math.Clamp(block, 0, 15) << 4) | (Math.Clamp(sky, 0, 15) << 20)
             : NoBrightnessOverride;
     }
 
@@ -460,7 +460,7 @@ public sealed partial class TextDisplay : Entity, ITextDisplay
     }
 
     private static float ReadFloat(NbtCompound tag, string name, float fallback) =>
-        tag.TryGetTag<NbtTag<float>>(name, out var value) ? value.Value : fallback;
+        tag.TryGetNumber<float>(name, out var value) ? value : fallback;
 
     /// <summary>A quaternion (x, y, z, w) as vanilla's transformations hold it.</summary>
     public readonly record struct Rotation(float X, float Y, float Z, float W)

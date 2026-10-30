@@ -123,7 +123,7 @@ public sealed partial class Dolphin : AgeableMob
     protected override void ReadAdditionalSave(Obsidian.Nbt.NbtCompound tag)
     {
         GotFish = tag.TryGetBool("GotFish", out var fish) && fish;
-        Moistness = tag.TryGetTagValue<int>("Moistness", out var moistness) ? Math.Clamp(moistness, 0, 2400) : 2400;
+        Moistness = tag.TryGetNumber<int>("Moistness", out var moistness) ? Math.Clamp(moistness, 0, 2400) : 2400;
         if (tag.TryGetTag<Obsidian.Nbt.NbtArray<int>>("ObsidianTreasurePos", out var point) && point.Count == 3)
             TreasurePosition = new Vector(point[0], point[1], point[2]);
     }

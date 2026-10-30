@@ -243,6 +243,8 @@ public partial class PlayerBase
 
     private async ValueTask TickPlayerAsync()
     {
+        Obsidian.Commands.CommandSpam.Tick(this);
+
         if (damageCooldown > 0)
             damageCooldown--;
 

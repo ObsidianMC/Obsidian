@@ -204,13 +204,13 @@ public sealed partial class Allay : PathfinderMob
 
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
-        duplicationCooldown = Math.Max(0, tag.TryGetTagValue<long>("DuplicationCooldown", out var ticks) ? ticks : 0);
+        duplicationCooldown = Math.Max(0, tag.TryGetNumber<long>("DuplicationCooldown", out var ticks) ? ticks : 0);
         if (tag.TryGetTag<NbtArray<int>>("ObsidianLikedPlayer", out var owner) && owner.Count == 4)
             likedPlayer = EntityNbt.UuidFromInts(owner.GetArray());
         if (tag.TryGetTag<NbtCompound>("ObsidianCollected", out var item))
             collected = item.ItemFromNbt() ?? ItemStack.Air;
-        noteBlockTicks = tag.TryGetTagValue<int>("ObsidianNoteBlockTicks", out var notes) ? Math.Clamp(notes, 0, 600) : 0;
-        throwCooldown = tag.TryGetTagValue<int>("ObsidianThrowCooldown", out var throwing) ? Math.Clamp(throwing, 0, 60) : 0;
+        noteBlockTicks = tag.TryGetNumber<int>("ObsidianNoteBlockTicks", out var notes) ? Math.Clamp(notes, 0, 600) : 0;
+        throwCooldown = tag.TryGetNumber<int>("ObsidianThrowCooldown", out var throwing) ? Math.Clamp(throwing, 0, 60) : 0;
         if (noteBlockTicks > 0 && tag.TryGetTag<NbtArray<int>>("ObsidianNoteBlock", out var note) && note.Count == 3)
         {
             var point = note.GetArray();

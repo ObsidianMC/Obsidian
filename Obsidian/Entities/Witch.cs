@@ -140,8 +140,8 @@ public sealed partial class Witch : PathfinderMob
 
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
-        drinkTicks = Math.Clamp(tag.TryGetTagValue<int>("ObsidianDrinkTicks", out var ticks) ? ticks : 0, 0, 32);
-        drinkEffect = tag.TryGetTagValue<int>("ObsidianDrinkEffect", out var effect) ? effect : -1;
+        drinkTicks = Math.Clamp(tag.TryGetNumber<int>("ObsidianDrinkTicks", out var ticks) ? ticks : 0, 0, 32);
+        drinkEffect = tag.TryGetNumber<int>("ObsidianDrinkEffect", out var effect) ? effect : -1;
         if (drinkEffect is not (5 or 11 or 12 or 0))
             drinkTicks = 0;
     }

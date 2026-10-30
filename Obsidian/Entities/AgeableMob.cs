@@ -54,8 +54,8 @@ public class AgeableMob : PathfinderMob, IAgeable
         base.ReadNbt(tag);
 
         if (HasAi)
-            Age = tag.TryGetTag<NbtTag<int>>("Age", out var age) ? age.Value : 0;
+            Age = tag.TryGetNumber<int>("Age", out var age) ? age : 0;
         else
-            this.IsBaby = tag.TryGetTag<NbtTag<int>>("Age", out var legacyAge) && legacyAge.Value < 0;
+            this.IsBaby = tag.TryGetNumber<int>("Age", out var legacyAge) && legacyAge < 0;
     }
 }

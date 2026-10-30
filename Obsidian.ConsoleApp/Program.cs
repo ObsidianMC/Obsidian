@@ -26,7 +26,7 @@ var builder = Host.CreateApplicationBuilder(args);
 // defaults (see ConfigureObsidian), which the dedicated server's files would override.
 ServerConstants.ConfigurePaths(builder.Configuration);
 if (!builder.Configuration.GetValue<bool>("Integrated:Enabled"))
-    await GenerateConfigFiles(ServerConstants.ConfigPath);
+    await ConfigFiles.GenerateAsync(ServerConstants.ConfigPath, Console.WriteLine);
 
 builder.ConfigureObsidian();
 builder.AddObsidian();

@@ -198,7 +198,7 @@ public abstract class HangingEntity : Entity, IPlayerInteractable
     {
         base.ReadNbt(tag);
 
-        var facing = FromFacingId(tag.TryGetTag<NbtTag<byte>>("Facing", out var saved) ? saved.Value : 0);
+        var facing = FromFacingId(tag.TryGetNumber<byte>("Facing", out var saved) ? saved : 0);
         var block = tag.TryGetTag<NbtArray<int>>("block_pos", out var position) && position.Count == 3
             ? new Vector(position.GetArray()[0], position.GetArray()[1], position.GetArray()[2])
             : (Vector)this.Position.Floor();

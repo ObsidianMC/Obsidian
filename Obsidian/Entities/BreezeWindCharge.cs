@@ -157,7 +157,7 @@ internal sealed class BreezeWindCharge : Entity
     internal override void ReadNbt(NbtCompound tag)
     {
         base.ReadNbt(tag);
-        age = tag.TryGetTagValue<int>("ObsidianLife", out var ticks) ? Math.Clamp(ticks, 0, 200) : 0;
+        age = tag.TryGetNumber<int>("ObsidianLife", out var ticks) ? Math.Clamp(ticks, 0, 200) : 0;
         if (tag.TryGetTag<NbtArray<int>>("Owner", out var uuid) && uuid.Count == 4)
             ownerUuid = EntityNbt.UuidFromInts(uuid.GetArray());
         BoundingBox = Dimension.CreateBBFromPosition(Position);

@@ -133,7 +133,7 @@ internal sealed partial class MobSpawner
         spawner.Set("Delay", (short)(maximum <= minimum ? minimum : random.Next(minimum, maximum)));
         if (!spawner.Data.TryGetTag<NbtList>("SpawnPotentials", out var potentials))
             return;
-        var entries = potentials.OfType<NbtCompound>().Where(entry => entry.TryGetTagValue<int>("weight", out var weight) && weight > 0 &&
+        var entries = potentials.OfType<NbtCompound>().Where(entry => entry.TryGetNumber<int>("weight", out var weight) && weight > 0 &&
             entry.TryGetTag<NbtCompound>("data", out _)).ToArray();
         var total = entries.Sum(entry => (long)entry.GetInt("weight"));
         if (total <= 0)
@@ -155,7 +155,7 @@ internal sealed partial class MobSpawner
     }
 
     private static int ReadShort(NbtCompound tag, string name, int fallback, int minimum, int maximum) =>
-        Math.Clamp(tag.TryGetTagValue<short>(name, out var value) ? value : fallback, minimum, maximum);
+        Math.Clamp(tag.TryGetNumber<short>(name, out var value) ? value : fallback, minimum, maximum);
 
     // Vanilla's placement predicate for a spawner's mob (BaseSpawner.serverTick: SpawnPlacements.isSpawnPositionOk):
     // aquatic mobs need water at their feet; the rest need no fluid at their feet, a solid floor that is not liquid,

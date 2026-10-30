@@ -101,7 +101,7 @@ internal sealed class DragonFireball : Entity
         base.ReadNbt(tag);
         if (!EntityNbt.TryReadVector(tag, "ObsidianAcceleration", out acceleration) && Motion.Magnitude > 0.001f)
             acceleration = Motion / Motion.Magnitude * 0.1f;
-        age = Math.Clamp(tag.TryGetTagValue<int>("ObsidianLife", out var ticks) ? ticks : 0, 0, 600);
+        age = Math.Clamp(tag.TryGetNumber<int>("ObsidianLife", out var ticks) ? ticks : 0, 0, 600);
         if (tag.TryGetTag<NbtArray<int>>("Owner", out var owner) && owner.Count == 4)
             OwnerUuid = EntityNbt.UuidFromInts(owner.GetArray());
     }
@@ -204,13 +204,13 @@ internal sealed class DragonBreathCloud : Entity
     internal override void ReadNbt(NbtCompound tag)
     {
         base.ReadNbt(tag);
-        if (tag.TryGetTagValue<float>("Radius", out var radius) && float.IsFinite(radius))
+        if (tag.TryGetNumber<float>("Radius", out var radius) && float.IsFinite(radius))
             Radius = Math.Clamp(radius, 0, 32);
-        if (tag.TryGetTagValue<float>("RadiusPerTick", out var rate) && float.IsFinite(rate))
+        if (tag.TryGetNumber<float>("RadiusPerTick", out var rate) && float.IsFinite(rate))
             RadiusPerTick = Math.Clamp(rate, -1, 1);
-        Duration = Math.Clamp(tag.TryGetTagValue<int>("Duration", out var duration) ? duration : 600, 0, 72000);
-        WaitTime = Math.Clamp(tag.TryGetTagValue<int>("WaitTime", out var wait) ? wait : 20, 0, 72000);
-        age = Math.Clamp(tag.TryGetTagValue<int>("Age", out var ticks) ? ticks : 0, 0, 144000);
+        Duration = Math.Clamp(tag.TryGetNumber<int>("Duration", out var duration) ? duration : 600, 0, 72000);
+        WaitTime = Math.Clamp(tag.TryGetNumber<int>("WaitTime", out var wait) ? wait : 20, 0, 72000);
+        age = Math.Clamp(tag.TryGetNumber<int>("Age", out var ticks) ? ticks : 0, 0, 144000);
         if (tag.TryGetTag<NbtArray<int>>("Owner", out var owner) && owner.Count == 4)
             OwnerUuid = EntityNbt.UuidFromInts(owner.GetArray());
     }

@@ -109,8 +109,8 @@ public sealed partial class FireworkRocket : Entity
     internal override void ReadNbt(NbtCompound tag)
     {
         base.ReadNbt(tag);
-        life = tag.TryGetTagValue<int>("Life", out var savedLife) ? Math.Max(0, savedLife) : 0;
-        lifetime = tag.TryGetTagValue<int>("LifeTime", out var savedLifetime) ? Math.Max(0, savedLifetime) : 0;
+        life = tag.TryGetNumber<int>("Life", out var savedLife) ? Math.Max(0, savedLife) : 0;
+        lifetime = tag.TryGetNumber<int>("LifeTime", out var savedLifetime) ? Math.Max(0, savedLifetime) : 0;
         ShotAtAngle = tag.TryGetBool("ShotAtAngle", out var shot) && shot;
         Item = tag.TryGetTag<NbtCompound>("FireworksItem", out var item) ? item.ItemFromNbt() : null;
     }

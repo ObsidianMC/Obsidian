@@ -183,8 +183,8 @@ public sealed partial class Goat : FarmAnimal
         Screaming = tag.TryGetBool("IsScreamingGoat", out var screaming) && screaming;
         HasLeftHorn = !tag.TryGetBool("HasLeftHorn", out var left) || left;
         HasRightHorn = !tag.TryGetBool("HasRightHorn", out var right) || right;
-        ramCooldown = Math.Clamp((tag.TryGetTagValue<int>("ObsidianRamCooldown", out var savedObsidianRamCooldown) ? savedObsidianRamCooldown : 0), 0, 6000);
-        longJumpCooldown = Math.Clamp((tag.TryGetTagValue<int>("ObsidianLongJumpCooldown", out var savedObsidianLongJumpCooldown) ? savedObsidianLongJumpCooldown : 0), 0, 1200);
+        ramCooldown = Math.Clamp((tag.TryGetNumber<int>("ObsidianRamCooldown", out var savedObsidianRamCooldown) ? savedObsidianRamCooldown : 0), 0, 6000);
+        longJumpCooldown = Math.Clamp((tag.TryGetNumber<int>("ObsidianLongJumpCooldown", out var savedObsidianLongJumpCooldown) ? savedObsidianLongJumpCooldown : 0), 0, 1200);
     }
 }
 

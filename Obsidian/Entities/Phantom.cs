@@ -78,7 +78,7 @@ public sealed partial class Phantom : PathfinderMob
 
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
-        Size = tag.TryGetTagValue<int>("size", out var saved) ? saved : 0;
+        Size = tag.TryGetNumber<int>("size", out var saved) ? saved : 0;
         if (tag.TryGetTag<NbtArray<int>>("anchor_pos", out var anchor) && anchor.Count == 3)
         {
             var coordinates = anchor.GetArray();

@@ -177,7 +177,7 @@ public sealed partial class Evoker : PathfinderMob
     }
 
     protected override void WriteAdditionalSave(INbtWriter writer) => writer.WriteInt("SpellTicks", spellTicks);
-    protected override void ReadAdditionalSave(NbtCompound tag) => spellTicks = Math.Clamp(tag.TryGetTagValue<int>("SpellTicks", out var ticks) ? ticks : 0, 0, 100);
+    protected override void ReadAdditionalSave(NbtCompound tag) => spellTicks = Math.Clamp(tag.TryGetNumber<int>("SpellTicks", out var ticks) ? ticks : 0, 0, 100);
 }
 
 internal sealed class EvokerCastingGoal(Evoker evoker) : Goal

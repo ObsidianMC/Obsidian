@@ -124,7 +124,8 @@ internal sealed partial class LoginClientHandler : ClientHandler
         {
             await this.Client.DisconnectAsync(BanList.DisconnectMessage(ban.Reason));
         }
-        else if (this.Server.Configuration.Whitelist && !this.Server.IsWhitelisted(username))
+        else if (this.Server is not Server { Integrated: not null }
+            && this.Server.Configuration.Whitelist && !this.Server.IsWhitelisted(username))
         {
             await this.Client.DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
         }

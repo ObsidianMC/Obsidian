@@ -315,7 +315,7 @@ public sealed partial class CopperGolem : PathfinderMob
         weather = tag.TryGetTagValue<string>("weather_state", out var state)
             ? Math.Max(0, Array.IndexOf(WeatherStates, state))
             : 0;
-        if (tag.TryGetTagValue<long>("next_weather_age", out var ticks))
+        if (tag.TryGetNumber<long>("next_weather_age", out var ticks))
             nextWeather = ticks;
         else
             nextWeather = Level.LevelData.GameTime + Random.Next(504000, 552001);

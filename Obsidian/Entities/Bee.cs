@@ -251,10 +251,10 @@ public sealed partial class Bee : FarmAnimal
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         HasNectar = tag.TryGetBool("HasNectar", out var nectar) && nectar;
-        CropsGrownSincePollination = tag.TryGetTagValue<int>("CropsGrownSincePollination", out var crops) ? crops : 0;
+        CropsGrownSincePollination = tag.TryGetNumber<int>("CropsGrownSincePollination", out var crops) ? crops : 0;
         HasStung = tag.TryGetBool("HasStung", out var stung) && stung;
-        AngerTicks = Math.Clamp((tag.TryGetTagValue<int>("AngerTime", out var savedAngerTime) ? savedAngerTime : 0), 0, 800);
-        stingTicks = Math.Clamp((tag.TryGetTagValue<int>("ObsidianStingTicks", out var savedObsidianStingTicks) ? savedObsidianStingTicks : 0), 0, 1200);
+        AngerTicks = Math.Clamp((tag.TryGetNumber<int>("AngerTime", out var savedAngerTime) ? savedAngerTime : 0), 0, 800);
+        stingTicks = Math.Clamp((tag.TryGetNumber<int>("ObsidianStingTicks", out var savedObsidianStingTicks) ? savedObsidianStingTicks : 0), 0, 1200);
         if (tag.TryGetTag<NbtArray<int>>("ObsidianHivePos", out var hive) && hive.Count == 3)
             HivePosition = new Vector(hive[0], hive[1], hive[2]);
         if (tag.TryGetTag<NbtArray<int>>("ObsidianFlowerPos", out var flower) && flower.Count == 3)

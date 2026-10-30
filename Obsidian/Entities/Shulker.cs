@@ -192,9 +192,9 @@ public sealed partial class Shulker : PathfinderMob
 
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
-        face = tag.TryGetTagValue<byte>("AttachFace", out var attachment) ? (byte)Math.Clamp((int)attachment, 0, 5) : (byte)0;
-        peek = tag.TryGetTagValue<byte>("Peek", out var savedPeek) ? (byte)Math.Clamp((int)savedPeek, 0, 100) : (byte)0;
-        Color = tag.TryGetTagValue<byte>("Color", out var color) ? (byte)Math.Clamp((int)color, 0, 16) : (byte)16;
+        face = tag.TryGetNumber<byte>("AttachFace", out var attachment) ? (byte)Math.Clamp((int)attachment, 0, 5) : (byte)0;
+        peek = tag.TryGetNumber<byte>("Peek", out var savedPeek) ? (byte)Math.Clamp((int)savedPeek, 0, 100) : (byte)0;
+        Color = tag.TryGetNumber<byte>("Color", out var color) ? (byte)Math.Clamp((int)color, 0, 16) : (byte)16;
         closeAt = AiTick + 40;
         UpdateArmor();
     }

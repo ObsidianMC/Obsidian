@@ -13,8 +13,11 @@ internal static class CommandFeedback
         context.Sender.SendMessageAsync(ChatMessage.Simple(message));
 
     /// <summary>Tells the sender a command failed, in red like vanilla's errors.</summary>
-    public static Task FailAsync(this CommandContext context, string message) =>
-        context.Sender.SendMessageAsync(ChatMessage.Simple(message, ChatColor.Red));
+    public static Task FailAsync(this CommandContext context, string message)
+    {
+        context.SetResult(false);
+        return context.Sender.SendMessageAsync(ChatMessage.Simple(message, ChatColor.Red));
+    }
 
     /// <summary>
     /// Says that a selector found nobody, as vanilla does, and returns whether it did, so a command can stop.

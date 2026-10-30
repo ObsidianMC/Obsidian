@@ -69,11 +69,11 @@ internal sealed class MovingPistonBlockEntity : BlockEntity
     protected internal override void Load(NbtCompound tag)
     {
         this.movedState = tag.TryGetTag("blockState", out var state) ? BlockStateNbt.Read(state) : BlocksRegistry.Air;
-        this.facing = tag.TryGetTagValue<int>("facing", out var face) && face is >= 0 and <= 5
+        this.facing = tag.TryGetNumber<int>("facing", out var face) && face is >= 0 and <= 5
             ? (BlockFace)face : BlockFace.North;
         this.extending = tag.TryGetBool("extending", out var extend) && extend;
         this.source = tag.TryGetBool("source", out var isSource) && isSource;
-        this.progress = tag.TryGetTagValue<float>("progress", out var saved) ? saved : 0;
+        this.progress = tag.TryGetNumber<float>("progress", out var saved) ? saved : 0;
         this.progressO = this.progress;
     }
 

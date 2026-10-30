@@ -155,8 +155,8 @@ public sealed partial class PrimedTnt : Entity
     {
         base.ReadNbt(tag);
 
-        if (tag.TryGetTag<NbtTag<short>>("fuse", out var fuse))
-            this.Fuse = fuse.Value;
+        if (tag.TryGetNumber<short>("fuse", out var fuse))
+            this.Fuse = fuse;
 
         this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
     }

@@ -9,6 +9,8 @@ internal static class FixtureDumper
     {
         var classpath = string.Join(Path.PathSeparator, server.ClassPath);
         var scratch = server.ScratchDirectory;
+        await VanillaServer.RunJavaAsync(scratch, "-cp", classpath, Source("CommandFixtures.java"),
+            Path.Combine(output, $"commands-{server.Version}.json"));
         await VanillaServer.RunJavaAsync(
             scratch,
             "-cp",

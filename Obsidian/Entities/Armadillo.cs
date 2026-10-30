@@ -145,9 +145,9 @@ public sealed partial class Armadillo : FarmAnimal
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         state = tag.TryGetTagValue<string>("state", out var value) ? Math.Max(0, Array.IndexOf(new[] { "idle", "rolling", "scared", "unrolling" }, value)) : 0;
-        scuteTime = tag.TryGetTagValue<int>("scute_time", out var ticks) ? Math.Clamp(ticks, 0, 12000) : Random.Next(6000, 12001);
-        stateTicks = tag.TryGetTagValue<int>("ObsidianStateTicks", out var elapsed) ? Math.Clamp(elapsed, 0, 100) : 0;
-        safeAt = AiTick + (tag.TryGetTagValue<long>("ObsidianScaredTicks", out var scared) ? Math.Clamp(scared, 0, 80) : 80);
+        scuteTime = tag.TryGetNumber<int>("scute_time", out var ticks) ? Math.Clamp(ticks, 0, 12000) : Random.Next(6000, 12001);
+        stateTicks = tag.TryGetNumber<int>("ObsidianStateTicks", out var elapsed) ? Math.Clamp(elapsed, 0, 100) : 0;
+        safeAt = AiTick + (tag.TryGetNumber<long>("ObsidianScaredTicks", out var scared) ? Math.Clamp(scared, 0, 80) : 80);
     }
 }
 

@@ -222,7 +222,7 @@ internal sealed class LecternBlockEntity : VanillaContainerBlockEntity
         if (tag.TryGetTag<NbtCompound>("Book", out var book) && book.ItemFromNbt() is { Count: > 0 } item)
             this.Lectern.SetItem(LecternContainer.BookSlot, new ItemStack(item, 1));
 
-        this.Lectern.Page = tag.TryGetTagValue<int>("Page", out var page) ? Math.Max(0, page) : 0;
+        this.Lectern.Page = tag.TryGetNumber<int>("Page", out var page) ? Math.Max(0, page) : 0;
     }
 
     protected internal override void Save(NbtCompound tag)
@@ -370,8 +370,8 @@ internal sealed class CrafterBlockEntity : VanillaContainerBlockEntity
                 crafter.SetSlotDisabled(slot, true);
         }
 
-        crafter.Triggered = tag.TryGetTagValue<int>("triggered", out var triggered) && triggered == 1;
-        crafter.CraftingTicksRemaining = tag.TryGetTagValue<int>("crafting_ticks_remaining", out var ticks) ? ticks : 0;
+        crafter.Triggered = tag.TryGetNumber<int>("triggered", out var triggered) && triggered == 1;
+        crafter.CraftingTicksRemaining = tag.TryGetNumber<int>("crafting_ticks_remaining", out var ticks) ? ticks : 0;
     }
 
     protected internal override void Save(NbtCompound tag)

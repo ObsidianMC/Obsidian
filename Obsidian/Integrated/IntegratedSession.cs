@@ -36,6 +36,8 @@ public sealed class IntegratedSession(IOptions<IntegratedConfiguration> options)
     /// <param name="allowCommands">Whether every player may use commands from now on.</param>
     public void Publish(GameMode? gameMode, bool allowCommands) => this.publication = new(gameMode, allowCommands);
 
+    public void Unpublish() => this.publication = null;
+
     /// <summary>
     /// Whether <paramref name="username"/> is the local player's name, which only the local player may use. Names
     /// compare without case, like vanilla's.

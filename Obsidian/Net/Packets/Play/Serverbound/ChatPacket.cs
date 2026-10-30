@@ -28,6 +28,7 @@ public partial class ChatPacket
     public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         await server.EventDispatcher.ExecuteEventAsync(new IncomingChatMessageEventArgs(player, server, this.Message, "<{0}> {1}"));
+        await Obsidian.Commands.CommandSpam.RecordAsync(server, player, command: false);
     }
 
     public override void Populate(INetStreamReader reader)
@@ -41,4 +42,3 @@ public partial class ChatPacket
         this.Acknowledgement = ChatMessageTypes.ChatAcknowledgement.Read(reader);
     }
 }
-

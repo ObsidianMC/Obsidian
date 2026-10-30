@@ -218,7 +218,7 @@ public sealed partial class Panda : FarmAnimal
     {
         MainGene = (byte)Math.Max(0, Array.IndexOf(genes, (tag.TryGetTagValue<string>("MainGene", out var savedMainGene) ? savedMainGene : null)));
         HiddenGene = (byte)Math.Max(0, Array.IndexOf(genes, (tag.TryGetTagValue<string>("HiddenGene", out var savedHiddenGene) ? savedHiddenGene : null)));
-        EatingTicks = Math.Clamp((tag.TryGetTagValue<int>("ObsidianEatingTicks", out var savedObsidianEatingTicks) ? savedObsidianEatingTicks : 0), 0, 80);
+        EatingTicks = Math.Clamp((tag.TryGetNumber<int>("ObsidianEatingTicks", out var savedObsidianEatingTicks) ? savedObsidianEatingTicks : 0), 0, 80);
         ApplyGenes();
     }
 }

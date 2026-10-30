@@ -118,7 +118,7 @@ public sealed partial class Sniffer : FarmAnimal
 
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
-        nextDig = AiTick + Math.Clamp(tag.TryGetTagValue<long>("ObsidianDigCooldown", out var cooldown) ? cooldown : 0, 0, 9600);
+        nextDig = AiTick + Math.Clamp(tag.TryGetNumber<long>("ObsidianDigCooldown", out var cooldown) ? cooldown : 0, 0, 9600);
         if (tag.TryGetTag<NbtArray<int>>("ObsidianExplored", out var saved))
         {
             var points = saved.GetArray();

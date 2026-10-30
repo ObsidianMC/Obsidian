@@ -35,6 +35,9 @@ public sealed partial class IntegratedServerService(
     // Publishing runs once at a time, from the control command or /publish.
     private readonly SemaphoreSlim publishLock = new(1, 1);
 
+    private CancellationTokenSource? lanBroadcast;
+    private int? lanPort;
+
     private int stoppingReported;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -180,17 +183,58 @@ public sealed partial class IntegratedServerService(
             }
 
             session.Publish(gameMode, allowCommands);
+            this.lanPort = boundPort;
+            this.lanBroadcast = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
             Log.Published(logger, boundPort);
 
             // Vanilla's integrated server MOTD, "<player> - <world>".
             var motd = $"{session.Configuration.LocalPlayerName} - {this.server.DefaultWorld.LevelData.LevelName}";
-            _ = LanBroadcasterService.BroadcastAsync(() => (motd, boundPort), logger, lifetime.ApplicationStopping);
+            _ = LanBroadcasterService.BroadcastAsync(() => (motd, boundPort), logger, this.lanBroadcast.Token);
 
             foreach (var player in this.server.OnlinePlayers.Values)
                 await ((OperatorList)this.server.Operators).SendPermissionLevelAsync(player);
 
             events.Write(IntegratedEvent.Published(boundPort));
             return boundPort;
+        }
+        finally
+        {
+            this.publishLock.Release();
+        }
+    }
+
+    /// <summary>Closes the publication's listener and advertisement without closing the local connection.</summary>
+    public async Task<bool> UnpublishAsync()
+    {
+        await this.publishLock.WaitAsync();
+        try
+        {
+            if (!session.IsPublished || this.lanPort is not int port)
+                return false;
+
+            this.server.CloseListener(port);
+            foreach (var player in this.server.OnlinePlayers.Values.OfType<IClientPlayer>().ToArray())
+            {
+                if (!session.IsLocalPlayer(player))
+                {
+                    await player.Client.DisconnectAsync(new ChatMessage
+                    {
+                        Translate = "multiplayer.disconnect.server_shutdown"
+                    });
+                }
+            }
+
+            this.lanBroadcast?.Cancel();
+            this.lanBroadcast?.Dispose();
+            this.lanBroadcast = null;
+            this.lanPort = null;
+            session.Unpublish();
+
+            foreach (var player in this.server.OnlinePlayers.Values)
+                await ((OperatorList)this.server.Operators).SendPermissionLevelAsync(player);
+
+            events.Write(new IntegratedEvent("unpublished"));
+            return true;
         }
         finally
         {

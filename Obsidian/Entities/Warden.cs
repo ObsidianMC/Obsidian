@@ -483,7 +483,7 @@ public sealed partial class Warden : PathfinderMob
         poseTicks = ReadTimer(tag, "ObsidianWardenPoseTicks", 134);
         sonicCooldown = ReadTimer(tag, "ObsidianWardenSonicCooldown", 200);
         sonicTicks = ReadTimer(tag, "ObsidianWardenSonicTicks", 60);
-        if (tag.TryGetTagValue<int>("ObsidianWardenPose", out var pose)
+        if (tag.TryGetNumber<int>("ObsidianWardenPose", out var pose)
             && (Pose)pose is Pose.Standing or Pose.Roaring or Pose.Sniffing or Pose.Digging or Pose.Emerging)
         {
             Pose = (Pose)pose;
@@ -496,7 +496,7 @@ public sealed partial class Warden : PathfinderMob
             {
                 if (entry.TryGetTagValue<string>("uuid", out var text)
                     && Guid.TryParse(text, out var id)
-                    && entry.TryGetTagValue<int>("anger", out var value)
+                    && entry.TryGetNumber<int>("anger", out var value)
                     && value > 0)
                 {
                     anger[id] = Math.Min(150, value);
@@ -506,7 +506,7 @@ public sealed partial class Warden : PathfinderMob
     }
 
     private static int ReadTimer(NbtCompound tag, string name, int maximum) =>
-        tag.TryGetTagValue<int>(name, out var value) ? Math.Clamp(value, 0, maximum) : 0;
+        tag.TryGetNumber<int>(name, out var value) ? Math.Clamp(value, 0, maximum) : 0;
 }
 
 internal sealed class WardenStrollGoal(Warden warden) : NavigationGoal(warden, 0.5f)

@@ -30,6 +30,29 @@ internal sealed class CommandExecutor : IExecutor<CommandContext>
 
         this.PluginContainer?.InjectServices(this.Logger, module); //inject through attribute
 
+        context.SetResult(true, 1);
+
+        if (this.MethodExecutor.MethodReturnType == typeof(Task<int>))
+        {
+            var result = await (Task<int>)this.MethodExecutor.Execute(module, methodParams)!;
+            context.SetResult(context.Succeeded, result);
+            return;
+        }
+
+        if (this.MethodExecutor.MethodReturnType == typeof(ValueTask<int>))
+        {
+            var result = await (ValueTask<int>)this.MethodExecutor.Execute(module, methodParams)!;
+            context.SetResult(context.Succeeded, result);
+            return;
+        }
+
+        if (this.MethodExecutor.MethodReturnType == typeof(int))
+        {
+            var result = (int)this.MethodExecutor.Execute(module, methodParams)!;
+            context.SetResult(context.Succeeded, result);
+            return;
+        }
+
         if (this.MethodExecutor.MethodReturnType == typeof(ValueTask))
         {
             await (ValueTask)this.MethodExecutor.Execute(module, methodParams)!;
