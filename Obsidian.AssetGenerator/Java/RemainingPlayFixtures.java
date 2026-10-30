@@ -1,5 +1,6 @@
 import com.google.gson.*;
 import com.mojang.serialization.JsonOps;
+import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
 import java.nio.file.*;
 import java.util.*;
 import net.minecraft.SharedConstants;
@@ -13,6 +14,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.*;
 import net.minecraft.server.Bootstrap;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.stats.*;
 import net.minecraft.util.random.*;
 import net.minecraft.world.entity.ai.attributes.*;
 import net.minecraft.world.level.gamerules.*;
@@ -25,6 +27,8 @@ class RemainingPlayFixtures extends ScreenFixtures {
         rows.add(encode(packet.getClass().getName(), "STREAM_CODEC", packet));
     }
     public static void main(String[] args) throws Exception {
+        // Advancement progress saves its times in the default time zone.
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
         SharedConstants.tryDetectVersion();
         Bootstrap.bootStrap();
         access = RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY);
@@ -254,6 +258,30 @@ class RemainingPlayFixtures extends ScreenFixtures {
         var id = Identifier.parse("probe:progress");
         output.addProperty("progress_advancements", encode(ClientboundUpdateAdvancementsPacket.class.getName(), "STREAM_CODEC",
             new ClientboundUpdateAdvancementsPacket(true, List.of(new ClientboundUpdateAdvancementsPacket.PositionedAdvancement(new AdvancementHolder(id, advancement), 0, 0)), Set.of(), Map.of(id, progress), false)));
+        // The same progress as a player's advancements file stores it.
+        var savedProgress = AdvancementProgress.CODEC.encodeStart(JsonOps.INSTANCE, progress).getOrThrow();
+        output.add("progress_advancement", savedProgress);
+        statistics(output);
+    }
+
+    // A player's statistics file after setting the custom play_time to 1200 and jump to 2, and the award packet with
+    // the same values, in that order.
+    static void statistics(JsonObject output) {
+        var playTime = Stats.CUSTOM.get(Stats.PLAY_TIME);
+        var jump = Stats.CUSTOM.get(Stats.JUMP);
+
+        // No server is needed while the file doesn't exist: the counter only reads the file through it.
+        var counter = new ServerStatsCounter(null, Path.of("missing-stats.json"));
+        counter.setValue(null, playTime, 1200);
+        counter.setValue(null, jump, 2);
+        var toJson = Vanilla.method(ServerStatsCounter.class.getName(), "toJson");
+        output.add("progress_stats", (JsonElement) Vanilla.call(toJson, counter));
+
+        var values = new Object2IntLinkedOpenHashMap<Stat<?>>();
+        values.put(playTime, 1200);
+        values.put(jump, 2);
+        var packet = new ClientboundAwardStatsPacket(values);
+        output.addProperty("progress_award_stats", encode(packet.getClass().getName(), "STREAM_CODEC", packet));
     }
 
     // Recipe slot displays: furnace inputs and a stonecutter choice, then a shaped and a shapeless recipe book entry.
