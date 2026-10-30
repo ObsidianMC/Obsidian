@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
 using Obsidian.API.BlockEntities;
@@ -312,7 +312,7 @@ public sealed class VanillaCommands26
     public void DefaultsMatchVanilla()
     {
         var expected = fixture.GetProperty("defaults");
-        var configuration = new ServerConfiguration();
+        var configuration = ServerConfiguration.CreateDefault();
 
         Assert.Equal(expected.GetProperty("whitelist").GetBoolean(), configuration.Whitelist);
         Assert.Equal(expected.GetProperty("chatSpamThresholdSeconds").GetInt32(), configuration.ChatSpamThresholdSeconds);

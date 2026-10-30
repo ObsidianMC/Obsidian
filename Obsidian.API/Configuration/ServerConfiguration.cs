@@ -12,6 +12,12 @@ public sealed class ServerConfiguration
     private const byte MinimumViewDistance = 3;
     private const byte MinimumSimulationDistance = 5;
 
+    /// <summary>Vanilla's whitelist default, which only a freshly written configuration takes.</summary>
+    public const bool FreshInstallWhitelist = true;
+
+    /// <summary>The configuration written for a fresh install, with vanilla's defaults.</summary>
+    public static ServerConfiguration CreateDefault() => new() { Whitelist = FreshInstallWhitelist };
+
     /// <summary>
     /// Enabled Remote Console operation.
     /// </summary>
@@ -53,7 +59,12 @@ public sealed class ServerConfiguration
 
     public bool? Baah { get; set; }
 
-    public bool Whitelist { get; set; } = true;
+    /// <summary>
+    /// Whether only whitelisted players may join. Off when a configuration doesn't set it, so an existing
+    /// <c>server.json</c> keeps admitting everyone; a fresh install gets vanilla's default (on) from
+    /// <see cref="CreateDefault"/>, which writes it explicitly.
+    /// </summary>
+    public bool Whitelist { get; set; }
 
     /// <summary>Chat burst budget in seconds of ticks. A non-positive value disables this limit.</summary>
     public int ChatSpamThresholdSeconds { get; set; } = 10;

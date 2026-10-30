@@ -510,7 +510,9 @@ identifiers and slot names. `CommandFixtures.java` captures the grammar and exec
 - `/execute` retains its earlier supported context operations and conditions; storage callbacks (`store`), functions
   and the rest of vanilla's older execution branches are still absent.
 
-Whitelist defaults to on. An empty optional IP whitelist no longer rejects every connection before player login;
+Whitelist defaults to on for fresh installs, whose generated `server.json` sets it explicitly; an existing
+`server.json` without a `whitelist` entry keeps it off and gets a startup notice. An empty optional IP whitelist no
+longer rejects every connection before player login;
 integrated worlds use their existing owner/LAN admission policy. Chat and commands have independent ten-second
 spam budgets, with vanilla's 20-tick charge, one-tick recovery, boundary and disabled-limit behavior. Operators and
 the integrated owner are exempt from disconnection.

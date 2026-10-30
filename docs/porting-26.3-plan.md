@@ -193,7 +193,7 @@ over.
   - Explorer maps become separate items.
   - Spectators can use portals.
   - Persistent mobs idle when no player is near.
-  - Whitelist defaults to on.
+  - Whitelist defaults to on (fresh installs only; existing configs keep theirs).
 - **Commands:**
   - 26.1: `/swing`, and `/time` with clocks
   - 26.2: `/unpublish`
