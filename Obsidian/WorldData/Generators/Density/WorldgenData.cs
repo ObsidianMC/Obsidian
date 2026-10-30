@@ -14,14 +14,21 @@ namespace Obsidian.WorldData.Generators.Density;
 /// beside the legacy worldgen assets, which the live generator still reads (Phase 5 of
 /// <c>docs/porting-26.3-plan.md</c>).
 /// </remarks>
-internal sealed class WorldgenData(Func<string, string, Stream?> open)
+/// <param name="open">Opens an entry's JSON by registry and identifier, or gives <c>null</c>.</param>
+/// <param name="list">The identifiers of a registry's entries; none by default.</param>
+internal sealed class WorldgenData(Func<string, string, Stream?> open, Func<string, IEnumerable<string>>? list = null)
 {
     private const string ResourcePrefix = "Obsidian.Assets.worldgen_26_3.";
 
     private readonly ConcurrentDictionary<(string Registry, string Id), JsonElement> entries = new();
 
     /// <summary>Vanilla's entries, embedded in Obsidian.</summary>
-    public static WorldgenData Vanilla { get; } = new(OpenEmbedded);
+    public static WorldgenData Vanilla { get; } = new(OpenEmbedded, ListEmbedded);
+
+    /// <summary>
+    /// The identifiers of a registry's entries, in no particular order, for registries read whole (structures).
+    /// </summary>
+    public IEnumerable<string> Ids(string registry) => list?.Invoke(registry) ?? [];
 
     /// <summary>
     /// An entry's JSON, such as <c>Read("noise", "minecraft:temperature")</c>. An identifier without a namespace is
@@ -54,6 +61,19 @@ internal sealed class WorldgenData(Func<string, string, Stream?> open)
         using var document = JsonDocument.Parse(stream);
 
         return document.RootElement.Clone();
+    }
+
+    // Vanilla's paths have no dots, so each dot of a resource name between the registry and ".json" is a folder.
+    private static IEnumerable<string> ListEmbedded(string registry)
+    {
+        var prefix = $"{ResourcePrefix}{registry}.";
+        const string suffix = ".json";
+
+        return Assembly.GetExecutingAssembly().GetManifestResourceNames()
+            .Where(name => name.StartsWith(prefix, StringComparison.Ordinal))
+            .Where(name => name.EndsWith(suffix, StringComparison.Ordinal))
+            .Select(name => "minecraft:" + name[prefix.Length..^suffix.Length].Replace('.', '/'))
+            .ToArray();
     }
 
     // Embedded resources are named by their folders, so minecraft:overworld/continents is

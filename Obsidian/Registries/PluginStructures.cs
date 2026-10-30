@@ -563,8 +563,19 @@ internal sealed record WorldgenStructures
     }
 
     /// <summary>
+    /// Whether <see cref="Pool"/> falls back to vanilla's compiled pools; the 26.3 structures hold all of theirs.
+    /// </summary>
+    public bool LegacyPools { get; init; } = true;
+
+    /// <summary>
     /// A template pool by identifier, a file's or vanilla's, or <c>null</c>.
     /// </summary>
-    public StructureTemplatePool? Pool(string identifier) =>
-        this.Pools.GetValueOrDefault(identifier) ?? TemplatePools.All.GetValueOrDefault(identifier);
+    public StructureTemplatePool? Pool(string identifier)
+    {
+        var pool = this.Pools.GetValueOrDefault(identifier);
+        if (pool is not null || !this.LegacyPools)
+            return pool;
+
+        return TemplatePools.All.GetValueOrDefault(identifier);
+    }
 }

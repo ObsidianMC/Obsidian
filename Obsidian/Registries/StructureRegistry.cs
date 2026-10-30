@@ -27,6 +27,15 @@ internal static class StructureRegistry
 
     private static string? directory;
 
+    // The current version's templates, for the 26.3 generator (see GetCurrent).
+    private static readonly ConcurrentDictionary<string, Lazy<StructureTemplate>> currentTemplates = new();
+
+    private static string? currentDirectory;
+
+    // See Use: the templates a structure on this thread starts and places with, instead of the legacy ones.
+    [ThreadStatic]
+    private static Func<string, StructureTemplate>? scoped;
+
     private static FrozenDictionary<string, StructureTemplate> overrides =
         FrozenDictionary<string, StructureTemplate>.Empty;
 
@@ -34,6 +43,41 @@ internal static class StructureRegistry
     /// Sets the directory templates are read from, before any template is used.
     /// </summary>
     public static void Initialize(string structureDirectory) => directory = structureDirectory;
+
+    /// <summary>
+    /// Sets the directory the current version's templates are read from (see <see cref="GetCurrent"/>).
+    /// </summary>
+    public static void InitializeCurrent(string structureDirectory) => currentDirectory = structureDirectory;
+
+    /// <summary>
+    /// Gets one of the current version's vanilla templates by id, loaded on first use; unknown ids get an empty
+    /// template. The 26.3 generator's structures and features read these, beside the legacy ones of <see cref="Get"/>.
+    /// </summary>
+    public static StructureTemplate GetCurrent(string id) =>
+        currentTemplates.GetOrAdd(Qualify(id), static key => new Lazy<StructureTemplate>(() =>
+            Load(key, currentDirectory, nameof(InitializeCurrent)))).Value;
+
+    /// <summary>
+    /// Makes <see cref="Get"/> return <paramref name="templates"/>' templates on this thread until the scope is
+    /// disposed, so that structures read from another version's data place that version's templates.
+    /// </summary>
+    /// <param name="templates">The templates by id, or <c>null</c> to keep the current ones.</param>
+    public static TemplateScope Use(Func<string, StructureTemplate>? templates)
+    {
+        var previous = scoped;
+        if (templates is not null)
+            scoped = templates;
+
+        return new TemplateScope(previous);
+    }
+
+    /// <summary>
+    /// Restores the templates <see cref="Get"/> returned before <see cref="Use"/>.
+    /// </summary>
+    public readonly struct TemplateScope(Func<string, StructureTemplate>? previous) : IDisposable
+    {
+        public void Dispose() => scoped = previous;
+    }
 
     /// <summary>
     /// Sets the templates of plugins' and data packs' files, by id, which replace vanilla's of the same id.
@@ -59,24 +103,30 @@ internal static class StructureRegistry
     /// </summary>
     public static StructureTemplate Get(string id)
     {
-        // Like vanilla's identifiers, one without a namespace is vanilla's.
-        if (!id.Contains(':'))
-            id = Vanilla + id;
+        id = Qualify(id);
+
+        if (scoped is not null)
+            return scoped(id);
 
         var files = Volatile.Read(ref overrides);
         if (files.Count > 0 && files.TryGetValue(id, out var file))
             return file;
 
-        return templates.GetOrAdd(id, static key => new Lazy<StructureTemplate>(() => Load(key))).Value;
+        return templates.GetOrAdd(id, static key => new Lazy<StructureTemplate>(() =>
+            Load(key, directory, nameof(Initialize)))).Value;
     }
 
-    private static StructureTemplate Load(string id)
+    // Like vanilla's identifiers, one without a namespace is vanilla's.
+    private static string Qualify(string id) => id.Contains(':') ? id : Vanilla + id;
+
+    private static StructureTemplate Load(string id, string? directory, string initializer)
     {
         // Only vanilla's templates are in the directory; another namespace's is a file's or doesn't exist.
         if (!id.StartsWith(Vanilla, StringComparison.Ordinal))
             return StructureTemplate.CreateEmpty();
 
-        var root = directory ?? throw new InvalidOperationException("Structure templates are used before StructureRegistry.Initialize.");
+        var root = directory
+            ?? throw new InvalidOperationException($"Structure templates are used before StructureRegistry.{initializer}.");
         var path = id[Vanilla.Length..];
         var file = Path.Combine(root, path + FileSuffix);
 

@@ -147,6 +147,29 @@ Nothing is reimplemented:
   constructor would set, since the chunks have no generation holders), `FeaturePlacer.placeWithBiomeCheck` and
   decoration random place it, and the changed blocks of the writable 3x3 chunks are recorded.
 
+## Structure references
+
+`structures/` captures 26.3 structure starts in a world with structures on (seed 12345): 47 overworld cases (every
+village, the pillager outpost, ancient city, trail ruins, trial chambers, all 18 abandoned camps, every scattered and
+template structure, mineshafts, the monument, the stronghold and the mansion), four nether cases (fortress, bastion,
+nether fossil and nether ruined portal) and the end city. A case names a structure and a search origin
+(`searchX`, `searchZ`, `searchRadius` in chunks); vanilla's `findNearestMapStructure` finds the start chunk, which
+later captures keep. Each case records `pieceCount` and `pieces`, the SHA-256 of one line per piece in the shape
+`VanillaStructureGeneration.Describe` writes (piece types map to Obsidian's class names; a generated fortress start
+keeps `BridgeCrossing`'s type, as vanilla's does).
+
+Cases with `blocks` also record the blocks inside the start's piece boxes (as generated), chunk by chunk over the
+chunks its box reaches. Each chunk is a fresh 3x3 region at the terrain status, bearded by the world's starts, that
+keeps the world's starts and references; only structures are placed in it, step by step with decoration's seeds, as
+`applyBiomeDecoration` places them before features. `structureOrder` records each step's structures in registry
+order. `VanillaStructurePlacement` replays both through the 26.3 pipeline (`BiomeTerrain` with structures on), placing
+each chunk into fresh copies of the terrain like the capture. The scattered pieces (desert and jungle pyramids, swamp
+huts and buried treasure) have no block cases yet: in the capture vanilla places them at their generated height,
+where Obsidian's settle on the terrain, and the cause isn't found.
+
+Record this section alone with
+`dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen -p:CaptureSections=structures`.
+
 ## Decoration references
 
 `decoration/` captures the 26.3 `features` status with structures disabled. The 71 cases cover 66 of 67 biomes (all
@@ -168,8 +191,8 @@ fluid ticks, lighting and neighboring chunks' own decoration. Tree edge shape up
 result for each generation step, including features absent from this particular region.
 `VanillaBiomeDecoration.BiomesTerrainAndDecorationMatchVanilla` checks that order and replays biomes, terrain and
 decoration, comparing blocks, heightmaps, marks and block-entity NBT. Every case has `Category=Worldgen`. The 26.3
-pipeline remains separate from the live generator. Structure pieces will run through the explicit per-step hook
-before placed features in Phase 5 step 6.
+pipeline remains separate from the live generator. Structures place through the per-step hook before placed
+features (see "Structure references").
 
 Record this section alone with:
 

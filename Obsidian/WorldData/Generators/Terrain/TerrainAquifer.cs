@@ -49,12 +49,18 @@ internal sealed class TerrainAquifer
     public bool ShouldScheduleFluidUpdate { get; private set; }
 
     public TerrainAquifer(TerrainContext context)
+        : this(context.Generator, context.Volume)
     {
-        this.functions = context.Generator.Router.Aquifers;
-        this.random = context.Generator.Compiler.RandomFactory("minecraft:aquifer");
+    }
+
+    /// <param name="volume">The blocks the aquifer serves: a chunk's, or one column's for structure heights.</param>
+    public TerrainAquifer(TerrainGenerator generator, DensityVolume volume)
+    {
+        this.functions = generator.Router.Aquifers;
+        this.random = generator.Compiler.RandomFactory("minecraft:aquifer");
         this.globalFluidPicker = Aquifers.CreateGlobalFluidPicker(
-            context.Generator.Settings.SeaLevel,
-            context.Generator.DefaultFluid);
+            generator.Settings.SeaLevel,
+            generator.DefaultFluid);
         this.skipSamplingAboveY = int.MinValue;
 
         if (this.functions is null)
@@ -62,13 +68,13 @@ internal sealed class TerrainAquifer
             return;
         }
 
-        var volume = context.Volume;
         this.minGridX = GridX(volume.MinBlockX - 5);
         this.minGridY = GridY(volume.MinBlockY + 1) - 1;
         this.minGridZ = GridZ(volume.MinBlockZ - 5);
-        var maxGridX = GridX(volume.MinBlockX + 15 - 5) + 1;
+        // Vanilla's grid reaches the volume's last block: a chunk's 15th, a column's own.
+        var maxGridX = GridX(volume.MinBlockX + volume.SizeX - 1 - 5) + 1;
         var maxGridY = GridY(volume.MinBlockY + volume.SizeY) + 1;
-        var maxGridZ = GridZ(volume.MinBlockZ + 15 - 5) + 1;
+        var maxGridZ = GridZ(volume.MinBlockZ + volume.SizeZ - 1 - 5) + 1;
         this.gridSizeX = maxGridX - this.minGridX + 1;
         this.gridSizeZ = maxGridZ - this.minGridZ + 1;
         var size = this.gridSizeX * (maxGridY - this.minGridY + 1) * this.gridSizeZ;
