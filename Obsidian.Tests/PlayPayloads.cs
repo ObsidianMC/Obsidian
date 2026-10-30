@@ -71,6 +71,7 @@ public sealed class PlayPayloads
                 }
 
                 break;
+
             case "level_particles":
                 foreach (var reference in references.EnumerateArray())
                 {
@@ -103,6 +104,7 @@ public sealed class PlayPayloads
                     Assert.True(flags.ReadBoolean());
                 }
                 break;
+
             case "explode":
                 for (var i = 0; i < 2; i++)
                 {
@@ -125,43 +127,15 @@ public sealed class PlayPayloads
                 }
 
                 break;
+
             case "update_advancements":
-                foreach (var reference in references.EnumerateArray())
-                {
-                    var definitions = reference.GetProperty("definitions").EnumerateArray().Select(Definition).ToArray();
-                    var placed = AdvancementsRegistry.PlaceDisplays(definitions);
-                    foreach (var expected in reference.GetProperty("definitions").EnumerateArray())
-                    {
-                        var display = placed[expected.GetProperty("id").GetString()!].Display;
-                        // Positions are sent as floats, so compare their bits: a one-ulp difference is a parity bug.
-                        AssertSameFloat(expected.GetProperty("x").GetSingle(), display?.XCoord ?? 0);
-                        AssertSameFloat(expected.GetProperty("y").GetSingle(), display?.YCoord ?? 0);
-                    }
-                    Equal(reference.GetProperty("wire"), new UpdateAdvancementsPacket
-                    {
-                        Reset = true, Added = definitions.Select(definition => placed[definition.Identifier]).ToList(),
-                        Removed = ["fixture:removed"]
-                    });
-                }
+                CheckAdvancements(references);
                 break;
+
             case "game_rule_values":
-                var values = GameRuleSynchronization.Snapshot(new LevelData());
-                Assert.Equal(59, values.Values.Count);
-                Equal(references[0], values);
-                foreach (var row in root.GetProperty("game_rule_parsing").EnumerateArray())
-                    Assert.Equal(row[2].GetBoolean(), GameRuleSynchronization.TryNormalize(row[0].GetString()!, row[1].GetString()!, out _, out _));
-                foreach (var bounds in root.GetProperty("game_rule_bounds").EnumerateObject())
-                {
-                    var min = bounds.Value[0].GetInt32();
-                    var max = bounds.Value[1].GetInt32();
-                    Assert.True(GameRuleSynchronization.TryNormalize(bounds.Name, min.ToString(CultureInfo.InvariantCulture), out _, out _));
-                    Assert.True(GameRuleSynchronization.TryNormalize(bounds.Name, max.ToString(CultureInfo.InvariantCulture), out _, out _));
-                    Assert.False(GameRuleSynchronization.TryNormalize(bounds.Name, ((long)min - 1).ToString(CultureInfo.InvariantCulture), out _, out _));
-                    Assert.False(GameRuleSynchronization.TryNormalize(bounds.Name, ((long)max + 1).ToString(CultureInfo.InvariantCulture), out _, out _));
-                }
-                Assert.False(GameRuleSynchronization.TryNormalize("fixture:keep_inventory", "true", out _, out _));
-                Assert.False(GameRuleSynchronization.TryNormalize("minecraft:unknown", "true", out _, out _));
+                CheckGameRules(root, references);
                 break;
+
             case "set_game_rule":
                 var reader = new NetworkBuffer(Convert.FromHexString(references[0].GetString()!));
                 var edit = new SetGameRulePacket();
@@ -171,33 +145,24 @@ public sealed class PlayPayloads
                     KeyValuePair.Create("minecraft:random_tick_speed", "17") }, edit.Entries);
                 await CheckGameRuleEditingAsync(edit);
                 break;
+
             case "low_disk_space_warning":
                 Equal(references[0], new LowDiskSpaceWarningPacket());
                 break;
+
             case "add_transient_block":
                 Equal(references[0], new AddTransientBlockPacket(new(-12, 70, 23), BlocksRegistry.Stone.DefaultId));
                 break;
+
             case "update_attributes":
-                var attributes = new List<AttributeSnapshot>();
-                var modifiers = ImmutableArray.Create(new EntityAttributeModifier("fixture:add", 1.5, AttributeOperation.Add),
-                    new EntityAttributeModifier("fixture:base", -.25, AttributeOperation.MulBase),
-                    new EntityAttributeModifier("fixture:total", .75, AttributeOperation.MulTotal));
-                foreach (var row in root.GetProperty("attribute_ranges").EnumerateArray())
-                {
-                    var name = row[0].GetString()!;
-                    Assert.True(VanillaAttributes.TryGetProtocolId(name, out var id));
-                    Assert.True(VanillaAttributes.TryGetRange(name, out var range));
-                    Assert.Equal(row[1].GetDouble(), range.Min);
-                    Assert.Equal(row[2].GetDouble(), range.Max);
-                    Assert.Equal(row[3].GetBoolean(), range.Syncable);
-                    attributes.Add(new(id, row[4].GetDouble(), modifiers));
-                }
-                Equal(references[0], new UpdateAttributesPacket(301, attributes));
+                CheckAttributes(root, references);
                 break;
+
             case "delete_chat":
                 Equal(references[0], new DeleteChatPacket { Signature = Signature });
                 Equal(references[1], new DeleteChatPacket { Signature = default, SignatureIndex = 301 });
                 break;
+
             case "player_chat":
                 for (var i = 0; i < 3; i++)
                 {
@@ -216,6 +181,7 @@ public sealed class PlayPayloads
                 }
 
                 break;
+
             case "chat":
                 var chat = new ChatPacket();
                 for (var i = 0; i < 2; i++)
@@ -230,6 +196,7 @@ public sealed class PlayPayloads
                     Assert.Equal(new ChatAcknowledgement(301, 0x80009, 77), chat.Acknowledgement);
                 }
                 break;
+
             case "chat_command_signed":
                 var signedInput = new NetworkBuffer(Convert.FromHexString(references[0].GetString()!));
                 var signed = new ChatCommandSignedPacket();
@@ -242,6 +209,7 @@ public sealed class PlayPayloads
                 Assert.Equal(Signature, signed.ArgumentSignatures[0].Signature.ToArray());
                 Assert.Equal(new ChatAcknowledgement(301, 0x80009, 77), signed.Acknowledgement);
                 break;
+
             case "pick_item_from_block":
                 var pickInput = new NetworkBuffer(Convert.FromHexString(references[0].GetString()!));
                 var pick = new PickItemFromBlockPacket();
@@ -250,10 +218,12 @@ public sealed class PlayPayloads
                 Assert.Equal(new Vector(-12, 70, 23), pick.Position);
                 Assert.True(pick.IncludeData);
                 break;
+
             case "damage_event":
                 Equal(references[0], new DamageEventPacket(301, "minecraft:arrow", 2, 3, new VectorD(-12.25, 64.5, 31.875)));
                 Equal(references[1], new DamageEventPacket(301, "minecraft:arrow", null, null, null));
                 break;
+
             case "disguised_chat":
                 for (var i = 0; i < 2; i++)
                 {
@@ -265,6 +235,7 @@ public sealed class PlayPayloads
                 }
 
                 break;
+
             case "update_recipes":
                 var recipes = new Dictionary<string, IRecipe>();
                 foreach (var type in new[] { CraftingType.Smelting, CraftingType.Blasting })
@@ -284,6 +255,7 @@ public sealed class PlayPayloads
                 });
                 Equal(references[0], new UpdateRecipesPacket(recipes));
                 break;
+
             case "recipe_book_add":
                 Ingredient stone = [new ItemStack(ItemsRegistry.Stone)];
                 Ingredient either = [new ItemStack(ItemsRegistry.Cobblestone), new ItemStack(ItemsRegistry.Andesite)];
@@ -359,6 +331,79 @@ public sealed class PlayPayloads
         type.GetProperty("Username")!.SetValue(entry, player.Username);
         type.GetProperty("Level")!.SetValue(entry, level);
         entries.Add(entry);
+    }
+
+    private static void CheckAdvancements(JsonElement references)
+    {
+        foreach (var reference in references.EnumerateArray())
+        {
+            var definitions = reference.GetProperty("definitions").EnumerateArray().Select(Definition).ToArray();
+            var placed = AdvancementsRegistry.PlaceDisplays(definitions);
+            foreach (var expected in reference.GetProperty("definitions").EnumerateArray())
+            {
+                var display = placed[expected.GetProperty("id").GetString()!].Display;
+
+                // Positions are sent as floats, so compare their bits: a one-ulp difference is a parity bug.
+                AssertSameFloat(expected.GetProperty("x").GetSingle(), display?.XCoord ?? 0);
+                AssertSameFloat(expected.GetProperty("y").GetSingle(), display?.YCoord ?? 0);
+            }
+            Equal(reference.GetProperty("wire"), new UpdateAdvancementsPacket
+            {
+                Reset = true, Added = definitions.Select(definition => placed[definition.Identifier]).ToList(),
+                Removed = ["fixture:removed"]
+            });
+        }
+    }
+
+    private static void CheckGameRules(JsonElement root, JsonElement references)
+    {
+        var values = GameRuleSynchronization.Snapshot(new LevelData());
+        Assert.Equal(59, values.Values.Count);
+        Equal(references[0], values);
+
+        foreach (var row in root.GetProperty("game_rule_parsing").EnumerateArray())
+        {
+            Assert.Equal(row[2].GetBoolean(), Accepts(row[0].GetString()!, row[1].GetString()!));
+        }
+
+        // Each integer rule takes its bounds, and nothing past them.
+        foreach (var bounds in root.GetProperty("game_rule_bounds").EnumerateObject())
+        {
+            long min = bounds.Value[0].GetInt32();
+            long max = bounds.Value[1].GetInt32();
+            Assert.True(Accepts(bounds.Name, min));
+            Assert.True(Accepts(bounds.Name, max));
+            Assert.False(Accepts(bounds.Name, min - 1));
+            Assert.False(Accepts(bounds.Name, max + 1));
+        }
+
+        Assert.False(Accepts("fixture:keep_inventory", "true"));
+        Assert.False(Accepts("minecraft:unknown", "true"));
+
+        static bool Accepts(string rule, object value) => GameRuleSynchronization.TryNormalize(
+            rule,
+            Convert.ToString(value, CultureInfo.InvariantCulture)!,
+            out _,
+            out _);
+    }
+
+    private static void CheckAttributes(JsonElement root, JsonElement references)
+    {
+        var attributes = new List<AttributeSnapshot>();
+        var modifiers = ImmutableArray.Create(new EntityAttributeModifier("fixture:add", 1.5, AttributeOperation.Add),
+            new EntityAttributeModifier("fixture:base", -.25, AttributeOperation.MulBase),
+            new EntityAttributeModifier("fixture:total", .75, AttributeOperation.MulTotal));
+        foreach (var row in root.GetProperty("attribute_ranges").EnumerateArray())
+        {
+            var name = row[0].GetString()!;
+            Assert.True(VanillaAttributes.TryGetProtocolId(name, out var id));
+            Assert.True(VanillaAttributes.TryGetRange(name, out var range));
+            Assert.Equal(row[1].GetDouble(), range.Min);
+            Assert.Equal(row[2].GetDouble(), range.Max);
+            Assert.Equal(row[3].GetBoolean(), range.Syncable);
+            attributes.Add(new(id, row[4].GetDouble(), modifiers));
+        }
+        Equal(references[0], new UpdateAttributesPacket(301, attributes));
     }
 
     private static void Equal(JsonElement expected, IClientboundPacket packet)
