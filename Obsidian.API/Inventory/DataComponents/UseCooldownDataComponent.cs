@@ -4,6 +4,17 @@ namespace Obsidian.API.Inventory.DataComponents;
 
 public sealed record class UseCooldownDataComponent : DataComponent
 {
+    private ComponentValueKey Comparison => new(new object?[]
+    {
+        this.seconds,
+        this.cooldownGroup
+    });
+
+    public bool Equals(UseCooldownDataComponent? other) => ReferenceEquals(this, other)
+        || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
+
+    public override int GetHashCode() => HashCode.Combine(base.GetHashCode(), this.Comparison);
+
     public override DataComponentType Type => DataComponentType.UseCooldown;
 
     public override string Identifier => "minecraft:use_cooldown";

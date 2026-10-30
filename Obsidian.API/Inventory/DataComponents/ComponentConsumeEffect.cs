@@ -5,6 +5,23 @@ namespace Obsidian.API.Inventory.DataComponents;
 /// <summary>The five 26.3 consume-effect payloads, selected by their registry ID.</summary>
 public sealed record ComponentConsumeEffect : IConsumeEffect
 {
+    private ComponentValueKey Comparison => new(new object?[]
+    {
+        this.Id,
+        ComponentValueKey.Sequence(this.effects),
+        this.probability,
+        this.removedEffects,
+        this.diameter,
+        this.directionalParticles,
+        this.sound
+    });
+
+    public bool Equals(ComponentConsumeEffect? other) => ReferenceEquals(this, other)
+        || other is not null && this.Comparison.Equals(other.Comparison);
+
+    public override int GetHashCode() =>
+        this.Comparison.GetHashCode();
+
     private static readonly string[] Names = ["apply_effects", "remove_effects", "clear_all_effects", "teleport_randomly", "play_sound"];
     public int Id { get; init; }
     public string Type => "minecraft:" + Names[this.Id];

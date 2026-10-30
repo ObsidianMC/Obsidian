@@ -4,6 +4,18 @@ namespace Obsidian.API.Inventory.DataComponents;
 
 public abstract record class BlockPredicatesDataComponent : DataComponent
 {
+    private ComponentValueKey Comparison => new(new object?[]
+    {
+        ComponentValueKey.Sequence(this.predicates),
+        this.ShowInTooltip
+    });
+
+    public virtual bool Equals(BlockPredicatesDataComponent? other) => ReferenceEquals(this, other)
+        || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
+
+    public override int GetHashCode() =>
+        HashCode.Combine(base.GetHashCode(), this.Comparison);
+
     public override DataComponentType Type { get; }
 
     public override string Identifier { get; }
@@ -113,6 +125,17 @@ public abstract record class BlockPredicatesDataComponent : DataComponent
 /// </summary>
 public readonly record struct ComponentPredicate
 {
+    private ComponentValueKey Comparison => new(new object?[]
+    {
+        this.IsPredicateType,
+        this.TypeId,
+        this.Value
+    });
+
+    public bool Equals(ComponentPredicate other) => this.Comparison.Equals(other.Comparison);
+
+    public override int GetHashCode() => this.Comparison.GetHashCode();
+
     public required bool IsPredicateType { get; init; }
     public required int TypeId { get; init; }
     public required NbtCompound Value
@@ -124,6 +147,23 @@ public readonly record struct ComponentPredicate
 
 public readonly record struct BlockPredicate
 {
+    private ComponentValueKey Comparison => new(new object?[]
+    {
+        this.Blocks,
+        ComponentValueKey.Sequence(this.ExactComponents),
+        this.PartialComponents.IsDefaultOrEmpty
+            ? Enumerable.Empty<ComponentPredicate>()
+            : this.PartialComponents.OrderBy(predicate => predicate.IsPredicateType)
+                .ThenBy(predicate => predicate.TypeId),
+        ComponentValueKey.Sequence(this.BlockIds),
+        ComponentValueKey.Sequence(this.Properties),
+        this.Nbt
+    });
+
+    public bool Equals(BlockPredicate other) => this.Comparison.Equals(other.Comparison);
+
+    public override int GetHashCode() => this.Comparison.GetHashCode();
+
     public BlockPredicate() { }
     public IdSet? Blocks { get; init; }
     public ImmutableArray<DataComponent> ExactComponents { get; init; } = [];

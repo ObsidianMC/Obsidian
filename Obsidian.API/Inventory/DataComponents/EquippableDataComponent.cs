@@ -5,6 +5,29 @@ namespace Obsidian.API.Inventory.DataComponents;
 
 public sealed record class EquippableDataComponent : DataComponent
 {
+    private ComponentValueKey Comparison => new(new object?[]
+    {
+        this.slot,
+        this.equipSound,
+        this.assetIdentifier,
+        this.allowedEntitySet,
+        this.equipOnInteract,
+        this.canBeSheared,
+        this.shearingSound,
+        this.assetId,
+        this.cameraOverlay,
+        ComponentValueKey.Sequence(this.allowedEntities),
+        this.dispensable,
+        this.swappable,
+        this.damageOnHurt
+    });
+
+    public bool Equals(EquippableDataComponent? other) => ReferenceEquals(this, other)
+        || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
+
+    public override int GetHashCode() =>
+        HashCode.Combine(base.GetHashCode(), this.Comparison);
+
     public override DataComponentType Type => DataComponentType.Equippable;
 
     public override string Identifier => "minecraft:equippable";

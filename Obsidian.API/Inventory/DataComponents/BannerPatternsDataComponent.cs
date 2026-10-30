@@ -4,6 +4,17 @@ namespace Obsidian.API.Inventory.DataComponents;
 public sealed record BannerPatternsDataComponent() : SimpleDataComponent<ImmutableArray<BannerPatternLayer>>(
     DataComponentType.BannerPatterns, "minecraft:banner_patterns", (_, _) => { }, _ => [])
 {
+    private ComponentValueKey Comparison => new(new object?[]
+    {
+        ComponentValueKey.Sequence(this.registryIds)
+    });
+
+    public bool Equals(BannerPatternsDataComponent? other) => ReferenceEquals(this, other)
+        || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
+
+    public override int GetHashCode() =>
+        HashCode.Combine(base.GetHashCode(), this.Comparison);
+
     private ImmutableArray<int?> registryIds = [];
 
     public ImmutableArray<int?> RegistryIds

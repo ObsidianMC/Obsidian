@@ -1,9 +1,10 @@
 using Obsidian.Nbt;
 using System.Collections;
+using System.Runtime.CompilerServices;
 
 namespace Obsidian.API.Inventory.DataComponents;
 
-// Built once, lazily, for immutable payloads. Hashes only reject mismatches; equality still checks every value.
+// Structural snapshots for component payloads. Hashes only reject mismatches; equality checks every value.
 internal sealed class ComponentValueKey : IEquatable<ComponentValueKey>
 {
     private readonly object? key;
@@ -23,10 +24,37 @@ internal sealed class ComponentValueKey : IEquatable<ComponentValueKey>
 
     public override int GetHashCode() => this.hash;
 
+    // A default immutable array has no backing storage; compare it like an empty sequence without enumerating it.
+    public static object Sequence<T>(ImmutableArray<T> values) => values.IsDefault ? ImmutableArray<T>.Empty : values;
+
+    public static object? Sequence<T>(ImmutableArray<T>? values) => values.HasValue ? Sequence(values.Value) : null;
+
     private static object? Key(object? value) => value switch
     {
         null => null,
         string => value,
+        float number => ComponentFloatingPoint.Key(number),
+        double number => ComponentFloatingPoint.Key(number),
+        ITuple tuple => Enumerable.Range(0, tuple.Length).Select(index => Key(tuple[index])).ToArray(),
+        ToolRule rule => Key((rule.Blocks, rule.Speed, rule.CorrectDropForBlocks)),
+        AttributeModifier modifier => Key((
+            modifier.Id,
+            modifier.Uuid,
+            modifier.Name,
+            modifier.Value,
+            modifier.Operation,
+            modifier.Slot)),
+        MapDecoration decoration => Key((decoration.Type, decoration.X, decoration.Z, decoration.Rotation)),
+        SoundEvent sound => Key((sound.ResourceLocation, sound.FixedRange, sound.RegistryId)),
+        ComponentFloatValue number => Key((number.Constant, number.Provider)),
+        FuelComponentData fuel => Key((fuel.Amount, fuel.SpeedMultiplier)),
+        JukeboxSong song => Key((song.SoundEvent, song.Description, song.LengthInSeconds, song.ComparatorOutput)),
+        SkinProperty property => new object?[]
+        {
+            property.Name,
+            property.Value,
+            property.Signature
+        },
         NbtCompound compound => new object?[]
         {
             compound.Type,
@@ -62,13 +90,14 @@ internal sealed class ComponentValueKey : IEquatable<ComponentValueKey>
         NbtTag<short> tag => tag.Value,
         NbtTag<int> tag => tag.Value,
         NbtTag<long> tag => tag.Value,
-        NbtTag<float> tag => tag.Value,
-        NbtTag<double> tag => tag.Value,
+        NbtTag<float> tag => Key(tag.Value),
+        NbtTag<double> tag => Key(tag.Value),
         NbtTag<string> tag => tag.Value,
         ChatMessage chat => new object?[]
         {
             chat.Text,
             chat.Translate,
+            chat.Keybind,
             chat.Color,
             chat.Bold,
             chat.Italic,
@@ -103,13 +132,13 @@ internal sealed class ComponentValueKey : IEquatable<ComponentValueKey>
         {
             set.Type,
             set.TagName,
-            Key(set.Ids)
+            Key(Sequence(set.Ids))
         },
         FireworkExplosion explosion => new object?[]
         {
             explosion.Shape,
-            Key(explosion.Colors),
-            Key(explosion.FadeColors),
+            Key(Sequence(explosion.Colors)),
+            Key(Sequence(explosion.FadeColors)),
             explosion.HasTrail,
             explosion.HasTwinkle
         },
@@ -117,26 +146,26 @@ internal sealed class ComponentValueKey : IEquatable<ComponentValueKey>
         {
             visibility.TargetingEntityTypes.TagName,
             visibility.TargetingEntityTypes.Ids?.ToArray(),
-            visibility.Visibility
+            Key(visibility.Visibility)
         },
         InstrumentData instrument => new object?[]
         {
             instrument.Identifier,
-            instrument.SoundEvent,
-            instrument.UseDuration,
-            instrument.Range,
+            Key(instrument.SoundEvent),
+            Key(instrument.UseDuration),
+            Key(instrument.Range),
             instrument.DurabilityDamage,
             Key(instrument.Description)
         },
         ComponentConsumeEffect effect => new object?[]
         {
             effect.Id,
-            Key(effect.Effects),
-            effect.Probability,
+            Key(Sequence(effect.Effects)),
+            Key(effect.Probability),
             Key(effect.RemovedEffects),
-            effect.Diameter,
+            Key(effect.Diameter),
             effect.DirectionalParticles,
-            effect.Sound
+            Key(effect.Sound)
         },
         IEnumerable values => values.Cast<object?>().Select(Key).ToArray(),
         _ => value

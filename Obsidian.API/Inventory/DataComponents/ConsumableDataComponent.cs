@@ -5,6 +5,21 @@ namespace Obsidian.API.Inventory.DataComponents;
 
 public sealed record class ConsumableDataComponent : DataComponent
 {
+    private ComponentValueKey Comparison => new(new object?[]
+    {
+        this.consumeSeconds,
+        this.animation,
+        this.sound,
+        this.hasConsumeParticles,
+        ComponentValueKey.Sequence(this.effects)
+    });
+
+    public bool Equals(ConsumableDataComponent? other) => ReferenceEquals(this, other)
+        || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
+
+    public override int GetHashCode() =>
+        HashCode.Combine(base.GetHashCode(), this.Comparison);
+
     public override DataComponentType Type => DataComponentType.Consumable;
 
     public override string Identifier => "minecraft:consumable";
