@@ -151,7 +151,10 @@ public readonly record struct BlockPredicate
     {
         this.Blocks,
         ComponentValueKey.Sequence(this.ExactComponents),
-        ComponentValueKey.Sequence(this.PartialComponents),
+        this.PartialComponents.IsDefaultOrEmpty
+            ? Enumerable.Empty<ComponentPredicate>()
+            : this.PartialComponents.OrderBy(predicate => predicate.IsPredicateType)
+                .ThenBy(predicate => predicate.TypeId),
         ComponentValueKey.Sequence(this.BlockIds),
         ComponentValueKey.Sequence(this.Properties),
         this.Nbt
