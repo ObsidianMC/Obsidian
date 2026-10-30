@@ -1,6 +1,7 @@
 using Obsidian.API;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.API.Registries;
+using Obsidian.Nbt;
 using Obsidian.Registries;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators.Density;
@@ -9,8 +10,10 @@ using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Mojang.Features;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -120,6 +123,17 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
         if (entry.TryGetProperty("nextRegionRandom", out var nextRegionRandom))
         {
             Assert.Equal(nextRegionRandom.GetInt32(), region.Random.NextInt());
+        }
+
+        if (entry.TryGetProperty("recordBlockEntities", out _))
+        {
+            var expectedEntities = entry.GetProperty("blockEntities")
+                .EnumerateArray()
+                .Select(ExpectedBlockEntity)
+                .ToList();
+            var actualEntities = BlockEntities(chunks, chunkX, chunkZ);
+
+            Assert.Equal(expectedEntities, actualEntities);
         }
 
         if (entry.TryGetProperty("marks", out var expectedMarksJson))
@@ -302,6 +316,113 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
         }
 
         return result;
+    }
+
+    // A captured block entity as "x y z type data", with the data as canonical JSON.
+    private static string ExpectedBlockEntity(JsonElement record)
+    {
+        var position = Position(record);
+        var type = record[3].GetString();
+        var data = CanonicalJson(record[4]);
+
+        return $"{position.X} {position.Y} {position.Z} {type} {data}";
+    }
+
+    // The block entities of the writable chunks by Y, Z and X, saved without their id and position, like the capture.
+    private static List<string> BlockEntities(Dictionary<(int X, int Z), IChunk> chunks, int centerX, int centerZ)
+    {
+        var saved = new List<(Vector Position, string Record)>();
+
+        for (var z = centerZ - 1; z <= centerZ + 1; z++)
+        {
+            for (var x = centerX - 1; x <= centerX + 1; x++)
+            {
+                var chunk = (Chunk)chunks[(x, z)];
+
+                foreach (var blockEntity in chunk.BlockEntities.Values)
+                {
+                    var tag = BlockEntityNbt.Save(blockEntity);
+                    var type = tag.GetString("id");
+
+                    foreach (var metadata in (string[])["id", "x", "y", "z", "keepPacked"])
+                    {
+                        tag.Remove(metadata);
+                    }
+
+                    if (tag.TryGetTag<NbtCompound>("components", out var components) && components.Count == 0)
+                    {
+                        tag.Remove("components");
+                    }
+
+                    var position = blockEntity.BlockPosition;
+                    var data = CanonicalJson(JsonSerializer.SerializeToElement(NbtJson(tag)));
+                    var record = $"{position.X} {position.Y} {position.Z} {type} {data}";
+
+                    saved.Add((position, record));
+                }
+            }
+        }
+
+        return saved
+            .OrderBy(entity => entity.Position.Y)
+            .ThenBy(entity => entity.Position.Z)
+            .ThenBy(entity => entity.Position.X)
+            .Select(entity => entity.Record)
+            .ToList();
+    }
+
+    // Vanilla's NbtOps-to-JsonOps form of a tag: compounds as objects, lists and arrays as arrays, booleans as bytes.
+    private static JsonNode NbtJson(INbtTag tag) => tag switch
+    {
+        NbtCompound compound => NbtObject(compound),
+        NbtList list => new JsonArray(list.Select(NbtJson).ToArray()),
+        NbtArray<byte> bytes => new JsonArray(bytes.GetArray().Select(value => (JsonNode)value).ToArray()),
+        NbtArray<int> ints => new JsonArray(ints.GetArray().Select(value => (JsonNode)value).ToArray()),
+        NbtArray<long> longs => new JsonArray(longs.GetArray().Select(value => (JsonNode)value).ToArray()),
+        NbtTag<string> text => text.Value,
+        NbtTag<bool> flag => flag.Value ? 1 : 0,
+        NbtTag<byte> value => value.Value,
+        NbtTag<short> value => value.Value,
+        NbtTag<int> value => value.Value,
+        NbtTag<long> value => value.Value,
+        NbtTag<float> value => value.Value,
+        NbtTag<double> value => value.Value,
+        _ => throw new InvalidOperationException($"Unexpected tag {tag}.")
+    };
+
+    private static JsonObject NbtObject(NbtCompound compound)
+    {
+        var fields = compound.Select(field => KeyValuePair.Create(field.Key, NbtJson(field.Value)));
+
+        return new JsonObject(fields);
+    }
+
+    // JSON with sorted keys and numbers by value, so vanilla's and Obsidian's data compare as text.
+    private static string CanonicalJson(JsonElement element)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Object:
+            {
+                var fields = element.EnumerateObject()
+                    .OrderBy(field => field.Name, StringComparer.Ordinal)
+                    .Select(field => $"{JsonSerializer.Serialize(field.Name)}:{CanonicalJson(field.Value)}");
+
+                return $"{{{string.Join(',', fields)}}}";
+            }
+            case JsonValueKind.Array:
+            {
+                var items = element.EnumerateArray().Select(CanonicalJson);
+
+                return $"[{string.Join(',', items)}]";
+            }
+            case JsonValueKind.Number:
+                return element.GetDouble().ToString("R", CultureInfo.InvariantCulture);
+            case JsonValueKind.String:
+                return JsonSerializer.Serialize(element.GetString());
+            default:
+                return element.GetRawText();
+        }
     }
 
     // Vanilla's decoration random: a population seed from the chunk's corner, then the feature's step and index.
