@@ -32,12 +32,9 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
     // regionRadius), but these features don't read beyond two chunks.
     private const int RegionRadius = 2;
 
-    // Captured placed features whose feature types aren't implemented yet: trees and fallen trees, and spikes.
+    // Captured placed features whose feature types aren't implemented yet.
     private static readonly HashSet<string> pending =
     [
-        "minecraft:trees_plains",
-        "minecraft:trees_birch_and_oak_leaf_litter",
-        "minecraft:trees_dappled_forest",
         "minecraft:ice_spike"
     ];
 

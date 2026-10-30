@@ -16,7 +16,14 @@ internal static class LeafDistanceUpdater
     private const int MaxDistance = 7;
 
     public static TreeVoxelShape UpdateLeaves(IWorldGenLevel level, TreeBounds bounds, VanillaBlockPosSet logs,
-        VanillaBlockPosSet decorations, VanillaBlockPosSet roots)
+        VanillaBlockPosSet decorations, VanillaBlockPosSet roots) =>
+        UpdateLeaves(level, bounds, logs, decorations, roots, TreeBlocks.OptionalLeafDistance);
+
+    /// <summary>
+    /// The pass with another <c>LeavesBlock.getOptionalDistanceAt</c>, such as 26.3's trees with their own tags.
+    /// </summary>
+    public static TreeVoxelShape UpdateLeaves(IWorldGenLevel level, TreeBounds bounds, VanillaBlockPosSet logs,
+        VanillaBlockPosSet decorations, VanillaBlockPosSet roots, Func<IWorldGenLevel, Vector, int?> distanceAt)
     {
         var shape = new TreeVoxelShape(bounds.SizeX, bounds.SizeY, bounds.SizeZ);
         var queues = new VanillaBlockPosSet[MaxDistance];
@@ -56,7 +63,7 @@ internal static class LeafDistanceUpdater
                         if (shape.IsFull(local.X, local.Y, local.Z))
                             continue;
 
-                        var neighborDistance = TreeBlocks.OptionalLeafDistance(level, neighbor);
+                        var neighborDistance = distanceAt(level, neighbor);
                         if (neighborDistance is null)
                             continue;
 
