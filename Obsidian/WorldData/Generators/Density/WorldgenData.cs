@@ -6,8 +6,8 @@ using System.Text.Json;
 namespace Obsidian.WorldData.Generators.Density;
 
 /// <summary>
-/// The 26.3 worldgen JSON the density functions read: <c>noise</c>, <c>density_function</c> and
-/// <c>noise_settings</c> entries by identifier.
+/// The 26.3 worldgen JSON used by density and terrain: noises, functions, settings, material rules and conditions,
+/// carvers, biome inputs and block tags, read by registry and identifier.
 /// </summary>
 /// <remarks>
 /// <see cref="Vanilla"/> reads the files Obsidian.AssetGenerator copies to <c>Assets/worldgen_26_3</c>. Temporary
