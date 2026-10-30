@@ -128,7 +128,7 @@ internal sealed partial class DensityCompiler
             "div" => this.Binary(BinaryOperation.Div, json, path),
             "min" => this.Binary(BinaryOperation.Min, json, path),
             "max" => this.Binary(BinaryOperation.Max, json, path),
-            "pow" => new PowFunction(this.Input(json, path, "base"), this.Input(json, path, "exponent")),
+            "pow" => PowFunction.Create(this.Input(json, path, "base"), this.Input(json, path, "exponent")),
             "spline" => new SplineFunction(this.CompileSpline(Required(json, path, "spline"), Field(path, "spline"))),
             "lerp" => this.CompileLerp(json, path),
             "clamp" => this.CompileClamp(json, path),

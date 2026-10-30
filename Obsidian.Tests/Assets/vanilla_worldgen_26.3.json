@@ -3478,6 +3478,297 @@
       "z": -1,
       "value": "0.66636217",
       "bits": "0x3F2A96B6"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:pow",
+        "base": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:cave_cheese",
+          "xz_scale": 0.1,
+          "y_scale": 0.7
+        },
+        "exponent": 2.0
+      },
+      "x": 29901971,
+      "y": 104,
+      "z": -29899343,
+      "value": "0.0015709635",
+      "bits": "0x3ACDE8CA"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:pow",
+          "base": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:cave_cheese",
+            "xz_scale": 0.1,
+            "y_scale": 0.7
+          },
+          "exponent": 2.0
+        }
+      },
+      "x": 29901973,
+      "y": 105,
+      "z": -29899341,
+      "value": "0.0018858486",
+      "bits": "0x3AF72E94"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:pow",
+        "base": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:cave_cheese",
+          "xz_scale": 0.1,
+          "y_scale": 0.7
+        },
+        "exponent": 2.5
+      },
+      "x": 29901971,
+      "y": 104,
+      "z": -29899343,
+      "value": "3.1275742E-4",
+      "bits": "0x39A3F997"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:pow",
+          "base": {
+            "type": "minecraft:abs",
+            "input": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:cave_cheese",
+              "xz_scale": 0.1,
+              "y_scale": 0.7
+            }
+          },
+          "exponent": 2.5
+        }
+      },
+      "x": 29901973,
+      "y": 105,
+      "z": -29899341,
+      "value": "3.986668E-4",
+      "bits": "0x39D10427"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:pow",
+          "base": {
+            "type": "minecraft:abs",
+            "input": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:cave_cheese",
+              "xz_scale": 0.1,
+              "y_scale": 0.7
+            }
+          },
+          "exponent": -0.5
+        }
+      },
+      "x": 29901973,
+      "y": 105,
+      "z": -29899341,
+      "value": "4.901058",
+      "bits": "0x409CD578"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:pow",
+          "base": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:cave_cheese",
+            "xz_scale": 0.1,
+            "y_scale": 0.7
+          },
+          "exponent": 3.0
+        }
+      },
+      "x": 29901973,
+      "y": 105,
+      "z": -29899341,
+      "value": "8.028517E-5",
+      "bits": "0x38A85EC6"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:pow",
+          "base": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:cave_cheese",
+            "xz_scale": 0.1,
+            "y_scale": 0.7
+          },
+          "exponent": -1.0
+        }
+      },
+      "x": 29901973,
+      "y": 105,
+      "z": -29899341,
+      "value": "14.549761",
+      "bits": "0x4168CBD2"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:pow",
+          "base": 2.0,
+          "exponent": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:cave_cheese",
+            "xz_scale": 0.1,
+            "y_scale": 0.7
+          }
+        }
+      },
+      "x": 29901973,
+      "y": 105,
+      "z": -29899341,
+      "value": "1.0256878",
+      "bits": "0x3F8349BD"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:pow",
+          "base": {
+            "type": "minecraft:abs",
+            "input": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:cave_cheese",
+              "xz_scale": 0.1,
+              "y_scale": 0.7
+            }
+          },
+          "exponent": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:cave_layer",
+            "xz_scale": 1.0,
+            "y_scale": 1.0
+          }
+        }
+      },
+      "x": 29901973,
+      "y": 105,
+      "z": -29899341,
+      "value": "0.36342698",
+      "bits": "0x3EBA131A"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:pow",
+          "base": {
+            "type": "minecraft:abs",
+            "input": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:cave_cheese",
+              "xz_scale": 0.1,
+              "y_scale": 0.7
+            }
+          },
+          "exponent": 2.5
+        }
+      },
+      "x": 29901712,
+      "y": 106,
+      "z": -29898974,
+      "value": "0.0010899485",
+      "bits": "0x3A8EDC9A"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:pow",
+          "base": {
+            "type": "minecraft:abs",
+            "input": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:cave_cheese",
+              "xz_scale": 0.1,
+              "y_scale": 0.7
+            }
+          },
+          "exponent": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:cave_layer",
+            "xz_scale": 1.0,
+            "y_scale": 1.0
+          }
+        }
+      },
+      "x": 29901668,
+      "y": 107,
+      "z": -29898974,
+      "value": "5.2459035",
+      "bits": "0x40A7DE71"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:pow",
+          "base": 2.0,
+          "exponent": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:cave_cheese",
+            "xz_scale": 0.1,
+            "y_scale": 0.7
+          }
+        }
+      },
+      "x": 29901713,
+      "y": 109,
+      "z": -29898974,
+      "value": "0.9606271",
+      "bits": "0x3F75EBA8"
     }
   ]
 }

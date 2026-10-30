@@ -258,18 +258,64 @@ internal abstract class BinaryFunction : DensityFunction
     };
 }
 
-/// <summary><c>pow</c>: <c>base</c> to the power of <c>exponent</c>, computed in double and narrowed.</summary>
+/// <summary>
+/// <c>pow</c>: <c>base</c> to the power of <c>exponent</c>, computed in double and narrowed. Build it with
+/// <see cref="Create"/>, which rewrites some constant exponents like vanilla's compiler.
+/// </summary>
 /// <remarks>
-/// Java's Math.pow (like Math.log for <c>log</c>) may differ from .NET's by an ulp before narrowing; vanilla's data
-/// uses neither, so no capture checks them.
+/// Over a volume both operands are sampled as volumes first, like vanilla's PowFunction samplers. Java's Math.pow may
+/// still differ from .NET's by an ulp before narrowing, which the captures haven't shown.
 /// </remarks>
 internal sealed class PowFunction(DensityFunction baseFunction, DensityFunction exponent) : DensityFunction
 {
+    public static DensityFunction Create(DensityFunction baseFunction, DensityFunction exponent)
+    {
+        var constantBase = baseFunction is ConstantFunction;
+        var constantExponent = exponent as ConstantFunction;
+
+        if (constantBase || constantExponent is null)
+            return new PowFunction(baseFunction, exponent);
+
+        return CreateWithConstantExponent(baseFunction, constantExponent.Value);
+    }
+
     public override float Sample(int x, int y, int z)
     {
-        double value = baseFunction.Sample(x, y, z);
-        double power = exponent.Sample(x, y, z);
+        var value = baseFunction.Sample(x, y, z);
+        var power = exponent.Sample(x, y, z);
 
-        return (float)Math.Pow(value, power);
+        return Pow(value, power);
     }
+
+    public override void SampleVolume(Span<float> output, in DensityVolume volume)
+    {
+        baseFunction.SampleVolume(output, volume);
+        using var powers = DensityBuffer.Sample(exponent, volume);
+
+        for (var i = 0; i < output.Length; i++)
+            output[i] = Pow(output[i], powers.Span[i]);
+    }
+
+    // For an exponent of ±0.5, ±1, ±2 or ±3 vanilla's compiler takes the float root, the base, its square or its cube,
+    // and the reciprocal of that for a negative exponent. They round differently from Math.pow.
+    private static DensityFunction CreateWithConstantExponent(DensityFunction baseFunction, float exponent)
+    {
+        var magnitude = MathF.Abs(exponent);
+        DensityFunction power;
+
+        if (magnitude == 0.5f)
+            power = new UnaryFunction(UnaryOperation.Sqrt, baseFunction);
+        else if (magnitude == 1.0f)
+            power = baseFunction;
+        else if (magnitude == 2.0f)
+            power = new UnaryFunction(UnaryOperation.Square, baseFunction);
+        else if (magnitude == 3.0f)
+            power = new UnaryFunction(UnaryOperation.Cube, baseFunction);
+        else
+            return new PowFunction(baseFunction, new ConstantFunction(exponent));
+
+        return exponent < 0.0f ? new UnaryFunction(UnaryOperation.Reciprocal, power) : power;
+    }
+
+    private static float Pow(float value, float exponent) => (float)Math.Pow(value, exponent);
 }
