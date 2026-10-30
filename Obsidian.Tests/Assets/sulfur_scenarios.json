@@ -5112,7 +5112,7 @@
    "checkpoints": [
     {
      "tick": 0,
-     "gameTime": 5683,
+     "gameTime": 41,
      "states": [
       "minecraft:air",
       "minecraft:air",
@@ -5126,11 +5126,35 @@
       null,
       null,
       null
-     ]
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0
     },
     {
-     "tick": 60,
-     "gameTime": 5743,
+     "tick": 1,
+     "gameTime": 42,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=down,waterlogged=false]",
+      "minecraft:sulfur_spike[thickness=frustum,vertical_direction=down,waterlogged=false]"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0
+    },
+    {
+     "tick": 2,
+     "gameTime": 43,
      "states": [
       "minecraft:air",
       "minecraft:air",
@@ -5144,10 +5168,1524 @@
       null,
       null,
       null
-     ]
+     ],
+     "falling": 2,
+     "hurtingFalling": 1,
+     "items": 0
+    },
+    {
+     "tick": 3,
+     "gameTime": 44,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 2,
+     "hurtingFalling": 1,
+     "items": 0
+    },
+    {
+     "tick": 60,
+     "gameTime": 101,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 2
+    }
+   ],
+   "recordEntities": true,
+   "sampleTicks": [
+    1,
+    2,
+    3
+   ]
+  },
+  {
+   "name": "review_spike_entity_drops_disabled",
+   "setup": [
+    {
+     "pos": [
+      0,
+      70,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      76,
+      0
+     ],
+     "state": "minecraft:sulfur"
+    },
+    {
+     "pos": [
+      0,
+      75,
+      0
+     ],
+     "state": "minecraft:sulfur_spike[vertical_direction=down]"
+    },
+    {
+     "pos": [
+      0,
+      74,
+      0
+     ],
+     "state": "minecraft:sulfur_spike[vertical_direction=down]"
+    }
+   ],
+   "ticks": 60,
+   "interval": 60,
+   "watch": [
+    [
+     0,
+     71,
+     0
+    ],
+    [
+     0,
+     72,
+     0
+    ],
+    [
+     0,
+     73,
+     0
+    ],
+    [
+     0,
+     74,
+     0
+    ],
+    [
+     0,
+     75,
+     0
+    ]
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "pos": [
+      0,
+      76,
+      0
+     ],
+     "state": "minecraft:air"
+    }
+   ],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 141,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=down,waterlogged=false]",
+      "minecraft:sulfur_spike[thickness=frustum,vertical_direction=down,waterlogged=false]"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0
+    },
+    {
+     "tick": 1,
+     "gameTime": 142,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=down,waterlogged=false]",
+      "minecraft:sulfur_spike[thickness=frustum,vertical_direction=down,waterlogged=false]"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0
+    },
+    {
+     "tick": 2,
+     "gameTime": 143,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 2,
+     "hurtingFalling": 1,
+     "items": 0
+    },
+    {
+     "tick": 3,
+     "gameTime": 144,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 2,
+     "hurtingFalling": 1,
+     "items": 0
+    },
+    {
+     "tick": 60,
+     "gameTime": 201,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0
+    }
+   ],
+   "recordEntities": true,
+   "sampleTicks": [
+    1,
+    2,
+    3
+   ],
+   "rules": {
+    "entity_drops": "false"
+   }
+  },
+  {
+   "name": "review_spike_drop_item_disabled",
+   "setup": [
+    {
+     "pos": [
+      0,
+      70,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      76,
+      0
+     ],
+     "state": "minecraft:sulfur"
+    },
+    {
+     "pos": [
+      0,
+      75,
+      0
+     ],
+     "state": "minecraft:sulfur_spike[vertical_direction=down]"
+    },
+    {
+     "pos": [
+      0,
+      74,
+      0
+     ],
+     "state": "minecraft:sulfur_spike[vertical_direction=down]"
+    }
+   ],
+   "ticks": 60,
+   "interval": 60,
+   "watch": [
+    [
+     0,
+     71,
+     0
+    ],
+    [
+     0,
+     72,
+     0
+    ],
+    [
+     0,
+     73,
+     0
+    ],
+    [
+     0,
+     74,
+     0
+    ],
+    [
+     0,
+     75,
+     0
+    ]
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "pos": [
+      0,
+      76,
+      0
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "tick": 3,
+     "fallingFlags": {
+      "DropItem": 0
+     }
+    }
+   ],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 241,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=down,waterlogged=false]",
+      "minecraft:sulfur_spike[thickness=frustum,vertical_direction=down,waterlogged=false]"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0
+    },
+    {
+     "tick": 1,
+     "gameTime": 242,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=down,waterlogged=false]",
+      "minecraft:sulfur_spike[thickness=frustum,vertical_direction=down,waterlogged=false]"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0
+    },
+    {
+     "tick": 2,
+     "gameTime": 243,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 2,
+     "hurtingFalling": 1,
+     "items": 0
+    },
+    {
+     "tick": 3,
+     "gameTime": 244,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 2,
+     "hurtingFalling": 1,
+     "items": 0
+    },
+    {
+     "tick": 60,
+     "gameTime": 301,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0
+    }
+   ],
+   "recordEntities": true,
+   "sampleTicks": [
+    1,
+    2,
+    3
+   ],
+   "rules": {}
+  },
+  {
+   "name": "review_spike_cancel_drop",
+   "setup": [
+    {
+     "pos": [
+      0,
+      70,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      76,
+      0
+     ],
+     "state": "minecraft:sulfur"
+    },
+    {
+     "pos": [
+      0,
+      75,
+      0
+     ],
+     "state": "minecraft:sulfur_spike[vertical_direction=down]"
+    },
+    {
+     "pos": [
+      0,
+      74,
+      0
+     ],
+     "state": "minecraft:sulfur_spike[vertical_direction=down]"
+    }
+   ],
+   "ticks": 60,
+   "interval": 60,
+   "watch": [
+    [
+     0,
+     71,
+     0
+    ],
+    [
+     0,
+     72,
+     0
+    ],
+    [
+     0,
+     73,
+     0
+    ],
+    [
+     0,
+     74,
+     0
+    ],
+    [
+     0,
+     75,
+     0
+    ]
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "pos": [
+      0,
+      76,
+      0
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "tick": 3,
+     "fallingFlags": {
+      "CancelDrop": 1
+     }
+    }
+   ],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 341,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=down,waterlogged=false]",
+      "minecraft:sulfur_spike[thickness=frustum,vertical_direction=down,waterlogged=false]"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0
+    },
+    {
+     "tick": 1,
+     "gameTime": 342,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=down,waterlogged=false]",
+      "minecraft:sulfur_spike[thickness=frustum,vertical_direction=down,waterlogged=false]"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0
+    },
+    {
+     "tick": 2,
+     "gameTime": 343,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 2,
+     "hurtingFalling": 1,
+     "items": 0
+    },
+    {
+     "tick": 3,
+     "gameTime": 344,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 2,
+     "hurtingFalling": 1,
+     "items": 0
+    },
+    {
+     "tick": 60,
+     "gameTime": 401,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0
+    }
+   ],
+   "recordEntities": true,
+   "sampleTicks": [
+    1,
+    2,
+    3
+   ],
+   "rules": {}
+  },
+  {
+   "name": "review_spike_silent",
+   "setup": [
+    {
+     "pos": [
+      0,
+      70,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      76,
+      0
+     ],
+     "state": "minecraft:sulfur"
+    },
+    {
+     "pos": [
+      0,
+      75,
+      0
+     ],
+     "state": "minecraft:sulfur_spike[vertical_direction=down]"
+    },
+    {
+     "pos": [
+      0,
+      74,
+      0
+     ],
+     "state": "minecraft:sulfur_spike[vertical_direction=down]"
+    }
+   ],
+   "ticks": 60,
+   "interval": 60,
+   "watch": [
+    [
+     0,
+     71,
+     0
+    ],
+    [
+     0,
+     72,
+     0
+    ],
+    [
+     0,
+     73,
+     0
+    ],
+    [
+     0,
+     74,
+     0
+    ],
+    [
+     0,
+     75,
+     0
+    ]
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "pos": [
+      0,
+      76,
+      0
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "tick": 3,
+     "fallingFlags": {
+      "Silent": 1
+     }
+    }
+   ],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 441,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=down,waterlogged=false]",
+      "minecraft:sulfur_spike[thickness=frustum,vertical_direction=down,waterlogged=false]"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0
+    },
+    {
+     "tick": 1,
+     "gameTime": 442,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=down,waterlogged=false]",
+      "minecraft:sulfur_spike[thickness=frustum,vertical_direction=down,waterlogged=false]"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0
+    },
+    {
+     "tick": 2,
+     "gameTime": 443,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 2,
+     "hurtingFalling": 1,
+     "items": 0
+    },
+    {
+     "tick": 3,
+     "gameTime": 444,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 2,
+     "hurtingFalling": 1,
+     "items": 0
+    },
+    {
+     "tick": 60,
+     "gameTime": 501,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 2
+    }
+   ],
+   "recordEntities": true,
+   "sampleTicks": [
+    1,
+    2,
+    3
+   ],
+   "rules": {}
+  },
+  {
+   "name": "review_spike_pending_fall_keeps_frustum",
+   "setup": [
+    {
+     "pos": [
+      0,
+      70,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      76,
+      0
+     ],
+     "state": "minecraft:sulfur"
+    },
+    {
+     "pos": [
+      0,
+      75,
+      0
+     ],
+     "state": "minecraft:sulfur_spike[vertical_direction=down]"
+    },
+    {
+     "pos": [
+      0,
+      74,
+      0
+     ],
+     "state": "minecraft:sulfur_spike[vertical_direction=down]"
+    }
+   ],
+   "ticks": 60,
+   "interval": 60,
+   "watch": [
+    [
+     0,
+     71,
+     0
+    ],
+    [
+     0,
+     72,
+     0
+    ],
+    [
+     0,
+     73,
+     0
+    ],
+    [
+     0,
+     74,
+     0
+    ],
+    [
+     0,
+     75,
+     0
+    ]
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "pos": [
+      0,
+      76,
+      0
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "tick": 1,
+     "pos": [
+      0,
+      74,
+      0
+     ],
+     "state": "minecraft:air"
+    }
+   ],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 541,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=down,waterlogged=false]",
+      "minecraft:sulfur_spike[thickness=frustum,vertical_direction=down,waterlogged=false]"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0
+    },
+    {
+     "tick": 1,
+     "gameTime": 542,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:sulfur_spike[thickness=frustum,vertical_direction=down,waterlogged=false]"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0
+    },
+    {
+     "tick": 2,
+     "gameTime": 543,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 1,
+     "hurtingFalling": 0,
+     "items": 0
+    },
+    {
+     "tick": 3,
+     "gameTime": 544,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 1,
+     "hurtingFalling": 0,
+     "items": 0
+    },
+    {
+     "tick": 60,
+     "gameTime": 601,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 1
+    }
+   ],
+   "recordEntities": true,
+   "sampleTicks": [
+    1,
+    2,
+    3
+   ]
+  },
+  {
+   "name": "review_trident_inside_spike_cell",
+   "setup": [
+    {
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:sulfur"
+    },
+    {
+     "pos": [
+      0,
+      72,
+      0
+     ],
+     "state": "minecraft:sulfur_spike"
+    }
+   ],
+   "ticks": 4,
+   "interval": 2,
+   "watch": [
+    [
+     0,
+     72,
+     0
+    ]
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "projectile": {
+      "type": "trident",
+      "pos": [
+       0.5625,
+       72.11875,
+       -1
+      ],
+      "motion": [
+       0,
+       -0.1,
+       2
+      ]
+     }
+    }
+   ],
+   "recordProjectile": true,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 41,
+     "states": [
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=false]"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 2,
+     "gameTime": 43,
+     "states": [
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 4,
+     "gameTime": 45,
+     "states": [
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    }
+   ]
+  },
+  {
+   "name": "review_arrow_inside_spike_cell",
+   "setup": [
+    {
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:sulfur"
+    },
+    {
+     "pos": [
+      0,
+      72,
+      0
+     ],
+     "state": "minecraft:sulfur_spike"
+    }
+   ],
+   "ticks": 4,
+   "interval": 2,
+   "watch": [
+    [
+     0,
+     72,
+     0
+    ]
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "projectile": {
+      "type": "arrow",
+      "pos": [
+       0.5625,
+       72.11875,
+       -1
+      ],
+      "motion": [
+       0,
+       -0.1,
+       2
+      ]
+     }
+    }
+   ],
+   "recordProjectile": true,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 85,
+     "states": [
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=false]"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 2,
+     "gameTime": 87,
+     "states": [
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=false]"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 4,
+     "gameTime": 89,
+     "states": [
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=false]"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    }
+   ]
+  },
+  {
+   "name": "review_spectral_arrow_inside_spike_cell",
+   "setup": [
+    {
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:sulfur"
+    },
+    {
+     "pos": [
+      0,
+      72,
+      0
+     ],
+     "state": "minecraft:sulfur_spike"
+    }
+   ],
+   "ticks": 4,
+   "interval": 2,
+   "watch": [
+    [
+     0,
+     72,
+     0
+    ]
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "projectile": {
+      "type": "spectral_arrow",
+      "pos": [
+       0.5625,
+       72.11875,
+       -1
+      ],
+      "motion": [
+       0,
+       -0.1,
+       2
+      ]
+     }
+    }
+   ],
+   "recordProjectile": true,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 129,
+     "states": [
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=false]"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 2,
+     "gameTime": 131,
+     "states": [
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=false]"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 4,
+     "gameTime": 133,
+     "states": [
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=false]"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    }
+   ]
+  },
+  {
+   "name": "review_arrow_target_face",
+   "setup": [
+    {
+     "pos": [
+      0,
+      72,
+      0
+     ],
+     "state": "minecraft:target"
+    }
+   ],
+   "ticks": 4,
+   "interval": 2,
+   "watch": [
+    [
+     0,
+     72,
+     0
+    ]
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "projectile": {
+      "type": "arrow",
+      "pos": [
+       0.5,
+       72.5,
+       -1
+      ],
+      "motion": [
+       0,
+       0,
+       2
+      ]
+     }
+    }
+   ],
+   "recordProjectile": true,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 773,
+     "states": [
+      "minecraft:target[power=0]"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 2,
+     "gameTime": 775,
+     "states": [
+      "minecraft:target[power=15]"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 4,
+     "gameTime": 777,
+     "states": [
+      "minecraft:target[power=15]"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    }
+   ]
+  },
+  {
+   "name": "review_spectral_arrow_target_face",
+   "setup": [
+    {
+     "pos": [
+      0,
+      72,
+      0
+     ],
+     "state": "minecraft:target"
+    }
+   ],
+   "ticks": 4,
+   "interval": 2,
+   "watch": [
+    [
+     0,
+     72,
+     0
+    ]
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "projectile": {
+      "type": "spectral_arrow",
+      "pos": [
+       0.5,
+       72.5,
+       -1
+      ],
+      "motion": [
+       0,
+       0,
+       2
+      ]
+     }
+    }
+   ],
+   "recordProjectile": true,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 817,
+     "states": [
+      "minecraft:target[power=0]"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 2,
+     "gameTime": 819,
+     "states": [
+      "minecraft:target[power=15]"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 4,
+     "gameTime": 821,
+     "states": [
+      "minecraft:target[power=15]"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    }
+   ]
+  },
+  {
+   "name": "review_trident_target_face",
+   "setup": [
+    {
+     "pos": [
+      0,
+      72,
+      0
+     ],
+     "state": "minecraft:target"
+    }
+   ],
+   "ticks": 4,
+   "interval": 2,
+   "watch": [
+    [
+     0,
+     72,
+     0
+    ]
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "projectile": {
+      "type": "trident",
+      "pos": [
+       0.5,
+       72.5,
+       -1
+      ],
+      "motion": [
+       0,
+       0,
+       2
+      ]
+     }
+    }
+   ],
+   "recordProjectile": true,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 861,
+     "states": [
+      "minecraft:target[power=0]"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 2,
+     "gameTime": 863,
+     "states": [
+      "minecraft:target[power=15]"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 4,
+     "gameTime": 865,
+     "states": [
+      "minecraft:target[power=15]"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
     }
    ]
   }
  ],
- "_notes": "Recorded from a frozen vanilla 26.3 server over RCON, seed test-seed. Setup and actions use setblock with updates. Each checkpoint records absolute game time, full states at watched positions and potent sulfur's saved countdown. Reload actions save and restart vanilla; their elapsed game ticks are retained. Other actions run before the next tick. Only this fixture is recorded by CaptureFixtures=sulfur."
+ "_notes": "Recorded from a frozen vanilla 26.3 server over RCON, seed test-seed. Setup and actions use setblock with updates. Each checkpoint records absolute game time, full states at watched positions and potent sulfur's saved countdown. Reload actions save and restart vanilla; their elapsed game ticks are retained. Other actions run before the next tick. Optional entity samples count live falling blocks, damaging falling blocks and total sulfur-spike items, and projectile samples count embedded projectiles. These samples do not record sound effects. CaptureCases selects individual scenarios without re-recording the Java probes."
 }

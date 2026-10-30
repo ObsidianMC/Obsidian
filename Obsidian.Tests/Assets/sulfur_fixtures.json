@@ -4718,6 +4718,472 @@
       "face": "down",
       "secondary": false,
       "placed": "minecraft:sulfur_brick_wall[east=none,north=none,south=none,up=true,waterlogged=true,west=none]"
+    },
+    {
+      "name": "review_landing_rule_0_drop_0_cancel_0_silent_0",
+      "kind": "landing",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "entityDrops": false,
+      "dropItem": false,
+      "cancelDrop": false,
+      "silent": false,
+      "removed": true,
+      "items": 0,
+      "events": []
+    },
+    {
+      "name": "review_landing_rule_0_drop_0_cancel_0_silent_1",
+      "kind": "landing",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "entityDrops": false,
+      "dropItem": false,
+      "cancelDrop": false,
+      "silent": true,
+      "removed": true,
+      "items": 0,
+      "events": []
+    },
+    {
+      "name": "review_landing_rule_0_drop_0_cancel_1_silent_0",
+      "kind": "landing",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "entityDrops": false,
+      "dropItem": false,
+      "cancelDrop": true,
+      "silent": false,
+      "removed": true,
+      "items": 0,
+      "events": [
+        {
+          "type": 1052,
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "data": 0
+        }
+      ]
+    },
+    {
+      "name": "review_landing_rule_0_drop_0_cancel_1_silent_1",
+      "kind": "landing",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "entityDrops": false,
+      "dropItem": false,
+      "cancelDrop": true,
+      "silent": true,
+      "removed": true,
+      "items": 0,
+      "events": []
+    },
+    {
+      "name": "review_landing_rule_0_drop_1_cancel_0_silent_0",
+      "kind": "landing",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "entityDrops": false,
+      "dropItem": true,
+      "cancelDrop": false,
+      "silent": false,
+      "removed": true,
+      "items": 0,
+      "events": []
+    },
+    {
+      "name": "review_landing_rule_0_drop_1_cancel_0_silent_1",
+      "kind": "landing",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "entityDrops": false,
+      "dropItem": true,
+      "cancelDrop": false,
+      "silent": true,
+      "removed": true,
+      "items": 0,
+      "events": []
+    },
+    {
+      "name": "review_landing_rule_0_drop_1_cancel_1_silent_0",
+      "kind": "landing",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "entityDrops": false,
+      "dropItem": true,
+      "cancelDrop": true,
+      "silent": false,
+      "removed": true,
+      "items": 0,
+      "events": [
+        {
+          "type": 1052,
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "data": 0
+        }
+      ]
+    },
+    {
+      "name": "review_landing_rule_0_drop_1_cancel_1_silent_1",
+      "kind": "landing",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "entityDrops": false,
+      "dropItem": true,
+      "cancelDrop": true,
+      "silent": true,
+      "removed": true,
+      "items": 0,
+      "events": []
+    },
+    {
+      "name": "review_landing_rule_1_drop_0_cancel_0_silent_0",
+      "kind": "landing",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "entityDrops": true,
+      "dropItem": false,
+      "cancelDrop": false,
+      "silent": false,
+      "removed": true,
+      "items": 0,
+      "events": []
+    },
+    {
+      "name": "review_landing_rule_1_drop_0_cancel_0_silent_1",
+      "kind": "landing",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "entityDrops": true,
+      "dropItem": false,
+      "cancelDrop": false,
+      "silent": true,
+      "removed": true,
+      "items": 0,
+      "events": []
+    },
+    {
+      "name": "review_landing_rule_1_drop_0_cancel_1_silent_0",
+      "kind": "landing",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "entityDrops": true,
+      "dropItem": false,
+      "cancelDrop": true,
+      "silent": false,
+      "removed": true,
+      "items": 0,
+      "events": [
+        {
+          "type": 1052,
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "data": 0
+        }
+      ]
+    },
+    {
+      "name": "review_landing_rule_1_drop_0_cancel_1_silent_1",
+      "kind": "landing",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "entityDrops": true,
+      "dropItem": false,
+      "cancelDrop": true,
+      "silent": true,
+      "removed": true,
+      "items": 0,
+      "events": []
+    },
+    {
+      "name": "review_landing_rule_1_drop_1_cancel_0_silent_0",
+      "kind": "landing",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "entityDrops": true,
+      "dropItem": true,
+      "cancelDrop": false,
+      "silent": false,
+      "removed": true,
+      "items": 1,
+      "events": [
+        {
+          "type": 1052,
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "data": 0
+        }
+      ]
+    },
+    {
+      "name": "review_landing_rule_1_drop_1_cancel_0_silent_1",
+      "kind": "landing",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "entityDrops": true,
+      "dropItem": true,
+      "cancelDrop": false,
+      "silent": true,
+      "removed": true,
+      "items": 1,
+      "events": []
+    },
+    {
+      "name": "review_landing_rule_1_drop_1_cancel_1_silent_0",
+      "kind": "landing",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "entityDrops": true,
+      "dropItem": true,
+      "cancelDrop": true,
+      "silent": false,
+      "removed": true,
+      "items": 0,
+      "events": [
+        {
+          "type": 1052,
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "data": 0
+        }
+      ]
+    },
+    {
+      "name": "review_landing_rule_1_drop_1_cancel_1_silent_1",
+      "kind": "landing",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "entityDrops": true,
+      "dropItem": true,
+      "cancelDrop": true,
+      "silent": true,
+      "removed": true,
+      "items": 0,
+      "events": []
     }
   ]
 }

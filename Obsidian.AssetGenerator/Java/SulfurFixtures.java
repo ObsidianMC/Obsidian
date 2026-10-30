@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
@@ -33,6 +34,9 @@ import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.level.ItemLike;
+import net.minecraft.world.level.gamerules.GameRules;
 
 /** Calls vanilla's sulfur growth and gas/launch routines on a bounded, explicitly supplied block view. */
 public final class SulfurFixtures {
@@ -40,8 +44,15 @@ public final class SulfurFixtures {
         var version = VanillaDumper.bootstrap();
         var root = JsonParser.parseString(Files.readString(Path.of(arguments[0]))).getAsJsonObject();
         root.addProperty("version", version);
+        var selected = arguments.length > 1 ? Set.of(arguments[1].split("\\+")) : null;
+        int captured = 0;
         for (var entry : root.getAsJsonArray("cases")) {
             var input = entry.getAsJsonObject();
+            if (selected != null && !selected.contains(input.get("name").getAsString())) {
+                continue;
+            }
+
+            captured++;
             for (var key : List.of("writes", "nextRandom", "source", "forceHeight", "reaches",
                 "launchedMotionY", "nauseaDuration", "ambient", "particles", "damage", "broken", "placed",
                 "remainingFallDistance", "clampedFallDistance")) {
@@ -54,7 +65,23 @@ public final class SulfurFixtures {
             }
 
             var origin = position(input.getAsJsonArray("origin"));
-            if (input.get("kind").getAsString().equals("placement")) {
+            if (input.get("kind").getAsString().equals("landing")) {
+                level.rules.set(GameRules.ENTITY_DROPS, input.get("entityDrops").getAsBoolean(), null);
+                var falling = new LandingProbe(level);
+                falling.setPos(origin.getX() + 0.5, origin.getY(), origin.getZ() + 0.5);
+                var blockState = FallingBlockEntity.class.getDeclaredField("blockState");
+                blockState.setAccessible(true);
+                blockState.set(falling, state("minecraft:sulfur_spike[vertical_direction=down]"));
+                var cancelDrop = FallingBlockEntity.class.getDeclaredField("cancelDrop");
+                cancelDrop.setAccessible(true);
+                cancelDrop.setBoolean(falling, input.get("cancelDrop").getAsBoolean());
+                falling.dropItem = input.get("dropItem").getAsBoolean();
+                falling.setSilent(input.get("silent").getAsBoolean());
+                falling.tick();
+                input.addProperty("removed", falling.isRemoved());
+                input.addProperty("items", falling.items);
+                input.add("events", level.events);
+            } else if (input.get("kind").getAsString().equals("placement")) {
                 var block = BuiltInRegistries.BLOCK.getValue(Identifier.parse(input.get("block").getAsString()));
                 var look = Direction.valueOf(input.get("look").getAsString().toUpperCase(java.util.Locale.ROOT));
                 var face = Direction.valueOf(input.get("face").getAsString().toUpperCase(java.util.Locale.ROOT));
@@ -140,6 +167,10 @@ public final class SulfurFixtures {
             }
         }
 
+        if (selected != null && captured != selected.size()) {
+            throw new IllegalArgumentException("Every selected sulfur probe must exist and be named once");
+        }
+
         Files.writeString(Path.of(arguments[0]),
             new GsonBuilder().serializeNulls().setPrettyPrinting().disableHtmlEscaping().create().toJson(root) + "\n");
     }
@@ -153,6 +184,8 @@ public final class SulfurFixtures {
         level.blocks = new HashMap<>();
         level.writes = new ArrayList<>();
         level.entities = new ArrayList<>();
+        level.rules = new GameRules(List.of(GameRules.ENTITY_DROPS));
+        level.events = new JsonArray();
         return level;
     }
 
@@ -194,6 +227,20 @@ public final class SulfurFixtures {
         List<JsonObject> writes;
         List<Entity> entities;
         boolean broken;
+        GameRules rules;
+        JsonArray events;
+
+        @Override public GameRules getGameRules() {
+            return rules;
+        }
+
+        @Override public void levelEvent(Entity source, int event, BlockPos pos, int data) {
+            var recorded = new JsonObject();
+            recorded.addProperty("type", event);
+            recorded.add("pos", coordinates(pos));
+            recorded.addProperty("data", data);
+            events.add(recorded);
+        }
 
         @Override public boolean destroyBlock(BlockPos pos, boolean drops, Entity breaker, int limit) {
             broken = true;
@@ -334,6 +381,40 @@ public final class SulfurFixtures {
 
         @Override public boolean isSecondaryUseActive() {
             return secondary;
+        }
+    }
+
+    /** Supplies an already resolved ground contact; vanilla still decides removal, drops and break effects. */
+    private static final class LandingProbe extends FallingBlockEntity {
+        int items;
+
+        LandingProbe(ProbeLevel level) {
+            super(EntityTypes.FALLING_BLOCK, level);
+        }
+
+        @Override public void move(MoverType type, Vec3 delta) {
+            setOnGround(true);
+        }
+
+        @Override protected void checkSupportingBlock(boolean onGround, Vec3 movement) {
+        }
+
+        @Override protected void applyEffectsFromBlocks() {
+        }
+
+        @Override protected void handlePortal() {
+        }
+
+        @Override protected void applyGravity() {
+        }
+
+        @Override protected float getAirDrag() {
+            return 1;
+        }
+
+        @Override public net.minecraft.world.entity.item.ItemEntity spawnAtLocation(ServerLevel level, ItemLike item) {
+            items++;
+            return null;
         }
     }
 }

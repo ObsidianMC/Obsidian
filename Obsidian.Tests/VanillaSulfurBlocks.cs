@@ -11,6 +11,7 @@ using Obsidian.Nbt;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
+using Obsidian.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -41,6 +42,8 @@ public sealed class VanillaSulfurBlocks
             .Single(value => value.GetProperty("name").GetString() == name);
         await using var context = TestServerFactory.CreateServer($"sulfur-probe-{Guid.NewGuid():N}");
         var world = context.World;
+        world.LevelData.GameRules["spawn_mobs"] = "false";
+        world.LevelData.GameRules["random_tick_speed"] = "0";
         await BlockUpdates.AddChunksAsync(world);
         foreach (var placement in probe.GetProperty("setup").EnumerateArray())
         {
@@ -50,6 +53,60 @@ public sealed class VanillaSulfurBlocks
         }
 
         var origin = Position(probe.GetProperty("origin"));
+        if (probe.GetProperty("kind").GetString() == "landing")
+        {
+            world.LevelData.GameRules["entity_drops"] = probe.GetProperty("entityDrops").GetBoolean().ToString();
+            var listener = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Listener",
+                new VectorD(8, 80, 8));
+            world.Players.TryAdd(listener.Uuid, listener);
+            var client = Assert.IsType<TestClient>(listener.Client);
+            var spawn = (VectorD)origin + new VectorD(0.5, 3, 0.5);
+            var falling = new FallingBlock(spawn)
+            {
+                Level = world,
+                Block = ParseState("minecraft:sulfur_spike[vertical_direction=down]"),
+                Type = EntityType.FallingBlock,
+                DropItem = probe.GetProperty("dropItem").GetBoolean(),
+                CancelDrop = probe.GetProperty("cancelDrop").GetBoolean(),
+                Silent = probe.GetProperty("silent").GetBoolean()
+            };
+            var saved = new NbtCompound();
+            falling.WriteNbt(saved);
+            var restored = new FallingBlock(spawn)
+            {
+                Level = world,
+                Block = falling.Block,
+                Type = EntityType.FallingBlock,
+                EntityId = Obsidian.Server.GetNextEntityId()
+            };
+            restored.ReadNbt(saved);
+            Assert.Equal(falling.DropItem, restored.DropItem);
+            Assert.Equal(falling.CancelDrop, restored.CancelDrop);
+            Assert.Equal(falling.Silent, restored.Silent);
+            Assert.True(world.TryAddEntity(restored));
+            for (var tick = 0; tick < 60; tick++)
+            {
+                await world.DoWorldTickAsync();
+            }
+
+            var remaining = world.GetNonPlayerEntitiesInRange((VectorD)origin, 10).ToArray();
+            Assert.Equal(probe.GetProperty("removed").GetBoolean(), !remaining.Contains(restored));
+            Assert.Equal(probe.GetProperty("items").GetInt32(), remaining.OfType<ItemEntity>()
+                .Where(item => !item.Removed && item.Item.Holder.Id == ItemIds.SulfurSpike)
+                .Sum(item => item.Item.Count));
+            var effects = client.SentPackets.OfType<LevelEventPacket>().Where(packet => packet.Type == 1052).ToArray();
+            var events = probe.GetProperty("events").EnumerateArray().ToArray();
+            Assert.Equal(events.Length, effects.Length);
+            for (var i = 0; i < events.Length; i++)
+            {
+                Assert.Equal(events[i].GetProperty("type").GetInt32(), effects[i].Type);
+                Assert.Equal(Position(events[i].GetProperty("pos")), effects[i].Position);
+                Assert.Equal(events[i].GetProperty("data").GetInt32(), effects[i].Data);
+            }
+
+            return;
+        }
+
         if (probe.GetProperty("kind").GetString() == "placement")
         {
             var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Placer");
@@ -187,6 +244,13 @@ public sealed class VanillaSulfurBlocks
         var world = context.World;
         world.LevelData.GameRules["spawn_mobs"] = "false";
         world.LevelData.GameRules["random_tick_speed"] = "0";
+        if (scenario.TryGetProperty("rules", out var rules))
+        {
+            foreach (var rule in rules.EnumerateObject())
+            {
+                world.LevelData.GameRules[rule.Name] = rule.Value.GetString()!;
+            }
+        }
         await BlockUpdates.AddChunksAsync(world);
         var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Observer",
             new VectorD(8, 80, 8));
@@ -231,6 +295,35 @@ public sealed class VanillaSulfurBlocks
                     var entity = Assert.IsType<PotentSulfurBlockEntity>(
                         world.GetResidentBlockEntity(Position(action.GetProperty("pos"))));
                     entity.Countdown = countdown.GetInt32();
+                }
+                else if (action.TryGetProperty("projectile", out var projectile))
+                {
+                    var type = projectile.GetProperty("type").GetString();
+                    Arrow arrow = type switch
+                    {
+                        "trident" => new Trident { Level = world, Type = EntityType.Trident },
+                        "spectral_arrow" => new SpectralArrow { Level = world },
+                        _ => new Arrow { Level = world, Type = EntityType.Arrow }
+                    };
+                    arrow.EntityId = Obsidian.Server.GetNextEntityId();
+                    arrow.Position = Location(projectile.GetProperty("pos"));
+                    arrow.Motion = Location(projectile.GetProperty("motion"));
+                    arrow.NoGravity = true;
+                    Assert.True(world.TryAddEntity(arrow));
+                }
+                else if (action.TryGetProperty("fallingFlags", out var flags))
+                {
+                    foreach (var falling in world.GetNonPlayerEntitiesInRange(new VectorD(0, 75, 0), 50)
+                        .OfType<FallingBlock>())
+                    {
+                        var tag = new NbtCompound();
+                        foreach (var flag in flags.EnumerateObject())
+                        {
+                            tag.Add(new NbtTag<bool>(flag.Name, flag.Value.GetInt32() != 0));
+                        }
+
+                        falling.ReadNbt(tag);
+                    }
                 }
                 else
                 {
@@ -331,7 +424,31 @@ public sealed class VanillaSulfurBlocks
 
             index++;
         }
+
+        var entities = world.GetNonPlayerEntitiesInRange(new VectorD(0, 75, 0), 50).ToArray();
+        if (checkpoint.TryGetProperty("falling", out var falling))
+        {
+            Assert.Equal(falling.GetInt32(), entities.OfType<FallingBlock>().Count());
+            Assert.Equal(checkpoint.GetProperty("hurtingFalling").GetInt32(),
+                entities.OfType<FallingBlock>().Count(entity => entity.StalactiteDamage > 0));
+            Assert.Equal(checkpoint.GetProperty("items").GetInt32(), entities.OfType<ItemEntity>()
+                .Where(item => !item.Removed && item.Item.Holder.Id == ItemIds.SulfurSpike)
+                .Sum(item => item.Item.Count));
+        }
+
+        if (checkpoint.TryGetProperty("embedded", out var embedded))
+        {
+            Assert.Equal(embedded.GetInt32(), entities.OfType<Arrow>().Count(arrow =>
+            {
+                var data = new NbtCompound();
+                arrow.WriteNbt(data);
+                return data.TryGetTagValue<bool>("inGround", out var value) && value;
+            }));
+        }
     }
+
+    private static VectorD Location(JsonElement array) =>
+        new(array[0].GetDouble(), array[1].GetDouble(), array[2].GetDouble());
 
     internal static IBlock ParseState(string text)
     {

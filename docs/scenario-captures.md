@@ -12,13 +12,20 @@ replaces only what vanilla produced.
   readings.
 - `sulfur_scenarios.json` (`VanillaSulfurBlocks`) defines setup, actions, watched positions and sampling intervals.
   It records full block states and potent sulfur countdowns at absolute game times, including elapsed ticks across
-  save/restart actions. Its world seed is `test-seed`.
+  save/restart actions. Its world seed is `test-seed`. Cases with `recordEntities` also sample live falling blocks,
+  damaging falling blocks and total sulfur-spike item counts. Extra `sampleTicks` check the interval before landing
+  as well as the completed fall, so immediate disappearance, missing drops and endlessly falling entities fail.
+  `recordProjectile` samples embedded projectiles; projectile actions exercise collision handling through the live
+  entity tick. RCON samples do not record sound effects.
 - `sulfur_fixtures.json` (also `VanillaSulfurBlocks`) holds bounded Java probes for sulfur placement, growth and
   subsequent random draws, gas source/visibility, geyser force and fall-distance handling, trident thresholds and
   raw falling-spike damage. `Java/SulfurFixtures.java`, registered in `FixtureDumper.cs`, invokes vanilla's routines
   against each case's block view. Growth writes are recorded without neighbor notifications; the RCON scenarios
   separately cover the live update path. The impact target records the raw damage passed by vanilla's falling
   entity, before armor and other victim-specific mitigation.
+  The `review_landing_*` probes instead supply a resolved ground contact and invoke vanilla's falling entity tick;
+  they record removal, item drops and level events for every combination of `entity_drops`, `DropItem`, `CancelDrop`
+  and `Silent`. The replay checks both item totals and the clients' landing-effect packets.
 
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.
@@ -30,6 +37,8 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=redstone+daylight
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur
+
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur -p:CaptureCases=spike_shatters_after_falling+review_spike_pending_fall_keeps_frustum
 ```
 
 This uses the server of the Minecraft version `Obsidian.csproj` targets, from the shared vanilla cache (see
@@ -37,8 +46,13 @@ This uses the server of the Minecraft version `Obsidian.csproj` targets, from th
 To add a scenario, add its definition with placeholder checkpoints (the redstone capture records as many ticks as the
 scenario has checkpoints) and capture again; the tests pick it up.
 
+For sulfur, `CaptureCases` accepts exact scenario names separated by `+`. It replaces only those cases' checkpoints
+and skips the Java probes. Other scenarios retain their stored absolute times and are replayed independently.
+`SulfurFixtures.java` also accepts an optional second argument of exact `+`-separated probe names, when run directly
+with the vanilla server and libraries on the classpath, to re-record only new or changed Java cases.
+
 The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory>
-<scratch directory> <test assets directory> [redstone+fluids+daylight+sulfur]`.
+<scratch directory> <test assets directory> [redstone+fluids+daylight+sulfur] [sulfur case names]`.
 
 ## How it captures
 

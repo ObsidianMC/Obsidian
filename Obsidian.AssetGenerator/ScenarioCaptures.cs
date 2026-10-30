@@ -79,9 +79,12 @@ internal static class ScenarioCaptures
         """;
 
     public static async Task RunAsync(VanillaServer server, string assetsDirectory,
-        IReadOnlyCollection<string> fixtures)
+        IReadOnlyCollection<string> fixtures, IReadOnlyCollection<string>? cases = null)
     {
-        if (fixtures.Contains(Sulfur))
+        if (cases is not null && (fixtures.Count != 1 || !fixtures.Contains(Sulfur)))
+            throw new ArgumentException("Scenario case selection currently requires CaptureFixtures=sulfur.");
+
+        if (fixtures.Contains(Sulfur) && cases is null)
         {
             await FixtureDumper.DumpSulfurAsync(server, Path.Combine(assetsDirectory, "sulfur_fixtures.json"));
         }
@@ -94,7 +97,7 @@ internal static class ScenarioCaptures
         {
             var path = Path.Combine(assetsDirectory, "sulfur_scenarios.json");
             await CaptureFileAsync(path, server.Version, ScenarioSulfurCaptures.Notes,
-                root => ScenarioSulfurCaptures.CaptureAsync(vanilla, root));
+                root => ScenarioSulfurCaptures.CaptureAsync(vanilla, root, cases));
         }
 
         if (fixtures.Contains(Redstone))

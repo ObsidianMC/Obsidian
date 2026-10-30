@@ -6,6 +6,7 @@ using Obsidian.WorldData;
 using Obsidian.Nbt;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
+using Obsidian.API.Blocks;
 
 [MinecraftEntity("minecraft:arrow")]
 public partial class Arrow : Entity
@@ -74,6 +75,7 @@ public partial class Arrow : Entity
     }
 
     protected bool embedded;
+    private Vector? embeddedBlock;
 
     public override void Write(INetStreamWriter writer)
     {
@@ -142,12 +144,22 @@ public partial class Arrow : Entity
 
         if (embedded)
         {
-            await PickupAsync();
-            return;
+            if (this.embeddedBlock is not Vector anchor || !level.BlockUpdates.GetBlock(anchor).IsAir)
+            {
+                await PickupAsync();
+                return;
+            }
+
+            // Vanilla releases an embedded projectile when the block it struck has disappeared.
+            this.embedded = false;
+            this.embeddedBlock = null;
+            this.PacketBroadcaster.QueuePacketToLevelInRange(this.Level, this.Position,
+                new SetEntityDataPacket { EntityId = this.EntityId, Entity = this });
         }
 
         var terrain = new MobTerrain(Level);
-        var blockFraction = FindBlockHitFraction(terrain);
+        var blockHit = this.FindBlockHit(terrain);
+        var blockFraction = blockHit?.Fraction ?? 1;
         var (target, fraction) = FindEntityHit(blockFraction);
         var next = Position + Motion * fraction;
         if (!level.TryMoveEntity(this, Position, next))
@@ -163,9 +175,9 @@ public partial class Arrow : Entity
             return;
         }
 
-        if (fraction < 1)
+        if (blockHit is { } collision)
         {
-            await HitBlockAsync(level);
+            await this.HitBlockAsync(level, collision.Hit);
             return;
         }
 
@@ -176,22 +188,26 @@ public partial class Arrow : Entity
     }
 
     /// <summary>
-    /// The fraction of this tick's motion the arrow travels before it meets a block (1 when it meets none).
+    /// The nearest collision, retaining the block and face even when a shape ends inside its block's cell.
     /// </summary>
-    private double FindBlockHitFraction(MobTerrain terrain)
+    private (double Fraction, BlockShapeHit Hit)? FindBlockHit(MobTerrain terrain)
     {
         var end = Position + Motion;
         var min = VectorD.Min(Position, end) - new VectorD(0.3f);
         var max = VectorD.Max(Position, end) + new VectorD(0.3f);
         var bounds = new BoundingBox(min, max);
-        var fraction = 1d;
-        foreach (var shape in terrain.GetCollisions(bounds))
+        (double Fraction, BlockShapeHit Hit)? nearest = null;
+        foreach (var (shape, block) in terrain.GetBlockCollisions(bounds))
         {
-            if (MobTerrain.RayIntersection(shape, Position, Motion) is double hit)
-                fraction = Math.Min(fraction, hit);
+            var local = shape.OffsetBy(-(VectorD)block);
+            var hit = BlockShapeRaycast.Clip([local], block, VectorD.Zero, this.Position, this.Motion);
+            if (hit is { } collision && (nearest is null || collision.Distance < nearest.Value.Fraction))
+            {
+                nearest = (collision.Distance, collision.Hit);
+            }
         }
 
-        return fraction;
+        return nearest;
     }
 
     /// <summary>
@@ -399,7 +415,7 @@ public partial class Arrow : Entity
         }
     }
 
-    private async ValueTask HitBlockAsync(AbstractLevel level)
+    private async ValueTask HitBlockAsync(AbstractLevel level, BlockShapeHit collision)
     {
         level.EmitGameEvent(MobGameEvent.ProjectileLand, Position, this, Owner);
         if (Type is EntityType.ShulkerBullet or EntityType.WitherSkull)
@@ -411,7 +427,8 @@ public partial class Arrow : Entity
         // Like vanilla's onHitBlock, a block the arrow hits reacts before the arrow embeds.
         if (Level is AbstractLevel hitLevel)
         {
-            var (hitBlock, hitFace) = EnteredBlockFace(Position, Motion);
+            var hitBlock = collision.Position;
+            var hitFace = collision.Face;
             await hitLevel.OnProjectileHitBlockAsync(hitBlock, Position, hitFace);
             if (this.Type == EntityType.Trident
                 && hitLevel.BlockUpdates.GetBlock(hitBlock).Is(BlockIds.SulfurSpike))
@@ -427,6 +444,7 @@ public partial class Arrow : Entity
         }
 
         embedded = true;
+        this.embeddedBlock = collision.Position;
         Crit = false;
         Motion = VectorD.Zero;
         var packet = new SetEntityDataPacket { EntityId = EntityId, Entity = this };

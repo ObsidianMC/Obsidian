@@ -39,11 +39,12 @@ if (args is ["capture-worldgen", var captureVersion, var captureCache, var captu
 if (args is ["capture-scenarios", var scenarioVersion, var scenarioCache, var scenarioScratch, var testAssets,
     .. var fixtureNames])
 {
-    var fixtures = fixtureNames is [var names] ? names.Split('+') : ScenarioCaptures.All;
+    var fixtures = fixtureNames.Length > 0 ? fixtureNames[0].Split('+') : ScenarioCaptures.All;
+    var cases = fixtureNames.Length > 1 ? fixtureNames[1].Split('+') : null;
     var vanilla = await VanillaServer.PrepareAsync(httpClient, scenarioVersion,
         Path.Combine(Path.GetFullPath(scenarioCache), scenarioVersion),
         Path.Combine(Path.GetFullPath(scenarioScratch), scenarioVersion));
-    await ScenarioCaptures.RunAsync(vanilla, Path.GetFullPath(testAssets), fixtures);
+    await ScenarioCaptures.RunAsync(vanilla, Path.GetFullPath(testAssets), fixtures, cases);
 
     var seconds = timer.Elapsed.TotalSeconds;
     Console.WriteLine($"Captured the {scenarioVersion} scenarios ({string.Join(", ", fixtures)}) in {seconds:0.0}s.");

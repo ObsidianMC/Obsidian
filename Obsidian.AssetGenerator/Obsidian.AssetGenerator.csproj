@@ -142,6 +142,7 @@
 			<ScenarioCommand>$(ScenarioCommand) &quot;$(VanillaWorkDirectory).&quot;</ScenarioCommand>
 			<ScenarioCommand>$(ScenarioCommand) &quot;$(VanillaScratchDirectory).&quot;</ScenarioCommand>
 			<ScenarioCommand>$(ScenarioCommand) &quot;$(VanillaScenarioAssets)&quot; $(CaptureFixtures)</ScenarioCommand>
+			<ScenarioCommand Condition="'$(CaptureCases)' != ''">$(ScenarioCommand) &quot;$(CaptureCases)&quot;</ScenarioCommand>
 		</PropertyGroup>
 
 		<Exec IgnoreStandardErrorWarningFormat="true" Command="$(ScenarioCommand)" />

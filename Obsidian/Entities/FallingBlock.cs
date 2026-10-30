@@ -1,5 +1,6 @@
 using Obsidian.Entities.AI;
 using Obsidian.API.Inventory;
+using Obsidian.Nbt;
 
 namespace Obsidian.Entities;
 
@@ -15,6 +16,10 @@ public sealed partial class FallingBlock : Entity
     public VectorD SpawnPosition { get; private set; }
 
     internal float StalactiteDamage { get; set; }
+
+    internal bool DropItem { get; set; } = true;
+
+    internal bool CancelDrop { get; set; }
 
     // Blocks per tick, negative is down.
     private double VelocityY;
@@ -63,6 +68,10 @@ public sealed partial class FallingBlock : Entity
     // block's item where it landed. Replacing a block doesn't break it, so nothing drops for the cell it takes.
     private async Task LandAsync(Vector loc)
     {
+        var target = await this.Level.GetBlockAsync(loc);
+        if (target?.Is(BlockIds.MovingPiston) == true)
+            return;
+
         if (this.Block.Is(BlockIds.SulfurSpike))
         {
             if (this.StalactiteDamage > 0)
@@ -80,19 +89,23 @@ public sealed partial class FallingBlock : Entity
                 }
             }
 
-            if (BlocksRegistry.TryGetItem(this.Block, out var spikeItem))
+            var drops = this.DropItem && this.Level.LevelData.GetBooleanRule("entity_drops");
+            if (!this.CancelDrop && drops && BlocksRegistry.TryGetItem(this.Block, out var spikeItem))
             {
                 this.Level.SpawnItem(this.Position, new ItemStack(spikeItem));
             }
 
-            this.PacketBroadcaster.BroadcastToLevelInRange(this.Level, this.Position,
-                new Net.Packets.Play.Clientbound.LevelEventPacket(1052, loc, 0));
+            // Vanilla's cancelled landing invokes the break hook regardless of item-drop settings.
+            if ((this.CancelDrop || drops) && !this.Silent)
+            {
+                this.PacketBroadcaster.BroadcastToLevelInRange(this.Level, this.Position,
+                    new Net.Packets.Play.Clientbound.LevelEventPacket(1052, loc, 0));
+            }
             await this.Level.DestroyEntityAsync(this);
             return;
         }
 
-        var target = await Level.GetBlockAsync(loc);
-        if (target is null || target.CanBeReplaced())
+        if (!this.CancelDrop && (target is null || target.CanBeReplaced()))
         {
             // Like vanilla's, with updates: the landed block checks below it again, and its neighbours hear of it.
             await Level.SetBlockAsync(loc, this.Block, doBlockUpdate: true);
@@ -104,12 +117,28 @@ public sealed partial class FallingBlock : Entity
                     new Net.Packets.Play.Clientbound.AddTransientBlockPacket(loc, landed.State?.Id ?? landed.DefaultId));
             }
         }
-        else if (BlocksRegistry.TryGetItem(this.Block, out var item))
+        else if (!this.CancelDrop && this.DropItem
+            && this.Level.LevelData.GetBooleanRule("entity_drops")
+            && BlocksRegistry.TryGetItem(this.Block, out var item))
         {
             Level.SpawnItem(new VectorD(Position.X, loc.Y, Position.Z), new ItemStack(item));
         }
 
         await Level.DestroyEntityAsync(this);
+    }
+
+    internal override void ReadNbt(NbtCompound tag)
+    {
+        base.ReadNbt(tag);
+        this.DropItem = !tag.TryGetBool("DropItem", out var drops) || drops;
+        this.CancelDrop = tag.TryGetBool("CancelDrop", out var cancel) && cancel;
+    }
+
+    internal override void WriteNbt(NbtCompound tag)
+    {
+        base.WriteNbt(tag);
+        tag.Set(new NbtTag<bool>("DropItem", this.DropItem));
+        tag.Set(new NbtTag<bool>("CancelDrop", this.CancelDrop));
     }
 
     internal static float StalactiteImpactDamage(double distance, float size)
