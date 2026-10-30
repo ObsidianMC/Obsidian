@@ -43,6 +43,12 @@ internal static class DatagenAssets
         WriteJson(Path.Combine(outputDirectory, "enchantments.json"), Combine(Path.Combine(data, "enchantment"), ToId));
         WriteJson(Path.Combine(outputDirectory, "dialogs.json"), Combine(Path.Combine(data, "dialog"), ToId));
         WriteJson(Path.Combine(outputDirectory, "instruments.json"), Combine(Path.Combine(data, "instrument"), ToId));
+        foreach (var registry in new[] { "block_transformer", "decorated_pot_pattern", "timeline" })
+            WriteJson(Path.Combine(outputDirectory, registry + ".json"), Combine(Path.Combine(data, registry), ToId));
+
+        var tillTables = Combine(Path.Combine(data, "loot_table", "till"), path => ToId("till/" + path));
+        WriteJson(Path.Combine(outputDirectory, "block_transformer_loot.json"), tillTables);
+
         // The context number providers and predicates fuel, brewing fuel and compostable components name (see
         // Obsidian's ComponentNumbers).
         WriteJson(Path.Combine(outputDirectory, "context_int_providers.json"),

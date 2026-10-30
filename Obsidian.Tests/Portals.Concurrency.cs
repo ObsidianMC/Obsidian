@@ -232,8 +232,8 @@ public partial class Portals
         Assert.Single(handled.OfType<RespawnPacket>());
 
         // A level change awaited by a handler of the previous one's destination packets follows all of them.
-        source.World.LevelData.Time = 12345;
-        target.World.LevelData.Time = 67890;
+        source.World.LevelData.GameTime = 12345;
+        target.World.LevelData.GameTime = 67890;
         var returnToTarget = true;
         var returned = false;
         probe = async args =>

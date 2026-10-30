@@ -34,6 +34,8 @@ internal sealed record DimensionTypeData(
     private const int HighestY = 2031;
     private const int MaxHeight = 4064;
 
+    public string? DefaultClock { get; init; }
+
     public static DimensionTypeData Read(JsonElement root)
     {
         Object(root, "");
@@ -65,7 +67,10 @@ internal sealed record DimensionTypeData(
             Attributes: TryGet(root, "attributes", out var attributes)
                 ? EnvironmentAttributes.Read(attributes, "attributes", onlyPositional: false)
                 : EnvironmentAttributeMap.Empty,
-            TimelineTag: TryGet(root, "timelines", out var timelines) ? ReadTimelines(timelines) : null);
+            TimelineTag: TryGet(root, "timelines", out var timelines) ? ReadTimelines(timelines) : null)
+        {
+            DefaultClock = TryGet(root, "default_clock", out var clock) ? String(clock, "default_clock") : null
+        };
 
         // The checks of vanilla's DimensionType constructor.
         if (minY + height > HighestY + 1)
@@ -119,6 +124,7 @@ internal sealed record DimensionTypeData(
         MonsterSpawnLightProvider = this.MonsterSpawnLightLevel,
         MonsterSpawnBlockLightLimit = this.MonsterSpawnBlockLightLimit,
         Timelines = this.TimelineTag is null ? null : $"#{this.TimelineTag}",
+        DefaultClock = this.DefaultClock,
 
         // The attributes' defaults are false and 15; the dimension type's map applies first, as in vanilla.
         MonstersBurn = this.Attributes.Apply("minecraft:gameplay/monsters_burn", false),

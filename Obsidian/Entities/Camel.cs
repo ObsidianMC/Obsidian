@@ -54,7 +54,7 @@ public partial class Camel : AbstractHorse, IRideableJumping
     {
         if (IsSitting == sitting || sitting && (HasRider || IsBaby || InWater || InLava))
             return;
-        var time = Math.Max(1, Level.LevelData.Time);
+        var time = Math.Max(1, Level.LevelData.GameTime);
         LastPoseChangeTick = sitting ? -time : time;
         Pose = sitting ? Pose.Sitting : Pose.Standing;
         if (sitting)

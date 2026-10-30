@@ -106,9 +106,9 @@ public sealed class WorldFolders : IDisposable
     }
 
     [Theory(DisplayName = "A world Obsidian saved in a 1.21.11 layout is upgraded once, after a complete backup")]
-    [InlineData("obsidian")]
-    [InlineData("vanilla")]
-    public async Task LegacyWorldsUpgrade(string layout)
+    [InlineData("obsidian", 5000)]
+    [InlineData("vanilla", 9000)]
+    public async Task LegacyWorldsUpgrade(string layout, long gameTime)
     {
         var folder = Path.Combine(this.root, layout);
         if (layout == "obsidian")
@@ -145,15 +145,21 @@ public sealed class WorldFolders : IDisposable
         Assert.Equal(Difficulty.Hard, level.Difficulty);
         Assert.True(level.DifficultyLocked);
         Assert.Equal(5000, level.Time);
+        Assert.Equal(gameTime, level.WorldClocks.GameTime);
         Assert.True(level.Raining);
         Assert.Equal(new VectorD(8.5, 70, -7.5), level.SpawnPosition);
         Assert.Equal(1234, level.RandomSeed);
         Assert.True(level.GetBooleanRule("keep_inventory", defaultValue: false));
         Assert.Equal(7, level.GetIntegerRule("random_tick_speed"));
-        Assert.Equal(42, nether.LevelData.Time);
+        Assert.Same(level.WorldClocks, nether.LevelData.WorldClocks);
+        Assert.Equal(level.Time, nether.LevelData.Time);
 
         // The dragon fight Obsidian kept is in vanilla's file once the world saves.
         await world.SaveAsync();
+        var reloaded = VanillaLevelData.Read(LevelFiles.Load(folder, NullLogger.Instance)!);
+        Assert.Equal(level.Time, reloaded.Time);
+        Assert.Equal(level.WorldClocks.GameTime, reloaded.WorldClocks.GameTime);
+
         var fight = SavedDataFile.Read(Path.Combine(folder, "dimensions/minecraft/the_end/data/minecraft/ender_dragon_fight.dat"))!;
         Assert.True(fight.GetBool("dragon_killed"));
         Assert.Equal(18, ((NbtList)fight["gateways"]).Count);

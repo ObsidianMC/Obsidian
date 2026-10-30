@@ -12,7 +12,7 @@ namespace Obsidian.WorldData;
 /// </summary>
 /// <remarks>
 /// A world keeps the whole compounds it was loaded with and only overwrites the fields Obsidian owns when it saves (see
-/// <see cref="Update"/>), so what Obsidian doesn't model (paused clocks, data packs, rules it doesn't have...) survives.
+/// <see cref="Update"/>), so what Obsidian doesn't model (data packs, rules it doesn't have...) survives.
 /// </remarks>
 internal static class VanillaLevelData
 {
@@ -38,8 +38,7 @@ internal static class VanillaLevelData
     /// Reads the fields Obsidian models, but the game rules (see <see cref="AbstractLevel.ReadGameRules"/>).
     /// </summary>
     /// <remarks>
-    /// Obsidian has one clock for game and day time, so it runs on the overworld's world clock, where the sun is;
-    /// <see cref="Update"/> advances <c>Time</c>, the game time, by as much as the clock moved.
+    /// Game time and every clock's ticks, rate, fraction and paused state are independent.
     /// </remarks>
     public static LevelData Read(LevelFiles files)
     {
@@ -60,7 +59,7 @@ internal static class VanillaLevelData
             AllowCommands = data.GetBool("allowCommands"),
             Initialized = data.GetBool("initialized"),
             LastPlayed = Get(data, "LastPlayed", 0L),
-            Time = GetClock(files, Get(data, "Time", 0L)),
+            WorldClocks = ReadClocks(files),
             Raining = weather.GetBool("raining"),
             Thundering = weather.GetBool("thundering"),
             RainTime = Get(weather, "rain_time", 0),
@@ -78,9 +77,24 @@ internal static class VanillaLevelData
         return level;
     }
 
-    // The overworld's world clock, or the fallback when there's none.
-    private static long GetClock(LevelFiles files, long fallback) =>
-        files.WorldClocks.TryGetTag<NbtCompound>(Overworld, out var clock) ? Get(clock, "total_ticks", fallback) : fallback;
+    private static WorldClocks ReadClocks(LevelFiles files)
+    {
+        var clocks = new WorldClocks { GameTime = Get(files.Data, "Time", 0L) };
+        foreach (var (identifier, value) in files.WorldClocks)
+        {
+            if (value is not NbtCompound clock)
+                continue;
+
+            clocks.States[identifier] = new WorldClockState
+            {
+                TotalTicks = Get(clock, "total_ticks", 0L),
+                PartialTick = Get(clock, "partial_tick", 0f),
+                Rate = Get(clock, "rate", 1f),
+                Paused = clock.GetBool("paused")
+            };
+        }
+        return clocks;
+    }
 
     /// <summary>
     /// The UUID of the singleplayer owner, whose player file the game loads for whoever opens the world in singleplayer,
@@ -263,8 +277,7 @@ internal static class VanillaLevelData
     {
         var data = files.Data;
 
-        // Advances the game time by as much as the clock moved since the last save (see Read).
-        var gameTime = Get(data, "Time", 0L) + Math.Max(0, level.Time - GetClock(files, level.Time));
+        var gameTime = level.WorldClocks.GameTime;
 
         Set(data, new NbtTag<int>("DataVersion", ServerConstants.DataVersion));
         Set(data, new NbtCompound("Version")
@@ -319,9 +332,17 @@ internal static class VanillaLevelData
         Set(files.Weather, new NbtTag<int>("thunder_time", level.ThunderTime));
         Set(files.Weather, new NbtTag<int>("clear_weather_time", level.ClearWeatherTime));
 
-        var clock = files.WorldClocks.TryGetTag<NbtCompound>(Overworld, out var savedClock) ? savedClock : new NbtCompound(Overworld);
-        Set(clock, new NbtTag<long>("total_ticks", level.Time));
-        Set(files.WorldClocks, clock);
+        foreach (var (identifier, state) in level.WorldClocks.States)
+        {
+            var clock = files.WorldClocks.TryGetTag<NbtCompound>(identifier, out var saved)
+                ? saved
+                : new NbtCompound(identifier);
+            Set(clock, new NbtTag<long>("total_ticks", state.TotalTicks));
+            Set(clock, new NbtTag<float>("partial_tick", state.PartialTick));
+            Set(clock, new NbtTag<float>("rate", state.Rate));
+            Set(clock, new NbtTag<byte>("paused", Byte(state.Paused)));
+            Set(files.WorldClocks, clock);
+        }
 
         // Rules Obsidian doesn't have stay as they were.
         SetGameRules(files.GameRules, level.GameRules);

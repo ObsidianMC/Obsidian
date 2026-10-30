@@ -74,7 +74,7 @@ public sealed partial class SamplePlugin
         Assert.False(chunk.GetBlock(position + Vector.South + Vector.Down).IsAir);
         Assert.False(world.IsMobTicking(new VectorD((center + 1) * 16 + 8, 0, center * 16 + 8)));
 
-        world.LevelData.Time = 600;
+        world.LevelData.GameTime = 600;
         await world.ManageChunksAsync();
         await world.UnloadRegionAsync(center >> 5, center >> 5);
         Assert.Same(chunk, world.GetLoadedChunk(center, center));
@@ -100,7 +100,7 @@ public sealed partial class SamplePlugin
             slots.Release(Environment.ProcessorCount);
         }
 
-        world.LevelData.Time = 1200;
+        world.LevelData.GameTime = 1200;
         await world.ManageChunksAsync();
         Assert.Null(world.GetLoadedChunk(center, center));
         Assert.DoesNotContain(NumericsHelper.IntsToLong(center, center), world.LoadedChunks);
@@ -119,13 +119,13 @@ public sealed partial class SamplePlugin
         Assert.True(world.IsMobTicking(new VectorD(-39 * 16 + 8, 0, -39 * 16 + 8)));
         Assert.False(world.IsMobTicking(new VectorD(-38 * 16 + 8, 0, -38 * 16 + 8)));
         radius.Dispose();
-        world.LevelData.Time = 600;
+        world.LevelData.GameTime = 600;
         await world.ManageChunksAsync();
         Assert.Null(world.GetLoadedChunk(-42, -42));
         Assert.NotNull(world.GetLoadedChunk(-39, -39));
         overlap.Dispose();
         overlap.Dispose();
-        world.LevelData.Time = 1200;
+        world.LevelData.GameTime = 1200;
         await world.ManageChunksAsync();
         Assert.Null(world.GetLoadedChunk(-39, -39));
 
@@ -174,7 +174,7 @@ public sealed partial class SamplePlugin
             Assert.NotNull(world.GetLoadedChunk(500, 500));
             Assert.Contains(NumericsHelper.IntsToLong(500, 500), world.LoadedChunks);
             completed!.Dispose();
-            world.LevelData.Time = 1800;
+            world.LevelData.GameTime = 1800;
             await world.ManageChunksAsync();
             Assert.Null(world.GetLoadedChunk(500, 500));
             Assert.DoesNotContain(NumericsHelper.IntsToLong(500, 500), world.LoadedChunks);

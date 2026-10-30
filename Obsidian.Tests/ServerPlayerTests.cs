@@ -354,10 +354,10 @@ public sealed class ServerPlayerTests
         Assert.True(world.IsMobTicking(far));
 
         // The level's unloading pass, every 600 ticks, keeps them while the player is there.
-        world.LevelData.Time = 600;
+        world.LevelData.GameTime = 600;
         await world.ManageChunksAsync();
         Assert.True(AllLoaded(100, 100));
-        world.LevelData.Time = 601;
+        world.LevelData.GameTime = 601;
 
         // Walking on, as a plugin moves it, it loads the chunks ahead and lets go of those behind, which the level then
         // unloads like any player's.

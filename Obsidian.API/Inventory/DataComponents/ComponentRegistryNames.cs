@@ -96,6 +96,18 @@ internal static class ComponentRegistryNames
         foreach (var (registry, values) in JsonSerializer.Deserialize<Dictionary<string, string[]>>(components)!)
             names.Add(registry, values);
 
+        using var syncedStream = typeof(ComponentRegistryNames).Assembly
+            .GetManifestResourceStream("Obsidian.API.synced_registries.json")!;
+        using var synced = JsonDocument.Parse(syncedStream);
+        foreach (var registry in synced.RootElement.EnumerateArray())
+        {
+            var identifier = registry.GetProperty("registry").GetString()!;
+            var entries = registry.GetProperty("entries").EnumerateArray()
+                .Select(entry => entry.GetString()!)
+                .ToArray();
+            names[identifier] = entries;
+        }
+
         return names;
     }
 }

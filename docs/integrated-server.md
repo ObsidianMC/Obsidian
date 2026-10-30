@@ -132,11 +132,12 @@ Server worlds (`worlds/<name>/`) are laid out the same way.
 Each of these files keeps everything it was loaded with: on each save Obsidian only rewrites the fields it owns
 (level.dat's `DataVersion`, `Version`, `version_history`, `GameType`, `difficulty_settings`, `allowCommands`,
 `initialized`, `LastPlayed`, `Time`, `spawn`, `ServerBrands` with `obsidian` added, `WasModded` and
-`singleplayer_uuid`; the weather; the overworld's clock; the game rules it has; the dragon fight's kill, dragon, exit
-portal and gateways; the wandering trader's delay and chance), so data Obsidian doesn't model (paused clocks, the world
-border, raids, scheduled events and so on) survives. Obsidian has one clock: it runs on the overworld's world clock, and
-advances `Time` by as much as the clock moved. What only Obsidian keeps (its raids, patrols, the dragon fight's
-respawn, a dimension's spawn and time) is in each level's `data/obsidian/level_state.dat`, which vanilla ignores.
+`singleplayer_uuid`; the weather; the world clocks; the game rules it has; the dragon fight's kill, dragon, exit
+portal and gateways; the wandering trader's delay and chance), so data Obsidian doesn't model (the world border,
+raids, scheduled events and so on) survives. Game time advances with simulation ticks; the shared world clocks
+advance independently at their saved rates, respecting pause and `advance_time`. What only Obsidian keeps (its
+raids, patrols, the dragon fight's respawn and a dimension's spawn) is in each level's
+`data/obsidian/level_state.dat`, which vanilla ignores.
 
 A world Obsidian saved for 1.21.11, in its own layout or vanilla 1.21.11's, is upgraded once when it loads: the world
 is first copied to `<folder>-1.21.11-backup` beside it (`-2`, `-3`... when that's taken), then its files are moved and

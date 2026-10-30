@@ -827,7 +827,11 @@ public abstract partial class AbstractLevel : ILevel
             return;
         var timings = new TickTimings(this.entityTypeTimes);
 
-        LevelData.Time += this.Configuration.TimeTickSpeedMultiplier;
+        if (this is not Dimension)
+        {
+            var advanceTime = LevelData.GetBooleanRule("advance_time");
+            LevelData.WorldClocks.Tick(advanceTime, this.Configuration.TimeTickSpeedMultiplier);
+        }
         LevelData.RainTime -= this.Configuration.TimeTickSpeedMultiplier;
 
         // Like vanilla's ServerLevel, clients get the time every second, so their clocks don't drift from the server's.
@@ -1177,7 +1181,7 @@ public abstract partial class AbstractLevel : ILevel
 
     public async Task ManageChunksAsync()
     {
-        if (LevelData.Time > 0 && LevelData.Time % (20 * 30) == 0)
+        if (LevelData.GameTime > 0 && LevelData.GameTime % (20 * 30) == 0)
         {
             var chunksToKeep = new List<long>();
             Players.Values.ForEach(p =>
@@ -2089,6 +2093,22 @@ public abstract partial class AbstractLevel : ILevel
 
     protected void BroadcastTime() =>
         this.PacketBroadcaster.QueuePacketToLevel(this, SetTimePacket.Of(LevelData));
+
+    internal void SynchronizeClocks()
+    {
+        var world = this as World;
+        if (this is Dimension dimension)
+            world = dimension.ParentWorld as World;
+
+        if (world is null)
+        {
+            this.BroadcastTime();
+            return;
+        }
+
+        foreach (var level in world.dimensions.Values.OfType<AbstractLevel>().Prepend(world))
+            level.BroadcastTime();
+    }
 
     public async virtual ValueTask DisposeAsync()
     {

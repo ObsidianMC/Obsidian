@@ -372,7 +372,7 @@ public partial class MainEventHandler
                 return ValueTask.CompletedTask;
 
             var clock = TakeSoundClocks.GetValue(station, _ => new TakeSoundClock());
-            var time = level.LevelData.Time;
+            var time = level.LevelData.GameTime;
             if (clock.LastTime == time)
                 return ValueTask.CompletedTask;
 
