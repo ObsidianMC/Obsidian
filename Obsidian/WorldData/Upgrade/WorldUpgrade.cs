@@ -312,16 +312,8 @@ internal static partial class WorldUpgrade
         if (!Directory.Exists(data))
             return;
 
-        foreach (var file in Directory.GetFiles(data, "*.dat"))
-        {
-            var name = Path.GetFileName(file);
-            if (LegacyWorldDataFile(name) is string moved)
-                MoveFile(file, Path.Combine(data, moved));
-            else if (name is "raids.dat" or "raids_end.dat" or "chunks.dat" or "world_border.dat")
-                MoveFile(file, Path.Combine(rootLevel, "data", "minecraft", LegacyLevelDataFile(name)));
-        }
-
-        // Plugins' level data first, as their world data takes the same folders.
+        // Plugins' level data first, as the world's data takes the same folders: command storage becomes
+        // data/<namespace>/command_storage.dat, and plugins' world data moves out of data/obsidian/world/.
         if (!levelDataIsCurrent)
         {
             foreach (var space in Directory.GetDirectories(data))
@@ -329,6 +321,15 @@ internal static partial class WorldUpgrade
                 if (Path.GetFileName(space) is not ("minecraft" or "obsidian"))
                     MoveFolder(space, Path.Combine(rootLevel, "data", Path.GetFileName(space)));
             }
+        }
+
+        foreach (var file in Directory.GetFiles(data, "*.dat"))
+        {
+            var name = Path.GetFileName(file);
+            if (LegacyWorldDataFile(name) is string moved)
+                MoveFile(file, Path.Combine(data, moved));
+            else if (name is "raids.dat" or "raids_end.dat" or "chunks.dat" or "world_border.dat")
+                MoveFile(file, Path.Combine(rootLevel, "data", "minecraft", LegacyLevelDataFile(name)));
         }
 
         var worldData = Path.Combine(data, "obsidian", "world");

@@ -162,6 +162,7 @@ public sealed class WorldFolders : IDisposable
         {
             Assert.True(File.Exists(Path.Combine(folder, "dimensions/minecraft/overworld/data/sample/networks.dat")));
             Assert.True(File.Exists(Path.Combine(folder, "data/sample/global.dat")));
+            Assert.True(File.Exists(Path.Combine(folder, "data/sample/command_storage.dat")));
             Assert.True(File.Exists(Path.Combine(folder, "data/minecraft/maps/3.dat")));
             Assert.True(File.Exists(Path.Combine(folder, "dimensions/sample/glade/region/r.0.0.mca")));
             Assert.True(File.Exists(Path.Combine(folder, $"players/stats/{playerUuid}.json")));
@@ -227,6 +228,7 @@ public sealed class WorldFolders : IDisposable
 
         WriteSavedData(Path.Combine(folder, "data", "map_3.dat"), new NbtCompound("data") { new NbtTag<byte>("scale", 0) });
         WriteSavedData(Path.Combine(folder, "data", "idcounts.dat"), new NbtCompound("data") { new NbtTag<int>("map", 3) });
+        WriteSavedData(Path.Combine(folder, "data", "command_storage_sample.dat"), new NbtCompound("data"));
         WriteSavedData(Path.Combine(folder, "data", "sample", "networks.dat"), new NbtCompound("data"));
         WriteSavedData(Path.Combine(folder, "data", "obsidian", "world", "sample", "global.dat"), new NbtCompound("data"));
 
