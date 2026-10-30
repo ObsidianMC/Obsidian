@@ -43,7 +43,8 @@ internal sealed class PoplarFoliagePlacer(JsonElement json) : FoliagePlacer(json
         this.PlaceRow(tree, center, bottomRadius, -1, shape);
     }
 
-    protected override bool ShouldSkipLocation(IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk) =>
+    protected override bool ShouldSkipLocation(
+        IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk) =>
         throw new InvalidOperationException("The poplar's rows need the crown's height and orientation.");
 
     private void PlaceRow(TreePlacement tree, Vector center, int radius, int y, CrownShape shape)

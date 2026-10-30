@@ -55,7 +55,8 @@ internal abstract class FoliagePlacer(JsonElement json)
         int offset);
 
     /// <summary>Whether a row skips the position, from its distances to the attachment.</summary>
-    protected abstract bool ShouldSkipLocation(IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk);
+    protected abstract bool ShouldSkipLocation(
+        IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk);
 
     /// <summary>A double trunk measures from the nearer of its two columns on each axis.</summary>
     protected virtual bool ShouldSkipLocationSigned(

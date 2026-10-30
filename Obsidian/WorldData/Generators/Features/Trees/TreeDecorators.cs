@@ -352,7 +352,7 @@ internal sealed class AttachedToLogsDecorator(FeatureRegistry registry, JsonElem
     }
 }
 
-/// <summary>Podzol and similar: circles of the provider's block replacing dirt around the trunk's base.</summary>
+/// <summary>Podzol and similar: circles of the provider's optional block on the ground around the trunk's base.</summary>
 internal sealed class AlterGroundDecorator(FeatureRegistry registry, JsonElement json) : TreeDecorator
 {
     private readonly StateProvider provider = registry.Provider(json.GetProperty("provider"));
@@ -408,21 +408,21 @@ internal sealed class AlterGroundDecorator(FeatureRegistry registry, JsonElement
         }
     }
 
+    // 26.3 asks the provider (rule based, testing the ground) at each height instead of testing for dirt itself.
     private void PlaceBlockAt(TreeDecoration context, Vector position)
     {
         for (var dy = 2; dy >= -3; dy--)
         {
             var candidate = position + (0, dy, 0);
-            var block = context.Level.GetBlock(candidate);
+            var state = this.provider(context.Level, context.Random, candidate);
 
-            if (context.Tags.Dirt.Contains(block.RegistryId))
+            if (state is not null)
             {
-                var state = FeatureRegistry.State(this.provider, context.Level, context.Random, position);
                 context.SetBlock(candidate, state);
                 return;
             }
 
-            if (!block.IsAir && dy < 0)
+            if (!context.IsAir(candidate) && dy < 0)
             {
                 return;
             }
@@ -578,7 +578,7 @@ internal sealed class CreakingHeartDecorator(JsonElement json) : TreeDecorator
 
         foreach (var log in logs)
         {
-            var enclosed = FeatureHelpers.Directions.All(face => context.Tags.IsLog(context.Level.GetBlock(log.Offset(face))));
+            var enclosed = FeatureHelpers.Directions.All(face => IsLog(context, log.Offset(face)));
 
             if (!enclosed)
             {
@@ -593,4 +593,7 @@ internal sealed class CreakingHeartDecorator(JsonElement json) : TreeDecorator
             return;
         }
     }
+
+    private static bool IsLog(TreeDecoration context, Vector position) =>
+        context.Tags.IsLog(context.Level.GetBlock(position));
 }

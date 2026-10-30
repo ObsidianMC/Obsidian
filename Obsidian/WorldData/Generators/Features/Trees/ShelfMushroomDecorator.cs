@@ -139,9 +139,10 @@ internal sealed class ShelfMushroomDecorator(JsonElement json) : TreeDecorator
         }
 
         BlockFace[] neighbors = [BlockFace.East, BlockFace.West, BlockFace.North, BlockFace.South];
-        var water = IsWater(level.GetBlock(position)) || neighbors.Any(face => IsWater(level.GetBlock(position.Offset(face))));
+        var waterHere = IsWater(level.GetBlock(position));
+        var waterNearby = neighbors.Any(face => IsWater(level.GetBlock(position.Offset(face))));
 
-        return !water;
+        return !waterHere && !waterNearby;
     }
 
     private static bool IsWater(IBlock block) => block.UnlocalizedName == "minecraft:water";

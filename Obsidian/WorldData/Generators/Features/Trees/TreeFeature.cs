@@ -177,8 +177,6 @@ internal sealed class TreeTags(FeatureRegistry registry)
 
     public HashSet<int> ReplaceableByTrees { get; } = registry.BlockTag("minecraft:replaceable_by_trees");
 
-    public HashSet<int> Dirt { get; } = registry.BlockTag("minecraft:dirt");
-
     /// <summary>Vanilla <c>TreeFeature.validTreePos</c>: air or <c>#replaceable_by_trees</c>.</summary>
     public bool ValidTreePos(IWorldGenLevel level, Vector position)
     {

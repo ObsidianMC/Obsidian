@@ -151,9 +151,9 @@ internal sealed class FancyTrunkPlacer(JsonElement json) : TrunkPlacer(json)
         foreach (var (attachment, branchBaseY) in clusters)
         {
             var branchBase = new Vector(origin.X, branchBaseY, origin.Z);
-            var trimmed = !TrimBranches(height, branchBaseY - origin.Y);
+            var kept = TrimBranches(height, branchBaseY - origin.Y);
 
-            if (branchBase != attachment.Position && !trimmed)
+            if (branchBase != attachment.Position && kept)
             {
                 this.MakeLimb(tree, branchBase, attachment.Position, true);
             }
@@ -188,11 +188,13 @@ internal sealed class FancyTrunkPlacer(JsonElement json) : TrunkPlacer(json)
 internal sealed class CherryTrunkPlacer(JsonElement json) : TrunkPlacer(json)
 {
     private readonly IntProvider branchCount = ValueProviders.Int(json.GetProperty("branch_count"));
-    private readonly IntProvider branchHorizontalLength = ValueProviders.Int(json.GetProperty("branch_horizontal_length"));
-    private readonly IntProvider branchStartOffset = ValueProviders.Int(json.GetProperty("branch_start_offset_from_top"));
+    private readonly IntProvider branchHorizontalLength =
+        ValueProviders.Int(json.GetProperty("branch_horizontal_length"));
+
+
     private readonly IntProvider branchEndOffset = ValueProviders.Int(json.GetProperty("branch_end_offset_from_top"));
 
-    // The uniform start offset's bounds: the second branch draws from one less than its range.
+    // The start offset is a bare uniform range (no type): the second branch draws from one less than its range.
     private readonly int startMin = json.GetProperty("branch_start_offset_from_top")
         .GetProperty("min_inclusive")
         .GetInt32();
@@ -206,7 +208,8 @@ internal sealed class CherryTrunkPlacer(JsonElement json) : TrunkPlacer(json)
         var random = tree.Random;
         tree.PlaceBelowTrunk(origin + Vector.Down);
 
-        var firstBranchStart = Math.Max(0, freeTreeHeight - 1 + this.branchStartOffset(random));
+        var firstOffset = random.NextIntBetweenInclusive(this.startMin, this.startMax);
+        var firstBranchStart = Math.Max(0, freeTreeHeight - 1 + firstOffset);
         var secondOffset = random.NextInt(this.startMax - 1 - this.startMin + 1) + this.startMin;
         var secondBranchStart = Math.Max(0, freeTreeHeight - 1 + secondOffset);
 
@@ -235,7 +238,8 @@ internal sealed class CherryTrunkPlacer(JsonElement json) : TrunkPlacer(json)
         var direction = FeatureHelpers.RandomHorizontal(random);
         var horizontalLog = WithAxis(AxisOf(direction));
         var firstContinues = firstBranchStart < trunkHeight - 1;
-        var first = this.Branch(tree, freeTreeHeight, origin, horizontalLog, direction, firstBranchStart, firstContinues);
+        var first = this.Branch(
+            tree, freeTreeHeight, origin, horizontalLog, direction, firstBranchStart, firstContinues);
         attachments.Add(first);
 
         if (hasSecondBranch)

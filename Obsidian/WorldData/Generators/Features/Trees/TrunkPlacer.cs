@@ -6,7 +6,9 @@ using System.Text.Json;
 
 namespace Obsidian.WorldData.Generators.Features.Trees;
 
-/// <summary>Where foliage grows: the top of a trunk or branch, the radius change and whether the trunk is 2x2.</summary>
+/// <summary>
+/// Where foliage grows: the top of a trunk or branch, the radius change and whether the trunk is 2x2.
+/// </summary>
 internal readonly record struct FoliageAttachment(Vector Position, int RadiusOffset, bool DoubleTrunk);
 
 /// <summary>Places a tree's trunk and reports where its foliage attaches, like vanilla's <c>TrunkPlacer</c>.</summary>

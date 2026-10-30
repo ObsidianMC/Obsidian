@@ -21,7 +21,8 @@ internal sealed class BlobFoliagePlacer(JsonElement json) : FoliagePlacer(json)
         }
     }
 
-    protected override bool ShouldSkipLocation(IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk) =>
+    protected override bool ShouldSkipLocation(
+        IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk) =>
         dx == radius && dz == radius && (random.NextInt(2) == 0 || y == 0);
 }
 
@@ -42,7 +43,8 @@ internal sealed class BushFoliagePlacer(JsonElement json) : FoliagePlacer(json)
         }
     }
 
-    protected override bool ShouldSkipLocation(IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk) =>
+    protected override bool ShouldSkipLocation(
+        IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk) =>
         dx == radius && dz == radius && random.NextInt(2) == 0;
 }
 
@@ -65,7 +67,8 @@ internal sealed class FancyFoliagePlacer(JsonElement json) : FoliagePlacer(json)
         }
     }
 
-    protected override bool ShouldSkipLocation(IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk)
+    protected override bool ShouldSkipLocation(
+        IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk)
     {
         var x = dx + 0.5f;
         var z = dz + 0.5f;
@@ -94,7 +97,8 @@ internal sealed class JungleFoliagePlacer(JsonElement json) : FoliagePlacer(json
         }
     }
 
-    protected override bool ShouldSkipLocation(IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk) =>
+    protected override bool ShouldSkipLocation(
+        IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk) =>
         dx + dz >= 7 || dx * dx + dz * dz > radius * radius;
 }
 
@@ -131,7 +135,8 @@ internal sealed class SpruceFoliagePlacer(JsonElement json) : FoliagePlacer(json
         }
     }
 
-    protected override bool ShouldSkipLocation(IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk) =>
+    protected override bool ShouldSkipLocation(
+        IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk) =>
         dx == radius && dz == radius && radius > 0;
 }
 
@@ -170,7 +175,8 @@ internal sealed class PineFoliagePlacer(JsonElement json) : FoliagePlacer(json)
         }
     }
 
-    protected override bool ShouldSkipLocation(IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk) =>
+    protected override bool ShouldSkipLocation(
+        IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk) =>
         dx == radius && dz == radius && radius > 0;
 }
 
@@ -201,7 +207,8 @@ internal sealed class MegaPineFoliagePlacer(JsonElement json) : FoliagePlacer(js
         }
     }
 
-    protected override bool ShouldSkipLocation(IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk) =>
+    protected override bool ShouldSkipLocation(
+        IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk) =>
         dx + dz >= 7 || dx * dx + dz * dz > radius * radius;
 }
 
@@ -222,7 +229,8 @@ internal sealed class AcaciaFoliagePlacer(JsonElement json) : FoliagePlacer(json
         this.PlaceLeavesRow(tree, center, wideRadius - 1, 0, doubleTrunk);
     }
 
-    protected override bool ShouldSkipLocation(IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk)
+    protected override bool ShouldSkipLocation(
+        IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk)
     {
         if (y == 0)
         {
@@ -276,7 +284,8 @@ internal sealed class DarkOakFoliagePlacer(JsonElement json) : FoliagePlacer(jso
         return base.ShouldSkipLocationSigned(random, dx, y, dz, radius, doubleTrunk);
     }
 
-    protected override bool ShouldSkipLocation(IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk)
+    protected override bool ShouldSkipLocation(
+        IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk)
     {
         if (y == -1 && !doubleTrunk)
         {
@@ -311,7 +320,8 @@ internal sealed class RandomSpreadFoliagePlacer(JsonElement json) : FoliagePlace
         }
     }
 
-    protected override bool ShouldSkipLocation(IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk) =>
+    protected override bool ShouldSkipLocation(
+        IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk) =>
         false;
 }
 
@@ -350,7 +360,8 @@ internal sealed class CherryFoliagePlacer(JsonElement json) : FoliagePlacer(json
         this.PlaceLeavesRowWithHangingLeavesBelow(tree, center, radius - 1, -2, doubleTrunk, hanging, extension);
     }
 
-    protected override bool ShouldSkipLocation(IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk)
+    protected override bool ShouldSkipLocation(
+        IRandomSource random, int dx, int y, int dz, int radius, bool doubleTrunk)
     {
         var bottomEdge = y == -1 && (dx == radius || dz == radius);
 
