@@ -200,9 +200,16 @@ differs from the layers, in z, x, y order.
 
 `VanillaFeaturePlacement` replays them with `WorldData/Generators/Features/FeatureRegistry`, the 26.3 feature
 machinery built beside the legacy features. It builds the layered chunks two chunks around the decorated one; the
-features replayed so far read no further. Cases whose feature types aren't implemented yet (trees and spikes) are
-captured and listed as pending in the test. Biome decoration (each biome's ordered steps) waits for 26.3 biome
+features replayed so far read no further. Cases whose feature types aren't implemented yet are captured and
+listed as pending in the test. Biome decoration (each biome's ordered steps) waits for 26.3 biome
 selection. The replays have `Category=Worldgen`.
+
+Trees and large features have their own block of named cases at the end of the section: each tree family (oak,
+birch, fancy oak, spruce and pine, giant spruce and pine, jungle and mega jungle, dark oak, acacia, cherry, azalea,
+swamp oak, pale oak without moss, poplars, mangroves on mud) with bees and leaf litter variants, fallen trees, huge
+mushrooms, crimson and warped fungi (wild and planted) and spikes. Rejections cover blocked trunks, a blocked cap,
+wrong substrates, and the checked trees' sapling-survival filters on sand. Pale oaks with moss wait for
+`vegetation_patch`, which their moss decorator places.
 
 Feature review regressions extend the same `features` section. A named case may provide an inline placed
 feature, an explicit `origin`, a legacy `randomSeed`, and localized `edits` (`[x, y, z, block state]`). Edits

@@ -192,6 +192,12 @@ internal sealed partial class FeatureRegistry(WorldgenData data)
             "minecraft:disk" => this.Disk(json),
             "minecraft:block_blob" => this.BlockBlob(json),
             "minecraft:spring_feature" => this.Spring(json),
+            "minecraft:tree" => this.Tree(json),
+            "minecraft:fallen_tree" => this.FallenTree(json),
+            "minecraft:spike" => this.Spike(json),
+            "minecraft:huge_red_mushroom" => this.HugeMushroom(json, red: true),
+            "minecraft:huge_brown_mushroom" => this.HugeMushroom(json, red: false),
+            "minecraft:huge_fungus" => this.HugeFungus(json),
             _ => throw new NotSupportedException($"The 26.3 feature {type} isn't implemented yet.")
         };
     }

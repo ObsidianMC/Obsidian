@@ -79,7 +79,8 @@ internal sealed partial class FeatureRegistry
         }
     }
 
-    // New 26.x support-sensitive blocks use current tags; unchanged classes retain the shared survival rules.
+    // 26.x support-sensitive blocks and the plants trees and large features grow from use 26.3's tags; other classes
+    // keep the shared survival rules.
     private bool CanSurvive(IBlock state, IWorldGenLevel level, Vector position)
     {
         switch (state.BlockClass())
@@ -103,9 +104,63 @@ internal sealed partial class FeatureRegistry
 
                 return support.IsFaceSturdy(facing);
             }
+            case "SaplingBlock":
+            case "VegetationBlock":
+                return this.BelowIn("minecraft:supports_vegetation", level, position);
+            case "AzaleaBlock":
+                return this.BelowIn("minecraft:supports_azalea", level, position);
+            case "MangrovePropaguleBlock":
+                return this.MangrovePropaguleCanSurvive(state, level, position);
+            case "NetherFungusBlock":
+            {
+                var support = state.UnlocalizedName == "minecraft:crimson_fungus"
+                    ? "minecraft:supports_crimson_fungus"
+                    : "minecraft:supports_warped_fungus";
+
+                return this.BelowIn(support, level, position);
+            }
+            case "MushroomBlock":
+                return this.MushroomCanSurvive(level, position);
             default:
                 return state.CanSurvive(level, position);
         }
+    }
+
+    private bool BelowIn(string tag, IWorldGenLevel level, Vector position)
+    {
+        var below = level.GetBlock(position + Vector.Down);
+
+        return this.BlockTag(tag).Contains(below.RegistryId);
+    }
+
+    // A hanging propagule needs its supporting leaves above; a planted one is a sapling on its own support tag.
+    private bool MangrovePropaguleCanSurvive(IBlock state, IWorldGenLevel level, Vector position)
+    {
+        if (state.GetProperty("hanging") != "true")
+        {
+            return this.BelowIn("minecraft:supports_mangrove_propagule", level, position);
+        }
+
+        var above = level.GetBlock(position + Vector.Up);
+        var supports = this.BlockTag("minecraft:supports_hanging_mangrove_propagule");
+
+        return supports.Contains(above.RegistryId);
+    }
+
+    // The override tag, otherwise a solid render below in the dark. Decoration sees no light yet, so like the shared
+    // survival rules the brightness is the unlit 15 and only the override tag lets a mushroom stay.
+    private bool MushroomCanSurvive(IWorldGenLevel level, Vector position)
+    {
+        const int rawBrightness = 15;
+
+        if (this.BelowIn("minecraft:overrides_mushroom_light_requirement", level, position))
+        {
+            return true;
+        }
+
+        var below = level.GetBlock(position + Vector.Down);
+
+        return rawBrightness < 13 && below.IsSolid() && below.IsCollisionShapeFullBlock();
     }
 
     public RuleTest Rule(JsonElement json)
