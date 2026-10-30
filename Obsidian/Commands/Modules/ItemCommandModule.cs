@@ -69,6 +69,11 @@ public sealed class ItemCommandModule : CommandModuleBase
                     // Snapshot every source before any write, including when source and target overlap.
                     items.AddRange(sources.Where(slot => slot.Visible).Select(slot => slot.Get() ?? ItemStack.Air)
                         .Select(stack => new ItemStack(stack, stack.Count)));
+
+                    // Vanilla rejects a source without slots before touching any target, so nothing is erased.
+                    if (items.Count == 0)
+                        throw new FormatException("No applicable source slots");
+
                     if (!input.End)
                     {
                         var modifier = ReadModifier(input.Read());
