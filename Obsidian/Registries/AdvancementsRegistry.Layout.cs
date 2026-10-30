@@ -5,8 +5,10 @@ namespace Obsidian.Registries;
 
 internal static partial class AdvancementsRegistry
 {
-    // Vanilla's server uses a tidy tree: unit separation at every depth, centered parents, and evenly distributed
-    // shifts between conflicting sibling branches. Contours keep this independent of vanilla's threaded tree.
+    // Vanilla's server lays each tree out with Buchheim, Jünger and Leipert's linear-time version of Walker's tidy
+    // tree: unit separation at every depth, centered parents, and evenly distributed shifts between conflicting
+    // sibling branches. Its coordinates are floats, so the layout below keeps vanilla's threaded contours and the
+    // order of every float operation; summing the same offsets in another order can round a position one ulp apart.
     internal static FrozenDictionary<string, Advancement> PlaceDisplays(IEnumerable<Advancement> definitions)
     {
         var result = definitions.ToDictionary(definition => definition.Identifier);
@@ -16,132 +18,218 @@ internal static partial class AdvancementsRegistry
         {
             if (root.Display is null)
                 continue;
-            var branch = Build(root).Single();
-            Arrange(branch);
-            var positioned = Positions(branch, 0, 0).ToArray();
-            var minimum = Math.Min(0, positioned.Min(entry => entry.Y));
-            foreach (var (id, x, y) in positioned)
+
+            visited.Add(root.Identifier);
+            var tree = new LayoutNode(root.Identifier, null, null, 1);
+            AddChildren(tree, root.Identifier);
+            FirstWalk(tree);
+            var minimum = SecondWalk(tree, 0, 0, tree.Y);
+            if (minimum < 0)
             {
-                var definition = result[id];
-                var display = definition.Display!;
-                var placed = new AdvancementDisplay(display.Title, display.Description, display.Icon,
-                    display.AdvancementFrameType, display.Flags, display.BackgroundTexture, x, y - minimum)
-                {
-                    IconStack = display.IconStack,
-                    AnnounceToChat = display.AnnounceToChat
-                };
-                result[id] = new Advancement(id, definition.Parent, placed, definition.Reward, definition.Criteria)
-                {
-                    Requirements = definition.Requirements,
-                    SendsTelemetryEvent = definition.SendsTelemetryEvent
-                };
+                ThirdWalk(tree, -minimum);
             }
+
+            Place(tree);
         }
         return result.ToFrozenDictionary();
 
-        IEnumerable<DisplayBranch> Build(Advancement definition)
+        // A definition without a display takes no space; its descendants join its nearest displayed ancestor's
+        // children in its place.
+        void AddChildren(LayoutNode node, string parent)
         {
-            if (!visited.Add(definition.Identifier))
-                yield break;
-            var descendants = children[definition.Identifier].SelectMany(Build).ToArray();
-            if (definition.Display is not null)
+            foreach (var child in children[parent])
             {
-                yield return new DisplayBranch(definition.Identifier, descendants);
+                if (!visited.Add(child.Identifier))
+                    continue;
+
+                if (child.Display is null)
+                {
+                    AddChildren(node, child.Identifier);
+                    continue;
+                }
+
+                var previous = node.Children.Count > 0 ? node.Children[^1] : null;
+                var branch = new LayoutNode(child.Identifier, node, previous, node.Children.Count + 1);
+                node.Children.Add(branch);
+                AddChildren(branch, child.Identifier);
             }
-            else
+        }
+
+        void Place(LayoutNode node)
+        {
+            var definition = result[node.Identifier];
+            var display = definition.Display!;
+            var placed = new AdvancementDisplay(display.Title, display.Description, display.Icon,
+                display.AdvancementFrameType, display.Flags, display.BackgroundTexture, node.Depth, node.Y)
             {
-                foreach (var child in descendants)
-                    yield return child;
-            }
+                IconStack = display.IconStack,
+                AnnounceToChat = display.AnnounceToChat
+            };
+            result[node.Identifier] = new Advancement(node.Identifier, definition.Parent, placed, definition.Reward,
+                definition.Criteria)
+            {
+                Requirements = definition.Requirements,
+                SendsTelemetryEvent = definition.SendsTelemetryEvent
+            };
+            foreach (var child in node.Children)
+                Place(child);
         }
     }
 
-    private sealed class DisplayBranch(string identifier, DisplayBranch[] children)
+    private sealed class LayoutNode(string identifier, LayoutNode? parent, LayoutNode? previous, int number)
     {
         internal string Identifier { get; } = identifier;
-        internal DisplayBranch[] Children { get; } = children;
-        internal float Row;
-        internal float Offset;
-        internal void Move(float distance)
-        {
-            this.Row += distance;
-            this.Offset += distance;
-        }
+        internal LayoutNode? Parent { get; } = parent;
+        internal LayoutNode? Previous { get; } = previous;
+
+        /// <summary>The node's 1-based position among its parent's children.</summary>
+        internal int Number { get; } = number;
+        internal List<LayoutNode> Children { get; } = [];
+
+        internal int Depth;
+        internal float Y = -1;
+        internal float Mod;
+        internal float Change;
+        internal float Shift;
+        internal LayoutNode? Thread;
+        internal LayoutNode? Ancestor;
+
+        /// <summary>The next node down this subtree's left contour.</summary>
+        internal LayoutNode? LeftContour => this.Thread ?? (this.Children.Count > 0 ? this.Children[0] : null);
+
+        /// <summary>The next node down this subtree's right contour.</summary>
+        internal LayoutNode? RightContour => this.Thread ?? (this.Children.Count > 0 ? this.Children[^1] : null);
     }
 
-    private static void Arrange(DisplayBranch tree)
+    private static void FirstWalk(LayoutNode node)
     {
-        var branches = tree.Children;
-        var slopes = new float[branches.Length];
-        var shifts = new float[branches.Length];
-        var boundary = new Dictionary<int, (DisplayBranch Node, float Offset, int Branch)>();
-        for (var i = 0; i < branches.Length; i++)
+        node.Ancestor = node;
+        if (node.Children.Count == 0)
         {
-            var branch = branches[i];
-            Arrange(branch);
-            if (i > 0)
+            node.Y = node.Previous is null ? 0 : node.Previous.Y + 1;
+            return;
+        }
+
+        LayoutNode? defaultAncestor = null;
+        foreach (var child in node.Children)
+        {
+            FirstWalk(child);
+            defaultAncestor = Apportion(child, defaultAncestor ?? child);
+        }
+
+        ExecuteShifts(node);
+        var midpoint = (node.Children[0].Y + node.Children[^1].Y) / 2;
+        if (node.Previous is null)
+        {
+            node.Y = midpoint;
+            return;
+        }
+
+        node.Y = node.Previous.Y + 1;
+        node.Mod = node.Y - midpoint;
+    }
+
+    // Walks the right contour of the siblings left of node down against node's left contour, moving node right
+    // wherever they're closer than one apart, then threads the shallower contour onto the deeper one.
+    private static LayoutNode Apportion(LayoutNode node, LayoutNode defaultAncestor)
+    {
+        if (node.Previous is null)
+            return defaultAncestor;
+
+        var insideRight = node;
+        var outsideRight = node;
+        var insideLeft = node.Previous;
+        var outsideLeft = node.Parent!.Children[0];
+        var insideRightSum = insideRight.Mod;
+        var outsideRightSum = outsideRight.Mod;
+        var insideLeftSum = insideLeft.Mod;
+        var outsideLeftSum = outsideLeft.Mod;
+        while (insideLeft.RightContour is { } nextLeft && insideRight.LeftContour is { } nextRight)
+        {
+            insideLeft = nextLeft;
+            insideRight = nextRight;
+            outsideLeft = outsideLeft.LeftContour!;
+            outsideRight = outsideRight.RightContour!;
+            outsideRight.Ancestor = node;
+
+            // Vanilla adds each side's offset sum before subtracting; subtracting term by term rounds differently.
+            var shift = (insideLeft.Y + insideLeftSum) - (insideRight.Y + insideRightSum) + 1;
+            if (shift > 0)
             {
-                var center = branch.Row;
-                branch.Row = branches[i - 1].Row + 1;
-                branch.Offset = branch.Row - center;
+                var ancestor = insideLeft.Ancestor!.Parent == node.Parent ? insideLeft.Ancestor : defaultAncestor;
+                MoveSubtree(ancestor, node, shift);
+                insideRightSum += shift;
+                outsideRightSum += shift;
             }
 
-            var height = Contour(branch, left: true).Count;
-            for (var depth = 1; depth < height; depth++)
-            {
-                if (!boundary.TryGetValue(depth, out var previous))
-                    break;
-                var current = Contour(branch, left: true)[depth];
-                // Keep float operations in the server layout's order; these values are transmitted as floats.
-                var distance = previous.Node.Row + previous.Offset - current.Node.Row - current.Offset + 1;
-                if (distance <= 0)
-                    continue;
-                var slope = distance / (i - previous.Branch);
-                slopes[i] -= slope;
-                slopes[previous.Branch] += slope;
-                shifts[i] += distance;
-                branch.Move(distance);
-            }
-
-            foreach (var (depth, edge) in Contour(branch, left: false))
-                boundary[depth] = (edge.Node, edge.Offset, i);
+            insideLeftSum += insideLeft.Mod;
+            insideRightSum += insideRight.Mod;
+            outsideLeftSum += outsideLeft.Mod;
+            outsideRightSum += outsideRight.Mod;
         }
 
-        float displacement = 0, rate = 0;
-        for (var i = branches.Length - 1; i >= 0; i--)
+        if (insideLeft.RightContour is { } leftThread && outsideRight.RightContour is null)
         {
-            branches[i].Move(displacement);
-            rate += slopes[i];
-            displacement += shifts[i] + rate;
+            outsideRight.Thread = leftThread;
+            outsideRight.Mod += insideLeftSum - outsideRightSum;
+            return defaultAncestor;
         }
-        if (branches.Length > 0)
-            tree.Row = (branches[0].Row + branches[^1].Row) / 2;
+
+        if (insideRight.LeftContour is { } rightThread && outsideLeft.LeftContour is null)
+        {
+            outsideLeft.Thread = rightThread;
+            outsideLeft.Mod += insideRightSum - outsideLeftSum;
+        }
+        return node;
     }
 
-    private static Dictionary<int, (DisplayBranch Node, float Offset)> Contour(DisplayBranch branch, bool left)
+    private static void MoveSubtree(LayoutNode left, LayoutNode right, float shift)
     {
-        var result = new Dictionary<int, (DisplayBranch, float)>();
-        Visit(branch, 0, 0);
-        return result;
-
-        void Visit(DisplayBranch node, int depth, float offset)
+        float subtrees = right.Number - left.Number;
+        if (subtrees != 0)
         {
-            if (left)
-                result.TryAdd(depth, (node, offset));
-            else
-                result[depth] = (node, offset);
-            foreach (var child in node.Children)
-                Visit(child, depth + 1, offset + node.Offset);
+            right.Change -= shift / subtrees;
+            left.Change += shift / subtrees;
+        }
+
+        right.Shift += shift;
+        right.Y += shift;
+        right.Mod += shift;
+    }
+
+    // Spreads the shifts Apportion recorded across the siblings between each moved pair, right to left.
+    private static void ExecuteShifts(LayoutNode node)
+    {
+        float shift = 0;
+        float change = 0;
+        for (var i = node.Children.Count - 1; i >= 0; i--)
+        {
+            var child = node.Children[i];
+            child.Y += shift;
+            child.Mod += shift;
+            change += child.Change;
+            shift += child.Shift + change;
         }
     }
 
-    private static IEnumerable<(string Id, int X, float Y)> Positions(DisplayBranch branch, int depth, float offset)
+    private static float SecondWalk(LayoutNode node, float offset, int depth, float minimum)
     {
-        yield return (branch.Identifier, depth, branch.Row + offset);
-        foreach (var child in branch.Children)
+        node.Y += offset;
+        node.Depth = depth;
+        if (node.Y < minimum)
         {
-            foreach (var position in Positions(child, depth + 1, offset + branch.Offset))
-                yield return position;
+            minimum = node.Y;
         }
+
+        foreach (var child in node.Children)
+            minimum = SecondWalk(child, offset + node.Mod, depth + 1, minimum);
+        return minimum;
+    }
+
+    private static void ThirdWalk(LayoutNode node, float offset)
+    {
+        node.Y += offset;
+        foreach (var child in node.Children)
+            ThirdWalk(child, offset);
     }
 }

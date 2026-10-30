@@ -133,10 +133,16 @@ public sealed class PlayPayloads
                     foreach (var expected in reference.GetProperty("definitions").EnumerateArray())
                     {
                         var display = placed[expected.GetProperty("id").GetString()!].Display;
-                        Assert.Equal(expected.GetProperty("x").GetSingle(), display?.XCoord ?? 0);
-                        Assert.Equal(expected.GetProperty("y").GetSingle(), display?.YCoord ?? 0);
+                        // Positions are sent as floats, so compare their bits: a one-ulp difference is a parity bug.
+                        AssertSameFloat(expected.GetProperty("x").GetSingle(), display?.XCoord ?? 0);
+                        AssertSameFloat(expected.GetProperty("y").GetSingle(), display?.YCoord ?? 0);
                     }
-                    Equal(reference.GetProperty("wire"), new UpdateAdvancementsPacket
+
+                    // Only vanilla's own child order records the wire; the seeded orders check positions alone.
+                    if (!reference.TryGetProperty("wire", out var wire))
+                        continue;
+
+                    Equal(wire, new UpdateAdvancementsPacket
                     {
                         Reset = true, Added = definitions.Select(definition => placed[definition.Identifier]).ToList(),
                         Removed = ["fixture:removed"]
@@ -307,6 +313,10 @@ public sealed class PlayPayloads
 
     private static readonly byte[] Signature = Enumerable.Range(0, 256).Select(value => (byte)value).ToArray();
     private static readonly DateTimeOffset Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(1767000123456);
+
+    // Pairs each value with its bits, so a failure still shows the values while -0 and +0 stay different.
+    private static void AssertSameFloat(float expected, float actual) => Assert.Equal(
+        (expected, BitConverter.SingleToInt32Bits(expected)), (actual, BitConverter.SingleToInt32Bits(actual)));
 
     private static Advancement Definition(JsonElement row)
     {

@@ -2,6 +2,7 @@ import com.google.gson.*;
 import com.mojang.serialization.JsonOps;
 import java.nio.file.*;
 import java.util.*;
+import java.util.function.Consumer;
 import net.minecraft.SharedConstants;
 import net.minecraft.advancements.*;
 import net.minecraft.core.RegistryAccess;
@@ -243,47 +244,147 @@ class RemainingPlayFixtures extends ScreenFixtures {
     static JsonArray advancements() {
         var captures = new JsonArray();
         var random = new Random(777);
-        // Ordered child lists are captured explicitly: vanilla's identity hash set iteration isn't stable between JVMs.
+        var shuffles = new Random(778);
+        var ops = RegistryOps.create(JsonOps.INSTANCE, (RegistryAccess)access);
         for (int sample = 0; sample < 40; sample++) {
             int count = sample == 0 ? 1 : sample == 1 ? 9 : 15 + sample;
-            var nodes = new ArrayList<AdvancementNode>();
-            var ops = RegistryOps.create(JsonOps.INSTANCE, (RegistryAccess)access);
+            var holders = new ArrayList<AdvancementHolder>();
+            var parents = new int[count];
             for (int i = 0; i < count; i++) {
-                int parent = i == 0 ? -1 : sample == 1 ? (i - 1) / 2 : random.nextInt(i);
-                var json = new JsonObject();
-                if (parent >= 0) json.addProperty("parent", "fixture:n" + parent);
-                boolean display = i == 0 || sample == 1 || random.nextInt(5) != 0;
-                if (display) {
-                    var info = JsonParser.parseString("{\"title\":\"Title\",\"description\":\"Description\",\"icon\":{\"id\":\"minecraft:diamond\",\"count\":3},\"frame\":\"goal\"}").getAsJsonObject();
-                    if (i == 0) info.addProperty("background", "minecraft:gui/advancements/backgrounds/stone");
-                    json.add("display", info);
+                if (i == 0) {
+                    parents[i] = -1;
+                } else if (sample == 1) {
+                    parents[i] = (i - 1) / 2;
+                } else {
+                    parents[i] = random.nextInt(i);
                 }
-                json.add("criteria", JsonParser.parseString("{\"done\":{\"trigger\":\"minecraft:impossible\"}}"));
-                var advancement = Advancement.CODEC.parse(ops, json).getOrThrow();
-                var node = new AdvancementNode(new AdvancementHolder(Identifier.parse("fixture:n" + i), advancement), parent < 0 ? null : nodes.get(parent));
-                nodes.add(node);
-                if (parent >= 0) nodes.get(parent).addChild(node);
+                boolean display = i == 0 || sample == 1 || random.nextInt(5) != 0;
+                holders.add(holder(ops, i, parents[i], display));
             }
-            TreeNodePosition.run(nodes.getFirst());
-            var ordered = new ArrayList<AdvancementNode>();
-            visit(nodes.getFirst(), ordered);
-            var row = new JsonObject();
-            var definitions = new JsonArray();
-            for (var node : ordered) {
-                var definition = new JsonObject();
-                definition.addProperty("id", node.holder().id().toString());
-                definition.addProperty("parent", node.parent() == null ? "" : node.parent().holder().id().toString());
-                definition.addProperty("display", node.advancement().display().isPresent());
-                definition.addProperty("x", node.x()); definition.addProperty("y", node.y()); definitions.add(definition);
+
+            // Vanilla keeps children in an identity hash set, so the order it lays this tree out in changes between
+            // JVM runs. The seeded orders after it are the same every run.
+            captures.add(layout(holders, parents, null));
+            for (int order = 0; order < 2 && count > 2; order++) {
+                captures.add(layout(holders, parents, children -> Collections.shuffle(children, shuffles)));
             }
-            row.add("definitions", definitions);
-            var positioned = ordered.stream().map(ClientboundUpdateAdvancementsPacket.PositionedAdvancement::fromNode).toList();
-            row.addProperty("wire", encode(ClientboundUpdateAdvancementsPacket.class.getName(), "STREAM_CODEC",
-                new ClientboundUpdateAdvancementsPacket(true, positioned, Set.of(Identifier.parse("fixture:removed")), Map.of(), true)));
-            captures.add(row);
         }
+
+        // Summing a tree's offsets in another order than vanilla rounds a position differently in only a few child
+        // orders, which the seeded orders above rarely reach. This tree, with its children in index order, is one.
+        int[] roundingTree = {-1, 0, 1, 2, 0, 4, 4, 6, 6, 8, 6, 4, 4, 4, 13, 13, 13, 16, 13, 4, 19};
+        var holders = new ArrayList<AdvancementHolder>();
+        for (int i = 0; i < roundingTree.length; i++) {
+            holders.add(holder(ops, i, roundingTree[i], true));
+        }
+        captures.add(layout(holders, roundingTree, children -> { }));
         return captures;
     }
+
+    static AdvancementHolder holder(RegistryOps<JsonElement> ops, int index, int parent, boolean display) {
+        var json = new JsonObject();
+        if (parent >= 0) {
+            json.addProperty("parent", "fixture:n" + parent);
+        }
+
+        if (display) {
+            var info = new JsonObject();
+            info.addProperty("title", "Title");
+            info.addProperty("description", "Description");
+            var icon = new JsonObject();
+            icon.addProperty("id", "minecraft:diamond");
+            icon.addProperty("count", 3);
+            info.add("icon", icon);
+            info.addProperty("frame", "goal");
+            if (index == 0) {
+                info.addProperty("background", "minecraft:gui/advancements/backgrounds/stone");
+            }
+            json.add("display", info);
+        }
+
+        json.add("criteria", JsonParser.parseString("{\"done\":{\"trigger\":\"minecraft:impossible\"}}"));
+        var advancement = Advancement.CODEC.parse(ops, json).getOrThrow();
+        return new AdvancementHolder(Identifier.parse("fixture:n" + index), advancement);
+    }
+
+    /**
+     * Lays out one tree with vanilla's server layout and records its definitions in the order the layout visited
+     * them. Without {@code arrange} the nodes are vanilla's own; with it, each node's children are iterated in the
+     * order {@code arrange} leaves them in. Only vanilla's own order records the packet wire, to keep the fixture
+     * small.
+     */
+    static JsonObject layout(List<AdvancementHolder> holders, int[] parents,
+        Consumer<List<AdvancementNode>> arrange) {
+        var nodes = new ArrayList<AdvancementNode>();
+        var children = new ArrayList<List<AdvancementNode>>();
+        for (int i = 0; i < holders.size(); i++) {
+            var parent = parents[i] < 0 ? null : nodes.get(parents[i]);
+            if (arrange == null) {
+                nodes.add(new AdvancementNode(holders.get(i), parent));
+            } else {
+                nodes.add(new OrderedNode(holders.get(i), parent));
+            }
+            children.add(new ArrayList<>());
+            if (parent != null) {
+                children.get(parents[i]).add(nodes.get(i));
+            }
+        }
+
+        for (int i = 0; i < nodes.size(); i++) {
+            if (arrange != null) {
+                arrange.accept(children.get(i));
+            }
+            for (var child : children.get(i)) {
+                nodes.get(i).addChild(child);
+            }
+        }
+
+        TreeNodePosition.run(nodes.getFirst());
+        var ordered = new ArrayList<AdvancementNode>();
+        visit(nodes.getFirst(), ordered);
+        var definitions = new JsonArray();
+        for (var node : ordered) {
+            var definition = new JsonObject();
+            definition.addProperty("id", node.holder().id().toString());
+            var parent = node.parent() == null ? "" : node.parent().holder().id().toString();
+            definition.addProperty("parent", parent);
+            definition.addProperty("display", node.advancement().display().isPresent());
+            definition.addProperty("x", node.x());
+            definition.addProperty("y", node.y());
+            definitions.add(definition);
+        }
+
+        var row = new JsonObject();
+        row.add("definitions", definitions);
+        if (arrange == null) {
+            var positioned = ordered.stream().map(ClientboundUpdateAdvancementsPacket.PositionedAdvancement::fromNode);
+            var packet = new ClientboundUpdateAdvancementsPacket(true, positioned.toList(),
+                Set.of(Identifier.parse("fixture:removed")), Map.of(), true);
+            var codec = ClientboundUpdateAdvancementsPacket.class.getName();
+            row.addProperty("wire", encode(codec, "STREAM_CODEC", packet));
+        }
+        return row;
+    }
+
+    /** Iterates children in the order they were added, unlike vanilla's identity hash set. */
+    static final class OrderedNode extends AdvancementNode {
+        private final List<AdvancementNode> ordered = new ArrayList<>();
+
+        OrderedNode(AdvancementHolder holder, AdvancementNode parent) {
+            super(holder, parent);
+        }
+
+        @Override
+        public Iterable<AdvancementNode> children() {
+            return ordered;
+        }
+
+        @Override
+        public void addChild(AdvancementNode child) {
+            ordered.add(child);
+        }
+    }
+
     static void visit(AdvancementNode node, List<AdvancementNode> ordered) {
         ordered.add(node);
         for (var child : node.children()) visit(child, ordered);
