@@ -1,4 +1,5 @@
 using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
 
 namespace Obsidian.API.Loot.Functions;
@@ -19,6 +20,12 @@ public sealed class EnchantRandomlyFunction : LootFunction
     /// </summary>
     public bool OnlyCompatible { get; init; } = true;
 
+    /// <summary>
+    /// Adds a price for the enchantment to a trade selling the stack, when the context allows it
+    /// (<see cref="LootContext.AdditionalCostComponentAllowed"/>).
+    /// </summary>
+    public bool IncludeAdditionalCostComponent { get; init; }
+
     protected override ItemStack Run(ItemStack stack, LootContext context)
     {
         var isBook = LootItems.Is(stack, ItemsRegistry.Book);
@@ -38,6 +45,14 @@ public sealed class EnchantRandomlyFunction : LootFunction
             stack = new ItemStack(ItemsRegistry.EnchantedBook);
 
         EnchantmentHelper.Enchant(stack, chosen, level);
+
+        // Vanilla's price for an enchanted book: 2 + a draw below 5 + 10 per level, plus 3 per level.
+        if (this.IncludeAdditionalCostComponent && context.AdditionalCostComponentAllowed)
+        {
+            var cost = 2 + context.Random.NextInt(5 + level * 10) + 3 * level;
+            LootItems.Set(stack, ComponentBuilder.AdditionalTradeCost with { Value = cost });
+        }
+
         return stack;
     }
 }

@@ -103,8 +103,29 @@ public static partial class LootTableJson
                 {
                     Conditions = conditions,
                     Levels = ReadIntNumber(json.GetProperty("levels")),
-                    Options = ReadEnchantmentOptions(json)
+                    Options = ReadEnchantmentOptions(json),
+                    IncludeAdditionalCostComponent = ReadFlag(json, "include_additional_cost_component", false)
                 };
+            case "minecraft:enchant_randomly":
+                return new EnchantRandomlyFunction
+                {
+                    Conditions = conditions,
+                    Options = ReadEnchantmentOptions(json),
+                    OnlyCompatible = ReadFlag(json, "only_compatible", true),
+                    IncludeAdditionalCostComponent = ReadFlag(json, "include_additional_cost_component", false)
+                };
+            case "minecraft:exploration_map":
+                return ReadExplorationMap(json, conditions);
+            case "minecraft:set_stew_effect":
+                return new SetStewEffectFunction
+                {
+                    Conditions = conditions,
+                    Effects = ReadArray(json, "effects", ReadStewEffect)
+                };
+            case "minecraft:set_random_dyes":
+                return RandomDyes(json, conditions);
+            case "minecraft:set_random_potion":
+                return RandomPotion(json, conditions);
             case "minecraft:set_potion":
                 return new SetPotionFunction
                 {
@@ -161,6 +182,89 @@ public static partial class LootTableJson
                 throw new InvalidDataException($"Unsupported loot function {type}.");
         }
     }
+
+    private static bool ReadFlag(JsonElement json, string name, bool fallback) =>
+        json.TryGetProperty(name, out var value) ? value.GetBoolean() : fallback;
+
+    // Absent fields keep the function's defaults. A structure tag destination may be written with or without its '#'.
+    private static ExplorationMapFunction ReadExplorationMap(JsonElement json,
+        ImmutableArray<Conditions.ILootCondition> conditions)
+    {
+        var defaults = new ExplorationMapFunction();
+        var destination = json.TryGetProperty("destination", out var tag)
+            ? Qualify(tag.GetString()!.TrimStart('#'))
+            : defaults.Destination;
+        var decoration = json.TryGetProperty("decoration", out var marker)
+            ? Qualify(marker.GetString()!)
+            : defaults.Decoration;
+
+        return new ExplorationMapFunction
+        {
+            Conditions = conditions,
+            Destination = destination,
+            Decoration = decoration,
+            Zoom = json.TryGetProperty("zoom", out var zoom) ? zoom.GetInt32() : defaults.Zoom,
+            SearchRadius = json.TryGetProperty("search_radius", out var radius)
+                ? radius.GetInt32()
+                : defaults.SearchRadius,
+            SkipExistingChunks = ReadFlag(json, "skip_existing_chunks", defaults.SkipExistingChunks)
+        };
+    }
+
+    private static StewEffect ReadStewEffect(JsonElement json) => new()
+    {
+        Type = Enum.Parse<MobEffect>(Text(json, "type").Split(':')[^1].Replace("_", ""), true),
+        Duration = ReadIntNumber(json.GetProperty("duration"))
+    };
+
+    // Vanilla's SetRandomDyesFunction: the drawn number of dyes, each a random dye color, mixed into the stack's
+    // color like crafting dyed armor does. The result is a single item.
+    private static LootFunction RandomDyes(JsonElement json, ImmutableArray<Conditions.ILootCondition> conditions)
+    {
+        var count = ReadIntNumber(json.GetProperty("number_of_dyes"));
+        return new DataFunction((stack, context) =>
+        {
+            var dyes = count.GetInt(context);
+            if (dyes <= 0)
+                return stack;
+
+            var colors = new List<int>(dyes);
+            for (var i = 0; i < dyes; i++)
+            {
+                colors.Add(DyeColors.Diffuse[context.Random.NextInt(DyeColors.Diffuse.Length)]);
+            }
+
+            var current = stack.GetComponent<SimpleDataComponent<int>>(DataComponentType.DyedColor)?.Value;
+            var dyed = new ItemStack(stack, 1);
+            LootItems.Set(dyed, ComponentBuilder.DyedColor with { Value = DyeColors.Mix(current, colors) });
+            return dyed;
+        }) { Conditions = conditions };
+    }
+
+    // Vanilla's SetRandomPotionFunction: a random potion of the options (every potion when absent) replaces the
+    // stack's potion, keeping its other potion contents.
+    private static LootFunction RandomPotion(JsonElement json, ImmutableArray<Conditions.ILootCondition> conditions)
+    {
+        var options = json.TryGetProperty("options", out var ids)
+            ? ids.EnumerateArray().Select(id => ParsePotion(id.GetString()!)).ToImmutableArray()
+            : [.. Enum.GetValues<Potion>()];
+
+        return new DataFunction((stack, context) =>
+        {
+            if (options.IsEmpty)
+                return stack;
+
+            var potion = options[context.Random.NextInt(options.Length)];
+            var contents = stack.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents);
+            var updated = contents is null
+                ? new PotionContentsDataComponent { Potion = potion }
+                : contents with { Potion = potion };
+            LootItems.Set(stack, updated);
+            return stack;
+        }) { Conditions = conditions };
+    }
+
+    private static Potion ParsePotion(string id) => Enum.Parse<Potion>(id.Split(':')[^1].Replace("_", ""), true);
 
     private static ImmutableArray<LootFunction> ReadOptionalModifiers(JsonElement json, string name)
     {

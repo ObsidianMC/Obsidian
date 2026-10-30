@@ -129,8 +129,8 @@ public static partial class LootTableJson
                 throw new InvalidDataException($"Unsupported tool predicate {property.Name}.");
 
             if (property.Name == "predicates"
-                && property.Value.EnumerateObject().Any(value =>
-                    value.Name is not ("minecraft:enchantments" or "minecraft:map_id")))
+                && property.Value.EnumerateObject().Any(value => value.Name is not ("minecraft:enchantments"
+                    or "minecraft:stored_enchantments" or "minecraft:map_id" or "minecraft:dyed_color")))
                 throw new InvalidDataException("Unsupported item component predicate.");
         }
 
@@ -233,6 +233,11 @@ public static partial class LootTableJson
                 case "minecraft:type_specific/fishing_hook":
                     ValidateTypeSpecific(property.Value);
                     break;
+                case "minecraft:predicates":
+                    if (property.Value.EnumerateObject().Any(value => value.Name != "minecraft:villager/variant"))
+                        throw new InvalidDataException("Entity component predicates support only villager/variant.");
+
+                    break;
                 default:
                     throw new InvalidDataException($"Unsupported entity predicate {property.Name}.");
             }
@@ -262,6 +267,13 @@ public static partial class LootTableJson
                     break;
                 case "minecraft:vehicle":
                     if (!MatchesEntity(entity.Vehicle, property.Value, context))
+                        return false;
+
+                    break;
+                case "minecraft:predicates":
+                    var variant = context.EntityVillagerVariant?.Invoke(entity);
+                    var variants = property.Value.GetProperty("minecraft:villager/variant");
+                    if (variant is null || !MatchesIdentifiers(variants, variant))
                         return false;
 
                     break;
@@ -353,31 +365,8 @@ public static partial class LootTableJson
                 case "predicates":
                     foreach (var component in property.Value.EnumerateObject())
                     {
-                        if (component.Name == "minecraft:map_id")
-                        {
-                            if (component.Value.EnumerateObject().Any())
-                                throw new InvalidDataException("Only map_id presence checks are supported.");
-
-                            if (!tool.ContainsKey(DataComponentType.MapId))
-                                return false;
-
-                            continue;
-                        }
-
-                        if (component.Name != "minecraft:enchantments")
-                            throw new InvalidDataException($"Unsupported tool predicate {component.Name}.");
-
-                        foreach (var enchantment in component.Value.EnumerateArray())
-                        {
-                            var ids = enchantment.GetProperty("enchantments");
-                            var matches = EnchantmentsRegistry.All.Any(definition =>
-                                MatchesRegistrySet(ids, "enchantment", definition.Identifier, definition.Id)
-                                && EnchantmentLevel(tool, definition.Identifier) > 0
-                                && (!enchantment.TryGetProperty("levels", out var levels)
-                                    || MatchesRange(EnchantmentLevel(tool, definition.Identifier), levels)));
-                            if (!matches)
-                                return false;
-                        }
+                        if (!MatchesComponent(tool, component))
+                            return false;
                     }
 
                     break;
@@ -387,6 +376,63 @@ public static partial class LootTableJson
         }
 
         return true;
+    }
+
+    private static bool MatchesComponent(ItemStack tool, JsonProperty component)
+    {
+        switch (component.Name)
+        {
+            case "minecraft:map_id":
+                if (component.Value.EnumerateObject().Any())
+                    throw new InvalidDataException("Only map_id presence checks are supported.");
+
+                return tool.ContainsKey(DataComponentType.MapId);
+            case "minecraft:dyed_color":
+                if (component.Value.EnumerateObject().Any())
+                    throw new InvalidDataException("Only dyed_color presence checks are supported.");
+
+                return tool.ContainsKey(DataComponentType.DyedColor);
+            case "minecraft:enchantments":
+                return MatchesEnchantments(tool.Enchantments, component.Value);
+            case "minecraft:stored_enchantments":
+                var stored = tool.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(
+                    DataComponentType.StoredEnchantments)?.Value ?? [];
+                return MatchesEnchantments(stored, component.Value);
+            default:
+                throw new InvalidDataException($"Unsupported tool predicate {component.Name}.");
+        }
+    }
+
+    // Each entry must match one of the enchantments: one of its ids (any id when absent) at a level in its range (any
+    // level when absent). So [{}] matches any enchanted stack.
+    private static bool MatchesEnchantments(IEnumerable<Enchantment> enchantments, JsonElement predicates)
+    {
+        var present = enchantments.Where(enchantment => enchantment.Level > 0).ToList();
+        foreach (var predicate in predicates.EnumerateArray())
+        {
+            var matches = present.Any(enchantment =>
+            {
+                var definition = EnchantmentsRegistry.All[enchantment.Id];
+                var idMatches = !predicate.TryGetProperty("enchantments", out var ids)
+                    || MatchesRegistrySet(ids, "enchantment", definition.Identifier, definition.Id);
+                var levelMatches = !predicate.TryGetProperty("levels", out var levels)
+                    || MatchesRange(enchantment.Level, levels);
+                return idMatches && levelMatches;
+            });
+            if (!matches)
+                return false;
+        }
+
+        return true;
+    }
+
+    // An identifier or a list of identifiers, for registries without tags here.
+    private static bool MatchesIdentifiers(JsonElement set, string identifier)
+    {
+        if (set.ValueKind == JsonValueKind.Array)
+            return set.EnumerateArray().Any(value => Qualify(value.GetString()!) == identifier);
+
+        return Qualify(set.GetString()!) == identifier;
     }
 
     private static IEnumerable<string> RegistrySetIds(JsonElement set, string registry)
