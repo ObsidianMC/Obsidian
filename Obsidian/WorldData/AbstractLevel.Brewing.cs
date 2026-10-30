@@ -1,6 +1,5 @@
 using Obsidian.API.Containers;
 using Obsidian.API.Inventory;
-using Obsidian.Entities;
 using Obsidian.Events;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.WindowProperties;
@@ -28,16 +27,9 @@ public abstract partial class AbstractLevel
         if (step.Brewed)
             BroadcastLevelEvent(BrewingStandBrewEvent, position, 0);
 
-        if (step.Remainder is ItemStack remainder)
-        {
-            SpawnEntity(new ItemEntity
-            {
-                Level = this,
-                EntityId = Server.GetNextEntityId(),
-                Position = (VectorD)position + new VectorD(0.5, 0.5, 0.5),
-                Item = remainder
-            });
-        }
+        // Vanilla's stand drops them like a broken container's contents (Containers.dropItemStack).
+        foreach (var remainder in step.Remainders)
+            this.DropItemStack(position, remainder);
 
         if (step.Bottles is bool[] bottles && GameEventBlock(position) is IBlock block)
         {

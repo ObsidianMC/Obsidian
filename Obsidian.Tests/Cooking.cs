@@ -45,7 +45,25 @@ public sealed class Cooking
             Count: 3, CookTime: 100, BurnTime: 800, Speed: 2f)
     };
 
+    // Each row burns a stack given minecraft:cooking_fuel while a furnace cooks raw iron. Like vanilla's furnace, the
+    // fuel item's crafting remainder takes the fuel slot once the stack is used up, and drops otherwise.
+    private static readonly Dictionary<string, FuelRemainder> fuelRemainders = new()
+    {
+        ["A milk bucket leaves its bucket in the fuel slot"] = new(
+            ItemsRegistry.MilkBucket,
+            Count: 1,
+            InSlot: ItemsRegistry.Bucket,
+            Dropped: null),
+        ["A honey bottle drops its glass bottle while more are left"] = new(
+            ItemsRegistry.HoneyBottle,
+            Count: 2,
+            InSlot: ItemsRegistry.HoneyBottle,
+            Dropped: ItemsRegistry.GlassBottle)
+    };
+
     public static TheoryData<string> Machines => [.. machines.Keys];
+
+    public static TheoryData<string> FuelRemainderRows => [.. fuelRemainders.Keys];
 
     [Theory(DisplayName = "Cooking machines cook across a save and automation and award experience",
         Timeout = TestServerFactory.TestTimeout)]
@@ -117,6 +135,33 @@ public sealed class Cooking
         Assert.True(furnace.Inventory[2]?.Is(ItemsRegistry.Sponge));
     }
 
+    [Theory(DisplayName = "A furnace keeps what its fuel leaves behind, like vanilla",
+        Timeout = TestServerFactory.TestTimeout)]
+    [MemberData(nameof(FuelRemainderRows))]
+    public async Task FuelLeavesItsCraftingRemainder(string row)
+    {
+        var fuel = fuelRemainders[row];
+        await using var kitchen = await Kitchen.OpenAsync("fuel remainder");
+        var furnace = await kitchen.PlaceAsync<FurnaceBlockEntity>(BlocksRegistry.Furnace);
+        furnace.Inventory[0] = new ItemStack(ItemsRegistry.RawIron, 1);
+        furnace.Inventory[1] = CookingFuel(fuel.Item, fuel.Count, burnTime: 1600);
+
+        await kitchen.TickAsync(furnace, 1);
+
+        Assert.Equal(1600, furnace.LitTotal);
+        Assert.True(furnace.Inventory[1]?.Is(fuel.InSlot));
+        Assert.Equal(1, furnace.Inventory[1]?.Count);
+
+        var dropped = kitchen.Entities()
+            .OfType<ItemEntity>()
+            .Select(entity => entity.Item.Holder)
+            .ToArray();
+        if (fuel.Dropped is Item item)
+            Assert.Equal([item], dropped);
+        else
+            Assert.Empty(dropped);
+    }
+
     [Fact(DisplayName = "A campfire cooks across a save, showing items without their private components",
         Timeout = TestServerFactory.TestTimeout)]
     public async Task CampfireCooksAcrossSaveAndHidesPrivateComponents()
@@ -169,6 +214,14 @@ public sealed class Cooking
         Assert.Null(kitchen.World.GetItemAccess(position, BlockFace.Up));
     }
 
+    // A stack given its own minecraft:cooking_fuel, burning for the given time at normal speed.
+    private static ItemStack CookingFuel(Item item, int count, int burnTime)
+    {
+        var fuel = new FuelComponentData(new ComponentIntValue(burnTime), new ComponentFloatValue(1f));
+
+        return new ItemStack(item, count, ComponentBuilder.CookingFuel with { Value = fuel });
+    }
+
     private static int FirstCookingTime(NbtCompound tag)
     {
         Assert.True(tag.TryGetTag<NbtArray<int>>("CookingTimes", out var times));
@@ -210,6 +263,11 @@ public sealed class Cooking
         int CookTime,
         int BurnTime,
         float Speed);
+
+    /// <summary>
+    /// A fuel of a test row: the item and how many, and what's left in the fuel slot and dropped after one burns.
+    /// </summary>
+    private sealed record FuelRemainder(Item Item, int Count, Item InSlot, Item? Dropped);
 
     /// <summary>
     /// A server with an empty chunk and a joined player, cooking at <see cref="position"/>.

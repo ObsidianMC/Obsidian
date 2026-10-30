@@ -86,16 +86,26 @@ internal sealed partial class FurnaceBlockEntity
         tag.Add(used);
     }
 
-    /// <summary>Advances cooking once, under the inventory lock. Returns whether item slots changed.</summary>
-    internal bool Cook(RecipeSet recipes)
+    /// <summary>
+    /// What a furnace's tick changed.
+    /// </summary>
+    /// <param name="Slots">Whether its item slots changed.</param>
+    /// <param name="Remainder">
+    /// What the fuel it burned left behind (a lava bucket's bucket) when more of the fuel is left, to drop.
+    /// </param>
+    internal readonly record struct Step(bool Slots, ItemStack? Remainder);
+
+    /// <summary>Advances cooking once, under the inventory lock.</summary>
+    internal Step Cook(RecipeSet recipes)
     {
         var input = this.Inventory[IngredientSlot];
         var fuel = this.Inventory[FuelSlot];
         if (this.LitRemaining == 0 && this.CookingSpent == 0 && input.IsNullOrAir())
-            return false;
+            return default;
 
         var before = (this.LitRemaining, this.LitTotal, this.CookingSpent, this.CookingTotal);
         var slots = false;
+        ItemStack? remainder = null;
         var recipe = input.IsNullOrAir() ? null : recipes.FindCooking(this.RecipeType, input!, this.previousRecipe);
         this.previousRecipe = recipe?.Identifier ?? this.previousRecipe;
         if (!SameInput(this.previousInput, input))
@@ -117,10 +127,7 @@ internal sealed partial class FurnaceBlockEntity
                 var duration = this.Light(fuel, recipe!);
                 if (duration > 0)
                 {
-                    this.Inventory.RemoveItem(FuelSlot, 1);
-                    if (fuel.Count <= 0 && fuel.Is(ItemsRegistry.LavaBucket))
-                        this.Inventory[FuelSlot] = new ItemStack(ItemsRegistry.Bucket, 1);
-
+                    remainder = RecipeSet.UseOne(this.Inventory, FuelSlot);
                     slots = true;
                 }
             }
@@ -166,7 +173,7 @@ internal sealed partial class FurnaceBlockEntity
         if (slots || before != (this.LitRemaining, this.LitTotal, this.CookingSpent, this.CookingTotal))
             this.SetChanged();
 
-        return slots;
+        return new Step(slots, remainder);
     }
 
     // Vanilla's lighting in serverTick (26.1): the fuel's burn time and speed multiplier, worked out for this

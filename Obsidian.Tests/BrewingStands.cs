@@ -121,6 +121,22 @@ public sealed class BrewingStands : IDisposable
             )
         };
 
+    // Each row burns a stack given minecraft:brewing_fuel. Like vanilla's stand, the fuel item's crafting remainder
+    // takes the fuel slot once the stack is used up, and drops otherwise.
+    private static readonly Dictionary<string, FuelRemainder> fuelRemainders = new()
+    {
+        ["A milk bucket leaves its bucket in the fuel slot"] = new(
+            ItemsRegistry.MilkBucket,
+            Count: 1,
+            InSlot: ItemsRegistry.Bucket,
+            Dropped: null),
+        ["A honey bottle drops its glass bottle while more are left"] = new(
+            ItemsRegistry.HoneyBottle,
+            Count: 2,
+            InSlot: ItemsRegistry.HoneyBottle,
+            Dropped: ItemsRegistry.GlassBottle)
+    };
+
     // The data slot ids vanilla 26.3's BrewingStandMenu reads (the ContainerData.get call in each of its getters),
     // with the stand value each getter shows.
     private static readonly (string Getter, short Id, Func<BrewingStand, int> Value)[] menuData =
@@ -138,6 +154,8 @@ public sealed class BrewingStands : IDisposable
     public void Dispose() => Directory.Delete(this.folder, recursive: true);
 
     public static TheoryData<string> QuickMoveRows => [.. quickMoves.Keys];
+
+    public static TheoryData<string> FuelRemainderRows => [.. fuelRemainders.Keys];
 
     [Theory(DisplayName = "Shift-clicking in a brewing stand routes stacks like vanilla's brewing menu")]
     [MemberData(nameof(QuickMoveRows))]
@@ -238,6 +256,27 @@ public sealed class BrewingStands : IDisposable
 
         Assert.Equal(API.Potion.Awkward, PotionOf(loaded.GetItem(0)));
         Assert.Equal(5, loaded.Fuel);
+    }
+
+    [Theory(DisplayName = "A brewing stand keeps what its fuel leaves behind, like vanilla")]
+    [MemberData(nameof(FuelRemainderRows))]
+    public void FuelLeavesItsCraftingRemainder(string row)
+    {
+        var fuel = fuelRemainders[row];
+        var stand = new BrewingStand();
+        stand.SetItem(BrewingStand.FuelSlot, BrewingFuel(fuel.Item, fuel.Count));
+
+        var step = Tick(stand);
+
+        Assert.Equal(20, stand.Fuel);
+        Assert.True(stand.GetItem(BrewingStand.FuelSlot)?.Is(fuel.InSlot));
+        Assert.Equal(1, stand.GetItem(BrewingStand.FuelSlot)?.Count);
+
+        var dropped = step.Remainders.Select(stack => stack.Holder).ToArray();
+        if (fuel.Dropped is Item item)
+            Assert.Equal([item], dropped);
+        else
+            Assert.Empty(dropped);
     }
 
     [Fact(DisplayName = "An open brewing stand's menu gets its values under vanilla's data slot ids",
@@ -360,6 +399,14 @@ public sealed class BrewingStands : IDisposable
         });
     }
 
+    // A stack given its own minecraft:brewing_fuel: 20 brews at normal speed, blaze powder's.
+    private static ItemStack BrewingFuel(Item item, int count)
+    {
+        var fuel = new FuelComponentData(new ComponentIntValue(20), new ComponentFloatValue(1f));
+
+        return new ItemStack(item, count, ComponentBuilder.BrewingFuel with { Value = fuel });
+    }
+
     private static ItemStack Potion(Item bottle, API.Potion potion) =>
         new(bottle, 1, new PotionContentsDataComponent { Potion = potion });
 
@@ -398,4 +445,9 @@ public sealed class BrewingStands : IDisposable
 
         return $"{stack.Holder.UnlocalizedName} x{stack.Count} of minecraft:{potion}";
     }
+
+    /// <summary>
+    /// A fuel of a test row: the item and how many, and what's left in the fuel slot and dropped after one burns.
+    /// </summary>
+    private sealed record FuelRemainder(Item Item, int Count, Item InSlot, Item? Dropped);
 }

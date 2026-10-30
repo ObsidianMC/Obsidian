@@ -173,13 +173,37 @@ internal sealed class RecipeSet
         if (ingredient.IsNullOrAir() || ingredient!.Count <= 0)
             return null;
 
-        return ingredient.Holder.Id switch
-        {
-            ItemIds.MilkBucket or ItemIds.WaterBucket or ItemIds.LavaBucket
-                => new ItemStack(ItemsRegistry.Bucket, 1),
-            ItemIds.HoneyBottle => new ItemStack(ItemsRegistry.GlassBottle, 1),
-            _ => null
-        };
+        return CraftingRemainderOf(ingredient.Holder);
+    }
+
+    /// <summary>
+    /// What using up <paramref name="item"/> leaves behind: vanilla's items with a crafting remainder
+    /// (<c>Item.Properties.craftRemainder</c>). It belongs to the item, so a stack given a fuel component keeps it.
+    /// </summary>
+    internal static ItemStack? CraftingRemainderOf(Item item) => item.Id switch
+    {
+        ItemIds.MilkBucket or ItemIds.WaterBucket or ItemIds.LavaBucket
+            => new ItemStack(ItemsRegistry.Bucket, 1),
+        ItemIds.HoneyBottle or ItemIds.DragonBreath => new ItemStack(ItemsRegistry.GlassBottle, 1),
+        _ => null
+    };
+
+    /// <summary>
+    /// Uses up one item of a slot, like vanilla's furnace and brewing stand use up fuel and brewing ingredients: the
+    /// item's crafting remainder takes its place when that was the last one, and is returned, to drop, otherwise.
+    /// </summary>
+    internal static ItemStack? UseOne(BaseContainer container, int slot)
+    {
+        var item = container.GetItem(slot)!;
+        var remainder = CraftingRemainderOf(item.Holder);
+
+        container.RemoveItem(slot, 1);
+
+        if (remainder is null || container.GetItem(slot) is not null)
+            return remainder;
+
+        container.SetItem(slot, remainder);
+        return null;
     }
 
     private IRecipeWithResult? FindCraftingRecipe(IReadOnlyList<ItemStack?> grid, int width)

@@ -25,13 +25,15 @@ internal static class Brewing
     /// <param name="Slots">Whether its slots changed.</param>
     /// <param name="Properties">Whether its brew time or fuel changed, which its menu shows.</param>
     /// <param name="Brewed">Whether a brew ended, which plays vanilla's brewing sound.</param>
-    /// <param name="Remainder">What the ingredient leaves behind that stays out of the stand, to drop.</param>
+    /// <param name="Remainders">
+    /// What used-up fuel and ingredients left behind that stays out of the stand, to drop.
+    /// </param>
     /// <param name="Bottles">Which bottle slots hold something, when that changed, for the block's state.</param>
     internal readonly record struct Step(
         bool Slots,
         bool Properties,
         bool Brewed,
-        ItemStack? Remainder,
+        IReadOnlyList<ItemStack> Remainders,
         bool[]? Bottles);
 
     /// <summary>
@@ -47,7 +49,7 @@ internal static class Brewing
         var slots = false;
         var properties = false;
         var brewed = false;
-        ItemStack? remainder = null;
+        var remainders = new List<ItemStack>();
 
         // Out of fuel: burn the next fuel item for its brews and speed.
         var fuel = stand.GetItem(BrewingStand.FuelSlot);
@@ -58,7 +60,10 @@ internal static class Brewing
             stand.Fuel = ComponentNumbers.Resolve(fuelData.Amount, block, Random.Shared);
             stand.TotalFuel = stand.Fuel;
             stand.SpeedMultiplier = ComponentNumbers.Resolve(fuelData.SpeedMultiplier, block, Random.Shared);
-            stand.RemoveItem(BrewingStand.FuelSlot, 1);
+
+            if (RecipeSet.UseOne(stand, BrewingStand.FuelSlot) is ItemStack fuelRemainder)
+                remainders.Add(fuelRemainder);
+
             slots = true;
             properties = true;
         }
@@ -74,7 +79,9 @@ internal static class Brewing
 
             if (stand.BrewTime == 0 && canBrew)
             {
-                remainder = Brew(stand, recipes);
+                if (Brew(stand, recipes) is ItemStack ingredientRemainder)
+                    remainders.Add(ingredientRemainder);
+
                 slots = true;
                 brewed = true;
             }
@@ -102,7 +109,7 @@ internal static class Brewing
         if (bottlesChanged)
             stand.ShownBottles = bottles;
 
-        return new Step(slots, properties, brewed, remainder, bottlesChanged ? bottles : null);
+        return new Step(slots, properties, brewed, remainders, bottlesChanged ? bottles : null);
     }
 
     /// <summary>
@@ -177,7 +184,7 @@ internal static class Brewing
     }
 
     // Vanilla's doBrew: brews every bottle, then uses up one ingredient. What the ingredient leaves behind (a glass
-    // bottle, for dragon's breath) takes its place once it's used up, and is dropped otherwise.
+    // bottle, for dragon's breath) takes its place once it's used up, and is returned to drop otherwise.
     private static ItemStack? Brew(BrewingStand stand, RecipeSet recipes)
     {
         var ingredient = stand.GetItem(BrewingStand.IngredientSlot)!;
@@ -188,22 +195,6 @@ internal static class Brewing
                 stand.SetItem(slot, brewed);
         }
 
-        var left = Remainder(ingredient.Holder);
-        stand.RemoveItem(BrewingStand.IngredientSlot, 1);
-
-        if (left is null)
-            return null;
-
-        if (stand.GetItem(BrewingStand.IngredientSlot) is null)
-        {
-            stand.SetItem(BrewingStand.IngredientSlot, left);
-            return null;
-        }
-
-        return left;
+        return RecipeSet.UseOne(stand, BrewingStand.IngredientSlot);
     }
-
-    // Vanilla's crafting remainders of brewing ingredients: only dragon's breath has one among vanilla's.
-    private static ItemStack? Remainder(Item ingredient) =>
-        ingredient.Id == ItemIds.DragonBreath ? new ItemStack(ItemsRegistry.GlassBottle, 1) : null;
 }
