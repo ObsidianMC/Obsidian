@@ -41,7 +41,7 @@ internal sealed partial class FeatureRegistry
                 continue;
             }
 
-            if (field.Key == "output_state")
+            if (field.Key is "output_state" or "block_state")
             {
                 fields[field.Key] = ProcessorBlockState(field.Value);
             }
