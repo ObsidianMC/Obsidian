@@ -31,6 +31,9 @@ internal sealed class MapStorage(string folderPath)
     /// </summary>
     public static int? GetMapId(ItemStack stack) => stack.GetComponent<SimpleDataComponent<int>>(DataComponentType.MapId)?.Value;
 
+    // 26.3 gives explorer maps distinct item identities; this tag includes every vanilla MapItem.
+    internal static bool IsMap(ItemStack stack) => TagsRegistry.Item.ClonableMaps.Entries.Contains(stack.Holder.Id);
+
     /// <summary>
     /// Vanilla <c>getFreeMapId</c>: the next unused id, counting from 0.
     /// </summary>
@@ -71,7 +74,7 @@ internal sealed class MapStorage(string folderPath)
         for (var slot = 0; slot < inventory.Size; slot++)
         {
             var stack = inventory.GetItem(slot);
-            var mapId = stack is not null && stack.Is(ItemsRegistry.FilledMap) ? GetMapId(stack) : null;
+            var mapId = stack is not null && IsMap(stack) ? GetMapId(stack) : null;
             if (mapId is null)
                 continue;
 

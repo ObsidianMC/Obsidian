@@ -1,5 +1,6 @@
 using Obsidian.API.Inventory;
 using Obsidian.Nbt;
+using Obsidian.WorldData.Maps;
 
 namespace Obsidian.Entities;
 
@@ -55,7 +56,7 @@ public partial class ItemFrame : HangingEntity
                 Math.Floor(position.Y) + 0.5 - step.Y * offset,
                 Math.Floor(position.Z) + 0.5 - step.Z * offset);
 
-            var across = this.Item is { } item && item.Is(ItemsRegistry.FilledMap) ? 1.0 : 0.75;
+            var across = this.Item is ItemStack item && MapStorage.GetMapId(item) is not null ? 1.0 : 0.75;
             var half = new VectorD(
                 (step.X != 0 ? depth : across) / 2,
                 (step.Y != 0 ? depth : across) / 2,
