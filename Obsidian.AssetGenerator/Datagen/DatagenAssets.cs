@@ -43,13 +43,21 @@ internal static class DatagenAssets
         WriteJson(Path.Combine(outputDirectory, "enchantments.json"), Combine(Path.Combine(data, "enchantment"), ToId));
         WriteJson(Path.Combine(outputDirectory, "dialogs.json"), Combine(Path.Combine(data, "dialog"), ToId));
         WriteJson(Path.Combine(outputDirectory, "instruments.json"), Combine(Path.Combine(data, "instrument"), ToId));
-
         WriteLootTables(data, outputDirectory);
         foreach (var registry in new[] { "predicate", "context_int_provider", "context_float_provider" })
         {
             var definitions = Combine(Path.Combine(data, registry), ToId);
             WriteJson(Path.Combine(outputDirectory, registry + ".json"), definitions);
         }
+
+        foreach (var registry in new[] { "block_transformer", "decorated_pot_pattern", "timeline" })
+        {
+            var definitions = Combine(Path.Combine(data, registry), ToId);
+            WriteJson(Path.Combine(outputDirectory, registry + ".json"), definitions);
+        }
+
+        var tillTables = Combine(Path.Combine(data, "loot_table", "till"), path => ToId("till/" + path));
+        WriteJson(Path.Combine(outputDirectory, "block_transformer_loot.json"), tillTables);
 
         WriteTags(Path.Combine(data, "tags"), outputDirectory);
         CodecAssets.Write(data, outputDirectory);

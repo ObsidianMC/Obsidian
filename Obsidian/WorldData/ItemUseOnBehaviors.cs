@@ -1,56 +1,165 @@
 using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
+using Obsidian.Entities;
 using System.Collections.Frozen;
 using System.Reflection;
 using System.Text.Json;
 
 namespace Obsidian.WorldData;
 
-/// <summary>
-/// A vanilla item class's <c>useOn</c> override, as Obsidian runs it when a player uses an item it owns on a block.
-/// </summary>
-internal interface IItemUseOnBehavior
-{
-    /// <returns>Whether the item did something with the block (vanilla's <c>InteractionResult.SUCCESS</c>).</returns>
-    ValueTask<bool> UseOnAsync(AbstractLevel level, IPlayer player, ItemStack stack, int slot, Vector position, IBlock block, BlockFace face);
-}
-
-/// <summary>
-/// Obsidian implementations of vanilla item classes that override <c>Item.useOn</c>. Which item an implementation
-/// serves comes from <c>Assets/item_use_on_classes.json</c>, the Mojang class that declares each item's override;
-/// <see cref="Counterparts"/> maps those classes to implementations, by full class name. Items whose owner has no
-/// counterpart (yet) are handled elsewhere, or not at all.
-/// </summary>
+/// <summary>Evaluates 26.3's item-supplied block transformers against the live level.</summary>
 internal static partial class ItemUseOnBehaviors
 {
-    /// <summary>The implemented owners, by vanilla class name.</summary>
-    /// <remarks>
-    /// Empty for now: the only one was <c>HoeItem</c>, which 26.1 replaced with the data-driven
-    /// <c>minecraft:block_transformer</c> item component, so tilling is disabled until Phase 4 of
-    /// <c>docs/porting-26.3-plan.md</c> reads that (see <c>docs/known-gaps.md</c>).
-    /// </remarks>
-    internal static readonly FrozenDictionary<string, IItemUseOnBehavior> Counterparts =
-        FrozenDictionary<string, IItemUseOnBehavior>.Empty;
+    private static readonly FrozenDictionary<string, JsonElement> transformers = Load("block_transformer.json");
 
-    /// <summary>The Mojang class declaring each item's <c>useOn</c>, by item identifier.</summary>
-    internal static readonly FrozenDictionary<string, string> Owners = LoadOwners();
+    internal sealed record Transformation(IBlock State, JsonElement Data)
+    {
+        public string Sound => Data.GetProperty("sound").GetString()!;
 
-    /// <returns>The behaviour of the vanilla class that owns this item's <c>useOn</c> override, or null.</returns>
-    public static IItemUseOnBehavior? For(Item item) =>
-        Owners.TryGetValue(item.UnlocalizedName, out var owner) && Counterparts.TryGetValue(owner, out var behavior)
-            ? behavior
-            : null;
+        public int Damage => Data.TryGetProperty("item_damage_per_use", out var damage) ? damage.GetInt32() : 0;
 
-    private static JsonDocument Load(string name)
+        public string? Loot => Data.TryGetProperty("loot", out var value) ? value.GetString() : null;
+    }
+
+    internal static FrozenDictionary<string, JsonElement> Load(string name)
     {
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream($"Obsidian.Assets.{name}")
             ?? throw new InvalidOperationException($"Missing {name} asset.");
-        return JsonDocument.Parse(stream);
+        using var document = JsonDocument.Parse(stream);
+        return document.RootElement.EnumerateObject()
+            .ToFrozenDictionary(entry => entry.Name, entry => entry.Value.Clone());
     }
 
-    private static FrozenDictionary<string, string> LoadOwners()
+    internal static string? Component(ItemStack stack, DataComponentType type, string name)
     {
-        using var document = Load("item_use_on_classes.json");
-        return document.RootElement.EnumerateObject().ToFrozenDictionary(item => item.Name, item => item.Value.GetString()!);
+        if (stack.RemoveComponents.Contains(type))
+            return null;
+
+        if (stack.GetComponent<SimpleDataComponent<string>>(type) is SimpleDataComponent<string> own)
+            return own.Value;
+
+        var value = CombatItems.Component(stack, name);
+        return value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+    }
+
+    internal static Transformation? Evaluate(
+        string identifier,
+        Func<Vector, IBlock> read,
+        Vector position,
+        BlockFace face)
+    {
+        if (!transformers.TryGetValue(identifier, out var transforms))
+            return null;
+
+        var faceName = face.ToString().ToLowerInvariant();
+        foreach (var transform in transforms.EnumerateArray())
+        {
+            if (transform.TryGetProperty("disallowed_faces", out var faces)
+                && faces.EnumerateArray().Any(value => value.GetString() == faceName))
+                continue;
+
+            var provider = transform.GetProperty("block_state_provider");
+            var output = Provide(provider, read, position);
+            if (output is not null)
+                return new Transformation(output, transform);
+        }
+
+        return null;
+    }
+
+    // Matches the provider types used by vanilla 26.3's transformers; no legacy worldgen tables are consulted.
+    private static IBlock? Provide(JsonElement provider, Func<Vector, IBlock> read, Vector position)
+    {
+        if (!provider.TryGetProperty("type", out var type))
+            return ReadState(provider);
+
+        switch (type.GetString())
+        {
+            case "minecraft:rule_based":
+                foreach (var rule in provider.GetProperty("rules").EnumerateArray())
+                {
+                    var predicate = rule.GetProperty("if_true");
+                    if (Matches(predicate, read, position))
+                    {
+                        var result = rule.GetProperty("then");
+                        return Provide(result, read, position);
+                    }
+                }
+                return null;
+
+            case "minecraft:copy_properties":
+                var source = provider.GetProperty("source");
+                var state = ReadState(source);
+                var original = read(position);
+                return CopyProperties(state, original);
+
+            default:
+                throw new NotSupportedException($"Unsupported transformer provider {type.GetString()}.");
+        }
+    }
+
+    private static IBlock CopyProperties(IBlock output, IBlock original)
+    {
+        foreach (var (name, value) in original.GetProperties())
+        {
+            if (output.GetProperty(name) is not null)
+                output = output.WithProperty(name, value);
+        }
+        return output;
+    }
+
+    private static bool Matches(JsonElement predicate, Func<Vector, IBlock> read, Vector position)
+    {
+        if (predicate.TryGetProperty("offset", out var offset))
+        {
+            var coordinates = offset.EnumerateArray().Select(value => value.GetInt32()).ToArray();
+            position += new Vector(coordinates[0], coordinates[1], coordinates[2]);
+        }
+
+        switch (predicate.GetProperty("type").GetString())
+        {
+            case "minecraft:all_of":
+                foreach (var child in predicate.GetProperty("predicates").EnumerateArray())
+                {
+                    if (!Matches(child, read, position))
+                        return false;
+                }
+                return true;
+
+            case "minecraft:matching_blocks":
+                var blocks = predicate.GetProperty("blocks");
+                var identifier = read(position).UnlocalizedName;
+                if (blocks.ValueKind == JsonValueKind.String)
+                    return blocks.GetString() == identifier;
+
+                return blocks.EnumerateArray().Any(block => block.GetString() == identifier);
+
+            case "minecraft:matching_block_tag":
+                var name = predicate.GetProperty("tag").GetString()!;
+                return TagsRegistry.TryGet("block", name, out var tag)
+                    && tag.Entries.Contains(read(position).RegistryId);
+
+            default:
+                throw new NotSupportedException("Unsupported transformer block predicate.");
+        }
+    }
+
+    internal static IBlock ReadState(JsonElement value)
+    {
+        if (value.ValueKind == JsonValueKind.String)
+        {
+            var identifier = value.GetString()!;
+            return BlocksRegistry.Get(identifier);
+        }
+
+        var name = value.GetProperty("id").GetString()!;
+        var block = BlocksRegistry.Get(name);
+        if (value.TryGetProperty("properties", out var properties))
+        {
+            foreach (var property in properties.EnumerateObject())
+                block = block.WithProperty(property.Name, property.Value.GetString()!);
+        }
+        return block;
     }
 }

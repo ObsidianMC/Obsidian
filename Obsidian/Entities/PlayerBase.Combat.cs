@@ -457,10 +457,10 @@ public partial class PlayerBase
     // Takes an experience orb's experience, at most every other tick, mending items with it first.
     internal async ValueTask<bool> PickUpExperienceAsync(int experience)
     {
-        if (Level.LevelData.Time - LastExperiencePickupTick < 2)
+        if (Level.LevelData.GameTime - LastExperiencePickupTick < 2)
             return false;
 
-        LastExperiencePickupTick = Level.LevelData.Time;
+        LastExperiencePickupTick = Level.LevelData.GameTime;
         await GiveExperienceAsync(await RepairWithMendingAsync(experience));
         return true;
     }

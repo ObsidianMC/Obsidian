@@ -90,6 +90,9 @@ public sealed record class DimensionElement : INbtSerializable
     /// </summary>
     public string? Timelines { get; set; }
 
+    /// <summary>The world clock selected by commands in this dimension, or null when none is configured.</summary>
+    public string? DefaultClock { get; set; }
+
     /// <summary>
     /// Whether undead monsters burn in daylight at any time of day: the type's own
     /// <c>minecraft:gameplay/monsters_burn</c> attribute, which the overworld's day timeline otherwise sets by day.

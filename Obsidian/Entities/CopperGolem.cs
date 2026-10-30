@@ -24,7 +24,7 @@ public sealed partial class CopperGolem : PathfinderMob
     protected override void FinalizeSpawn()
     {
         PersistenceRequired = true;
-        nextWeather = Level.LevelData.Time + Random.Next(504000, 552001);
+        nextWeather = Level.LevelData.GameTime + Random.Next(504000, 552001);
     }
 
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
@@ -40,9 +40,9 @@ public sealed partial class CopperGolem : PathfinderMob
     {
         if (MobBitMask.HasFlag(MobBitmask.NoAi))
             return;
-        if (nextWeather >= 0 && Level.LevelData.Time >= nextWeather)
+        if (nextWeather >= 0 && Level.LevelData.GameTime >= nextWeather)
         {
-            nextWeather = Level.LevelData.Time + Random.Next(504000, 552001);
+            nextWeather = Level.LevelData.GameTime + Random.Next(504000, 552001);
             if (weather < 3)
             {
                 weather++;
@@ -178,7 +178,7 @@ public sealed partial class CopperGolem : PathfinderMob
         {
             if (nextWeather != -2)
                 weather--;
-            nextWeather = Level.LevelData.Time + Random.Next(504000, 552001);
+            nextWeather = Level.LevelData.GameTime + Random.Next(504000, 552001);
             await DamageInteractionToolAsync(player, hand, 1);
             SynchronizeMetadata();
         }
@@ -215,7 +215,10 @@ public sealed partial class CopperGolem : PathfinderMob
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         weather = tag.TryGetTagValue<string>("weather_state", out var state) ? Math.Max(0, Array.IndexOf(new[] { "unaffected", "exposed", "weathered", "oxidized" }, state)) : 0;
-        nextWeather = tag.TryGetTagValue<long>("next_weather_age", out var ticks) ? ticks : Level.LevelData.Time + Random.Next(504000, 552001);
+        if (tag.TryGetTagValue<long>("next_weather_age", out var ticks))
+            nextWeather = ticks;
+        else
+            nextWeather = Level.LevelData.GameTime + Random.Next(504000, 552001);
     }
 }
 

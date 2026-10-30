@@ -83,7 +83,7 @@ internal sealed class MapStorage(string folderPath)
             if (data is null)
                 continue;
 
-            data.TickCarriedBy(player, stack!, id, level.Time);
+            data.TickCarriedBy(player, stack!, id, level.LevelData.GameTime);
             if (!data.Locked && (slot == player.CurrentHeldItemSlot || slot == 45))
                 await MapRenderer.UpdateAsync(level, player, data);
 

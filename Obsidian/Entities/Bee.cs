@@ -217,7 +217,7 @@ public sealed partial class Bee : FarmAnimal
         writer.WriteEntityMetadataType(AgeableMetadataCount, EntityMetadataType.Byte);
         writer.WriteByte((byte)((HasNectar ? 8 : 0) | (HasStung ? 4 : 0) | (AttackTarget != null ? 2 : 0)));
         writer.WriteEntityMetadataType(AgeableMetadataCount + 1, EntityMetadataType.VarLong);
-        writer.WriteVarLong(AngerTicks > 0 ? Level.LevelData.Time + AngerTicks : 0);
+        writer.WriteVarLong(AngerTicks > 0 ? Level.LevelData.GameTime + AngerTicks : 0);
     }
 
     protected override void WriteAdditionalSave(INbtWriter writer)

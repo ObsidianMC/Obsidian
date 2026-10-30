@@ -303,7 +303,8 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 _ => null
             };
             //TODO check if container is cached if so get that container
-            if (type is BlockIds.Chest or BlockIds.TrappedChest)
+            if (type is BlockIds.Chest or BlockIds.TrappedChest
+                || TagsRegistry.Block.CopperChests.Entries.Contains(type))
             {
                 container = NewChest(player, blockPosition);
 
@@ -395,7 +396,8 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             {
                 container = await StoredContainerAsync(player, level, blockPosition, container);
 
-                if (type is BlockIds.Chest or BlockIds.TrappedChest)
+                if (type is BlockIds.Chest or BlockIds.TrappedChest
+                    || TagsRegistry.Block.CopperChests.Entries.Contains(type))
                     container = await DoubleChestAsync(player, level, block, blockPosition, container);
             }
 

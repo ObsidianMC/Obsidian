@@ -114,8 +114,9 @@ internal sealed partial class MobSpawner
             return;
         var horse = new SkeletonHorse { Level = level, EntityId = Server.GetNextEntityId(), Position = position, SkeletonTrap = true };
         horse.InitializeAi();
-        if (level.LevelData.Difficulty != Difficulty.Peaceful && random.NextSingle() < Mob.CalculateDifficulty(level.LevelData.Difficulty,
-            level.LevelData.Time, chunk is Chunk concrete ? concrete.InhabitedTime : 0, 1) * 0.01f)
+        var inhabited = chunk is Chunk concrete ? concrete.InhabitedTime : 0;
+        var difficulty = Mob.CalculateDifficulty(level.LevelData.Difficulty, level.LevelData.GameTime, inhabited, 1);
+        if (level.LevelData.Difficulty != Difficulty.Peaceful && random.NextSingle() < difficulty * 0.01f)
             level.SpawnEntity(horse);
     }
 

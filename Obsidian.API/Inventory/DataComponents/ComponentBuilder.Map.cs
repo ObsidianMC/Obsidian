@@ -79,6 +79,8 @@ public static partial class ComponentBuilder
         DataComponentType.CookingFuel => CookingFuel,
         DataComponentType.BrewingFuel => BrewingFuel,
         DataComponentType.SulfurCubeContent => SulfurCubeContent,
+        DataComponentType.BlockTransformer => BlockTransformer,
+        DataComponentType.ProvidesPotteryPattern => ProvidesPotteryPattern,
         _ => null
     };
 }
