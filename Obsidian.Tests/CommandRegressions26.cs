@@ -41,6 +41,26 @@ public sealed class CommandRegressions26
         Assert.Equal(5, stack.Count);
     }
 
+    [Theory]
+    [InlineData("posteffect list MissingPlayer", false)]
+    [InlineData("posteffect list @a", false)]
+    [InlineData("posteffect list @e[type=zombie]", false)]
+    [InlineData("posteffect clear MissingPlayer", false)]
+    [InlineData("posteffect list Fixture", true)]
+    public async Task PostEffectSelectorFailuresFailTheCommand(string command, bool succeeds)
+    {
+        await using var server = TestServerFactory.CreateServer($"posteffect-selector-{Guid.NewGuid():N}");
+        var handler = (CommandHandler)server.Server.CommandHandler;
+        handler.RegisterCommandClass<PostEffectCommandModule>(null);
+        AddPlayer(server);
+        var context = Context(server.Server, command);
+
+        await handler.ProcessCommand(context);
+
+        Assert.Equal(succeeds, context.Succeeded);
+        Assert.Equal(0, context.Result);
+    }
+
     private static Obsidian.Entities.Player AddPlayer(RealServerContext server)
     {
         var player = TestServerFactory.CreateConnectedPlayer(server.Server, server.World, "Fixture");

@@ -9,6 +9,8 @@ namespace Obsidian.Commands.Modules;
 [RequirePermissionLevel(2)]
 public sealed class PostEffectCommandModule : CommandModuleBase
 {
+    private const string TooManyPlayers = "Only one player is allowed, but the provided selector allows more than one";
+
     private static readonly ConditionalWeakTable<IPlayer, List<string>> effects = new();
 
     [Command("add")]
@@ -23,8 +25,25 @@ public sealed class PostEffectCommandModule : CommandModuleBase
     public Task<int> ClearAsync(IPlayer[] targets) => this.ChangeAsync(targets, "clear", null);
 
     [Command("list")]
-    public async Task<int> ListAsync(IPlayer target)
+    public async Task<int> ListAsync(IPlayer? target)
     {
+        // Vanilla's player argument takes exactly one player, so a selector that allows more fails, as does nobody.
+        var input = CommandInput.Arguments(this.CommandContext);
+        var operation = input.End ? string.Empty : input.Read();
+        var selected = input.End ? string.Empty : input.Read();
+        var allowsMore = operation == "list" && EntitySelector.TryParse(selected, out var selector) && !selector.Single;
+        if (allowsMore)
+        {
+            await this.CommandContext.FailAsync(TooManyPlayers);
+            return 0;
+        }
+
+        if (target is null)
+        {
+            await this.CommandContext.FailAsync("No player was found");
+            return 0;
+        }
+
         var current = effects.GetOrCreateValue(target);
         await this.CommandContext.SuccessAsync($"{target.Username}: {string.Join(", ", current)}");
         return current.Count;
