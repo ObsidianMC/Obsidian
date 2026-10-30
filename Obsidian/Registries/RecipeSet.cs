@@ -254,9 +254,10 @@ internal sealed class RecipeSet
                 if (MatchesShapeless(items, shapeless.Ingredients, 0, new bool[items.Count]))
                     return new CraftingMatch(recipe, shapeless.Result.First());
             }
-            else if (SpecialCrafting.Assemble(recipe, grid, width) is ItemStack result)
+            else if (SpecialCrafting.TryAssemble(recipe, grid, width, out var result))
             {
-                return new CraftingMatch(recipe, result);
+                // Like vanilla, a grid whose first matching recipe assembles an invalid stack crafts nothing.
+                return result is not null ? new CraftingMatch(recipe, result) : null;
             }
         }
 

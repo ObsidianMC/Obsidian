@@ -12,23 +12,57 @@ namespace Obsidian.Registries;
 /// </summary>
 internal static class SpecialCrafting
 {
+    /// <summary>
+    /// Matches <paramref name="recipe"/> against a grid and assembles what it crafts.
+    /// </summary>
     /// <param name="grid">The grid's slots, row by row; null slots are empty.</param>
     /// <param name="width">The grid's width, 2 or 3.</param>
-    /// <returns>A new stack of what the recipe crafts from the grid's items, or <c>null</c> if it doesn't.</returns>
-    public static ItemStack? Assemble(ICraftingRecipe recipe, IReadOnlyList<ItemStack?> grid, int width)
+    /// <param name="result">
+    /// A new stack of what the recipe crafts, or <c>null</c> when it doesn't match or, like vanilla's empty result,
+    /// when what it assembles isn't a valid stack.
+    /// </param>
+    /// <returns>Whether the recipe matches, which ends the search for a recipe even when it crafts nothing.</returns>
+    public static bool TryAssemble(
+        ICraftingRecipe recipe,
+        IReadOnlyList<ItemStack?> grid,
+        int width,
+        out ItemStack? result)
     {
+        result = null;
+
         return recipe switch
         {
-            DyeRecipe dye => Dye(dye, Occupied(grid)),
-            ImbueRecipe imbue => Imbue(imbue, grid, width),
-            TransmuteRecipe transmute => Transmute(transmute, Occupied(grid)),
-            _ => null
+            DyeRecipe dye => TryDye(dye, Occupied(grid), out result),
+            ImbueRecipe imbue => TryImbue(imbue, grid, width, out result),
+            TransmuteRecipe transmute => TryTransmute(transmute, Occupied(grid), out result),
+            _ => false
         };
     }
 
-    // One target and at least one dye item, in any slots.
-    private static ItemStack? Dye(DyeRecipe recipe, List<ItemStack> items)
+    /// <summary>
+    /// Whether <paramref name="stack"/> is valid by vanilla's <c>ItemStack.validateStrict</c>, which a recipe's
+    /// result template checks the result with: no more items than its stack size, not both damageable and
+    /// stackable, and no stack it holds (in a container, bundle or loaded crossbow) larger than that stack's size.
+    /// Vanilla's bundle weight check fails only when the weight overflows, which no valid bundle reaches.
+    /// </summary>
+    internal static bool IsValidStack(ItemStack stack)
     {
+        var maxStackSize = MaxStackSize(stack);
+        if (stack.MaxDamage > 0 && maxStackSize > 1)
+            return false;
+
+        if (stack.Count > maxStackSize)
+            return false;
+
+        return HeldStacksFit(stack, DataComponentType.Container)
+            && HeldStacksFit(stack, DataComponentType.BundleContents)
+            && HeldStacksFit(stack, DataComponentType.ChargedProjectiles);
+    }
+
+    // One target and at least one dye item, in any slots.
+    private static bool TryDye(DyeRecipe recipe, List<ItemStack> items, out ItemStack? result)
+    {
+        result = null;
         ItemStack? target = null;
         var colors = new List<Dye>();
 
@@ -37,7 +71,7 @@ internal static class SpecialCrafting
             if (Matches(recipe.Target, item))
             {
                 if (target is not null)
-                    return null;
+                    return false;
 
                 target = item;
             }
@@ -47,18 +81,22 @@ internal static class SpecialCrafting
             }
             else
             {
-                return null;
+                return false;
             }
         }
 
         if (target is null || colors.Count == 0)
-            return null;
+            return false;
+
+        // Like vanilla, the result is checked before it's dyed, which doesn't change whether it's valid.
+        result = WithComponentsOf(target, recipe.Result.Holder, recipe.Result.Count);
+        if (result is null)
+            return true;
 
         var previous = target.GetComponent<SimpleDataComponent<int>>(DataComponentType.DyedColor)?.Value;
-        var result = WithComponentsOf(target, recipe.Result.Holder, recipe.Result.Count);
         result[DataComponentType.DyedColor] = ComponentBuilder.DyedColor with { Value = MixDyes(previous, colors) };
 
-        return result;
+        return true;
     }
 
     /// <summary>
@@ -94,36 +132,41 @@ internal static class SpecialCrafting
     private static int Blue(int rgb) => rgb & 0xFF;
 
     // A full 3x3 grid: the source in the middle and the material around it.
-    private static ItemStack? Imbue(ImbueRecipe recipe, IReadOnlyList<ItemStack?> grid, int width)
+    private static bool TryImbue(ImbueRecipe recipe, IReadOnlyList<ItemStack?> grid, int width, out ItemStack? result)
     {
         const int middle = 4;
+        result = null;
         if (width != 3)
-            return null;
+            return false;
 
         for (int slot = 0; slot < grid.Count; slot++)
         {
             var item = grid[slot];
             var ingredient = slot == middle ? recipe.Source : recipe.Material;
             if (!IsOccupied(item) || !Matches(ingredient, item!))
-                return null;
+                return false;
         }
+
+        // Like vanilla, the result is checked before it takes the potion.
+        result = Validated(new ItemStack(recipe.Result.Holder, recipe.Result.Count));
+        if (result is null)
+            return true;
 
         // The source's potion: its own, or its item's default (no potion), which the result's item has too.
         var source = grid[middle]!;
-        var result = new ItemStack(recipe.Result.Holder, recipe.Result.Count);
         var contents = source.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents);
         if (contents is not null)
             result[DataComponentType.PotionContents] = contents;
         else if (source.RemoveComponents.Contains(DataComponentType.PotionContents))
             result.Remove(DataComponentType.PotionContents);
 
-        return result;
+        return true;
     }
 
-    // One input and MinMaterialCount to MaxMaterialCount materials, in any slots. A recipe that would make one of
-    // the same input back, as dyeing a red shulker box red would, doesn't match.
-    private static ItemStack? Transmute(TransmuteRecipe recipe, List<ItemStack> items)
+    // One input and MinMaterialCount to MaxMaterialCount materials, in any slots.
+    private static bool TryTransmute(TransmuteRecipe recipe, List<ItemStack> items, out ItemStack? result)
     {
+        result = null;
         ItemStack? input = null;
         int materials = 0;
 
@@ -132,7 +175,7 @@ internal static class SpecialCrafting
             if (Matches(recipe.Input, item))
             {
                 if (input is not null)
-                    return null;
+                    return false;
 
                 input = item;
             }
@@ -142,30 +185,53 @@ internal static class SpecialCrafting
             }
             else
             {
-                return null;
+                return false;
             }
         }
 
         if (input is null || materials < recipe.MinMaterialCount || materials > recipe.MaxMaterialCount)
-            return null;
+            return false;
 
         var count = recipe.AddMaterialCountToResult ? recipe.ResultCount + materials : recipe.ResultCount;
-        var result = WithComponentsOf(input, recipe.ResultItem ?? input.Holder, count);
-        if (count == 1 && result == input)
-            return null;
+        result = WithComponentsOf(input, recipe.ResultItem ?? input.Holder, count);
 
-        return result;
+        // Vanilla's matching assembles a single result to compare it with the input: one that isn't a valid stack,
+        // or that is the input again (as dyeing a red shulker box red would be), doesn't match. A larger result
+        // matches whatever it assembles.
+        if (count == 1 && (result is null || result == input))
+        {
+            result = null;
+            return false;
+        }
+
+        return true;
     }
 
     // A stack of item with the components set on (or removed from) the source, like vanilla's
-    // TransmuteRecipe.createWithOriginalComponents.
-    private static ItemStack WithComponentsOf(ItemStack source, Item item, int count)
+    // TransmuteRecipe.createWithOriginalComponents, or null if that isn't a valid stack.
+    private static ItemStack? WithComponentsOf(ItemStack source, Item item, int count)
     {
         var result = source.TransmuteCopy(item);
         result.Count = count;
 
-        return result;
+        return Validated(result);
     }
+
+    // Like vanilla's ItemStackTemplate, which logs an invalid result and creates an empty stack instead.
+    private static ItemStack? Validated(ItemStack stack) => IsValidStack(stack) ? stack : null;
+
+    private static bool HeldStacksFit(ItemStack stack, DataComponentType type)
+    {
+        var held = stack.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(type)?.Value ?? [];
+
+        return held
+            .Where(IsOccupied)
+            .All(item => item.Count <= MaxStackSize(item));
+    }
+
+    // Vanilla's getMaxStackSize, whose default is 1: a stack whose max_stack_size component was removed holds one.
+    private static int MaxStackSize(ItemStack stack) =>
+        stack.RemoveComponents.Contains(DataComponentType.MaxStackSize) ? 1 : stack.MaxStackSize;
 
     // The grid's items, row by row.
     private static List<ItemStack> Occupied(IReadOnlyList<ItemStack?> grid) => grid

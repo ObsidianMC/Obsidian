@@ -15,7 +15,9 @@ import net.minecraft.world.item.crafting.display.*;
 /**
  * Captures 26.1's configurable special crafting recipes (crafting_dye, crafting_imbue and crafting_transmute):
  * - "crafts": for a table of crafting grids, the vanilla crafting recipe that matches first and what it assembles;
- * - "book": the recipe book entries vanilla's recipe manager makes of a few recipes of those types.
+ * - "book": the recipe book entries vanilla's recipe manager makes of a few recipes of those types;
+ * - "recipes": recipes of those types a data pack could add, whether vanilla loads each, and what grids craft with it
+ *   alone.
  * Usage: generated vanilla data directory (containing minecraft/recipe), output JSON.
  * Use Java 25's source launcher with the vanilla jar and libraries on the classpath, like the other fixtures.
  */
@@ -73,15 +75,24 @@ public final class SpecialRecipeFixtures {
         for (var json : BOOK_RECIPES)
             book.add(bookEntries(json));
 
+        var packs = new JsonArray();
+        for (var recipe : packRecipes())
+            packs.add(packRecipe(recipe));
+
         var output = new JsonObject();
         output.add("crafts", crafts);
         output.add("book", book);
+        output.add("recipes", packs);
         var gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
         Files.writeString(Path.of(arguments[1]), gson.toJson(output));
     }
 
     /** A crafting grid of the table: its name, width (2 or 3) and slots, row by row; null slots are empty. */
     private record Grid(String name, int width, List<JsonObject> slots) {
+    }
+
+    /** A recipe a data pack could add, and the grids to craft with it. */
+    private record PackRecipe(String json, List<Grid> grids) {
     }
 
     private static List<Grid> grids() {
@@ -147,7 +158,52 @@ public final class SpecialRecipeFixtures {
         grids.add(grid("blank maps alone", 2, blank, blank, null, null));
         grids.add(grid("map alone", 2, map, null, null, null));
 
+        // Results that aren't valid stacks (ItemStack.validateStrict): a recipe that assembles one crafts nothing.
+        grids.add(grid("map that doesn't stack and a blank map", 2,
+            item("filled_map", "{\"minecraft:map_id\": 7, \"minecraft:max_stack_size\": 1}"), blank, null, null));
+        grids.add(grid("map that stacks to two and two blank maps", 2,
+            item("filled_map", "{\"minecraft:map_id\": 7, \"minecraft:max_stack_size\": 2}"), blank, blank, null));
+        grids.add(grid("map without a stack size and a blank map", 2,
+            item("filled_map", "{\"minecraft:map_id\": 7, \"!minecraft:max_stack_size\": {}}"), blank, null, null));
+        grids.add(grid("damageable map and a blank map", 2,
+            item("filled_map", "{\"minecraft:map_id\": 7, \"minecraft:max_damage\": 10}"), blank, null, null));
+        grids.add(grid("stacking helmet and red dye", 2,
+            item("leather_helmet", "{\"minecraft:max_stack_size\": 2}"), item("red_dye"), null, null));
+        grids.add(grid("stacking damageable red shulker box and blue dye", 2,
+            item("red_shulker_box", "{\"minecraft:max_stack_size\": 2, \"minecraft:max_damage\": 5}"),
+            item("blue_dye"), null, null));
+
         return grids;
+    }
+
+    private static List<PackRecipe> packRecipes() {
+        var recipes = new ArrayList<PackRecipe>();
+        var shulkerAndDye = grid("shulker box and blue dye", 2, item("shulker_box"), item("blue_dye"), null, null);
+        var helmetAndDye = grid("helmet and red dye", 2, item("leather_helmet"), item("red_dye"), null, null);
+
+        // Result counts: vanilla's result codecs take 1 to 99, whatever the item stacks to.
+        recipes.add(new PackRecipe("""
+            {"type": "minecraft:crafting_transmute", "input": "minecraft:shulker_box", "material": "minecraft:blue_dye",
+             "result": {"id": "minecraft:blue_shulker_box", "count": 0}}
+            """, List.of()));
+        recipes.add(new PackRecipe("""
+            {"type": "minecraft:crafting_transmute", "input": "minecraft:shulker_box", "material": "minecraft:blue_dye",
+             "result": {"id": "minecraft:blue_shulker_box", "count": 100}}
+            """, List.of()));
+        recipes.add(new PackRecipe("""
+            {"type": "minecraft:crafting_transmute", "input": "minecraft:shulker_box", "material": "minecraft:blue_dye",
+             "result": {"id": "minecraft:blue_shulker_box", "count": 99}}
+            """, List.of(shulkerAndDye)));
+        recipes.add(new PackRecipe("""
+            {"type": "minecraft:crafting_dye", "target": "minecraft:leather_helmet", "dye": "minecraft:red_dye",
+             "result": {"id": "minecraft:leather_helmet", "count": 2}}
+            """, List.of(helmetAndDye)));
+        recipes.add(new PackRecipe("""
+            {"type": "minecraft:crafting_imbue", "source": "minecraft:lingering_potion", "material": "minecraft:arrow",
+             "result": {"id": "minecraft:tipped_arrow", "count": 100}}
+            """, List.of()));
+
+        return recipes;
     }
 
     private static Grid grid(String name, int width, JsonObject... slots) {
@@ -227,6 +283,24 @@ public final class SpecialRecipeFixtures {
 
         row.add("recipe", JsonNull.INSTANCE);
         row.add("result", JsonNull.INSTANCE);
+        return row;
+    }
+
+    private static JsonObject packRecipe(PackRecipe pack) {
+        var json = JsonParser.parseString(pack.json());
+        var parsed = Recipe.DIRECT_CODEC.parse(ops, json);
+
+        var crafts = new JsonArray();
+        if (parsed.result().orElse(null) instanceof CraftingRecipe crafting) {
+            var recipes = Map.of("probe:recipe", crafting);
+            for (var grid : pack.grids())
+                crafts.add(craft(recipes, grid));
+        }
+
+        var row = new JsonObject();
+        row.add("recipe", json);
+        row.addProperty("loads", parsed.isSuccess());
+        row.add("crafts", crafts);
         return row;
     }
 

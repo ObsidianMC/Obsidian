@@ -241,7 +241,7 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
             throw new JsonException("Transmute results can't set components yet.");
 
         var item = result.TryGetProperty("id", out var id) ? ItemsRegistry.Get(id.GetString()!) : null;
-        return (item, OptionalInt(result, "count", 1));
+        return (item, ReadResultCount(result));
     }
 
     // A result that's an item and a count. Vanilla's dye and imbue results set no components.
@@ -251,7 +251,18 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
             throw new JsonException("Dye and imbue results can't set components yet.");
 
         var item = ItemsRegistry.Get(value.GetProperty("id").GetString()!);
-        return new ItemStack(item, OptionalInt(value, "count", 1));
+        return new ItemStack(item, ReadResultCount(value));
+    }
+
+    // A result's count, which vanilla's result codecs take from 1 to 99 (whether the item stacks that high is only
+    // checked when the result is crafted).
+    private static int ReadResultCount(JsonElement result)
+    {
+        var count = OptionalInt(result, "count", 1);
+        if (count is < 1 or > 99)
+            throw new JsonException($"A result's count must be within 1 to 99, not {count}.");
+
+        return count;
     }
 
     private static int OptionalInt(JsonElement value, string name, int fallback) =>

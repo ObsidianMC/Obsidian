@@ -5,6 +5,7 @@ using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -31,28 +32,62 @@ public sealed class SpecialCraftingRecipes
     public static TheoryData<int> BookRecipes =>
         [.. Enumerable.Range(0, Capture().GetProperty("book").GetArrayLength())];
 
+    public static TheoryData<int> PackRecipes =>
+        [.. Enumerable.Range(0, Capture().GetProperty("recipes").GetArrayLength())];
+
+    public static TheoryData<int, string> PackCrafts
+    {
+        get
+        {
+            var rows = new TheoryData<int, string>();
+            var recipes = Capture().GetProperty("recipes").EnumerateArray().ToList();
+
+            for (int index = 0; index < recipes.Count; index++)
+            {
+                foreach (var craft in recipes[index].GetProperty("crafts").EnumerateArray())
+                    rows.Add(index, Name(craft));
+            }
+
+            return rows;
+        }
+    }
+
     [Theory(DisplayName = "Crafting grids craft what vanilla 26.3's crafting recipes craft")]
     [MemberData(nameof(Crafts))]
     public void CraftsLikeVanilla(string name)
     {
         var row = Capture().GetProperty("crafts").EnumerateArray().Single(craft => Name(craft) == name);
-        var grid = row.GetProperty("grid").EnumerateArray().Select(ReadStack).ToArray();
-        var width = row.GetProperty("width").GetInt32();
-
-        var crafted = RecipesRegistry.Current.EvaluateCrafting(grid, width);
-
         var recipe = row.GetProperty("recipe").GetString();
-        if (recipe is null)
-        {
-            Assert.Null(crafted);
-            return;
-        }
+        var identifier = recipe?.TrimResourceTag(keepUnderscores: true);
 
-        var expected = ReadStack(row.GetProperty("result"))!;
-        Assert.NotNull(crafted);
-        Assert.Equal(recipe.TrimResourceTag(keepUnderscores: true), crafted.RecipeIdentifier);
-        Assert.Equal(expected.Count, crafted.Output.Count);
-        Assert.True(expected == crafted.Output, $"Obsidian crafted {Hex(crafted.Output)}, vanilla {Hex(expected)}.");
+        AssertCraftsLikeVanilla(RecipesRegistry.Current, row, identifier);
+    }
+
+    [Theory(DisplayName = "Data pack special recipes load like vanilla 26.3's")]
+    [MemberData(nameof(PackRecipes))]
+    public void PackRecipesLoadLikeVanilla(int index)
+    {
+        var row = Capture().GetProperty("recipes")[index];
+        var json = row.GetProperty("recipe");
+
+        if (row.GetProperty("loads").GetBoolean())
+            Assert.NotNull(ReadRecipe(json));
+        else
+            Assert.Throws<JsonException>(() => ReadRecipe(json));
+    }
+
+    [Theory(DisplayName = "Data pack special recipes craft what vanilla 26.3's craft")]
+    [MemberData(nameof(PackCrafts))]
+    public void PackRecipesCraftLikeVanilla(int index, string name)
+    {
+        var row = Capture().GetProperty("recipes")[index];
+        var recipe = ReadRecipe(row.GetProperty("recipe"));
+        var craft = row.GetProperty("crafts").EnumerateArray().Single(craft => Name(craft) == name);
+        var recipes = new RecipeSet(
+            new Dictionary<string, IRecipe> { [recipe.Identifier] = recipe }.ToFrozenDictionary(),
+            [new RecipeBookEntry(0, recipe, null)]);
+
+        AssertCraftsLikeVanilla(recipes, craft, recipe.Identifier);
     }
 
     [Theory(DisplayName = "The recipe book shows special crafting recipes like vanilla 26.3")]
@@ -97,6 +132,28 @@ public sealed class SpecialCraftingRecipes
         Assert.All(loaded, name =>
             Assert.Equal(RecipesRegistry.DisplayCount((ICraftingRecipe)recipes.Recipes[name]), displays[name]));
         Assert.Equal(8, displays["map_cloning"]);
+    }
+
+    // Evaluates a captured grid with the recipes, expecting what vanilla crafted with the recipe named identifier.
+    // A recipe that matched but assembled an invalid stack crafted nothing (an empty result).
+    private static void AssertCraftsLikeVanilla(RecipeSet recipes, JsonElement row, string? identifier)
+    {
+        var grid = row.GetProperty("grid").EnumerateArray().Select(ReadStack).ToArray();
+        var width = row.GetProperty("width").GetInt32();
+
+        var crafted = recipes.EvaluateCrafting(grid, width);
+
+        var expected = ReadStack(row.GetProperty("result"));
+        if (expected is null)
+        {
+            Assert.Null(crafted);
+            return;
+        }
+
+        Assert.NotNull(crafted);
+        Assert.Equal(identifier, crafted.RecipeIdentifier);
+        Assert.Equal(expected.Count, crafted.Output.Count);
+        Assert.True(expected == crafted.Output, $"Obsidian crafted {Hex(crafted.Output)}, vanilla {Hex(expected)}.");
     }
 
     private static JsonElement Capture()
