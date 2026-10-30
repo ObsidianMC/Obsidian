@@ -1117,6 +1117,12 @@ class WorldgenCaptures {
         entry.addProperty("regionRadius", radius);
         entry.addProperty("placed", result);
         entry.add("changes", changes(region, chunkX, chunkZ, layers, entry));
+        if (entry.has("captureFluidTicks")) {
+            entry.add("fluidTicks", featureFluidTicks(chunks, chunkX, chunkZ));
+        }
+        if (entry.has("captureBlockEntities")) {
+            entry.add("blockEntities", featureBlockEntities(region, chunks, chunkX, chunkZ));
+        }
         if (entry.has("regionRandomSeed")) {
             entry.addProperty("nextRegionRandom", region.getRandom().nextInt());
         }
@@ -1138,6 +1144,50 @@ class WorldgenCaptures {
             }
             entry.add("postChanges", changes(region, chunkX, chunkZ, layers, entry));
         }
+    }
+
+    static JsonArray featureFluidTicks(Map<Long, ProtoChunk> chunks, int centerX, int centerZ) {
+        var result = new JsonArray();
+        for (int z = centerZ - 1; z <= centerZ + 1; z++) {
+            for (int x = centerX - 1; x <= centerX + 1; x++) {
+                var chunk = chunks.get(ChunkPos.pack(x, z));
+                for (var tick : chunk.getTicksForSerialization(0L).fluids()) {
+                    var row = coordinates(tick.pos());
+                    row.add(BuiltInRegistries.FLUID.getKey(tick.type()).toString());
+                    row.add(tick.delay());
+                    row.add(tick.priority().getValue());
+                    result.add(row);
+                }
+            }
+        }
+        return result;
+    }
+
+    static JsonArray featureBlockEntities(
+        WorldGenRegion region, Map<Long, ProtoChunk> chunks, int centerX, int centerZ) {
+        var result = new JsonArray();
+        var order = Comparator.<BlockPos>comparingInt(BlockPos::getZ)
+            .thenComparingInt(BlockPos::getX)
+            .thenComparingInt(BlockPos::getY);
+
+        for (int z = centerZ - 1; z <= centerZ + 1; z++) {
+            for (int x = centerX - 1; x <= centerX + 1; x++) {
+                var chunk = chunks.get(ChunkPos.pack(x, z));
+                var positions = new ArrayList<>(chunk.getBlockEntitiesPos());
+                positions.sort(order);
+                for (var pos : positions) {
+                    var entity = region.getBlockEntity(pos);
+                    if (entity == null) {
+                        continue;
+                    }
+
+                    var row = coordinates(pos);
+                    row.add(BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(entity.getType()).toString());
+                    result.add(row);
+                }
+            }
+        }
+        return result;
     }
 
     static List<BlockPos> featureMarks(Map<Long, ProtoChunk> chunks, int centerX, int centerZ) {
@@ -1273,6 +1323,13 @@ class WorldgenCaptures {
                 if ((pos.getX() >> 4) == position.x() && (pos.getZ() >> 4) == position.z()) {
                     var state = BlockState.CODEC.parse(ops, edit.get(3)).getOrThrow();
                     chunk.setBlockState(pos, state);
+                    if (entry.has("captureBlockEntities")
+                        && state.getBlock() instanceof net.minecraft.world.level.block.EntityBlock entityBlock) {
+                        var entity = entityBlock.newBlockEntity(pos, state);
+                        if (entity != null) {
+                            chunk.setBlockEntity(entity);
+                        }
+                    }
                 }
             }
         }

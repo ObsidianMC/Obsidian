@@ -3,6 +3,7 @@ using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.API.Registries;
 using Obsidian.Registries;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Fluids;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Generators.Features;
 using Obsidian.WorldData.Generators.Mojang;
@@ -105,6 +106,30 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
         Assert.Equal(expected, actual);
         Assert.Equal(entry.GetProperty("placed").GetBoolean(), placed);
         Assert.Equal(entry.GetProperty("nextRandom").GetInt32(), nextRandom);
+
+        if (entry.TryGetProperty("fluidTicks", out var expectedTicks))
+        {
+            var expectedFluids = expectedTicks.EnumerateArray().Select(tick => FluidTick(
+                Position(tick), tick[3].GetString()!, tick[4].GetInt32(), tick[5].GetInt32())).ToList();
+            var actualFluids = FeatureFluidTicks(chunks, chunkX, chunkZ);
+
+            if (entry.TryGetProperty("expectFluidTicks", out var expectTicks) && expectTicks.GetBoolean())
+            {
+                Assert.NotEmpty(expectedFluids);
+                Assert.NotEmpty(actualFluids);
+            }
+
+            Assert.Equal(expectedFluids, actualFluids);
+        }
+
+        if (entry.TryGetProperty("blockEntities", out var expectedEntities))
+        {
+            var expectedBlockEntities = expectedEntities.EnumerateArray()
+                .Select(entity => BlockEntityState(Position(entity), entity[3].GetString()!)).ToList();
+            var actualBlockEntities = FeatureBlockEntities(chunks, chunkX, chunkZ);
+
+            Assert.Equal(expectedBlockEntities, actualBlockEntities);
+        }
 
         if (entry.TryGetProperty("expectBlocks", out var expectBlocks))
         {
@@ -304,6 +329,56 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
         return result;
     }
 
+    private static List<string> FeatureFluidTicks(Dictionary<(int X, int Z), IChunk> chunks, int centerX, int centerZ)
+    {
+        var result = new List<string>();
+
+        for (var z = centerZ - 1; z <= centerZ + 1; z++)
+        {
+            for (var x = centerX - 1; x <= centerX + 1; x++)
+            {
+                var chunk = (Chunk)chunks[(x, z)];
+                foreach (var tick in chunk.FluidTicks.Pack())
+                {
+                    result.Add(FluidTick(tick.Position, tick.Type.Name(), tick.Delay, tick.Priority));
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private static string FluidTick(Vector position, string type, int delay, int priority) =>
+        $"{position.X},{position.Y},{position.Z} {type} {delay} {priority}";
+
+    private static List<string> FeatureBlockEntities(
+        Dictionary<(int X, int Z), IChunk> chunks, int centerX, int centerZ)
+    {
+        var result = new List<string>();
+
+        for (var z = centerZ - 1; z <= centerZ + 1; z++)
+        {
+            for (var x = centerX - 1; x <= centerX + 1; x++)
+            {
+                var chunk = (Chunk)chunks[(x, z)];
+                var entities = chunk.BlockEntities.Values
+                    .OrderBy(entity => entity.BlockPosition.Z)
+                    .ThenBy(entity => entity.BlockPosition.X)
+                    .ThenBy(entity => entity.BlockPosition.Y);
+
+                foreach (var entity in entities)
+                {
+                    result.Add(BlockEntityState(entity.BlockPosition, entity.Id));
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private static string BlockEntityState(Vector position, string type) =>
+        $"{position.X},{position.Y},{position.Z} {type}";
+
     // Vanilla's decoration random: a population seed from the chunk's corner, then the feature's step and index.
     private static WorldgenRandom DecorationRandom(JsonElement entry, int chunkX, int chunkZ)
     {
@@ -406,6 +481,11 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
             if (position.X >> 4 == chunkX && position.Z >> 4 == chunkZ)
             {
                 chunk.SetBlock(position.X, position.Y, position.Z, block);
+
+                if (entry.TryGetProperty("captureBlockEntities", out _) && block.HasBlockEntity())
+                {
+                    DataBlockEntity.ApplyBlockChange(chunk, position, block);
+                }
             }
         }
 

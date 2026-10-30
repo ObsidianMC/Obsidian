@@ -38,6 +38,19 @@ retain those distinctions. Geodes cover float noise on two world seeds, cracks, 
 blocks. Large dripstone covers wind displacement at radii 15 and 16, and sculk covers spread/growth rounds,
 waterlogging, composed catalysts/shriekers and post-processing marks.
 
+The review cases also cover magma's directional slab/stair occlusion faces and magma, iceberg and dripstone
+origins outside the writable region whose footprints overlap it. Additional cases cover all fossil rotations and
+skulls, partial empty-corner limits, fluid corners and bottom-clamped burial; three-point geodes with crack
+orientations 0 and 3; snow-disabled icebergs and floating snow cleanup; shrinking dripstone radii, lava roots and
+irregular submerged terrain; obstructed podium domes and the build-height edge; and sculk/vein starts and vertical
+obstructions. Group 15 is reserved for the separate tree-coverage change.
+
+Feature cases can opt into `captureFluidTicks` to record `fluidTicks` as `[x, y, z, fluid, delay, priority]`,
+in chunk z/x order and each chunk's scheduling order. `expectFluidTicks` requires a nonempty list in both vanilla
+and the replay. `captureBlockEntities` creates block entities for edited entity blocks before placement and records
+the surviving `blockEntities` as `[x, y, z, type]`, ordered by chunk z/x then position z/x/y. The replay checks both
+lists as well as changed block states, placement results and random consumption.
+
 The recursive feature-data inventory contains 56 feature types, all implemented in the 26.3 registry.
 `VanillaFeatureRegistration.EveryVanillaFeatureCanBeCompiled` compiles every shipped feature, including nested
 features and their providers/modifiers, so missing implementations and incompatible data shapes fail in CI.
