@@ -795,12 +795,16 @@ public final class VanillaDumper {
                     + " block state physics, indexed by state id. See BlockPhysics for the bit layouts.");
             json.put("flags", flags);
             json.put("supportFlags", supportFlags);
+
+            // Block classes, block entities and signal sources.
             json.put("blockClasses", blockClasses());
             var blockEntityTypes = blockEntityTypes();
             json.put("blockEntityTypes", blockEntityTypes);
             json.put("blockEntityTypeIds", blockEntityTypeIds(blockEntityTypes));
             json.put("signalSources", signalSources());
             json.put("fluidFlags", fluidFlags);
+
+            // Shapes: collision faces and boxes, then each state's shapes and offsets.
             json.put("collisionFaceSets", faceSets.values());
             json.put("collisionFaces", faces.values());
             json.put("shapeBoxes", shapeBoxes.values());
@@ -810,12 +814,15 @@ public final class VanillaDumper {
             json.put("suffocating", suffocating);
             json.put("postProcess", postProcess);
             json.put("shapeOffsets", Arrays.asList(shapeOffsets));
+
+            // Breaking, ticking and pistons.
             json.put("hardness", hardness);
             json.put("requiresTool", requiresTool);
             json.put("randomTicking", randomTicking);
             json.put("pushReactionNames", pushReactionNames);
             json.put("pushReactions", pushReactions);
             json.put("stickyPistonStates", stickyPistonStates);
+
             Json.write(output.resolve("block_physics.json"), json, false);
         }
     }
