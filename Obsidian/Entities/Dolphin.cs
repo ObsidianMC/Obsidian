@@ -32,7 +32,9 @@ public sealed partial class Dolphin : AgeableMob
         if (MobBitMask.HasFlag(MobBitmask.NoAi))
             return;
         if (InWater || Terrain.IsRainingAt((Vector)Position.Floor()))
+        {
             Moistness = 2400;
+        }
         else
         {
             if (--Moistness <= 0)
@@ -54,7 +56,9 @@ public sealed partial class Dolphin : AgeableMob
     protected override async ValueTask TickAirSupplyAsync()
     {
         if (Terrain.GetBlock((Vector)EyePosition.Floor())?.RegistryId != BlockIds.Water)
+        {
             Air = 4800;
+        }
         else if (--Air <= -20)
         {
             Air = 0;
@@ -69,13 +73,18 @@ public sealed partial class Dolphin : AgeableMob
             || player.Level != Level
             || player.GameMode == GameMode.Spectator
             || !IsInRange(player, 4))
+        {
             return false;
+        }
+
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (item is not { Count: > 0, Holder.Id: ItemIds.Cod or ItemIds.Salmon })
             return false;
         await ConsumeInteractionItemAsync(player, hand);
         if (IsBaby)
+        {
             Age += -Age / 10;
+        }
         else
         {
             GotFish = true;
@@ -171,7 +180,9 @@ internal sealed class DolphinSwimGoal(Dolphin dolphin) : AI.NavigationGoal(dolph
                 dolphin.SynchronizeMetadata();
             }
             else
+            {
                 MoveTo(dolphin.Position + delta / delta.Magnitude * 8);
+            }
         }
         else if (swimmer != null && swimmer.Level == dolphin.Level && swimmer.Swimming)
         {

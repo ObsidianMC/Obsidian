@@ -291,10 +291,14 @@ public sealed class PluginContentGenerator : IIncrementalGenerator
         lines.AddRange(block.Settings.Select(setting => $"    {setting}"));
 
         if (block.Item is null)
+        {
             lines.Add("    Item = null");
+        }
         else if (block.Item.Count > 0)
+        {
             lines.Add("    Item = new global::Obsidian.API.Inventory.ItemProperties "
                 + $"{{ {string.Join(", ", block.Item)} }}");
+        }
 
         for (var i = 0; i < lines.Count; i++)
             builder.Line(i < lines.Count - 1 ? $"{lines[i]}," : lines[i]);

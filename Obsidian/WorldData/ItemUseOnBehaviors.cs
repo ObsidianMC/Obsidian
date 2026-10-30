@@ -57,7 +57,9 @@ internal static partial class ItemUseOnBehaviors
         {
             if (transform.TryGetProperty("disallowed_faces", out var faces)
                 && faces.EnumerateArray().Any(value => value.GetString() == faceName))
+            {
                 continue;
+            }
 
             var provider = transform.GetProperty("block_state_provider");
             var output = Provide(provider, read, position);

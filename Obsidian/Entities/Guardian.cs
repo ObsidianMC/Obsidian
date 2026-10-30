@@ -55,7 +55,9 @@ public partial class Guardian : PathfinderMob
     {
         if (!moving && !ReferenceEquals(source, this) && (IncomingDirectSource ?? source) is Living attacker && IsValidTarget(attacker) &&
             IncomingDamageKind is not (CombatDamageKind.Magic or CombatDamageKind.Explosion or CombatDamageKind.Thorns))
+        {
             await attacker.DamageCombatAsync(this, 2, CombatDamageKind.Thorns);
+        }
     }
 
     protected override ValueTask OnDeathAsync(IEntity source)
@@ -129,6 +131,7 @@ internal sealed class GuardianAttackGoal(Guardian guardian) : Goal
         }
         var damage = guardian.AttackDamage;
         if (target is IPlayer)
+        {
             damage = guardian.Level.LevelData.Difficulty switch
             {
                 Difficulty.Peaceful => 0,
@@ -136,6 +139,8 @@ internal sealed class GuardianAttackGoal(Guardian guardian) : Goal
                 Difficulty.Hard => damage * 1.5f,
                 _ => damage
             };
+        }
+
         await target.DamageAsync(guardian, damage);
         guardian.AttackTarget = null;
     }
@@ -166,7 +171,10 @@ public sealed partial class ElderGuardian : Guardian
         {
             if (player.ActivePotionEffects.TryGetValue((int)PotionEffect.MiningFatigue - 1, out var effect) &&
                 effect.EffectData.Amplifier >= 2 && effect.CurrentDuration >= 1200)
+            {
                 continue;
+            }
+
             player.AddPotionEffect((int)PotionEffect.MiningFatigue - 1, 6000, 2, EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon);
             await player.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.PlayElderGuardianMobAppearance, Silent ? 0 : 1));
         }

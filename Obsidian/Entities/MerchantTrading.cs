@@ -13,7 +13,10 @@ internal static class MerchantTrading
             merchant.Level != player.Level || !merchant.IsInRange(player, 4) || offers.IsEmpty ||
             merchant.Level.GetPlayersInRange(merchant.Position, 16).Any(other =>
                 other.OpenedContainer is MerchantContainer menu && ReferenceEquals(menu.Merchant, merchant)))
+        {
             return;
+        }
+
         var container = new MerchantContainer(merchant, player, offers, level, experience, canRestock, completed);
         await player.OpenInventoryAsync(container);
         await container.SyncAsync();
@@ -62,7 +65,10 @@ internal sealed class MerchantContainer : BaseContainer
 
             if (closed || index < 0 || index >= offers.Length || !Merchant.Alive
                 || Merchant.Level != customer.Level || !Merchant.IsInRange(customer, 8))
+            {
                 return;
+            }
+
             selected = index;
             ReturnInputs();
             var offer = offers[index];
@@ -142,7 +148,9 @@ internal sealed class MerchantContainer : BaseContainer
             var slot = packet.ClickedSlot;
             if (slot == 2 && (packet.ClickType == ClickType.QuickMove
                 || packet.ClickType == ClickType.Pickup && packet.Button is 0 or 1))
+            {
                 TakeResult(packet.ClickType == ClickType.QuickMove);
+            }
             else if (slot is >= 0 and < 39 && packet.ClickType == ClickType.Pickup && packet.Button is 0 or 1)
             {
                 var mapped = GetSlot(slot);
@@ -241,7 +249,10 @@ internal sealed class MerchantContainer : BaseContainer
                 var cursor = customer.CarriedItem;
                 if (cursor is not null && !cursor.IsAir
                     && (cursor != result || cursor.Count + result.Count > cursor.MaxStackSize))
+                {
                     break;
+                }
+
                 if (cursor == null || cursor.IsAir)
                     customer.CarriedItem = result;
                 else

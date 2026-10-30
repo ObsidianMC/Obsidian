@@ -115,10 +115,12 @@ public partial class Entity
 
         int delay;
         using (call)
+        {
             delay = this is IPlayer player
                 ? player.Abilities.HasFlag(PlayerAbility.Invulnerable)
                     ? properties.CreativeWaitTicks : properties.WaitTicks
                 : properties.EntityWaitTicks;
+        }
 
         if (this.travelPortalTime++ < delay)
             return;
@@ -136,7 +138,9 @@ public partial class Entity
         this.travelPortalTime = 0;
         if (portal.BlockId == BlockIds.EndGateway
             && (this.Level is not AbstractLevel level || !level.TryUseEndGateway(portal.Position)))
+        {
             return;
+        }
 
         this.StartTravelPreparation(canContinue => EndTravel.PrepareAsync(this, portal, canContinue));
     }
@@ -161,8 +165,10 @@ public partial class Entity
             catch (Exception exception)
             {
                 if (source is AbstractLevel level)
+                {
                     level.Logger.LogError(
                         exception, "Failed to prepare a portal destination for entity {Id}", this.EntityId);
+                }
 
                 return null;
             }

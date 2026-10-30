@@ -92,8 +92,10 @@ public sealed class VanillaChunkNbt
                 AssertNbt(section["block_states"], saved["block_states"]);
                 AssertNbt(section["biomes"], saved["biomes"]);
                 foreach (var light in new[] { "BlockLight", "SkyLight" })
+                {
                     if (section.TryGetTag(light, out var capturedLight))
                         AssertNbt(capturedLight, saved[light]);
+                }
             }
             AssertNbt(captured["block_entities"], actual["block_entities"], unorderedList: true);
             AssertNbt(capturedEntities, await ReadRegion(destination, "entities"));
@@ -378,12 +380,20 @@ public sealed class VanillaChunkNbt
                 AssertNbt(entries[i], actualEntries[i]);
         }
         else if (expected is NbtArray<long> longs)
+        {
             Assert.Equal(longs.GetArray(), Assert.IsType<NbtArray<long>>(actual).GetArray());
+        }
         else if (expected is NbtArray<int> ints)
+        {
             Assert.Equal(ints.GetArray(), Assert.IsType<NbtArray<int>>(actual).GetArray());
+        }
         else if (expected is NbtArray<byte> bytes)
+        {
             Assert.Equal(bytes.GetArray(), Assert.IsType<NbtArray<byte>>(actual).GetArray());
+        }
         else
+        {
             Assert.Equal(expected.ToString(), actual.ToString());
+        }
     }
 }

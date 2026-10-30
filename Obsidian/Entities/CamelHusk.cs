@@ -27,7 +27,10 @@ public sealed partial class CamelHusk : Camel
     {
         if (!Alive || IsRemoved || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator ||
             !IsInRange(player, 4) || !CanSee(player))
+        {
             return false;
+        }
+
         SetSitting(false);
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (CanEat(item))

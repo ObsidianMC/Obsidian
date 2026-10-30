@@ -19,7 +19,10 @@ internal static class RandomPosition
                 position = VolumeMovement.CanOccupy(mob.PathBody, point) ? point : null;
             }
             else
+            {
                 position = evaluator.FindGround(x, z, mob.Position.Y + mob.Random.Next(-3, 4));
+            }
+
             if (position is not VectorD candidate)
                 continue;
 
@@ -93,13 +96,19 @@ public sealed class PanicGoal(PathfinderMob mob, float speed) : NavigationGoal(m
         {
             var origin = (Vector)Mob.Position.Floor();
             for (var x = origin.X - 5; x <= origin.X + 5; x++)
-            for (var y = origin.Y - 1; y <= origin.Y + 1; y++)
-            for (var z = origin.Z - 5; z <= origin.Z + 5; z++)
             {
-                var waterPoint = new VectorD(x + 0.5f, y, z + 0.5f);
-                if (Mob.Terrain.GetBlock(new Vector(x, y, z))?.RegistryId == BlockIds.Water &&
-                    (position == null || (waterPoint - Mob.Position).MagnitudeSquared() < (position.Value - Mob.Position).MagnitudeSquared()))
-                    position = waterPoint;
+                for (var y = origin.Y - 1; y <= origin.Y + 1; y++)
+                {
+                    for (var z = origin.Z - 5; z <= origin.Z + 5; z++)
+                    {
+                        var waterPoint = new VectorD(x + 0.5f, y, z + 0.5f);
+                        if (Mob.Terrain.GetBlock(new Vector(x, y, z))?.RegistryId == BlockIds.Water &&
+                            (position == null || (waterPoint - Mob.Position).MagnitudeSquared() < (position.Value - Mob.Position).MagnitudeSquared()))
+                        {
+                            position = waterPoint;
+                        }
+                    }
+                }
             }
         }
         position ??= RandomPosition.Find(Mob, 5);
@@ -379,7 +388,10 @@ public sealed class NearestAttackableTargetGoal(PathfinderMob zombie, Func<IEnti
         var target = zombie.AttackTarget;
         if (target == null || !zombie.IsValidTarget(target) ||
             (target.Position - zombie.Position).MagnitudeSquared() > zombie.FollowRange * zombie.FollowRange)
+        {
             return false;
+        }
+
         unseenTicks = !mustSee || zombie.CanSee(target) ? 0 : unseenTicks + 2;
         return unseenTicks <= 60;
     }

@@ -27,7 +27,9 @@ public sealed partial class ConsoleDevice : IConsoleDevice, IDisposable
                 this.IsInteractive &= (mode & VirtualTerminalProcessing) != 0 || this.restoreOutputMode;
             }
             else
+            {
                 this.IsInteractive = false;
+            }
         }
     }
 

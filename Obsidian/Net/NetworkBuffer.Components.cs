@@ -80,7 +80,9 @@ public partial class NetworkBuffer
                 ? encoding.Original : current.data.AsSpan(0, current.Offset));
         }
         else
+        {
             component.Write(this);
+        }
     }
 
     private int ReadComponentCount()
@@ -137,7 +139,9 @@ public partial class NetworkBuffer
     {
         var count = this.ReadComponentCount();
         if (count == 0)
+        {
             this.SkipString();
+        }
         else
         {
             for (var i = 1; i < count; i++)

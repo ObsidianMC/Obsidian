@@ -47,8 +47,11 @@ internal sealed class DragonFireball : Entity
         var swept = new BoundingBox(VectorD.Min(Position, end) - new VectorD(0.5f), VectorD.Max(Position, end) + new VectorD(0.5f));
         var fraction = 1d;
         foreach (var shape in terrain.GetCollisions(swept))
+        {
             if (MobTerrain.RayIntersection(shape, Position, Motion) is { } hit)
                 fraction = Math.Min(fraction, hit);
+        }
+
         foreach (var target in Level.GetEntitiesInRange(Position, (float)Motion.Magnitude + 3).OfType<Living>())
         {
             if (target.Uuid == OwnerUuid || !target.Alive || target is IPlayer { GameMode: GameMode.Creative or GameMode.Spectator })
@@ -150,7 +153,10 @@ internal sealed class DragonBreathCloud : Entity
             if (target.Uuid == OwnerUuid || target is EnderDragon || !target.Alive || target is IPlayer { GameMode: GameMode.Creative or GameMode.Spectator } ||
                 !BoundingBox.Intersects(target.Dimension.CreateBBFromPosition(target.Position)) ||
                 nextHit.TryGetValue(target.EntityId, out var ready) && age < ready)
+            {
                 continue;
+            }
+
             var difference = target.Position - Position;
             if (difference.X * difference.X + difference.Z * difference.Z > Radius * Radius)
                 continue;

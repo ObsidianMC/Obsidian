@@ -124,7 +124,9 @@ public abstract partial class AbstractLevel
     {
         if (await this.GetBlockAsync(position) is not IBlock current
             || !ReferenceEquals(this.GetResidentBlockEntity(position), expectedEntity))
+        {
             return;
+        }
 
         if (!current.IsSameState(block))
         {
@@ -165,7 +167,9 @@ public abstract partial class AbstractLevel
                 && ReferenceEquals(this.GetResidentBlockEntity(position), expectedEntity)
                 && (captured.Source is null
                     || ReferenceEquals(this.GetResidentBlockEntity(parts.DropPosition), captured.Source))))
+        {
             return;
+        }
 
         await parts.RemovePartnerAsync(this);
         // Vanilla Level.destroyBlock sends 2001 (sound and particles), except for fire. Water washout and

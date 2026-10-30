@@ -213,7 +213,9 @@ internal sealed class NoiseBasedAquifer : IAquifer
 
         if ((firstBlock == BlockIds.Lava && secondBlock == BlockIds.Water)
             || (firstBlock == BlockIds.Water && secondBlock == BlockIds.Lava))
+        {
             return 2.0;
+        }
 
         var levelDifference = Math.Abs(first.FluidLevel - second.FluidLevel);
         if (levelDifference == 0)

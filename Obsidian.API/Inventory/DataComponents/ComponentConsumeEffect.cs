@@ -93,7 +93,9 @@ public sealed record ComponentConsumeEffect : IConsumeEffect
             writer.WriteSingle(legacy.Probability);
         }
         else
+        {
             effect.Write(writer);
+        }
     }
 
     public IConsumeEffect Read(INetStreamReader reader)

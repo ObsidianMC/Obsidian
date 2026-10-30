@@ -55,7 +55,9 @@ public sealed partial class Turtle : FarmAnimal
     {
         if (Terrain.GetBlock(point)?.IsAir != true
             || Terrain.GetBlock(point - new Vector(0, 1, 0))?.RegistryId is not (BlockIds.Sand or BlockIds.RedSand))
+        {
             return;
+        }
 
         await Level.SetBlockAsync(point, BlocksRegistry.TurtleEgg.WithProperty("eggs", Random.Next(1, 5)), true);
         HasEgg = false;
@@ -114,7 +116,9 @@ internal sealed class TurtleLayEggGoal(Turtle turtle) : NavigationGoal(turtle, 1
             if (turtle.Terrain.GetBlock(point)?.IsAir == true
                 && turtle.Terrain.GetBlock(point - new Vector(0, 1, 0))?.RegistryId
                     is BlockIds.Sand or BlockIds.RedSand)
+            {
                 return true;
+            }
         }
         return false;
     }

@@ -1002,8 +1002,10 @@ public sealed class BlockUpdates : IDisposable
             Assert.DoesNotContain(client.SentPackets.OfType<LevelEventPacket>(), packet =>
                 packet.Type == 2001 && packet.Position == washPosition);
             if (!water)
+            {
                 Assert.Contains(client.SentPackets.OfType<LevelEventPacket>(), packet =>
                     packet.Type == 1501 && packet.Position == washPosition);
+            }
 
             chunk.SetBlock(washPosition, BlocksRegistry.Air);
             chunk.SetBlock(sourcePosition, BlocksRegistry.Air);

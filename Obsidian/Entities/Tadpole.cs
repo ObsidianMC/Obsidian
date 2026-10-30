@@ -37,13 +37,17 @@ public sealed partial class Tadpole : PathfinderMob
             frog.SynchronizeMetadata();
         }
         else if (!InWater && MovementFlags.HasFlag(MovementFlags.OnGround))
+        {
             Motion += new VectorD((Random.NextSingle() - 0.5f) * 0.2f, 0.4f, (Random.NextSingle() - 0.5f) * 0.2f);
+        }
     }
 
     protected override async ValueTask TickAirSupplyAsync()
     {
         if (InWater)
+        {
             Air = 300;
+        }
         else if (--Air <= -20)
         {
             Air = 0;
@@ -100,15 +104,19 @@ internal sealed class SeekWaterGoal(PathfinderMob mob, bool onlyDuringDay = fals
             return false;
         var origin = (Vector)mob.Position.Floor();
         for (var y = -2; y <= 2; y++)
-        for (var x = -8; x <= 8; x++)
-        for (var z = -8; z <= 8; z++)
         {
-            var point = new Vector(origin.X + x, origin.Y + y, origin.Z + z);
-            if (mob.Terrain.GetBlock(point)?.RegistryId == BlockIds.Water &&
-                mob.Terrain.IsFree(mob.Dimension.CreateBBFromPosition((VectorD)point + new VectorD(0.5f, 0, 0.5f))))
+            for (var x = -8; x <= 8; x++)
             {
-                destination = (VectorD)point + new VectorD(0.5f, 0, 0.5f);
-                return true;
+                for (var z = -8; z <= 8; z++)
+                {
+                    var point = new Vector(origin.X + x, origin.Y + y, origin.Z + z);
+                    if (mob.Terrain.GetBlock(point)?.RegistryId == BlockIds.Water &&
+                        mob.Terrain.IsFree(mob.Dimension.CreateBBFromPosition((VectorD)point + new VectorD(0.5f, 0, 0.5f))))
+                    {
+                        destination = (VectorD)point + new VectorD(0.5f, 0, 0.5f);
+                        return true;
+                    }
+                }
             }
         }
         return false;

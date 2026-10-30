@@ -11,7 +11,9 @@ public partial class Extensions
         builder.Append("new() { ");
 
         if (element.ValueKind == JsonValueKind.Number)
+        {
             builder.Append($"IntValue = {element.GetInt32()} ");
+        }
         else
         {
             builder.Append("Value = new() { ");

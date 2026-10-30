@@ -92,7 +92,9 @@ public sealed partial class WanderingTrader : AgeableMob
         offers = MerchantOffers.Read(tag);
         if (tag.TryGetTag<NbtCompound>("WanderTarget", out var target) && target.TryGetTagValue<int>("X", out var x) &&
             target.TryGetTagValue<int>("Y", out var y) && target.TryGetTagValue<int>("Z", out var z))
+        {
             WanderTarget = new Vector(x, y, z);
+        }
     }
 }
 

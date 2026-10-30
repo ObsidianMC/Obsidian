@@ -219,8 +219,10 @@ public sealed partial class SamplePlugin
             for (var x = centerX - radius; x <= centerX + radius; x++)
             {
                 for (var z = centerZ - radius; z <= centerZ + radius; z++)
+                {
                     ready &= level.GetLoadedChunk(x, z) is not null
                         && level.LoadedChunks.Contains(NumericsHelper.IntsToLong(x, z));
+                }
             }
 
             if (ready)

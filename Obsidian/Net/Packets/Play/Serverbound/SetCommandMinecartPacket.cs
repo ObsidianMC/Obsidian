@@ -31,11 +31,13 @@ public partial class SetCommandMinecartPacket
         }
 
         if (minecart.Level is WorldData.AbstractLevel level)
+        {
             level.EnqueueEntityAction(() =>
             {
                 minecart.Edit(this.Command, this.TrackOutput);
                 return default;
             });
+        }
 
         return default;
     }

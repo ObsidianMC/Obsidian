@@ -43,8 +43,11 @@ public sealed partial class Vindicator : PathfinderMob
     {
         if (source is IPlayer) DropItem(ItemsRegistry.Emerald, Random.Next(2));
         foreach (var slot in Enum.GetValues<EquipmentSlot>())
+        {
             if (!GetEquipment(slot).IsAir && Random.NextSingle() < GetEquipmentDropChance(slot))
                 DropItem(GetEquipment(slot));
+        }
+
         return default;
     }
     public override void Write(INetStreamWriter writer)

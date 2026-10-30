@@ -69,7 +69,9 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
             if (craftingType is not (CraftingType.CraftingShaped or CraftingType.CraftingShapeless or CraftingType.Blasting
                 or CraftingType.Smelting or CraftingType.Smoking or CraftingType.CampfireCooking
                 or CraftingType.Stonecutting or CraftingType.SmithingTransform))
+            {
                 continue;
+            }
 
             var result = value.GetProperty("result").Deserialize<Ingredient>(options)!;
 

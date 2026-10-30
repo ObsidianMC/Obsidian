@@ -17,7 +17,9 @@ internal static class DialogValidation
         if (parts.Length != 2 || parts.Any(string.IsNullOrEmpty) ||
             parts[0].Any(c => !(c is >= 'a' and <= 'z' or >= '0' and <= '9' or '_' or '-' or '.')) ||
             parts[1].Any(c => !(c is >= 'a' and <= 'z' or >= '0' and <= '9' or '_' or '-' or '.' or '/')))
+        {
             throw new ArgumentException("Expected a namespaced Minecraft identifier.", nameof(value));
+        }
     }
 
     internal static void WriteText(INbtWriter writer, string name, ChatMessage text)

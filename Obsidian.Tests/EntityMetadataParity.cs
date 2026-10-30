@@ -206,9 +206,10 @@ public class EntityMetadataParity
         // omitted fields and same-serializer shifts that a compatibility-only subset check would miss.
         if (entity is AgeableMob or Cushion or Interaction or OminousItemSpawner or DisplayEntity
             || type is EntityType.Marker or EntityType.WindCharge or EntityType.PoplarBoat or EntityType.PoplarChestBoat)
+        {
             Assert.Equal(layout.EnumerateObject().Select(field => int.Parse(field.Name)).Order(),
                 writer.Fields.Select(field => (int)field.Index).Order());
-
+        }
     }
 
     // Reimplement just the header method on the interface; inherited NetworkBuffer methods still write real payloads.

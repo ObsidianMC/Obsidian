@@ -90,17 +90,19 @@ public sealed partial class Fox : FarmAnimal
         {
             var origin = (Vector)Position.Floor();
             for (var x = -2; x <= 2; x++)
-            for (var z = -2; z <= 2; z++)
             {
-                var point = new Vector(origin.X + x, origin.Y, origin.Z + z);
-                if (Terrain.GetBlock(point) is { RegistryId: BlockIds.SweetBerryBush } berries
-                    && int.TryParse(berries.GetProperty("age"), out var age)
-                    && age >= 2)
+                for (var z = -2; z <= 2; z++)
                 {
-                    await Level.SetBlockAsync(point, berries.WithProperty("age", 1), true);
-                    DropItem(ItemsRegistry.SweetBerries, Random.Next(1, 3) + (age == 3 ? 1 : 0));
-                    PlayMobSound("eat");
-                    return;
+                    var point = new Vector(origin.X + x, origin.Y, origin.Z + z);
+                    if (Terrain.GetBlock(point) is { RegistryId: BlockIds.SweetBerryBush } berries
+                        && int.TryParse(berries.GetProperty("age"), out var age)
+                        && age >= 2)
+                    {
+                        await Level.SetBlockAsync(point, berries.WithProperty("age", 1), true);
+                        DropItem(ItemsRegistry.SweetBerries, Random.Next(1, 3) + (age == 3 ? 1 : 0));
+                        PlayMobSound("eat");
+                        return;
+                    }
                 }
             }
         }

@@ -181,8 +181,10 @@ public partial class PlayerBase
         var points = (int)Math.Clamp(Math.Floor(amount * 10 + 0.5), 0, int.MaxValue);
         this.Statistics.Increment("minecraft:damage_taken", points);
         if (source is IPlayer attacker && !ReferenceEquals(source, this))
+        {
             attacker.Statistics.Increment("minecraft:damage_dealt",
                 (int)Math.Clamp(Math.Floor(Math.Min(this.Health, amount) * 10 + 0.5), 0, int.MaxValue));
+        }
     }
 
     internal async ValueTask RecordProgressDeathAsync(IEntity source)
@@ -289,7 +291,9 @@ public partial class PlayerBase
         if ((!recipes.Recipes.ContainsKey(identifier)
                 && !recipes.Recipes.ContainsKey(identifier.TrimResourceTag(keepUnderscores: true)))
             || !this.unlockedRecipes.Add(identifier))
+        {
             return;
+        }
 
         // Obsidian currently exposes every crafting recipe. A reward still explicitly adds its display and
         // records the vanilla recipe_book identity, so it remains known when selective unlocking is implemented.

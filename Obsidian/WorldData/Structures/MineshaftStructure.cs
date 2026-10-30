@@ -486,8 +486,10 @@ public sealed class MineshaftCorridor : MineshaftPiece
         this.GenerateBox(level, box, 0, 0, 0, 2, 1, length, caveAir, caveAir, false);
         this.GenerateMaybeBox(level, box, random, 0.8f, 0, 2, 0, 2, 2, length, caveAir, caveAir, false, false);
         if (this.spiderCorridor)
+        {
             this.GenerateMaybeBox(
                 level, box, random, 0.6f, 0, 0, 0, 2, 1, length, BlocksRegistry.Cobweb, caveAir, false, true);
+        }
 
         for (var section = 0; section < this.numSections; section++)
         {

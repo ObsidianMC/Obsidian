@@ -154,20 +154,24 @@ public partial class ContainerBlockEntity : BlockEntity, IItemAccessProvider
     protected internal override void Save(NbtCompound tag)
     {
         using (this.Inventory.Lock())
-        lock (this.LootLock)
+        {
+            lock (this.LootLock)
             this.SaveContents(tag);
+        }
     }
 
     /// <summary>Overlays current container fields without invoking a plugin's Save override.</summary>
     internal void SnapshotContents(NbtCompound tag)
     {
         using (this.Inventory.Lock())
-        lock (this.LootLock)
+        {
+            lock (this.LootLock)
         {
             foreach (var name in new[] { "CustomName", "Items", "LootTable", "LootTableSeed" })
                 tag.Remove(name);
 
             this.SaveContents(tag);
+        }
         }
     }
 

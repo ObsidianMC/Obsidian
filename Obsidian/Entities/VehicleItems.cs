@@ -139,13 +139,19 @@ internal static class VehicleItems
         var below = front + Vector.Down;
         double raise;
         if (terrain.GetBlock(front) is IBlock frontBlock && FluidState.Of(frontBlock).IsWater)
+        {
             raise = 1;
+        }
         else if (terrain.GetBlock(front)?.IsAir == true
             && terrain.GetBlock(below) is IBlock belowBlock
             && FluidState.Of(belowBlock).IsWater)
+        {
             raise = 0;
+        }
         else
+        {
             return false;
+        }
 
         var boat = Boat.Create(type, level);
         boat.EntityId = Server.GetNextEntityId();

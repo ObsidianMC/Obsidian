@@ -84,48 +84,52 @@ public abstract partial class AbstractLevel
         var destroyed = new HashSet<Vector>();
         var reached = new HashSet<Vector>();
         for (var x = 0; x < 16; x++)
-        for (var y = 0; y < 16; y++)
-        for (var z = 0; z < 16; z++)
         {
-            if (x is not 0 and not 15 && y is not 0 and not 15 && z is not 0 and not 15)
-                continue;
-            var direction = new VectorD(x / 15f * 2 - 1, y / 15f * 2 - 1, z / 15f * 2 - 1);
-            direction /= direction.Magnitude;
-            var point = center;
-            var strength = radius * (0.7f + random.NextSingle() * 0.6f);
-            while (strength > 0)
+            for (var y = 0; y < 16; y++)
             {
-                var position = (Vector)point.Floor();
-                var block = terrain.GetBlock(position);
-                if (block == null)
-                    break;
-                // Like vanilla's ExplosionDamageCalculator, a waterlogged block resists as much as its water does.
-                var fluid = FluidState.Of(block);
-                if (!block.IsAir || !fluid.IsEmpty)
+                for (var z = 0; z < 16; z++)
                 {
-                    var resistance = BlocksRegistry.TryGetPluginBlock(block.GetHashCode(), out var pluginBlock)
-                        ? pluginBlock.Settings.ExplosionResistance
-                        : blastResistance.GetValueOrDefault(block.UnlocalizedName);
-                    if (!fluid.IsEmpty)
-                        resistance = Math.Max(resistance, 100);
-                    if (source is WitherSkull { Invulnerable: true }
-                        && !TagsRegistry.Block.WitherImmune.Entries.Contains(block.RegistryId))
+                    if (x is not 0 and not 15 && y is not 0 and not 15 && z is not 0 and not 15)
+                        continue;
+                    var direction = new VectorD(x / 15f * 2 - 1, y / 15f * 2 - 1, z / 15f * 2 - 1);
+                    direction /= direction.Magnitude;
+                    var point = center;
+                    var strength = radius * (0.7f + random.NextSingle() * 0.6f);
+                    while (strength > 0)
                     {
-                        resistance = Math.Min(resistance, 0.8f);
+                        var position = (Vector)point.Floor();
+                        var block = terrain.GetBlock(position);
+                        if (block == null)
+                            break;
+                        // Like vanilla's ExplosionDamageCalculator, a waterlogged block resists as much as its water does.
+                        var fluid = FluidState.Of(block);
+                        if (!block.IsAir || !fluid.IsEmpty)
+                        {
+                            var resistance = BlocksRegistry.TryGetPluginBlock(block.GetHashCode(), out var pluginBlock)
+                                ? pluginBlock.Settings.ExplosionResistance
+                                : blastResistance.GetValueOrDefault(block.UnlocalizedName);
+                            if (!fluid.IsEmpty)
+                                resistance = Math.Max(resistance, 100);
+                            if (source is WitherSkull { Invulnerable: true }
+                                && !TagsRegistry.Block.WitherImmune.Entries.Contains(block.RegistryId))
+                            {
+                                resistance = Math.Min(resistance, 0.8f);
+                            }
+
+                            if (spares?.Invoke(position, block) == true)
+                                resistance = 0;
+
+                            strength -= (resistance + 0.3f) * 0.3f;
+                        }
+                        if (strength > 0 && !block.IsAir && spares?.Invoke(position, block) != true)
+                            destroyed.Add(position);
+
+                        if (strength > 0 && fire)
+                            reached.Add(position);
+                        point += direction * 0.3f;
+                        strength -= 0.22500001f;
                     }
-
-                    if (spares?.Invoke(position, block) == true)
-                        resistance = 0;
-
-                    strength -= (resistance + 0.3f) * 0.3f;
                 }
-                if (strength > 0 && !block.IsAir && spares?.Invoke(position, block) != true)
-                    destroyed.Add(position);
-
-                if (strength > 0 && fire)
-                    reached.Add(position);
-                point += direction * 0.3f;
-                strength -= 0.22500001f;
             }
         }
         var knockbacks = new Dictionary<int, VectorD>();
@@ -139,7 +143,9 @@ public abstract partial class AbstractLevel
         {
             if (ReferenceEquals(target, source) || target.Health <= 0 ||
                 target is IPlayer player && player.GameMode == GameMode.Spectator)
+            {
                 continue;
+            }
 
             // Vanilla's VehicleEntity.ignoreExplosion: a mob's explosion passes boats and minecarts by without
             // mob_griefing.
@@ -177,13 +183,17 @@ public abstract partial class AbstractLevel
             var offsetX = (1 - Math.Floor(1 / stepX) * stepX) / 2;
             var offsetZ = (1 - Math.Floor(1 / stepZ) * stepZ) / 2;
             for (var a = 0d; a <= 1; a += stepX)
-            for (var b = 0d; b <= 1; b += stepY)
-            for (var c = 0d; c <= 1; c += stepZ)
             {
-                total++;
-                var sample = bounds.Min + (bounds.Max - bounds.Min) * new VectorD(a, b, c) + new VectorD(offsetX, 0, offsetZ);
-                if (terrain.HasLineOfSight(sample, center))
-                    visible++;
+                for (var b = 0d; b <= 1; b += stepY)
+                {
+                    for (var c = 0d; c <= 1; c += stepZ)
+                    {
+                        total++;
+                        var sample = bounds.Min + (bounds.Max - bounds.Min) * new VectorD(a, b, c) + new VectorD(offsetX, 0, offsetZ);
+                        if (terrain.HasLineOfSight(sample, center))
+                            visible++;
+                    }
+                }
             }
             var exposure = (1 - distance) * visible / Math.Max(1, total);
             var damage = (float)Math.Floor((exposure * exposure + exposure) / 2 * 7 * diameter + 1);
@@ -192,14 +202,18 @@ public abstract partial class AbstractLevel
             // block by.
             var attacker = owner ?? source ?? (IEntity)target;
             if (target is Living living)
+            {
                 await living.DamageCombatAsync(attacker, damage, CombatDamageKind.Explosion, sourcePosition: center);
+            }
             else if (target is ItemEntity item)
             {
                 if (await item.HurtByExplosionAsync(damage))
                     continue;
             }
             else if (target is EndCrystal)
+            {
                 await target.DamageAsync(attacker, damage);
+            }
             else if (target is VehicleEntity vehicle)
             {
                 await vehicle.HurtAsync(owner ?? source, damage, VehicleDamage.Explosion);
@@ -253,7 +267,9 @@ public abstract partial class AbstractLevel
             {
                 if (LevelData.GetBooleanRule("tnt_explodes")
                     && await this.TrySetBlockAsync(position, BlocksRegistry.Air, BlockUpdateFlags.All, state => state.RegistryId == BlockIds.Tnt))
+                {
                     PrimedTnt.Prime(this, position, owner ?? source, PrimedTnt.ExplodedFuse());
+                }
 
                 continue;
             }
@@ -380,7 +396,9 @@ public abstract partial class AbstractLevel
             state => state.GetHashCode() == block.GetHashCode()
                 && (blockEntity.Source is null || parts.DropPosition != position
                     || ReferenceEquals(this.GetResidentBlockEntity(position), blockEntity.Source))))
+        {
             return null;
+        }
 
         await parts.RemovePartnerAsync(this);
         foreach (var item in drops)

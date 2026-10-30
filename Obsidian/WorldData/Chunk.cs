@@ -743,8 +743,10 @@ internal static class ChunkHeights
             return heightmap.GetHeight(x, z);
 
         for (var y = chunk.MinY + chunk.Height - 1; y >= chunk.MinY; y--)
+        {
             if (Generators.Mojang.WorldgenHeightmaps.Matches(type, chunk.GetBlock(x, y, z)))
                 return y + 1;
+        }
 
         return chunk.MinY;
     }

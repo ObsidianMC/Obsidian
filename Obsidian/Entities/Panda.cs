@@ -27,11 +27,19 @@ public sealed partial class Panda : FarmAnimal
         var origin = (Vector)Position.Floor();
         var count = 0;
         for (var x = -5; x <= 5; x++)
-        for (var y = -2; y <= 2; y++)
-        for (var z = -5; z <= 5; z++)
-            if (Terrain.GetBlock(new Vector(origin.X + x, origin.Y + y, origin.Z + z))?.RegistryId == BlockIds.Bamboo
-                && ++count >= 8)
-                return true;
+        {
+            for (var y = -2; y <= 2; y++)
+            {
+                for (var z = -5; z <= 5; z++)
+                {
+                    if (Terrain.GetBlock(new Vector(origin.X + x, origin.Y + y, origin.Z + z))?.RegistryId == BlockIds.Bamboo
+                        && ++count >= 8)
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
         return false;
     }
 
@@ -85,13 +93,18 @@ public sealed partial class Panda : FarmAnimal
             || player.Level != Level
             || player.GameMode == GameMode.Spectator
             || !IsInRange(player, 4))
+        {
             return false;
+        }
+
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (item is not { Count: > 0, Holder.Id: ItemIds.Bamboo or ItemIds.Cake })
             return false;
         var used = true;
         if (item.Is(ItemsRegistry.Bamboo) && (IsBaby || Age == 0 && HasBreedingBamboo()))
+        {
             used = await base.FeedAsync(player, hand);
+        }
         else
         {
             if (item.Is(ItemsRegistry.Bamboo) && Age == 0)
@@ -127,7 +140,9 @@ public sealed partial class Panda : FarmAnimal
                 SynchronizeMetadata();
             }
             else if (EatingTicks % 10 == 0)
+            {
                 PlayMobSound("eat");
+            }
         }
         else if (!IsBaby && AttackTarget == null && Random.Next(600) == 0)
         {

@@ -46,12 +46,14 @@ public sealed class SchematicCommandModule : CommandModuleBase
         var max = pos + schematic.Size - new Vector(1, 1, 1);
         var level = LevelOf(this.CommandContext);
         for (var x = pos.X >> 4; x <= max.X >> 4; x++)
-        for (var z = pos.Z >> 4; z <= max.Z >> 4; z++)
         {
-            if (await level.GetChunkAsync(x, z, scheduleGeneration: false) is null)
+            for (var z = pos.Z >> 4; z <= max.Z >> 4; z++)
             {
-                await this.CommandContext.FailAsync("That area is not loaded");
-                return;
+                if (await level.GetChunkAsync(x, z, scheduleGeneration: false) is null)
+                {
+                    await this.CommandContext.FailAsync("That area is not loaded");
+                    return;
+                }
             }
         }
 

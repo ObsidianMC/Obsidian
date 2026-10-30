@@ -229,13 +229,18 @@ public partial class Mob
         // The live attachments, not those it was loaded or spawned with, which the copy below would bring back.
         writer.WriteTag(API.Data.AttachmentStorage.For(this).Snapshot());
         if (originalSave != null)
+        {
             foreach (var tag in originalSave)
+            {
                 if (!saveFields.Contains(tag.Key)
                     && tag.Key != API.Data.AttachmentStorage.NbtKey
                     && !additionalTags.HasTag(tag.Key))
                 {
                     writer.WriteTag(tag.Value);
                 }
+            }
+        }
+
         if (writeCompound)
             writer.EndCompound();
     }
@@ -269,8 +274,11 @@ public partial class Mob
         if (tag.TryGetTagValue<short>("Fire", out var fire))
             FireTicks = Math.Max(0, (int)fire);
         if (tag.TryGetTag<NbtList>("ObsidianEffects", out var effects))
+        {
             foreach (var effect in effects.OfType<NbtCompound>())
                 RestorePotionEffect(effect);
+        }
+
         MovementFlags = ReadFlag(tag, "OnGround") ? MovementFlags.OnGround : MovementFlags.None;
         PowderedSnowTicks = tag.TryGetTagValue<int>("TicksFrozen", out var frozen) ? Math.Clamp(frozen, 0, 140) : 0;
         if (tag.TryGetTagValue<float>("FallDistance", out var fallen) && float.IsFinite(fallen)) fallDistance = Math.Max(0, fallen);
@@ -283,10 +291,14 @@ public partial class Mob
         Glowing = ReadFlag(tag, "Glowing");
         CustomNameVisible = ReadFlag(tag, "CustomNameVisible");
         if (tag.TryGetTag("CustomName", out var name))
+        {
             CustomName = name is NbtTag<string> { Value: { } legacy } && legacy.TrimStart().StartsWith('{')
                 ? JsonSerializer.Deserialize<ChatMessage>(legacy) : name.TextFromNbt();
+        }
+
         this.LoadAttributes(tag);
         if (tag.TryGetTag<NbtList>("ObsidianEquipment", out var savedEquipment))
+        {
             foreach (var entry in savedEquipment.OfType<NbtCompound>())
             {
                 var slot = (EquipmentSlot)entry.GetInt("slot");
@@ -298,6 +310,8 @@ public partial class Mob
                     equipment[slot] = item;
                 equipmentDropChances[slot] = entry.GetFloat("drop_chance");
             }
+        }
+
         if (this is AgeableMob ageable && tag.TryGetTagValue<int>("Age", out var age))
             ageable.Age = age;
         if (this is Animal animal && tag.TryGetTagValue<int>("InLove", out var love))
@@ -334,7 +348,10 @@ public partial class Mob
                 var index = Array.IndexOf(Cat.DyeNames, collar);
                 if (index >= 0) wolf.CollarColor = (byte)index;
             }
-            else if (tag.TryGetTagValue<byte>("CollarColor", out var legacyCollar)) wolf.CollarColor = (byte)(legacyCollar & 15);
+            else if (tag.TryGetTagValue<byte>("CollarColor", out var legacyCollar))
+            {
+                wolf.CollarColor = (byte)(legacyCollar & 15);
+            }
         }
         if (this is Enderman enderman)
         {
@@ -372,7 +389,9 @@ public partial class Mob
                 if (index >= 0) cat.CollarColor = (byte)index;
             }
             else if (tag.TryGetTagValue<byte>("CollarColor", out var legacyCollar))
+            {
                 cat.CollarColor = (byte)(legacyCollar & 15);
+            }
         }
         if (this is Camel camel)
         {

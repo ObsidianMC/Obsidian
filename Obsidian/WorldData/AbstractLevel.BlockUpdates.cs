@@ -131,7 +131,9 @@ public abstract partial class AbstractLevel
         // A vanilla class's entityInside override, found from the class that declares it.
         if (inside && entity is Entities.Entity concrete
             && BlocksRegistry.GetEntityInsideBehavior(state.RegistryId) is IEntityInsideBehavior owner)
+        {
             owner.EntityInside(this.BlockUpdates, position, state, concrete);
+        }
 
         // A redstone block's entity contact, like a detector rail's minecart press.
         if (inside && this.RedstoneRules.ContactFor(state) is IRedstoneContact contact)

@@ -29,7 +29,10 @@ public partial class Living
                 result = current with { Duration = incoming.Duration };
                 changed = true;
             }
-            else result = current with { HiddenEffect = current.HiddenEffect == null ? incoming : MergeEffect(current.HiddenEffect, incoming) };
+            else
+            {
+                result = current with { HiddenEffect = current.HiddenEffect == null ? incoming : MergeEffect(current.HiddenEffect, incoming) };
+            }
         }
         return result with
         {

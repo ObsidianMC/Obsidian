@@ -231,19 +231,21 @@ public partial class PlayerBase
             foreach (var dy in new[] { 0, 1, -1 })
             {
                 for (var dx = -1; dx <= 1; dx++)
-                for (var dz = -1; dz <= 1; dz++)
                 {
-                    if (dx == 0 && dz == 0)
-                        continue;
+                    for (var dz = -1; dz <= 1; dz++)
+                    {
+                        if (dx == 0 && dz == 0)
+                            continue;
 
-                    var spot = new VectorD(part.X + dx + 0.5, part.Y + dy, part.Z + dz + 0.5);
-                    if (await level.GetBlockAsync((Vector)spot.Floor()) is IBlock own && TagsRegistry.Block.Beds.Entries.Contains(own.RegistryId))
-                        continue;
+                        var spot = new VectorD(part.X + dx + 0.5, part.Y + dy, part.Z + dz + 0.5);
+                        if (await level.GetBlockAsync((Vector)spot.Floor()) is IBlock own && TagsRegistry.Block.Beds.Entries.Contains(own.RegistryId))
+                            continue;
 
-                    var body = new BoundingBox(spot + new VectorD(-0.3, 0, -0.3), spot + new VectorD(0.3, 1.8, 0.3));
-                    var ground = new BoundingBox(spot + new VectorD(-0.3, -0.5, -0.3), spot + new VectorD(0.3, -0.01, 0.3));
-                    if (terrain.IsFree(body) && terrain.IsFreeOfFluid(body) && !terrain.IsFree(ground))
-                        return spot;
+                        var body = new BoundingBox(spot + new VectorD(-0.3, 0, -0.3), spot + new VectorD(0.3, 1.8, 0.3));
+                        var ground = new BoundingBox(spot + new VectorD(-0.3, -0.5, -0.3), spot + new VectorD(0.3, -0.01, 0.3));
+                        if (terrain.IsFree(body) && terrain.IsFreeOfFluid(body) && !terrain.IsFree(ground))
+                            return spot;
+                    }
                 }
             }
         }

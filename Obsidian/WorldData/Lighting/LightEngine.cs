@@ -158,7 +158,9 @@ internal sealed class LightEngine
                 hasGenerationLocks);
         }
         else
+        {
             LightChunk(chunk, litNeighbors, hasSkyLight);
+        }
     }
 
     /// <summary>
@@ -177,7 +179,9 @@ internal sealed class LightEngine
                 storage.MarkUnsaved();
             }
             else
+            {
                 section.SetLight(new byte[2048], LightType.Block);
+            }
 
             if (!section.IsEmpty)
                 this.EnqueueLightSources(section, sectionIndex);

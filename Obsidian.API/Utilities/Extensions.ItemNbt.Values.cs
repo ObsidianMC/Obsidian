@@ -143,13 +143,18 @@ public partial class Extensions
         }
 
         if (prototype is SimpleDataComponent<MobVisibilityData> visibility && tag is NbtCompound visibilityValue)
+        {
             return visibility with { Value = new(SetFromNbt(visibilityValue["targeting_entity_types"], ComponentValueCodecs.EntityTypes),
                 visibilityValue.GetFloat("visibility")) };
+        }
+
         if (prototype is SimpleDataComponent<ComponentIntValue> compost && tag is NbtCompound compostValue)
             return compost with { Value = ComponentIntFromNbt(compostValue["layers"]) };
         if (prototype is SimpleDataComponent<FuelComponentData> fuel && tag is NbtCompound fuelValue)
+        {
             return fuel with { Value = new(ComponentIntFromNbt(fuelValue[type == DataComponentType.CookingFuel ? "burn_time" : "uses"]),
                 ComponentFloatFromNbt(fuelValue["speed_multiplier"])) };
+        }
 
         if (prototype is SimpleDataComponent<bool> boolean)
             return boolean with { Value = ReadBoolean(tag) };
@@ -190,8 +195,10 @@ public partial class Extensions
             return explosion with { Value = ExplosionFromNbt(firework) };
 
         if (prototype is SimpleDataComponent<IdSet> repairable && tag is NbtCompound repair)
+        {
             return repairable with { Value = SetFromNbt(repair[type == DataComponentType.DamageResistant ? "types" : "items"],
                 type == DataComponentType.DamageResistant ? "minecraft:damage_type" : ComponentValueCodecs.Items) };
+        }
 
         if (prototype is SimpleDataComponent<ImmutableArray<IConsumeEffect>> protection && tag is NbtCompound death)
             return protection with { Value = [.. Compounds(death, "death_effects").Select(ConsumeEffectFromNbt)] };

@@ -173,7 +173,9 @@ public partial class PlayerBase
             Position = Level.LevelData.SpawnPosition;
         }
         else
+        {
             this.savedVehicle = this.ReadRootVehicle(data);
+        }
 
         if (!Alive)
             Health = 20f;//Player should never load data that has health at 0
@@ -383,7 +385,8 @@ public partial class PlayerBase
             // Taken like a click takes it, so that a click's check of the inventory and what it applies see the same
             // contents (see MainEventHandler.OnInventoryClick).
             using (await this.Inventory.LockAsync())
-            lock (ItemEntity.TransferLock)
+            {
+                lock (ItemEntity.TransferLock)
             {
                 if (itemEntity.Removed || !itemEntity.CanPickup || itemEntity.Item.Count <= 0)
                     continue;
@@ -417,6 +420,7 @@ public partial class PlayerBase
                 remove = itemEntity.Removed = itemEntity.Item.Count == 0;
                 if (!remove)
                     itemEntity.SendItemUpdate();
+            }
             }
 
             // In order with the window snapshots clicks send, which would otherwise overwrite it with what the
@@ -535,7 +539,9 @@ public partial class PlayerBase
         var root = this.RootVehicle;
         if (ReferenceEquals(root, this) || root.Passengers is not [var rider] || !ReferenceEquals(rider, this)
             || EntityNbt.Save(root) is not NbtCompound saved)
+        {
             return null;
+        }
 
         saved.Name = "Entity";
         var tag = new NbtCompound("RootVehicle") { new NbtArray<int>("Attach", EntityNbt.UuidToInts(this.Uuid)) };
@@ -550,7 +556,9 @@ public partial class PlayerBase
             || !root.TryGetTag<NbtArray<int>>("Attach", out var attach) || attach.Count != 4
             || EntityNbt.UuidFromInts(attach.GetArray()) != this.Uuid
             || !root.TryGetTag<NbtCompound>("Entity", out var entity))
+        {
             return null;
+        }
 
         return EntityNbt.Load(entity, this.Level);
     }

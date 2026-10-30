@@ -97,7 +97,9 @@ public sealed partial class Enderman : PathfinderMob
         if (AttackTarget is { } enemy)
         {
             if (staring && (enemy.Position - Position).MagnitudeSquared() < 16)
+            {
                 TryTeleport();
+            }
             else if (!staring && (enemy.Position - Position).MagnitudeSquared() > 256 && ++chaseTicks >= 30)
             {
                 chaseTicks = 0;
@@ -136,8 +138,11 @@ public sealed partial class Enderman : PathfinderMob
     internal bool TryAvoidProjectile()
     {
         for (var attempt = 0; attempt < 64; attempt++)
+        {
             if (TryTeleport())
                 return true;
+        }
+
         return false;
     }
 
@@ -152,7 +157,10 @@ public sealed partial class Enderman : PathfinderMob
             return false;
         while (point.Y > level.MinY && Terrain.GetBlock(new Vector(point.X, point.Y - 1, point.Z)) is { } floor &&
             BlockCollisionShapes.Get(floor).Count == 0 && !floor.IsLiquid)
+        {
             point.Y--;
+        }
+
         var support = Terrain.GetBlock(new Vector(point.X, point.Y - 1, point.Z));
         destination = new VectorD(point.X + 0.5f, point.Y, point.Z + 0.5f);
         if (support == null || support.IsLiquid || BlockCollisionShapes.Get(support).Count == 0 ||
@@ -160,7 +168,10 @@ public sealed partial class Enderman : PathfinderMob
             Enumerable.Range(0, (int)MathF.Ceiling(Dimension.Height)).Any(height =>
                 Terrain.GetBlock(new Vector(point.X, point.Y + height, point.Z)) is not { IsLiquid: false }) || !Terrain.IsFree(Dimension.CreateBBFromPosition(destination)) ||
             !level.TryMoveEntity(this, Position, destination))
+        {
             return false;
+        }
+
         PlayMobSound("teleport");
         CompleteTeleport(destination);
         PlayMobSound("teleport");
@@ -170,7 +181,9 @@ public sealed partial class Enderman : PathfinderMob
     protected override ValueTask OnHurtAsync(IEntity source)
     {
         if (ReferenceEquals(source, this))
+        {
             TryTeleport();
+        }
         else if (IsValidTarget(source))
         {
             AttackTarget = source;

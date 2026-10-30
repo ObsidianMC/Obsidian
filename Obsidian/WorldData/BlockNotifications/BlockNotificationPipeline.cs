@@ -196,7 +196,9 @@ internal sealed class BlockNotificationPipeline
                     this.world.DropAndRemove(work.Position, state, playEffect);
                 }
                 else
+                {
                     await this.world.SetBlockAsync(work.Position, updated);
+                }
             }
 
             return;

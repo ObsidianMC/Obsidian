@@ -31,7 +31,10 @@ public sealed partial class Bat : Ambient
         {
             if (flightTarget is not VectorD target || (target - Position).MagnitudeSquared() < 4 ||
                 Random.Next(30) == 0 || !Terrain.IsFree(Dimension.CreateBBFromPosition(target)))
+            {
                 flightTarget = Position + new VectorD(Random.Next(7) - Random.Next(7), Random.Next(-2, 4), Random.Next(7) - Random.Next(7));
+            }
+
             var delta = flightTarget.Value - Position;
             Motion += (new VectorD(Math.Sign(delta.X) * 0.5f, Math.Sign(delta.Y) * 0.7f, Math.Sign(delta.Z) * 0.5f) - Motion) * 0.1f;
             Yaw = (float)(Math.Atan2(-Motion.X, Motion.Z) * 180 / Math.PI);

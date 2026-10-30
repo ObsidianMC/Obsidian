@@ -44,7 +44,9 @@ public sealed partial class SnowGolem : PathfinderMob
             var snow = (Vector)(Position + new VectorD((index % 2 * 2 - 1) * 0.25f, 0, (index / 2 * 2 - 1) * 0.25f)).Floor();
             if (Terrain.GetBlock(snow)?.IsAir == true && Terrain.GetBlock(new Vector(snow.X, snow.Y - 1, snow.Z)) is { } floor &&
                 floor.IsCollisionShapeFullBlock() && !floor.IsLiquid)
+            {
                 await Level.SetBlockAsync(snow, BlocksRegistry.Snow, true);
+            }
         }
     }
 

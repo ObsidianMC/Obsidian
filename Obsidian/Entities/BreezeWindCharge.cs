@@ -51,13 +51,19 @@ internal sealed class BreezeWindCharge : Entity
         var fraction = 1d;
         IEntity? target = null;
         foreach (var shape in terrain.GetCollisions(swept))
+        {
             if (MobTerrain.RayIntersection(shape, Position, Motion) is double hit)
                 fraction = Math.Min(fraction, hit);
+        }
+
         foreach (var entity in Level.GetEntitiesInRange(Position, (float)Motion.Magnitude + 3))
         {
             if (entity is not Living || entity.Health <= 0 || ReferenceEquals(entity, owner) || entity is Breeze ||
                 entity is IPlayer { GameMode: GameMode.Creative or GameMode.Spectator })
+            {
                 continue;
+            }
+
             var bounds = entity.Dimension.CreateBBFromPosition(entity.Position);
             if (MobTerrain.RayIntersection(new BoundingBox(bounds.Min - new VectorD(0.15f), bounds.Max + new VectorD(0.15f)), Position, Motion) is double hit && hit < fraction)
             {
@@ -103,29 +109,39 @@ internal sealed class BreezeWindCharge : Entity
         {
             var center = (Vector)Position.Floor();
             for (var x = -2; x <= 2; x++)
-            for (var y = -2; y <= 2; y++)
-            for (var z = -2; z <= 2; z++)
             {
-                var point = center + new Vector(x, y, z);
+                for (var y = -2; y <= 2; y++)
+                {
+                    for (var z = -2; z <= 2; z++)
+                    {
+                        var point = center + new Vector(x, y, z);
                         if (((VectorD)point - Position).MagnitudeSquared() > 9)
                             continue;
-                var block = terrain.GetBlock(point);
+                        var block = terrain.GetBlock(point);
                         if (block == null)
                             continue;
-                if (block.RegistryId is BlockIds.Fire or BlockIds.SoulFire)
+                        if (block.RegistryId is BlockIds.Fire or BlockIds.SoulFire)
                         {
                             await Level.SetBlockAsync(point, BlocksRegistry.Air, true);
                             continue;
                         }
-                var open = block.GetProperty("open");
-                if (open != null && block.RegistryId is not BlockIds.IronDoor and not BlockIds.IronTrapdoor)
-                    await Level.SetBlockAsync(point, block.WithProperty("open", open != "true"), true);
-                else if (Level is AbstractLevel redstoneLevel && await redstoneLevel.TriggerRedstoneAsync(point))
-                    continue;
-                else if (block.GetProperty("lit") == "true"
-                    && (block.RegistryId is BlockIds.Campfire or BlockIds.SoulCampfire
-                        || TagsRegistry.Block.Candles.Entries.Contains(block.RegistryId)))
-                    await Level.SetBlockAsync(point, block.WithProperty("lit", false), true);
+                        var open = block.GetProperty("open");
+                        if (open != null && block.RegistryId is not BlockIds.IronDoor and not BlockIds.IronTrapdoor)
+                        {
+                            await Level.SetBlockAsync(point, block.WithProperty("open", open != "true"), true);
+                        }
+                        else if (Level is AbstractLevel redstoneLevel && await redstoneLevel.TriggerRedstoneAsync(point))
+                        {
+                            continue;
+                        }
+                        else if (block.GetProperty("lit") == "true"
+                            && (block.RegistryId is BlockIds.Campfire or BlockIds.SoulCampfire
+                                || TagsRegistry.Block.Candles.Entries.Contains(block.RegistryId)))
+                        {
+                            await Level.SetBlockAsync(point, block.WithProperty("lit", false), true);
+                        }
+                    }
+                }
             }
         }
     }

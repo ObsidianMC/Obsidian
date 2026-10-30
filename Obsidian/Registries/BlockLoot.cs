@@ -61,7 +61,9 @@ internal static partial class BlockLoot
     {
         if (checkTool && (breaker is IPlayer { GameMode: GameMode.Creative or GameMode.Spectator }
             || !HasCorrectTool(block, tool)))
+        {
             return [];
+        }
 
         // A named source is shared by the level. Hold it for the whole synchronous evaluation, including nested
         // tables and dynamic drops, so concurrent breaks cannot interleave vanilla's draws. Other sources stay free.

@@ -36,12 +36,15 @@ public sealed class MobSwimming
         var chunk = new Chunk(0, 0, -64, 384, ChunkGenStage.full);
         chunk.SetChunkStatus(ChunkGenStage.full);
         for (var x = 2; x <= 13; x++)
+        {
             for (var z = 2; z <= 13; z++)
             {
                 chunk.SetBlock(x, 64, z, BlocksRegistry.Stone);
                 if (x >= 8)
                     chunk.SetBlock(x, 65, z, BlocksRegistry.Stone);
             }
+        }
+
         context.World.LoadRegionByChunk(0, 0).SetChunk(chunk);
         var mob = Obsidian.Entities.Factories.EntitySpawner.CreateMob(context.World, type)!;
         mob.Position = new VectorD(sx, sy, sz);

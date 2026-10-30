@@ -61,7 +61,9 @@ public sealed class ExperienceCommandModule : CommandModuleBase
         foreach (var player in targets)
         {
             if (unit == ExperienceUnit.Levels)
+            {
                 await SetLevelsAsync(player, amount);
+            }
             else
             {
                 // Like vanilla's, setting points only changes the progress within the current level.

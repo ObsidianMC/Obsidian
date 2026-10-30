@@ -13,7 +13,9 @@ public partial class ChangeDifficultyPacket
         if (server is not Server obsidian
             || obsidian.DefaultWorld is not World world
             || !obsidian.MayChangeDifficulty(player))
+        {
             return default;
+        }
 
         var level = world.LevelData;
         if (level.DifficultyLocked)

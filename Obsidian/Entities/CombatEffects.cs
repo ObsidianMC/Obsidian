@@ -12,8 +12,10 @@ internal static class CombatEffects
         if (entity is IPlayer player)
         {
             for (var index = 0; index < 4; index++)
+            {
                 if (player.Inventory.GetItem(5 + index) is { Count: > 0 } item)
                     yield return (item, index switch { 0 => "head", 1 => "chest", 2 => "legs", _ => "feet" });
+            }
         }
         else if (entity is Mob mob)
         {

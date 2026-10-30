@@ -36,7 +36,10 @@ internal sealed partial class MobSpawner
         }
         if (!data.TryGetTag<NbtCompound>("SpawnData", out var spawnData) || !spawnData.TryGetTag<NbtCompound>("entity", out var entityData) ||
             !entityData.TryGetTagValue<string>("id", out var id))
+        {
             return;
+        }
+
         var plugin = EntityDefinitionsRegistry.TryGet(id, out var definition) ? definition : null;
         if (plugin is null && !EntityNbt.TryParseType(id, out _)
             || plugin is not null && (plugin.Kind != API.Entities.EntityKind.Mob || plugin.Binding is null))
@@ -71,17 +74,26 @@ internal sealed partial class MobSpawner
                 : (Mob)PluginEntity.Create(plugin, level);
             if (mob == null || level.LevelData.Difficulty == Difficulty.Peaceful &&
                 (mob.Hostile || mob is Zombie or Skeleton or Creeper))
+            {
                 continue;
+            }
+
             if (terrain.GetBlock(blockPoint) is not { } feet
                 || plugin is null && !FitsVanillaPlacement(type, feet, terrain.GetBlock(blockPoint + Vector.Down), chunk.GetBiome(blockPoint.X, blockPoint.Y, blockPoint.Z))
                 || !terrain.IsFree(mob.Dimension.CreateBBFromPosition(point)))
+            {
                 continue;
+            }
+
             var blockLight = chunk.GetLightLevel(blockPoint.X, blockPoint.Y, blockPoint.Z, LightType.Block);
             var sky = chunk.GetLightLevel(blockPoint.X, blockPoint.Y, blockPoint.Z, LightType.Sky);
             if ((mob.Hostile || mob is Zombie or Skeleton or Creeper)
                 && !IgnoresDarkness(type)
                 && !this.IsDarkEnoughToSpawn(blockLight, sky))
+            {
                 continue;
+            }
+
             mob.EntityId = Server.GetNextEntityId();
             mob.Position = point;
             mob.Yaw = random.Next(360);
@@ -90,16 +102,22 @@ internal sealed partial class MobSpawner
             {
                 var saved = EntityNbt.Save(mob)!;
                 foreach (var (name, value) in entityData)
+                {
                     if (name is not ("id" or "Pos" or "UUID"))
                     {
                         saved.Remove(name);
                         saved.Add(name, value);
                     }
+                }
+
                 mob.ReadSave(saved);
             }
             if (!terrain.IsFree(mob.Dimension.CreateBBFromPosition(point)) || level.GetEntitiesInRange(point, 2)
                 .Any(entity => MobTerrain.Overlaps(mob.Dimension.CreateBBFromPosition(point), entity.Dimension.CreateBBFromPosition(entity.Position))))
+            {
                 continue;
+            }
+
             level.SpawnEntity(mob);
             level.BroadcastLevelEvent(2004, spawner.BlockPosition, 0);
             spawned = true;

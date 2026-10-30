@@ -28,7 +28,9 @@ public sealed partial class Husk : Zombie
             }
         }
         else
+        {
             WaterTicks = -1;
+        }
     }
     protected internal override async ValueTask PerformMeleeAttackAsync(IEntity target)
     {

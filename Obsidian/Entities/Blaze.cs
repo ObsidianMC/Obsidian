@@ -135,6 +135,8 @@ internal sealed class BlazeAttackGoal(Blaze blaze) : NavigationGoal(blaze, 1)
             }
         }
         else if (unseenTicks < 5)
+        {
             MoveTo(target);
+        }
     }
 }

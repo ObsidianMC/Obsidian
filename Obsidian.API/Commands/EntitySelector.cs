@@ -287,7 +287,9 @@ public sealed partial class EntitySelector
         for (var i = 0; i < text.Length; i++)
         {
             if (text[i] == '"')
+            {
                 quoted = !quoted;
+            }
             else if (text[i] == ',' && !quoted)
             {
                 yield return text[start..i];

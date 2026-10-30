@@ -75,11 +75,17 @@ public partial class Zombie : PathfinderMob, IAgeable
                     SynchronizeMetadata();
                 }
             }
-            else DrowningWaterTicks = -1;
+            else
+            {
+                DrowningWaterTicks = -1;
+            }
         }
         if (!Level.MonstersBurn((Vector)Position.Floor()) ||
             Level.LevelData.Raining || Level.LevelData.Thundering || InWater || Random.NextSingle() * 30 >= 1.2f)
+        {
             return;
+        }
+
         var position = (Vector)EyePosition.Floor();
         if (Terrain.GetSkyLight(position) < 15)
             return;
@@ -144,11 +150,17 @@ public partial class Zombie : PathfinderMob, IAgeable
                 BlockCollisionShapes.Get(floor).Count == 0 || !Terrain.IsFree(bounds) ||
                 Level.GetPlayersInRange(point, 7).Any() || Level.GetEntitiesInRange(point, 2)
                     .Any(entity => MobTerrain.Overlaps(bounds, entity.Dimension.CreateBBFromPosition(entity.Position))))
+            {
                 continue;
+            }
+
             if (Level is not Obsidian.WorldData.AbstractLevel level ||
                 level.GetLoadedChunk(blockPosition.X >> 4, blockPosition.Z >> 4) is not { } chunk ||
                 chunk.GetLightLevel(blockPosition.X, blockPosition.Y, blockPosition.Z, LightType.Block) != 0)
+            {
                 continue;
+            }
+
             var reinforcement = (Zombie)Level.GetNewEntitySpawner().WithEntityType(EntityType.Zombie).AtPosition(point).Spawn();
             reinforcement.AlertedTarget = target;
             reinforcement.ReinforcementChance -= 0.05f;
@@ -177,7 +189,9 @@ public partial class Zombie : PathfinderMob, IAgeable
         await base.PerformMeleeAttackAsync(target);
         if (target.Health < health && target is Living living && Burning &&
             GetEquipment(Obsidian.API.Inventory.EquipmentSlot.MainHand).IsAir && Random.NextSingle() < EffectiveDifficulty * 0.3f)
+        {
             living.Ignite(2 * (int)EffectiveDifficulty);
+        }
     }
     public override void Write(INetStreamWriter writer)
     {

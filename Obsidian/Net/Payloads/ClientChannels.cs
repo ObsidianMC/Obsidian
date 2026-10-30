@@ -339,7 +339,9 @@ internal sealed partial class ClientChannels(IClient client, PayloadChannelRegis
 
             if (query.Values.Any(components => components.DistinctBy(component => component.Id).Count()
                 != components.Count))
+            {
                 throw new InvalidDataException("A channel is listed twice.");
+            }
         }
         catch (Exception ex)
         {

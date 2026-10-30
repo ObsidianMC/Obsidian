@@ -31,8 +31,10 @@ internal static class PluginAssemblyLoader
 
         var pluginType = assembly.GetTypes().FirstOrDefault(type => type.IsSubclassOf(typeof(PluginBase)));
         if (pluginType?.GetConstructor([]) is null)
+        {
             throw new InvalidOperationException(
                 "Loaded assembly contains no type implementing PluginBase with public parameterless constructor.");
+        }
 
         container.PluginAssembly = assembly;
         container.Plugin = (PluginBase)Activator.CreateInstance(pluginType)!;

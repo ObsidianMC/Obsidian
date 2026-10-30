@@ -201,7 +201,9 @@ public partial class WorldgenNoiseRegistryGenerator
                 builder.EndArrayScope(",", false);
             }
             else
+            {
                 passed = false;
+            }
         }
 
         if (appendName)
@@ -243,7 +245,9 @@ public partial class WorldgenNoiseRegistryGenerator
             builder.EndScope(",", false);
         }
         else
+        {
             return false;
+        }
 
         return true;
     }

@@ -63,7 +63,9 @@ public partial class Mob
         if (Position.Y < minimumY - 64)
             await DamageCombatAsync(this, 4, CombatDamageKind.Void);
         if (InWater || InLava || HasPotionEffect((int)PotionEffect.Levitation - 1))
+        {
             fallDistance = 0;
+        }
         else
         {
             // Count the drop that ended in landing too, as vanilla adds it before checking the ground.
@@ -92,10 +94,16 @@ public partial class Mob
             && !IsFireImmune
             && !Sneaking
             && !HasPotionEffect((int)PotionEffect.FireResistance - 1))
+        {
             await DamageCombatAsync(this, 1, CombatDamageKind.FireContact);
+        }
+
         if (this is not Fox && feet?.RegistryId == BlockIds.SweetBerryBush && !IsRemoved &&
             (LastPosition - Position).MagnitudeSquared() > 0.000025f)
+        {
             await ApplyDamageAsync(this, 1, true);
+        }
+
         await TickBlockHazardsAsync(feet);
     }
 
@@ -114,8 +122,9 @@ public partial class Mob
             }
         }
         else
+        {
             Air = (short)Math.Min(300, Air + 4);
-
+        }
     }
 
     protected internal virtual void PlayMobSound(string kind)

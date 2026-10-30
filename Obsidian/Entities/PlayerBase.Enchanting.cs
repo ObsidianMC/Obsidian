@@ -22,14 +22,21 @@ public partial class PlayerBase
         var terrain = new MobTerrain(Level);
         var count = 0;
         for (var x = -2; x <= 2; x++)
-        for (var y = 0; y <= 1; y++)
-        for (var z = -2; z <= 2; z++)
         {
-            if (Math.Abs(x) != 2 && Math.Abs(z) != 2) continue;
-            var shelf = terrain.GetBlock(new Vector(position.X + x, position.Y + y, position.Z + z));
-            var gap = terrain.GetBlock(new Vector(position.X + x / 2, position.Y + y, position.Z + z / 2));
-            if (shelf != null && gap != null && TagsRegistry.Block.EnchantmentPowerProvider.Entries.Contains(shelf.RegistryId) &&
-                TagsRegistry.Block.EnchantmentPowerTransmitter.Entries.Contains(gap.RegistryId)) count++;
+            for (var y = 0; y <= 1; y++)
+            {
+                for (var z = -2; z <= 2; z++)
+                {
+                    if (Math.Abs(x) != 2 && Math.Abs(z) != 2) continue;
+                    var shelf = terrain.GetBlock(new Vector(position.X + x, position.Y + y, position.Z + z));
+                    var gap = terrain.GetBlock(new Vector(position.X + x / 2, position.Y + y, position.Z + z / 2));
+                    if (shelf != null && gap != null && TagsRegistry.Block.EnchantmentPowerProvider.Entries.Contains(shelf.RegistryId) &&
+                        TagsRegistry.Block.EnchantmentPowerTransmitter.Entries.Contains(gap.RegistryId))
+                    {
+                        count++;
+                    }
+                }
+            }
         }
         return Math.Min(15, count);
     }
@@ -112,7 +119,11 @@ public partial class PlayerBase
     {
         if (containerId != CurrentContainerId || option is < 0 or > 2 || OpenedContainer is not EnchantmentTable table ||
             !Alive || Respawning || GameMode == GameMode.Spectator || (Position - (VectorD)table.BlockPosition).Magnitude > 8 ||
-            new MobTerrain(Level).GetBlock(table.BlockPosition)?.RegistryId != BlockIds.EnchantingTable) return;
+            new MobTerrain(Level).GetBlock(table.BlockPosition)?.RegistryId != BlockIds.EnchantingTable)
+        {
+            return;
+        }
+
         await RefreshEnchantingAsync();
         var item = table.GetItem(0);
         var lapis = table.GetItem(1);
@@ -122,7 +133,11 @@ public partial class PlayerBase
             (XpLevel < cost
                 || XpLevel < paidLevels
                 || lapis is not { Holder.Id: ItemIds.LapisLazuli }
-                || lapis.Count < paidLevels)) return;
+                || lapis.Count < paidLevels))
+        {
+            return;
+        }
+
         var selected = EnchantingSelection(item, option, cost, out _);
         if (selected.Count == 0) return;
         if (item.Is(ItemsRegistry.Book)) item = item.TransmuteCopy(ItemsRegistry.EnchantedBook);

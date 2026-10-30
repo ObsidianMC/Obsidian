@@ -31,7 +31,8 @@ public abstract partial class AbstractLevel
                 bool retired;
                 var staged = new LootInventory(inventory.Size);
                 using (inventory.Lock())
-                lock (container.LootLock)
+                {
+                    lock (container.LootLock)
                 {
                     if (container.LootTable is not string pending || container.IsRemoved && !removing)
                         return;
@@ -45,6 +46,7 @@ public abstract partial class AbstractLevel
                         if (inventory[slot] is ItemStack item)
                             staged.SetItem(slot, new ItemStack(item, item.Count));
                     }
+                }
                 }
 
                 // Saves still see the pending table while preparation runs. Match vanilla's random draws across
@@ -68,7 +70,8 @@ public abstract partial class AbstractLevel
                 }
 
                 using (inventory.Lock())
-                lock (container.LootLock)
+                {
+                    lock (container.LootLock)
                 {
                     // Eviction/unload saved the pending table, or another break now owns retirement. Its snapshot
                     // must remain final; that operation will prepare loot itself when it needs to.
@@ -78,7 +81,9 @@ public abstract partial class AbstractLevel
                     if (inventory.Revision != revision
                         || container.LootTable != lootTable
                         || container.LootTableSeed != seed)
+                    {
                         continue;
+                    }
 
                     for (var slot = 0; slot < inventory.Size; slot++)
                         inventory.SetItem(slot, staged[slot]);
@@ -86,6 +91,7 @@ public abstract partial class AbstractLevel
                     container.LootTable = null;
                     container.LootTableSeed = 0;
                     return;
+                }
                 }
             }
         }
@@ -103,7 +109,8 @@ public abstract partial class AbstractLevel
         var inventory = vehicle.Items;
         var staged = new LootInventory(inventory.Size);
         using (inventory.Lock())
-        lock (vehicle.LootLock)
+        {
+            lock (vehicle.LootLock)
         {
             if (vehicle.LootTable is not string pending)
                 return;
@@ -115,6 +122,7 @@ public abstract partial class AbstractLevel
                 if (inventory[slot] is ItemStack item)
                     staged.SetItem(slot, new ItemStack(item, item.Count));
             }
+        }
         }
 
         var resolver = PluginLootTables.CaptureResolver();
@@ -135,7 +143,8 @@ public abstract partial class AbstractLevel
         }
 
         using (inventory.Lock())
-        lock (vehicle.LootLock)
+        {
+            lock (vehicle.LootLock)
         {
             // Another opener rolled it meanwhile.
             if (vehicle.LootTable != lootTable)
@@ -146,6 +155,7 @@ public abstract partial class AbstractLevel
 
             vehicle.LootTable = null;
             vehicle.LootTableSeed = 0;
+        }
         }
     }
 

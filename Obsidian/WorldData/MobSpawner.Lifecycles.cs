@@ -84,6 +84,7 @@ internal sealed partial class MobSpawner
                         return;
 
                     for (var index = random.Next(2, 6); index > 0; index--)
+                    {
                         level.SpawnEntity(new Tadpole
                         {
                             Level = level,
@@ -91,6 +92,7 @@ internal sealed partial class MobSpawner
                             Position = new VectorD(position.X + 0.2f + random.NextSingle() * 0.6f, position.Y - 0.5f, position.Z + 0.2f + random.NextSingle() * 0.6f),
                             PersistenceRequired = true
                         });
+                    }
                 });
             }
         }
@@ -130,11 +132,19 @@ internal sealed partial class MobSpawner
             var origin = (Vector)villager.Position.Floor();
             var beds = 0;
             for (var x = -8; x <= 8; x++)
-            for (var y = -4; y <= 4; y++)
-            for (var z = -8; z <= 8; z++)
-                if (terrain.GetBlock(new Vector(origin.X + x, origin.Y + y, origin.Z + z)) is { } block &&
-                            TagsRegistry.Block.Beds.Entries.Contains(block.RegistryId) && block.GetProperty("part") == "head")
+            {
+                for (var y = -4; y <= 4; y++)
+                {
+                    for (var z = -8; z <= 8; z++)
+                    {
+                        if (terrain.GetBlock(new Vector(origin.X + x, origin.Y + y, origin.Z + z)) is { } block &&
+                                    TagsRegistry.Block.Beds.Entries.Contains(block.RegistryId) && block.GetProperty("part") == "head")
+                        {
                             beds++;
+                        }
+                    }
+                }
+            }
             if (beds < 5)
                 continue;
             var point = RandomPosition.Find(villager, 8);

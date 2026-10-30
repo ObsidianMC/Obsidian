@@ -421,9 +421,13 @@ public class Region : IRegion
                 {
                     if (entity.TryGetTagValue<string>("id", out var id) && EntityNbt.IsKnownType(id) &&
                         EntityNbt.ToGeneratedEntity(entity) is GeneratedEntity pending)
+                    {
                         chunk.PendingEntities.Add(pending);
+                    }
                     else
+                    {
                         chunk.UnspawnableEntities.Add(entity);
+                    }
                 }
             }
         }
@@ -618,7 +622,8 @@ public class Region : IRegion
             {
                 // Snapshot blocks, fluid ticks and entities together; take the generator's lock before the fluid lock.
                 using (this.LockChunk is null ? null : await this.LockChunk(chunk.X, chunk.Z))
-                lock (this.FluidTickLock)
+                {
+                    lock (this.FluidTickLock)
                 {
                     this.FlushLight?.Invoke();
 
@@ -655,6 +660,7 @@ public class Region : IRegion
 
                     if ((unloading || saveEntities) && current.IsGenerated && current is Chunk complete)
                         entities = this.CollectEntities(complete, unloading);
+                }
                 }
 
                 writer.EndCompound();
@@ -717,7 +723,8 @@ public class Region : IRegion
         var entities = new NbtList(NbtTagType.Compound, "Entities");
 
         lock (ItemEntity.TransferLock)
-        using (chunk.EntityLock.EnterScope())
+        {
+            using (chunk.EntityLock.EnterScope())
         {
             if (chunk.EntitiesUnloaded)
                 return null;
@@ -750,6 +757,7 @@ public class Region : IRegion
 
             if (unloading)
                 chunk.EntitiesUnloaded = true;
+        }
         }
 
         return entities;
@@ -828,7 +836,9 @@ public class Region : IRegion
 
                 if (entity.Level is AbstractLevel level && level.GetRegionForChunk(chunkX, chunkZ) is Region target
                     && target.TryAddEntity(entity))
+                {
                     this.TryRemoveEntity(entity);
+                }
             }
         }
     }
@@ -867,12 +877,17 @@ public class Region : IRegion
         API.Data.AttachmentStorage.For(chunk).Load(chunkCompound);
         Portals.PortalOwnership.Read(chunk, chunkCompound);
         if (chunkCompound.TryGetTag<NbtList>("ObsidianMobEggTicks", out var mobEggTicks))
+        {
             foreach (NbtCompound tick in mobEggTicks)
                 chunk.MobEggTicks[new Vector(tick.GetInt("x"), tick.GetInt("y"), tick.GetInt("z"))] = Math.Clamp(tick.GetInt("delay"), 0, 8300);
+        }
 
         if (chunkCompound.TryGetTag<NbtList>("ObsidianFrogspawnTicks", out var frogspawnTicks))
+        {
             foreach (var tick in frogspawnTicks.OfType<NbtCompound>())
                 chunk.FrogspawnTicks[new Vector(tick.GetInt("x"), tick.GetInt("y"), tick.GetInt("z"))] = Math.Clamp(tick.GetInt("delay"), 1, 12000);
+        }
+
         if (chunkCompound.TryGetTagValue<long>("InhabitedTime", out var inhabitedTime))
             chunk.InhabitedTime = inhabitedTime;
 

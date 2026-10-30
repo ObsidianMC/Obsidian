@@ -787,11 +787,14 @@ public abstract partial class PlayerBase : Avatar, IPlayer
             ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining;
         await this.QueuePacketAsync(new GameEventPacket(weather));
         foreach (var (id, effect) in ActivePotionEffects)
+        {
             await this.QueuePacketAsync(new UpdateMobEffectPacket(EntityId, id, effect.CurrentDuration)
             {
                 Amplifier = effect.EffectData.Amplifier,
                 Flags = EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon
             });
+        }
+
         await this.QueuePacketAsync(new GameEventPacket(
             ChangeGameStateReason.RainLevelChange, destination.LevelData.Raining ? 1 : 0));
         await this.QueuePacketAsync(new GameEventPacket(

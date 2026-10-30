@@ -1,0 +1,9 @@
+<Project>
+
+	<PropertyGroup>
+		<!-- Report the .editorconfig code-style rules set to warning (such as IDE0011, braces on multi-line bodies) in
+		     the build, not only in the IDE. Obsidian.Nbt is a submodule with its own repository and conventions. -->
+		<EnforceCodeStyleInBuild Condition="!$([MSBuild]::MakeRelative($(MSBuildThisFileDirectory), $(MSBuildProjectDirectory)).StartsWith('Obsidian.Nbt'))">true</EnforceCodeStyleInBuild>
+	</PropertyGroup>
+
+</Project>

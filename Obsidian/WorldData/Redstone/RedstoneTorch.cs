@@ -117,8 +117,10 @@ internal sealed class RedstoneTorch(IRedstoneLevel level, RedstoneEngine engine)
     {
         var count = 0;
         foreach (var toggle in this.toggles)
+        {
             if (toggle.Position == position)
                 count++;
+        }
 
         return count;
     }

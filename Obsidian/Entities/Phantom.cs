@@ -49,7 +49,10 @@ public sealed partial class Phantom : PathfinderMob
     {
         if (Level.MonstersBurn((Vector)Position.Floor()) &&
             !Level.LevelData.Raining && !InWater && Terrain.GetSkyLight((Vector)EyePosition.Floor()) == 15)
+        {
             Ignite(8);
+        }
+
         return default;
     }
 
@@ -82,7 +85,9 @@ public sealed partial class Phantom : PathfinderMob
             Anchor = new Vector(coordinates[0], coordinates[1], coordinates[2]);
         }
         else
+        {
             Anchor = (Vector)Position.Floor() + new Vector(0, 5, 0);
+        }
     }
 }
 

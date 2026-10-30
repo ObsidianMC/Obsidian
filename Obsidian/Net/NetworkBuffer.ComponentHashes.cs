@@ -136,7 +136,9 @@ public partial class NetworkBuffer
         {
             if (other is null || this.Count != other.Count || this.Holder != other.Holder
                 || !this.ComponentsToRemove.ToHashSet().SetEquals(other.RemoveComponents))
+            {
                 return false;
+            }
 
             var patch = SentPatch(other);
             if (patch.Count != this.HashedComponents.Count)
@@ -488,8 +490,11 @@ public partial class NetworkBuffer
             case DataComponentType.PotDecorations:
                 var faces = new List<(string, int)>();
                 foreach (var face in PotFaceNames)
+                {
                     if (this.ReadBoolean())
                         faces.Add((face, this.HashItemTemplate()));
+                }
+
                 return Record(faces);
             case DataComponentType.SulfurCubeContent: return this.HashItemTemplate();
             case DataComponentType.VillagerFood: return H.Record(("nutrition", H.Int(this.ReadVarInt())));
@@ -580,7 +585,9 @@ public partial class NetworkBuffer
                 if (probability != 1)
                     fields.Add(("probability", H.Float(probability)));
                 break;
-            case 1: fields.Add(("effects", this.HashIdSet("minecraft:mob_effect"))); break;
+            case 1:
+                fields.Add(("effects", this.HashIdSet("minecraft:mob_effect")));
+                break;
             case 3:
                 var diameter = this.ReadSingle();
                 if (diameter != 16)
@@ -588,7 +595,9 @@ public partial class NetworkBuffer
                 if (!this.ReadBoolean())
                     fields.Add(("directional_particles", H.Boolean(false)));
                 break;
-            case 4: fields.Add(("sound", this.HashSound())); break;
+            case 4:
+                fields.Add(("sound", this.HashSound()));
+                break;
         }
         return Record(fields);
     }
@@ -742,7 +751,10 @@ public partial class NetworkBuffer
                     var boolean = chat && name is "bold" or "italic" or "underlined" or "strikethrough" or "obfuscated" or "interpret";
                     if (chat && name is not ("text" or "translate" or "keybind" or "fallback" or "with" or "extra" or "color" or "shadow_color" or "bold"
                         or "italic" or "underlined" or "strikethrough" or "obfuscated" or "insertion" or ""))
+                    {
                         throw new UnsupportedComponentHashException();
+                    }
+
                     if (chat && name == "" && next is not (8 or 9 or 10))
                         throw new UnsupportedComponentHashException();
 

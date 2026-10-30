@@ -105,8 +105,10 @@ public sealed partial class Painting : HangingEntity
         var side = CounterClockwise(this.Facing).ToVector();
 
         for (var x = -(this.Width - 1) / 2; x <= this.Width / 2; x++)
-        for (var y = -(this.Height - 1) / 2; y <= this.Height / 2; y++)
-            yield return this.BlockPosition + side * x + new Vector(0, y, 0);
+        {
+            for (var y = -(this.Height - 1) / 2; y <= this.Height / 2; y++)
+                yield return this.BlockPosition + side * x + new Vector(0, y, 0);
+        }
     }
 
     public override void Write(INetStreamWriter writer)
@@ -130,7 +132,9 @@ public sealed partial class Painting : HangingEntity
         // The variant comes first, since where the painting hangs depends on its size.
         if (tag.TryGetTag<NbtTag<string>>("variant", out var variant)
             && CodecRegistry.PaintingVariant.All.TryGetValue(variant.Value!, out var codec))
+        {
             this.Variant = codec;
+        }
 
         base.ReadNbt(tag);
     }

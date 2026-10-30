@@ -81,16 +81,23 @@ internal static class DatagenJson
                 foreach (var (name, value) in obj)
                 {
                     if (value is JsonValue jsonValue && jsonValue.TryGetValue(out string? text))
+                    {
                         yield return (name, text);
+                    }
                     else
+                    {
                         foreach (var nested in StringProperties(value))
                             yield return nested;
+                    }
                 }
                 break;
             case JsonArray array:
                 foreach (var item in array)
+                {
                     foreach (var nested in StringProperties(item))
                         yield return nested;
+                }
+
                 break;
         }
     }

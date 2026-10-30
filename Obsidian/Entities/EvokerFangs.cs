@@ -28,7 +28,9 @@ public sealed partial class EvokerFangs : Entity
             foreach (var target in Level.GetEntitiesInRange(Position, 2).OfType<Living>().Where(target => target.Uuid != OwnerUuid &&
                 target.Health > 0 && target.Type is not (EntityType.Evoker or EntityType.Vindicator or EntityType.Pillager or EntityType.Illusioner) &&
                 bounds.Intersects(target.Dimension.CreateBBFromPosition(target.Position))))
+            {
                 await target.DamageAsync(owner ?? this, 6);
+            }
         }
         if (--life < 0) await RemoveAsync();
     }

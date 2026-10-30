@@ -57,7 +57,9 @@ internal static class PluginLootTables
             var parts = path.Split('/', 4);
             if (parts.Length != 4 || parts[0] != "data" || parts[2] != "loot_table"
                 || !parts[3].EndsWith(".json", StringComparison.Ordinal))
+            {
                 continue;
+            }
 
             var identifier = parts[1] + ":" + parts[3][..^5];
             if (PluginTags.IsFileIdentifier(identifier))

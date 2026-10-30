@@ -15,7 +15,9 @@ internal static class OverworldBuildRange
     public static void Ensure(IChunk? chunk, string generatorId)
     {
         if (chunk is not null && (chunk.MinY != MinY || chunk.Height != Height))
+        {
             throw new NotSupportedException(
                 $"The '{generatorId}' generator only supports the overworld build range (min Y {MinY}, height {Height}), not {chunk.MinY}/{chunk.Height}.");
+        }
     }
 }

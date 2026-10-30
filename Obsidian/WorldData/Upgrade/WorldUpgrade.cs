@@ -67,12 +67,16 @@ internal static partial class WorldUpgrade
         if (File.Exists(Path.Combine(folder, MarkerFile))
             || legacyFolders.Any(name => HasFiles(Path.Combine(folder, name)))
             || LegacyLevelFolders(Path.Combine(folder, "dimensions")).Any())
+        {
             return true;
+        }
 
         var data = Path.Combine(folder, "data");
         if (Directory.Exists(Path.Combine(data, "obsidian", "world"))
             || (Directory.Exists(data) && Directory.EnumerateFiles(data, "*.dat").Any(file => LegacyWorldDataFile(Path.GetFileName(file)) is not null)))
+        {
             return true;
+        }
 
         return World.ReadLevelDataOrBackup(Path.Combine(folder, WorldLayout.LevelDataFile), NullLogger.Instance) is NbtCompound root
             && !IsCurrentLevelData(root);
@@ -465,7 +469,9 @@ internal static partial class WorldUpgrade
             foreach (var (from, to) in new[] { ("NeedsStateScanning", "needs_state_scanning"), ("DragonKilled", "dragon_killed"),
                 ("PreviouslyKilled", "previously_killed"), ("Dragon", "dragon_uuid"), ("ExitPortalLocation", "exit_portal_location"),
                 ("Gateways", "gateways") })
+            {
                 Rename(fight, from, to);
+            }
 
             var end = Path.Combine(folder, WorldLayout.LevelFolder(TheEnd));
             SavedDataFile.Write(WorldLayout.SavedDataPath(end, "minecraft:ender_dragon_fight"), fight);
@@ -549,23 +555,25 @@ internal static partial class WorldUpgrade
             await file.InitializeAsync();
 
             for (var x = 0; x < 32; x++)
-            for (var z = 0; z < 32; z++)
             {
-                if (!file.HasChunk(x, z) || await file.GetChunkBytesAsync(x, z) is not Memory<byte> bytes)
-                    continue;
-
-                if (NbtReader.ReadTag(bytes.Span, true, out _) is not NbtCompound chunk)
-                    continue;
-
-                var written = new MemoryStream();
-                await using (var writer = new NbtWriterStream(written, NbtCompression.ZLib, ""))
+                for (var z = 0; z < 32; z++)
                 {
-                    writer.WriteEntries(upgrade(chunk));
-                    writer.EndCompound();
-                    await writer.TryFinishAsync();
-                }
+                    if (!file.HasChunk(x, z) || await file.GetChunkBytesAsync(x, z) is not Memory<byte> bytes)
+                        continue;
 
-                await file.SetChunkAsync(x, z, written);
+                    if (NbtReader.ReadTag(bytes.Span, true, out _) is not NbtCompound chunk)
+                        continue;
+
+                    var written = new MemoryStream();
+                    await using (var writer = new NbtWriterStream(written, NbtCompression.ZLib, ""))
+                    {
+                        writer.WriteEntries(upgrade(chunk));
+                        writer.EndCompound();
+                        await writer.TryFinishAsync();
+                    }
+
+                    await file.SetChunkAsync(x, z, written);
+                }
             }
 
             await file.FlushAsync();

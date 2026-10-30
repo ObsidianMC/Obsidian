@@ -63,7 +63,9 @@ public partial class Slime : CubeMob
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         if (Size == 1)
+        {
             DropSmallLoot();
+        }
         else
         {
             var count = Random.Next(2, 5);
@@ -96,8 +98,10 @@ internal sealed class SlimeMoveControl(Slime slime) : MoveControl(slime)
     {
         Stop();
         if (slime.AttackTarget is { } target)
+        {
             slime.Yaw = LookControl.RotateTowards(slime.Yaw.Degrees,
                 (float)(Math.Atan2(target.Position.Z - slime.Position.Z, target.Position.X - slime.Position.X) * 180 / Math.PI - 90), 10);
+        }
         else if (--turnDelay <= 0)
         {
             turnDelay = slime.Random.Next(40, 100);

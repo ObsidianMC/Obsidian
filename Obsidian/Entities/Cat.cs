@@ -68,7 +68,10 @@ public sealed partial class Cat : Animal
     {
         if (!Alive || IsRemoved || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator ||
             !IsInRange(player, 3) || !CanSee(player))
+        {
             return false;
+        }
+
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (CanEat(item))
         {
@@ -230,7 +233,11 @@ internal sealed class CatFollowOwnerGoal(Cat cat) : NavigationGoal(cat, 1)
             if (floor == null || TagsRegistry.Block.Leaves.Entries.Contains(floor.RegistryId) ||
                 evaluator.FindGround(point.X, point.Z, point.Y) is not { } ground || ground.Y != point.Y ||
                 evaluator.GetCost(destination) != 0 || !cat.Terrain.IsFree(bounds) || !cat.Terrain.IsFreeOfFluid(bounds) ||
-                !level.TryMoveEntity(cat, cat.Position, destination)) continue;
+                !level.TryMoveEntity(cat, cat.Position, destination))
+            {
+                continue;
+            }
+
             cat.CompleteTeleport(destination);
             Navigation.Stop();
             return;
@@ -285,14 +292,21 @@ internal sealed class CatRelaxOnOwnerGoal(Cat cat) : NavigationGoal(cat, 1.1f)
         MoveTo(new VectorD(goal.X, goal.Y, goal.Z));
         if ((owner!.Position - cat.Position).MagnitudeSquared() < 2.5)
         {
-            if (++onBedTicks > 8) cat.SetResting(true, false);
+            if (++onBedTicks > 8)
+            {
+                cat.SetResting(true, false);
+            }
             else
             {
                 cat.LookControl.LookAt(owner);
                 cat.SetResting(cat.IsLying, true);
             }
         }
-        else cat.SetResting(false, cat.IsRelaxing);
+        else
+        {
+            cat.SetResting(false, cat.IsRelaxing);
+        }
+
         return default;
     }
     public override void Stop()

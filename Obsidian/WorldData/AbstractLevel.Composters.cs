@@ -147,7 +147,9 @@ internal sealed class ComposterItemAccess(AbstractLevel level, Vector position, 
             || stack.IsNullOrAir()
             || !this.Accepts
             || Composters.LayersOf(stack) is not ComponentIntValue layers)
+        {
             return stack;
+        }
 
         if (!simulate)
             level.Fill(position, layers);
