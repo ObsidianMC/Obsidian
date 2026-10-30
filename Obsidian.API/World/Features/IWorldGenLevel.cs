@@ -23,6 +23,9 @@ public interface IWorldGenLevel
 
     public int SeaLevel { get; }
 
+    /// <summary>Raw brightness before lighting: 15 with skylight, otherwise 0.</summary>
+    public int UnlitBrightness => 15;
+
     /// <summary>
     /// The level's own random, like vanilla's <c>WorldGenRegion.getRandom</c>: seeded from the world seed and the chunk
     /// being decorated, and separate from the random of the feature or structure being placed.

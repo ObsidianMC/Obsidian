@@ -53,7 +53,8 @@ internal sealed partial class FeatureRegistry
     }
 
     // placeAt forces a low side at each supporting face, then joins it to the carpet above or below.
-    private static IBlock UpdateMossCarpet(IBlock state, IWorldGenLevel level, Vector position)
+    private static IBlock UpdateMossCarpet(
+        IBlock state, IWorldGenLevel level, Vector position, bool forceSides = true)
     {
         var above = level.GetBlock(position + Vector.Up);
         var below = level.GetBlock(position + Vector.Down);
@@ -67,16 +68,18 @@ internal sealed partial class FeatureRegistry
 
             if (BlockSurvival.CanAttachTo(support, face))
             {
-                side = "low";
+                side = forceSides || isBase ? "low" : state.GetProperty(property)!;
+                var refreshSide = side == "low";
 
-                if (above.RegistryId == state.RegistryId
+                if (refreshSide && above.RegistryId == state.RegistryId
                     && above.GetProperty("bottom") == "false"
                     && above.GetProperty(property) != "none")
                 {
                     side = "tall";
                 }
 
-                if (!isBase && below.RegistryId == state.RegistryId && below.GetProperty(property) == "none")
+                if (refreshSide && !isBase && below.RegistryId == state.RegistryId
+                    && below.GetProperty(property) == "none")
                 {
                     side = "none";
                 }
@@ -86,5 +89,18 @@ internal sealed partial class FeatureRegistry
         }
 
         return state;
+    }
+
+    /// <summary>Tree edge updates may connect a carpet placed by an earlier tree to the new trunk.</summary>
+    internal static IBlock UpdateMossCarpetShape(IBlock state, IWorldGenLevel level, Vector position)
+    {
+        if (!state.CanSurvive(level, position))
+            return BlocksRegistry.Air;
+
+        var updated = UpdateMossCarpet(state, level, position, forceSides: false);
+        var hasFaces = updated.GetProperty("bottom") == "true" || FeatureHelpers.Horizontal.Any(face =>
+            updated.GetProperty(face.ToString().ToLowerInvariant()) != "none");
+
+        return hasFaces ? updated : BlocksRegistry.Air;
     }
 }

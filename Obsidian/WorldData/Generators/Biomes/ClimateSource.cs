@@ -35,6 +35,12 @@ internal sealed class ClimateSource : IBiomeSource
             Climate.Quantize(this.functions[5].Sample(x, y, z)));
     }
 
+    /// <summary>Source encounter order, which also determines decoration's feature identities.</summary>
+    public IEnumerable<string> PossibleBiomes => this.parameters is null
+        ? ["minecraft:the_end", "minecraft:end_highlands", "minecraft:end_midlands",
+            "minecraft:small_end_islands", "minecraft:end_barrens"]
+        : this.parameters.Entries.Select(entry => entry.Biome).Distinct();
+
     public BiomeCodec GetNoiseBiome(int quartX, int quartY, int quartZ)
     {
         var name = this.parameters is null

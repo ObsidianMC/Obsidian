@@ -1,10 +1,11 @@
 using Obsidian.WorldData.Features;
+using Obsidian.WorldData.Generators.Mojang;
 
 namespace Obsidian.WorldData.Generators.Features;
 
 internal sealed partial class FeatureRegistry
 {
-    private static Feature FreezeSurface() => (context, _, origin) =>
+    private Feature FreezeSurface() => (context, _, origin) =>
     {
         var level = context.Level;
 
@@ -23,7 +24,13 @@ internal sealed partial class FeatureRegistry
                     level.SetBlock(below, BlocksRegistry.Ice);
                 }
 
-                if (FreezeTopLayerFeature.ShouldSnow(biome, level, top))
+                var cold = BiomeTemperature.ColdEnoughToSnow(biome, x, top.Y, z, level.SeaLevel);
+                var state = level.GetBlock(top);
+                var snow = biome.Element.HasPrecipitation && cold && !level.IsOutsideBuildHeight(top.Y)
+                    && state.LightEmission() < 10 && (state.IsAir || state.Is(BlockIds.Snow))
+                    && this.SnowCanSurvive(level, top);
+
+                if (snow)
                 {
                     level.SetBlock(top, BlocksRegistry.Snow);
                     var ground = level.GetBlock(below);

@@ -55,7 +55,7 @@ import net.minecraft.world.level.levelgen.synth.NormalNoise;
  * thread. Only the fixture's cases for this world are recaptured, and the fixture json is rewritten in place.
  *
  * <p>Phase 5 of docs/porting-26.3-plan.md adds sections step by step. Terrain, materials, single features,
- * biome sources and spawn attributes are captured here. Decoration, structures and lighting follow later.
+ * biome sources, biome decoration and spawn attributes are captured here. Structures and lighting follow later.
  */
 class WorldgenCaptures {
     // Which world (structures on or off) each section's cases are captured in.
@@ -70,6 +70,7 @@ class WorldgenCaptures {
         SECTIONS.put("aquifers", false);
         SECTIONS.put("carvers", false);
         SECTIONS.put("features", false);
+        SECTIONS.put("decoration", false);
         SECTIONS.put("biome_search", false);
         SECTIONS.put("biome_points", false);
         SECTIONS.put("spawn_attributes", false);
@@ -208,7 +209,7 @@ class WorldgenCaptures {
 
         var outcome = changes.isEmpty() ? ": unchanged" : ": CHANGED " + String.join(", ", changes);
         var inputs = before.deepCopy();
-        if (section.equals("terrain") || section.equals("biomes")) {
+        if (section.equals("terrain") || section.equals("biomes") || section.equals("decoration")) {
             inputs = new JsonObject();
             for (var field : List.of("seed", "dimension", "chunkX", "chunkZ")) {
                 inputs.add(field, before.get(field));
@@ -286,6 +287,7 @@ class WorldgenCaptures {
                     case "aquifers" -> aquifer(entry);
                     case "carvers" -> carvers(entry);
                     case "features" -> feature(entry);
+                    case "decoration" -> decoration(entry);
                     case "biomes" -> biomeSections(entry);
                     case "biome_search" -> biomeSearch(entry);
                     case "biome_points" -> biomePoint(entry);
@@ -1039,6 +1041,154 @@ class WorldgenCaptures {
             }
         } catch (Exception exception) {
             throw new RuntimeException(exception);
+        }
+    }
+
+    // Actual FEATURES status, structures disabled. Isolated terrain chunks keep cases independent, including
+    // neighboring cases, and let the replay verify every writable chunk rather than just the center.
+    static void decoration(JsonObject entry) {
+        try {
+            decorationChecked(entry);
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    static void decorationChecked(JsonObject entry) throws Exception {
+        System.out.println("Decorating " + entry.get("name"));
+        var level = level(entry.get("dimension").getAsString());
+        var generator = (NoiseBasedChunkGenerator) level.getChunkSource().getGenerator();
+        var source = generator.getBiomeSource();
+        var randomState = level.getChunkSource().randomState();
+        if (!entry.has("chunkX")) {
+            var target = entry.get("targetBiome").getAsString();
+            int searchY = entry.has("searchY") ? entry.get("searchY").getAsInt() : 70;
+            var found = source.findBiomeHorizontal(0, searchY, 0, 24000, 16,
+                biome -> biome.unwrapKey().orElseThrow().identifier().toString().equals(target),
+                new LegacyRandomSource(0L), true, randomState);
+            if (found == null) {
+                throw new IllegalStateException("No decoration target " + target);
+            }
+            entry.addProperty("chunkX", found.getFirst().getX() >> 4);
+            entry.addProperty("chunkZ", found.getFirst().getZ() >> 4);
+        }
+        int chunkX = entry.get("chunkX").getAsInt();
+        int chunkZ = entry.get("chunkZ").getAsInt();
+        entry.addProperty("minY", level.getMinY());
+        entry.addProperty("height", level.getHeight());
+        entry.addProperty("seaLevel", generator.getSeaLevel());
+        var step = ChunkPyramid.GENERATION_PYRAMID.getStepTo(ChunkStatus.FEATURES);
+        var chunks = new HashMap<Long, ProtoChunk>();
+        var resolver = source.createUncachedResolver(randomState);
+        var manager = new BiomeManager(resolver, BiomeManager.obfuscateSeed(level.getSeed()));
+        StaticCache2D<ChunkAccess> cache = StaticCache2D.create(chunkX, chunkZ,
+            step.accumulatedDependencies().getRadius(), (x, z) -> {
+                var chunk = new ProtoChunk(new ChunkPos(x, z), UpgradeData.EMPTY, level,
+                    PalettedContainerFactory.create(server.registryAccess()), null);
+                chunks.put(ChunkPos.pack(x, z), chunk);
+                return chunk;
+            });
+        var center = chunks.get(ChunkPos.pack(chunkX, chunkZ));
+        var region = region(level, cache, step, center);
+        for (int z = chunkZ - 1; z <= chunkZ + 1; z++) {
+            for (int x = chunkX - 1; x <= chunkX + 1; x++) {
+                var chunk = chunks.get(ChunkPos.pack(x, z));
+                generator.createBiomes(randomState, Blender.empty(), level.structureManager(), chunk).join();
+                var settings = generator.generatorSettings().value();
+                var volume = new DensityVolume(16, settings.noiseSettings().height(), 16,
+                    x * 16, settings.noiseSettings().minY(), z * 16);
+                try (var noise = new NoiseChunk(randomState, Beardifier.EMPTY, settings,
+                    fluidPicker(settings), Blender.empty(), volume)) {
+                    invokeStage(generator, "doFill", noise, chunk);
+                    invokeStage(generator, "buildSurface", chunk, noise, randomState, manager,
+                        source.possibleBiomes(), settings.materialRule().value());
+                    invokeStage(generator, "generateCarvers", chunk, Blender.empty(), noise,
+                        randomState, manager, null, settings.materialRule().value());
+                }
+                chunk.setPersistedStatus(ChunkStatus.TERRAIN);
+                Heightmap.primeHeightmaps(chunk, ChunkStatus.FEATURES.heightmapsAfter());
+            }
+        }
+
+        var possible = new JsonArray();
+        source.possibleBiomes().forEach(biome ->
+            possible.add(biome.unwrapKey().orElseThrow().identifier().toString()));
+        entry.add("possibleBiomes", possible);
+        var field = ChunkGenerator.class.getDeclaredField("featuresPerStep");
+        field.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        var steps = ((Supplier<List<net.minecraft.world.level.biome.FeatureSorter.StepFeatureData>>)
+            field.get(generator)).get();
+        var placedRegistry = server.registryAccess().lookupOrThrow(Registries.PLACED_FEATURE);
+        var featureOrder = new JsonArray();
+        for (var features : steps) {
+            var ids = new JsonArray();
+            features.features().forEach(feature -> ids.add(placedRegistry.getKey(feature).toString()));
+            featureOrder.add(ids);
+        }
+        entry.add("featureOrder", featureOrder);
+        var present = new TreeSet<String>();
+        for (int z = chunkZ - 1; z <= chunkZ + 1; z++) {
+            for (int x = chunkX - 1; x <= chunkX + 1; x++) {
+                for (var section : chunks.get(ChunkPos.pack(x, z)).getSections()) {
+                    section.getBiomes().getAll(biome ->
+                        present.add(biome.unwrapKey().orElseThrow().identifier().toString()));
+                }
+            }
+        }
+        entry.add("biomes", new Gson().toJsonTree(present));
+        generator.applyBiomeDecoration(region, center, level.structureManager().forWorldGenRegion(region));
+        center.setPersistedStatus(ChunkStatus.FEATURES);
+        entry.addProperty("status", center.getPersistedStatus().getName());
+        var results = new JsonArray();
+        for (int z = chunkZ - 1; z <= chunkZ + 1; z++) {
+            for (int x = chunkX - 1; x <= chunkX + 1; x++) {
+                var chunk = chunks.get(ChunkPos.pack(x, z));
+                var result = new JsonObject();
+                result.addProperty("chunkX", x);
+                result.addProperty("chunkZ", z);
+                result.add("blocks", blocks(chunk, level.getMinY(), level.getHeight()));
+                var heightmaps = new JsonObject();
+                for (var type : Heightmap.Types.values()) {
+                    var bytes = new ByteArrayOutputStream();
+                    var values = new DataOutputStream(bytes);
+                    for (int localZ = 0; localZ < 16; localZ++) {
+                        for (int localX = 0; localX < 16; localX++) {
+                            values.writeInt(chunk.getHeight(type, localX, localZ) + 1);
+                        }
+                    }
+                    heightmaps.addProperty(type.getSerializationKey(), compressed(bytes.toByteArray()));
+                }
+                result.add("heightmaps", heightmaps);
+                results.add(result);
+            }
+        }
+        entry.add("chunks", results);
+        var marks = new JsonArray();
+        featureMarks(chunks, chunkX, chunkZ).forEach(position -> marks.add(coordinates(position)));
+        entry.add("marks", marks);
+        entry.add("blockEntities", blockEntities(region, chunks, chunkX, chunkZ));
+        if (entry.has("verifyStatus") && entry.get("verifyStatus").getAsBoolean()) {
+            var actual = level.getChunkSource().getChunk(chunkX, chunkZ, ChunkStatus.FEATURES, true);
+            var actualBlocks = blocks(actual, level.getMinY(), level.getHeight());
+            var isolatedBlocks = blocks(center, level.getMinY(), level.getHeight());
+            if (!actualBlocks.get("hash").equals(isolatedBlocks.get("hash"))) {
+                int differences = 0;
+                var first = new ArrayList<String>();
+                for (var pos : BlockPos.betweenClosed(chunkX * 16, level.getMinY(), chunkZ * 16,
+                    chunkX * 16 + 15, level.getMaxY(), chunkZ * 16 + 15)) {
+                    var expected = actual.getBlockState(pos);
+                    var isolated = center.getBlockState(pos);
+                    if (expected != isolated) {
+                        differences++;
+                        if (first.size() < 12) {
+                            first.add(pos.toShortString() + ": " + expected + " vs " + isolated);
+                        }
+                    }
+                }
+                throw new IllegalStateException("Isolated decoration differs from FEATURES at "
+                    + center.getPos() + ": " + differences + " differences: " + first);
+            }
         }
     }
 

@@ -70,6 +70,8 @@ internal sealed class WorldGenRegion : IWorldGenLevel
 
     public int SeaLevel { get; }
 
+    public int UnlitBrightness { get; init; } = 15;
+
     public IRandomSource Random { get; }
 
     /// <param name="chunks">The center chunk and (at least) its 8 neighbors, keyed by chunk coordinates.</param>

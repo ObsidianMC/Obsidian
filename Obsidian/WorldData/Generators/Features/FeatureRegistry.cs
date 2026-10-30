@@ -30,8 +30,8 @@ internal sealed record DecorationContext(
 /// Entries compile on first use and are cached by identifier; the biome filter compares registered placed features
 /// by identifier, like vanilla compares holders, without compiling the biome's other features. Compiling isn't
 /// thread-safe; compile what a generator needs before sharing the registry. Types that aren't implemented yet throw
-/// <see cref="NotSupportedException"/> when compiled. Per-biome decoration (each biome's step lists and the feature
-/// index order across biomes) waits for 26.3 biome selection.
+/// <see cref="NotSupportedException"/> when compiled. <see cref="BiomeDecoration"/> supplies the per-biome step
+/// lists and the feature index order across the biome source.
 /// </remarks>
 internal sealed partial class FeatureRegistry(WorldgenData data)
 {

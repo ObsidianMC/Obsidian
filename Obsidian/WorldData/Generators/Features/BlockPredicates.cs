@@ -85,6 +85,8 @@ internal sealed partial class FeatureRegistry
     {
         switch (state.BlockClass())
         {
+            case "SnowLayerBlock":
+                return this.SnowCanSurvive(level, position);
             case "SulfurSpikeBlock":
             case "PointedDripstoneBlock":
             {
@@ -133,6 +135,21 @@ internal sealed partial class FeatureRegistry
         return this.BlockTag(tag).Contains(below.RegistryId);
     }
 
+    private bool SnowCanSurvive(IWorldGenLevel level, Vector position)
+    {
+        var below = level.GetBlock(position + Vector.Down);
+
+        if (this.BlockTag("minecraft:cannot_support_snow_layer").Contains(below.RegistryId))
+            return false;
+
+        if (this.BlockTag("minecraft:support_override_snow_layer").Contains(below.RegistryId))
+            return true;
+
+        // SnowLayerBlock tests the collision face. Leaves have full collision despite not being sturdy support.
+        return below.IsCollisionShapeFullBlock() || below.IsFaceSturdy(BlockFace.Up)
+            || below.Is(BlockIds.Snow) && below.GetProperty("layers") == "8";
+    }
+
     // A hanging propagule needs its supporting leaves above; a planted one is a sapling on its own support tag.
     private bool MangrovePropaguleCanSurvive(IBlock state, IWorldGenLevel level, Vector position)
     {
@@ -147,11 +164,10 @@ internal sealed partial class FeatureRegistry
         return supports.Contains(above.RegistryId);
     }
 
-    // The override tag, otherwise a solid render below in the dark. Decoration sees no light yet, so like the shared
-    // survival rules the brightness is the unlit 15 and only the override tag lets a mushroom stay.
+    // Before lighting, sky-lit dimensions report 15 even underground. The Nether reports 0.
     private bool MushroomCanSurvive(IWorldGenLevel level, Vector position)
     {
-        const int rawBrightness = 15;
+        var rawBrightness = level.UnlitBrightness;
 
         if (this.BelowIn("minecraft:overrides_mushroom_light_requirement", level, position))
         {

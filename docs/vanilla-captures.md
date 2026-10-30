@@ -147,6 +147,36 @@ Nothing is reimplemented:
   constructor would set, since the chunks have no generation holders), `FeaturePlacer.placeWithBiomeCheck` and
   decoration random place it, and the changed blocks of the writable 3x3 chunks are recorded.
 
+## Decoration references
+
+`decoration/` captures the 26.3 `features` status with structures disabled. The 71 cases cover 66 of 67 biomes (all
+except `the_void`), using seed 12345 across all 56 Overworld biomes, all five Nether biomes, and the End's main and
+outer islands. A smaller group repeats forests, deserts, warm oceans, warped forests and outer End islands with
+seed 987654321. The cases also exercise dungeon chest/spawner NBT, sculk block entities, snow on tree canopies, and
+pale moss joining a later tree. `targetBiome` and `searchY` are used only to find initial chunk coordinates;
+subsequent captures retain the recorded `chunkX` and `chunkZ`.
+
+The probe builds fresh terrain and biome chunks for the writable 3x3 region, invokes vanilla's
+`ChunkGenerator.applyBiomeDecoration`, and records all nine chunks' blocks and six heightmaps, ordered
+post-processing marks (including terrain marks), and block entities. Each heightmap is gzip/base64 encoded big-endian
+int32 heights in z/x column order, like the existing block-index arrays. Cases with `verifyStatus` also check the
+center's blocks against an actual chunk requested at `ChunkStatus.FEATURES`. Fresh isolated regions keep nearby
+capture cases independent of each other's decoration writes. These captures stop before chunk post-processing,
+fluid ticks, lighting and neighboring chunks' own decoration. Tree edge shape updates within a feature are included.
+
+`possibleBiomes` preserves the source's encounter order. `featureOrder` records vanilla's complete `FeatureSorter`
+result for each generation step, including features absent from this particular region.
+`VanillaBiomeDecoration.BiomesTerrainAndDecorationMatchVanilla` checks that order and replays biomes, terrain and
+decoration, comparing blocks, heightmaps, marks and block-entity NBT. Every case has `Category=Worldgen`. The 26.3
+pipeline remains separate from the live generator. Structure pieces will run through the explicit per-step hook
+before placed features in Phase 5 step 6.
+
+Record this section alone with:
+
+```sh
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen -p:CaptureSections=decoration/*
+```
+
 ## Terrain references
 
 On seed `12345`, the twelve overworld locations cover ocean and flooded caves `(0, 0)`, iron veins and underground
@@ -271,8 +301,8 @@ differs from the layers, in z, x, y order.
 `VanillaFeaturePlacement` replays them with `WorldData/Generators/Features/FeatureRegistry`, the 26.3 feature
 machinery built beside the legacy features. It builds the layered chunks two chunks around the decorated one; the
 features replayed so far read no further. Cases whose feature types aren't implemented yet are captured and
-listed as pending in the test. Biome decoration (each biome's ordered steps) waits for 26.3 biome
-selection. The replays have `Category=Worldgen`.
+listed as pending in the test. Complete per-biome decoration is captured separately in `decoration/`, as
+described above. The replays have `Category=Worldgen`.
 
 Trees and large features have their own files of named cases (`features/09-trees` to `15-tree-coverage`): each
 tree family (oak, birch, fancy oak, spruce and pine, giant spruce and pine, jungle and mega jungle, dark oak,

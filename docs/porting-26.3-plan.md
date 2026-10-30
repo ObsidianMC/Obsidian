@@ -376,6 +376,10 @@ Re-capture with the Phase 0 harness first, then work in this order. Each step ha
    - Replace the consolidated types with the general machinery.
    - Add the new feature and placement types and the block-state providers.
    - Speleothems, poplar trees, shelf mushrooms and red shrubs.
+   - Per-biome decoration is implemented beside the live generator in `BiomeTerrain.Decorate`. It collects
+     section biomes from the surrounding 3x3 terrain chunks and runs the source's globally ordered features by
+     generation step with 26.3 decoration and feature seeds. `BiomeDecoration.Generate` reserves a structure
+     placement hook before the placed features in each step; structure pieces remain step 6 work.
 6. **Structures.** Abandoned camps (jigsaw, so mostly data) and the changed templates. Save structure starts with
    vanilla's piece ids and fields: Obsidian writes only each piece's own state, so vanilla drops every piece (see
    `known-gaps.md`, "Structure pieces in saved chunks").
