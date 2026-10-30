@@ -10,7 +10,7 @@ internal sealed partial class FeatureRegistry
     private Feature MultifaceGrowth(JsonElement json)
     {
         var block = json.TryGetProperty("block", out var blockJson)
-            ? BlocksRegistry.Get(blockJson.GetString()!)
+            ? ReadBlock(blockJson)
             : BlocksRegistry.GlowLichen;
         var spreader = MultifaceSpreader.For(block);
         var supports = this.Blocks(json.GetProperty("can_be_placed_on"));

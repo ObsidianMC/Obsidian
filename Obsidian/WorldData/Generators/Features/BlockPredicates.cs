@@ -1,6 +1,7 @@
 using Obsidian.API.World.Features;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Features;
+using Obsidian.WorldData.Generators.Density;
 using System.IO;
 using System.Text.Json;
 
@@ -248,8 +249,8 @@ internal sealed partial class FeatureRegistry
     private static HashSet<FluidKind> Fluids(JsonElement json)
     {
         var names = json.ValueKind == JsonValueKind.Array
-            ? json.EnumerateArray().Select(entry => entry.GetString()!).ToArray()
-            : [json.GetString()!];
+            ? json.EnumerateArray().Select(entry => WorldgenData.Qualify(entry.GetString()!)).ToArray()
+            : [WorldgenData.Qualify(json.GetString()!)];
         var result = new HashSet<FluidKind>();
 
         foreach (var name in names)

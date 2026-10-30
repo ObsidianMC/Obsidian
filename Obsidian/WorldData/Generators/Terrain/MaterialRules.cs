@@ -124,7 +124,7 @@ internal sealed partial class MaterialRules
     {
         if (json.ValueKind == JsonValueKind.String)
         {
-            var id = Identifier(json.GetString()!);
+            var id = WorldgenData.Qualify(json.GetString()!);
 
             if (!this.rules.TryGetValue(id, out var rule))
             {
@@ -222,7 +222,7 @@ internal sealed partial class MaterialRules
     {
         if (json.ValueKind == JsonValueKind.String)
         {
-            var id = Identifier(json.GetString()!);
+            var id = WorldgenData.Qualify(json.GetString()!);
 
             if (!this.conditions.TryGetValue(id, out var condition))
             {
@@ -238,14 +238,15 @@ internal sealed partial class MaterialRules
             case "minecraft:biome":
                 var names = json.GetProperty("biome_is");
                 var biomes = names.ValueKind == JsonValueKind.String
-                    ? new HashSet<string> { Identifier(names.GetString()!) }
-                    : names.EnumerateArray().Select(name => Identifier(name.GetString()!)).ToHashSet();
+                    ? new HashSet<string> { WorldgenData.Qualify(names.GetString()!) }
+                    : names.EnumerateArray().Select(name => WorldgenData.Qualify(name.GetString()!)).ToHashSet();
                 return context => biomes.Contains(context.Biome);
             case "minecraft:not":
                 var inverted = this.CompileCondition(json.GetProperty("invert"));
                 return context => !inverted(context);
             case "minecraft:noise_threshold":
-                var noise = this.generator.Compiler.Noise(Identifier(json.GetProperty("noise").GetString()!));
+                var noiseId = WorldgenData.Qualify(json.GetProperty("noise").GetString()!);
+                var noise = this.generator.Compiler.Noise(noiseId);
                 var min = json.GetProperty("min_threshold").GetDouble();
                 var max = json.GetProperty("max_threshold").GetDouble();
                 var is3d = json.TryGetProperty("is_3d", out var is3dJson) && is3dJson.GetBoolean();
@@ -288,7 +289,7 @@ internal sealed partial class MaterialRules
     {
         var below = this.ResolveAnchor(json.GetProperty("true_at_and_below"));
         var above = this.ResolveAnchor(json.GetProperty("false_at_and_above"));
-        var name = Identifier(json.GetProperty("random_name").GetString()!);
+        var name = WorldgenData.Qualify(json.GetProperty("random_name").GetString()!);
         var factory = this.generator.Compiler.RandomFactory(name);
 
         return context =>
@@ -333,16 +334,14 @@ internal sealed partial class MaterialRules
         return anchor.Resolve(this.generator.Settings.MinY, this.generator.Settings.Height);
     }
 
-    private static string Identifier(string name) => name.Contains(':') ? name : $"minecraft:{name}";
-
     internal static IBlock ReadBlock(JsonElement json)
     {
         if (json.ValueKind == JsonValueKind.String)
         {
-            return BlocksRegistry.Get(Identifier(json.GetString()!));
+            return BlocksRegistry.Get(WorldgenData.Qualify(json.GetString()!));
         }
 
-        var id = json.GetProperty("id").GetString()!;
+        var id = WorldgenData.Qualify(json.GetProperty("id").GetString()!);
         var properties = new Dictionary<string, string>();
 
         if (json.TryGetProperty("properties", out var values))

@@ -50,7 +50,7 @@ internal sealed partial class FeatureRegistry(WorldgenData data)
             return this.CompilePlaced(json, id: null);
         }
 
-        var id = json.GetString()!;
+        var id = WorldgenData.Qualify(json.GetString()!);
 
         if (!this.placedFeatures.TryGetValue(id, out var placed))
         {
@@ -71,7 +71,7 @@ internal sealed partial class FeatureRegistry(WorldgenData data)
             return this.CompileFeature(json);
         }
 
-        var id = json.GetString()!;
+        var id = WorldgenData.Qualify(json.GetString()!);
 
         if (!this.features.TryGetValue(id, out var feature))
         {
@@ -123,7 +123,7 @@ internal sealed partial class FeatureRegistry(WorldgenData data)
             {
                 foreach (var entry in step.EnumerateArray())
                 {
-                    placed.Add(entry.GetString()!);
+                    placed.Add(WorldgenData.Qualify(entry.GetString()!));
                 }
             }
 
