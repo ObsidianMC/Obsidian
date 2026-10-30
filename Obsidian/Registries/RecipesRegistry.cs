@@ -60,9 +60,22 @@ public static partial class RecipesRegistry
         return Task.CompletedTask;
     }
 
-    public static ICraftingRecipe? FindRecipe(CraftingTable grid) => FindRecipe(grid, 3);
+    /// <summary>
+    /// The crafting recipe a crafting table's grid matches, or <c>null</c>. A dye, imbue or transmute recipe's
+    /// result depends on the grid's items; <see cref="IServer.EvaluateCrafting"/> gives what a grid crafts.
+    /// </summary>
+    public static ICraftingRecipe? FindCraftingRecipe(CraftingTable grid) => FindCraftingRecipe(grid, 3);
 
-    internal static ICraftingRecipe? FindRecipe(BaseContainer grid, int width) => Current.FindRecipe(grid, width);
+    /// <summary>
+    /// The shaped or shapeless recipe a crafting table's grid matches, or <c>null</c>, also when it matches a recipe
+    /// without a fixed result. Kept with its original signature for compiled plugins.
+    /// </summary>
+    [Obsolete("Finds only recipes with a fixed result. Use FindCraftingRecipe, or IServer.EvaluateCrafting for what "
+        + "a grid crafts.")]
+    public static IRecipeWithResult? FindRecipe(CraftingTable grid) => FindCraftingRecipe(grid) as IRecipeWithResult;
+
+    internal static ICraftingRecipe? FindCraftingRecipe(BaseContainer grid, int width) =>
+        Current.FindRecipe(grid, width);
 
     /// <summary>
     /// Whether a recipe of <paramref name="type"/> cooks <paramref name="item"/>, which a furnace of that type
