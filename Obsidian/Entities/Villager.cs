@@ -300,7 +300,10 @@ public sealed partial class Villager : AgeableMob
         }
         VillagerXp = tag.TryGetTagValue<int>("Xp", out var xp) ? Math.Max(0, xp) : 0;
         offers = MerchantOffers.Read(tag);
-        tradingLevel = tag.TryGetTagValue<int>("ObsidianTradingLevel", out var unlocked) ? Math.Clamp(unlocked, 0, 5) : offers.IsEmpty ? 0 : VillagerLevel;
+        if (tag.TryGetTagValue<int>("ObsidianTradingLevel", out var unlocked))
+            tradingLevel = Math.Clamp(unlocked, 0, 5);
+        else
+            tradingLevel = tag.HasTag("ObsidianOffers") || tag.HasTag("Offers") ? VillagerLevel : 0;
         restocks = tag.TryGetTagValue<int>("RestocksToday", out var stock) ? Math.Clamp(stock, 0, 2) : 0;
         if (tag.TryGetTagValue<long>("LastRestock", out var last))
             lastRestock = last;
@@ -328,7 +331,7 @@ public sealed partial class Villager : AgeableMob
     internal void RestoreVillagerOffers(NbtCompound tag)
     {
         offers = MerchantOffers.Read(tag);
-        if (!offers.IsEmpty)
+        if (tag.HasTag("ObsidianOffers") || tag.HasTag("Offers"))
             tradingLevel = VillagerLevel;
     }
 

@@ -71,6 +71,7 @@ public sealed class VillagerTrades
             offer.UsedCount = index;
             offer.Demand = index - 2;
             offer.Discount = -index;
+            offer.RewardExp = index % 2 == 0;
             offer.IsDisabled = offer.UsedCount >= offer.MaxCount;
         }
 
@@ -78,6 +79,73 @@ public sealed class VillagerTrades
 
         Assert.Equal(offers.Select(Describe), restored.Select(Describe));
         Assert.Equal(offers.Select(Progress), restored.Select(Progress));
+    }
+
+    [Theory(Timeout = TestServerFactory.TestTimeout)]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task VanillaSavedOffersSurviveLoadingAndFirstInteraction(bool empty)
+    {
+        await using var context = TestServerFactory.CreateServer($"vanilla-offers-{Guid.NewGuid():N}");
+        WorldBlockEntities.AddEmptyChunk(context.World);
+        using var stream = typeof(Server).Assembly.GetManifestResourceStream("Obsidian.Assets.villager-saved-26.3.nbt")!;
+        var saved = Assert.IsType<NbtCompound>(new NbtReader(stream).ReadNextTag());
+        var vanillaOffers = Assert.IsType<NbtCompound>(saved["Offers"]);
+        if (empty)
+        {
+            vanillaOffers.Remove("Recipes");
+            vanillaOffers.Add(new NbtList(NbtTagType.Compound, "Recipes"));
+        }
+
+        var recipes = Assert.IsType<NbtList>(vanillaOffers["Recipes"]).OfType<NbtCompound>().ToList();
+        var villager = NewVillager(context.World, context.World.LevelData.SpawnPosition);
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Customer");
+
+        villager.ReadNbt(saved);
+        villager.Position = player.Position;
+        var loaded = MerchantOffers.Read(EntityNbt.Save(villager)!);
+        await villager.InteractAsync(player, InteractionHand.MainHand);
+        var afterInteraction = EntityNbt.Save(villager)!;
+
+        Assert.Equal(recipes.Count, loaded.Length);
+        for (var index = 0; index < recipes.Count; index++)
+        {
+            AssertSavedVanillaOffer(recipes[index], loaded[index]);
+        }
+
+        Assert.Equal(5, afterInteraction.GetInt("ObsidianTradingLevel"));
+        Assert.Equal(loaded.Select(Describe), MerchantOffers.Read(afterInteraction).Select(Describe));
+        if (empty)
+        {
+            Assert.Null(player.OpenedContainer);
+        }
+        else
+        {
+            var shown = ((TestClient)player.Client).SentPackets
+                .OfType<Obsidian.Net.Packets.Play.Clientbound.MerchantOffersPacket>().Last();
+            Assert.Equal(loaded.Select(Describe), shown.Offers.Select(Describe));
+            Assert.Equal(loaded.Select(Progress), Reload(loaded).Select(Progress));
+        }
+    }
+
+    private static void AssertSavedVanillaOffer(NbtCompound saved, TradeEntry actual)
+    {
+        var first = Assert.IsType<NbtCompound>(saved["buy"]).ItemFromNbt()!;
+        var output = Assert.IsType<NbtCompound>(saved["sell"]).ItemFromNbt()!;
+        var second = saved.TryGetTag<NbtCompound>("buyB", out var buyB) ? buyB.ItemFromNbt() : null;
+        Assert.Equal(Describe(first), Describe(actual.FirstInput));
+        Assert.Equal(Describe(output), Describe(actual.Output));
+        Assert.Equal(second is null ? "nothing" : Describe(second),
+            actual.SecondInput.Count == 0 ? "nothing" : Describe(actual.SecondInput));
+        Assert.Equal(saved.TryGetTagValue<int>("uses", out var uses) ? uses : 0, actual.UsedCount);
+        Assert.Equal(saved.TryGetTagValue<int>("maxUses", out var maximum) ? maximum : 4, actual.MaxCount);
+        Assert.Equal(saved.TryGetTagValue<int>("xp", out var xp) ? xp : 1, actual.XP);
+        Assert.Equal(saved.TryGetTagValue<int>("demand", out var demand) ? demand : 0, actual.Demand);
+        Assert.Equal(saved.TryGetTagValue<int>("specialPrice", out var specialPrice) ? specialPrice : 0, actual.Discount);
+        Assert.Equal(saved.TryGetTagValue<float>("priceMultiplier", out var multiplier) ? multiplier : 0,
+            actual.Multiplier);
+        Assert.Equal(!saved.TryGetBool("rewardExp", out var reward) || reward, actual.RewardExp);
+        Assert.Equal(actual.UsedCount >= actual.MaxCount, actual.IsDisabled);
     }
 
     [Theory(Timeout = TestServerFactory.TestTimeout)]
@@ -318,7 +386,8 @@ public sealed class VillagerTrades
     private static string Label(string merchant, List<string> offers) => $"{merchant}: {string.Join(" | ", offers)}";
 
     private static string Progress(TradeEntry offer) =>
-        $"{offer.UsedCount}/{offer.MaxCount} demand {offer.Demand} discount {offer.Discount} {offer.IsDisabled}";
+        $"{offer.UsedCount}/{offer.MaxCount} demand {offer.Demand} discount {offer.Discount} " +
+        $"{offer.IsDisabled} reward {offer.RewardExp}";
 
     // An offer as vanilla's MerchantOffer.CODEC wrote it, with its defaults (4 uses, 1 experience).
     private static string DescribeCaptured(JsonElement offer)

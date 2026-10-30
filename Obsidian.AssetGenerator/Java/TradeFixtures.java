@@ -89,6 +89,7 @@ public final class TradeFixtures {
 
         var output = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create().toJson(worlds);
         Files.writeString(Path.of(arguments[0]), output + "\n");
+        captureSavedVillager(Path.of(arguments[0]).resolveSibling("villager-saved-26.3.nbt"));
     }
 
     // The built-in registries and the vanilla pack's data pack registries, with their tags, as a server loads them.
@@ -250,6 +251,46 @@ public final class TradeFixtures {
             HolderSet.class, int.class);
         draw.setAccessible(true);
         draw.invoke(null, context, offers, tradeSet.trades(), amount);
+    }
+
+    // The same save sections and codecs used by Villager and AbstractVillager. Keep NBT types intact for replay.
+    private static void captureSavedVillager(Path outputPath) throws Exception {
+        var villager = (Villager) allocate(Villager.class);
+        var profession = access.lookupOrThrow(Registries.VILLAGER_PROFESSION)
+            .getOrThrow(ResourceKey.create(Registries.VILLAGER_PROFESSION,
+                Identifier.withDefaultNamespace("librarian")));
+        var type = access.lookupOrThrow(Registries.VILLAGER_TYPE)
+            .getOrThrow(ResourceKey.create(Registries.VILLAGER_TYPE, Identifier.withDefaultNamespace("desert")));
+        var offers = new MerchantOffers();
+        var sequences = new RandomSequences();
+        for (var rank = 1; rank <= 5; rank++) {
+            setVillagerData(villager, new VillagerData(type, profession, rank));
+            addOffers(villager, offers, profession.value().getTrades(rank), sequences, 12345L);
+        }
+
+        // Include the wandering trader's component-bearing water-bottle cost as well as the librarian's books.
+        var trader = (WanderingTrader) allocate(WanderingTrader.class);
+        addOffers(trader, offers, TradeSets.WANDERING_TRADER_BUYING, sequences, 12345L);
+        for (var index = 0; index < offers.size(); index++) {
+            var offer = offers.get(index);
+            for (var use = 0; use < index % (offer.getMaxUses() + 1); use++) {
+                offer.increaseUses();
+            }
+            offer.updateDemand();
+            offer.setSpecialPriceDiff(-index);
+            var reward = MerchantOffer.class.getDeclaredField("rewardExp");
+            reward.setAccessible(true);
+            reward.setBoolean(offer, index % 2 == 0);
+        }
+
+        var output = net.minecraft.world.level.storage.TagValueOutput.createWithContext(
+            net.minecraft.util.ProblemReporter.DISCARDING, access);
+        output.store("VillagerData", VillagerData.CODEC, new VillagerData(type, profession, 5));
+        output.putInt("Xp", 250);
+        output.store("Offers", MerchantOffers.CODEC, offers);
+        try (var stream = new java.io.DataOutputStream(Files.newOutputStream(outputPath))) {
+            net.minecraft.nbt.NbtIo.write(output.buildResult(), stream);
+        }
     }
 
     private static JsonArray describe(MerchantOffers offers) {
