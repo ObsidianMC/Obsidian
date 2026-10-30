@@ -82,6 +82,7 @@ internal sealed class ComponentValueKey : IEquatable<ComponentValueKey>
         {
             chat.Text,
             chat.Translate,
+            chat.Keybind,
             chat.Color,
             chat.Bold,
             chat.Italic,
