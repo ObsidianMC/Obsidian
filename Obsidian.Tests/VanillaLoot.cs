@@ -18,6 +18,7 @@ using Obsidian.Entities.Factories;
 using Obsidian.Tests.Fakes;
 using Obsidian.Registries;
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.WorldData;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -182,6 +183,63 @@ public class VanillaLoot
         }
 
         Assert.Equal(2, rows.Length);
+    }
+
+    [Fact]
+    public void ComponentNumberReferencesMatchVanillaValuesAndDraws()
+    {
+        using var stream = typeof(VanillaLoot).Assembly.GetManifestResourceStream(
+            "Obsidian.Tests.Assets.context_numbers.json")!;
+        using var capture = JsonDocument.Parse(stream);
+        var rows = capture.RootElement.EnumerateArray()
+            .Where(row => row.GetProperty("provider").ValueKind == JsonValueKind.String)
+            .ToArray();
+
+        foreach (var row in rows)
+        {
+            ReplayComponentReference(row);
+        }
+
+        Assert.NotEmpty(rows);
+    }
+
+    private static void ReplayComponentReference(JsonElement row)
+    {
+        var random = new LegacyRandomSource(row.GetProperty("seed").GetInt64());
+        var loot = NumberLootContext(row, random);
+        Assert.True(BlocksRegistry.TryGetDefault("minecraft:furnace", out var defaultBlock));
+        var block = loot.BlockState ?? defaultBlock;
+        var provider = row.GetProperty("provider").GetString()!;
+        var caller = new CapturedRandom(random);
+
+        if (row.GetProperty("kind").GetString() == "int")
+        {
+            var value = new ComponentIntValue(0, provider);
+            var actual = ComponentNumbers.Resolve(value, block, caller);
+
+            Assert.Equal(row.GetProperty("value").GetInt32(), actual);
+        }
+        else
+        {
+            var value = new ComponentFloatValue(0, provider);
+            var actual = ComponentNumbers.Resolve(value, block, caller);
+
+            Assert.Equal(row.GetProperty("bits").GetInt32(), BitConverter.SingleToInt32Bits(actual));
+        }
+
+        Assert.Equal(row.GetProperty("nextInt").GetInt32(), random.NextInt());
+    }
+
+    // Supply vanilla's captured stream through the same System.Random entry point as fuel/compost callers.
+    private sealed class CapturedRandom(LegacyRandomSource source) : Random
+    {
+        public override int Next() => source.NextInt();
+
+        public override int Next(int maxValue) => source.NextInt(maxValue);
+
+        public override float NextSingle() => source.NextFloat();
+
+        public override double NextDouble() => source.NextDouble();
     }
 
     private static void ReplayContextNumber(JsonElement row)
