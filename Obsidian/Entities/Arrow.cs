@@ -266,7 +266,11 @@ public partial class Arrow : Entity
         if (fraction < 1)
         {
             level.EmitGameEvent(MobGameEvent.ProjectileLand, Position, this, Owner);
-            if (Type is EntityType.ShulkerBullet or EntityType.WitherSkull) { await OnImpactAsync(null, false); return; }
+            if (Type is EntityType.ShulkerBullet or EntityType.WitherSkull)
+            {
+                await OnImpactAsync(null, false);
+                return;
+            }
 
             // Like vanilla's onHitBlock, a block the arrow hits reacts before the arrow embeds.
             if (Level is AbstractLevel hitLevel)

@@ -409,7 +409,11 @@ public partial class PlayerBase
             HasPotionEffect((int)PotionEffect.Levitation - 1) || HasPotionEffect((int)PotionEffect.SlowFalling - 1) ||
             feet?.RegistryId is BlockIds.Water or BlockIds.Lava or BlockIds.Cobweb or BlockIds.PowderSnow ||
             feet != null && TagsRegistry.Block.Climbable.Entries.Contains(feet.RegistryId))
-        { FallDistance = 0; return; }
+        {
+            FallDistance = 0;
+            return;
+        }
+
         // Like vanilla's LivingEntity.updateFallFlying calling Entity.cQ, a glide that isn't descending fast
         // (vertical movement above -0.5 a tick) keeps the fall distance at most 1, so only a real dive counts.
         if (gliding && Position.Y - previous.Y > -0.5 && FallDistance > 1) FallDistance = 1;

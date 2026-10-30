@@ -30,7 +30,14 @@ public sealed partial class EnderDragon : BossMob
     private readonly Dictionary<int, long> contactTicks = [];
     public bool PreviouslyKilled { get; internal set; } = true;
     internal bool IsPerched => phase is DragonPhase.Flaming or DragonPhase.Scanning or DragonPhase.Attacking or DragonPhase.Hovering;
-    internal IReadOnlyList<EnderDragonPart> Parts { get { UpdateParts(); return parts; } }
+    internal IReadOnlyList<EnderDragonPart> Parts
+    {
+        get
+        {
+            UpdateParts();
+            return parts;
+        }
+    }
 
     public EnderDragon()
     {

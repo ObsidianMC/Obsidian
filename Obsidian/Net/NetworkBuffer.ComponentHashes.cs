@@ -585,7 +585,9 @@ public partial class NetworkBuffer
                 if (probability != 1)
                     fields.Add(("probability", H.Float(probability)));
                 break;
-            case 1: fields.Add(("effects", this.HashIdSet("minecraft:mob_effect"))); break;
+            case 1:
+                fields.Add(("effects", this.HashIdSet("minecraft:mob_effect")));
+                break;
             case 3:
                 var diameter = this.ReadSingle();
                 if (diameter != 16)
@@ -593,7 +595,9 @@ public partial class NetworkBuffer
                 if (!this.ReadBoolean())
                     fields.Add(("directional_particles", H.Boolean(false)));
                 break;
-            case 4: fields.Add(("sound", this.HashSound())); break;
+            case 4:
+                fields.Add(("sound", this.HashSound()));
+                break;
         }
         return Record(fields);
     }
