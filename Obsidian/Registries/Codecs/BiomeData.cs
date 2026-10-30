@@ -220,7 +220,7 @@ internal sealed record BiomeData(
         return ([], []);
     }
 
-    private static (Dictionary<string, SpawnerMob[]> Spawners, Dictionary<string, SpawnCost> Costs)
+    internal static (Dictionary<string, SpawnerMob[]> Spawners, Dictionary<string, SpawnCost> Costs)
         ReadSpawnSettings(JsonElement value, string path)
     {
         Object(value, path);
@@ -266,7 +266,9 @@ internal sealed record BiomeData(
             });
         }
 
-        return new NbtCompound(name) { categories, spawnCosts };
+        var result = new NbtCompound(name) { categories, spawnCosts };
+        WorldData.SpawnEnvironment.Remember(result, spawners, costs);
+        return result;
     }
 
     /// <summary>

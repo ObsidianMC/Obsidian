@@ -46,7 +46,7 @@ import net.minecraft.world.level.levelgen.synth.NormalNoise;
  * thread. Only the fixture's cases for this world are recaptured, and the fixture is rewritten in place.
  *
  * <p>Phase 5 of docs/porting-26.3-plan.md adds sections step by step. Terrain and material captures are here;
- * features, structures, lighting and spawn references follow in the later steps.
+ * biome sources and spawn attributes are captured too. Features, structures and lighting follow in later steps.
  */
 class WorldgenCaptures {
     // Which world (structures on or off) each section's cases are captured in.
@@ -59,6 +59,10 @@ class WorldgenCaptures {
         SECTIONS.put("materials", false);
         SECTIONS.put("aquifers", false);
         SECTIONS.put("carvers", false);
+        SECTIONS.put("biomes", false);
+        SECTIONS.put("biome_search", false);
+        SECTIONS.put("biome_points", false);
+        SECTIONS.put("spawn_attributes", false);
     }
 
     static MinecraftServer server;
@@ -165,11 +169,16 @@ class WorldgenCaptures {
 
         var outcome = changes.isEmpty() ? ": unchanged" : ": CHANGED " + String.join(", ", changes);
         var inputs = before.deepCopy();
-        if (section.equals("terrain")) {
+        if (section.equals("terrain") || section.equals("biomes")) {
             inputs = new JsonObject();
             for (var field : List.of("seed", "dimension", "chunkX", "chunkZ")) {
                 inputs.add(field, before.get(field));
             }
+        }
+        if (section.equals("biome_search")) {
+            inputs = new JsonObject();
+            var name = before.has("preset") ? before.get("preset") : before.get("name");
+            inputs.add("name", name);
         }
         return "  " + section + " " + inputs + outcome;
     }
@@ -231,6 +240,10 @@ class WorldgenCaptures {
                     case "materials" -> materialRule(entry);
                     case "aquifers" -> aquifer(entry);
                     case "carvers" -> carvers(entry);
+                    case "biomes" -> biomeSections(entry);
+                    case "biome_search" -> biomeSearch(entry);
+                    case "biome_points" -> biomePoint(entry);
+                    case "spawn_attributes" -> spawnAttributes(entry);
                     default -> throw new IllegalArgumentException(section);
                 }
                 return null;
@@ -524,6 +537,129 @@ class WorldgenCaptures {
         entry.add("materialBiomes", biomes);
 
         entry.add("carverSources", carverSources(resolver, chunkX, chunkZ));
+    }
+
+    // Captures actual BIOMES status storage, independent of the later terrain/material stage.
+    static void biomeSections(JsonObject entry) {
+        try {
+            var level = level(entry.get("dimension").getAsString());
+            int chunkX = entry.get("chunkX").getAsInt();
+            int chunkZ = entry.get("chunkZ").getAsInt();
+            var chunk = level.getChunkSource().getChunk(chunkX, chunkZ, ChunkStatus.BIOMES, true);
+            var names = new LinkedHashMap<String, Integer>();
+            var bytes = new ByteArrayOutputStream();
+            var output = new DataOutputStream(bytes);
+            for (int y = chunk.getMinY() >> 2; y < (chunk.getMinY() + chunk.getHeight()) >> 2; y++) {
+                for (int z = 0; z < 4; z++) {
+                    for (int x = 0; x < 4; x++) {
+                        var biome = chunk.getNoiseBiome(chunkX * 4 + x, y, chunkZ * 4 + z);
+                        var name = biome.unwrapKey().orElseThrow().identifier().toString();
+                        output.writeInt(names.computeIfAbsent(name, key -> names.size()));
+                    }
+                }
+            }
+            var palette = new JsonArray();
+            names.keySet().forEach(palette::add);
+            entry.add("palette", palette);
+            entry.addProperty("data", compressed(bytes.toByteArray()));
+            entry.addProperty("minY", chunk.getMinY());
+            entry.addProperty("height", chunk.getHeight());
+            entry.addProperty("status", chunk.getPersistedStatus().getName());
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    // The ordered targets deliberately reuse one ParameterList: its previous leaf participates in exact ties.
+    static void biomeSearch(JsonObject entry) {
+        net.minecraft.world.level.biome.Climate.ParameterList<Integer> parameters;
+        if (entry.has("preset")) {
+            var preset = Identifier.withDefaultNamespace(entry.get("preset").getAsString());
+            var original = server.registryAccess()
+                .lookupOrThrow(Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST).getValue(preset).parameters();
+            var values = new ArrayList<com.mojang.datafixers.util.Pair<
+                net.minecraft.world.level.biome.Climate.ParameterPoint, Integer>>();
+            for (int index = 0; index < original.values().size(); index++) {
+                values.add(com.mojang.datafixers.util.Pair.of(original.values().get(index).getFirst(), index));
+            }
+            parameters = new net.minecraft.world.level.biome.Climate.ParameterList<>(values);
+        } else {
+            var codec = net.minecraft.world.level.biome.Climate.ParameterList.codec(
+                com.mojang.serialization.Codec.INT.fieldOf("value"));
+            parameters = codec.parse(JsonOps.INSTANCE, entry.get("parameters")).getOrThrow();
+        }
+        entry.addProperty("entryCount", parameters.values().size());
+        try {
+            var compressedTargets = Base64.getDecoder().decode(entry.get("targetsData").getAsString());
+            var uncompressed = new java.util.zip.GZIPInputStream(
+                new ByteArrayInputStream(compressedTargets)).readAllBytes();
+            var input = new DataInputStream(new ByteArrayInputStream(uncompressed));
+            var bytes = new ByteArrayOutputStream();
+            var results = new DataOutputStream(bytes);
+            while (input.available() > 0) {
+                var target = new net.minecraft.world.level.biome.Climate.TargetPoint(
+                    input.readInt(), input.readInt(), input.readInt(),
+                    input.readInt(), input.readInt(), input.readInt());
+                results.writeInt(parameters.findValue(target));
+            }
+            entry.addProperty("resultsData", compressed(bytes.toByteArray()));
+        } catch (IOException exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    static void biomePoint(JsonObject entry) {
+        var level = level(entry.get("dimension").getAsString());
+        var random = level.getChunkSource().randomState();
+        var context = net.minecraft.world.level.levelgen.densityfunction.SamplerContext.EMPTY_UNCACHED;
+        var sampler = random.createClimateSampler(context);
+        if (entry.has("erosion")) {
+            var function = DensityFunction.CODEC.parse(JsonOps.INSTANCE, entry.get("erosion")).getOrThrow();
+            var erosion = random.getSampler(function).bind(context);
+            sampler = new net.minecraft.world.level.biome.Climate.Sampler(
+                sampler.temperature(), sampler.humidity(), sampler.continentalness(), erosion,
+                sampler.depth(), sampler.weirdness());
+        }
+        int x = entry.get("quartX").getAsInt();
+        int y = entry.get("quartY").getAsInt();
+        int z = entry.get("quartZ").getAsInt();
+        var values = new JsonArray();
+        var climate = sampler.sample(x, y, z);
+        long[] coordinates = {climate.temperature(), climate.humidity(), climate.continentalness(),
+            climate.erosion(), climate.depth(), climate.weirdness(), 0L};
+        for (long value : coordinates) {
+            values.add(value);
+        }
+        entry.add("climate", values);
+        var source = level.getChunkSource().getGenerator().getBiomeSource();
+        var biome = source.createResolver(sampler).getNoiseBiome(x, y, z);
+        entry.addProperty("biome", biome.unwrapKey().orElseThrow().identifier().toString());
+    }
+
+    // Resolve the same attribute maps vanilla applies: default, dimension, biome. Custom maps exercise overlays.
+    static void spawnAttributes(JsonObject entry) {
+        var ops = RegistryOps.create(JsonOps.INSTANCE, server.registryAccess());
+        var dimension = level(entry.get("dimension").getAsString()).dimensionType().attributes();
+        var biomeId = Identifier.parse(entry.get("biome").getAsString());
+        var biome = server.registryAccess().lookupOrThrow(Registries.BIOME).getValue(biomeId);
+        var biomeMap = biome.getAttributes();
+        if (entry.has("dimensionAttributes")) {
+            dimension = net.minecraft.world.attribute.EnvironmentAttributeMap.CODEC
+                .parse(ops, entry.get("dimensionAttributes")).getOrThrow();
+        }
+        if (entry.has("biomeAttributes")) {
+            biomeMap = net.minecraft.world.attribute.EnvironmentAttributeMap.CODEC_ONLY_POSITIONAL
+                .parse(ops, entry.get("biomeAttributes")).getOrThrow();
+        }
+        var attribute = net.minecraft.world.attribute.EnvironmentAttributes.NATURAL_MOB_SPAWNS;
+        var value = dimension.applyModifier(attribute, attribute.defaultValue());
+        value = biomeMap.applyModifier(attribute, value);
+        entry.add("spawns", attribute.valueCodec().encodeStart(ops, value).getOrThrow());
+        var probabilityAttribute =
+            net.minecraft.world.attribute.EnvironmentAttributes.CREATURE_WORLD_GEN_SPAWN_PROBABILITY;
+        var probability = dimension.applyModifier(probabilityAttribute, probabilityAttribute.defaultValue());
+        probability = biomeMap.applyModifier(probabilityAttribute, probability);
+        entry.addProperty("probability", probability);
     }
 
     static ServerLevel level(String dimension) {

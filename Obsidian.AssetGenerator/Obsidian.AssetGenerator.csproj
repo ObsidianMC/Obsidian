@@ -46,6 +46,8 @@
 			<VanillaAssetsOutput Include="$(VanillaAssetsStamp)" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)version.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)worldgen_26_3\noise_settings\overworld.json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)worldgen_26_3\biome_parameters\overworld.json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)worldgen_26_3\dimension_type\overworld.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)item-components-$(MinecraftVersion).json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)client-entity-metadata-$(MinecraftVersion).json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)client-screens-$(MinecraftVersion).json" />

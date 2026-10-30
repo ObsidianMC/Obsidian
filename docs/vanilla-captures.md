@@ -11,7 +11,8 @@ Phase 5 of `docs/porting-26.3-plan.md` builds the 26.3 generator beside the lega
   `functions` records them as `Float.floatToIntBits` in hex too (`bits`), since JSON numbers hold neither NaN nor
   infinities. `terrain` holds chunks at the merged terrain status, `materials` holds small, single-rule boundary
   cases, `aquifers` holds single aquifer positions and `carvers` holds carving masks alone.
-  `VanillaTerrainGeneration` and `VanillaMaterialRules` replay those sections; see below.
+  `VanillaTerrainGeneration` and `VanillaMaterialRules` replay those sections; see below. `biomes`, `biome_points`,
+  `biome_search` and `spawn_attributes` cover Phase 5 step 4's biome sources and natural spawning.
 - `Obsidian.Tests/Assets/vanilla_worldgen.json` holds the 1.21.11 references of the legacy generator, which
   `VanillaWorldGeneration` and `VanillaStructureGeneration` replay: noise router values, biomes, chunks after the
   surface, carver and decoration steps, full chunks, the spawn, light, structure piece lists, structure blocks and a
@@ -106,13 +107,58 @@ cover the compact palette JSON followed by the uncompressed index bytes. Heightm
 
 The 26.3 implementation is `WorldData/Generators/Terrain/TerrainGenerator`. Its single `Generate` entry point fills
 density, applies materials, then generates and applies the temporary carving mask. It accepts biome and carver-list
-lookups explicitly: Phase 5's biome step will supply them, while these replays supply vanilla's captured inputs.
+lookups explicitly. `Generators/Biomes/BiomeTerrain` now supplies them from the 26.3 biome source, while these
+stage-isolation replays continue supplying vanilla's captured inputs.
 `DensityCompiler` accepts a beardifier function; terrain defaults it to its neutral contextual value until structures
 are implemented. None of this switches the live generator or changes its 1.21.11 data.
 
 Chunk replays have `Category=Worldgen` and stay out of CI. The 79 small material-rule replays run in CI alongside the
-density tests. Biome selection, features, structures, the remaining Nether/End pipeline and performance work remain
+density tests. Features, structures, the remaining Nether/End pipeline and performance work remain
 for the later Phase 5 steps. The noise-input point-sampling allocations noted in #597 are unchanged.
+
+## Biome and spawn references
+
+The 26.3 biome pipeline lives in `WorldData/Generators/Biomes`, beside the live 1.21.11 pipeline. Its overworld and
+Nether parameter lists are copied from `reports/biome_parameters/minecraft` to `Assets/worldgen_26_3/biome_parameters`;
+they contain 7,594 and 5 entries respectively. The original report order and integer endpoints are retained. The
+shared search tree keeps its legacy branching factor of 6 by default; the new source selects 26.3's factor of 19.
+Stable sorting and the previous winning leaf on each thread decide equal-distance searches.
+
+- `biome_search` records ordered searches through both complete preset lists and small trees with 1, 6, 19, 20
+  and 40 entries. Preset targets visit every entry midpoint, seeded miscellaneous points and repeated earlier
+  queries. Results identify the winning entry, even when several entries name the same biome. `targetsData`
+  contains six big-endian 32-bit quantized climate coordinates per query; `resultsData` contains one winning
+  entry index per query. Both are gzip/base64 buffers. Synthetic lists retain their inline parameter inputs;
+  preset lists are obtained from vanilla's registry during capture and from the datagen report during replay.
+- `biome_points` records all seven quantized climate coordinates and the selected biome at quart positions.
+  It covers both terrain seeds and all three dimensions, negative/distant coordinates, the End's central-island
+  boundary and its exact erosion thresholds with adjacent float values. Constant erosion inputs are evaluated
+  by vanilla's own End source with a bound sampler.
+- `biomes` records sections at actual `ChunkStatus.BIOMES`, at every terrain capture location (including sulfur
+  caves and dappled forest), plus more End locations. `palette` and `data` encode every stored quart in ascending
+  y, z, x order, with big-endian 32-bit palette indices compressed as above. Selection uses vanilla's climate
+  volume path, at quart corners, and searches in section, x, y, z order. Those are distinct from buffer order.
+- `spawn_attributes` records vanilla's resolution of default, dimension and biome maps. It covers ordinary and
+  new overworld biomes, the deep dark's empty categories, Nether costs and the End, plus inherited dimension
+  spawns, explicit empty categories, overridden costs, an empty override and a probability modifier.
+
+`VanillaBiomes.ParameterSearchMatchesVanilla`, `ClimateAndPointBiomesMatchVanilla` and
+`SpawnAttributesMatchVanilla` are small CI replays. `PluginModifiersApplyAfterDimensionAndBiomeAttributes`
+compares plugin removal/unload behavior with the captured empty-category and inherited-map results. The
+`VanillaBiomeGeneration` section, block-biome, stored spawn-position and complete terrain replays have
+`Category=Worldgen`. They select biomes themselves, then compare the material inputs, final blocks and fluid
+post-processing with the independent terrain captures.
+
+`BiomeTerrain.Generate` fills BIOMES before terrain and supplies seeded full-resolution material lookups and
+source-biome carver lists. Storage still represents the new terrain status with the internal legacy `carvers`
+enum value, which already serializes as `minecraft:terrain`. It does not activate this pipeline on live worlds.
+
+Natural spawning now reads the 26.3 environment attributes at each spawn or charge position, with dimension
+defaults and biome overlays before plugin spawn modifiers. Vanilla marks `natural_mob_spawns` for full-resolution
+biomes, so it uses the seeded border lookup over loaded sections; population probability uses the quart biome.
+Count providers retain their distributions. The old flattened spawn tables remain for the legacy plugin API
+during Phase 5, while spawning reads the resolved `BiomeSpawns.At` snapshot. Features, structures and the final
+live-generator switch remain later Phase 5 work.
 
 ## Carver references
 

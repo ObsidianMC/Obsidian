@@ -15,8 +15,8 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Replays 26.3 terrain status captures with structures disabled. Biome selection belongs to Phase 5 step 4:
-/// these tests supply vanilla's captured biome and carver-list inputs through terrain's dependency hooks.
+/// Replays isolated 26.3 terrain stages with structures disabled, supplying captured biome and carver inputs.
+/// VanillaBiomeGeneration also replays the complete pipeline with the new biome source selecting those inputs.
 /// </summary>
 [Trait("Category", TestCategory.Worldgen)]
 [Collection(WorldgenCollection.Name)]
@@ -312,7 +312,7 @@ public class VanillaTerrainGeneration
             this.carvers[(x - this.Chunk.X + 8) * 17 + z - this.Chunk.Z + 8];
     }
 
-    private static void AssertBlocks(JsonElement expected, Chunk chunk)
+    internal static void AssertBlocks(JsonElement expected, Chunk chunk)
     {
         var names = expected.GetProperty("palette").EnumerateArray().Select(value => value.GetString()!).ToArray();
         var palette = names.Select(ParseBlock).ToArray();
