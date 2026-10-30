@@ -21,5 +21,8 @@ difficulty hard
 gamerule keep_inventory true
 ```
 
+A second run then replaced the pot (as above) and saved again; starting the server applied `server.properties`'
+default difficulty, so `level.dat` ends up `easy` despite the `difficulty hard` above.
+
 The overworld's `region/r.0.0.mca` was trimmed to chunk (0, 0); `poi/`, `session.lock` and `level.dat_old` were left
 out. Nobody joined, so there's no `players/` folder.
