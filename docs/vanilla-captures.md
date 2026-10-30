@@ -71,6 +71,10 @@ Nothing is reimplemented:
   with the case's density, which records the block (or `null` for a barrier) and `shouldScheduleFluidUpdate`. Then
   `computeFluid` records the fluid status of the position as an aquifer center.
 - **Carvers:** the terrain capture's carving mask and carver sources alone, for a chunk that needs no blocks.
+- **Features:** one placed feature on layered terrain. Every chunk of a features-step region is a protochunk at the
+  terrain status holding the case's `layers` and `biome`. Vanilla's own `WorldGenRegion` (given the fields its
+  constructor would set, since the chunks have no generation holders), `FeaturePlacer.placeWithBiomeCheck` and
+  decoration random place it, and the changed blocks of the writable 3x3 chunks are recorded.
 
 ## Terrain references
 
@@ -135,3 +139,19 @@ replays their blocks and scheduling decisions. They have `Category=Worldgen` too
 
 The 1.21.11 probe also captured lit/full chunks, structure pieces and blocks, the spawn and a treasure map (in git
 history before Phase 5). The feature and structure steps adapt those captures to 26.3 as they need them.
+
+## Feature references
+
+`features` cases place one 26.3 placed feature without biome selection, so features can be verified while 26.3
+biomes are built separately. Each case gives a `seed`, a chunk (`chunkX`, `chunkZ`), the decoration `step` and
+`index` that seed its random (vanilla's `setDecorationSeed` and `setFeatureSeed`), a `biome` that lists the feature
+(for its biome filter), and `layers`: block ids from the bottom up, each filling from the previous layer's top + 1 to
+its own top, with air above. The capture records `placed` (the placement's result), `regionRadius` (vanilla's region
+radius for the features step) and `changes`: `[x, y, z, state]` for each block of the writable 3x3 chunks that
+differs from the layers, in z, x, y order.
+
+`VanillaFeaturePlacement` replays them with `WorldData/Generators/Features/FeatureRegistry`, the 26.3 feature
+machinery built beside the legacy features. It builds the layered chunks two chunks around the decorated one; the
+features replayed so far read no further. Cases whose feature types aren't implemented yet (trees and spikes) are
+captured and listed as pending in the test. Biome decoration (each biome's ordered steps) waits for 26.3 biome
+selection. The replays have `Category=Worldgen`.

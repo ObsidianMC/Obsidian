@@ -47,7 +47,8 @@ internal sealed class OreBlob((RuleTest Target, IBlock State)[] targets, int siz
         double endY = origin.Y + random.NextInt(3) - 2;
 
         var spreadCeiling = (int)Math.Ceiling(spread);
-        var min = new Vector(origin.X - spreadCeiling - radius, origin.Y - 2 - radius, origin.Z - spreadCeiling - radius);
+        var reach = spreadCeiling + radius;
+        var min = new Vector(origin.X - reach, origin.Y - 2 - radius, origin.Z - reach);
         var width = 2 * (spreadCeiling + radius);
         var height = 2 * (2 + radius);
 

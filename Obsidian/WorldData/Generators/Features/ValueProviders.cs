@@ -198,7 +198,7 @@ internal static class ValueProviders
         return new WeightedEntries<T>(entries);
     }
 
-    /// <summary>TrapezoidInt: a symmetric triangle draws twice from the positive half, anything else from two parts.</summary>
+    /// <summary>TrapezoidInt: a symmetric triangle draws twice from its positive half, others in two parts.</summary>
     private static IntProvider Trapezoid(int min, int max, int plateau)
     {
         if (plateau == 0 && min == -max)
@@ -274,7 +274,7 @@ internal static class ValueProviders
     }
 }
 
-/// <summary>Vanilla's WeightedList: one draw below the total weight, then the entry whose weight range holds it.</summary>
+/// <summary>Vanilla's WeightedList: one draw below the total weight, then the entry whose range holds it.</summary>
 internal sealed class WeightedEntries<T>(List<(T Value, int Weight)> entries)
 {
     private readonly int total = entries.Sum(entry => entry.Weight);

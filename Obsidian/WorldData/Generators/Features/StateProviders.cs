@@ -67,7 +67,7 @@ internal sealed partial class FeatureRegistry
             case "minecraft:rule_based":
                 return this.RuleBased(json);
             case "minecraft:noise_threshold":
-                return this.NoiseThreshold(json);
+                return NoiseThreshold(json);
             default:
                 throw new NotSupportedException($"The 26.3 block state provider {type} isn't implemented yet.");
         }
@@ -136,7 +136,7 @@ internal sealed partial class FeatureRegistry
 
     // Low states below the threshold, otherwise a high state by chance, otherwise the default. The noise is the
     // provider's own, seeded from its seed with a legacy random like NoiseBasedStateProvider's.
-    private StateProvider NoiseThreshold(JsonElement json)
+    private static StateProvider NoiseThreshold(JsonElement json)
     {
         var noise = ProviderNoise(json);
         var scale = (double)json.GetProperty("scale").GetSingle();

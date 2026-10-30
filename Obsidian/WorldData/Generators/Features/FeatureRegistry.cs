@@ -28,10 +28,10 @@ internal sealed record DecorationContext(
 /// </summary>
 /// <remarks>
 /// Entries compile on first use and are cached by identifier; the biome filter compares registered placed features
-/// by identifier, like vanilla compares holders, without compiling the biome's other features. Compiling isn't thread-safe; compile what a generator needs
-/// before sharing the registry. Types that aren't implemented yet throw <see cref="NotSupportedException"/> when
-/// compiled. Per-biome decoration (each biome's step lists and the feature index order across biomes) waits for 26.3
-/// biome selection.
+/// by identifier, like vanilla compares holders, without compiling the biome's other features. Compiling isn't
+/// thread-safe; compile what a generator needs before sharing the registry. Types that aren't implemented yet throw
+/// <see cref="NotSupportedException"/> when compiled. Per-biome decoration (each biome's step lists and the feature
+/// index order across biomes) waits for 26.3 biome selection.
 /// </remarks>
 internal sealed partial class FeatureRegistry(WorldgenData data)
 {
@@ -181,7 +181,7 @@ internal sealed class PlacedFeature(string? id, Feature feature, PlacementModifi
     public bool Place(DecorationContext context, IRandomSource random, Vector origin) =>
         this.Place(context, random, origin, top: null);
 
-    /// <summary>Places the feature as a biome's decoration does, so that a biome modifier can check the biome.</summary>
+    /// <summary>Places the feature as a biome's decoration does, so a biome modifier can check the biome.</summary>
     public bool PlaceWithBiomeCheck(DecorationContext context, IRandomSource random, Vector origin) =>
         this.Place(context, random, origin, top: this);
 
