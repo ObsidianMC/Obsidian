@@ -304,7 +304,10 @@ public sealed partial class EnderDragon : BossMob
     private void TickLanding()
     {
         destination = Podium;
-        if ((destination - Position).MagnitudeSquared() >= 1)
+
+        // Negated rather than `>= 1`, so a NaN distance (a corrupt position) keeps the dragon landing as before.
+        var reachedPodium = (destination - Position).MagnitudeSquared() < 1;
+        if (!reachedPodium)
             return;
 
         SetPhase(DragonPhase.Scanning);
