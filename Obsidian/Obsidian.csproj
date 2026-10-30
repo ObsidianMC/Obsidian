@@ -11,11 +11,11 @@
 	<PropertyGroup>
 		<!-- The Minecraft version Obsidian implements. Obsidian.AssetGenerator generates Assets from its server jar. -->
 		<MinecraftVersion>26.3</MinecraftVersion>
-		<!-- Temporary: the older Minecraft version whose loot tables and worldgen Obsidian runs on, since its models
+		<!-- Temporary: the older Minecraft version whose worldgen Obsidian runs on, since its models
 		     don't read the current version's yet. Obsidian.AssetGenerator writes them to Assets\legacy-<version>, which
 		     is embedded under the names of the assets they stand in for, and the server extracts this version's
-		     structure templates (ServerConstants.LegacyVersion). Phases 4 (loot) and 5 (worldgen) of
-		     docs/porting-26.3-plan.md remove it, together with Datagen.LegacyTags and the generated LegacyWorldgenTags
+		     structure templates (ServerConstants.LegacyVersion). Phase 5 (worldgen) of
+		     docs/porting-26.3-plan.md removes it, together with Datagen.LegacyTags and the generated LegacyWorldgenTags
 		     bridge: legacy tag references use obsidian_legacy with legacy contents/current ids and never sync to clients. -->
 		<LegacyMinecraftVersion>1.21.11</LegacyMinecraftVersion>
 	</PropertyGroup>
@@ -103,9 +103,9 @@
 			<!-- Required only when upgrading numeric block states (moving pistons, palette ids) written by Obsidian 1.21.11. -->
 			<EmbeddedResource Include="Assets\legacy-$(LegacyMinecraftVersion)\block_states.json"
 			                  LogicalName="Obsidian.Assets.legacy_block_states.json" />
-			<!-- The legacy loot and worldgen assets, under the names of the current version's assets they stand in for
+			<!-- The legacy worldgen assets, under the names of the current version's assets they stand in for
 			     (Obsidian.Assets.worldgen.structures.nether.json). -->
-			<_LegacyVanillaAsset Include="Assets\legacy-$(LegacyMinecraftVersion)\**\*.*" Exclude="Assets\legacy-$(LegacyMinecraftVersion)\block_states.json" />
+			<_LegacyVanillaAsset Include="Assets\legacy-$(LegacyMinecraftVersion)\**\*.*" Exclude="Assets\legacy-$(LegacyMinecraftVersion)\block_states.json;Assets\legacy-$(LegacyMinecraftVersion)\loot_table\**" />
 			<EmbeddedResource Include="@(_LegacyVanillaAsset)"
 			                  LogicalName="Obsidian.Assets.$([System.String]::Copy('%(_LegacyVanillaAsset.RecursiveDir)').Replace('\', '.').Replace('/', '.'))%(_LegacyVanillaAsset.Filename)%(_LegacyVanillaAsset.Extension)" />
 		</ItemGroup>

@@ -24,7 +24,7 @@ internal static class DatagenAssets
     /// <param name="generatedDirectory">The data generators' output (<c>data</c> and <c>reports</c>).</param>
     /// <param name="packetFieldsPath">The Java dumper's fields of each packet (see <see cref="JavaDumper.PacketFieldsPath"/>).</param>
     /// <param name="outputDirectory">The assets directory to write into.</param>
-    /// <remarks>Loot tables and worldgen come from the legacy version for now (see <see cref="WriteLegacy"/>).</remarks>
+    /// <remarks>Worldgen comes from the legacy version for now (see <see cref="WriteLegacy"/>).</remarks>
     public static void Write(string generatedDirectory, string packetFieldsPath, string outputDirectory)
     {
         var reports = Path.Combine(generatedDirectory, "reports");
@@ -43,36 +43,70 @@ internal static class DatagenAssets
         WriteJson(Path.Combine(outputDirectory, "enchantments.json"), Combine(Path.Combine(data, "enchantment"), ToId));
         WriteJson(Path.Combine(outputDirectory, "dialogs.json"), Combine(Path.Combine(data, "dialog"), ToId));
         WriteJson(Path.Combine(outputDirectory, "instruments.json"), Combine(Path.Combine(data, "instrument"), ToId));
+        WriteLootTables(data, outputDirectory);
+        foreach (var registry in new[] { "predicate", "context_int_provider", "context_float_provider" })
+        {
+            var definitions = Combine(Path.Combine(data, registry), ToId);
+            WriteJson(Path.Combine(outputDirectory, registry + ".json"), definitions);
+        }
+
         foreach (var registry in new[] { "block_transformer", "decorated_pot_pattern", "timeline" })
-            WriteJson(Path.Combine(outputDirectory, registry + ".json"), Combine(Path.Combine(data, registry), ToId));
+        {
+            var definitions = Combine(Path.Combine(data, registry), ToId);
+            WriteJson(Path.Combine(outputDirectory, registry + ".json"), definitions);
+        }
 
         var tillTables = Combine(Path.Combine(data, "loot_table", "till"), path => ToId("till/" + path));
         WriteJson(Path.Combine(outputDirectory, "block_transformer_loot.json"), tillTables);
-
-        // The context number providers and predicates fuel, brewing fuel and compostable components name (see
-        // Obsidian's ComponentNumbers).
-        WriteJson(Path.Combine(outputDirectory, "context_int_providers.json"),
-            Combine(Path.Combine(data, "context_int_provider"), ToId));
-        WriteJson(Path.Combine(outputDirectory, "context_float_providers.json"),
-            Combine(Path.Combine(data, "context_float_provider"), ToId));
-        WriteJson(Path.Combine(outputDirectory, "predicates.json"), Combine(Path.Combine(data, "predicate"), ToId));
 
         WriteTags(Path.Combine(data, "tags"), outputDirectory);
         CodecAssets.Write(data, outputDirectory);
     }
 
+    private static void WriteLootTables(string dataDirectory, string outputDirectory)
+    {
+        foreach (var category in lootTableCategories)
+        {
+            var directory = Path.Combine(dataDirectory, "loot_table", category);
+            var tables = Combine(directory, path => ToId($"{category}/{path}"));
+            if (category == "entities")
+            {
+                // Keep the existing hard-coded drops for predicates the evaluator cannot model yet.
+                var excluded = new[] { "ghast", "magma_cube", "slime", "turtle", "sheep", "pillager" };
+                foreach (var id in excluded)
+                {
+                    tables.Remove($"minecraft:entities/{id}");
+                }
+            }
+
+            if (category == "gameplay")
+            {
+                // Only fishing is evaluated so far; the other gameplay tables need their own owners.
+                var excluded = tables.Select(table => table.Key)
+                    .Where(id => !id.StartsWith("minecraft:gameplay/fishing", StringComparison.Ordinal))
+                    .ToList();
+                foreach (var id in excluded)
+                {
+                    tables.Remove(id);
+                }
+            }
+
+            WriteJson(Path.Combine(outputDirectory, "loot_table", $"{category}.json"), tables);
+        }
+    }
+
     /// <summary>
-    /// Writes the loot and worldgen assets from an older vanilla version's data generators into
+    /// Writes the worldgen assets from an older vanilla version's data generators into
     /// <paramref name="outputDirectory"/> (<c>Assets/legacy-1.21.11</c>), in the layout the current version's would have:
-    /// <c>loot_table</c>, <c>worldgen</c> (see <see cref="WorldgenAssets"/>), <c>configured_carver</c>,
+    /// <c>worldgen</c> (see <see cref="WorldgenAssets"/>), <c>configured_carver</c>,
     /// <c>biome_parameters</c> and <c>biome_spawns.json</c>.
     /// </summary>
     /// <remarks>
-    /// Temporary: the current version's loot and worldgen data don't fit Obsidian's models yet, so those systems run on
-    /// the older version's. Phase 4 (loot) and Phase 5 (worldgen) of <c>docs/porting-26.3-plan.md</c> move them to the
-    /// current version and remove this. LegacyTags keeps worldgen tag references (including the worldgen helpers' tags)
+    /// Temporary: the current version's worldgen data doesn't fit Obsidian's models yet, so worldgen runs on
+    /// the older version's. Phase 5 (worldgen) of <c>docs/porting-26.3-plan.md</c> moves it to the
+    /// current version and removes this. LegacyTags keeps worldgen tag references (including the worldgen helpers' tags)
     /// in the temporary obsidian_legacy namespace, with legacy contents and current registry ids, excluded from client
-    /// sync. Remove that bridge with LegacyMinecraftVersion when both phases are complete.
+    /// sync. Remove that bridge with LegacyMinecraftVersion when Phase 5 is complete.
     /// </remarks>
     /// <param name="generatedDirectory">The legacy data generators' output (<c>data</c> and <c>reports</c>).</param>
     /// <param name="worldgenGroupsPath">
@@ -109,27 +143,6 @@ internal static class DatagenAssets
 
         foreach (var (path, carver) in ReadAll(Path.Combine(data, "worldgen", "configured_carver")))
             WriteJson(Path.Combine(outputDirectory, "configured_carver", path + ".json"), carver);
-
-        foreach (var category in lootTableCategories)
-        {
-            var tables = Combine(Path.Combine(data, "loot_table", category), path => ToId($"{category}/{path}"));
-            if (category == "entities")
-            {
-                // These need entity predicates that the evaluator does not model yet. Keep their old drops until
-                // their behaviour can be checked against vanilla; do not weaken predicates to include them.
-                foreach (var id in new[] { "ghast", "magma_cube", "slime", "turtle", "sheep", "pillager" })
-                    tables.Remove($"minecraft:entities/{id}");
-            }
-
-            if (category == "gameplay")
-            {
-                // Only fishing is evaluated so far (see FishingHook); the other gameplay tables need their own owners.
-                foreach (var id in tables.Where(table => !table.Key.StartsWith("minecraft:gameplay/fishing", StringComparison.Ordinal)).Select(table => table.Key).ToList())
-                    tables.Remove(id);
-            }
-
-            WriteJson(Path.Combine(outputDirectory, "loot_table", $"{category}.json"), tables);
-        }
 
         // Each biome's mob spawn settings, which 26.1 moved out of the biome: { "value": [{ "name", "element" }] } in the
         // biomes' order, like the biome codec they used to be read from.

@@ -8,9 +8,9 @@
         {
           "type": "minecraft:item",
           "name": "sample:tick_counter",
-          "functions": [
+          "modifier": [
             {
-              "function": "minecraft:copy_components",
+              "type": "minecraft:copy_components",
               "source": "block_entity",
               "include": [
                 "sample:ticks"
@@ -19,11 +19,14 @@
           ]
         }
       ],
-      "conditions": [
-        {
-          "condition": "minecraft:survives_explosion"
-        }
-      ]
+      "condition": {
+        "type": "minecraft:all_of",
+        "terms": [
+          {
+            "type": "minecraft:survives_explosion"
+          }
+        ]
+      }
     }
   ],
   "random_sequence": "sample:blocks/tick_counter"

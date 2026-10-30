@@ -10,8 +10,29 @@ namespace Obsidian.API.Loot;
 
 public static partial class LootTableJson
 {
-    private static ImmutableArray<LootFunction> ReadFunctions(JsonElement json) =>
-        ReadArray(json, "functions", ReadFunction);
+    private static ImmutableArray<LootFunction> ReadFunctions(JsonElement json)
+    {
+        if (!json.TryGetProperty("modifier", out var modifier))
+            return [];
+
+        return ReadModifiers(modifier);
+    }
+
+    private static ImmutableArray<LootFunction> ReadModifiers(JsonElement json)
+    {
+        if (json.ValueKind == JsonValueKind.Array)
+            return json.EnumerateArray().Select(ReadFunction).ToImmutableArray();
+
+        return [ReadFunction(json)];
+    }
+
+    /// <summary>Reads a modifier or modifier sequence for generated tables and plugins.</summary>
+    public static LootFunction ReadModifier(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        var functions = ReadModifiers(document.RootElement);
+        return new DataFunction((stack, context) => LootFunction.ApplyAll(functions, stack, context));
+    }
 
     // The enchantments an enchant_with_levels function picks from. The generator expands tags before the runtime
     // reads a gameplay table, so options are ids; every enchantment when absent.
@@ -29,15 +50,36 @@ public static partial class LootTableJson
 
     private static LootFunction ReadFunction(JsonElement json)
     {
-        var type = Qualify(Text(json, "function"));
+        if (json.ValueKind == JsonValueKind.Array)
+        {
+            var functions = ReadModifiers(json);
+            return new DataFunction((stack, context) => LootFunction.ApplyAll(functions, stack, context));
+        }
+
+        var type = Qualify(Text(json, "type"));
         var conditions = ReadConditions(json);
         switch (type)
         {
+            case "minecraft:discard":
+                return new DataFunction((_, _) => new ItemStack(ItemsRegistry.Air, 0))
+                {
+                    Conditions = conditions
+                };
+            case "minecraft:filtered":
+                var filterJson = json.GetProperty("item_filter").Clone();
+                _ = ToolPredicate(filterJson);
+                var onPass = ReadOptionalModifiers(json, "on_pass");
+                var onFail = ReadOptionalModifiers(json, "on_fail");
+                return new DataFunction((stack, context) =>
+                {
+                    var functions = MatchesTool(stack, filterJson) ? onPass : onFail;
+                    return LootFunction.ApplyAll(functions, stack, context);
+                }) { Conditions = conditions };
             case "minecraft:set_count":
                 return new SetCountFunction
                 {
                     Conditions = conditions,
-                    Count = ReadNumber(json.GetProperty("count")),
+                    Count = ReadIntNumber(json.GetProperty("count")),
                     Add = json.TryGetProperty("add", out var add) && add.GetBoolean()
                 };
             case "minecraft:furnace_smelt":
@@ -53,14 +95,14 @@ public static partial class LootTableJson
                 return new SetDamageFunction
                 {
                     Conditions = conditions,
-                    Damage = ReadNumber(json.GetProperty("damage")),
+                    Damage = ReadFloatNumber(json.GetProperty("damage")),
                     Add = json.TryGetProperty("add", out var addDamage) && addDamage.GetBoolean()
                 };
             case "minecraft:enchant_with_levels":
                 return new EnchantWithLevelsFunction
                 {
                     Conditions = conditions,
-                    Levels = ReadNumber(json.GetProperty("levels")),
+                    Levels = ReadIntNumber(json.GetProperty("levels")),
                     Options = ReadEnchantmentOptions(json)
                 };
             case "minecraft:set_potion":
@@ -118,6 +160,14 @@ public static partial class LootTableJson
             default:
                 throw new InvalidDataException($"Unsupported loot function {type}.");
         }
+    }
+
+    private static ImmutableArray<LootFunction> ReadOptionalModifiers(JsonElement json, string name)
+    {
+        if (!json.TryGetProperty(name, out var modifier))
+            return [];
+
+        return ReadModifiers(modifier);
     }
 
     private static int CountLimit(JsonElement value)
@@ -183,7 +233,7 @@ public static partial class LootTableJson
         ImmutableArray<Conditions.ILootCondition> conditions)
     {
         var enchantment = Qualify(Text(json, "enchantment"));
-        var count = ReadNumber(json.GetProperty("count"));
+        var count = ReadFloatNumber(json.GetProperty("count"));
         var limit = json.TryGetProperty("limit", out var value) ? value.GetInt32() : 0;
 
         return new DataFunction((stack, context) =>

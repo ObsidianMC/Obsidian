@@ -41,7 +41,7 @@ public sealed class BlockDrops
     [Fact]
     public void VanillaBlockLootAndRandomDrawsMatchCapture()
     {
-        // The Java probe executes actual 1.21.11 tables, plus vanilla's tool check. nextInt proves that skipped
+        // The Java probe executes actual 26.3 tables, plus vanilla's tool check. nextInt proves that skipped
         // alternatives and conditions, fortune and per-item explosion decay consume precisely the same draws.
         using var stream = typeof(BlockDrops).Assembly.GetManifestResourceStream(
             "Obsidian.Tests.Assets.block_loot.json")!;
@@ -152,9 +152,9 @@ public sealed class BlockDrops
     {
         var table = LootTableJson.Parse("""
             { "pools": [{ "rolls": 1, "entries": [{ "type": "minecraft:item", "name": "minecraft:oak_log",
-              "functions": [
-                { "function": "minecraft:copy_state", "block": "minecraft:oak_log", "properties": ["axis"] },
-                { "function": "minecraft:copy_components", "source": "block_entity",
+              "modifier": [
+                { "type": "minecraft:copy_state", "block": "minecraft:oak_log", "properties": ["axis"] },
+                { "type": "minecraft:copy_components", "source": "block_entity",
                   "include": ["minecraft:custom_name"] }
               ]
             }] }] }
@@ -177,7 +177,9 @@ public sealed class BlockDrops
             DataComponentType.BlockState)!.Value;
         Assert.Equal("x", Assert.Single(properties).Value);
         Assert.Throws<InvalidDataException>(() => LootTableJson.Parse("""
-            { "pools": [{ "rolls": 1, "conditions": [{ "condition": "plugin:unknown" }], "entries": [] }] }
+            { "pools": [{ "rolls": 1,
+              "condition": { "type": "minecraft:all_of", "terms": [{ "type": "plugin:unknown" }] },
+              "entries": [] }] }
             """));
     }
 
@@ -574,11 +576,11 @@ public sealed class BlockDrops
         """, "minecraft:blocks/oak_log");
 
     private static LootTable LocationTable(string item, int offset) => LootTableJson.Parse($$"""
-        { "pools": [{ "rolls": 1, "conditions": [
-          { "condition": "minecraft:location_check", "offsetY": {{offset}},
+        { "pools": [{ "rolls": 1, "condition": { "type": "minecraft:all_of", "terms": [
+          { "type": "minecraft:location_check", "offsetY": {{offset}},
             "predicate": { "block": { "blocks": "minecraft:stone" } } }
-        ], "entries": [{ "type": "minecraft:item", "name": "{{item}}", "functions": [
-          { "function": "minecraft:set_count", "count": { "type": "minecraft:uniform", "min": 1, "max": 10 } }
+        ] }, "entries": [{ "type": "minecraft:item", "name": "{{item}}", "modifier": [
+          { "type": "minecraft:set_count", "count": { "type": "minecraft:uniform", "min": 1, "max": 10 } }
         ] }] }] }
         """, "blockloottests:nested");
 
@@ -602,8 +604,8 @@ public sealed class BlockDrops
 
     private static string ItemTable(string item, int count) => $$"""
         { "type": "minecraft:block", "pools": [{ "rolls": 1, "entries": [
-          { "type": "minecraft:item", "name": "{{item}}", "functions": [
-            { "function": "minecraft:set_count", "count": {{count}} }
+          { "type": "minecraft:item", "name": "{{item}}", "modifier": [
+            { "type": "minecraft:set_count", "count": {{count}} }
           ] }
         ] }] }
         """;

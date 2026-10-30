@@ -998,14 +998,20 @@ public partial class MainEventHandler
     {
         var map = table.GetItem(CartographyTable.MapSlot);
         var additional = table.GetItem(CartographyTable.AdditionalSlot);
-        if (map.IsNullOrAir() || additional.IsNullOrAir() || !map.Is(ItemsRegistry.FilledMap))
+        if (map.IsNullOrAir() || additional.IsNullOrAir())
             return null;
 
         if (MapStorage.GetMapId(map) is not int id || MapStorage.For(player.Level).Get(id) is not MapData data)
             return null;
 
-        if (additional.Is(ItemsRegistry.Paper) && !data.Locked && data.Scale < 4)
+        // Vanilla 26.3 accepts map ids in the input slot, but only extendable_maps can be scaled with paper.
+        if (additional.Is(ItemsRegistry.Paper)
+            && TagsRegistry.Item.ExtendableMaps.Entries.Contains(map.Holder.Id)
+            && !data.Locked
+            && data.Scale < 4)
+        {
             return WithPostProcessing(map, MapPostProcessingType.Scale);
+        }
 
         if (additional.Is(ItemsRegistry.GlassPane) && !data.Locked)
             return WithPostProcessing(map, MapPostProcessingType.Lock);
@@ -1069,7 +1075,7 @@ public partial class MainEventHandler
             },
             Grindstone => GrindstoneAccepts(item),
             CartographyTable => slot == CartographyTable.MapSlot
-                ? item.Is(ItemsRegistry.FilledMap)
+                ? MapStorage.GetMapId(item) is not null
                 : item.Is(ItemsRegistry.Paper) || item.Is(ItemsRegistry.Map) || item.Is(ItemsRegistry.GlassPane),
             _ => true
         };

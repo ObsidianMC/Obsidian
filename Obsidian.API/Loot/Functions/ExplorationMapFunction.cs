@@ -1,10 +1,9 @@
 using Obsidian.API.Inventory;
-using Obsidian.API.Registries;
 
 namespace Obsidian.API.Loot.Functions;
 
 /// <summary>
-/// Turns an empty map into an explorer map pointing at the nearest structure of <see cref="Destination"/>.
+/// Adds explorer map data for the nearest structure of <see cref="Destination"/>.
 /// </summary>
 /// <remarks>
 /// The map is left as is when the context has no <see cref="LootContext.ExplorationMaps"/> or origin, or when no structure is
@@ -37,10 +36,26 @@ public sealed class ExplorationMapFunction : LootFunction
 
     protected override ItemStack Run(ItemStack stack, LootContext context)
     {
-        if (!stack.Is(ItemsRegistry.Map) || context.Origin is null || context.ExplorationMaps is null)
+        if (LootItems.IsEmpty(stack) || context.Origin is null || context.ExplorationMaps is null)
             return stack;
 
-        return context.ExplorationMaps.Create(new ExplorationMapRequest(this.Destination, context.Origin.Value, this.SearchRadius,
-            this.SkipExistingChunks, this.Zoom, this.Decoration)) ?? stack;
+        var request = new ExplorationMapRequest(
+            this.Destination,
+            context.Origin.Value,
+            this.SearchRadius,
+            this.SkipExistingChunks,
+            this.Zoom,
+            this.Decoration);
+        var map = context.ExplorationMaps.Create(request);
+        if (map is null)
+            return stack;
+
+        // 26.3 ExplorationMapFunction applies map data to the original item, preserving its type and count.
+        foreach (var component in map.Patch)
+        {
+            stack[component.Type] = component;
+        }
+
+        return stack;
     }
 }

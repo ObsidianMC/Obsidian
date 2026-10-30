@@ -243,5 +243,59 @@
       "minecraft:redstone*5"
     ],
     "nextInt": 1761283695
+  },
+  {
+    "block": "poplar_log",
+    "tool": "air",
+    "level": 0,
+    "seed": 1,
+    "checkTool": true,
+    "properties": {},
+    "drops": [
+      "minecraft:poplar_log*1"
+    ],
+    "nextInt": -1155869325
+  },
+  {
+    "block": "poplar_slab",
+    "tool": "air",
+    "level": 0,
+    "seed": 1,
+    "checkTool": true,
+    "properties": {
+      "type": "double"
+    },
+    "drops": [
+      "minecraft:poplar_slab*2"
+    ],
+    "nextInt": -1155869325
+  },
+  {
+    "block": "white_wool_slab",
+    "tool": "air",
+    "level": 0,
+    "seed": 1,
+    "checkTool": true,
+    "properties": {
+      "type": "double"
+    },
+    "drops": [
+      "minecraft:white_wool_slab*2"
+    ],
+    "nextInt": -1155869325
+  },
+  {
+    "block": "straw_bed",
+    "tool": "air",
+    "level": 0,
+    "seed": 1,
+    "checkTool": true,
+    "properties": {
+      "part": "head"
+    },
+    "drops": [
+      "minecraft:straw_bed*1"
+    ],
+    "nextInt": -1155869325
   }
 ]

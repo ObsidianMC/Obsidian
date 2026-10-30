@@ -6,9 +6,9 @@ using System.Diagnostics;
 //        Obsidian.AssetGenerator capture-worldgen <minecraft version> <work directory> <fixture>
 //
 // Downloads the vanilla server jar of the version, runs its data generators and the Java dumper against it, and writes
-// the assets the source generators and the server read into the assets directory (replacing what's there). The loot
-// and worldgen assets come from the legacy version's data generators instead, into legacy-<legacy version> (temporary,
-// until Phases 4 and 5 of docs/porting-26.3-plan.md; see DatagenAssets.WriteLegacy).
+// the assets the source generators and the server read into the assets directory (replacing what's there). The worldgen
+// assets come from the legacy version's data generators instead, into legacy-<legacy version> (temporary,
+// until Phase 5 of docs/porting-26.3-plan.md; see DatagenAssets.WriteLegacy).
 //
 // capture-worldgen instead re-records the vanilla worldgen and structure references in the fixture (in place) with the
 // version's server; see docs/vanilla-captures.md.

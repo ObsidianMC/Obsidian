@@ -1,4 +1,6 @@
 using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
+using Obsidian.API.Data;
 using Obsidian.API.Loot.Conditions;
 using Obsidian.API.Loot.Numbers;
 using Obsidian.API.Registries;
@@ -10,12 +12,26 @@ namespace Obsidian.API.Loot;
 
 public static partial class LootTableJson
 {
-    private static ImmutableArray<ILootCondition> ReadConditions(JsonElement json) =>
-        ReadArray(json, "conditions", ReadCondition);
-
-    private static ILootCondition ReadCondition(JsonElement json)
+    private static ImmutableArray<ILootCondition> ReadConditions(JsonElement json)
     {
-        var type = Qualify(Text(json, "condition"));
+        ValidateContainerKeys(json);
+        if (!json.TryGetProperty("condition", out var condition))
+            return [];
+
+        return [ReadCondition(condition)];
+    }
+
+    /// <summary>Reads a 26.3 predicate or a reference to a built-in predicate.</summary>
+    public static ILootCondition ReadCondition(JsonElement json)
+    {
+        if (json.ValueKind == JsonValueKind.String)
+        {
+            var id = Qualify(json.GetString()!);
+            return ContextNumberProviders.Predicates.TryGetValue(id, out var predicate)
+                ? ReadCondition(predicate) : throw new InvalidDataException($"Unknown predicate {id}.");
+        }
+
+        var type = Qualify(Text(json, "type"));
         return type switch
         {
             "minecraft:all_of" or "minecraft:any_of" => Terms(
@@ -23,10 +39,10 @@ public static partial class LootTableJson
             "minecraft:inverted" => Invert(ReadCondition(json.GetProperty("term"))),
             "minecraft:survives_explosion" => new PredicateCondition(context =>
                 context.ExplosionRadius is not float radius || context.Random.NextFloat() <= 1 / radius),
-            "minecraft:random_chance" => Chance(ReadNumber(json.GetProperty("chance"))),
+            "minecraft:random_chance" => Chance(ReadFloatNumber(json.GetProperty("chance"))),
             "minecraft:table_bonus" => TableBonus(json),
             "minecraft:match_tool" => ToolPredicate(json.GetProperty("predicate").Clone()),
-            "minecraft:block_state_property" => StatePredicate(json.Clone()),
+            "minecraft:match_block" => StatePredicate(json.Clone()),
             "minecraft:location_check" => LocationPredicate(json.Clone()),
             "minecraft:entity_properties" => EntityPredicate(json.Clone()),
             "minecraft:killed_by_player" => new PredicateCondition(context => context.LastDamagePlayer is not null),
@@ -53,7 +69,10 @@ public static partial class LootTableJson
     }
 
     private static ILootCondition Chance(INumberProvider chance) => new PredicateCondition(context =>
-        context.Random.NextFloat() < chance.GetFloat(context));
+    {
+        var threshold = chance.GetFloat(context);
+        return context.Random.NextFloat() < threshold;
+    });
 
     // Vanilla's LootItemRandomChanceWithEnchantedBonusCondition: the attacker's enchantment level picks the enchanted
     // chance for that level, or the unenchanted chance at level 0, and one draw decides.
@@ -110,16 +129,19 @@ public static partial class LootTableJson
                 throw new InvalidDataException($"Unsupported tool predicate {property.Name}.");
 
             if (property.Name == "predicates"
-                && property.Value.EnumerateObject().Any(value => value.Name != "minecraft:enchantments"))
-                throw new InvalidDataException("Only active enchantments are supported in tool component predicates.");
+                && property.Value.EnumerateObject().Any(value =>
+                    value.Name is not ("minecraft:enchantments" or "minecraft:map_id")))
+                throw new InvalidDataException("Unsupported item component predicate.");
         }
 
         return new PredicateCondition(context => MatchesTool(context.Tool, predicate));
     }
 
     private static ILootCondition StatePredicate(JsonElement json) => new PredicateCondition(context =>
-        context.BlockState is IBlock block && block.UnlocalizedName == Qualify(Text(json, "block"))
-            && (!json.TryGetProperty("properties", out var properties)
+        context.BlockState is IBlock block
+            && (!json.TryGetProperty("blocks", out var blocks)
+                || MatchesRegistrySet(blocks, "block", block.UnlocalizedName, block.RegistryId))
+            && (!json.TryGetProperty("state", out var properties)
                 || MatchesProperties(context.BlockProperties, properties)));
 
     private static ILootCondition LocationPredicate(JsonElement json)
@@ -130,9 +152,8 @@ public static partial class LootTableJson
             if (predicate.EnumerateObject().Any(value => value.Name != "biomes"))
                 throw new InvalidDataException("Biome location checks support only biomes.");
 
-            var ids = biomes.EnumerateArray().Select(biome => Qualify(biome.GetString()!)).ToHashSet();
-            return new PredicateCondition(context => context.Origin is { } origin
-                && context.OriginBiome?.Invoke(origin) is { } name && ids.Contains(name));
+            var set = biomes.Clone();
+            return new PredicateCondition(context => MatchesOriginBiome(context, set));
         }
 
         if (predicate.EnumerateObject().Any(value => value.Name != "block"))
@@ -143,6 +164,18 @@ public static partial class LootTableJson
             throw new InvalidDataException("Location block predicates support blocks and state.");
 
         return new PredicateCondition(context => context.TestLocation?.Invoke(json) == true);
+    }
+
+    private static bool MatchesOriginBiome(LootContext context, JsonElement set)
+    {
+        if (context.Origin is not VectorD origin)
+            return false;
+
+        var name = context.OriginBiome?.Invoke(origin);
+        if (name is null || !CodecRegistry.TryGetBiome(name, out var biome))
+            return false;
+
+        return MatchesRegistrySet(set, "worldgen/biome", name, biome.Id);
     }
 
     private static ILootCondition EntityPredicate(JsonElement json)
@@ -166,14 +199,14 @@ public static partial class LootTableJson
     {
         foreach (var property in predicate.EnumerateObject())
         {
-            switch (property.Name)
+            switch (Qualify(property.Name))
             {
-                case "type":
+                case "minecraft:entity_type":
                     break;
-                case "vehicle":
+                case "minecraft:vehicle":
                     ValidateEntityPredicate(property.Value);
                     break;
-                case "equipment":
+                case "minecraft:equipment":
                     foreach (var slot in property.Value.EnumerateObject())
                     {
                         if (slot.Name is not ("mainhand" or "offhand" or "head" or "chest" or "legs"
@@ -186,7 +219,7 @@ public static partial class LootTableJson
                     }
 
                     break;
-                case "flags":
+                case "minecraft:flags":
                     foreach (var flag in property.Value.EnumerateObject())
                     {
                         if (flag.Name is not ("is_on_fire" or "is_sneaking" or "is_sprinting" or "is_swimming"
@@ -197,7 +230,7 @@ public static partial class LootTableJson
                     }
 
                     break;
-                case "type_specific":
+                case "minecraft:type_specific/fishing_hook":
                     ValidateTypeSpecific(property.Value);
                     break;
                 default:
@@ -213,26 +246,26 @@ public static partial class LootTableJson
 
         foreach (var property in predicate.EnumerateObject())
         {
-            switch (property.Name)
+            switch (Qualify(property.Name))
             {
-                case "type":
+                case "minecraft:entity_type":
                     var id = entity.Definition?.Id ?? (int)(entity.Type ?? (EntityType)(-1));
                     var name = entity.Definition?.Identifier ?? "minecraft:" + entity.Type?.ToString().ToSnakeCase();
                     if (!MatchesRegistrySet(property.Value, "entity_type", name, id))
                         return false;
 
                     break;
-                case "type_specific":
+                case "minecraft:type_specific/fishing_hook":
                     if (!MatchesTypeSpecific(entity, property.Value, context))
                         return false;
 
                     break;
-                case "vehicle":
+                case "minecraft:vehicle":
                     if (!MatchesEntity(entity.Vehicle, property.Value, context))
                         return false;
 
                     break;
-                case "equipment":
+                case "minecraft:equipment":
                     foreach (var slot in property.Value.EnumerateObject())
                     {
                         if (!MatchesTool(context.EntityEquipment?.Invoke(entity, slot.Name), slot.Value))
@@ -240,7 +273,7 @@ public static partial class LootTableJson
                     }
 
                     break;
-                case "flags":
+                case "minecraft:flags":
                     foreach (var flag in property.Value.EnumerateObject())
                     {
                         var value = flag.Name switch
@@ -267,12 +300,9 @@ public static partial class LootTableJson
     // Vanilla's fishing_hook type-specific predicate: only the hook's open-water state is modelled.
     private static void ValidateTypeSpecific(JsonElement predicate)
     {
-        if (Text(predicate, "type") != "minecraft:fishing_hook")
-            throw new InvalidDataException("Unsupported type_specific predicate.");
-
         foreach (var property in predicate.EnumerateObject())
         {
-            if (property.Name is not ("type" or "in_open_water"))
+            if (property.Name != "in_open_water")
                 throw new InvalidDataException($"Unsupported fishing_hook predicate {property.Name}.");
         }
     }
@@ -323,6 +353,17 @@ public static partial class LootTableJson
                 case "predicates":
                     foreach (var component in property.Value.EnumerateObject())
                     {
+                        if (component.Name == "minecraft:map_id")
+                        {
+                            if (component.Value.EnumerateObject().Any())
+                                throw new InvalidDataException("Only map_id presence checks are supported.");
+
+                            if (!tool.ContainsKey(DataComponentType.MapId))
+                                return false;
+
+                            continue;
+                        }
+
                         if (component.Name != "minecraft:enchantments")
                             throw new InvalidDataException($"Unsupported tool predicate {component.Name}.");
 
@@ -346,6 +387,22 @@ public static partial class LootTableJson
         }
 
         return true;
+    }
+
+    private static IEnumerable<string> RegistrySetIds(JsonElement set, string registry)
+    {
+        if (set.ValueKind == JsonValueKind.Array)
+            return set.EnumerateArray().SelectMany(value => RegistrySetIds(value, registry));
+
+        var name = set.GetString()!;
+        if (!name.StartsWith('#'))
+            return [Qualify(name)];
+
+        if (!TagsRegistry.TryGet(registry, Qualify(name[1..]), out var tag))
+            throw new InvalidDataException($"Unknown {registry} tag {name}.");
+
+        return tag.Entries.Select(id => registry == "item" ? ItemsRegistry.Get(id).UnlocalizedName
+            : throw new InvalidDataException($"Unsupported registry set {registry}."));
     }
 
     /// <summary>Tests an identifier, a list of identifiers, or a tag using the live registry tags.</summary>

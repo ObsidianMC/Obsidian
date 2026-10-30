@@ -8,6 +8,13 @@ internal static class FixtureDumper
     public static async Task DumpServerAsync(VanillaServer server, string output)
     {
         var classpath = string.Join(Path.PathSeparator, server.ClassPath);
+        await VanillaServer.RunJavaAsync(
+            server.Directory,
+            "-cp",
+            classpath,
+            Source("ContextNumberFixtures.java"),
+            Source("context-number-cases.json"),
+            Path.Combine(output, $"context-numbers-{server.Version}.json"));
         await VanillaServer.RunJavaAsync(server.Directory, "-cp", classpath, Source("ComponentFixtures.java"),
             Source("component-fixtures-input.json"), Path.Combine(output, $"item-components-{server.Version}.json"));
         await VanillaServer.RunJavaAsync(server.Directory, "-cp", classpath, Source("EntityMetadataFixtures.java"),

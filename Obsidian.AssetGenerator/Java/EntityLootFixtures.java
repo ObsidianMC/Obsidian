@@ -36,6 +36,9 @@ public final class EntityLootFixtures {
         capture(rows, arguments[0], "spider", 1, true);
         capture(rows, arguments[0], "blaze", 42, false);
         capture(rows, arguments[0], "blaze", 42, true);
+        capture(rows, arguments[0], "chicken", 42, false);
+        capture(rows, arguments[0], "iron_golem", 1, false);
+        capture(rows, arguments[0], "snow_golem", 42, false);
         Files.writeString(Path.of(arguments[1]), new GsonBuilder().setPrettyPrinting().create().toJson(rows));
     }
 

@@ -10,11 +10,14 @@
           "name": "sample:grinder"
         }
       ],
-      "conditions": [
-        {
-          "condition": "minecraft:survives_explosion"
-        }
-      ]
+      "condition": {
+        "type": "minecraft:all_of",
+        "terms": [
+          {
+            "type": "minecraft:survives_explosion"
+          }
+        ]
+      }
     }
   ],
   "random_sequence": "sample:blocks/grinder"
