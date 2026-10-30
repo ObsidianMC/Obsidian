@@ -8,7 +8,8 @@ namespace Obsidian.WorldData.Generators.Features.Trees;
 /// <summary>
 /// 26.3's <c>minecraft:fallen_tree</c>: a one-block stump, and a log lying two or three blocks away on solid ground
 /// (with gaps of at most two) when it fits whole. Both are decorated, the log by its blocks' Java hash set order
-/// sorted by Y. Vanilla always reports a placement, even when only the stump fit.
+/// sorted by Y. Each log marks the blocks above it for post-processing, so a plant left standing on it breaks. Vanilla
+/// always reports a placement, even when only the stump fit.
 /// </summary>
 internal sealed class FallenTreeFeature
 {
@@ -121,6 +122,7 @@ internal sealed class FallenTreeFeature
         }
 
         level.SetBlock(position, state);
+        FeatureHelpers.MarkAboveForPostProcessing(level, position);
         return position;
     }
 

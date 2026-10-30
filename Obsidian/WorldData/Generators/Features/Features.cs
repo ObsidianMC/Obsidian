@@ -251,7 +251,7 @@ internal sealed partial class FeatureRegistry
                             // Mark only at the start of each matching segment, as 26.3 DiskFeature does.
                             if (!replacingSegment)
                             {
-                                MarkAboveDisk(level, position);
+                                FeatureHelpers.MarkAboveForPostProcessing(level, position);
                             }
 
                             replacingSegment = true;
@@ -263,21 +263,6 @@ internal sealed partial class FeatureRegistry
 
             return placed;
         };
-    }
-
-    private static void MarkAboveDisk(IWorldGenLevel level, Vector position)
-    {
-        for (var i = 0; i < 2; i++)
-        {
-            position += Vector.Up;
-
-            if (level.GetBlock(position).IsAir)
-            {
-                return;
-            }
-
-            level.MarkForPostProcessing(position);
-        }
     }
 
     // Moves down to a block it can sit on, then places three small, randomly sized and drifting balls.

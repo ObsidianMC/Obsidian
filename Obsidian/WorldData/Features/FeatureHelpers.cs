@@ -462,6 +462,25 @@ internal static class FeatureHelpers
     }
 
     /// <summary>
+    /// Vanilla <c>Feature.markAboveForPostProcessing</c>: marks up to two blocks above <paramref name="position"/>,
+    /// stopping at the first air.
+    /// </summary>
+    public static void MarkAboveForPostProcessing(IWorldGenLevel level, Vector position)
+    {
+        for (var i = 0; i < 2; i++)
+        {
+            position += Vector.Up;
+
+            if (level.GetBlock(position).IsAir)
+            {
+                return;
+            }
+
+            level.MarkForPostProcessing(position);
+        }
+    }
+
+    /// <summary>
     /// Vanilla <c>Feature.safeSetBlock</c>: sets the block only if the current block passes <paramref name="canReplace"/>.
     /// </summary>
     public static void SafeSetBlock(IWorldGenLevel level, Vector position, IBlock block, Func<IBlock, bool> canReplace)

@@ -894,7 +894,7 @@
         "temperature": -0.9067838,
         "vegetation": 0.15336975,
         "continents": -0.2712552,
-        "erosion": 0.00083004124,
+        "erosion": 8.3004124E-4,
         "depth": 0.47781247,
         "ridges": 0.25431758,
         "chunk_surface_level": 32.0,
@@ -203572,6 +203572,109 @@
           64,
           16,
           "minecraft:birch_log{axis=z}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          60
+        ],
+        [
+          "minecraft:dirt",
+          63
+        ],
+        [
+          "minecraft:grass_block",
+          64
+        ]
+      ],
+      "randomSeed": 1,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "fallen_oak_tree_stump_under_grass_1",
+      "feature": {
+        "feature": "minecraft:fallen_oak_tree",
+        "placement": []
+      },
+      "expectChanges": true,
+      "edits": [
+        [
+          8,
+          65,
+          8,
+          "minecraft:short_grass"
+        ]
+      ],
+      "postProcess": true,
+      "nextRandom": -155886662,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          8,
+          65,
+          5,
+          "minecraft:oak_log{axis=z}"
+        ],
+        [
+          8,
+          65,
+          6,
+          "minecraft:oak_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          8,
+          "minecraft:oak_log{axis=y}"
+        ]
+      ],
+      "marks": [
+        [
+          8,
+          65,
+          8
+        ]
+      ],
+      "postChanges": [
+        [
+          8,
+          65,
+          5,
+          "minecraft:oak_log{axis=z}"
+        ],
+        [
+          8,
+          65,
+          6,
+          "minecraft:oak_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          8,
+          "minecraft:oak_log{axis=y}"
+        ],
+        [
+          8,
+          65,
+          8,
+          "minecraft:air"
         ]
       ]
     },
