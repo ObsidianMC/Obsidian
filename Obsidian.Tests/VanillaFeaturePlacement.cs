@@ -117,12 +117,22 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
             Assert.Equal(nextRegionRandom.GetInt32(), region.Random.NextInt());
         }
 
-        if (entry.TryGetProperty("postProcess", out _))
+        if (entry.TryGetProperty("marks", out var expectedMarksJson))
         {
             var marks = FeatureMarks(chunks, chunkX, chunkZ);
-            var expectedMarks = entry.GetProperty("marks").EnumerateArray().Select(Position).ToList();
+            var expectedMarks = expectedMarksJson.EnumerateArray().Select(Position).ToList();
+
+            if (entry.TryGetProperty("expectMarks", out var expectMarks) && expectMarks.GetBoolean())
+            {
+                Assert.NotEmpty(expectedMarks);
+                Assert.NotEmpty(marks);
+            }
 
             Assert.Equal(expectedMarks, marks);
+        }
+
+        if (entry.TryGetProperty("postProcess", out _))
+        {
 
             var builder = fixture.Builder(MojangDimension.Overworld, entry.GetProperty("seed").GetInt64(), false);
 

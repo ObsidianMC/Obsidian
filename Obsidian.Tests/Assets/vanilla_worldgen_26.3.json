@@ -139634,6 +139634,15 @@
           7,
           "minecraft:tuff"
         ]
+      ],
+      "captureMarks": true,
+      "expectMarks": true,
+      "marks": [
+        [
+          1,
+          -1,
+          0
+        ]
       ]
     },
     {
@@ -160906,6 +160915,15 @@
           7,
           "minecraft:tuff"
         ]
+      ],
+      "captureMarks": true,
+      "expectMarks": true,
+      "marks": [
+        [
+          1,
+          5,
+          0
+        ]
       ]
     },
     {
@@ -170505,6 +170523,159 @@
       "regionRadius": 10,
       "placed": true,
       "changes": []
+    },
+    {
+      "name": "coverage_postprocess_magma_block",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:mycelium",
+          -1
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:magma_block"
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "captureMarks": true,
+      "expectMarks": true,
+      "nextRandom": -1148943845,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          0,
+          0,
+          "minecraft:magma_block"
+        ]
+      ],
+      "marks": [
+        [
+          0,
+          1,
+          0
+        ]
+      ]
+    },
+    {
+      "name": "coverage_postprocess_soul_sand",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:mycelium",
+          -1
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:soul_sand"
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "captureMarks": true,
+      "expectMarks": true,
+      "nextRandom": -1148943845,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          0,
+          0,
+          "minecraft:soul_sand"
+        ]
+      ],
+      "marks": [
+        [
+          0,
+          1,
+          0
+        ]
+      ]
+    },
+    {
+      "name": "coverage_postprocess_brown_mushroom",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:mycelium",
+          -1
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:brown_mushroom"
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "captureMarks": true,
+      "expectMarks": true,
+      "nextRandom": -1148943845,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          0,
+          0,
+          "minecraft:brown_mushroom"
+        ]
+      ],
+      "marks": [
+        [
+          0,
+          0,
+          0
+        ]
+      ]
     }
   ],
   "biomes": [

@@ -1108,11 +1108,15 @@ class WorldgenCaptures {
         if (entry.has("regionRandomSeed")) {
             entry.addProperty("nextRegionRandom", region.getRandom().nextInt());
         }
-        if (entry.has("postProcess")) {
+        if (entry.has("postProcess") || entry.has("captureMarks")) {
             var marks = featureMarks(chunks, chunkX, chunkZ);
             var recorded = new JsonArray();
             marks.forEach(pos -> recorded.add(coordinates(pos)));
             entry.add("marks", recorded);
+
+            if (!entry.has("postProcess")) {
+                return;
+            }
 
             // These cases contain no fluids or block-specific post-processing; this is vanilla's shape pass.
             for (var pos : marks) {

@@ -235,9 +235,16 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         else
             chunk.SetBlock(position.X, position.Y, position.Z, block ??= BlocksRegistry.Get(stateId));
 
-        // Vanilla's WorldGenRegion.setBlock: a state with hasPostProcess is marked; post-processing's own writes aren't.
+        // 26.3's getPostProcessPos marks above bubble-column sources, and the block itself for mushrooms.
+        // Post-processing's own writes must not enqueue more marks.
         if (this.MarksPostProcessing && BlockPhysics.HasPostProcess(stateId))
-            this.MarkForPostProcessing(position);
+        {
+            block ??= BlocksRegistry.Get(stateId);
+            var marksAbove = block.Is(BlockIds.MagmaBlock) || block.Is(BlockIds.SoulSand);
+            var markedPosition = marksAbove ? position + Vector.Up : position;
+
+            this.MarkForPostProcessing(markedPosition);
+        }
 
         var info = knownState ? writeInfos[stateId] : WriteInfo(block!);
         heightmaps.Update(position.X, position.Y, position.Z, info & HeightmapMask);
