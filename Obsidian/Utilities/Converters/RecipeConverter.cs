@@ -1,4 +1,6 @@
-﻿using Obsidian.API.Crafting;
+using Obsidian.API.Crafting;
+using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Utilities;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -6,9 +8,9 @@ using System.Text.Json.Serialization;
 namespace Obsidian.Utilities.Converters;
 public sealed class RecipesConverter : JsonConverter<IRecipe[]>
 {
-    // Recipe types that 26.1 and later added, which Obsidian doesn't model yet. Phase 4 of the 26.3 port (data-driven
-    // systems) reads them; until then they're left out, and brewing keeps BrewingRegistry's own mixes.
-    private static readonly HashSet<string> unsupportedTypes = ["minecraft:brewing", "minecraft:crafting_dye", "minecraft:crafting_imbue"];
+    // Special crafting recipes that 26.1 added, which Obsidian doesn't evaluate yet (see docs/known-gaps.md, "Special
+    // crafting recipes"), so they're left out.
+    private static readonly HashSet<string> unsupportedTypes = ["minecraft:crafting_dye", "minecraft:crafting_imbue"];
 
     //TODO PARSE SPECIAL RECIPES
     public override IRecipe[]? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -43,6 +45,20 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
                     Addition = value.GetProperty("addition").Deserialize<Ingredient>(options)!,
                     Base = value.GetProperty("base").Deserialize<Ingredient>(options)!,
                     Pattern = value.TryGetProperty("pattern", out var pattern) ? pattern.GetString() : null
+                });
+                continue;
+            }
+
+            if (craftingType == CraftingType.Brewing)
+            {
+                recipes.Add(new BrewingRecipe
+                {
+                    Identifier = recipeName,
+                    Type = craftingType,
+                    Group = group,
+                    Input = ReadPotionIngredient(value.GetProperty("input"), options),
+                    Reagent = ReadPotionIngredient(value.GetProperty("reagent"), options),
+                    Output = ReadBrewingOutput(value.GetProperty("output"))
                 });
                 continue;
             }
@@ -129,6 +145,51 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
         }
 
         return recipes.ToArray();
+    }
+
+    // Vanilla's PotionIngredient: an item ingredient, and optionally the potions (potion_contents' "potions", one or a
+    // list) its item holds.
+    private static PotionIngredient ReadPotionIngredient(JsonElement value, JsonSerializerOptions options)
+    {
+        var items = value.GetProperty("item").Deserialize<Ingredient>(options)!;
+        if (!value.TryGetProperty("potion_contents", out var contents))
+            return new PotionIngredient(items, null);
+
+        var names = contents.GetProperty("potions");
+        var potions = names.ValueKind == JsonValueKind.Array
+            ? names.EnumerateArray().Select(name => ReadPotion(name.GetString()!)).ToArray()
+            : [ReadPotion(names.GetString()!)];
+
+        return new PotionIngredient(items, potions);
+    }
+
+    // A brewing recipe's output: an item and its potion, the only component vanilla's brewing outputs set.
+    private static ItemStack ReadBrewingOutput(JsonElement value)
+    {
+        var item = ItemsRegistry.Get(value.GetProperty("id").GetString()!);
+        var count = value.TryGetProperty("count", out var countValue) ? countValue.GetInt32() : 1;
+        if (!value.TryGetProperty("components", out var components))
+            return new ItemStack(item, count);
+
+        foreach (var component in components.EnumerateObject())
+        {
+            if (component.Name != "minecraft:potion_contents")
+                throw new JsonException($"Brewing outputs can't set {component.Name} yet.");
+        }
+
+        var potion = components.GetProperty("minecraft:potion_contents").GetProperty("potion").GetString()!;
+        return new ItemStack(item, count, new PotionContentsDataComponent { Potion = ReadPotion(potion) });
+    }
+
+    private static Potion ReadPotion(string name)
+    {
+        if (name.StartsWith('#'))
+            throw new JsonException($"Potion tags ({name}) aren't supported in brewing recipes.");
+
+        var pascal = name.TrimResourceTag(keepUnderscores: true).ToPascalCase();
+        return Enum.TryParse<Potion>(pascal, out var potion)
+            ? potion
+            : throw new JsonException($"Unknown potion '{name}'.");
     }
 
     // 26.1+ leaves out a crafting recipe's category when it's the default, misc.

@@ -107,9 +107,9 @@ public sealed class PluginRecipes
         using var writer = new NetworkBuffer();
         recipes.UpdatePacket.Serialize(writer);
         using var reader = new NetworkBuffer(writer.AsSpan(0, writer.Size).ToArray());
-        Assert.Equal(7, reader.ReadVarInt());
+        Assert.Equal(9, reader.ReadVarInt());
         var sets = new Dictionary<string, int[]>();
-        for (var i = 0; i < 7; i++)
+        for (var i = 0; i < 9; i++)
         {
             var name = reader.ReadString();
             sets.Add(name, Enumerable.Range(0, reader.ReadVarInt()).Select(_ => reader.ReadVarInt()).ToArray());

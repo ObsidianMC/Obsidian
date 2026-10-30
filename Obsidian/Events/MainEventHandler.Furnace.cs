@@ -7,8 +7,11 @@ namespace Obsidian.Events;
 
 public partial class MainEventHandler
 {
-    /// <summary>Whether this stack has a vanilla furnace burn duration.</summary>
-    internal static bool IsFuel(ItemStack item) => WorldData.FurnaceFuels.BurnTime(item) > 0;
+    /// <summary>
+    /// Whether furnaces burn this stack: whether it has a <c>minecraft:cooking_fuel</c> (vanilla's
+    /// <c>AbstractFurnaceMenu.isFuel</c>).
+    /// </summary>
+    internal static bool IsFuel(ItemStack item) => WorldData.ItemFuels.CookingFuel(item) is not null;
 
     // A vanilla furnace, blast furnace or smoker, rather than a plugin's container of another shape.
     private static bool IsFurnace(SmeltingContainer container) =>

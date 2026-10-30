@@ -588,7 +588,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         var blocks = BlocksRegistry.ReleasePlugin(pluginContainer);
         this.RefreshPlacedBlocks(blocks);
 
-        BrewingRegistry.ReleasePlugin(pluginContainer);
+        PluginPotionMixes.ReleasePlugin(pluginContainer);
         if (this.server is Server recipeServer)
             recipeServer.RecipeRegistry.Types.ReleasePlugin(pluginContainer);
         EntityDefinitionsRegistry.ReleasePlugin(pluginContainer);

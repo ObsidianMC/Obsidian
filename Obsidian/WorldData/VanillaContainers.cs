@@ -76,11 +76,16 @@ internal sealed partial class BrewingStandBlockEntity
     };
 
     // Vanilla's canPlaceItem: ingredients, fuel, and a bottle into an empty bottle slot.
-    protected internal override bool CanInsert(int slot, ItemStack stack, BlockFace? side) => slot switch
+    protected internal override bool CanInsert(int slot, ItemStack stack, BlockFace? side)
     {
-        BrewingStand.IngredientSlot or BrewingStand.FuelSlot => Brewing.SlotAccepts(slot, stack),
-        _ => Brewing.IsBottle(stack) && this.Inventory[slot] is null or { IsAir: true } or { Count: <= 0 }
-    };
+        var recipes = this.Level is AbstractLevel level ? level.CookingRecipes : RecipesRegistry.Current;
+
+        return slot switch
+        {
+            BrewingStand.IngredientSlot or BrewingStand.FuelSlot => Brewing.SlotAccepts(slot, stack, recipes),
+            _ => Brewing.IsBottle(stack, recipes) && this.Inventory[slot] is null or { IsAir: true } or { Count: <= 0 }
+        };
+    }
 
     // Vanilla's canTakeItemThroughFace: through a face, the ingredient slot gives up only a glass bottle.
     protected internal override bool CanExtract(int slot, ItemStack stack, BlockFace? side) =>

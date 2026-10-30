@@ -1,6 +1,7 @@
 using Obsidian.API.Containers;
 using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Nbt;
 using Obsidian.Net;
 using System.Runtime.CompilerServices;
@@ -14,7 +15,7 @@ internal sealed partial class FurnaceBlockEntity
 
     internal FurnaceBlockEntity(SmeltingContainer furnace)
         : base(furnace, "cooking_time_spent", "cooking_total_time",
-            "lit_time_remaining", "lit_total_time", "RecipesUsed")
+            "lit_time_remaining", "lit_total_time", "speed_multiplier", "RecipesUsed")
     {
         machines.Add(furnace, this);
     }
@@ -26,6 +27,12 @@ internal sealed partial class FurnaceBlockEntity
     internal int LitTotal { get; private set; }
     internal int CookingSpent { get; private set; }
     internal int CookingTotal { get; private set; } = 200;
+
+    /// <summary>
+    /// How much faster than normal the fuel that lit the furnace cooks (vanilla's <c>speed_multiplier</c>, 26.1),
+    /// from its <c>minecraft:cooking_fuel</c>.
+    /// </summary>
+    internal float SpeedMultiplier { get; private set; } = 1f;
     internal Dictionary<string, int> RecipesUsed { get; } = [];
 
     private ItemStack? previousInput;
@@ -47,6 +54,7 @@ internal sealed partial class FurnaceBlockEntity
         this.CookingTotal = Read("cooking_total_time");
         this.LitRemaining = Read("lit_time_remaining");
         this.LitTotal = Read("lit_total_time");
+        this.SpeedMultiplier = tag.TryGetTagValue<float>("speed_multiplier", out var speed) ? speed : 1f;
         this.previousInput = this.Inventory[IngredientSlot] is ItemStack input
             ? NetworkBuffer.SnapshotItemStack(input)
             : null;
@@ -70,6 +78,7 @@ internal sealed partial class FurnaceBlockEntity
         tag.Add(new NbtTag<int>("cooking_total_time", this.CookingTotal));
         tag.Add(new NbtTag<int>("lit_time_remaining", this.LitRemaining));
         tag.Add(new NbtTag<int>("lit_total_time", this.LitTotal));
+        tag.Add(new NbtTag<float>("speed_multiplier", this.SpeedMultiplier));
         var used = new NbtCompound("RecipesUsed");
         foreach (var (name, count) in this.RecipesUsed)
             used.Add(new NbtTag<int>(name, count));
@@ -92,7 +101,7 @@ internal sealed partial class FurnaceBlockEntity
         if (!SameInput(this.previousInput, input))
         {
             this.CookingSpent = 0;
-            this.CookingTotal = recipe?.CookingTime ?? 200;
+            this.CookingTotal = recipe is null ? 200 : this.TotalCookTime(recipe);
             this.previousInput = input is not null ? NetworkBuffer.SnapshotItemStack(input) : null;
         }
 
@@ -105,12 +114,7 @@ internal sealed partial class FurnaceBlockEntity
         {
             if (this.LitRemaining == 0 && canCook && fuel is not null)
             {
-                var duration = FurnaceFuels.BurnTime(fuel);
-                if (this.RecipeType != CraftingType.Smelting)
-                    duration /= 2;
-
-                this.LitRemaining = duration;
-                this.LitTotal = duration;
+                var duration = this.Light(fuel, recipe!);
                 if (duration > 0)
                 {
                     this.Inventory.RemoveItem(FuelSlot, 1);
@@ -124,13 +128,13 @@ internal sealed partial class FurnaceBlockEntity
             if (this.LitRemaining > 0 && canCook)
             {
                 if (this.CookingTotal <= 0)
-                    this.CookingTotal = recipe!.CookingTime;
+                    this.CookingTotal = this.TotalCookTime(recipe!);
 
                 this.CookingSpent++;
                 if (this.CookingSpent >= this.CookingTotal)
                 {
                     this.CookingSpent = 0;
-                    this.CookingTotal = recipe!.CookingTime;
+                    this.CookingTotal = this.TotalCookTime(recipe!);
                     var result = recipe.Result.First();
                     if (this.Inventory[ResultSlot].IsNullOrAir())
                         this.Inventory[ResultSlot] = NetworkBuffer.SnapshotItemStack(result);
@@ -164,6 +168,55 @@ internal sealed partial class FurnaceBlockEntity
 
         return slots;
     }
+
+    // Vanilla's lighting in serverTick (26.1): the fuel's burn time and speed multiplier, worked out for this
+    // furnace's block (a blast furnace or smoker burns fuel for half as long and cooks twice as fast), and the cooking
+    // progress kept as a fraction of the new total time. Returns the burn time.
+    private int Light(ItemStack fuel, SmeltingRecipe recipe)
+    {
+        if (ItemFuels.CookingFuel(fuel) is not FuelComponentData fuelData)
+        {
+            this.LitRemaining = 0;
+            this.LitTotal = 0;
+            return 0;
+        }
+
+        var block = this.Level is AbstractLevel level
+            ? level.BlockUpdates.GetBlock(this.BlockPosition)
+            : DefaultBlock(this.RecipeType);
+        var duration = ComponentNumbers.Resolve(fuelData.Amount, block, Random.Shared);
+        var speed = ComponentNumbers.Resolve(fuelData.SpeedMultiplier, block, Random.Shared);
+
+        this.LitRemaining = duration;
+        this.LitTotal = duration;
+        this.SpeedMultiplier = speed;
+
+        if (this.CookingTotal > 0 && this.CookingSpent < this.CookingTotal)
+        {
+            var progress = (float)this.CookingSpent / this.CookingTotal;
+            this.CookingTotal = this.TotalCookTime(recipe);
+            this.CookingSpent = (int)Math.Ceiling(progress * this.CookingTotal);
+        }
+
+        return duration;
+    }
+
+    // Vanilla's getTotalCookTime: the recipe's cooking time divided by the speed multiplier, rounded up, or as is for
+    // a multiplier that isn't positive.
+    private int TotalCookTime(SmeltingRecipe recipe)
+    {
+        if (this.SpeedMultiplier <= 0)
+            return recipe.CookingTime;
+
+        return (int)Math.Ceiling(recipe.CookingTime / this.SpeedMultiplier);
+    }
+
+    private static IBlock DefaultBlock(CraftingType type) => type switch
+    {
+        CraftingType.Blasting => BlocksRegistry.BlastFurnace,
+        CraftingType.Smoking => BlocksRegistry.Smoker,
+        _ => BlocksRegistry.Furnace
+    };
 
     private static bool SameInput(ItemStack? before, ItemStack? after) =>
         before.IsNullOrAir() && after.IsNullOrAir()

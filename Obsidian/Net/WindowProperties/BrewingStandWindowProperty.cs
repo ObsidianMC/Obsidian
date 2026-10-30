@@ -1,4 +1,4 @@
-﻿namespace Obsidian.Net.WindowProperties;
+namespace Obsidian.Net.WindowProperties;
 
 public sealed class BrewingStandWindowProperty : IWindowProperty
 {
@@ -13,8 +13,11 @@ public sealed class BrewingStandWindowProperty : IWindowProperty
     }
 }
 
+// Vanilla's BrewingStandBlockEntity data slots (26.3).
 public enum BrewingStandProperty : short
 {
     BrewTime,
-    FuelTime
+    TotalBrewTime,
+    TotalFuel,
+    Fuel
 }

@@ -23,6 +23,10 @@ internal sealed class RecipeSet
     private readonly SmeltingRecipe[] cookingRecipes;
     private readonly FrozenDictionary<(CraftingType, int), SmeltingRecipe[]> cookingInputs;
 
+    private readonly BrewingRecipe[] brewingRecipes;
+    private readonly FrozenSet<int> brewingInputs;
+    private readonly FrozenSet<int> brewingReagents;
+
     /// <param name="recipes">Every recipe, by identifier.</param>
     /// <param name="book">The recipe book's entries by display id, <c>null</c> where an id's recipe is gone.</param>
     public RecipeSet(
@@ -56,6 +60,20 @@ internal sealed class RecipeSet
                 .Select(item => ((recipe.Type, (int)item.Holder.Id), Recipe: recipe)))
             .GroupBy(pair => pair.Item1)
             .ToFrozenDictionary(group => group.Key, group => group.Select(pair => pair.Recipe).Distinct().ToArray());
+
+        // Vanilla's recipe manager tries recipes of a type in identifier order, and its brewing_input and
+        // brewing_reagent property sets are the items of every brewing recipe's input and reagent.
+        this.brewingRecipes = [.. recipes.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+            .Select(pair => pair.Value).OfType<BrewingRecipe>()];
+        this.brewingInputs = this.brewingRecipes
+            .SelectMany(recipe => recipe.Input.Items)
+            .Select(item => (int)item.Holder.Id)
+            .ToFrozenSet();
+        this.brewingReagents = this.brewingRecipes
+            .SelectMany(recipe => recipe.Reagent.Items)
+            .Select(item => (int)item.Holder.Id)
+            .ToFrozenSet();
+
         this.UpdatePacket = new(recipes);
     }
 
@@ -210,6 +228,24 @@ internal sealed class RecipeSet
     /// </summary>
     public bool IsCookingIngredient(CraftingType type, ItemStack item) =>
         this.cookingInputs.ContainsKey((type, item.Holder.Id));
+
+    /// <summary>
+    /// Whether <paramref name="item"/> is some brewing recipe's input item (vanilla's <c>brewing_input</c> property
+    /// set).
+    /// </summary>
+    public bool IsBrewingInput(ItemStack item) => this.brewingInputs.Contains(item.Holder.Id);
+
+    /// <summary>
+    /// Whether <paramref name="item"/> is some brewing recipe's reagent item (vanilla's <c>brewing_reagent</c>
+    /// property set), which a brewing stand's ingredient slot takes.
+    /// </summary>
+    public bool IsBrewingReagent(ItemStack item) => this.brewingReagents.Contains(item.Holder.Id);
+
+    /// <summary>
+    /// The first brewing recipe that brews <paramref name="bottle"/> with <paramref name="reagent"/>, if any.
+    /// </summary>
+    public BrewingRecipe? FindBrewing(ItemStack bottle, ItemStack reagent) =>
+        this.brewingRecipes.FirstOrDefault(recipe => recipe.Matches(bottle, reagent));
 
     /// <summary>Tries the last matching identifier first, like vanilla's cached cooking lookup.</summary>
     internal SmeltingRecipe? FindCooking(CraftingType type, ItemStack item, string? previous = null)

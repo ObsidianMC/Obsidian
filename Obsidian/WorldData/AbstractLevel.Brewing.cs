@@ -21,7 +21,7 @@ public abstract partial class AbstractLevel
     {
         Brewing.Step step;
         using (await stand.LockAsync())
-            step = Brewing.Tick(stand);
+            step = Brewing.Tick(stand, this.CookingRecipes);
 
         var position = stand.BlockPosition;
 
@@ -63,23 +63,27 @@ public abstract partial class AbstractLevel
     }
 
     /// <summary>
-    /// Sends <paramref name="viewer"/> the brew time and fuel of the stand they have open, which its menu's arrow and
-    /// fuel bar show (vanilla's brewing menu data).
+    /// Sends <paramref name="viewer"/> the brew time and fuel of the stand they have open, with their totals, which its
+    /// menu's arrow and fuel bar show (vanilla's brewing menu data, in its order).
     /// </summary>
     internal static async ValueTask SendBrewingPropertiesAsync(IPlayer viewer, BrewingStand stand)
     {
         var containerId = viewer.CurrentContainerId;
+        (BrewingStandProperty Property, int Value)[] values =
+        [
+            (BrewingStandProperty.BrewTime, stand.BrewTime),
+            (BrewingStandProperty.TotalBrewTime, stand.TotalBrewTime),
+            (BrewingStandProperty.TotalFuel, stand.TotalFuel),
+            (BrewingStandProperty.Fuel, stand.Fuel)
+        ];
 
-        await viewer.QueuePacketAsync(new ContainerSetDataPacket
+        foreach (var (property, value) in values)
         {
-            ContainerId = containerId,
-            WindowProperty = new BrewingStandWindowProperty(BrewingStandProperty.BrewTime, (short)stand.BrewTime)
-        });
-
-        await viewer.QueuePacketAsync(new ContainerSetDataPacket
-        {
-            ContainerId = containerId,
-            WindowProperty = new BrewingStandWindowProperty(BrewingStandProperty.FuelTime, (short)stand.Fuel)
-        });
+            await viewer.QueuePacketAsync(new ContainerSetDataPacket
+            {
+                ContainerId = containerId,
+                WindowProperty = new BrewingStandWindowProperty(property, (short)value)
+            });
+        }
     }
 }
