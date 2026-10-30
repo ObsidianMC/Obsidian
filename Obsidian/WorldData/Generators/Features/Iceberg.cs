@@ -25,11 +25,6 @@ internal sealed class IcebergShape(IBlock state) : ConfiguredFeatureBase
     {
         var level = context.Level;
         var random = context.Random;
-        if (!level.EnsureCanWrite(context.Origin))
-        {
-            return false;
-        }
-
         var origin = context.Origin.AtY(level.SeaLevel);
         var snowOnTop = random.NextDouble() > 0.7;
         var iceberg = state;

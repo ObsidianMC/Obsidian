@@ -63,7 +63,7 @@ internal sealed class DripstoneCones(HashSet<int> replaceable, HashSet<int> base
         var level = context.Level;
         var random = context.Random;
         var origin = context.Origin;
-        if (!level.EnsureCanWrite(origin) || !DripstoneUtils.IsEmptyOrWater(level.GetBlock(origin)))
+        if (!DripstoneUtils.IsEmptyOrWater(level.GetBlock(origin)))
         {
             return false;
         }

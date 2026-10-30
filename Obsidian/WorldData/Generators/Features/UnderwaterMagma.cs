@@ -14,11 +14,6 @@ internal sealed partial class FeatureRegistry
         return (context, random, origin) =>
         {
             var level = context.Level;
-            if (!level.EnsureCanWrite(origin))
-            {
-                return false;
-            }
-
             var column = Column.Scan(level, origin, searchRange, block => block.Is(BlockIds.Water),
                 block => !block.Is(BlockIds.Water));
             if (column?.Floor is not int floor)
