@@ -2,6 +2,7 @@ using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.Nbt;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using static Obsidian.Registries.Codecs.CodecJson;
 
 namespace Obsidian.Registries.Codecs;
@@ -52,6 +53,7 @@ internal sealed record BiomeData(
         Func<string, bool>? isConfiguredCarver = null)
     {
         Object(root, "");
+        root = MigrateLegacySpawns(root);
 
         var effects = Object(Required(root, "", "effects"), "effects");
         var attributes = TryGet(root, "attributes", out var attributesValue)
@@ -87,6 +89,105 @@ internal sealed record BiomeData(
             CreatureSpawnProbability: Math.Clamp(spawnProbability, 0f, 0.9999999f),
             Spawners: spawners,
             SpawnCosts: spawnCosts);
+    }
+
+    private static JsonElement MigrateLegacySpawns(JsonElement root)
+    {
+        var hasSpawners = TryGet(root, "spawners", out var spawners);
+        var hasCosts = TryGet(root, "spawn_costs", out var costs);
+        var hasProbability = TryGet(root, "creature_spawn_probability", out var probability);
+
+        if (!hasSpawners && !hasCosts && !hasProbability)
+            return root;
+
+        var attributes = TryGet(root, "attributes", out var attributesValue)
+            ? JsonNode.Parse(Object(attributesValue, "attributes").GetRawText())!.AsObject()
+            : new JsonObject();
+
+        if (hasSpawners || hasCosts)
+        {
+            const string attribute = "minecraft:gameplay/natural_mob_spawns";
+            RejectLegacySpawnConflict(attributes, "spawners, spawn_costs", attribute);
+
+            var settings = new JsonObject
+            {
+                ["spawns_by_category"] = hasSpawners ? MigrateLegacySpawners(spawners) : new JsonObject(),
+                ["spawn_costs"] = hasCosts ? JsonNode.Parse(costs.GetRawText()) : new JsonObject()
+            };
+
+            // Like 26.3's vanilla biomes, overlay the dimension's categories and costs with this biome's entries.
+            attributes[attribute] = new JsonObject
+            {
+                ["modifier"] = "overlay",
+                ["argument"] = settings
+            };
+        }
+
+        if (hasProbability)
+        {
+            const string attribute = "minecraft:gameplay/creature_world_gen_spawn_probability";
+            RejectLegacySpawnConflict(attributes, "creature_spawn_probability", attribute);
+            attributes[attribute] = JsonNode.Parse(probability.GetRawText());
+        }
+
+        // Reuse the 26.3 readers so migrated attributes and the server's spawn model have the same validation.
+        var converted = JsonNode.Parse(root.GetRawText())!.AsObject();
+        converted["attributes"] = attributes;
+        converted.Remove("spawners");
+        converted.Remove("spawn_costs");
+        converted.Remove("creature_spawn_probability");
+
+        return JsonSerializer.SerializeToElement(converted);
+    }
+
+    private static void RejectLegacySpawnConflict(JsonObject attributes, string fields, string attribute)
+    {
+        foreach (var property in attributes)
+        {
+            if (TryParseIdentifier(property.Key, out var id) && id == attribute)
+            {
+                throw Error(fields, $"cannot combine legacy fields with attributes.{attribute}; "
+                    + $"use only attributes.{attribute} in 26.3");
+            }
+        }
+    }
+
+    private static JsonObject MigrateLegacySpawners(JsonElement value)
+    {
+        Object(value, "spawners");
+
+        var categories = new JsonObject();
+
+        foreach (var property in value.EnumerateObject())
+        {
+            var categoryPath = Field("spawners", property.Name);
+            var list = Array(property.Value, categoryPath);
+            var mobs = new JsonArray();
+
+            foreach (var item in list.EnumerateArray())
+            {
+                var mob = ReadSpawner(item, Index(categoryPath, mobs.Count));
+                var count = TryGet(item, "count", out var provider)
+                    ? JsonNode.Parse(provider.GetRawText())
+                    : new JsonObject
+                    {
+                        ["type"] = IntProviderTypes.Uniform,
+                        ["min_inclusive"] = mob.MinCount,
+                        ["max_inclusive"] = mob.MaxCount
+                    };
+
+                mobs.Add(new JsonObject
+                {
+                    ["type"] = mob.Type,
+                    ["weight"] = mob.Weight,
+                    ["count"] = count
+                });
+            }
+
+            categories[property.Name] = mobs;
+        }
+
+        return categories;
     }
 
     // Spawns are server-only attributes in 26.3. Keep their providers in the attribute map as well as exposing the
