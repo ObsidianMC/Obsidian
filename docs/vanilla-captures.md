@@ -211,6 +211,9 @@ biome-filter identity. Every placement records `nextRandom`, including rejected 
 
 Component cases use `probe: provider`, `modifier`, `predicate` or `rule`, with the corresponding inline
 codec input. They record the optional state, ordered positions, or boolean result and the next random int.
+Provider cases with `requiredState: true` instead call the required-state path. Empty `random_block` lists and
+tags exercise both paths: optional reads return null, required reads preserve the existing state's properties,
+and neither consumes randomness.
 `FeatureComponentMatchesVanilla` replays these independently of feature placement. The cases exercise
 nested and fixed-direction rotated providers, float noise count boundaries, integer-provider short circuits,
 26.x support-sensitive survival, modifier termination and thresholds, rule matching, and height limits.
@@ -238,7 +241,26 @@ gateways and chorus plants. Additional references cover block piles, freezing, c
 and the unchanged algorithms shared with the legacy generator. Actual vanilla entries exercise basalt
 columns and pillars, glowstone, twisting and weeping vines, sulfur springs, desert wells and warm-ocean coral.
 These references verify blocks, placement results and the next placement-random value; multiface and sulfur
-template cases also verify the ordered post-processing marks and resulting neighbor shapes.
+template cases also verify the ordered post-processing marks. Multiface cases with `postProcess` additionally
+verify the resulting neighbor shapes. Sulfur templates use `captureMarks` to record marks independently of fluid
+ticks and shape processing; `expectMarks` requires a nonempty mark list.
+Direct magma, soul sand and mushroom captures distinguish the position above bubble-column sources from a
+mushroom's own position. Templates rely on the region's write-time marks rather than enqueueing duplicates.
+
+The review captures cover exact template processor states (compact and property-bearing states, including
+random exact-state rules), and End platforms whose origins lie just outside the writable region. A platform at
+`(32, 0, 0)` overlaps the region in x=30..31; one at x=34 has no writable overlap but still returns true.
+
+The `coverage_` cases add a second placement random seed (19) across twelve representative algorithms, water
+lakes with observable freezing, air lake barriers, actual bamboo podzol, ceiling-only dripstone and sulfur
+clusters, and root systems with water inside and just beyond their allowance. Lake shell predicates, unsupported
+multiface growth and occupied cluster origins reject inside the algorithms, without an always-false placement
+filter. `expectBlocks` pins the advertised branch outputs in both the capture and replay.
+
+Eleven Nether and End cases select a vanilla `dimension` and record its `minY`, `height` and generator `seaLevel`.
+The replay uses these values for its chunks and region: both dimensions build from 0 through 255, with sea levels
+32 and 0 respectively. Existing cases without dimension parameters retain their Overworld defaults.
+The decoration context separately uses the dimension's noise generator range, including the Nether's height of 128.
 
 Provider references cover `noise`, its Obsidian compatibility alias `noise_provider`, `dual_noise` and
 `random_block`. Large and negative coordinates distinguish float scaling from double scaling. Modifier

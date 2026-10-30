@@ -1055,8 +1055,18 @@ class WorldgenCaptures {
     }
 
     static void featureChecked(JsonObject entry) throws Exception {
-        var level = server.overworld();
+        var dimension = entry.has("dimension")
+            ? entry.get("dimension").getAsString()
+            : "minecraft:overworld";
+        var level = level(dimension);
         var generator = level.getChunkSource().getGenerator();
+
+        if (entry.has("dimension")) {
+            entry.addProperty("minY", level.getMinY());
+            entry.addProperty("height", level.getHeight());
+            entry.addProperty("seaLevel", generator.getSeaLevel());
+        }
+
         long seed = entry.get("seed").getAsLong();
         int chunkX = entry.get("chunkX").getAsInt();
         int chunkZ = entry.get("chunkZ").getAsInt();

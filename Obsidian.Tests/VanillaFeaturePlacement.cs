@@ -84,7 +84,7 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
         var chunkZ = entry.GetProperty("chunkZ").GetInt32();
         var region = Region(chunkX, chunkZ, entry, layers, out var chunks);
         var biome = entry.GetProperty("biome").GetString()!;
-        var context = new DecorationContext(registry, region, _ => biome, MinY, Height);
+        var context = Context(entry, region, biome);
         var feature = registry.Placed(entry.GetProperty("feature"));
 
         var random = DecorationRandom(entry, chunkX, chunkZ);
@@ -112,6 +112,17 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
         Assert.Equal(entry.GetProperty("placed").GetBoolean(), placed);
         Assert.Equal(entry.GetProperty("nextRandom").GetInt32(), nextRandom);
 
+        if (entry.TryGetProperty("expectBlocks", out var expectBlocks))
+        {
+            foreach (var block in expectBlocks.EnumerateArray())
+            {
+                var statePrefix = $" {block.GetString()}[";
+
+                Assert.Contains(expected, change => change.Contains(statePrefix, StringComparison.Ordinal));
+                Assert.Contains(actual, change => change.Contains(statePrefix, StringComparison.Ordinal));
+            }
+        }
+
         if (entry.TryGetProperty("nextRegionRandom", out var nextRegionRandom))
         {
             Assert.Equal(nextRegionRandom.GetInt32(), region.Random.NextInt());
@@ -119,7 +130,7 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
 
         if (entry.TryGetProperty("marks", out var expectedMarksJson))
         {
-            var marks = FeatureMarks(chunks, chunkX, chunkZ);
+            var marks = FeatureMarks(chunks, chunkX, chunkZ, region.MinY);
             var expectedMarks = expectedMarksJson.EnumerateArray().Select(Position).ToList();
 
             if (entry.TryGetProperty("expectMarks", out var expectMarks) && expectMarks.GetBoolean())
@@ -133,8 +144,7 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
 
         if (entry.TryGetProperty("postProcess", out _))
         {
-
-            var builder = fixture.Builder(MojangDimension.Overworld, entry.GetProperty("seed").GetInt64(), false);
+            var builder = fixture.Builder(Dimension(entry), entry.GetProperty("seed").GetInt64(), false);
 
             for (var z = chunkZ - 1; z <= chunkZ + 1; z++)
             {
@@ -149,7 +159,6 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
 
             Assert.Equal(postExpected, postActual);
         }
-
     }
 
     public static TheoryData<FeatureCase> ComponentCases()
@@ -177,7 +186,7 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
         var layers = Layers(entry);
         var region = Region(chunkX, chunkZ, entry, layers, out _);
         var biome = entry.GetProperty("biome").GetString()!;
-        var context = new DecorationContext(registry, region, _ => biome, MinY, Height);
+        var context = Context(entry, region, biome);
         var origin = Origin(entry, chunkX, chunkZ);
         var random = DecorationRandom(entry, chunkX, chunkZ);
 
@@ -250,13 +259,42 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
         Assert.Equal(entry.GetProperty("nextRandom").GetInt32(), random.NextInt());
     }
 
+    private static int CaseMinY(JsonElement entry) =>
+        entry.TryGetProperty("minY", out var minY) ? minY.GetInt32() : MinY;
+
+    private static int CaseHeight(JsonElement entry) =>
+        entry.TryGetProperty("height", out var height) ? height.GetInt32() : Height;
+
+    private static DecorationContext Context(JsonElement entry, WorldGenRegion region, string biome)
+    {
+        var noise = Dimension(entry).Settings.Noise;
+
+        return new DecorationContext(registry, region, _ => biome, noise.MinY, noise.Height);
+    }
+
+    private static MojangDimension Dimension(JsonElement entry)
+    {
+        var dimension = entry.TryGetProperty("dimension", out var value) ? value.GetString() : "minecraft:overworld";
+
+        return dimension switch
+        {
+            "minecraft:overworld" => MojangDimension.Overworld,
+            "minecraft:the_nether" => MojangDimension.Nether,
+            "minecraft:the_end" => MojangDimension.End,
+            _ => throw new InvalidOperationException($"Unknown feature capture dimension {dimension}.")
+        };
+    }
+
     private static Vector Position(JsonElement coordinates) =>
         new(coordinates[0].GetInt32(), coordinates[1].GetInt32(), coordinates[2].GetInt32());
 
     private static Vector Origin(JsonElement entry, int chunkX, int chunkZ) =>
-        entry.TryGetProperty("origin", out var origin) ? Position(origin) : new Vector(chunkX * 16, MinY, chunkZ * 16);
+        entry.TryGetProperty("origin", out var origin)
+            ? Position(origin)
+            : new Vector(chunkX * 16, CaseMinY(entry), chunkZ * 16);
 
-    private static List<Vector> FeatureMarks(Dictionary<(int X, int Z), IChunk> chunks, int centerX, int centerZ)
+    private static List<Vector> FeatureMarks(
+        Dictionary<(int X, int Z), IChunk> chunks, int centerX, int centerZ, int minY)
     {
         var result = new List<Vector>();
 
@@ -265,7 +303,7 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
             for (var x = centerX - 1; x <= centerX + 1; x++)
             {
                 var chunk = (Chunk)chunks[(x, z)];
-                result.AddRange(chunk.PostProcessing.OrderBy(position => (position.Y - MinY) >> 4));
+                result.AddRange(chunk.PostProcessing.OrderBy(position => (position.Y - minY) >> 4));
             }
         }
 
@@ -336,16 +374,22 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
             : 0L;
         var random = new XoroshiroRandomSource(regionSeed);
 
-        return new WorldGenRegion(chunks, centerX, centerZ, seed, MinY, Height, SeaLevel, biomes, random, false);
+        var minY = CaseMinY(entry);
+        var height = CaseHeight(entry);
+        var seaLevel = entry.TryGetProperty("seaLevel", out var seaLevelJson) ? seaLevelJson.GetInt32() : SeaLevel;
+
+        return new WorldGenRegion(chunks, centerX, centerZ, seed, minY, height, seaLevel, biomes, random, false);
     }
 
     private static Chunk LayeredChunk(
         int chunkX, int chunkZ, (IBlock Block, int Top)[] layers, JsonElement entry)
     {
-        var chunk = new Chunk(chunkX, chunkZ, MinY, Height);
+        var minY = CaseMinY(entry);
+        var height = CaseHeight(entry);
+        var chunk = new Chunk(chunkX, chunkZ, minY, height);
         var top = layers[^1].Top;
 
-        for (var y = MinY; y <= top; y++)
+        for (var y = minY; y <= top; y++)
         {
             var block = LayerBlock(layers, y);
 
@@ -371,7 +415,7 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
             }
         }
 
-        WorldgenHeightmaps.Update(chunk, MinY, Height);
+        WorldgenHeightmaps.Update(chunk, minY, height);
         return chunk;
     }
 
@@ -393,7 +437,7 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
         {
             for (var x = chunkX * 16 - 16; x < chunkX * 16 + 32; x++)
             {
-                for (var y = MinY; y < MinY + Height; y++)
+                for (var y = region.MinY; y < region.MinY + region.Height; y++)
                 {
                     var position = new Vector(x, y, z);
                     var block = region.GetBlock(position);
