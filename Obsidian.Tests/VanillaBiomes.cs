@@ -103,7 +103,13 @@ public sealed class VanillaBiomes
         var entry = testCase.Entry;
         var dimension = entry.GetProperty("dimension").GetString()!;
         var preset = dimension == "minecraft:the_nether" ? "minecraft:nether" : dimension;
-        var settings = NoiseGeneratorSettings.Read(WorldgenData.Vanilla, preset);
+        var settingsId = dimension switch
+        {
+            "minecraft:the_nether" => "minecraft:nether",
+            "minecraft:the_end" => "minecraft:end",
+            _ => dimension
+        };
+        var settings = NoiseGeneratorSettings.Read(WorldgenData.Vanilla, settingsId);
 
         if (entry.TryGetProperty("erosion", out var erosion))
         {

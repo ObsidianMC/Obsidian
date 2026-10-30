@@ -55,11 +55,11 @@ class WorldgenCaptures {
         SECTIONS.put("noises", false);
         SECTIONS.put("router", false);
         SECTIONS.put("functions", false);
+        SECTIONS.put("biomes", false);
         SECTIONS.put("terrain", false);
         SECTIONS.put("materials", false);
         SECTIONS.put("aquifers", false);
         SECTIONS.put("carvers", false);
-        SECTIONS.put("biomes", false);
         SECTIONS.put("biome_search", false);
         SECTIONS.put("biome_points", false);
         SECTIONS.put("spawn_attributes", false);
@@ -546,9 +546,15 @@ class WorldgenCaptures {
             int chunkX = entry.get("chunkX").getAsInt();
             int chunkZ = entry.get("chunkZ").getAsInt();
             var chunk = level.getChunkSource().getChunk(chunkX, chunkZ, ChunkStatus.BIOMES, true);
+
+            if (chunk.getPersistedStatus() != ChunkStatus.BIOMES) {
+                throw new IllegalStateException("Expected biomes, got " + chunk.getPersistedStatus());
+            }
+
             var names = new LinkedHashMap<String, Integer>();
             var bytes = new ByteArrayOutputStream();
             var output = new DataOutputStream(bytes);
+
             for (int y = chunk.getMinY() >> 2; y < (chunk.getMinY() + chunk.getHeight()) >> 2; y++) {
                 for (int z = 0; z < 4; z++) {
                     for (int x = 0; x < 4; x++) {
@@ -558,6 +564,7 @@ class WorldgenCaptures {
                     }
                 }
             }
+
             var palette = new JsonArray();
             names.keySet().forEach(palette::add);
             entry.add("palette", palette);
@@ -565,6 +572,32 @@ class WorldgenCaptures {
             entry.addProperty("minY", chunk.getMinY());
             entry.addProperty("height", chunk.getHeight());
             entry.addProperty("status", chunk.getPersistedStatus().getName());
+
+            // Natural spawn attributes use full-resolution lookups over stored sections. These can differ from
+            // uncached material biomes where the point and volume climate paths round to different sides of a tie.
+            BiomeResolver stored = (x, y, z) -> level.getChunkSource()
+                .getChunk(x >> 2, z >> 2, ChunkStatus.BIOMES, true).getNoiseBiome(x, y, z);
+            var manager = new BiomeManager(stored, BiomeManager.obfuscateSeed(entry.get("seed").getAsLong()));
+            var spawnNames = new LinkedHashMap<String, Integer>();
+            var spawnBytes = new ByteArrayOutputStream();
+            var spawnOutput = new DataOutputStream(spawnBytes);
+
+            for (int z = 0; z < 16; z++) {
+                for (int x = 0; x < 16; x++) {
+                    for (int y = chunk.getMinY(); y < chunk.getMinY() + chunk.getHeight(); y++) {
+                        var biome = manager.getBiome(chunkX * 16 + x, y, chunkZ * 16 + z);
+                        var name = biome.unwrapKey().orElseThrow().identifier().toString();
+                        spawnOutput.writeInt(spawnNames.computeIfAbsent(name, key -> spawnNames.size()));
+                    }
+                }
+            }
+
+            var spawnBiomes = new JsonObject();
+            var spawnPalette = new JsonArray();
+            spawnNames.keySet().forEach(spawnPalette::add);
+            spawnBiomes.add("palette", spawnPalette);
+            spawnBiomes.addProperty("data", compressed(spawnBytes.toByteArray()));
+            entry.add("spawnBiomes", spawnBiomes);
         } catch (Exception exception) {
             throw new RuntimeException(exception);
         }
@@ -588,6 +621,7 @@ class WorldgenCaptures {
                 com.mojang.serialization.Codec.INT.fieldOf("value"));
             parameters = codec.parse(JsonOps.INSTANCE, entry.get("parameters")).getOrThrow();
         }
+
         entry.addProperty("entryCount", parameters.values().size());
         try {
             var compressedTargets = Base64.getDecoder().decode(entry.get("targetsData").getAsString());
@@ -596,12 +630,14 @@ class WorldgenCaptures {
             var input = new DataInputStream(new ByteArrayInputStream(uncompressed));
             var bytes = new ByteArrayOutputStream();
             var results = new DataOutputStream(bytes);
+
             while (input.available() > 0) {
                 var target = new net.minecraft.world.level.biome.Climate.TargetPoint(
                     input.readInt(), input.readInt(), input.readInt(),
                     input.readInt(), input.readInt(), input.readInt());
                 results.writeInt(parameters.findValue(target));
             }
+
             entry.addProperty("resultsData", compressed(bytes.toByteArray()));
         } catch (IOException exception) {
             throw new RuntimeException(exception);
@@ -613,6 +649,7 @@ class WorldgenCaptures {
         var random = level.getChunkSource().randomState();
         var context = net.minecraft.world.level.levelgen.densityfunction.SamplerContext.EMPTY_UNCACHED;
         var sampler = random.createClimateSampler(context);
+
         if (entry.has("erosion")) {
             var function = DensityFunction.CODEC.parse(JsonOps.INSTANCE, entry.get("erosion")).getOrThrow();
             var erosion = random.getSampler(function).bind(context);
@@ -620,6 +657,7 @@ class WorldgenCaptures {
                 sampler.temperature(), sampler.humidity(), sampler.continentalness(), erosion,
                 sampler.depth(), sampler.weirdness());
         }
+
         int x = entry.get("quartX").getAsInt();
         int y = entry.get("quartY").getAsInt();
         int z = entry.get("quartZ").getAsInt();
@@ -630,6 +668,7 @@ class WorldgenCaptures {
         for (long value : coordinates) {
             values.add(value);
         }
+
         entry.add("climate", values);
         var source = level.getChunkSource().getGenerator().getBiomeSource();
         var biome = source.createResolver(sampler).getNoiseBiome(x, y, z);
@@ -643,6 +682,7 @@ class WorldgenCaptures {
         var biomeId = Identifier.parse(entry.get("biome").getAsString());
         var biome = server.registryAccess().lookupOrThrow(Registries.BIOME).getValue(biomeId);
         var biomeMap = biome.getAttributes();
+
         if (entry.has("dimensionAttributes")) {
             dimension = net.minecraft.world.attribute.EnvironmentAttributeMap.CODEC
                 .parse(ops, entry.get("dimensionAttributes")).getOrThrow();
@@ -651,10 +691,12 @@ class WorldgenCaptures {
             biomeMap = net.minecraft.world.attribute.EnvironmentAttributeMap.CODEC_ONLY_POSITIONAL
                 .parse(ops, entry.get("biomeAttributes")).getOrThrow();
         }
+
         var attribute = net.minecraft.world.attribute.EnvironmentAttributes.NATURAL_MOB_SPAWNS;
         var value = dimension.applyModifier(attribute, attribute.defaultValue());
         value = biomeMap.applyModifier(attribute, value);
         entry.add("spawns", attribute.valueCodec().encodeStart(ops, value).getOrThrow());
+
         var probabilityAttribute =
             net.minecraft.world.attribute.EnvironmentAttributes.CREATURE_WORLD_GEN_SPAWN_PROBABILITY;
         var probability = dimension.applyModifier(probabilityAttribute, probabilityAttribute.defaultValue());

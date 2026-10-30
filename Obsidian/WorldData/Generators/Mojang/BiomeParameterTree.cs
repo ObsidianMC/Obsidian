@@ -15,6 +15,7 @@ internal sealed class BiomeParameterTree<T>
     // Vanilla starts each search from the previous result on the same thread; it only matters for exact ties.
     private readonly ThreadLocal<Leaf?> lastResult = new();
 
+    /// <param name="childrenPerNode">6 for the live legacy pipeline, 19 for 26.3.</param>
     public BiomeParameterTree(IReadOnlyList<(ParameterPoint Point, T Value)> values, int childrenPerNode = 6)
     {
         if (values.Count == 0)

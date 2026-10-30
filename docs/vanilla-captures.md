@@ -138,6 +138,8 @@ Stable sorting and the previous winning leaf on each thread decide equal-distanc
   caves and dappled forest), plus more End locations. `palette` and `data` encode every stored quart in ascending
   y, z, x order, with big-endian 32-bit palette indices compressed as above. Selection uses vanilla's climate
   volume path, at quart corners, and searches in section, x, y, z order. Those are distinct from buffer order.
+  `spawnBiomes` separately records full-resolution block lookups over stored sections, in z, x, y order. Those
+  can differ from the uncached point-climate `materialBiomes` at cave borders, and clamp Y to storage height.
 - `spawn_attributes` records vanilla's resolution of default, dimension and biome maps. It covers ordinary and
   new overworld biomes, the deep dark's empty categories, Nether costs and the End, plus inherited dimension
   spawns, explicit empty categories, overridden costs, an empty override and a probability modifier.

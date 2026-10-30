@@ -13,6 +13,7 @@ internal sealed class ClimateSource : IBiomeSource
     private readonly DensityFunction[] functions;
     private readonly BiomeParameters? parameters;
 
+    /// <param name="preset">minecraft:overworld, minecraft:nether, or minecraft:the_end.</param>
     public ClimateSource(WorldgenData data, DensityRouter router, string preset)
     {
         this.functions = climateFields.Select(field => router.Functions[field]).ToArray();

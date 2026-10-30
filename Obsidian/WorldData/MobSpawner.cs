@@ -1,16 +1,16 @@
-using Obsidian.Entities;
-using Obsidian.Entities.AI;
-using Obsidian.Entities.Factories;
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.Entities;
+using Obsidian.Entities.AI;
+using Obsidian.Entities.Factories;
 using Obsidian.Nbt;
 using Obsidian.Providers.IntProviders;
 using Obsidian.WorldData.Fluids;
 using Obsidian.WorldData.Generators;
+using System.IO;
 using System.Reflection;
 using System.Text.Json;
-using System.IO;
 
 namespace Obsidian.WorldData;
 
@@ -288,8 +288,12 @@ internal sealed partial class MobSpawner(AbstractLevel level)
         var top = GetSpawnHeight(chunk, x, z);
         var maxY = level.MinY + level.Height;
         var seaLevel = level.Generator is MojangGenerator generator ? generator.SeaLevel : 63;
-        var y = category == "creature" ? top : category == "water_creature" ? random.Next(seaLevel - 23, seaLevel) :
-            random.Next(level.MinY, Math.Clamp(top + 1, level.MinY + 1, maxY));
+        var y = category switch
+        {
+            "creature" => top,
+            "water_creature" => random.Next(seaLevel - 23, seaLevel),
+            _ => random.Next(level.MinY, Math.Clamp(top + 1, level.MinY + 1, maxY))
+        };
         var biome = this.SpawnBiomeAt(chunk, x, Math.Clamp(y, level.MinY, maxY - 1), z);
         // Vanilla's biomes' spawners, with plugins' biomes and spawn modifiers.
         var settings = PluginSpawns.Current.At(level.DimensionType, biome);

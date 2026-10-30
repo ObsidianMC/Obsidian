@@ -152,15 +152,30 @@ internal static partial class PluginSpawns
                 };
                 var applicable = resolved.Where(value => !failed.Contains(value.File)
                     && value.Biomes.Contains(name)).ToArray();
+                var rejected = new HashSet<FeatureFile>();
 
-                foreach (var (modifier, _, _, _, _) in applicable)
+                foreach (var (modifier, _, _, _, file) in applicable)
                 {
-                    AddSpawns(resolvedLists, [name], modifier.Add.Spawners);
-                    AddCosts(resolvedCosts, [name], modifier.Add.SpawnCosts);
+                    try
+                    {
+                        AddSpawns(resolvedLists, [name], modifier.Add.Spawners);
+                        AddCosts(resolvedCosts, [name], modifier.Add.SpawnCosts);
+                    }
+                    catch (InvalidDataException ex)
+                    {
+                        // Dimension defaults can make a resolved list's weight exceed the legacy table's.
+                        rejected.Add(file);
+                        Log.Invalid(logger, file.Source, ex.Message);
+                    }
                 }
 
-                foreach (var (_, _, removedSpawns, removedCosts, _) in applicable)
+                foreach (var (_, _, removedSpawns, removedCosts, file) in applicable)
                 {
+                    if (rejected.Contains(file))
+                    {
+                        continue;
+                    }
+
                     RemoveSpawns(resolvedLists, [name], removedSpawns);
                     RemoveCosts(resolvedCosts, [name], removedCosts);
                 }
@@ -322,7 +337,8 @@ internal static partial class PluginSpawns
 /// The spawners of each biome, by biome identifier and mob category (vanilla's names, like <c>monster</c>), with the
 /// biomes' spawn costs and creature spawn probabilities.
 /// </summary>
-internal sealed partial record BiomeSpawns(IReadOnlyDictionary<string, IReadOnlyDictionary<string, SpawnerMob[]>> Biomes)
+internal sealed partial record BiomeSpawns(
+    IReadOnlyDictionary<string, IReadOnlyDictionary<string, SpawnerMob[]>> Biomes)
 {
     /// <summary>
     /// Vanilla's chance of each further group of creatures spawning when a chunk generates, for biomes that don't set

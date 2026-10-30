@@ -68,6 +68,7 @@ internal static class SpawnEnvironment
         });
     }
 
+    // Keep providers beside their encoded attribute values: natural spawning samples their full distributions.
     internal static void Remember(NbtCompound value, Dictionary<string, SpawnerMob[]> categories,
         Dictionary<string, SpawnCost> costs) =>
         decoded.Add(value, new SpawnSettings(categories, costs, SpawnSettings.Empty.CreatureProbability));

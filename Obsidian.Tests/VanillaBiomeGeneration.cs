@@ -1,10 +1,8 @@
 using Obsidian.API;
-using Obsidian.Registries;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators.Biomes;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Generators.Mojang;
-using Obsidian.WorldData.Generators.Terrain;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -39,6 +37,7 @@ public sealed class VanillaBiomeGeneration
 
         pipeline.Source.FillBiomes(chunk);
 
+        Assert.Equal("minecraft:biomes", entry.GetProperty("status").GetString());
         Assert.Equal(ChunkGenStage.biomes, chunk.ChunkStatus);
         var palette = entry.GetProperty("palette").EnumerateArray().Select(value => value.GetString()!).ToArray();
         var expected = VanillaBiomes.Decode(entry.GetProperty("data").GetString()!);
@@ -91,33 +90,47 @@ public sealed class VanillaBiomeGeneration
     }
 
     [Theory]
-    [MemberData(nameof(VanillaTerrainGeneration.TerrainCases), MemberType = typeof(VanillaTerrainGeneration))]
+    [MemberData(nameof(BiomeCases))]
     public void SpawnPositionsUseFullResolutionBiomes(VanillaTerrainGeneration.TerrainCase testCase)
     {
         var entry = testCase.Entry;
         var pipeline = Create(entry);
         var chunk = CreateChunk(entry);
         var zoomSeed = BiomeManager.ObfuscateSeed(entry.GetProperty("seed").GetInt64());
-        var captured = entry.GetProperty("materialBiomes");
+        var captured = entry.GetProperty("spawnBiomes");
         var palette = captured.GetProperty("palette").EnumerateArray().Select(value => value.GetString()!).ToArray();
         var expected = VanillaBiomes.Decode(captured.GetProperty("data").GetString()!);
+        var chunks = new Dictionary<(int X, int Z), Chunk>();
 
         pipeline.Source.FillBiomes(chunk);
+        chunks[(chunk.X, chunk.Z)] = chunk;
 
-        // Interior positions' jittered corners all lie in this captured chunk. Avoid build-height clamping,
-        // because materialBiomes was captured from an uncached resolver and can sample past the top/bottom.
-        for (var z = 2; z < 14; z++)
+        // Include chunk and vertical storage boundaries. This reference reads stored sections independently of
+        // materialBiomes, whose uncached point climate path can round differently at cave borders.
+        for (var z = 0; z < 16; z++)
         {
-            for (var x = 2; x < 14; x++)
+            for (var x = 0; x < 16; x++)
             {
-                for (var y = chunk.MinY + 4; y < chunk.MinY + chunk.Height - 4; y += 4)
+                for (var y = chunk.MinY; y < chunk.MinY + chunk.Height; y += 4)
                 {
-                    var actual = MobSpawner.SpawnBiomeAt(zoomSeed, (_, _) => chunk, chunk,
+                    var actual = MobSpawner.SpawnBiomeAt(zoomSeed, LoadedChunk, chunk,
                         chunk.X * 16 + x, y, chunk.Z * 16 + z);
-                    var index = (z * 16 + x) * (chunk.Height + 1) + y - chunk.MinY;
+                    var index = (z * 16 + x) * chunk.Height + y - chunk.MinY;
                     Assert.Equal(palette[expected[index]], actual.Name);
                 }
             }
+        }
+
+        Chunk LoadedChunk(int x, int z)
+        {
+            if (!chunks.TryGetValue((x, z), out var neighbor))
+            {
+                neighbor = new Chunk(x, z, chunk.MinY, chunk.Height);
+                pipeline.Source.FillBiomes(neighbor);
+                chunks[(x, z)] = neighbor;
+            }
+
+            return neighbor;
         }
     }
 
@@ -151,7 +164,12 @@ public sealed class VanillaBiomeGeneration
     private static BiomeTerrain Create(JsonElement entry)
     {
         var dimension = entry.GetProperty("dimension").GetString()!;
-        var settings = dimension == "minecraft:the_nether" ? "minecraft:nether" : dimension;
+        var settings = dimension switch
+        {
+            "minecraft:the_nether" => "minecraft:nether",
+            "minecraft:the_end" => "minecraft:end",
+            _ => dimension
+        };
         var seed = entry.GetProperty("seed").GetInt64();
         var generator = new TerrainGenerator(WorldgenData.Vanilla, seed, settings);
         var preset = dimension == "minecraft:the_nether" ? "minecraft:nether" : dimension;
