@@ -29,6 +29,9 @@ namespace Obsidian.Tests;
 
 public sealed class VanillaCommands26
 {
+    // The player inventory index of hotbar.0.
+    private const int FirstHotbarSlot = 36;
+
     private static readonly JsonElement fixture = ReadFixture();
 
     private static JsonElement ReadFixture()
@@ -43,6 +46,7 @@ public sealed class VanillaCommands26
     public static IEnumerable<object[]> SlotCases => Rows("slots");
     public static IEnumerable<object[]> DataCases => Rows("data");
     public static IEnumerable<object[]> SpamCases => Rows("spam");
+    public static IEnumerable<object[]> ItemCountCases => Rows("item_counts");
 
     private static IEnumerable<object[]> Rows(string section) => fixture.GetProperty(section).EnumerateArray()
         .Select((row, index) => new object[] { $"{section}-{index}", row.GetRawText() });
@@ -153,6 +157,29 @@ public sealed class VanillaCommands26
             var inventory = inventories[index / 4];
             AssertStack(expected[index], inventory.GetItem(index % 4) ?? ItemStack.Air);
         }
+    }
+
+    [Theory]
+    [MemberData(nameof(ItemCountCases))]
+    public async Task CreatedItemStacksAreValidatedLikeVanilla(string name, string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        var row = document.RootElement;
+        await using var server = TestServerFactory.CreateServer($"{name}-{Guid.NewGuid():N}");
+        var handler = (CommandHandler)server.Server.CommandHandler;
+        handler.RegisterCommandClass<ItemCommandModule>(null);
+        var player = AddFixturePlayer(server);
+        var item = row.GetProperty("item").GetString();
+        var count = row.GetProperty("count").GetInt32();
+        var context = Context(server.Server, $"item replace entity Fixture hotbar.0 with {item} {count}");
+
+        await handler.ProcessCommand(context);
+
+        var success = row.GetProperty("success").GetBoolean();
+        Assert.Equal(success, context.Succeeded);
+        var stack = player.Inventory.GetItem(FirstHotbarSlot);
+        var stored = stack is { IsAir: false } ? stack.Count : 0;
+        Assert.Equal(success ? count : 0, stored);
     }
 
     [Fact]
@@ -512,6 +539,13 @@ public sealed class VanillaCommands26
             await Task.Yield();
             return 37;
         }
+    }
+
+    private static Obsidian.Entities.Player AddFixturePlayer(RealServerContext server)
+    {
+        var player = TestServerFactory.CreateConnectedPlayer(server.Server, server.World, "Fixture");
+        server.Server.AddPlayer(player);
+        return player;
     }
 
     private static CommandContext Context(Server server, string command) =>

@@ -403,6 +403,29 @@ public final class CommandFixtures {
         return rows;
     }
 
+    /** Which counts {@code /item ... with <item> <count>} accepts: vanilla validates the created stack. */
+    private static JsonArray itemCounts(CommandBuildContext context) throws Exception {
+        var rows = new JsonArray();
+        for (var input : List.of("stone 64", "stone 65", "ender_pearl 16", "ender_pearl 17", "diamond_sword 1",
+            "diamond_sword 2")) {
+            var parts = input.split(" ");
+            var item = net.minecraft.commands.arguments.item.ItemArgument.item(context)
+                .parse(new com.mojang.brigadier.StringReader(parts[0]));
+            var count = Integer.parseInt(parts[1]);
+            var row = new JsonObject();
+            row.addProperty("item", parts[0]);
+            row.addProperty("count", count);
+            try {
+                item.createItemStack(count);
+                row.addProperty("success", true);
+            } catch (com.mojang.brigadier.exceptions.CommandSyntaxException exception) {
+                row.addProperty("success", false);
+            }
+            rows.add(row);
+        }
+        return rows;
+    }
+
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static JsonObject node(CommandNode<CommandSourceStack> node, Commands commands) {
         var output = ArgumentUtils.serializeNodeToJson(commands.getDispatcher(), node);
@@ -465,6 +488,7 @@ public final class CommandFixtures {
         output.add("slot_ranges", ranges);
         output.add("compute", compute(commands, access));
         output.add("slots", slots(context, access));
+        output.add("item_counts", itemCounts(context));
         output.add("time", time(commands, access));
         output.add("marker_completions", markerCompletions);
         output.add("posteffect", postEffects());

@@ -1,4 +1,4 @@
-using Obsidian.Commands.Framework;
+﻿using Obsidian.Commands.Framework;
 using Obsidian.API.Commands;
 using Obsidian.API.Commands.ArgumentParsers;
 using Obsidian.API.Inventory;
@@ -40,7 +40,7 @@ public sealed class ItemCommandModule : CommandModuleBase
 
                     visited++;
                     var current = slot.Get() ?? ItemStack.Air;
-                    var result = modifier.Apply(new ItemStack(current, current.Count), loot);
+                    var result = Modify(modifier, new ItemStack(current, current.Count), loot);
                     count += await ReplaceAsync(slot, result);
                 }
             }
@@ -61,7 +61,13 @@ public sealed class ItemCommandModule : CommandModuleBase
                     if (amount is < 1 or > 99)
                         throw new FormatException("Item count must be between 1 and 99");
 
-                    items.Add(new ItemStack(item, amount));
+                    // Vanilla's ItemInput.createItemStack: the created stack must fit the item's maximum stack size.
+                    var created = new ItemStack(item, amount);
+                    var maximum = created.MaxStackSize;
+                    if (amount > maximum)
+                        throw new FormatException($"Can't set more than {maximum} {created.Holder.UnlocalizedName}");
+
+                    items.Add(created);
                 }
                 else if (sourceKind == "from")
                 {
@@ -77,7 +83,7 @@ public sealed class ItemCommandModule : CommandModuleBase
                     if (!input.End)
                     {
                         var modifier = ReadModifier(input.Read());
-                        items = items.Select(item => modifier.Apply(item, loot)).ToList();
+                        items = items.Select(item => Modify(modifier, item, loot)).ToList();
                     }
                 }
                 else
@@ -109,6 +115,16 @@ public sealed class ItemCommandModule : CommandModuleBase
             throw new FormatException("Registered loot modifiers are not implemented");
 
         return LootTableJson.ReadModifier(CommandInput.QualifyTypes(data).GetRawText());
+    }
+
+    // Vanilla's applyModifier limits the modified stack to its maximum stack size.
+    private static ItemStack Modify(Obsidian.API.Loot.Functions.LootFunction modifier, ItemStack item, LootContext loot)
+    {
+        var result = modifier.Apply(item, loot);
+        if (result.Count > result.MaxStackSize)
+            result = new ItemStack(result, result.MaxStackSize);
+
+        return result;
     }
 
     internal static async Task<int> DistributeAsync(List<CommandSlots.Slot> targets, List<ItemStack> items, string operation)
