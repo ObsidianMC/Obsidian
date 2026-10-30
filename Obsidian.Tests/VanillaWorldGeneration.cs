@@ -17,8 +17,8 @@ namespace Obsidian.Tests;
 
 /// <summary>
 /// Parity checks for the Mojang (vanilla) generator, replaying the references in <c>Assets/vanilla_worldgen.json</c>
-/// (<see cref="VanillaWorldgenCaptures"/>). Vanilla's own world generation recorded them with the same seeds; re-record
-/// them with <c>dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen</c> (<c>docs/vanilla-captures.md</c>).
+/// (<see cref="VanillaWorldgenCaptures"/>). Vanilla 1.21.11's own world generation recorded them with the same seeds;
+/// they can't be re-recorded on 26.3, and Phase 5 replaces them with 26.3 captures (<c>docs/vanilla-captures.md</c>).
 /// </summary>
 [Trait("Category", TestCategory.Worldgen)]
 [Collection(WorldgenCollection.Name)]
