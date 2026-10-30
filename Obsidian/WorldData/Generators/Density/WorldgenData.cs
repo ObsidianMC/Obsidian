@@ -33,9 +33,19 @@ internal sealed class WorldgenData(Func<string, string, Stream?> open)
 
     /// <summary>
     /// An identifier with its namespace, which is vanilla's when it has none, as vanilla's codecs read identifiers:
-    /// data packs and the JSON typed into commands may write <c>stone</c> for <c>minecraft:stone</c>.
+    /// data packs and the JSON typed into commands may write <c>stone</c> (or <c>:stone</c>) for
+    /// <c>minecraft:stone</c>.
     /// </summary>
-    public static string Qualify(string id) => id.Contains(':') ? id : $"minecraft:{id}";
+    public static string Qualify(string id)
+    {
+        var separator = id.IndexOf(':');
+
+        // Vanilla's identifiers take an empty namespace, as in ":stone", for its own too.
+        if (separator == 0)
+            return $"minecraft{id}";
+
+        return separator > 0 ? id : $"minecraft:{id}";
+    }
 
     private static JsonElement Parse(Func<string, string, Stream?> open, string registry, string id)
     {

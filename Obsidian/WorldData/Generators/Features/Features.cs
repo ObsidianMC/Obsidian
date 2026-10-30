@@ -1,6 +1,7 @@
 using Obsidian.API.World.Features;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Features;
+using Obsidian.WorldData.Generators.Density;
 using System.Text.Json;
 
 namespace Obsidian.WorldData.Generators.Features;
@@ -363,7 +364,7 @@ internal sealed partial class FeatureRegistry
     private static IBlock LiquidBlock(JsonElement json)
     {
         const string flowingPrefix = "minecraft:flowing_";
-        var id = json.GetProperty("id").GetString()!;
+        var id = WorldgenData.Qualify(json.GetProperty("id").GetString()!);
         var properties = json.TryGetProperty("properties", out var values) ? values : default;
         var flowing = id.StartsWith(flowingPrefix, StringComparison.Ordinal);
         var block = BlocksRegistry.Get(flowing ? "minecraft:" + id[flowingPrefix.Length..] : id);

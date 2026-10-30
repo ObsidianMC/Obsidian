@@ -582,6 +582,7 @@ public sealed class VanillaCommands26
 
     [Theory]
     [InlineData("stone")]
+    [InlineData(":stone")]
     [InlineData("minecraft:stone")]
     public async Task InlineFeaturesChangeTheWorld(string block)
     {

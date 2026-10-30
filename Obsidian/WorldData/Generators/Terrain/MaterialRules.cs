@@ -245,7 +245,8 @@ internal sealed partial class MaterialRules
                 var inverted = this.CompileCondition(json.GetProperty("invert"));
                 return context => !inverted(context);
             case "minecraft:noise_threshold":
-                var noise = this.generator.Compiler.Noise(WorldgenData.Qualify(json.GetProperty("noise").GetString()!));
+                var noiseId = WorldgenData.Qualify(json.GetProperty("noise").GetString()!);
+                var noise = this.generator.Compiler.Noise(noiseId);
                 var min = json.GetProperty("min_threshold").GetDouble();
                 var max = json.GetProperty("max_threshold").GetDouble();
                 var is3d = json.TryGetProperty("is_3d", out var is3dJson) && is3dJson.GetBoolean();
