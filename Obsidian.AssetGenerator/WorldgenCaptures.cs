@@ -10,7 +10,8 @@ namespace Obsidian.AssetGenerator;
 /// <remarks>
 /// The capture runs a headless vanilla server per world (seed, with and without structures), which evaluates every
 /// case with vanilla's own code. It is slow and needs no rebuild of the assets, so it only runs on request
-/// (<c>dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen</c>), not on every build.
+/// (<c>dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen</c>), not on every build. It can record only some
+/// sections, files or cases (<see cref="CaptureSelection"/>), and only rewrites the files holding them.
 /// </remarks>
 internal static class WorldgenCaptures
 {
@@ -20,18 +21,21 @@ internal static class WorldgenCaptures
 
     private static string Source(string name) => Path.Combine(AppContext.BaseDirectory, name);
 
-    public static async Task RunAsync(VanillaServer server, string fixtureDirectory)
+    public static async Task RunAsync(VanillaServer server, string fixtureDirectory, CaptureSelection selection)
     {
         var files = WorldgenFixtureFile.Load(fixtureDirectory);
+        var unmatched = selection.Unmatched(files).ToList();
+        if (unmatched.Count > 0)
+            throw new ArgumentException($"Nothing in {fixtureDirectory} matches {string.Join(", ", unmatched)}.");
 
-        // The probe captures the cases in a fixture of their own, by section, which replaces them in their files only
-        // once every world succeeded. A failed capture never leaves files mixing versions.
-        var selected = Select(files);
+        // The probe captures the selected cases in a fixture of their own, by section, which replaces them in their
+        // files only once every world succeeded. A failed capture never leaves files mixing versions.
+        var selected = Select(files, selection);
         var capturing = Path.Combine(server.ScratchDirectory, "captures", "fixture.json");
         Directory.CreateDirectory(Path.GetDirectoryName(capturing)!);
         await File.WriteAllTextAsync(capturing, WorldgenFixtureFile.Serialize(Fixture(selected)));
 
-        Console.WriteLine($"Capturing {selected.Count} cases...");
+        Console.WriteLine($"Capturing {selected.Count} cases ({selection})...");
         await CaptureWorldsAsync(server, capturing, Seeds(selected));
 
         var captured = JsonNode.Parse(await File.ReadAllTextAsync(capturing))!.AsObject();
@@ -46,20 +50,26 @@ internal static class WorldgenCaptures
         }
     }
 
-    // The cases, in the files' order.
-    private static List<SelectedCase> Select(List<WorldgenFixtureFile> files)
+    // The selected cases, in the files' order.
+    private static List<SelectedCase> Select(List<WorldgenFixtureFile> files, CaptureSelection selection)
     {
         var selected = new List<SelectedCase>();
-        foreach (var file in files)
+        foreach (var file in files.Where(selection.Includes))
         {
             for (var index = 0; index < file.Cases.Count; index++)
-                selected.Add(new SelectedCase(file, index));
+            {
+                if (selection.Includes(file.Cases[index]!))
+                    selected.Add(new SelectedCase(file, index));
+            }
         }
+
+        if (selected.Count == 0)
+            throw new ArgumentException($"No cases match {selection}.");
 
         return selected;
     }
 
-    // The probe's input: the cases by section, in the files' order.
+    // The probe's input: the selected cases by section, in the files' order.
     private static JsonObject Fixture(List<SelectedCase> selected)
     {
         var fixture = new JsonObject();
@@ -125,7 +135,7 @@ internal static class WorldgenCaptures
         }
     }
 
-    // The seeds of the cases, each captured in a world of its own.
+    // The seeds of the selected cases, each captured in a world of its own.
     private static List<long> Seeds(List<SelectedCase> selected) =>
         [.. selected
             .Select(entry => entry.File.Cases[entry.Index]!["seed"]!.GetValue<long>())

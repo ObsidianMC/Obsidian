@@ -104,7 +104,9 @@
 
 	<!-- Re-records the 26.3 vanilla worldgen references the parity tests replay, in place, with the Minecraft version's
 	     server (docs/vanilla-captures.md). Slow, so only on request:
-	     dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen -->
+	     dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen
+	     CaptureSections and CaptureCases record only some sections or files and cases, by '+'-separated patterns, e.g.
+	     -p:CaptureSections=features/09-trees+terrain -p:CaptureCases=tree_oak_* -->
 	<PropertyGroup>
 		<VanillaWorldgenFixture>$(MSBuildThisFileDirectory)..\Obsidian.Tests\Assets\vanilla_worldgen_26.3</VanillaWorldgenFixture>
 	</PropertyGroup>
@@ -115,6 +117,9 @@
 			<VanillaCaptureCommand>$(VanillaCaptureCommand) &quot;$(VanillaWorkDirectory).&quot;</VanillaCaptureCommand>
 			<VanillaCaptureCommand>$(VanillaCaptureCommand) &quot;$(VanillaScratchDirectory).&quot;</VanillaCaptureCommand>
 			<VanillaCaptureCommand>$(VanillaCaptureCommand) &quot;$(VanillaWorldgenFixture)&quot;</VanillaCaptureCommand>
+			<CaptureSectionsOption Condition="'$(CaptureSections)' != ''">--sections &quot;$(CaptureSections)&quot;</CaptureSectionsOption>
+			<CaptureCasesOption Condition="'$(CaptureCases)' != ''">--cases &quot;$(CaptureCases)&quot;</CaptureCasesOption>
+			<VanillaCaptureCommand>$(VanillaCaptureCommand) $(CaptureSectionsOption) $(CaptureCasesOption)</VanillaCaptureCommand>
 		</PropertyGroup>
 
 		<Exec IgnoreStandardErrorWarningFormat="true" Command="$(VanillaCaptureCommand)" />

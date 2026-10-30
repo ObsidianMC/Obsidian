@@ -379,7 +379,7 @@
         "temperature": -0.9067838,
         "vegetation": 0.15336975,
         "continents": -0.2712552,
-        "erosion": 0.00083004124,
+        "erosion": 8.3004124E-4,
         "depth": 0.47781247,
         "ridges": 0.25431758,
         "chunk_surface_level": 32.0,

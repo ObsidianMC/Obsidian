@@ -5,7 +5,7 @@ using System.Diagnostics;
 // Usage: Obsidian.AssetGenerator <minecraft version> <legacy version> <cache directory> <scratch directory>
 //            <assets directory>
 //        Obsidian.AssetGenerator capture-worldgen <minecraft version> <cache directory> <scratch directory>
-//            <fixture directory>
+//            <fixture directory> [--sections <patterns>] [--cases <patterns>]
 //
 // Downloads the vanilla server jar of the version, runs its data generators and the Java dumper against it, and writes
 // the assets the source generators and the server read into the assets directory (replacing what's there). The worldgen
@@ -14,16 +14,17 @@ using System.Diagnostics;
 // cached per version in the cache directory, which checkouts share; this checkout's runs work in the scratch directory.
 //
 // capture-worldgen instead re-records the vanilla worldgen references in the fixture directory (in place) with the
-// version's server; see docs/vanilla-captures.md.
+// version's server, or only the sections and cases the patterns select; see docs/vanilla-captures.md.
 var timer = Stopwatch.StartNew();
 using var httpClient = new HttpClient();
 
-if (args is ["capture-worldgen", var captureVersion, var captureCache, var captureScratch, var fixture])
+if (args is ["capture-worldgen", var captureVersion, var captureCache, var captureScratch, var fixture, .. var options])
 {
+    var selection = CaptureSelection.Parse(options);
     var vanilla = await VanillaServer.PrepareAsync(httpClient, captureVersion,
         Path.Combine(Path.GetFullPath(captureCache), captureVersion),
         Path.Combine(Path.GetFullPath(captureScratch), captureVersion));
-    await WorldgenCaptures.RunAsync(vanilla, Path.GetFullPath(fixture));
+    await WorldgenCaptures.RunAsync(vanilla, Path.GetFullPath(fixture), selection);
 
     var seconds = timer.Elapsed.TotalSeconds;
     Console.WriteLine($"Captured the {captureVersion} worldgen references into {fixture} in {seconds:0.0}s.");
@@ -36,6 +37,7 @@ if (args.Length != 5)
     Console.Error.WriteLine("           <scratch directory> <assets directory>");
     Console.Error.WriteLine("       Obsidian.AssetGenerator capture-worldgen <minecraft version> <cache directory>");
     Console.Error.WriteLine("           <scratch directory> <fixture directory>");
+    Console.Error.WriteLine("           [--sections <patterns>] [--cases <patterns>]");
     return 1;
 }
 
