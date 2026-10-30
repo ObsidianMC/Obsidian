@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
@@ -10,7 +9,6 @@ using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
 using System;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
@@ -46,24 +44,6 @@ public sealed class EnvironmentRules
               "error_message": { "text": "Too hot to sleep" }
             }
           }
-        }
-        """;
-
-    // A plugin's biome where beds explode, in a dimension where they work.
-    private const string BedlessBiome = """
-        {
-          "has_precipitation": false,
-          "temperature": 2,
-          "downfall": 0,
-          "attributes": {
-            "minecraft:gameplay/bed_rule": { "can_sleep": "never", "can_set_spawn": "never", "explodes": true },
-            "minecraft:gameplay/snow_golem_melts": true
-          },
-          "effects": { "water_color": "#3f76e4" },
-          "carvers": [],
-          "features": [],
-          "spawners": {},
-          "spawn_costs": {}
         }
         """;
 
@@ -130,49 +110,6 @@ public sealed class EnvironmentRules
         player.Inventory.SetItem(player.CurrentHeldItemSlot, null);
         Assert.True(await UseAnchorAsync(world, player, anchor));
         Assert.False(Block(world, anchor).Is(BlockIds.RespawnAnchor));
-    }
-
-    [Fact(DisplayName = "A plugin's biome's attributes apply where it is, over its dimension's",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task BiomeAttributesApplyWhereTheBiomeIs()
-    {
-        await using var context = TestServerFactory.CreateServer($"bed-biome-{Guid.NewGuid():N}");
-        var world = context.World;
-        AddGroundChunk(world);
-
-        PluginCodecs.Apply(
-            [
-                PluginCodecs.Parse(
-                    PluginCodecs.Biome,
-                    "gameplaytests:bedless",
-                    "test",
-                    Encoding.UTF8.GetBytes(BedlessBiome))
-            ],
-            NullLogger.Instance);
-
-        Assert.True(CodecRegistry.TryGetBiome("gameplaytests:bedless", out var bedless));
-        var player = await JoinAsync(context);
-
-        // In the overworld's plains, a bed works and snow golems don't melt.
-        var foot = new Vector(8, Ground + 1, 8);
-        var (footBlock, headBlock) = Bed();
-        world.GetLoadedChunk(0, 0)!.SetBlock(foot, footBlock);
-        world.GetLoadedChunk(0, 0)!.SetBlock(foot + new Vector(0, 0, -1), headBlock);
-
-        Assert.True(await world.UseBedAsync(player, foot, footBlock));
-        Assert.True(Block(world, foot).Is(BlockIds.RedBed));
-        Assert.False(world.Gameplay(LevelEnvironment.SnowGolemMelts, foot));
-
-        // Where the plugin's biome is, it explodes, and snow golems melt. The bed rule is read at the bed's head.
-        for (var y = Ground - 4; y < Ground + 8; y += 4)
-        {
-            world.GetLoadedChunk(0, 0)!.SetBiome(8, y, 4, bedless!);
-            world.GetLoadedChunk(0, 0)!.SetBiome(8, y, 8, bedless!);
-        }
-
-        Assert.True(world.Gameplay(LevelEnvironment.SnowGolemMelts, foot));
-        Assert.True(await world.UseBedAsync(player, foot, footBlock));
-        Assert.False(Block(world, foot).Is(BlockIds.RedBed));
     }
 
     // A red bed facing north: its foot, and its head to the north.

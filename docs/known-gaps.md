@@ -428,11 +428,11 @@ and plugin unload/reload.
 
 26.1 replaced `HoeItem.TILLABLES` (and the axe's and shovel's tables) with the data-driven `minecraft:block_transformer`
 item component: rule-based block state providers with tag and offset predicates, sounds, item damage and loot
-tables. The old dump can't be made from 26.3, so hoes no longer till; `ItemUseOnBehaviors` has no counterparts and
-the hoe test is skipped.
+tables. The old dump can't be made from 26.3, so hoes no longer till; `ItemUseOnBehaviors` has no counterparts. A
+Phase 6 vanilla capture will cover tilling instead of a hand-written test.
 
 **Where to start:** read vanilla's `data/minecraft/block_transformer` files (`hoe`, `axe`, `shovel`) and run them from
-the item's `block_transformer` component in `UseItemOnPacket`, then re-enable `Farmland.HoeTills`.
+the item's `block_transformer` component in `UseItemOnPacket`.
 
 ## Entity behavior beyond 26.3 metadata
 
@@ -493,7 +493,8 @@ Since 26.1 soul sand and magma no longer start bubble columns themselves. The wa
 `onPlace`, `neighborChanged` and `updateShape` (from below) schedule a 20-tick check when the block below is in
 `#enables_bubble_column_push_up` or `#enables_bubble_column_drag_down`, and its `tick` updates the column. Obsidian's
 soul sand and magma behaviors no longer bind to an owner, so new columns don't form; existing columns still tick. The
-five bubble column tests that start a column are skipped.
+two bubble column tests that start a column and send it to the client are skipped; a Phase 6 vanilla capture will
+cover the rest of the behavior.
 
 **Where to start:** give water the same hooks (Obsidian's fluid ticks handle water today, so keep its spreading path)
 and replace `SoulSandBlock` and `MagmaBlock` in `BlockOwnerBehaviors` with them, then re-enable the skipped tests in

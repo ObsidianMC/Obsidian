@@ -31,16 +31,6 @@ public class TripWireTests
         BlocksRegistry.Get("minecraft:tripwire_hook").WithProperty("facing", facing).WithProperty("attached", "false").WithProperty("powered", "false");
 
     [Fact]
-    public async Task HooksAttachWhenALineOfTripwireConnectsThem()
-    {
-        var world = await BuildLineAsync();
-
-        Assert.Equal("true", world.GetLoadedBlock(HookA)!.GetProperty("attached"));
-        Assert.Equal("true", world.GetLoadedBlock(HookB)!.GetProperty("attached"));
-        Assert.Equal("false", world.GetLoadedBlock(HookA)!.GetProperty("powered"));
-    }
-
-    [Fact]
     public async Task TouchingATripwirePowersTheLineAndTheHookSignalsItsSupport()
     {
         var world = await BuildLineAsync();

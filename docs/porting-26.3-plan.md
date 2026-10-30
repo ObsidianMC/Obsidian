@@ -393,6 +393,16 @@ throughput is no worse than on 1.21.x.
 7. **Hand-written tables.** Re-check those that mirror vanilla data: `BlockSoundPlayback`, `FluidRules`,
    `ShapeSupport`, `StructureBlockShapes`, placement rules, `EnvironmentAttributes`, `JukeboxSongsRegistry` and
    `BannerPatternsRegistry`. Where we can, generate them.
+8. **Gameplay scenario captures.** Hand-written gameplay-rule tests were removed (`AGENTS.md`'s testing rule), so
+   these rules need vanilla-captured scenarios, recorded and replayed like the redstone ones:
+   - bubble columns: creation, bucket placement, source replacement, direction and breathing;
+   - crops: growth draws, farmland hydration and tilling, and nether wart;
+   - fire: support, facing, spread and burning out;
+   - plants: stack collapse, bamboo placement and leaf distance;
+   - combat: damage and bypass formulas, wolf armor, golem repair and freezing;
+   - mob navigation: water, banks, terraces and doors, and species path costs and floating;
+   - bundles: capacity and nesting, and fishing enchantments;
+   - portal frames and exit placement, boat buoyancy and minecart motion.
 
 ### Phase 7: finishing and making `26.3.x` the main branch
 

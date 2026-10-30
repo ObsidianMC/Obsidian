@@ -18,9 +18,8 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Bone meal grows saplings into the trees vanilla's grow into, four dark oak saplings into one tree, and a plugin's
-/// sapling into the feature it names while the plugin is loaded. Growth doesn't race players' block writes, queued
-/// bone meal applies to the block each use finds, and random ticks only draw positions where vanilla's do.
+/// Bone meal grows a plugin's sapling into the feature it names while the plugin is loaded. Growth doesn't race players'
+/// block writes, and queued bone meal applies to the block each use finds.
 /// </summary>
 // Loading the probe plugin merges its tags into vanilla's, which PluginTagFiles changes too.
 [Collection(nameof(PluginTagFiles))]
@@ -36,58 +35,6 @@ public sealed class SaplingGrowth : IDisposable
     public SaplingGrowth() => Directory.CreateDirectory(this.folder);
 
     public void Dispose() => Directory.Delete(this.folder, recursive: true);
-
-    [Fact(DisplayName = "Bone meal grows saplings into vanilla's trees, and dark oaks only from four",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task BoneMealGrowsVanillaTrees()
-    {
-        await using var context = TestServerFactory.CreateServer($"saplings-{Guid.NewGuid():N}");
-        var world = context.World;
-        AddChunks(world, BlocksRegistry.GrassBlock);
-
-        var oak = new Vector(12, Ground + 1, 12);
-        world.GetLoadedChunk(0, 0)!.SetBlock(oak, BlocksRegistry.GetDefault(BlockIds.OakSapling));
-
-        await GrowAsync(world, oak);
-
-        // An oak (or, one time in ten, a fancy oak): logs from the sapling up, and leaves around them.
-        Assert.True(world.GetLoadedChunk(0, 0)!.GetBlock(oak).Is(BlockIds.OakLog));
-        Assert.True(world.GetLoadedChunk(0, 0)!.GetBlock(oak + Vector.Up).Is(BlockIds.OakLog));
-        Assert.True(CountAround(world, oak, BlockIds.OakLeaves) > 0);
-
-        // A dark oak sapling alone doesn't take bone meal's growth: it needs three more in a square.
-        var corner = new Vector(3, Ground + 1, 3);
-        var darkOak = BlocksRegistry.GetDefault(BlockIds.DarkOakSapling);
-        world.GetLoadedChunk(0, 0)!.SetBlock(corner, darkOak);
-
-        for (var use = 0; use < 8; use++)
-        {
-            Assert.True(world.UseBoneMeal(corner));
-            await world.DoWorldTickAsync();
-        }
-
-        Assert.True(world.GetLoadedChunk(0, 0)!.GetBlock(corner).Is(BlockIds.DarkOakSapling));
-
-        foreach (var offset in new[] { Vector.East, Vector.South, new Vector(1, 0, 1) })
-            world.GetLoadedChunk(0, 0)!.SetBlock(corner + offset, darkOak);
-
-        await GrowAsync(world, corner + new Vector(1, 0, 1));
-
-        foreach (var offset in new[] { Vector.Zero, Vector.East, Vector.South, new Vector(1, 0, 1) })
-            Assert.True(world.GetLoadedChunk(0, 0)!.GetBlock(corner + offset).Is(BlockIds.DarkOakLog));
-
-        // Bone meal on a grass block plants vanilla's grass_bonemeal around it, and ages a crop by two to five.
-        var grass = new Vector(8, Ground, -8);
-        Assert.True(world.UseBoneMeal(grass));
-        await world.DoWorldTickAsync();
-        Assert.True(CountAround(world, grass + Vector.Up, BlockIds.ShortGrass) > 0);
-
-        var wheat = new Vector(-8, Ground + 1, 8);
-        world.GetLoadedChunk(-1, 0)!.SetBlock(wheat, BlocksRegistry.GetDefault(BlockIds.Wheat));
-        Assert.True(world.UseBoneMeal(wheat));
-        await world.DoWorldTickAsync();
-        Assert.InRange(int.Parse(world.GetLoadedChunk(-1, 0)!.GetBlock(wheat).GetProperty("age")!), 2, 5);
-    }
 
     [Fact(DisplayName = "A plugin's sapling grows the feature it names until the plugin unloads",
         Timeout = TestServerFactory.TestTimeout)]
@@ -201,26 +148,6 @@ public sealed class SaplingGrowth : IDisposable
 
             await world.DoWorldTickAsync();
         }
-    }
-
-    private static int CountAround(WorldData.World world, Vector position, int block)
-    {
-        var count = 0;
-
-        for (var x = -3; x <= 3; x++)
-        {
-            for (var y = 0; y <= 8; y++)
-            {
-                for (var z = -3; z <= 3; z++)
-                {
-                    var at = position + new Vector(x, y, z);
-                    if (world.GetLoadedChunk(at.X >> 4, at.Z >> 4)!.GetBlock(at).Is(block))
-                        count++;
-                }
-            }
-        }
-
-        return count;
     }
 
     // Complete plains chunks around the origin, empty but for a layer of the ground block.

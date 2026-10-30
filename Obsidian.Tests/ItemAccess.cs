@@ -3,6 +3,7 @@ using Obsidian.API.BlockEntities;
 using Obsidian.API.Containers;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
+using Obsidian.Entities;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
@@ -233,6 +234,22 @@ public sealed class ItemAccess
             for (var chunkZ = -1; chunkZ <= 1; chunkZ++)
                 await world.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false);
         }
+    }
+
+    [Fact(DisplayName = "Throwables and eyes of ender are owned by their vanilla item classes; other items have no throw")]
+    public void ThrowOwnersAreGenerated()
+    {
+        Assert.Equal("net.minecraft.world.item.EggItem", ItemUseBehaviors.Owners["minecraft:egg"]);
+        Assert.Equal("net.minecraft.world.item.SnowballItem", ItemUseBehaviors.Owners["minecraft:snowball"]);
+        Assert.NotNull(ItemUseBehaviors.For(new ItemStack(ItemsRegistry.Egg, 1)));
+        Assert.NotNull(ItemUseBehaviors.For(new ItemStack(ItemsRegistry.Snowball, 1)));
+
+        Assert.NotNull(ItemUseBehaviors.For(new ItemStack(ItemsRegistry.EnderPearl, 1)));
+        Assert.NotNull(ItemUseBehaviors.For(new ItemStack(ItemsRegistry.EnderEye, 1)));
+        Assert.NotNull(ItemUseBehaviors.For(new ItemStack(ItemsRegistry.ExperienceBottle, 1)));
+
+        // Sticks aren't used by throwing at all.
+        Assert.Null(ItemUseBehaviors.For(new ItemStack(ItemsRegistry.Stick, 1)));
     }
 
     private static BaseContainer Inventory(World world, Vector position) =>

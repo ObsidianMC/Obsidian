@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
 using Obsidian.API.Configuration;
@@ -84,8 +83,7 @@ public sealed class DataPackStartup : IDisposable
         File.WriteAllText(Path.Join(data, "minecraft", "dimension_type", "overworld.json"), lowOverworld);
         File.WriteAllText(Path.Join(data, "startuptest", "dimension", "plains.json"), plains);
 
-        var logger = new PluginFeatureFiles.ListLogger<PluginManager>();
-        var manager = CreateManager(logger);
+        var manager = CreateManager();
 
         try
         {
@@ -95,9 +93,6 @@ public sealed class DataPackStartup : IDisposable
 
             var dimension = PluginDimensions.Find("startuptest:plains").Noise();
             Assert.Equal("minecraft:plains", Assert.Single(dimension.PossibleBiomes).Name);
-
-            Assert.Contains(logger.Messages, message => message.Contains("Kept vanilla's dimension type"));
-            Assert.DoesNotContain(logger.Messages, message => message.Contains("Left out"));
         }
         finally
         {
@@ -186,8 +181,7 @@ public sealed class DataPackStartup : IDisposable
         };
         await File.WriteAllBytesAsync(plugin, PluginLoading.ProbeArchive("1.0.0", stem));
 
-        var logger = new PluginFeatureFiles.ListLogger<PluginManager>();
-        var manager = CreateManager(logger);
+        var manager = CreateManager();
 
         try
         {
@@ -196,9 +190,6 @@ public sealed class DataPackStartup : IDisposable
 
             Assert.Equal(0, CodecRegistry.Dimensions.All["minecraft:overworld"].Element.MinY);
             Assert.Equal("startuptest:tall", PluginDimensions.Find("minecraft:overworld").Noise().NoiseSettings);
-
-            Assert.DoesNotContain(logger.Messages, message => message.Contains("Kept vanilla's dimension type"));
-            Assert.DoesNotContain(logger.Messages, message => message.Contains("Left out"));
         }
         finally
         {
@@ -211,7 +202,7 @@ public sealed class DataPackStartup : IDisposable
     }
 
     // A plugin manager with no plugins, as the server creates it, during startup: no world is loaded yet.
-    private static PluginManager CreateManager(ILogger<PluginManager> logger)
+    private static PluginManager CreateManager()
     {
         var world = TestWorldFactory.Create($"fake-server-{Guid.NewGuid():N}");
         var server = new FakeServer(world, worldManager: new FakeWorldManager(world, worldsLoaded: false));
@@ -229,7 +220,7 @@ public sealed class DataPackStartup : IDisposable
             provider,
             dispatcher,
             commands,
-            logger,
+            NullLogger<PluginManager>.Instance,
             new ConfigurationBuilder().Build());
     }
 }

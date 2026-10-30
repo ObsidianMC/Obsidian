@@ -8,28 +8,6 @@ namespace Obsidian.Tests;
 
 public sealed class ItemPickup
 {
-    // A player at (0, 64, 0) with a 0.6 by 1.8 box. On foot, vanilla's pickup area reaches 1.425 out horizontally
-    // (0.3 + 1 + the item's 0.125) and from 0.75 below the feet (0.5 + the item's height) to 0.5 above the head. Riding
-    // a
-    // 1.4 by 1.6 vehicle at (0, 63, 0), it reaches 1.825 out (0.7 + 1 + 0.125), down to the vehicle's feet less the
-    // item's height, and only up to the top of the player's head.
-    [Theory]
-    [InlineData(false, 1.42, 64, 0, true)]
-    [InlineData(false, 1.43, 64, 0, false)]
-    [InlineData(true, 1.82, 63, 0, true)]
-    [InlineData(true, 1.83, 63, 0, false)]
-    public void PickupAreaMatchesVanilla(bool riding, double x, double y, double z, bool expected)
-    {
-        var player = new BoundingBox(new VectorD(-0.3, 64, -0.3), new VectorD(0.3, 65.8, 0.3));
-        BoundingBox? vehicle = riding
-            ? new BoundingBox(new VectorD(-0.7, 63, -0.7), new VectorD(0.7, 64.6, 0.7))
-            : null;
-
-        var area = PlayerEntity.GetPickupArea(player, vehicle);
-
-        Assert.Equal(expected, PlayerEntity.IsInPickupArea(area, new VectorD(x, y, z)));
-    }
-
     [Fact]
     public void PickupTopsUpStacksThenFillsTheFirstEmptyHotbarSlot()
     {

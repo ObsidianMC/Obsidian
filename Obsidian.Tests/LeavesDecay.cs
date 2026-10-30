@@ -22,17 +22,6 @@ public sealed class LeavesDecay
 
     private static readonly Vector Leaf = new(8, Ground + 2, 8);
 
-    [Fact(DisplayName = "Leaves are owned by LeavesBlock for random ticks, ticks, shape updates and placement")]
-    public void OwnersAreGenerated()
-    {
-        var oak = BlocksRegistry.GetDefault(BlockIds.OakLeaves);
-        Assert.Same(RandomTickBehaviors.LeavesBlock, BlocksRegistry.GetRandomTickBehavior(BlockIds.OakLeaves));
-        Assert.Same(TickBehaviors.LeavesBlock, BlocksRegistry.GetTickBehavior(BlockIds.OakLeaves));
-        Assert.Same(ShapeUpdateBehaviors.LeavesBlock, BlocksRegistry.GetShapeUpdateBehavior(BlockIds.OakLeaves));
-        Assert.NotNull(PlacementBehaviors.For(oak));
-        Assert.Null(BlocksRegistry.GetRandomTickBehavior(BlockIds.OakLog));
-    }
-
     [Fact(DisplayName = "Leaves far from any log decay on a random tick, and persistent leaves stay",
         Timeout = TestServerFactory.TestTimeout)]
     public async Task DistantLeavesDecayAndPersistentLeavesStay()
@@ -47,29 +36,6 @@ public sealed class LeavesDecay
         await WaitForAirAsync(world, Leaf);
 
         Held(world).SetBlock(Leaf, Leaves(distance: 7, persistent: true));
-        RandomTickBehaviors.LeavesBlock.RandomTick(world, Leaf, Held(world).GetBlock(Leaf), random);
-        for (var tick = 0; tick < 5; tick++)
-            await world.DoWorldTickAsync();
-        Assert.Equal(BlockIds.OakLeaves, Held(world).GetBlock(Leaf).RegistryId);
-    }
-
-    [Fact(DisplayName = "Leaves next to a log take distance 1 on their tick and so don't decay",
-        Timeout = TestServerFactory.TestTimeout)]
-    public async Task LeavesNearLogsKeepTheirDistance()
-    {
-        await using var context = TestServerFactory.CreateServer($"leaves-log-{Guid.NewGuid():N}");
-        var world = context.World;
-        AddChunks(world);
-        var random = new LegacyRandomSource(1);
-
-        Held(world).SetBlock(Leaf + Vector.East, BlocksRegistry.GetDefault(BlockIds.OakLog));
-        Held(world).SetBlock(Leaf, Leaves(distance: 7, persistent: false));
-
-        // Vanilla's tick first: the distance comes from the neighbours, here 1 from the log. Then the random tick
-        // sees distance 1, not the 7 it was placed with, and draws nothing.
-        TickBehaviors.LeavesBlock.Tick(world.BlockUpdates, Leaf, Held(world).GetBlock(Leaf), random);
-        Assert.Equal("1", Held(world).GetBlock(Leaf).GetProperty("distance"));
-
         RandomTickBehaviors.LeavesBlock.RandomTick(world, Leaf, Held(world).GetBlock(Leaf), random);
         for (var tick = 0; tick < 5; tick++)
             await world.DoWorldTickAsync();

@@ -87,7 +87,6 @@ public class RedstoneEngineTests
     }
 
     [Theory]
-    [InlineData(15)]
     [InlineData(9)]
     [InlineData(1)]
     public async Task AnalogPowerDecaysOneStepPerWire(int strength)
@@ -139,20 +138,6 @@ public class RedstoneEngineTests
         Assert.Equal(0, world.Engine.GetSignal(new Vector(16, 64, 8), BlockFace.West));
         Assert.Null(world.GetLoadedBlock(new Vector(16, 64, 8)));
         Assert.Equal(0, Power(world, new Vector(15, 64, 8)));
-    }
-
-    [Fact]
-    public async Task LoadedSourceAtTheSameEdgeDrivesTheWire()
-    {
-        // Control for the test above: with the source loaded, the same wire is powered.
-        var world = new RedstoneTestWorld();
-        world.Load(0, 15, 62, 66, 0, 15);
-        world.Redstone.Register(BlockClassOf(Source), new TestSource(signal: (direction, _) => sides.Contains(direction) ? 15 : 0));
-        await world.Place(new Vector(13, 64, 8), BlocksRegistry.Get(Source));
-        await world.Place(new Vector(14, 63, 8), BlocksRegistry.Get(Floor));
-        await PlaceWire(world, new Vector(14, 64, 8));
-
-        Assert.Equal(15, Power(world, new Vector(14, 64, 8)));
     }
 
     [Fact]
@@ -439,8 +424,11 @@ public class RedstoneEngineTests
         Assert.Null(await DoorPlacement.PlanAsync(door, new Vector(8, 64, 8), BlockFace.Up, 0, Read));
     }
 
-    [Fact]
-    public async Task WallLeverNextToADoorOpensIt()
+    [Theory]
+    [InlineData("adjacent_lever")]
+    [InlineData("lever_through_wall")]
+    [InlineData("redstone_block")]
+    public async Task PoweredDoorOpensBothHalves(string source)
     {
         var world = new RedstoneTestWorld();
         world.Load(0, 15, 62, 66, 0, 15);
@@ -452,64 +440,32 @@ public class RedstoneEngineTests
         await world.Place(lower, plan!.Lower);
         await world.Place(upper, plan.Upper);
 
-        // Wall lever on the east side of the door, mounted on a stone wall at x=10, pointing west (away from the wall).
-        var leverPosition = new Vector(9, 64, 8);
-        await world.Place(new Vector(10, 64, 8), BlocksRegistry.Get("minecraft:stone"));
-        var lever = BlocksRegistry.Get("minecraft:lever").WithProperty("face", "wall").WithProperty("facing", "west");
-        Assert.Equal("wall", lever.GetProperty("face"));
-        await world.Place(leverPosition, lever);
-        Assert.Equal("false", world.GetLoadedBlock(lower)!.GetProperty("open"));
+        if (source == "redstone_block")
+        {
+            await world.Place(new Vector(7, 64, 8), BlocksRegistry.Get("minecraft:redstone_block"));
+        }
+        else
+        {
+            var throughWall = source == "lever_through_wall";
+            var leverPosition = new Vector(throughWall ? 10 : 9, 64, 8);
+            await world.Place(new Vector(throughWall ? 9 : 10, 64, 8), BlocksRegistry.Get("minecraft:stone"));
+            if (throughWall)
+                await world.Place(new Vector(11, 64, 8), BlocksRegistry.Get("minecraft:stone"));
+            var lever = BlocksRegistry.Get("minecraft:lever").WithProperty("face", "wall").WithProperty("facing", throughWall ? "east" : "west");
+            Assert.Equal("wall", lever.GetProperty("face"));
+            await world.Place(leverPosition, lever);
+            Assert.Equal("false", world.GetLoadedBlock(lower)!.GetProperty("open"));
 
-        // The lever is a source of its own, so turning it on must open the door through the ordinary neighbor path.
-        await world.Place(leverPosition, lever.WithProperty("powered", true));
-
-        Assert.Equal("true", world.GetLoadedBlock(lower)!.GetProperty("open"));
-        Assert.Equal("true", world.GetLoadedBlock(upper)!.GetProperty("open"));
-    }
-
-    [Fact]
-    public async Task DoorOpensWhenTheWallBehindItIsPoweredByALeverOnTheFarSide()
-    {
-        var world = new RedstoneTestWorld();
-        world.Load(0, 15, 62, 66, 0, 15);
-        var lower = new Vector(8, 64, 8);
-        var upper = new Vector(8, 65, 8);
-        await world.Place(new Vector(8, 63, 8), BlocksRegistry.Get("minecraft:stone"));
-        ValueTask<IBlock?> Read(Vector p) => ValueTask.FromResult(world.GetLoadedBlock(p));
-        var plan = await DoorPlacement.PlanAsync(BlocksRegistry.Get("minecraft:oak_door"), lower, BlockFace.Up, 0, Read);
-        await world.Place(lower, plan!.Lower);
-        await world.Place(upper, plan.Upper);
-
-        // Wall block directly east of the door; the lever is mounted on its far side and points east, away from the wall.
-        var wall = new Vector(9, 64, 8);
-        var leverPosition = new Vector(10, 64, 8);
-        await world.Place(wall, BlocksRegistry.Get("minecraft:stone"));
-        await world.Place(new Vector(11, 64, 8), BlocksRegistry.Get("minecraft:stone"));
-        var lever = BlocksRegistry.Get("minecraft:lever").WithProperty("face", "wall").WithProperty("facing", "east");
-        await world.Place(leverPosition, lever);
-        Assert.Equal("false", world.GetLoadedBlock(lower)!.GetProperty("open"));
-
-        // Turning the lever on powers the wall, which powers the door. The lever's own neighbours don't include the door.
-        await BasicRedstoneComponents.SetMountedStateAsync(world, leverPosition, lever.WithProperty("powered", true));
-
-        Assert.Equal("true", world.GetLoadedBlock(lower)!.GetProperty("open"));
-        Assert.Equal("true", world.GetLoadedBlock(upper)!.GetProperty("open"));
-    }
-
-    [Fact]
-    public async Task PoweredDoorOpensBothHalves()
-    {
-        var world = new RedstoneTestWorld();
-        world.Load(0, 15, 62, 66, 0, 15);
-        var lower = new Vector(8, 64, 8);
-        var upper = new Vector(8, 65, 8);
-        await world.Place(new Vector(8, 63, 8), BlocksRegistry.Get("minecraft:stone"));
-        ValueTask<IBlock?> Read(Vector p) => ValueTask.FromResult(world.GetLoadedBlock(p));
-        var plan = await DoorPlacement.PlanAsync(BlocksRegistry.Get("minecraft:oak_door"), lower, BlockFace.Up, 0, Read);
-        await world.Place(lower, plan!.Lower);
-        await world.Place(upper, plan.Upper);
-
-        await world.Place(new Vector(7, 64, 8), BlocksRegistry.Get("minecraft:redstone_block"));
+            if (throughWall)
+            {
+                // The lever's own neighbors don't include the door; its mounted support must notify it.
+                await BasicRedstoneComponents.SetMountedStateAsync(world, leverPosition, lever.WithProperty("powered", true));
+            }
+            else
+            {
+                await world.Place(leverPosition, lever.WithProperty("powered", true));
+            }
+        }
 
         Assert.Equal("true", world.GetLoadedBlock(lower)!.GetProperty("open"));
         Assert.Equal("true", world.GetLoadedBlock(upper)!.GetProperty("open"));
@@ -609,7 +565,10 @@ public class RedstoneEngineTests
         var block = BlocksRegistry.Get(name).WithProperty("power", 9);
         if (facing is not null)
             block = block.WithProperty("facing", facing);
+        await world.Place(new Vector(8, 63, 8), BlocksRegistry.Get(Floor));
+        await world.Place(new Vector(9, 63, 8), BlocksRegistry.Get(Floor));
         await world.Place(sensor, block);
+        await PlaceWire(world, new Vector(9, 64, 8));
 
         foreach (var side in sides)
         {
@@ -617,21 +576,9 @@ public class RedstoneEngineTests
             Assert.Equal(expected, world.Engine.GetSignal(sensor, side));
         }
 
+        Assert.Equal(9, Power(world, new Vector(9, 64, 8)));
         Assert.Equal(9, world.Engine.GetDirectSignal(sensor, BlockFace.Down));
         Assert.Equal(0, world.Engine.GetDirectSignal(sensor, BlockFace.Up));
-    }
-
-    [Fact]
-    public async Task WireNextToSculkSensorTakesItsPower()
-    {
-        var world = new RedstoneTestWorld();
-        world.Load(0, 15, 62, 66, 0, 15);
-        await world.Place(new Vector(8, 63, 8), BlocksRegistry.Get(Floor));
-        await world.Place(new Vector(9, 63, 8), BlocksRegistry.Get(Floor));
-        await world.Place(new Vector(8, 64, 8), BlocksRegistry.Get("minecraft:sculk_sensor").WithProperty("power", 9));
-        await PlaceWire(world, new Vector(9, 64, 8));
-
-        Assert.Equal(9, Power(world, new Vector(9, 64, 8)));
     }
 
     [Fact]

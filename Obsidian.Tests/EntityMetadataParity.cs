@@ -69,6 +69,31 @@ public class EntityMetadataParity
             Assert.True(checkedFields > 0, $"No payload checked for {entity.GetType().Name}.");
         }
 
+        // Populated values the defaults never write, matched against vanilla's samples: a negative (sitting) pose
+        // timer for LONG's -1, an owner for OPTIONAL_LIVING_ENTITY_REFERENCE's UUID and a nonzero INT variant for 300.
+        var owner = Guid.Parse("00112233-4455-6677-8899-aabbccddeeff");
+        (Entity Entity, byte Index)[] populated =
+        [
+            (new Camel { Level = null!, LastPoseChangeTick = -1 }, 20), (new Cat { Level = null!, Owner = owner }, 19),
+            (new Wolf { Level = null!, Owner = owner }, 19), (new Horse { Level = null!, Variant = 300 }, 19)
+        ];
+        foreach (var (entity, index) in populated)
+        {
+            using var writer = new MetadataWriter();
+            entity.Write(writer);
+            var serializer = Assert.Single(writer.Fields, field => field.Index == index).Serializer;
+            Assert.Equal(Convert.FromHexString(samples.GetProperty(((int)serializer).ToString()).GetString()!), writer.Value(index));
+        }
+
+        // The holder samples only select entry zero, so check that nonzero raw registry ids reach the wire as well.
+        using var cat = new MetadataWriter();
+        new Cat { Level = null!, Variant = 10 }.Write(cat);
+        Assert.Equal([10], cat.Value(20));
+        using var wolf = new MetadataWriter();
+        new Wolf { Level = null!, Variant = 8, SoundVariant = 6 }.Write(wolf);
+        Assert.Equal([8], wolf.Value(23));
+        Assert.Equal([6], wolf.Value(24));
+
         // Vanilla's default pig sound is classic: raw registry id one, after big at zero.
         using var defaultPig = new MetadataWriter();
         new Pig { Level = null! }.Write(defaultPig);

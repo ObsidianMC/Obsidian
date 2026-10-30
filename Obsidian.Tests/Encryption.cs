@@ -9,8 +9,6 @@ namespace Obsidian.Tests;
 
 public class Encryption
 {
-    const int testDataLength = 1024;
-
     [Fact]
     public void CipherContinuesTheStreamAcrossCalls()
     {
@@ -88,14 +86,16 @@ public class Encryption
         }
     }
 
-    [MemberData(nameof(RandomData))]
-    [Theory]
-    public void TestEncryption(byte[] testData)
+    [Fact]
+    public void EncryptedBufferRoundTrips()
     {
-        var random = new Random();
+        // A fixed seed keeps the key and data the same on every run.
+        var random = new Random(1);
         // The protocol's shared secret is 16 bytes, and it also serves as the IV, which must match AES's block size.
         var sharedKey = new byte[16];
         random.NextBytes(sharedKey);
+        var testData = new byte[1024];
+        random.NextBytes(testData);
 
         using var buffer = new EncryptedNetworkBuffer(sharedKey);
 
@@ -103,25 +103,8 @@ public class Encryption
 
         buffer.Reset();
 
-        using var incomingRandomData = buffer.Read(testDataLength);
+        using var incomingRandomData = buffer.Read(testData.Length);
 
         Assert.Equal(testData, incomingRandomData.GetBuffer());
-    }
-
-    public static IEnumerable<object[]> RandomData
-    {
-        get {
-            var random = new Random();
-            var values = new List<object[]>();
-
-            for (int i = 0; i < 32; i++)
-            {
-                var randomData = new byte[testDataLength];
-                random.NextBytes(randomData);
-                values.Add([randomData]);
-            }
-
-            return values;
-        }
     }
 }

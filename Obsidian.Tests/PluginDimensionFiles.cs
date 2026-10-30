@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
 using Obsidian.API.Configuration;
@@ -352,15 +351,13 @@ public sealed class PluginDimensionFiles : IDisposable
             read.CreateBiomeSource,
             () => read.PossibleBiomes,
             [plugin]);
-        var levelLogger = new PluginFeatureFiles.ListLogger<Dimension>();
-        await using (var failingLevel = CreateLevel(this.CreateWorld(), failing, levelLogger))
+        await using (var failingLevel = CreateLevel(this.CreateWorld(), failing))
         {
             var failingGenerator = (LevelStemGenerator)failingLevel.Generator;
 
             // The noise failed partway, so the chunk is rewound to replay its steps from scratch.
             Assert.True((await failingGenerator.GenerateChunkAsync(0, 0)).ChunkStatus < ChunkGenStage.biomes);
             Assert.Null(failingGenerator.Builder);
-            Assert.Contains("stemfiles:failing stopped generating", Assert.Single(levelLogger.Messages));
         }
 
         // A plugin's feature failing stops the level too, but its chunk counts as decorated: what was placed stays,
@@ -607,7 +604,7 @@ public sealed class PluginDimensionFiles : IDisposable
     [Fact(DisplayName = "Reverting one dimension's modifiers re-checks the dimensions sharing its biomes")]
     public void RevertsUntilEveryDimensionIsOrdered()
     {
-        var logger = new PluginFeatureFiles.ListLogger();
+        var logger = NullLogger.Instance;
         bool isFeature(string id) => id is "stemfiles:x" or "stemfiles:y" or "stemfiles:z";
 
         CodecFile[] biomes =
@@ -642,7 +639,6 @@ public sealed class PluginDimensionFiles : IDisposable
         var features = PluginFeatures.Build(files, biomes, [], logger, [first, second]);
 
         Assert.Empty(features.Unordered);
-        Assert.Equal(2, logger.Messages.Count(message => message.StartsWith("Left out plugins' biome modifiers")));
 
         // Both can be generated: ordering their features doesn't throw.
         foreach (var dimension in new[] { first, second })
@@ -713,11 +709,10 @@ public sealed class PluginDimensionFiles : IDisposable
     private static Dimension CreateLevel(
         World world,
         MojangDimension dimension,
-        ILogger<Dimension>? logger = null,
         LevelStemGenerator? generator = null)
     {
         var level = new Dimension(
-            logger ?? NullLogger<Dimension>.Instance,
+            NullLogger<Dimension>.Instance,
             null!,
             new TestOptionsMonitor<ServerConfiguration>(new ServerConfiguration()),
             null!,

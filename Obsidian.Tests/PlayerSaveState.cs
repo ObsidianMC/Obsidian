@@ -15,35 +15,25 @@ namespace Obsidian.Tests;
 
 public sealed class PlayerSaveState
 {
-    [Fact]
-    public async Task RiderComesBackInBoatWithAllSavedState()
+    [Theory]
+    [InlineData(nameof(Boat))]
+    [InlineData(nameof(Pig))]
+    public async Task RiderComesBackOnTheirVehicle(string kind)
     {
-        await using var context = TestServerFactory.CreateServer($"player-boat-{Guid.NewGuid():N}");
+        await using var context = TestServerFactory.CreateServer($"player-rider-{Guid.NewGuid():N}");
         var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Rider");
         await player.LoadAsync(loadFromPersistentWorld: false);
-        var boat = new Boat { Level = context.World, Position = new VectorD(4.5, 64, 4.5) };
-        context.World.SpawnEntity(boat);
-        Assert.True(player.StartRiding(boat));
+        var position = new VectorD(4.5, 64, 4.5);
+        Entity vehicle = kind == nameof(Boat)
+            ? new Boat { Level = context.World, Position = position }
+            : new Pig { Level = context.World, Position = position };
+        context.World.SpawnEntity(vehicle);
+        Assert.True(player.StartRiding(vehicle));
 
         var returning = await LeaveAndReturnAsync(context, player);
-        var restored = Assert.IsType<Boat>(returning.Vehicle);
-        Assert.Equal(boat.Uuid, restored.Uuid);
-        Assert.Same(returning, Assert.Single(restored.Passengers));
-    }
-
-    [Fact]
-    public async Task RiderComesBackOnMountWithAllSavedState()
-    {
-        await using var context = TestServerFactory.CreateServer($"player-mount-{Guid.NewGuid():N}");
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Jockey");
-        await player.LoadAsync(loadFromPersistentWorld: false);
-        var pig = new Pig { Level = context.World, Position = new VectorD(4.5, 64, 4.5) };
-        context.World.SpawnEntity(pig);
-        Assert.True(player.StartRiding(pig));
-
-        var returning = await LeaveAndReturnAsync(context, player);
-        var restored = Assert.IsType<Pig>(returning.Vehicle);
-        Assert.Equal(pig.Uuid, restored.Uuid);
+        var restored = returning.Vehicle!;
+        Assert.IsType(vehicle.GetType(), restored);
+        Assert.Equal(vehicle.Uuid, restored.Uuid);
         Assert.Same(returning, Assert.Single(restored.Passengers));
     }
 
@@ -105,30 +95,14 @@ public sealed class PlayerSaveState
         Assert.Equal(9, returning.Inventory.GetItem(20)?.Count);
         Assert.Equal(1, returning.Inventory.GetItem(5)?.Count);
         Assert.Equal(2, returning.EnderInventory.GetItem(3)?.Count);
+
+        // The join's player-info step sends the saved hotbar slot the client starts from.
+        await returning.SendPlayerInfoAsync();
+        var held = Assert.Single(Assert.IsType<TestClient>(returning.Client).SentPackets.OfType<SetHeldSlotPacket>());
+        Assert.Equal(4, held.Slot);
     }
 
     // Saves the player the way leaving does, takes their vehicle out of the world, then loads them as a joining player.
-    [Fact]
-    public async Task RejoinSendsTheSavedHeldSlotToTheClient()
-    {
-        await using var context = TestServerFactory.CreateServer($"held-slot-{Guid.NewGuid():N}");
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Holder");
-        await player.LoadAsync(loadFromPersistentWorld: false);
-        player.CurrentHeldItemSlot = 5;
-        await player.SaveAsync();
-
-        var client = new TestClient(context.Server);
-        var returning = new Obsidian.Entities.Player(player.Uuid, player.Username, client, context.World) { Server = context.Server };
-        await returning.LoadAsync(loadFromPersistentWorld: false);
-        Assert.Equal(41, returning.CurrentHeldItemSlot);
-
-        // The join's player-info step, which sends the selected hotbar slot the client starts from.
-        await returning.SendPlayerInfoAsync();
-
-        var held = Assert.Single(client.SentPackets.OfType<SetHeldSlotPacket>());
-        Assert.Equal(5, held.Slot);
-    }
-
     private static async Task<Obsidian.Entities.Player> LeaveAndReturnAsync(RealServerContext context, Obsidian.Entities.Player player)
     {
         await player.SaveAsync();

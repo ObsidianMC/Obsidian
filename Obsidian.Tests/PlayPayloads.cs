@@ -77,6 +77,24 @@ public sealed class PlayPayloads
                             OverrideLimiter = true, Position = new(-12.25, 64.5, 31.875), Offset = new(.25f, .5f, .75f),
                             Speed = new(1, 2, 3), ParticleCount = 301, Randomization = (ParticleRandomization)i
                         });
+
+                // The captures always set per-axis speeds and leave AlwaysShow off. Without Speed, MaxSpeed fills every
+                // axis, and AlwaysShow is the flag after OverrideLimiter.
+                var ink = new SimpleParticle(ParticleType.SquidInk);
+                using (var fallback = new NetworkBuffer())
+                using (var perAxis = new NetworkBuffer())
+                {
+                    new LevelParticlesPacket { Data = ink, AlwaysShow = true, Position = new(1, 62, 3), MaxSpeed = .5f, ParticleCount = 30 }
+                        .Serialize(fallback);
+                    new LevelParticlesPacket { Data = ink, AlwaysShow = true, Position = new(1, 62, 3), Speed = new(.5f), ParticleCount = 30 }
+                        .Serialize(perAxis);
+                    var wire = fallback.AsSpan(0, fallback.Size).ToArray();
+                    Assert.Equal(perAxis.AsSpan(0, perAxis.Size).ToArray(), wire);
+                    using var flags = new NetworkBuffer(wire);
+                    Assert.Equal((int)ParticleType.SquidInk, flags.ReadVarInt());
+                    Assert.False(flags.ReadBoolean());
+                    Assert.True(flags.ReadBoolean());
+                }
                 break;
             case "explode":
                 for (var i = 0; i < 2; i++)
