@@ -25,6 +25,8 @@ internal interface IOnPlaceBehavior
 /// </summary>
 internal static class OnPlaceBehaviors
 {
+    internal static IOnPlaceBehavior PotentSulfurBlock { get; } = new PotentSulfurBlockBehavior();
+
     internal static IOnPlaceBehavior SoulSandBlock { get; } = new SoulSandBlockBehavior();
 
     internal static IOnPlaceBehavior MagmaBlock { get; } = new MagmaBlockBehavior();
@@ -57,6 +59,8 @@ internal interface IShapeUpdateBehavior
 /// </summary>
 internal static class TickBehaviors
 {
+    internal static IScheduledTickBehavior SpeleothemBlock { get; } = new SulfurSpikeBehavior();
+
     internal static IScheduledTickBehavior FarmlandBlock { get; } = new FarmlandBlockBehavior();
 
     internal static IScheduledTickBehavior LeavesBlock { get; } = new LeavesBlockBehavior();
@@ -84,6 +88,10 @@ internal static class TickBehaviors
 /// </summary>
 internal static class ShapeUpdateBehaviors
 {
+    internal static IShapeUpdateBehavior SpeleothemBlock { get; } = new SulfurSpikeBehavior();
+
+    internal static IShapeUpdateBehavior PotentSulfurBlock { get; } = new PotentSulfurBlockBehavior();
+
     internal static IShapeUpdateBehavior FarmlandBlock { get; } = new FarmlandBlockBehavior();
 
     internal static IShapeUpdateBehavior LeavesBlock { get; } = new LeavesBlockBehavior();

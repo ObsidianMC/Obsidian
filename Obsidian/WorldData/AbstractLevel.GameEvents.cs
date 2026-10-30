@@ -7,7 +7,8 @@ namespace Obsidian.WorldData;
 internal enum MobGameEvent
 {
     Step, Land, Swim, ProjectileShoot, ProjectileLand, BlockPlace, BlockDestroy, BlockChange,
-    EntityDamage, EntityDie, EntityInteract, NoteBlockPlay, JukeboxPlay, JukeboxStop, SculkSensorClick
+    EntityDamage, EntityDie, EntityInteract, NoteBlockPlay, JukeboxPlay, JukeboxStop, SculkSensorClick,
+    BlockActivate, BlockDeactivate
 }
 
 internal readonly record struct MobVibration(
@@ -435,6 +436,8 @@ public abstract partial class AbstractLevel
         MobGameEvent.Land => 3,
         MobGameEvent.NoteBlockPlay => 10,
         MobGameEvent.BlockChange => 11,
+        MobGameEvent.BlockActivate => 10,
+        MobGameEvent.BlockDeactivate => 9,
         MobGameEvent.BlockDestroy or MobGameEvent.EntityDie => 12,
         MobGameEvent.BlockPlace => 13,
         MobGameEvent.EntityInteract => 6,

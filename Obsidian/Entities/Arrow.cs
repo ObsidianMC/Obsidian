@@ -413,6 +413,17 @@ public partial class Arrow : Entity
         {
             var (hitBlock, hitFace) = EnteredBlockFace(Position, Motion);
             await hitLevel.OnProjectileHitBlockAsync(hitBlock, Position, hitFace);
+            if (this.Type == EntityType.Trident
+                && hitLevel.BlockUpdates.GetBlock(hitBlock).Is(BlockIds.SulfurSpike))
+            {
+                var allowed = hitLevel.LevelData.GetBooleanRule("projectiles_can_break_blocks")
+                    && this.Owner is not IPlayer { GameMode: GameMode.Adventure or GameMode.Spectator }
+                    && (this.Owner is null or IPlayer || hitLevel.LevelData.GetBooleanRule("mob_griefing"));
+                if (WorldData.SulfurSpikeBehavior.BreaksFromTrident(this.Motion.Magnitude, allowed))
+                {
+                    hitLevel.DestroyBlock(hitBlock, dropItems: true, this.Owner);
+                }
+            }
         }
 
         embedded = true;

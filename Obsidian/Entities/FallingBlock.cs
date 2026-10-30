@@ -14,6 +14,8 @@ public sealed partial class FallingBlock : Entity
 
     public VectorD SpawnPosition { get; private set; }
 
+    internal float StalactiteDamage { get; set; }
+
     // Blocks per tick, negative is down.
     private double VelocityY;
 
@@ -61,6 +63,34 @@ public sealed partial class FallingBlock : Entity
     // block's item where it landed. Replacing a block doesn't break it, so nothing drops for the cell it takes.
     private async Task LandAsync(Vector loc)
     {
+        if (this.Block.Is(BlockIds.SulfurSpike))
+        {
+            if (this.StalactiteDamage > 0)
+            {
+                var damage = StalactiteImpactDamage(this.SpawnPosition.Y - this.Position.Y, this.StalactiteDamage);
+                if (damage > 0)
+                {
+                    foreach (var victim in this.Level.GetEntitiesInRange(this.Position, 3).OfType<Living>())
+                    {
+                        if (MobTerrain.Overlaps(this.BoundingBox, victim.BoundingBox))
+                        {
+                            await victim.DamageCombatAsync(this, damage, CombatDamageKind.FallingStalactite);
+                        }
+                    }
+                }
+            }
+
+            if (BlocksRegistry.TryGetItem(this.Block, out var spikeItem))
+            {
+                this.Level.SpawnItem(this.Position, new ItemStack(spikeItem));
+            }
+
+            this.PacketBroadcaster.BroadcastToLevelInRange(this.Level, this.Position,
+                new Net.Packets.Play.Clientbound.LevelEventPacket(1052, loc, 0));
+            await this.Level.DestroyEntityAsync(this);
+            return;
+        }
+
         var target = await Level.GetBlockAsync(loc);
         if (target is null || target.CanBeReplaced())
         {
@@ -80,5 +110,12 @@ public sealed partial class FallingBlock : Entity
         }
 
         await Level.DestroyEntityAsync(this);
+    }
+
+    internal static float StalactiteImpactDamage(double distance, float size)
+    {
+        // Vanilla's falling stalactite rounds distance up after its one-block grace, then caps damage at 40.
+        var damagingDistance = (int)Math.Ceiling(distance - 1);
+        return damagingDistance > 0 ? Math.Min(40, MathF.Floor(damagingDistance * size)) : 0;
     }
 }

@@ -1,0 +1,4723 @@
+{
+  "version": "26.3",
+  "cases": [
+    {
+      "name": "growth_length_1_seed_5120",
+      "kind": "growth",
+      "origin": [
+        0,
+        75,
+        0
+      ],
+      "seed": 5120,
+      "setup": [
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            70,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down,thickness=tip]"
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=false]"
+        }
+      ],
+      "nextRandom": 1718635699
+    },
+    {
+      "name": "growth_length_1_seed_5121",
+      "kind": "growth",
+      "origin": [
+        0,
+        75,
+        0
+      ],
+      "seed": 5121,
+      "setup": [
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            70,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down,thickness=tip]"
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "nextRandom": -1848143960
+    },
+    {
+      "name": "growth_length_1_seed_1",
+      "kind": "growth",
+      "origin": [
+        0,
+        75,
+        0
+      ],
+      "seed": 1,
+      "setup": [
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            70,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down,thickness=tip]"
+        }
+      ],
+      "writes": [],
+      "nextRandom": 431529176
+    },
+    {
+      "name": "growth_length_2_seed_5120",
+      "kind": "growth",
+      "origin": [
+        0,
+        75,
+        0
+      ],
+      "seed": 5120,
+      "setup": [
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            70,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down,thickness=frustum]"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down,thickness=tip]"
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=false]"
+        }
+      ],
+      "nextRandom": 1718635699
+    },
+    {
+      "name": "growth_length_2_seed_5121",
+      "kind": "growth",
+      "origin": [
+        0,
+        75,
+        0
+      ],
+      "seed": 5121,
+      "setup": [
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            70,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down,thickness=frustum]"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down,thickness=tip]"
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "nextRandom": -1848143960
+    },
+    {
+      "name": "growth_length_2_seed_1",
+      "kind": "growth",
+      "origin": [
+        0,
+        75,
+        0
+      ],
+      "seed": 1,
+      "setup": [
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            70,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down,thickness=frustum]"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down,thickness=tip]"
+        }
+      ],
+      "writes": [],
+      "nextRandom": 431529176
+    },
+    {
+      "name": "growth_length_3_seed_5120",
+      "kind": "growth",
+      "origin": [
+        0,
+        75,
+        0
+      ],
+      "seed": 5120,
+      "setup": [
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            70,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down,thickness=frustum]"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down,thickness=frustum]"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down,thickness=tip]"
+        }
+      ],
+      "writes": [],
+      "nextRandom": 1565381045
+    },
+    {
+      "name": "growth_length_3_seed_5121",
+      "kind": "growth",
+      "origin": [
+        0,
+        75,
+        0
+      ],
+      "seed": 5121,
+      "setup": [
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            70,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down,thickness=frustum]"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down,thickness=frustum]"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down,thickness=tip]"
+        }
+      ],
+      "writes": [],
+      "nextRandom": -1574101675
+    },
+    {
+      "name": "growth_length_3_seed_1",
+      "kind": "growth",
+      "origin": [
+        0,
+        75,
+        0
+      ],
+      "seed": 1,
+      "setup": [
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            70,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down,thickness=frustum]"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down,thickness=frustum]"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down,thickness=tip]"
+        }
+      ],
+      "writes": [],
+      "nextRandom": 431529176
+    },
+    {
+      "name": "growth_target_water_0",
+      "kind": "growth",
+      "origin": [
+        0,
+        75,
+        0
+      ],
+      "seed": 5120,
+      "setup": [
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down]"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        }
+      ],
+      "writes": [],
+      "nextRandom": 1565381045
+    },
+    {
+      "name": "growth_target_water_1",
+      "kind": "growth",
+      "origin": [
+        0,
+        75,
+        0
+      ],
+      "seed": 5121,
+      "setup": [
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down]"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        }
+      ],
+      "writes": [],
+      "nextRandom": -1574101675
+    },
+    {
+      "name": "growth_target_lava_0",
+      "kind": "growth",
+      "origin": [
+        0,
+        75,
+        0
+      ],
+      "seed": 5120,
+      "setup": [
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down]"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:lava"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        }
+      ],
+      "writes": [],
+      "nextRandom": 1565381045
+    },
+    {
+      "name": "growth_target_lava_1",
+      "kind": "growth",
+      "origin": [
+        0,
+        75,
+        0
+      ],
+      "seed": 5121,
+      "setup": [
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down]"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:lava"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        }
+      ],
+      "writes": [],
+      "nextRandom": -1574101675
+    },
+    {
+      "name": "growth_target_sulfur_spike_0",
+      "kind": "growth",
+      "origin": [
+        0,
+        75,
+        0
+      ],
+      "seed": 5120,
+      "setup": [
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down]"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=up]"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[thickness=tip_merge,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[thickness=tip_merge,vertical_direction=up,waterlogged=false]"
+        }
+      ],
+      "nextRandom": 1718635699
+    },
+    {
+      "name": "growth_target_sulfur_spike_1",
+      "kind": "growth",
+      "origin": [
+        0,
+        75,
+        0
+      ],
+      "seed": 5121,
+      "setup": [
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down]"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=up]"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[thickness=tip_merge,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[thickness=tip_merge,vertical_direction=up,waterlogged=false]"
+        }
+      ],
+      "nextRandom": -1848143960
+    },
+    {
+      "name": "growth_target_stone_0",
+      "kind": "growth",
+      "origin": [
+        0,
+        75,
+        0
+      ],
+      "seed": 5120,
+      "setup": [
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down]"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        }
+      ],
+      "writes": [],
+      "nextRandom": 1565381045
+    },
+    {
+      "name": "growth_target_stone_1",
+      "kind": "growth",
+      "origin": [
+        0,
+        75,
+        0
+      ],
+      "seed": 5121,
+      "setup": [
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down]"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        }
+      ],
+      "writes": [],
+      "nextRandom": -1574101675
+    },
+    {
+      "name": "gas_depth_1_air",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          74.5,
+          0.5
+        ],
+        [
+          2.5,
+          74.5,
+          0.5
+        ],
+        [
+          3.5,
+          74.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": [
+        0,
+        74,
+        0
+      ],
+      "forceHeight": 6,
+      "reaches": [
+        true,
+        false,
+        false,
+        false
+      ],
+      "launchedMotionY": 0.20000000298023224,
+      "remainingFallDistance": 1.0,
+      "clampedFallDistance": 1.0,
+      "nauseaDuration": 0
+    },
+    {
+      "name": "gas_depth_1_stone",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          74.5,
+          0.5
+        ],
+        [
+          2.5,
+          74.5,
+          0.5
+        ],
+        [
+          3.5,
+          74.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": null
+    },
+    {
+      "name": "gas_depth_1_oak_slab",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:oak_slab[type=bottom,waterlogged=true]"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          74.5,
+          0.5
+        ],
+        [
+          2.5,
+          74.5,
+          0.5
+        ],
+        [
+          3.5,
+          74.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": null
+    },
+    {
+      "name": "gas_depth_1_seagrass",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:seagrass"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          74.5,
+          0.5
+        ],
+        [
+          2.5,
+          74.5,
+          0.5
+        ],
+        [
+          3.5,
+          74.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": [
+        0,
+        74,
+        0
+      ],
+      "forceHeight": 6,
+      "reaches": [
+        true,
+        false,
+        false,
+        false
+      ],
+      "launchedMotionY": 0.20000000298023224,
+      "remainingFallDistance": 1.0,
+      "clampedFallDistance": 1.0,
+      "nauseaDuration": 0
+    },
+    {
+      "name": "gas_depth_1_snow",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:snow[layers=1]"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          74.5,
+          0.5
+        ],
+        [
+          2.5,
+          74.5,
+          0.5
+        ],
+        [
+          3.5,
+          74.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": [
+        0,
+        73,
+        0
+      ],
+      "forceHeight": 0,
+      "reaches": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "launchedMotionY": 0.0,
+      "remainingFallDistance": 10.0,
+      "clampedFallDistance": 1.0,
+      "nauseaDuration": 0
+    },
+    {
+      "name": "gas_depth_2_air",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          75.5,
+          0.5
+        ],
+        [
+          2.5,
+          75.5,
+          0.5
+        ],
+        [
+          3.5,
+          75.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": [
+        0,
+        75,
+        0
+      ],
+      "forceHeight": 12,
+      "reaches": [
+        true,
+        false,
+        false,
+        false
+      ],
+      "launchedMotionY": 0.20000000298023224,
+      "remainingFallDistance": 1.0,
+      "clampedFallDistance": 1.0,
+      "nauseaDuration": 80,
+      "ambient": true,
+      "particles": true
+    },
+    {
+      "name": "gas_depth_2_stone",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          75.5,
+          0.5
+        ],
+        [
+          2.5,
+          75.5,
+          0.5
+        ],
+        [
+          3.5,
+          75.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": null
+    },
+    {
+      "name": "gas_depth_2_oak_slab",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:oak_slab[type=bottom,waterlogged=true]"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          75.5,
+          0.5
+        ],
+        [
+          2.5,
+          75.5,
+          0.5
+        ],
+        [
+          3.5,
+          75.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": null
+    },
+    {
+      "name": "gas_depth_2_seagrass",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:seagrass"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          75.5,
+          0.5
+        ],
+        [
+          2.5,
+          75.5,
+          0.5
+        ],
+        [
+          3.5,
+          75.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": [
+        0,
+        75,
+        0
+      ],
+      "forceHeight": 12,
+      "reaches": [
+        true,
+        false,
+        false,
+        false
+      ],
+      "launchedMotionY": 0.20000000298023224,
+      "remainingFallDistance": 1.0,
+      "clampedFallDistance": 1.0,
+      "nauseaDuration": 80,
+      "ambient": true,
+      "particles": true
+    },
+    {
+      "name": "gas_depth_2_snow",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:snow[layers=1]"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          75.5,
+          0.5
+        ],
+        [
+          2.5,
+          75.5,
+          0.5
+        ],
+        [
+          3.5,
+          75.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": [
+        0,
+        73,
+        0
+      ],
+      "forceHeight": 0,
+      "reaches": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "launchedMotionY": 0.0,
+      "remainingFallDistance": 10.0,
+      "clampedFallDistance": 1.0,
+      "nauseaDuration": 0
+    },
+    {
+      "name": "gas_depth_4_air",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          77.5,
+          0.5
+        ],
+        [
+          2.5,
+          77.5,
+          0.5
+        ],
+        [
+          3.5,
+          77.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": [
+        0,
+        77,
+        0
+      ],
+      "forceHeight": 24,
+      "reaches": [
+        true,
+        false,
+        false,
+        false
+      ],
+      "launchedMotionY": 0.20000000298023224,
+      "remainingFallDistance": 1.0,
+      "clampedFallDistance": 1.0,
+      "nauseaDuration": 0
+    },
+    {
+      "name": "gas_depth_4_stone",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          77.5,
+          0.5
+        ],
+        [
+          2.5,
+          77.5,
+          0.5
+        ],
+        [
+          3.5,
+          77.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": null
+    },
+    {
+      "name": "gas_depth_4_oak_slab",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:oak_slab[type=bottom,waterlogged=true]"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          77.5,
+          0.5
+        ],
+        [
+          2.5,
+          77.5,
+          0.5
+        ],
+        [
+          3.5,
+          77.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": null
+    },
+    {
+      "name": "gas_depth_4_seagrass",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:seagrass"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          77.5,
+          0.5
+        ],
+        [
+          2.5,
+          77.5,
+          0.5
+        ],
+        [
+          3.5,
+          77.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": [
+        0,
+        77,
+        0
+      ],
+      "forceHeight": 24,
+      "reaches": [
+        true,
+        false,
+        false,
+        false
+      ],
+      "launchedMotionY": 0.20000000298023224,
+      "remainingFallDistance": 1.0,
+      "clampedFallDistance": 1.0,
+      "nauseaDuration": 0
+    },
+    {
+      "name": "gas_depth_4_snow",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:snow[layers=1]"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          77.5,
+          0.5
+        ],
+        [
+          2.5,
+          77.5,
+          0.5
+        ],
+        [
+          3.5,
+          77.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": [
+        0,
+        73,
+        0
+      ],
+      "forceHeight": 0,
+      "reaches": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "launchedMotionY": 0.0,
+      "remainingFallDistance": 10.0,
+      "clampedFallDistance": 1.0,
+      "nauseaDuration": 0
+    },
+    {
+      "name": "gas_depth_5_air",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            77,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          78.5,
+          0.5
+        ],
+        [
+          2.5,
+          78.5,
+          0.5
+        ],
+        [
+          3.5,
+          78.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": null
+    },
+    {
+      "name": "gas_depth_5_stone",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            77,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          78.5,
+          0.5
+        ],
+        [
+          2.5,
+          78.5,
+          0.5
+        ],
+        [
+          3.5,
+          78.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": null
+    },
+    {
+      "name": "gas_depth_5_oak_slab",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            77,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:oak_slab[type=bottom,waterlogged=true]"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          78.5,
+          0.5
+        ],
+        [
+          2.5,
+          78.5,
+          0.5
+        ],
+        [
+          3.5,
+          78.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": null
+    },
+    {
+      "name": "gas_depth_5_seagrass",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            77,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:seagrass"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          78.5,
+          0.5
+        ],
+        [
+          2.5,
+          78.5,
+          0.5
+        ],
+        [
+          3.5,
+          78.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": null
+    },
+    {
+      "name": "gas_depth_5_snow",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            77,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:snow[layers=1]"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          78.5,
+          0.5
+        ],
+        [
+          2.5,
+          78.5,
+          0.5
+        ],
+        [
+          3.5,
+          78.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": [
+        0,
+        73,
+        0
+      ],
+      "forceHeight": 0,
+      "reaches": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "launchedMotionY": 0.0,
+      "remainingFallDistance": 10.0,
+      "clampedFallDistance": 1.0,
+      "nauseaDuration": 0
+    },
+    {
+      "name": "launch_y_73_motion_0.39",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "eyes": [],
+      "entity": {
+        "pos": [
+          0.5,
+          73,
+          0.5
+        ],
+        "motionY": 0.39
+      },
+      "source": [
+        0,
+        74,
+        0
+      ],
+      "forceHeight": 6,
+      "reaches": [],
+      "launchedMotionY": 0.5900000029802323,
+      "remainingFallDistance": 1.0,
+      "clampedFallDistance": 1.0,
+      "nauseaDuration": 80,
+      "ambient": true,
+      "particles": true
+    },
+    {
+      "name": "launch_y_73_motion_0.4",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "eyes": [],
+      "entity": {
+        "pos": [
+          0.5,
+          73,
+          0.5
+        ],
+        "motionY": 0.4
+      },
+      "source": [
+        0,
+        74,
+        0
+      ],
+      "forceHeight": 6,
+      "reaches": [],
+      "launchedMotionY": 0.6000000029802323,
+      "remainingFallDistance": 1.0,
+      "clampedFallDistance": 1.0,
+      "nauseaDuration": 80,
+      "ambient": true,
+      "particles": true
+    },
+    {
+      "name": "launch_y_73_motion_0.5",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "eyes": [],
+      "entity": {
+        "pos": [
+          0.5,
+          73,
+          0.5
+        ],
+        "motionY": 0.5
+      },
+      "source": [
+        0,
+        74,
+        0
+      ],
+      "forceHeight": 6,
+      "reaches": [],
+      "launchedMotionY": 0.5,
+      "remainingFallDistance": 1.0,
+      "clampedFallDistance": 1.0,
+      "nauseaDuration": 80,
+      "ambient": true,
+      "particles": true
+    },
+    {
+      "name": "launch_y_78_motion_0",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "eyes": [],
+      "entity": {
+        "pos": [
+          0.5,
+          78,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": [
+        0,
+        74,
+        0
+      ],
+      "forceHeight": 6,
+      "reaches": [],
+      "launchedMotionY": 0.20000000298023224,
+      "remainingFallDistance": 1.0,
+      "clampedFallDistance": 1.0,
+      "nauseaDuration": 0
+    },
+    {
+      "name": "launch_y_79_motion_0",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "eyes": [],
+      "entity": {
+        "pos": [
+          0.5,
+          79,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": [
+        0,
+        74,
+        0
+      ],
+      "forceHeight": 6,
+      "reaches": [],
+      "launchedMotionY": 0.0,
+      "remainingFallDistance": 10.0,
+      "clampedFallDistance": 1.0,
+      "nauseaDuration": 0
+    },
+    {
+      "name": "launch_y_74_motion_-1",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "eyes": [],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": -1
+      },
+      "source": [
+        0,
+        74,
+        0
+      ],
+      "forceHeight": 6,
+      "reaches": [],
+      "launchedMotionY": -0.7999999970197678,
+      "remainingFallDistance": 10.0,
+      "clampedFallDistance": 10.0,
+      "nauseaDuration": 0
+    },
+    {
+      "name": "gas_collision_powder_snow",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:powder_snow"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          74.5,
+          0.5
+        ],
+        [
+          2.5,
+          74.5,
+          0.5
+        ],
+        [
+          3.5,
+          74.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": [
+        0,
+        73,
+        0
+      ],
+      "forceHeight": 0,
+      "reaches": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "launchedMotionY": 0.0,
+      "remainingFallDistance": 10.0,
+      "clampedFallDistance": 1.0,
+      "nauseaDuration": 0
+    },
+    {
+      "name": "gas_collision_scaffolding",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:scaffolding"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          74.5,
+          0.5
+        ],
+        [
+          2.5,
+          74.5,
+          0.5
+        ],
+        [
+          3.5,
+          74.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": [
+        0,
+        73,
+        0
+      ],
+      "forceHeight": 0,
+      "reaches": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "launchedMotionY": 0.0,
+      "remainingFallDistance": 10.0,
+      "clampedFallDistance": 1.0,
+      "nauseaDuration": 0
+    },
+    {
+      "name": "gas_collision_lily_pad",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:lily_pad"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          74.5,
+          0.5
+        ],
+        [
+          2.5,
+          74.5,
+          0.5
+        ],
+        [
+          3.5,
+          74.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": null
+    },
+    {
+      "name": "gas_collision_oak_trapdoor",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:oak_trapdoor[open=true,waterlogged=true]"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          74.5,
+          0.5
+        ],
+        [
+          2.5,
+          74.5,
+          0.5
+        ],
+        [
+          3.5,
+          74.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": null
+    },
+    {
+      "name": "gas_collision_sculk_vein",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:sculk_vein[waterlogged=true,down=true]"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          74.5,
+          0.5
+        ],
+        [
+          2.5,
+          74.5,
+          0.5
+        ],
+        [
+          3.5,
+          74.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          0.5,
+          74,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": [
+        0,
+        74,
+        0
+      ],
+      "forceHeight": 6,
+      "reaches": [
+        true,
+        false,
+        false,
+        false
+      ],
+      "launchedMotionY": 0.20000000298023224,
+      "remainingFallDistance": 1.0,
+      "clampedFallDistance": 1.0,
+      "nauseaDuration": 0
+    },
+    {
+      "name": "gas_water_line_clear",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            1,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            2,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          74.5,
+          0.5
+        ],
+        [
+          2.5,
+          74.5,
+          0.5
+        ],
+        [
+          3.5,
+          74.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          2.5,
+          72.6,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": [
+        0,
+        74,
+        0
+      ],
+      "forceHeight": 6,
+      "reaches": [
+        true,
+        true,
+        false,
+        false
+      ],
+      "launchedMotionY": 0.0,
+      "remainingFallDistance": 10.0,
+      "clampedFallDistance": 1.0,
+      "nauseaDuration": 80,
+      "ambient": true,
+      "particles": true
+    },
+    {
+      "name": "gas_water_line_blocked",
+      "kind": "gas",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            1,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            2,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            1,
+            73,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "eyes": [
+        [
+          0.5,
+          74.5,
+          0.5
+        ],
+        [
+          2.5,
+          74.5,
+          0.5
+        ],
+        [
+          3.5,
+          74.5,
+          0.5
+        ],
+        [
+          0.5,
+          72.5,
+          0.5
+        ]
+      ],
+      "entity": {
+        "pos": [
+          2.5,
+          72.6,
+          0.5
+        ],
+        "motionY": 0
+      },
+      "source": [
+        0,
+        74,
+        0
+      ],
+      "forceHeight": 6,
+      "reaches": [
+        true,
+        false,
+        false,
+        false
+      ],
+      "launchedMotionY": 0.0,
+      "remainingFallDistance": 10.0,
+      "clampedFallDistance": 1.0,
+      "nauseaDuration": 0
+    },
+    {
+      "name": "growth_submerged_true",
+      "kind": "growth",
+      "origin": [
+        0,
+        75,
+        0
+      ],
+      "seed": 5121,
+      "setup": [
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            70,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down,waterlogged=true]"
+        }
+      ],
+      "writes": [],
+      "nextRandom": -1574101675
+    },
+    {
+      "name": "growth_submerged_false",
+      "kind": "growth",
+      "origin": [
+        0,
+        75,
+        0
+      ],
+      "seed": 5121,
+      "setup": [
+        {
+          "pos": [
+            0,
+            76,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            70,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            75,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "nextRandom": -1848143960
+    },
+    {
+      "name": "falling_damage_size_6_distance_0",
+      "kind": "impact",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "size": 6,
+      "distance": 0,
+      "damage": 0.0
+    },
+    {
+      "name": "falling_damage_size_6_distance_1",
+      "kind": "impact",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "size": 6,
+      "distance": 1,
+      "damage": 0.0
+    },
+    {
+      "name": "falling_damage_size_6_distance_1.1",
+      "kind": "impact",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "size": 6,
+      "distance": 1.1,
+      "damage": 6.0
+    },
+    {
+      "name": "falling_damage_size_6_distance_2",
+      "kind": "impact",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "size": 6,
+      "distance": 2,
+      "damage": 6.0
+    },
+    {
+      "name": "falling_damage_size_6_distance_3",
+      "kind": "impact",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "size": 6,
+      "distance": 3,
+      "damage": 12.0
+    },
+    {
+      "name": "falling_damage_size_6_distance_8",
+      "kind": "impact",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "size": 6,
+      "distance": 8,
+      "damage": 40.0
+    },
+    {
+      "name": "falling_damage_size_6_distance_20",
+      "kind": "impact",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "size": 6,
+      "distance": 20,
+      "damage": 40.0
+    },
+    {
+      "name": "falling_damage_size_11_distance_0",
+      "kind": "impact",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "size": 11,
+      "distance": 0,
+      "damage": 0.0
+    },
+    {
+      "name": "falling_damage_size_11_distance_1",
+      "kind": "impact",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "size": 11,
+      "distance": 1,
+      "damage": 0.0
+    },
+    {
+      "name": "falling_damage_size_11_distance_1.1",
+      "kind": "impact",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "size": 11,
+      "distance": 1.1,
+      "damage": 11.0
+    },
+    {
+      "name": "falling_damage_size_11_distance_2",
+      "kind": "impact",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "size": 11,
+      "distance": 2,
+      "damage": 11.0
+    },
+    {
+      "name": "falling_damage_size_11_distance_3",
+      "kind": "impact",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "size": 11,
+      "distance": 3,
+      "damage": 22.0
+    },
+    {
+      "name": "falling_damage_size_11_distance_8",
+      "kind": "impact",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "size": 11,
+      "distance": 8,
+      "damage": 40.0
+    },
+    {
+      "name": "falling_damage_size_11_distance_20",
+      "kind": "impact",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "size": 11,
+      "distance": 20,
+      "damage": 40.0
+    },
+    {
+      "name": "trident_speed_0_allowed_False",
+      "kind": "projectile",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "speed": 0,
+      "allowed": false,
+      "broken": false
+    },
+    {
+      "name": "trident_speed_0_allowed_True",
+      "kind": "projectile",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "speed": 0,
+      "allowed": true,
+      "broken": false
+    },
+    {
+      "name": "trident_speed_0.59_allowed_False",
+      "kind": "projectile",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "speed": 0.59,
+      "allowed": false,
+      "broken": false
+    },
+    {
+      "name": "trident_speed_0.59_allowed_True",
+      "kind": "projectile",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "speed": 0.59,
+      "allowed": true,
+      "broken": false
+    },
+    {
+      "name": "trident_speed_0.6_allowed_False",
+      "kind": "projectile",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "speed": 0.6,
+      "allowed": false,
+      "broken": false
+    },
+    {
+      "name": "trident_speed_0.6_allowed_True",
+      "kind": "projectile",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "speed": 0.6,
+      "allowed": true,
+      "broken": false
+    },
+    {
+      "name": "trident_speed_0.6000001_allowed_False",
+      "kind": "projectile",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "speed": 0.6000001,
+      "allowed": false,
+      "broken": false
+    },
+    {
+      "name": "trident_speed_0.6000001_allowed_True",
+      "kind": "projectile",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "speed": 0.6000001,
+      "allowed": true,
+      "broken": true
+    },
+    {
+      "name": "trident_speed_1_allowed_False",
+      "kind": "projectile",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "speed": 1,
+      "allowed": false,
+      "broken": false
+    },
+    {
+      "name": "trident_speed_1_allowed_True",
+      "kind": "projectile",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "speed": 1,
+      "allowed": true,
+      "broken": true
+    },
+    {
+      "name": "trident_speed_3_allowed_False",
+      "kind": "projectile",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "speed": 3,
+      "allowed": false,
+      "broken": false
+    },
+    {
+      "name": "trident_speed_3_allowed_True",
+      "kind": "projectile",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "speed": 3,
+      "allowed": true,
+      "broken": true
+    },
+    {
+      "name": "spike_placement_up_floor",
+      "kind": "placement",
+      "block": "minecraft:sulfur_spike",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        }
+      ],
+      "look": "up",
+      "face": "up",
+      "secondary": false,
+      "placed": "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=false]"
+    },
+    {
+      "name": "spike_placement_up_ceiling",
+      "kind": "placement",
+      "block": "minecraft:sulfur_spike",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        }
+      ],
+      "look": "up",
+      "face": "up",
+      "secondary": false,
+      "placed": "minecraft:sulfur_spike[thickness=tip,vertical_direction=down,waterlogged=false]"
+    },
+    {
+      "name": "spike_placement_up_none",
+      "kind": "placement",
+      "block": "minecraft:sulfur_spike",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "look": "up",
+      "face": "up",
+      "secondary": false,
+      "placed": null
+    },
+    {
+      "name": "spike_placement_up_both",
+      "kind": "placement",
+      "block": "minecraft:sulfur_spike",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        }
+      ],
+      "look": "up",
+      "face": "up",
+      "secondary": false,
+      "placed": "minecraft:sulfur_spike[thickness=tip,vertical_direction=down,waterlogged=false]"
+    },
+    {
+      "name": "spike_placement_down_floor",
+      "kind": "placement",
+      "block": "minecraft:sulfur_spike",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        }
+      ],
+      "look": "down",
+      "face": "up",
+      "secondary": false,
+      "placed": "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=false]"
+    },
+    {
+      "name": "spike_placement_down_ceiling",
+      "kind": "placement",
+      "block": "minecraft:sulfur_spike",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        }
+      ],
+      "look": "down",
+      "face": "up",
+      "secondary": false,
+      "placed": "minecraft:sulfur_spike[thickness=tip,vertical_direction=down,waterlogged=false]"
+    },
+    {
+      "name": "spike_placement_down_none",
+      "kind": "placement",
+      "block": "minecraft:sulfur_spike",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "look": "down",
+      "face": "up",
+      "secondary": false,
+      "placed": null
+    },
+    {
+      "name": "spike_placement_down_both",
+      "kind": "placement",
+      "block": "minecraft:sulfur_spike",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        }
+      ],
+      "look": "down",
+      "face": "up",
+      "secondary": false,
+      "placed": "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=false]"
+    },
+    {
+      "name": "spike_placement_merge_secondary_False",
+      "kind": "placement",
+      "block": "minecraft:sulfur_spike",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down]"
+        }
+      ],
+      "look": "down",
+      "face": "up",
+      "secondary": false,
+      "placed": "minecraft:sulfur_spike[thickness=tip_merge,vertical_direction=up,waterlogged=false]"
+    },
+    {
+      "name": "spike_placement_merge_secondary_True",
+      "kind": "placement",
+      "block": "minecraft:sulfur_spike",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            74,
+            0
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[vertical_direction=down]"
+        }
+      ],
+      "look": "down",
+      "face": "up",
+      "secondary": true,
+      "placed": "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=false]"
+    },
+    {
+      "name": "potent_placement_stone",
+      "kind": "placement",
+      "block": "minecraft:potent_sulfur",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "look": "down",
+      "face": "up",
+      "secondary": false,
+      "placed": "minecraft:potent_sulfur[potent_sulfur_state=wet]"
+    },
+    {
+      "name": "potent_placement_magma_block",
+      "kind": "placement",
+      "block": "minecraft:potent_sulfur",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:magma_block"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "look": "down",
+      "face": "up",
+      "secondary": false,
+      "placed": "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+    },
+    {
+      "name": "potent_placement_lava",
+      "kind": "placement",
+      "block": "minecraft:potent_sulfur",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:lava"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "look": "down",
+      "face": "up",
+      "secondary": false,
+      "placed": "minecraft:potent_sulfur[potent_sulfur_state=continuous]"
+    },
+    {
+      "name": "potent_placement_lava[level=1]",
+      "kind": "placement",
+      "block": "minecraft:potent_sulfur",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:lava[level=1]"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "look": "down",
+      "face": "up",
+      "secondary": false,
+      "placed": "minecraft:potent_sulfur[potent_sulfur_state=wet]"
+    },
+    {
+      "name": "family_placement_sulfur_stairs_up",
+      "kind": "placement",
+      "block": "minecraft:sulfur_stairs",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "look": "down",
+      "face": "up",
+      "secondary": false,
+      "placed": "minecraft:sulfur_stairs[facing=north,half=bottom,shape=straight,waterlogged=true]"
+    },
+    {
+      "name": "family_placement_sulfur_stairs_down",
+      "kind": "placement",
+      "block": "minecraft:sulfur_stairs",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "look": "down",
+      "face": "down",
+      "secondary": false,
+      "placed": "minecraft:sulfur_stairs[facing=north,half=top,shape=straight,waterlogged=true]"
+    },
+    {
+      "name": "family_placement_sulfur_slab_up",
+      "kind": "placement",
+      "block": "minecraft:sulfur_slab",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "look": "down",
+      "face": "up",
+      "secondary": false,
+      "placed": "minecraft:sulfur_slab[type=bottom,waterlogged=true]"
+    },
+    {
+      "name": "family_placement_sulfur_slab_down",
+      "kind": "placement",
+      "block": "minecraft:sulfur_slab",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "look": "down",
+      "face": "down",
+      "secondary": false,
+      "placed": "minecraft:sulfur_slab[type=top,waterlogged=true]"
+    },
+    {
+      "name": "family_placement_sulfur_wall_up",
+      "kind": "placement",
+      "block": "minecraft:sulfur_wall",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "look": "down",
+      "face": "up",
+      "secondary": false,
+      "placed": "minecraft:sulfur_wall[east=none,north=none,south=none,up=true,waterlogged=true,west=none]"
+    },
+    {
+      "name": "family_placement_sulfur_wall_down",
+      "kind": "placement",
+      "block": "minecraft:sulfur_wall",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "look": "down",
+      "face": "down",
+      "secondary": false,
+      "placed": "minecraft:sulfur_wall[east=none,north=none,south=none,up=true,waterlogged=true,west=none]"
+    },
+    {
+      "name": "family_placement_polished_sulfur_stairs_up",
+      "kind": "placement",
+      "block": "minecraft:polished_sulfur_stairs",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "look": "down",
+      "face": "up",
+      "secondary": false,
+      "placed": "minecraft:polished_sulfur_stairs[facing=north,half=bottom,shape=straight,waterlogged=true]"
+    },
+    {
+      "name": "family_placement_polished_sulfur_stairs_down",
+      "kind": "placement",
+      "block": "minecraft:polished_sulfur_stairs",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "look": "down",
+      "face": "down",
+      "secondary": false,
+      "placed": "minecraft:polished_sulfur_stairs[facing=north,half=top,shape=straight,waterlogged=true]"
+    },
+    {
+      "name": "family_placement_polished_sulfur_slab_up",
+      "kind": "placement",
+      "block": "minecraft:polished_sulfur_slab",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "look": "down",
+      "face": "up",
+      "secondary": false,
+      "placed": "minecraft:polished_sulfur_slab[type=bottom,waterlogged=true]"
+    },
+    {
+      "name": "family_placement_polished_sulfur_slab_down",
+      "kind": "placement",
+      "block": "minecraft:polished_sulfur_slab",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "look": "down",
+      "face": "down",
+      "secondary": false,
+      "placed": "minecraft:polished_sulfur_slab[type=top,waterlogged=true]"
+    },
+    {
+      "name": "family_placement_polished_sulfur_wall_up",
+      "kind": "placement",
+      "block": "minecraft:polished_sulfur_wall",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "look": "down",
+      "face": "up",
+      "secondary": false,
+      "placed": "minecraft:polished_sulfur_wall[east=none,north=none,south=none,up=true,waterlogged=true,west=none]"
+    },
+    {
+      "name": "family_placement_polished_sulfur_wall_down",
+      "kind": "placement",
+      "block": "minecraft:polished_sulfur_wall",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "look": "down",
+      "face": "down",
+      "secondary": false,
+      "placed": "minecraft:polished_sulfur_wall[east=none,north=none,south=none,up=true,waterlogged=true,west=none]"
+    },
+    {
+      "name": "family_placement_sulfur_brick_stairs_up",
+      "kind": "placement",
+      "block": "minecraft:sulfur_brick_stairs",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "look": "down",
+      "face": "up",
+      "secondary": false,
+      "placed": "minecraft:sulfur_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=true]"
+    },
+    {
+      "name": "family_placement_sulfur_brick_stairs_down",
+      "kind": "placement",
+      "block": "minecraft:sulfur_brick_stairs",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "look": "down",
+      "face": "down",
+      "secondary": false,
+      "placed": "minecraft:sulfur_brick_stairs[facing=north,half=top,shape=straight,waterlogged=true]"
+    },
+    {
+      "name": "family_placement_sulfur_brick_slab_up",
+      "kind": "placement",
+      "block": "minecraft:sulfur_brick_slab",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "look": "down",
+      "face": "up",
+      "secondary": false,
+      "placed": "minecraft:sulfur_brick_slab[type=bottom,waterlogged=true]"
+    },
+    {
+      "name": "family_placement_sulfur_brick_slab_down",
+      "kind": "placement",
+      "block": "minecraft:sulfur_brick_slab",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "look": "down",
+      "face": "down",
+      "secondary": false,
+      "placed": "minecraft:sulfur_brick_slab[type=top,waterlogged=true]"
+    },
+    {
+      "name": "family_placement_sulfur_brick_wall_up",
+      "kind": "placement",
+      "block": "minecraft:sulfur_brick_wall",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "look": "down",
+      "face": "up",
+      "secondary": false,
+      "placed": "minecraft:sulfur_brick_wall[east=none,north=none,south=none,up=true,waterlogged=true,west=none]"
+    },
+    {
+      "name": "family_placement_sulfur_brick_wall_down",
+      "kind": "placement",
+      "block": "minecraft:sulfur_brick_wall",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "look": "down",
+      "face": "down",
+      "secondary": false,
+      "placed": "minecraft:sulfur_brick_wall[east=none,north=none,south=none,up=true,waterlogged=true,west=none]"
+    }
+  ]
+}

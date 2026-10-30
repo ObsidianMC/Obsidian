@@ -22,6 +22,8 @@ internal interface IRandomTickBehavior
 /// </summary>
 internal static partial class RandomTickBehaviors
 {
+    internal static IRandomTickBehavior SpeleothemBlock { get; } = new SulfurSpikeBehavior();
+
     private static readonly IRandomTickBehavior Crop = new CropGrowth();
 
     // One member per Mojang class that owns an implemented randomTick override. CropBlock's wheat, carrots and potatoes

@@ -1,0 +1,406 @@
+using Obsidian.API;
+using Obsidian.API.BlockEntities;
+using Obsidian.API.Blocks;
+using Obsidian.API.Inventory;
+using Obsidian.API.Registries;
+using Obsidian.API.World;
+using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.Entities;
+using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Nbt;
+using Obsidian.Registries;
+using Obsidian.Tests.Fakes;
+using Obsidian.WorldData;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Text.Json;
+using System.Threading.Tasks;
+using Xunit;
+
+namespace Obsidian.Tests;
+
+public sealed class VanillaSulfurBlocks
+{
+    private static readonly JsonElement fixture = LoadFixture();
+    private static readonly JsonElement probes = LoadFixture("sulfur_fixtures");
+
+    public static IEnumerable<object[]> Scenarios() => fixture.GetProperty("scenarios").EnumerateArray()
+        .Select(scenario => new object[] { scenario.GetProperty("name").GetString()! });
+
+    public static IEnumerable<object[]> Probes() => probes.GetProperty("cases").EnumerateArray()
+        .Select(probe => new object[] { probe.GetProperty("name").GetString()! });
+
+    [Theory]
+    [MemberData(nameof(Probes))]
+    public async Task ReplayCapturedProbe(string name)
+    {
+        Assert.Equal(ServerConstants.ProtocolDescription, probes.GetProperty("version").GetString());
+        var probe = probes.GetProperty("cases").EnumerateArray()
+            .Single(value => value.GetProperty("name").GetString() == name);
+        await using var context = TestServerFactory.CreateServer($"sulfur-probe-{Guid.NewGuid():N}");
+        var world = context.World;
+        await BlockUpdates.AddChunksAsync(world);
+        foreach (var placement in probe.GetProperty("setup").EnumerateArray())
+        {
+            world.BlockUpdates.SetBlock(Position(placement.GetProperty("pos")),
+                ParseState(placement.GetProperty("state").GetString()!),
+                BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);
+        }
+
+        var origin = Position(probe.GetProperty("origin"));
+        if (probe.GetProperty("kind").GetString() == "placement")
+        {
+            var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Placer");
+            player.Yaw = 180;
+            player.Pitch = probe.GetProperty("look").GetString() == "down" ? 90 : -90;
+            player.Sneaking = probe.GetProperty("secondary").GetBoolean();
+            var block = ParseState(probe.GetProperty("block").GetString()!);
+            var face = probe.GetProperty("face").GetString() == "up" ? BlockFace.Up : BlockFace.Down;
+            var behavior = PlacementBehaviors.For(block);
+            var placed = behavior is null
+                ? VanillaPlacement.GetState(world.BlockUpdates, block, origin, player, face,
+                    VectorD.Zero, replacesClicked: true)
+                : behavior.GetStateForPlacement(new BlockPlaceContext
+                {
+                    Level = world.BlockUpdates,
+                    Player = player,
+                    Hand = InteractionHand.MainHand,
+                    Item = null!,
+                    Block = block,
+                    Position = origin,
+                    ClickedPosition = origin,
+                    ClickedFace = face,
+                    ClickedAt = VectorD.Zero,
+                    ReplacesClicked = true,
+                    HorizontalDirection = BlockFace.North,
+                    NearestLookDirection = probe.GetProperty("look").GetString() == "down"
+                        ? BlockFace.Down : BlockFace.Up
+                });
+            var expected = probe.GetProperty("placed");
+            if (expected.ValueKind == JsonValueKind.Null)
+            {
+                Assert.Null(placed);
+            }
+            else
+            {
+                Assert.NotNull(placed);
+                Assert.True(ParseState(expected.GetString()!).IsSameState(placed), expected.GetString());
+            }
+
+            return;
+        }
+
+        if (probe.GetProperty("kind").GetString() == "impact")
+        {
+            Assert.Equal(probe.GetProperty("damage").GetSingle(),
+                FallingBlock.StalactiteImpactDamage(probe.GetProperty("distance").GetDouble(),
+                    probe.GetProperty("size").GetSingle()));
+            return;
+        }
+
+        if (probe.GetProperty("kind").GetString() == "projectile")
+        {
+            Assert.Equal(probe.GetProperty("broken").GetBoolean(),
+                SulfurSpikeBehavior.BreaksFromTrident(probe.GetProperty("speed").GetDouble(),
+                    probe.GetProperty("allowed").GetBoolean()));
+            return;
+        }
+
+        if (probe.GetProperty("kind").GetString() == "growth")
+        {
+            var level = new GrowthView(world);
+            var random = new LegacyRandomSource(probe.GetProperty("seed").GetInt64());
+            SulfurSpikeBehavior.GrowOnRandomTick(level, origin, level.GetBlock(origin), random);
+            var writes = probe.GetProperty("writes").EnumerateArray().ToArray();
+            Assert.Equal(writes.Length, level.Writes.Count);
+            for (var i = 0; i < writes.Length; i++)
+            {
+                Assert.Equal(Position(writes[i].GetProperty("pos")), level.Writes[i].Position);
+                Assert.True(ParseState(writes[i].GetProperty("state").GetString()!)
+                    .IsSameState(level.Writes[i].State));
+            }
+
+            Assert.Equal(probe.GetProperty("nextRandom").GetInt32(), random.NextInt());
+            return;
+        }
+
+        var expectedSource = probe.GetProperty("source");
+        var source = SulfurGas.FindSource(world.BlockUpdates, origin);
+        if (expectedSource.ValueKind == JsonValueKind.Null)
+        {
+            Assert.Null(source);
+            return;
+        }
+
+        Assert.Equal(Position(expectedSource), source);
+        var depth = source!.Value.Y - origin.Y - 1;
+        Assert.Equal(probe.GetProperty("forceHeight").GetInt32(),
+            SulfurGas.ForceHeight(world.BlockUpdates, origin, depth));
+        var eyes = probe.GetProperty("eyes").EnumerateArray().ToArray();
+        for (var i = 0; i < eyes.Length; i++)
+        {
+            var eye = eyes[i];
+            Assert.Equal(probe.GetProperty("reaches")[i].GetBoolean(),
+                SulfurGas.Reaches(world, source.Value,
+                    new VectorD(eye[0].GetDouble(), eye[1].GetDouble(), eye[2].GetDouble())));
+        }
+
+        if (probe.TryGetProperty("entity", out var actor))
+        {
+            var pos = actor.GetProperty("pos");
+            var stand = new ArmorStand
+            {
+                EntityId = 123,
+                Level = world,
+                Type = EntityType.ArmorStand,
+                Health = 20,
+                Motion = new VectorD(0, actor.GetProperty("motionY").GetDouble(), 0)
+            };
+            await stand.UpdateAsync(new VectorD(pos[0].GetDouble(), pos[1].GetDouble(), pos[2].GetDouble()),
+                MovementFlags.None);
+            Assert.True(world.TryAddEntity(stand));
+            world.LaunchGeyserEntities(origin, source.Value);
+            Assert.Equal(probe.GetProperty("launchedMotionY").GetDouble(), stand.Motion.Y);
+            Assert.Equal(probe.GetProperty("clampedFallDistance").GetSingle(),
+                Entity.GeyserFallDistance(10, actor.GetProperty("motionY").GetDouble()));
+            world.ApplySulfurGas(source.Value);
+            stand.ActivePotionEffects.TryGetValue((int)PotionEffect.Nausea - 1, out var nausea);
+            Assert.Equal(probe.GetProperty("nauseaDuration").GetInt32(), nausea?.CurrentDuration ?? 0);
+            if (nausea is not null)
+            {
+                Assert.Equal(probe.GetProperty("ambient").GetBoolean(), nausea.EffectData.Ambient);
+                Assert.Equal(probe.GetProperty("particles").GetBoolean(), nausea.EffectData.ShowParticles);
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Scenarios))]
+    public async Task ReplayCapturedScenario(string name)
+    {
+        Assert.Equal(ServerConstants.ProtocolDescription, fixture.GetProperty("version").GetString());
+        var scenario = fixture.GetProperty("scenarios").EnumerateArray()
+            .Single(value => value.GetProperty("name").GetString() == name);
+        await using var context = TestServerFactory.CreateServer($"sulfur-{Guid.NewGuid():N}");
+        var world = context.World;
+        world.LevelData.GameRules["spawn_mobs"] = "false";
+        world.LevelData.GameRules["random_tick_speed"] = "0";
+        await BlockUpdates.AddChunksAsync(world);
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Observer",
+            new VectorD(8, 80, 8));
+        world.Players.TryAdd(player.Uuid, player);
+        var checkpoints = scenario.GetProperty("checkpoints").EnumerateArray().ToArray();
+        Assert.NotEmpty(checkpoints);
+        world.LevelData.GameTime = checkpoints[0].GetProperty("gameTime").GetInt64();
+
+        foreach (var placement in scenario.GetProperty("setup").EnumerateArray())
+        {
+            await PlaceAsync(world, placement);
+        }
+
+        var checkpointIndex = 0;
+        Compare(world, scenario, checkpoints[checkpointIndex++]);
+        for (var tick = 1; tick <= scenario.GetProperty("ticks").GetInt32(); tick++)
+        {
+            foreach (var action in scenario.GetProperty("actions").EnumerateArray()
+                .Where(action => action.GetProperty("tick").GetInt32() == tick))
+            {
+                if (action.TryGetProperty("reload", out _))
+                {
+                    foreach (var position in scenario.GetProperty("watch").EnumerateArray().Select(Position))
+                    {
+                        if (world.GetResidentBlockEntity(position) is BlockEntity entity)
+                        {
+                            var tag = BlockEntityNbt.Save(entity)!;
+                            var reloaded = BlockEntityNbt.Load(tag, entity.Id, position);
+                            var chunk = await world.GetChunkAsync(position.X >> 4, position.Z >> 4);
+                            chunk!.SetBlockEntity(position.X, position.Y, position.Z, reloaded);
+                            world.AttachBlockEntity(reloaded);
+                        }
+                    }
+
+                    for (var elapsed = 0; elapsed < action.GetProperty("elapsed").GetInt32(); elapsed++)
+                    {
+                        await AdvanceAsync(world);
+                    }
+                }
+                else if (action.TryGetProperty("countdown", out var countdown))
+                {
+                    var entity = Assert.IsType<PotentSulfurBlockEntity>(
+                        world.GetResidentBlockEntity(Position(action.GetProperty("pos"))));
+                    entity.Countdown = countdown.GetInt32();
+                }
+                else
+                {
+                    await PlaceAsync(world, action);
+                }
+            }
+
+            await AdvanceAsync(world);
+            if (checkpointIndex < checkpoints.Length
+                && checkpoints[checkpointIndex].GetProperty("tick").GetInt32() == tick)
+            {
+                Compare(world, scenario, checkpoints[checkpointIndex++]);
+            }
+        }
+
+        Assert.Equal(checkpoints.Length, checkpointIndex);
+    }
+
+    // A focused Obsidian persistence risk: retained data must be copied and countdowns must remain signed ints.
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(0)]
+    [InlineData(300)]
+    public void SavedStateOwnsItsDataAndPreservesCountdown(int countdown)
+    {
+        var source = new NbtCompound
+        {
+            new NbtTag<int>("countdown", countdown),
+            new NbtCompound("components") { new NbtTag<string>("test:marker", "kept") }
+        };
+        var entity = BlockEntityNbt.Create("minecraft:potent_sulfur", new Vector(3, 72, 4), source);
+        Assert.IsType<NbtCompound>(source["components"]).Clear();
+        var saved = BlockEntityNbt.Save(entity)!;
+        Assert.Equal(countdown, saved.GetInt("countdown"));
+        Assert.Equal("kept", Assert.IsType<NbtCompound>(saved["components"]).GetString("test:marker"));
+        Assert.Equal("minecraft:potent_sulfur", saved.GetString("id"));
+        Assert.Equal(3, saved.GetInt("x"));
+        var loaded = BlockEntityNbt.Load(saved, entity.Id, entity.BlockPosition);
+        Assert.IsType<NbtCompound>(saved["components"]).Clear();
+        var again = BlockEntityNbt.Save(loaded)!;
+        Assert.Equal(countdown, again.GetInt("countdown"));
+        Assert.Equal("kept", Assert.IsType<NbtCompound>(again["components"]).GetString("test:marker"));
+        Assert.Null(loaded.GetUpdateData());
+    }
+
+    [Theory]
+    [InlineData("continuous", "minecraft:block.potent_sulfur.geyser_continuous_eruption")]
+    [InlineData("erupting", "minecraft:block.potent_sulfur.geyser_eruption")]
+    public async Task GeyserPacketsUseTheBlockRegistryAndStartClientAnimation(string mode, string sound)
+    {
+        await using var context = TestServerFactory.CreateServer($"geyser-packets-{Guid.NewGuid():N}");
+        await BlockUpdates.AddChunksAsync(context.World);
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Listener",
+            new VectorD(0.5, 74, 0.5));
+        context.World.Players.TryAdd(player.Uuid, player);
+        var client = Assert.IsType<TestClient>(player.Client);
+        var position = new Vector(0, 72, 0);
+        context.World.StartGeyser(position,
+            ParseState($"minecraft:potent_sulfur[potent_sulfur_state={mode}]"));
+
+        var blockEvent = Assert.Single(client.SentPackets.OfType<BlockEventPacket>());
+        Assert.Equal(position, blockEvent.Position);
+        Assert.Equal(BlockIds.PotentSulfur, blockEvent.BlockType);
+        Assert.Equal(0, blockEvent.ActionId);
+        Assert.Equal(0, blockEvent.ActionParam);
+        var started = Assert.Single(client.SentPackets.OfType<SoundPacket>());
+        Assert.Equal(sound, started.SoundLocation);
+        Assert.Equal(SoundCategory.Blocks, started.Category);
+    }
+
+    private static async Task AdvanceAsync(World world)
+    {
+        await world.DoWorldTickAsync();
+    }
+
+    private static async Task PlaceAsync(World world, JsonElement action) =>
+        await world.SetBlockAsync(Position(action.GetProperty("pos")),
+            ParseState(action.GetProperty("state").GetString()!), doBlockUpdate: true);
+
+    private static void Compare(World world, JsonElement scenario, JsonElement checkpoint)
+    {
+        Assert.Equal(checkpoint.GetProperty("gameTime").GetInt64(), world.LevelData.GameTime);
+        var index = 0;
+        foreach (var position in scenario.GetProperty("watch").EnumerateArray().Select(Position))
+        {
+            var expected = ParseState(checkpoint.GetProperty("states")[index].GetString()!);
+            var actual = world.BlockUpdates.GetBlock(position);
+            Assert.True(expected.IsSameState(actual),
+                $"{scenario.GetProperty("name")} tick {checkpoint.GetProperty("tick")} at {position}: "
+                + $"expected {checkpoint.GetProperty("states")[index]}, got {actual.UnlocalizedName} "
+                + $"{actual.GetProperty("potent_sulfur_state")} {actual.GetProperty("thickness")}");
+            var countdown = checkpoint.GetProperty("countdowns")[index];
+            if (countdown.ValueKind != JsonValueKind.Null)
+            {
+                var entity = Assert.IsType<PotentSulfurBlockEntity>(world.GetResidentBlockEntity(position));
+                Assert.Equal(countdown.GetInt32(), entity.Countdown);
+            }
+
+            index++;
+        }
+    }
+
+    internal static IBlock ParseState(string text)
+    {
+        var bracket = text.IndexOf('[');
+        if (bracket < 0)
+            return BlockStateProperties.GetState(text, new Dictionary<string, string>());
+
+        var properties = text[(bracket + 1)..^1].Split(',')
+            .Select(property => property.Split('='))
+            .ToDictionary(pair => pair[0], pair => pair[1]);
+        return BlockStateProperties.GetState(text[..bracket], properties);
+    }
+
+    private static Vector Position(JsonElement array) =>
+        new(array[0].GetInt32(), array[1].GetInt32(), array[2].GetInt32());
+
+    private static JsonElement LoadFixture(string name = "sulfur_scenarios")
+    {
+        using var stream = Assembly.GetExecutingAssembly()
+            .GetManifestResourceStream($"Obsidian.Tests.Assets.{name}.json")!;
+        using var document = JsonDocument.Parse(stream);
+        return document.RootElement.Clone();
+    }
+
+    // Like the Java probe's block view, writes are retained without neighbor notifications. The live notification
+    // path is covered separately by the RCON scenarios above.
+    private sealed class GrowthView(World world) : IBlockLevel
+    {
+        public List<(Vector Position, IBlock State)> Writes { get; } = [];
+
+        public ILevel Level => world;
+
+        public IRandomSource Random => throw new NotSupportedException();
+
+        public IBlock GetBlock(Vector position) => world.BlockUpdates.GetBlock(position);
+
+        public IBlockEntity GetBlockEntity(Vector position) => world.GetResidentBlockEntity(position);
+
+        public bool SetBlock(Vector position, IBlock block, BlockUpdateFlags flags = BlockUpdateFlags.All)
+        {
+            this.Writes.Add((position, block));
+            return world.BlockUpdates.SetBlock(position, block,
+                BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);
+        }
+
+        public bool RemoveBlock(Vector position) => throw new NotSupportedException();
+
+        public void ScheduleTick(Vector position, IBlock block, int delay,
+            TickPriority priority = TickPriority.Normal) =>
+            throw new NotSupportedException();
+
+        public bool HasScheduledTick(Vector position, IBlock block) => false;
+
+        public void UpdateNeighbors(Vector position, IBlock source) => throw new NotSupportedException();
+
+        public void UpdateAnalogOutput(Vector position) => throw new NotSupportedException();
+
+        public IItemAccess GetItemAccess(Vector position, BlockFace? side) => throw new NotSupportedException();
+
+        public int GetSignal(Vector position, BlockFace direction) => 0;
+
+        public int GetDirectSignal(Vector position, BlockFace direction) => 0;
+
+        public int GetDirectSignalTo(Vector position) => 0;
+
+        public bool HasSignal(Vector position, BlockFace direction) => false;
+
+        public bool HasNeighborSignal(Vector position) => false;
+
+        public int GetBestNeighborSignal(Vector position) => 0;
+    }
+}

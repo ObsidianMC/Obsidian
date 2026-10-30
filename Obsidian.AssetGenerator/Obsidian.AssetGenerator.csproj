@@ -29,8 +29,10 @@
 		<!-- The capture driver only runs on request (CaptureVanillaWorldgen), so editing it doesn't regenerate the
 		     assets. -->
 		<VanillaGeneratorInput Include="@(Compile)" Exclude="WorldgenCaptures.cs;WorldgenFixtureFiles.cs;Scenario*.cs" />
-		<VanillaDumperInput Include="Java\**\*.java;Java\**\*.json" />
+		<VanillaDumperInput Include="Java\**\*.java;Java\**\*.json" Exclude="Java\SulfurFixtures.java" />
 		<None Update="@(VanillaDumperInput)" CopyToOutputDirectory="PreserveNewest" />
+		<!-- Sulfur's probe runs only through CaptureFixtures=sulfur. -->
+		<None Update="Java\SulfurFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<!-- On-request captures (CaptureVanillaWorldgen); not asset inputs, so editing them doesn't regenerate the assets. -->
 		<None Update="Captures\**\*.java" CopyToOutputDirectory="PreserveNewest" />
 		<UpToDateCheckOutput Include="$(VanillaAssetsDirectory)collision_shapes.json" />

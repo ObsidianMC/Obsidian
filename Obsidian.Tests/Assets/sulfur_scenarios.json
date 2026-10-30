@@ -1,0 +1,5153 @@
+{
+ "version": "26.3",
+ "scenarios": [
+  {
+   "name": "dry_wet_continuous_and_flowing_lava",
+   "setup": [
+    {
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      -1,
+      73,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      73,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      -1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      72,
+      0
+     ],
+     "state": "minecraft:potent_sulfur"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      0
+     ],
+     "state": "minecraft:water"
+    }
+   ],
+   "ticks": 8,
+   "interval": 1,
+   "watch": [
+    [
+     0,
+     72,
+     0
+    ]
+   ],
+   "actions": [
+    {
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:lava",
+     "tick": 1
+    },
+    {
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:lava[level=1]",
+     "tick": 2
+    },
+    {
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:magma_block",
+     "tick": 3
+    },
+    {
+     "pos": [
+      0,
+      73,
+      0
+     ],
+     "state": "minecraft:air",
+     "tick": 4
+    },
+    {
+     "pos": [
+      0,
+      73,
+      0
+     ],
+     "state": "minecraft:water",
+     "tick": 5
+    },
+    {
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:stone",
+     "tick": 6
+    }
+   ],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 41,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=wet]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 1,
+     "gameTime": 42,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=continuous]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 2,
+     "gameTime": 43,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=wet]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 3,
+     "gameTime": 44,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 4,
+     "gameTime": 45,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dry]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 5,
+     "gameTime": 46,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 6,
+     "gameTime": 47,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=wet]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 7,
+     "gameTime": 48,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=wet]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 8,
+     "gameTime": 49,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=wet]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    }
+   ]
+  },
+  {
+   "name": "periodic_depth_1",
+   "setup": [
+    {
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:magma_block"
+    },
+    {
+     "pos": [
+      -1,
+      73,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      73,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      -1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      72,
+      0
+     ],
+     "state": "minecraft:potent_sulfur"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      0
+     ],
+     "state": "minecraft:water"
+    }
+   ],
+   "ticks": 1600,
+   "interval": 20,
+   "watch": [
+    [
+     0,
+     72,
+     0
+    ]
+   ],
+   "actions": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 89,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 20,
+     "gameTime": 109,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 40,
+     "gameTime": 129,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      17
+     ]
+    },
+    {
+     "tick": 60,
+     "gameTime": 149,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      16
+     ]
+    },
+    {
+     "tick": 80,
+     "gameTime": 169,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      15
+     ]
+    },
+    {
+     "tick": 100,
+     "gameTime": 189,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      14
+     ]
+    },
+    {
+     "tick": 120,
+     "gameTime": 209,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      13
+     ]
+    },
+    {
+     "tick": 140,
+     "gameTime": 229,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      12
+     ]
+    },
+    {
+     "tick": 160,
+     "gameTime": 249,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      11
+     ]
+    },
+    {
+     "tick": 180,
+     "gameTime": 269,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      10
+     ]
+    },
+    {
+     "tick": 200,
+     "gameTime": 289,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      9
+     ]
+    },
+    {
+     "tick": 220,
+     "gameTime": 309,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      8
+     ]
+    },
+    {
+     "tick": 240,
+     "gameTime": 329,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      7
+     ]
+    },
+    {
+     "tick": 260,
+     "gameTime": 349,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      6
+     ]
+    },
+    {
+     "tick": 280,
+     "gameTime": 369,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      5
+     ]
+    },
+    {
+     "tick": 300,
+     "gameTime": 389,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      4
+     ]
+    },
+    {
+     "tick": 320,
+     "gameTime": 409,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      3
+     ]
+    },
+    {
+     "tick": 340,
+     "gameTime": 429,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      2
+     ]
+    },
+    {
+     "tick": 360,
+     "gameTime": 449,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 380,
+     "gameTime": 469,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 400,
+     "gameTime": 489,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 420,
+     "gameTime": 509,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 440,
+     "gameTime": 529,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 460,
+     "gameTime": 549,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      17
+     ]
+    },
+    {
+     "tick": 480,
+     "gameTime": 569,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      16
+     ]
+    },
+    {
+     "tick": 500,
+     "gameTime": 589,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      15
+     ]
+    },
+    {
+     "tick": 520,
+     "gameTime": 609,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      14
+     ]
+    },
+    {
+     "tick": 540,
+     "gameTime": 629,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      13
+     ]
+    },
+    {
+     "tick": 560,
+     "gameTime": 649,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      12
+     ]
+    },
+    {
+     "tick": 580,
+     "gameTime": 669,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      11
+     ]
+    },
+    {
+     "tick": 600,
+     "gameTime": 689,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      10
+     ]
+    },
+    {
+     "tick": 620,
+     "gameTime": 709,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      9
+     ]
+    },
+    {
+     "tick": 640,
+     "gameTime": 729,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      8
+     ]
+    },
+    {
+     "tick": 660,
+     "gameTime": 749,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      7
+     ]
+    },
+    {
+     "tick": 680,
+     "gameTime": 769,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      6
+     ]
+    },
+    {
+     "tick": 700,
+     "gameTime": 789,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      5
+     ]
+    },
+    {
+     "tick": 720,
+     "gameTime": 809,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      4
+     ]
+    },
+    {
+     "tick": 740,
+     "gameTime": 829,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      3
+     ]
+    },
+    {
+     "tick": 760,
+     "gameTime": 849,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      2
+     ]
+    },
+    {
+     "tick": 780,
+     "gameTime": 869,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 800,
+     "gameTime": 889,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 820,
+     "gameTime": 909,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 840,
+     "gameTime": 929,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 860,
+     "gameTime": 949,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 880,
+     "gameTime": 969,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      17
+     ]
+    },
+    {
+     "tick": 900,
+     "gameTime": 989,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      16
+     ]
+    },
+    {
+     "tick": 920,
+     "gameTime": 1009,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      15
+     ]
+    },
+    {
+     "tick": 940,
+     "gameTime": 1029,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      14
+     ]
+    },
+    {
+     "tick": 960,
+     "gameTime": 1049,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      13
+     ]
+    },
+    {
+     "tick": 980,
+     "gameTime": 1069,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      12
+     ]
+    },
+    {
+     "tick": 1000,
+     "gameTime": 1089,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      11
+     ]
+    },
+    {
+     "tick": 1020,
+     "gameTime": 1109,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      10
+     ]
+    },
+    {
+     "tick": 1040,
+     "gameTime": 1129,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      9
+     ]
+    },
+    {
+     "tick": 1060,
+     "gameTime": 1149,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      8
+     ]
+    },
+    {
+     "tick": 1080,
+     "gameTime": 1169,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      7
+     ]
+    },
+    {
+     "tick": 1100,
+     "gameTime": 1189,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      6
+     ]
+    },
+    {
+     "tick": 1120,
+     "gameTime": 1209,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      5
+     ]
+    },
+    {
+     "tick": 1140,
+     "gameTime": 1229,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      4
+     ]
+    },
+    {
+     "tick": 1160,
+     "gameTime": 1249,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      3
+     ]
+    },
+    {
+     "tick": 1180,
+     "gameTime": 1269,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      2
+     ]
+    },
+    {
+     "tick": 1200,
+     "gameTime": 1289,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 1220,
+     "gameTime": 1309,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 1240,
+     "gameTime": 1329,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 1260,
+     "gameTime": 1349,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 1280,
+     "gameTime": 1369,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 1300,
+     "gameTime": 1389,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      17
+     ]
+    },
+    {
+     "tick": 1320,
+     "gameTime": 1409,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      16
+     ]
+    },
+    {
+     "tick": 1340,
+     "gameTime": 1429,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      15
+     ]
+    },
+    {
+     "tick": 1360,
+     "gameTime": 1449,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      14
+     ]
+    },
+    {
+     "tick": 1380,
+     "gameTime": 1469,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      13
+     ]
+    },
+    {
+     "tick": 1400,
+     "gameTime": 1489,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      12
+     ]
+    },
+    {
+     "tick": 1420,
+     "gameTime": 1509,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      11
+     ]
+    },
+    {
+     "tick": 1440,
+     "gameTime": 1529,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      10
+     ]
+    },
+    {
+     "tick": 1460,
+     "gameTime": 1549,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      9
+     ]
+    },
+    {
+     "tick": 1480,
+     "gameTime": 1569,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      8
+     ]
+    },
+    {
+     "tick": 1500,
+     "gameTime": 1589,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      7
+     ]
+    },
+    {
+     "tick": 1520,
+     "gameTime": 1609,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      6
+     ]
+    },
+    {
+     "tick": 1540,
+     "gameTime": 1629,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      5
+     ]
+    },
+    {
+     "tick": 1560,
+     "gameTime": 1649,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      4
+     ]
+    },
+    {
+     "tick": 1580,
+     "gameTime": 1669,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      3
+     ]
+    },
+    {
+     "tick": 1600,
+     "gameTime": 1689,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      2
+     ]
+    }
+   ]
+  },
+  {
+   "name": "periodic_depth_2",
+   "setup": [
+    {
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:magma_block"
+    },
+    {
+     "pos": [
+      -1,
+      73,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      73,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      -1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      -1,
+      74,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      74,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      74,
+      -1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      74,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      72,
+      0
+     ],
+     "state": "minecraft:potent_sulfur"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      0
+     ],
+     "state": "minecraft:water"
+    },
+    {
+     "pos": [
+      0,
+      74,
+      0
+     ],
+     "state": "minecraft:water"
+    }
+   ],
+   "ticks": 1600,
+   "interval": 20,
+   "watch": [
+    [
+     0,
+     72,
+     0
+    ]
+   ],
+   "actions": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 1729,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 20,
+     "gameTime": 1749,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      28
+     ]
+    },
+    {
+     "tick": 40,
+     "gameTime": 1769,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      27
+     ]
+    },
+    {
+     "tick": 60,
+     "gameTime": 1789,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      26
+     ]
+    },
+    {
+     "tick": 80,
+     "gameTime": 1809,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      25
+     ]
+    },
+    {
+     "tick": 100,
+     "gameTime": 1829,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      24
+     ]
+    },
+    {
+     "tick": 120,
+     "gameTime": 1849,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      23
+     ]
+    },
+    {
+     "tick": 140,
+     "gameTime": 1869,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      22
+     ]
+    },
+    {
+     "tick": 160,
+     "gameTime": 1889,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      21
+     ]
+    },
+    {
+     "tick": 180,
+     "gameTime": 1909,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      20
+     ]
+    },
+    {
+     "tick": 200,
+     "gameTime": 1929,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      19
+     ]
+    },
+    {
+     "tick": 220,
+     "gameTime": 1949,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 240,
+     "gameTime": 1969,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      17
+     ]
+    },
+    {
+     "tick": 260,
+     "gameTime": 1989,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      16
+     ]
+    },
+    {
+     "tick": 280,
+     "gameTime": 2009,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      15
+     ]
+    },
+    {
+     "tick": 300,
+     "gameTime": 2029,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      14
+     ]
+    },
+    {
+     "tick": 320,
+     "gameTime": 2049,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      13
+     ]
+    },
+    {
+     "tick": 340,
+     "gameTime": 2069,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      12
+     ]
+    },
+    {
+     "tick": 360,
+     "gameTime": 2089,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      11
+     ]
+    },
+    {
+     "tick": 380,
+     "gameTime": 2109,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      10
+     ]
+    },
+    {
+     "tick": 400,
+     "gameTime": 2129,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      9
+     ]
+    },
+    {
+     "tick": 420,
+     "gameTime": 2149,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      8
+     ]
+    },
+    {
+     "tick": 440,
+     "gameTime": 2169,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      7
+     ]
+    },
+    {
+     "tick": 460,
+     "gameTime": 2189,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      6
+     ]
+    },
+    {
+     "tick": 480,
+     "gameTime": 2209,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      5
+     ]
+    },
+    {
+     "tick": 500,
+     "gameTime": 2229,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      4
+     ]
+    },
+    {
+     "tick": 520,
+     "gameTime": 2249,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      3
+     ]
+    },
+    {
+     "tick": 540,
+     "gameTime": 2269,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      2
+     ]
+    },
+    {
+     "tick": 560,
+     "gameTime": 2289,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 580,
+     "gameTime": 2309,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 600,
+     "gameTime": 2329,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      2
+     ]
+    },
+    {
+     "tick": 620,
+     "gameTime": 2349,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 640,
+     "gameTime": 2369,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 660,
+     "gameTime": 2389,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      28
+     ]
+    },
+    {
+     "tick": 680,
+     "gameTime": 2409,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      27
+     ]
+    },
+    {
+     "tick": 700,
+     "gameTime": 2429,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      26
+     ]
+    },
+    {
+     "tick": 720,
+     "gameTime": 2449,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      25
+     ]
+    },
+    {
+     "tick": 740,
+     "gameTime": 2469,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      24
+     ]
+    },
+    {
+     "tick": 760,
+     "gameTime": 2489,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      23
+     ]
+    },
+    {
+     "tick": 780,
+     "gameTime": 2509,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      22
+     ]
+    },
+    {
+     "tick": 800,
+     "gameTime": 2529,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      21
+     ]
+    },
+    {
+     "tick": 820,
+     "gameTime": 2549,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      20
+     ]
+    },
+    {
+     "tick": 840,
+     "gameTime": 2569,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      19
+     ]
+    },
+    {
+     "tick": 860,
+     "gameTime": 2589,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 880,
+     "gameTime": 2609,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      17
+     ]
+    },
+    {
+     "tick": 900,
+     "gameTime": 2629,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      16
+     ]
+    },
+    {
+     "tick": 920,
+     "gameTime": 2649,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      15
+     ]
+    },
+    {
+     "tick": 940,
+     "gameTime": 2669,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      14
+     ]
+    },
+    {
+     "tick": 960,
+     "gameTime": 2689,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      13
+     ]
+    },
+    {
+     "tick": 980,
+     "gameTime": 2709,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      12
+     ]
+    },
+    {
+     "tick": 1000,
+     "gameTime": 2729,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      11
+     ]
+    },
+    {
+     "tick": 1020,
+     "gameTime": 2749,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      10
+     ]
+    },
+    {
+     "tick": 1040,
+     "gameTime": 2769,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      9
+     ]
+    },
+    {
+     "tick": 1060,
+     "gameTime": 2789,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      8
+     ]
+    },
+    {
+     "tick": 1080,
+     "gameTime": 2809,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      7
+     ]
+    },
+    {
+     "tick": 1100,
+     "gameTime": 2829,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      6
+     ]
+    },
+    {
+     "tick": 1120,
+     "gameTime": 2849,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      5
+     ]
+    },
+    {
+     "tick": 1140,
+     "gameTime": 2869,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      4
+     ]
+    },
+    {
+     "tick": 1160,
+     "gameTime": 2889,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      3
+     ]
+    },
+    {
+     "tick": 1180,
+     "gameTime": 2909,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      2
+     ]
+    },
+    {
+     "tick": 1200,
+     "gameTime": 2929,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 1220,
+     "gameTime": 2949,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 1240,
+     "gameTime": 2969,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      2
+     ]
+    },
+    {
+     "tick": 1260,
+     "gameTime": 2989,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 1280,
+     "gameTime": 3009,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 1300,
+     "gameTime": 3029,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      28
+     ]
+    },
+    {
+     "tick": 1320,
+     "gameTime": 3049,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      27
+     ]
+    },
+    {
+     "tick": 1340,
+     "gameTime": 3069,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      26
+     ]
+    },
+    {
+     "tick": 1360,
+     "gameTime": 3089,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      25
+     ]
+    },
+    {
+     "tick": 1380,
+     "gameTime": 3109,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      24
+     ]
+    },
+    {
+     "tick": 1400,
+     "gameTime": 3129,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      23
+     ]
+    },
+    {
+     "tick": 1420,
+     "gameTime": 3149,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      22
+     ]
+    },
+    {
+     "tick": 1440,
+     "gameTime": 3169,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      21
+     ]
+    },
+    {
+     "tick": 1460,
+     "gameTime": 3189,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      20
+     ]
+    },
+    {
+     "tick": 1480,
+     "gameTime": 3209,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      19
+     ]
+    },
+    {
+     "tick": 1500,
+     "gameTime": 3229,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 1520,
+     "gameTime": 3249,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      17
+     ]
+    },
+    {
+     "tick": 1540,
+     "gameTime": 3269,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      16
+     ]
+    },
+    {
+     "tick": 1560,
+     "gameTime": 3289,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      15
+     ]
+    },
+    {
+     "tick": 1580,
+     "gameTime": 3309,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      14
+     ]
+    },
+    {
+     "tick": 1600,
+     "gameTime": 3329,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      13
+     ]
+    }
+   ]
+  },
+  {
+   "name": "periodic_depth_4",
+   "setup": [
+    {
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:magma_block"
+    },
+    {
+     "pos": [
+      -1,
+      73,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      73,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      -1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      -1,
+      74,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      74,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      74,
+      -1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      74,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      -1,
+      75,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      75,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      75,
+      -1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      75,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      -1,
+      76,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      76,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      76,
+      -1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      76,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      72,
+      0
+     ],
+     "state": "minecraft:potent_sulfur"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      0
+     ],
+     "state": "minecraft:water"
+    },
+    {
+     "pos": [
+      0,
+      74,
+      0
+     ],
+     "state": "minecraft:water"
+    },
+    {
+     "pos": [
+      0,
+      75,
+      0
+     ],
+     "state": "minecraft:water"
+    },
+    {
+     "pos": [
+      0,
+      76,
+      0
+     ],
+     "state": "minecraft:water"
+    }
+   ],
+   "ticks": 1600,
+   "interval": 20,
+   "watch": [
+    [
+     0,
+     72,
+     0
+    ]
+   ],
+   "actions": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 3369,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 20,
+     "gameTime": 3389,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      48
+     ]
+    },
+    {
+     "tick": 40,
+     "gameTime": 3409,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      47
+     ]
+    },
+    {
+     "tick": 60,
+     "gameTime": 3429,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      46
+     ]
+    },
+    {
+     "tick": 80,
+     "gameTime": 3449,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      45
+     ]
+    },
+    {
+     "tick": 100,
+     "gameTime": 3469,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      44
+     ]
+    },
+    {
+     "tick": 120,
+     "gameTime": 3489,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      43
+     ]
+    },
+    {
+     "tick": 140,
+     "gameTime": 3509,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      42
+     ]
+    },
+    {
+     "tick": 160,
+     "gameTime": 3529,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      41
+     ]
+    },
+    {
+     "tick": 180,
+     "gameTime": 3549,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      40
+     ]
+    },
+    {
+     "tick": 200,
+     "gameTime": 3569,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      39
+     ]
+    },
+    {
+     "tick": 220,
+     "gameTime": 3589,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      38
+     ]
+    },
+    {
+     "tick": 240,
+     "gameTime": 3609,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      37
+     ]
+    },
+    {
+     "tick": 260,
+     "gameTime": 3629,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      36
+     ]
+    },
+    {
+     "tick": 280,
+     "gameTime": 3649,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      35
+     ]
+    },
+    {
+     "tick": 300,
+     "gameTime": 3669,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      34
+     ]
+    },
+    {
+     "tick": 320,
+     "gameTime": 3689,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      33
+     ]
+    },
+    {
+     "tick": 340,
+     "gameTime": 3709,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      32
+     ]
+    },
+    {
+     "tick": 360,
+     "gameTime": 3729,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      31
+     ]
+    },
+    {
+     "tick": 380,
+     "gameTime": 3749,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      30
+     ]
+    },
+    {
+     "tick": 400,
+     "gameTime": 3769,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      29
+     ]
+    },
+    {
+     "tick": 420,
+     "gameTime": 3789,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      28
+     ]
+    },
+    {
+     "tick": 440,
+     "gameTime": 3809,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      27
+     ]
+    },
+    {
+     "tick": 460,
+     "gameTime": 3829,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      26
+     ]
+    },
+    {
+     "tick": 480,
+     "gameTime": 3849,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      25
+     ]
+    },
+    {
+     "tick": 500,
+     "gameTime": 3869,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      24
+     ]
+    },
+    {
+     "tick": 520,
+     "gameTime": 3889,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      23
+     ]
+    },
+    {
+     "tick": 540,
+     "gameTime": 3909,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      22
+     ]
+    },
+    {
+     "tick": 560,
+     "gameTime": 3929,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      21
+     ]
+    },
+    {
+     "tick": 580,
+     "gameTime": 3949,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      20
+     ]
+    },
+    {
+     "tick": 600,
+     "gameTime": 3969,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      19
+     ]
+    },
+    {
+     "tick": 620,
+     "gameTime": 3989,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 640,
+     "gameTime": 4009,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      17
+     ]
+    },
+    {
+     "tick": 660,
+     "gameTime": 4029,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      16
+     ]
+    },
+    {
+     "tick": 680,
+     "gameTime": 4049,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      15
+     ]
+    },
+    {
+     "tick": 700,
+     "gameTime": 4069,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      14
+     ]
+    },
+    {
+     "tick": 720,
+     "gameTime": 4089,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      13
+     ]
+    },
+    {
+     "tick": 740,
+     "gameTime": 4109,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      12
+     ]
+    },
+    {
+     "tick": 760,
+     "gameTime": 4129,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      11
+     ]
+    },
+    {
+     "tick": 780,
+     "gameTime": 4149,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      10
+     ]
+    },
+    {
+     "tick": 800,
+     "gameTime": 4169,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      9
+     ]
+    },
+    {
+     "tick": 820,
+     "gameTime": 4189,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      8
+     ]
+    },
+    {
+     "tick": 840,
+     "gameTime": 4209,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      7
+     ]
+    },
+    {
+     "tick": 860,
+     "gameTime": 4229,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      6
+     ]
+    },
+    {
+     "tick": 880,
+     "gameTime": 4249,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      5
+     ]
+    },
+    {
+     "tick": 900,
+     "gameTime": 4269,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      4
+     ]
+    },
+    {
+     "tick": 920,
+     "gameTime": 4289,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      3
+     ]
+    },
+    {
+     "tick": 940,
+     "gameTime": 4309,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      2
+     ]
+    },
+    {
+     "tick": 960,
+     "gameTime": 4329,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 980,
+     "gameTime": 4349,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 1000,
+     "gameTime": 4369,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      4
+     ]
+    },
+    {
+     "tick": 1020,
+     "gameTime": 4389,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      3
+     ]
+    },
+    {
+     "tick": 1040,
+     "gameTime": 4409,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      2
+     ]
+    },
+    {
+     "tick": 1060,
+     "gameTime": 4429,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 1080,
+     "gameTime": 4449,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 1100,
+     "gameTime": 4469,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      48
+     ]
+    },
+    {
+     "tick": 1120,
+     "gameTime": 4489,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      47
+     ]
+    },
+    {
+     "tick": 1140,
+     "gameTime": 4509,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      46
+     ]
+    },
+    {
+     "tick": 1160,
+     "gameTime": 4529,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      45
+     ]
+    },
+    {
+     "tick": 1180,
+     "gameTime": 4549,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      44
+     ]
+    },
+    {
+     "tick": 1200,
+     "gameTime": 4569,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      43
+     ]
+    },
+    {
+     "tick": 1220,
+     "gameTime": 4589,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      42
+     ]
+    },
+    {
+     "tick": 1240,
+     "gameTime": 4609,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      41
+     ]
+    },
+    {
+     "tick": 1260,
+     "gameTime": 4629,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      40
+     ]
+    },
+    {
+     "tick": 1280,
+     "gameTime": 4649,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      39
+     ]
+    },
+    {
+     "tick": 1300,
+     "gameTime": 4669,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      38
+     ]
+    },
+    {
+     "tick": 1320,
+     "gameTime": 4689,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      37
+     ]
+    },
+    {
+     "tick": 1340,
+     "gameTime": 4709,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      36
+     ]
+    },
+    {
+     "tick": 1360,
+     "gameTime": 4729,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      35
+     ]
+    },
+    {
+     "tick": 1380,
+     "gameTime": 4749,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      34
+     ]
+    },
+    {
+     "tick": 1400,
+     "gameTime": 4769,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      33
+     ]
+    },
+    {
+     "tick": 1420,
+     "gameTime": 4789,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      32
+     ]
+    },
+    {
+     "tick": 1440,
+     "gameTime": 4809,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      31
+     ]
+    },
+    {
+     "tick": 1460,
+     "gameTime": 4829,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      30
+     ]
+    },
+    {
+     "tick": 1480,
+     "gameTime": 4849,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      29
+     ]
+    },
+    {
+     "tick": 1500,
+     "gameTime": 4869,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      28
+     ]
+    },
+    {
+     "tick": 1520,
+     "gameTime": 4889,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      27
+     ]
+    },
+    {
+     "tick": 1540,
+     "gameTime": 4909,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      26
+     ]
+    },
+    {
+     "tick": 1560,
+     "gameTime": 4929,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      25
+     ]
+    },
+    {
+     "tick": 1580,
+     "gameTime": 4949,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      24
+     ]
+    },
+    {
+     "tick": 1600,
+     "gameTime": 4969,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      23
+     ]
+    }
+   ]
+  },
+  {
+   "name": "periodic_depth_5",
+   "setup": [
+    {
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:magma_block"
+    },
+    {
+     "pos": [
+      -1,
+      73,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      73,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      -1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      -1,
+      74,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      74,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      74,
+      -1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      74,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      -1,
+      75,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      75,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      75,
+      -1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      75,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      -1,
+      76,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      76,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      76,
+      -1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      76,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      -1,
+      77,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      77,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      77,
+      -1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      77,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      72,
+      0
+     ],
+     "state": "minecraft:potent_sulfur"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      0
+     ],
+     "state": "minecraft:water"
+    },
+    {
+     "pos": [
+      0,
+      74,
+      0
+     ],
+     "state": "minecraft:water"
+    },
+    {
+     "pos": [
+      0,
+      75,
+      0
+     ],
+     "state": "minecraft:water"
+    },
+    {
+     "pos": [
+      0,
+      76,
+      0
+     ],
+     "state": "minecraft:water"
+    },
+    {
+     "pos": [
+      0,
+      77,
+      0
+     ],
+     "state": "minecraft:water"
+    }
+   ],
+   "ticks": 60,
+   "interval": 20,
+   "watch": [
+    [
+     0,
+     72,
+     0
+    ]
+   ],
+   "actions": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 5009,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 20,
+     "gameTime": 5029,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 40,
+     "gameTime": 5049,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 60,
+     "gameTime": 5069,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    }
+   ]
+  },
+  {
+   "name": "countdown_pauses_under_roof",
+   "setup": [
+    {
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:magma_block"
+    },
+    {
+     "pos": [
+      -1,
+      73,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      73,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      -1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      -1,
+      74,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      74,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      74,
+      -1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      74,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      72,
+      0
+     ],
+     "state": "minecraft:potent_sulfur"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      0
+     ],
+     "state": "minecraft:water"
+    },
+    {
+     "pos": [
+      0,
+      74,
+      0
+     ],
+     "state": "minecraft:water"
+    },
+    {
+     "pos": [
+      0,
+      75,
+      0
+     ],
+     "state": "minecraft:stone"
+    }
+   ],
+   "ticks": 80,
+   "interval": 20,
+   "watch": [
+    [
+     0,
+     72,
+     0
+    ]
+   ],
+   "actions": [
+    {
+     "pos": [
+      0,
+      75,
+      0
+     ],
+     "state": "minecraft:air",
+     "tick": 41
+    }
+   ],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 5109,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 20,
+     "gameTime": 5129,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 40,
+     "gameTime": 5149,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 60,
+     "gameTime": 5169,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      28
+     ]
+    },
+    {
+     "tick": 80,
+     "gameTime": 5189,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      27
+     ]
+    }
+   ]
+  },
+  {
+   "name": "saved_countdown_and_reactivation",
+   "setup": [
+    {
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:magma_block"
+    },
+    {
+     "pos": [
+      -1,
+      73,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      73,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      -1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      72,
+      0
+     ],
+     "state": "minecraft:potent_sulfur"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      0
+     ],
+     "state": "minecraft:water"
+    }
+   ],
+   "ticks": 80,
+   "interval": 1,
+   "watch": [
+    [
+     0,
+     72,
+     0
+    ]
+   ],
+   "actions": [
+    {
+     "pos": [
+      0,
+      72,
+      0
+     ],
+     "countdown": 2,
+     "tick": 1
+    },
+    {
+     "reload": true,
+     "tick": 21,
+     "elapsed": 1
+    },
+    {
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:stone",
+     "tick": 42
+    },
+    {
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:magma_block",
+     "tick": 43
+    }
+   ],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 5229,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 1,
+     "gameTime": 5230,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      2
+     ]
+    },
+    {
+     "tick": 2,
+     "gameTime": 5231,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      2
+     ]
+    },
+    {
+     "tick": 3,
+     "gameTime": 5232,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      2
+     ]
+    },
+    {
+     "tick": 4,
+     "gameTime": 5233,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      2
+     ]
+    },
+    {
+     "tick": 5,
+     "gameTime": 5234,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      2
+     ]
+    },
+    {
+     "tick": 6,
+     "gameTime": 5235,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      2
+     ]
+    },
+    {
+     "tick": 7,
+     "gameTime": 5236,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      2
+     ]
+    },
+    {
+     "tick": 8,
+     "gameTime": 5237,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      2
+     ]
+    },
+    {
+     "tick": 9,
+     "gameTime": 5238,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      2
+     ]
+    },
+    {
+     "tick": 10,
+     "gameTime": 5239,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      2
+     ]
+    },
+    {
+     "tick": 11,
+     "gameTime": 5240,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 12,
+     "gameTime": 5241,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 13,
+     "gameTime": 5242,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 14,
+     "gameTime": 5243,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 15,
+     "gameTime": 5244,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 16,
+     "gameTime": 5245,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 17,
+     "gameTime": 5246,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 18,
+     "gameTime": 5247,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 19,
+     "gameTime": 5248,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 20,
+     "gameTime": 5249,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 21,
+     "gameTime": 5251,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 22,
+     "gameTime": 5252,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 23,
+     "gameTime": 5253,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 24,
+     "gameTime": 5254,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 25,
+     "gameTime": 5255,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 26,
+     "gameTime": 5256,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 27,
+     "gameTime": 5257,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 28,
+     "gameTime": 5258,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 29,
+     "gameTime": 5259,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      1
+     ]
+    },
+    {
+     "tick": 30,
+     "gameTime": 5260,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 31,
+     "gameTime": 5261,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 32,
+     "gameTime": 5262,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 33,
+     "gameTime": 5263,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 34,
+     "gameTime": 5264,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 35,
+     "gameTime": 5265,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 36,
+     "gameTime": 5266,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 37,
+     "gameTime": 5267,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 38,
+     "gameTime": 5268,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 39,
+     "gameTime": 5269,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 40,
+     "gameTime": 5270,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 41,
+     "gameTime": 5271,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=erupting]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 42,
+     "gameTime": 5272,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=wet]"
+     ],
+     "countdowns": [
+      0
+     ]
+    },
+    {
+     "tick": 43,
+     "gameTime": 5273,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 44,
+     "gameTime": 5274,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 45,
+     "gameTime": 5275,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 46,
+     "gameTime": 5276,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 47,
+     "gameTime": 5277,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 48,
+     "gameTime": 5278,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 49,
+     "gameTime": 5279,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 50,
+     "gameTime": 5280,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 51,
+     "gameTime": 5281,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 52,
+     "gameTime": 5282,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 53,
+     "gameTime": 5283,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 54,
+     "gameTime": 5284,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 55,
+     "gameTime": 5285,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 56,
+     "gameTime": 5286,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 57,
+     "gameTime": 5287,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 58,
+     "gameTime": 5288,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 59,
+     "gameTime": 5289,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 60,
+     "gameTime": 5290,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 61,
+     "gameTime": 5291,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 62,
+     "gameTime": 5292,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 63,
+     "gameTime": 5293,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 64,
+     "gameTime": 5294,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 65,
+     "gameTime": 5295,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 66,
+     "gameTime": 5296,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 67,
+     "gameTime": 5297,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 68,
+     "gameTime": 5298,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 69,
+     "gameTime": 5299,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 70,
+     "gameTime": 5300,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      17
+     ]
+    },
+    {
+     "tick": 71,
+     "gameTime": 5301,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      17
+     ]
+    },
+    {
+     "tick": 72,
+     "gameTime": 5302,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      17
+     ]
+    },
+    {
+     "tick": 73,
+     "gameTime": 5303,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      17
+     ]
+    },
+    {
+     "tick": 74,
+     "gameTime": 5304,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      17
+     ]
+    },
+    {
+     "tick": 75,
+     "gameTime": 5305,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      17
+     ]
+    },
+    {
+     "tick": 76,
+     "gameTime": 5306,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      17
+     ]
+    },
+    {
+     "tick": 77,
+     "gameTime": 5307,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      17
+     ]
+    },
+    {
+     "tick": 78,
+     "gameTime": 5308,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      17
+     ]
+    },
+    {
+     "tick": 79,
+     "gameTime": 5309,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      17
+     ]
+    },
+    {
+     "tick": 80,
+     "gameTime": 5310,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      17
+     ]
+    }
+   ]
+  },
+  {
+   "name": "waterlogged_collision_and_gas_source",
+   "setup": [
+    {
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:magma_block"
+    },
+    {
+     "pos": [
+      -1,
+      73,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      73,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      -1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      72,
+      0
+     ],
+     "state": "minecraft:potent_sulfur"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      0
+     ],
+     "state": "minecraft:water"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      0
+     ],
+     "state": "minecraft:oak_slab[type=bottom,waterlogged=true]"
+    }
+   ],
+   "ticks": 60,
+   "interval": 20,
+   "watch": [
+    [
+     0,
+     72,
+     0
+    ]
+   ],
+   "actions": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 5350,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 20,
+     "gameTime": 5370,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 40,
+     "gameTime": 5390,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 60,
+     "gameTime": 5410,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    }
+   ]
+  },
+  {
+   "name": "waterlogged_empty_collision",
+   "setup": [
+    {
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:magma_block"
+    },
+    {
+     "pos": [
+      -1,
+      73,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      73,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      -1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      72,
+      0
+     ],
+     "state": "minecraft:potent_sulfur"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      0
+     ],
+     "state": "minecraft:water"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      0
+     ],
+     "state": "minecraft:seagrass"
+    }
+   ],
+   "ticks": 60,
+   "interval": 20,
+   "watch": [
+    [
+     0,
+     72,
+     0
+    ]
+   ],
+   "actions": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 5450,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      -1
+     ]
+    },
+    {
+     "tick": 20,
+     "gameTime": 5470,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      18
+     ]
+    },
+    {
+     "tick": 40,
+     "gameTime": 5490,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      17
+     ]
+    },
+    {
+     "tick": 60,
+     "gameTime": 5510,
+     "states": [
+      "minecraft:potent_sulfur[potent_sulfur_state=dormant]"
+     ],
+     "countdowns": [
+      16
+     ]
+    }
+   ]
+  },
+  {
+   "name": "spike_shapes_and_floor_support",
+   "setup": [
+    {
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:sulfur"
+    },
+    {
+     "pos": [
+      0,
+      72,
+      0
+     ],
+     "state": "minecraft:sulfur_spike"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      0
+     ],
+     "state": "minecraft:sulfur_spike"
+    },
+    {
+     "pos": [
+      0,
+      74,
+      0
+     ],
+     "state": "minecraft:sulfur_spike"
+    }
+   ],
+   "ticks": 5,
+   "interval": 1,
+   "watch": [
+    [
+     0,
+     72,
+     0
+    ],
+    [
+     0,
+     73,
+     0
+    ],
+    [
+     0,
+     74,
+     0
+    ]
+   ],
+   "actions": [
+    {
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:air",
+     "tick": 2
+    }
+   ],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 5550,
+     "states": [
+      "minecraft:sulfur_spike[thickness=base,vertical_direction=up,waterlogged=false]",
+      "minecraft:sulfur_spike[thickness=frustum,vertical_direction=up,waterlogged=false]",
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=false]"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null
+     ]
+    },
+    {
+     "tick": 1,
+     "gameTime": 5551,
+     "states": [
+      "minecraft:sulfur_spike[thickness=base,vertical_direction=up,waterlogged=false]",
+      "minecraft:sulfur_spike[thickness=frustum,vertical_direction=up,waterlogged=false]",
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=false]"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null
+     ]
+    },
+    {
+     "tick": 2,
+     "gameTime": 5552,
+     "states": [
+      "minecraft:air",
+      "minecraft:sulfur_spike[thickness=frustum,vertical_direction=up,waterlogged=false]",
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=false]"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null
+     ]
+    },
+    {
+     "tick": 3,
+     "gameTime": 5553,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=false]"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null
+     ]
+    },
+    {
+     "tick": 4,
+     "gameTime": 5554,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null
+     ]
+    },
+    {
+     "tick": 5,
+     "gameTime": 5555,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null
+     ]
+    }
+   ]
+  },
+  {
+   "name": "spike_ceiling_fall_delay",
+   "setup": [
+    {
+     "pos": [
+      0,
+      76,
+      0
+     ],
+     "state": "minecraft:sulfur"
+    },
+    {
+     "pos": [
+      0,
+      75,
+      0
+     ],
+     "state": "minecraft:sulfur_spike[vertical_direction=down]"
+    },
+    {
+     "pos": [
+      0,
+      74,
+      0
+     ],
+     "state": "minecraft:sulfur_spike[vertical_direction=down]"
+    }
+   ],
+   "ticks": 5,
+   "interval": 1,
+   "watch": [
+    [
+     0,
+     75,
+     0
+    ],
+    [
+     0,
+     74,
+     0
+    ]
+   ],
+   "actions": [
+    {
+     "pos": [
+      0,
+      76,
+      0
+     ],
+     "state": "minecraft:air",
+     "tick": 1
+    }
+   ],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 5595,
+     "states": [
+      "minecraft:sulfur_spike[thickness=frustum,vertical_direction=down,waterlogged=false]",
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=down,waterlogged=false]"
+     ],
+     "countdowns": [
+      null,
+      null
+     ]
+    },
+    {
+     "tick": 1,
+     "gameTime": 5596,
+     "states": [
+      "minecraft:sulfur_spike[thickness=frustum,vertical_direction=down,waterlogged=false]",
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=down,waterlogged=false]"
+     ],
+     "countdowns": [
+      null,
+      null
+     ]
+    },
+    {
+     "tick": 2,
+     "gameTime": 5597,
+     "states": [
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null
+     ]
+    },
+    {
+     "tick": 3,
+     "gameTime": 5598,
+     "states": [
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null
+     ]
+    },
+    {
+     "tick": 4,
+     "gameTime": 5599,
+     "states": [
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null
+     ]
+    },
+    {
+     "tick": 5,
+     "gameTime": 5600,
+     "states": [
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null
+     ]
+    }
+   ]
+  },
+  {
+   "name": "spike_tip_merge_and_separation",
+   "setup": [
+    {
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:sulfur"
+    },
+    {
+     "pos": [
+      0,
+      72,
+      0
+     ],
+     "state": "minecraft:sulfur_spike[thickness=tip_merge]"
+    },
+    {
+     "pos": [
+      0,
+      74,
+      0
+     ],
+     "state": "minecraft:sulfur"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      0
+     ],
+     "state": "minecraft:sulfur_spike[vertical_direction=down,thickness=tip_merge]"
+    }
+   ],
+   "ticks": 3,
+   "interval": 1,
+   "watch": [
+    [
+     0,
+     72,
+     0
+    ],
+    [
+     0,
+     73,
+     0
+    ]
+   ],
+   "actions": [
+    {
+     "pos": [
+      0,
+      73,
+      0
+     ],
+     "state": "minecraft:air",
+     "tick": 1
+    }
+   ],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 5640,
+     "states": [
+      "minecraft:sulfur_spike[thickness=tip_merge,vertical_direction=up,waterlogged=false]",
+      "minecraft:sulfur_spike[thickness=tip_merge,vertical_direction=down,waterlogged=false]"
+     ],
+     "countdowns": [
+      null,
+      null
+     ]
+    },
+    {
+     "tick": 1,
+     "gameTime": 5641,
+     "states": [
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null
+     ]
+    },
+    {
+     "tick": 2,
+     "gameTime": 5642,
+     "states": [
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null
+     ]
+    },
+    {
+     "tick": 3,
+     "gameTime": 5643,
+     "states": [
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null
+     ]
+    }
+   ]
+  },
+  {
+   "name": "spike_shatters_after_falling",
+   "setup": [
+    {
+     "pos": [
+      0,
+      70,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      76,
+      0
+     ],
+     "state": "minecraft:sulfur"
+    },
+    {
+     "pos": [
+      0,
+      75,
+      0
+     ],
+     "state": "minecraft:sulfur_spike[vertical_direction=down]"
+    },
+    {
+     "pos": [
+      0,
+      74,
+      0
+     ],
+     "state": "minecraft:sulfur_spike[vertical_direction=down]"
+    }
+   ],
+   "ticks": 60,
+   "interval": 60,
+   "watch": [
+    [
+     0,
+     71,
+     0
+    ],
+    [
+     0,
+     72,
+     0
+    ],
+    [
+     0,
+     73,
+     0
+    ],
+    [
+     0,
+     74,
+     0
+    ],
+    [
+     0,
+     75,
+     0
+    ]
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "pos": [
+      0,
+      76,
+      0
+     ],
+     "state": "minecraft:air"
+    }
+   ],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 5683,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:sulfur_spike[thickness=tip,vertical_direction=down,waterlogged=false]",
+      "minecraft:sulfur_spike[thickness=frustum,vertical_direction=down,waterlogged=false]"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ]
+    },
+    {
+     "tick": 60,
+     "gameTime": 5743,
+     "states": [
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null,
+      null,
+      null
+     ]
+    }
+   ]
+  }
+ ],
+ "_notes": "Recorded from a frozen vanilla 26.3 server over RCON, seed test-seed. Setup and actions use setblock with updates. Each checkpoint records absolute game time, full states at watched positions and potent sulfur's saved countdown. Reload actions save and restart vanilla; their elapsed game ticks are retained. Other actions run before the next tick. Only this fixture is recorded by CaptureFixtures=sulfur."
+}

@@ -98,7 +98,8 @@ public partial class PlayerBase
         }
         lastIncomingDamage = incoming;
         AcceptedDamageCount++;
-        if (kind is CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion or CombatDamageKind.FireContact or CombatDamageKind.Thorns)
+        if (kind is CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion
+            or CombatDamageKind.FireContact or CombatDamageKind.Thorns or CombatDamageKind.FallingStalactite)
         {
             // Worn items' armour is in the attributes' modifiers.
             UpdateEquipmentAttributes();
@@ -143,6 +144,7 @@ public partial class PlayerBase
         [CombatDamageKind.Freezing] = "minecraft:freeze",
         [CombatDamageKind.Thorns] = "minecraft:thorns",
         [CombatDamageKind.Drowning] = "minecraft:drown",
+        [CombatDamageKind.FallingStalactite] = "minecraft:falling_stalactite",
     };
 
     private void QueueDamageEvent(IEntity source, IEntity? directSource, CombatDamageKind kind, VectorD? sourcePosition)

@@ -30,6 +30,7 @@ internal sealed class ScenarioServer : IAsyncDisposable
 
     private readonly VanillaServer server;
     private readonly string directory;
+    private readonly string? seed;
     private readonly int rconPort;
     private readonly string password = Convert.ToHexString(RandomNumberGenerator.GetBytes(16));
     private readonly IReadOnlyDictionary<string, BlockProperties> blocks;
@@ -38,11 +39,13 @@ internal sealed class ScenarioServer : IAsyncDisposable
     private StreamWriter? log;
     private RconClient? rcon;
 
-    private ScenarioServer(VanillaServer server, string directory, IReadOnlyDictionary<string, BlockProperties> blocks)
+    private ScenarioServer(VanillaServer server, string directory, IReadOnlyDictionary<string, BlockProperties> blocks,
+        string? seed)
     {
         this.server = server;
         this.directory = directory;
         this.blocks = blocks;
+        this.seed = seed;
         this.rconPort = FreePort();
     }
 
@@ -50,14 +53,14 @@ internal sealed class ScenarioServer : IAsyncDisposable
     public IEnumerable<string> BlockIds => this.blocks.Keys;
 
     /// <summary>Creates a new world in the scratch directory and starts the server on it.</summary>
-    public static async Task<ScenarioServer> StartAsync(VanillaServer server)
+    public static async Task<ScenarioServer> StartAsync(VanillaServer server, string? seed = null)
     {
         var directory = Path.Combine(server.ScratchDirectory, "scenarios");
         if (Directory.Exists(directory))
             Directory.Delete(directory, recursive: true);
 
         var blocks = BlockProperties.Read(Path.Combine(server.GeneratedDirectory, "reports", "blocks.json"));
-        var scenarioServer = new ScenarioServer(server, directory, blocks);
+        var scenarioServer = new ScenarioServer(server, directory, blocks, seed);
         try
         {
             scenarioServer.WriteWorld();
@@ -220,6 +223,7 @@ internal sealed class ScenarioServer : IAsyncDisposable
             "level-type=minecraft\\:flat",
             $"generator-settings={VoidLayers.Replace(":", "\\:")}",
             "generate-structures=false",
+            $"level-seed={this.seed}",
             "spawn-protection=0",
             "max-tick-time=-1",
             "pause-when-empty-seconds=-1",

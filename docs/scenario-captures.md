@@ -1,6 +1,6 @@
 # Vanilla scenario captures
 
-The redstone, fluid and daylight detector parity tests replay scenarios recorded tick by tick on a headless vanilla
+The redstone, fluid, daylight detector and sulfur parity tests replay scenarios recorded on a headless vanilla
 server. Each fixture in `Obsidian.Tests/Assets` is its own input: it holds every scenario's definition, and a capture
 replaces only what vanilla produced.
 
@@ -10,6 +10,15 @@ replaces only what vanilla produced.
   capture records the checkpoints.
 - `daylight_detector.json` (`DaylightDetectorTests`) defines the clock times to sample; the capture records the
   readings.
+- `sulfur_scenarios.json` (`VanillaSulfurBlocks`) defines setup, actions, watched positions and sampling intervals.
+  It records full block states and potent sulfur countdowns at absolute game times, including elapsed ticks across
+  save/restart actions. Its world seed is `test-seed`.
+- `sulfur_fixtures.json` (also `VanillaSulfurBlocks`) holds bounded Java probes for sulfur placement, growth and
+  subsequent random draws, gas source/visibility, geyser force and fall-distance handling, trident thresholds and
+  raw falling-spike damage. `Java/SulfurFixtures.java`, registered in `FixtureDumper.cs`, invokes vanilla's routines
+  against each case's block view. Growth writes are recorded without neighbor notifications; the RCON scenarios
+  separately cover the live update path. The impact target records the raw damage passed by vanilla's falling
+  entity, before armor and other victim-specific mitigation.
 
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.
@@ -19,15 +28,17 @@ against the version Obsidian implements.
 ```sh
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=redstone+daylight
+
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur
 ```
 
 This uses the server of the Minecraft version `Obsidian.csproj` targets, from the shared vanilla cache (see
-[vanilla captures](vanilla-captures.md#the-vanilla-cache)), and needs Java 25. All three fixtures take under a minute.
+[vanilla captures](vanilla-captures.md#the-vanilla-cache)), and needs Java 25. The sulfur capture takes about 30 seconds.
 To add a scenario, add its definition with placeholder checkpoints (the redstone capture records as many ticks as the
 scenario has checkpoints) and capture again; the tests pick it up.
 
 The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory>
-<scratch directory> <test assets directory> [redstone+fluids+daylight]`.
+<scratch directory> <test assets directory> [redstone+fluids+daylight+sulfur]`.
 
 ## How it captures
 
