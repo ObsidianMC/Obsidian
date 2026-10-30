@@ -109,6 +109,7 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
         EntityType.Fireball or EntityType.SmallFireball or EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion => new MobProjectile(level, type),
         EntityType.ExperienceOrb => new ExperienceOrb { Level = level, Value = 1 },
         EntityType.Arrow => new Arrow { Level = level },
+        EntityType.SpectralArrow => new SpectralArrow { Level = level },
         EntityType.Trident => new Trident { Level = level },
         EntityType.EvokerFangs => new EvokerFangs { Level = level },
         EntityType.ShulkerBullet => new ShulkerBullet { Level = level },

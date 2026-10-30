@@ -9,7 +9,7 @@ public sealed partial class FallingBlock : Entity
 {
     // Vanilla: each tick the downward speed drops by this much, then is scaled by the drag.
     private const double Gravity = 0.04;
-    private const double AirDrag = 0.98;
+    private const float AirDrag = 0.98f;
 
     public required IBlock Block { get; init; }
 
@@ -21,47 +21,56 @@ public sealed partial class FallingBlock : Entity
 
     internal bool CancelDrop { get; set; }
 
-    // Blocks per tick, negative is down.
-    private double VelocityY;
-
     public FallingBlock(VectorD position) : base()
     {
         SpawnPosition = position;
         LastPosition = position;
         Position = position;
-        VelocityY = 0;
     }
 
     public async override ValueTask TickAsync()
     {
         LastPosition = Position;
 
-        VelocityY -= Gravity;
-        var next = new VectorD(Position.X, Position.Y + VelocityY, Position.Z);
-        var fromCell = (int)Math.Floor(Position.Y);
-        var toCell = (int)Math.Floor(next.Y);
-
-        // Sends the move to clients, so they follow the fall instead of seeing it jump to the landing spot.
-        await UpdateAsync(next, MovementFlags.None);
-
-        // Vanilla's collision stops the block on the first block with a collision shape whose top the feet pass.
-        // Blocks without one (torches, flowers) don't stop it. The block lands in the cell the feet were in.
-        for (var cell = fromCell - 1; cell >= toCell; cell--)
+        this.Motion -= new VectorD(0, Gravity, 0);
+        var next = new VectorD(this.Position.X, this.Position.Y + this.Motion.Y, this.Position.Z);
+        var grounded = false;
+        if (this.Motion.Y < 0)
         {
-            var support = await Level.GetBlockAsync(new Vector((int)Math.Floor(next.X), cell, (int)Math.Floor(next.Z)));
-            if (support is null || support.HasEmptyCollision())
-                continue;
+            var halfWidth = this.Dimension.Width / 2.0;
+            var swept = new BoundingBox(
+                new VectorD(this.Position.X - halfWidth, next.Y, this.Position.Z - halfWidth),
+                new VectorD(this.Position.X + halfWidth, this.Position.Y, this.Position.Z + halfWidth));
+            var floor = next.Y;
+            foreach (var shape in new MobTerrain(this.Level).GetCollisions(swept))
+            {
+                if (shape.Max.X <= swept.Min.X || shape.Min.X >= swept.Max.X
+                    || shape.Max.Z <= swept.Min.Z || shape.Min.Z >= swept.Max.Z
+                    || shape.Max.Y > this.Position.Y || shape.Max.Y < floor)
+                {
+                    continue;
+                }
 
-            // Only a support whose top the feet have passed stops the fall; a partial-height one below may not yet.
-            var boxes = BlockCollisionShapes.Get(support);
-            if (boxes.Count == 0 || next.Y > cell + boxes.Max(box => box.Max.Y))
-                continue;
+                floor = shape.Max.Y;
+                grounded = true;
+            }
 
-            await LandAsync(new Vector((int)Math.Floor(next.X), cell + 1, (int)Math.Floor(next.Z)));
-            return;
+            if (grounded)
+            {
+                next.Y = floor;
+                this.Motion = new VectorD(this.Motion.X, 0, this.Motion.Z);
+            }
         }
 
-        VelocityY *= AirDrag;
+        await this.UpdateAsync(next, grounded ? MovementFlags.OnGround : MovementFlags.None);
+        if (grounded)
+        {
+            // Vanilla resolves ground contact before its landing response, even while a piston defers placement.
+            this.Motion = new VectorD(this.Motion.X * 0.7, this.Motion.Y * -0.5, this.Motion.Z * 0.7);
+            await this.LandAsync((Vector)this.Position.Floor());
+        }
+
+        this.Motion *= AirDrag;
     }
 
     // Vanilla FallingBlockEntity.tick: a replaceable cell takes the block; any other cell discards it, dropping the

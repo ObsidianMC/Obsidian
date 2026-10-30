@@ -144,13 +144,20 @@ public partial class Arrow : Entity
 
         if (embedded)
         {
-            if (this.embeddedBlock is not Vector anchor || !level.BlockUpdates.GetBlock(anchor).IsAir)
+            // Older saves have no hit-cell anchor. Vanilla's small collision volume supplies their release check.
+            var clearance = new BoundingBox(this.Position - new VectorD(0.06), this.Position + new VectorD(0.06));
+            var anchored = this.embeddedBlock is { } anchor
+                ? !level.BlockUpdates.GetBlock(anchor).IsAir
+                : new MobTerrain(level).GetCollisions(clearance).Any(shape =>
+                    shape.Max.X > clearance.Min.X && shape.Min.X < clearance.Max.X
+                    && shape.Max.Y > clearance.Min.Y && shape.Min.Y < clearance.Max.Y
+                    && shape.Max.Z > clearance.Min.Z && shape.Min.Z < clearance.Max.Z);
+            if (anchored)
             {
                 await PickupAsync();
                 return;
             }
 
-            // Vanilla releases an embedded projectile when the block it struck has disappeared.
             this.embedded = false;
             this.embeddedBlock = null;
             this.PacketBroadcaster.QueuePacketToLevelInRange(this.Level, this.Position,
@@ -530,6 +537,8 @@ public partial class Arrow : Entity
         tag.SetOrRemove("Owner", ownerTag);
         tag.Set(new NbtTag<int>("ObsidianLife", age));
         tag.Set(new NbtTag<bool>("inGround", embedded));
+        tag.SetOrRemove("ObsidianEmbeddedBlock", this.embeddedBlock is { } anchor
+            ? new NbtArray<int>("ObsidianEmbeddedBlock", [anchor.X, anchor.Y, anchor.Z]) : null);
         tag.Set(new NbtTag<double>("damage", Damage));
         tag.Set(new NbtTag<int>("ObsidianEffect", Effect));
         tag.Set(new NbtTag<int>("ObsidianEffectDuration", EffectDuration));
@@ -552,6 +561,12 @@ public partial class Arrow : Entity
             age = Math.Clamp(life, 0, 1200);
 
         embedded = tag.TryGetBool("inGround", out var ground) && ground;
+        this.embeddedBlock = null;
+        if (embedded && tag.TryGetTag<NbtArray<int>>("ObsidianEmbeddedBlock", out var anchor) && anchor.Count == 3)
+        {
+            var coordinates = anchor.GetArray();
+            this.embeddedBlock = new Vector(coordinates[0], coordinates[1], coordinates[2]);
+        }
 
         if (tag.TryGetNumber<double>("damage", out var damage) && double.IsFinite(damage))
             Damage = (float)Math.Clamp(damage, 0, float.MaxValue);

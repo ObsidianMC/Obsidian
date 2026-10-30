@@ -11,6 +11,8 @@ using Obsidian.Nbt;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
+using Obsidian.WorldData.BlockNotifications;
+using Obsidian.WorldData.Fluids;
 using Obsidian.Utilities;
 using System;
 using System.Collections.Generic;
@@ -30,12 +32,22 @@ public sealed class VanillaSulfurBlocks
     public static IEnumerable<object[]> Scenarios() => fixture.GetProperty("scenarios").EnumerateArray()
         .Select(scenario => new object[] { scenario.GetProperty("name").GetString()! });
 
-    public static IEnumerable<object[]> Probes() => probes.GetProperty("cases").EnumerateArray()
-        .Select(probe => new object[] { probe.GetProperty("name").GetString()! });
+    public static IEnumerable<object[]> Probes()
+    {
+        foreach (var probe in probes.GetProperty("cases").EnumerateArray())
+        {
+            var name = probe.GetProperty("name").GetString()!;
+            yield return [name, false];
+            if (probe.GetProperty("kind").GetString() == "shape_update")
+            {
+                yield return [name, true];
+            }
+        }
+    }
 
     [Theory]
     [MemberData(nameof(Probes))]
-    public async Task ReplayCapturedProbe(string name)
+    public async Task ReplayCapturedProbe(string name, bool fluidPath)
     {
         Assert.Equal(ServerConstants.ProtocolDescription, probes.GetProperty("version").GetString());
         var probe = probes.GetProperty("cases").EnumerateArray()
@@ -53,6 +65,40 @@ public sealed class VanillaSulfurBlocks
         }
 
         var origin = Position(probe.GetProperty("origin"));
+        if (probe.GetProperty("kind").GetString() == "shape_update")
+        {
+            var neighbor = Position(probe.GetProperty("neighbor"));
+            if (fluidPath)
+            {
+                var fluidLevel = new FluidLevel(world.Fluids);
+                var direction = Enum.Parse<BlockFace>(probe.GetProperty("direction").GetString()!, ignoreCase: true);
+                fluidLevel.ExecuteShapeUpdate(direction, origin, world.BlockUpdates.GetBlock(neighbor),
+                    BlockUpdateFlags.All, 512, VanillaShapes.All);
+            }
+            else
+            {
+                world.BlockNotifications.Enqueue(new BlockChange(neighbor, BlocksRegistry.Get("minecraft:stone"),
+                    world.BlockUpdates.GetBlock(neighbor)), BlockUpdateFlags.SkipOnPlace);
+                await world.BlockNotifications.DrainAsync();
+            }
+
+            Assert.True(ParseState(probe.GetProperty("updated").GetString()!)
+                .IsSameState(world.BlockUpdates.GetBlock(origin)));
+            var chunk = await world.GetChunkAsync(origin.X >> 4, origin.Z >> 4);
+            var ticks = Assert.IsType<Chunk>(chunk).FluidTicks.Pack().Where(tick => tick.Position == origin).ToArray();
+            var expected = probe.GetProperty("fluidTicks").EnumerateArray().ToArray();
+            Assert.Equal(expected.Length, ticks.Length);
+            for (var i = 0; i < expected.Length; i++)
+            {
+                Assert.Equal(Position(expected[i].GetProperty("pos")), ticks[i].Position);
+                Assert.Equal(expected[i].GetProperty("delay").GetInt32(), ticks[i].Delay);
+                Assert.Equal(expected[i].GetProperty("type").GetString(),
+                    $"minecraft:{ticks[i].Type.ToString().ToLowerInvariant()}");
+            }
+
+            return;
+        }
+
         if (probe.GetProperty("kind").GetString() == "landing")
         {
             world.LevelData.GameRules["entity_drops"] = probe.GetProperty("entityDrops").GetBoolean().ToString();
@@ -325,6 +371,18 @@ public sealed class VanillaSulfurBlocks
                         falling.ReadNbt(tag);
                     }
                 }
+                else if (action.TryGetProperty("spawnFalling", out var spawn))
+                {
+                    var falling = new FallingBlock(Location(spawn.GetProperty("pos")))
+                    {
+                        Level = world,
+                        Type = EntityType.FallingBlock,
+                        EntityId = Obsidian.Server.GetNextEntityId(),
+                        Block = ParseState(spawn.GetProperty("block").GetString()!),
+                        Motion = Location(spawn.GetProperty("motion"))
+                    };
+                    Assert.True(world.TryAddEntity(falling));
+                }
                 else
                 {
                     await PlaceAsync(world, action);
@@ -399,9 +457,18 @@ public sealed class VanillaSulfurBlocks
         await world.DoWorldTickAsync();
     }
 
-    private static async Task PlaceAsync(World world, JsonElement action) =>
-        await world.SetBlockAsync(Position(action.GetProperty("pos")),
-            ParseState(action.GetProperty("state").GetString()!), doBlockUpdate: true);
+    private static async Task PlaceAsync(World world, JsonElement action)
+    {
+        var position = Position(action.GetProperty("pos"));
+        await world.SetBlockAsync(position, ParseState(action.GetProperty("state").GetString()!),
+            doBlockUpdate: true);
+        if (action.TryGetProperty("withoutBlockEntity", out var absent) && absent.GetBoolean())
+        {
+            // A bare vanilla setblock moving_piston has no block entity carrying a moving block.
+            var chunk = await world.GetChunkAsync(position.X >> 4, position.Z >> 4);
+            chunk!.RemoveBlockEntity(position.X, position.Y, position.Z);
+        }
+    }
 
     private static void Compare(World world, JsonElement scenario, JsonElement checkpoint)
     {
@@ -414,7 +481,9 @@ public sealed class VanillaSulfurBlocks
             Assert.True(expected.IsSameState(actual),
                 $"{scenario.GetProperty("name")} tick {checkpoint.GetProperty("tick")} at {position}: "
                 + $"expected {checkpoint.GetProperty("states")[index]}, got {actual.UnlocalizedName} "
-                + $"{actual.GetProperty("potent_sulfur_state")} {actual.GetProperty("thickness")}");
+                + $"{actual.GetProperty("potent_sulfur_state")} {actual.GetProperty("thickness")}; "
+                + string.Join("; ", world.GetNonPlayerEntitiesInRange(new VectorD(0, 75, 0), 50)
+                    .OfType<Entity>().Select(entity => $"{entity.Type} {entity.Position} {entity.Motion}")));
             var countdown = checkpoint.GetProperty("countdowns")[index];
             if (countdown.ValueKind != JsonValueKind.Null)
             {
@@ -432,8 +501,26 @@ public sealed class VanillaSulfurBlocks
             Assert.Equal(checkpoint.GetProperty("hurtingFalling").GetInt32(),
                 entities.OfType<FallingBlock>().Count(entity => entity.StalactiteDamage > 0));
             Assert.Equal(checkpoint.GetProperty("items").GetInt32(), entities.OfType<ItemEntity>()
-                .Where(item => !item.Removed && item.Item.Holder.Id == ItemIds.SulfurSpike)
+                .Where(item => !item.Removed && item.Item.Holder.Id ==
+                    ItemsRegistry.Get(scenario.TryGetProperty("item", out var itemId)
+                        ? itemId.GetString()! : "minecraft:sulfur_spike").Id)
                 .Sum(item => item.Item.Count));
+        }
+
+        if (checkpoint.TryGetProperty("fallingMotion", out var motion))
+        {
+            var fallingEntities = entities.OfType<FallingBlock>().ToArray();
+            if (motion.ValueKind == JsonValueKind.Null)
+            {
+                Assert.Empty(fallingEntities);
+            }
+            else
+            {
+                var entity = Assert.Single(fallingEntities);
+                Assert.Equal(motion[0].GetDouble(), entity.Position.Y, precision: 7);
+                Assert.Equal(motion[1].GetDouble(), entity.Motion.Y, precision: 7);
+                Assert.Equal(motion[2].GetDouble() != 0, entity.MovementFlags.HasFlag(MovementFlags.OnGround));
+            }
         }
 
         if (checkpoint.TryGetProperty("embedded", out var embedded))

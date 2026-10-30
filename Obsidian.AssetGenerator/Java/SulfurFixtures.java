@@ -65,7 +65,39 @@ public final class SulfurFixtures {
             }
 
             var origin = position(input.getAsJsonArray("origin"));
-            if (input.get("kind").getAsString().equals("landing")) {
+            if (input.get("kind").getAsString().equals("shape_update")) {
+                var ticks = new JsonArray();
+                var blockTicks = java.lang.reflect.Proxy.newProxyInstance(
+                    SulfurFixtures.class.getClassLoader(),
+                    new Class<?>[] { net.minecraft.world.ticks.LevelTickAccess.class },
+                    (proxy, method, values) -> method.getReturnType() == boolean.class ? false : null);
+                var scheduler = (net.minecraft.world.level.ScheduledTickAccess)java.lang.reflect.Proxy.newProxyInstance(
+                    SulfurFixtures.class.getClassLoader(),
+                    new Class<?>[] { net.minecraft.world.level.ScheduledTickAccess.class },
+                    (proxy, method, values) -> {
+                        if (method.getName().equals("getBlockTicks")) {
+                            return blockTicks;
+                        }
+
+                        if (method.getName().equals("scheduleTick")
+                            && values[1] instanceof net.minecraft.world.level.material.Fluid fluid) {
+                            var tick = new JsonObject();
+                            tick.add("pos", coordinates((BlockPos)values[0]));
+                            tick.addProperty("type", BuiltInRegistries.FLUID.getKey(fluid).toString());
+                            tick.addProperty("delay", (int)values[2]);
+                            ticks.add(tick);
+                        }
+
+                        return null;
+                    });
+                var neighbor = position(input.getAsJsonArray("neighbor"));
+                var direction = Direction.valueOf(input.get("direction").getAsString()
+                    .toUpperCase(java.util.Locale.ROOT));
+                var updated = level.getBlockState(origin).updateShape(level, scheduler, origin, direction,
+                    neighbor, level.getBlockState(neighbor), RandomSource.create(1));
+                input.addProperty("updated", updated.toString().replace("Block{", "").replace("}", ""));
+                input.add("fluidTicks", ticks);
+            } else if (input.get("kind").getAsString().equals("landing")) {
                 level.rules.set(GameRules.ENTITY_DROPS, input.get("entityDrops").getAsBoolean(), null);
                 var falling = new LandingProbe(level);
                 falling.setPos(origin.getX() + 0.5, origin.getY(), origin.getZ() + 0.5);

@@ -9,8 +9,10 @@ internal static class ScenarioSulfurCaptures
         updates. Each checkpoint records absolute game time, full states at watched positions and potent sulfur's
         saved countdown. Reload actions save and restart vanilla; their elapsed game ticks are retained. Other
         actions run before the next tick. Optional entity samples count live falling blocks, damaging falling blocks
-        and total sulfur-spike items, and projectile samples count embedded projectiles. These samples do not record
-        sound effects. CaptureCases selects individual scenarios without re-recording the Java probes.
+        and total items (sulfur spikes unless item is supplied). Projectile samples count embedded projectiles.
+        Falling-motion samples retain height, vertical velocity and OnGround for explicitly summoned falling blocks.
+        withoutBlockEntity validates a bare moving_piston's absent block entity before stepping. These samples do not
+        record sound effects. CaptureCases selects individual scenarios without re-recording the Java probes.
         """;
 
     internal static async Task CaptureAsync(ScenarioServer vanilla, JsonObject root,
@@ -47,6 +49,15 @@ internal static class ScenarioSulfurCaptures
             foreach (var setup in scenario["setup"]!.AsArray())
             {
                 await PlaceAsync(vanilla, setup!);
+                if (setup!["withoutBlockEntity"]?.GetValue<bool>() == true)
+                {
+                    var feedback = await vanilla.RunInAsync(dimension,
+                        $"data get block {PositionOf(setup["pos"]!)}");
+                    if (!feedback.Contains("not a block entity", StringComparison.Ordinal))
+                    {
+                        throw new InvalidOperationException($"Expected no block entity: {feedback}");
+                    }
+                }
             }
 
             var checkpoints = new JsonArray();
@@ -71,6 +82,15 @@ internal static class ScenarioSulfurCaptures
                     else if (action["projectile"] is JsonObject projectile)
                     {
                         await ShootAsync(vanilla, projectile);
+                    }
+                    else if (action["spawnFalling"] is JsonObject falling)
+                    {
+                        var position = string.Join(" ", falling["pos"]!.AsArray());
+                        var motion = string.Join(",", falling["motion"]!.AsArray().Select(value => $"{value}d"));
+                        var block = falling["block"]!.GetValue<string>();
+                        await vanilla.RunInAsync(dimension,
+                            $"summon minecraft:falling_block {position} "
+                            + $"{{Tags:[\"shared_falling\"],Time:1,BlockState:\"{block}\",Motion:[{motion}]}}");
                     }
                     else if (action["fallingFlags"] is JsonObject flags)
                     {
@@ -146,13 +166,36 @@ internal static class ScenarioSulfurCaptures
             checkpoint["falling"] = await CountAsync(vanilla, "@e[type=minecraft:falling_block]");
             checkpoint["hurtingFalling"] = await CountAsync(vanilla,
                 "@e[type=minecraft:falling_block,nbt={HurtEntities:1b}]");
-            const string items = "@e[type=minecraft:item,nbt={Item:{id:\"minecraft:sulfur_spike\"}}]";
+            var item = scenario["item"]?.GetValue<string>() ?? "minecraft:sulfur_spike";
+            var items = $"@e[type=minecraft:item,nbt={{Item:{{id:\"{item}\"}}}}]";
             await vanilla.RunInAsync(ScenarioServer.Overworld, "scoreboard players set total sulfur_capture 0");
             await vanilla.RunInAsync(ScenarioServer.Overworld,
                 $"execute as {items} store result score @s sulfur_capture run data get entity @s Item.count");
             await vanilla.RunInAsync(ScenarioServer.Overworld,
                 $"execute as {items} run scoreboard players operation total sulfur_capture += @s sulfur_capture");
             checkpoint["items"] = await ScoreAsync(vanilla, "total");
+        }
+
+        if (scenario["recordFallingMotion"]?.GetValue<bool>() == true)
+        {
+            const string selector = "@e[tag=shared_falling,limit=1]";
+            if (await CountAsync(vanilla, selector) == 0)
+            {
+                checkpoint["fallingMotion"] = null;
+            }
+            else
+            {
+                var values = new JsonArray();
+                foreach (var path in new[] { "Pos[1]", "Motion[1]", "OnGround" })
+                {
+                    var feedback = await vanilla.RunInAsync(ScenarioServer.Overworld,
+                        $"data get entity {selector} {path}");
+                    var number = feedback[(feedback.LastIndexOf(' ') + 1)..].TrimEnd('d', 'f', 'b');
+                    values.Add(double.Parse(number, System.Globalization.CultureInfo.InvariantCulture));
+                }
+
+                checkpoint["fallingMotion"] = values;
+            }
         }
 
         if (scenario["recordProjectile"]?.GetValue<bool>() == true)

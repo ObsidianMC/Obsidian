@@ -552,7 +552,8 @@ the latter is recorded by `SulfurFixtures.java` through `CaptureFixtures=sulfur`
 Remaining sulfur limits:
 
 - Falling spikes use the shared simplified falling-block flight and collision implementation. Captures cover
-  support-loss timing, shattering and raw impact damage, but not exact per-tick falling trajectories. Falling
+  support-loss timing, shattering, raw impact damage and vertical sand contacts with full/partial floors and a
+  moving piston. General horizontal flight and per-tick spike trajectories remain unaudited. Falling
   entities do not yet persist the spike's damage multiplier. Helmet-specific damage reduction and durability loss
   for `damages_helmet` damage sources are not implemented in the shared combat path.
 - Tridents respect the projectile-breaking and mob-griefing game rules and reject adventure/spectator owners.

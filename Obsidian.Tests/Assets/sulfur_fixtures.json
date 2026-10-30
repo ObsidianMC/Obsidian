@@ -5184,6 +5184,406 @@
       "removed": true,
       "items": 0,
       "events": []
+    },
+    {
+      "name": "shape_glass_pane_wet",
+      "kind": "shape_update",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "neighbor": [
+        1,
+        72,
+        0
+      ],
+      "direction": "east",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:glass_pane[waterlogged=true]"
+        }
+      ],
+      "updated": "minecraft:glass_pane[east=false,north=false,south=false,waterlogged=true,west=false]",
+      "fluidTicks": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ]
+    },
+    {
+      "name": "shape_glass_pane_dry",
+      "kind": "shape_update",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "neighbor": [
+        1,
+        72,
+        0
+      ],
+      "direction": "east",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:glass_pane[waterlogged=false]"
+        }
+      ],
+      "updated": "minecraft:glass_pane[east=false,north=false,south=false,waterlogged=false,west=false]",
+      "fluidTicks": []
+    },
+    {
+      "name": "shape_iron_bars_wet",
+      "kind": "shape_update",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "neighbor": [
+        1,
+        72,
+        0
+      ],
+      "direction": "east",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:iron_bars[waterlogged=true]"
+        }
+      ],
+      "updated": "minecraft:iron_bars[east=false,north=false,south=false,waterlogged=true,west=false]",
+      "fluidTicks": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ]
+    },
+    {
+      "name": "shape_iron_bars_dry",
+      "kind": "shape_update",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "neighbor": [
+        1,
+        72,
+        0
+      ],
+      "direction": "east",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:iron_bars[waterlogged=false]"
+        }
+      ],
+      "updated": "minecraft:iron_bars[east=false,north=false,south=false,waterlogged=false,west=false]",
+      "fluidTicks": []
+    },
+    {
+      "name": "shape_oak_leaves_wet",
+      "kind": "shape_update",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "neighbor": [
+        1,
+        72,
+        0
+      ],
+      "direction": "east",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:oak_leaves[waterlogged=true,persistent=true,distance=7]"
+        }
+      ],
+      "updated": "minecraft:oak_leaves[distance=7,persistent=true,waterlogged=true]",
+      "fluidTicks": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ]
+    },
+    {
+      "name": "shape_oak_leaves_dry",
+      "kind": "shape_update",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "neighbor": [
+        1,
+        72,
+        0
+      ],
+      "direction": "east",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:oak_leaves[waterlogged=false,persistent=true,distance=7]"
+        }
+      ],
+      "updated": "minecraft:oak_leaves[distance=7,persistent=true,waterlogged=false]",
+      "fluidTicks": []
+    },
+    {
+      "name": "shape_sulfur_spike_wet",
+      "kind": "shape_update",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "neighbor": [
+        1,
+        72,
+        0
+      ],
+      "direction": "east",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[waterlogged=true,vertical_direction=up]"
+        }
+      ],
+      "updated": "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=true]",
+      "fluidTicks": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ]
+    },
+    {
+      "name": "shape_sulfur_spike_dry",
+      "kind": "shape_update",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "neighbor": [
+        1,
+        72,
+        0
+      ],
+      "direction": "east",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:sulfur_spike[waterlogged=false,vertical_direction=up]"
+        }
+      ],
+      "updated": "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=false]",
+      "fluidTicks": []
+    },
+    {
+      "name": "shape_pointed_dripstone_wet",
+      "kind": "shape_update",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "neighbor": [
+        1,
+        72,
+        0
+      ],
+      "direction": "east",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:pointed_dripstone[waterlogged=true,vertical_direction=up]"
+        }
+      ],
+      "updated": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=true]",
+      "fluidTicks": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ]
+    },
+    {
+      "name": "shape_pointed_dripstone_dry",
+      "kind": "shape_update",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "neighbor": [
+        1,
+        72,
+        0
+      ],
+      "direction": "east",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:pointed_dripstone[waterlogged=false,vertical_direction=up]"
+        }
+      ],
+      "updated": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]",
+      "fluidTicks": []
     }
   ]
 }

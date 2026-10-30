@@ -6685,7 +6685,809 @@
      "embedded": 1
     }
    ]
+  },
+  {
+   "name": "sand_waits_for_moving_piston",
+   "setup": [
+    {
+     "pos": [
+      0,
+      70,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:moving_piston",
+     "withoutBlockEntity": true
+    }
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "spawnFalling": {
+      "pos": [
+       0.5,
+       71.2,
+       0.5
+      ],
+      "motion": [
+       0,
+       -0.5,
+       0
+      ],
+      "block": "minecraft:sand"
+     }
+    },
+    {
+     "tick": 4,
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:air"
+    }
+   ],
+   "watch": [
+    [
+     0,
+     70,
+     0
+    ],
+    [
+     0,
+     71,
+     0
+    ]
+   ],
+   "ticks": 6,
+   "interval": 1,
+   "recordEntities": true,
+   "recordFallingMotion": true,
+   "item": "minecraft:sand",
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 41,
+     "states": [
+      "minecraft:stone",
+      "minecraft:moving_piston[facing=north,type=normal]"
+     ],
+     "countdowns": [
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0,
+     "fallingMotion": null
+    },
+    {
+     "tick": 1,
+     "gameTime": 42,
+     "states": [
+      "minecraft:stone",
+      "minecraft:moving_piston[facing=north,type=normal]"
+     ],
+     "countdowns": [
+      null,
+      null
+     ],
+     "falling": 1,
+     "hurtingFalling": 0,
+     "items": 0,
+     "fallingMotion": [
+      71,
+      0,
+      1
+     ]
+    },
+    {
+     "tick": 2,
+     "gameTime": 43,
+     "states": [
+      "minecraft:stone",
+      "minecraft:moving_piston[facing=north,type=normal]"
+     ],
+     "countdowns": [
+      null,
+      null
+     ],
+     "falling": 1,
+     "hurtingFalling": 0,
+     "items": 0,
+     "fallingMotion": [
+      71,
+      0,
+      1
+     ]
+    },
+    {
+     "tick": 3,
+     "gameTime": 44,
+     "states": [
+      "minecraft:stone",
+      "minecraft:moving_piston[facing=north,type=normal]"
+     ],
+     "countdowns": [
+      null,
+      null
+     ],
+     "falling": 1,
+     "hurtingFalling": 0,
+     "items": 0,
+     "fallingMotion": [
+      71,
+      0,
+      1
+     ]
+    },
+    {
+     "tick": 4,
+     "gameTime": 45,
+     "states": [
+      "minecraft:stone",
+      "minecraft:sand"
+     ],
+     "countdowns": [
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0,
+     "fallingMotion": null
+    },
+    {
+     "tick": 5,
+     "gameTime": 46,
+     "states": [
+      "minecraft:stone",
+      "minecraft:sand"
+     ],
+     "countdowns": [
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0,
+     "fallingMotion": null
+    },
+    {
+     "tick": 6,
+     "gameTime": 47,
+     "states": [
+      "minecraft:stone",
+      "minecraft:sand"
+     ],
+     "countdowns": [
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0,
+     "fallingMotion": null
+    }
+   ]
+  },
+  {
+   "name": "sand_lands_on_full_floor",
+   "setup": [
+    {
+     "pos": [
+      0,
+      70,
+      0
+     ],
+     "state": "minecraft:stone"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "spawnFalling": {
+      "pos": [
+       0.5,
+       71.2,
+       0.5
+      ],
+      "motion": [
+       0,
+       -0.5,
+       0
+      ],
+      "block": "minecraft:sand"
+     }
+    }
+   ],
+   "watch": [
+    [
+     0,
+     70,
+     0
+    ],
+    [
+     0,
+     71,
+     0
+    ]
+   ],
+   "ticks": 6,
+   "interval": 1,
+   "recordEntities": true,
+   "recordFallingMotion": true,
+   "item": "minecraft:sand",
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 87,
+     "states": [
+      "minecraft:stone",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0,
+     "fallingMotion": null
+    },
+    {
+     "tick": 1,
+     "gameTime": 88,
+     "states": [
+      "minecraft:stone",
+      "minecraft:sand"
+     ],
+     "countdowns": [
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0,
+     "fallingMotion": null
+    },
+    {
+     "tick": 2,
+     "gameTime": 89,
+     "states": [
+      "minecraft:stone",
+      "minecraft:sand"
+     ],
+     "countdowns": [
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0,
+     "fallingMotion": null
+    },
+    {
+     "tick": 3,
+     "gameTime": 90,
+     "states": [
+      "minecraft:stone",
+      "minecraft:sand"
+     ],
+     "countdowns": [
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0,
+     "fallingMotion": null
+    },
+    {
+     "tick": 4,
+     "gameTime": 91,
+     "states": [
+      "minecraft:stone",
+      "minecraft:sand"
+     ],
+     "countdowns": [
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0,
+     "fallingMotion": null
+    },
+    {
+     "tick": 5,
+     "gameTime": 92,
+     "states": [
+      "minecraft:stone",
+      "minecraft:sand"
+     ],
+     "countdowns": [
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0,
+     "fallingMotion": null
+    },
+    {
+     "tick": 6,
+     "gameTime": 93,
+     "states": [
+      "minecraft:stone",
+      "minecraft:sand"
+     ],
+     "countdowns": [
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0,
+     "fallingMotion": null
+    }
+   ]
+  },
+  {
+   "name": "sand_lands_on_partial_floor",
+   "setup": [
+    {
+     "pos": [
+      0,
+      70,
+      0
+     ],
+     "state": "minecraft:stone_slab[type=bottom]"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "spawnFalling": {
+      "pos": [
+       0.5,
+       71.2,
+       0.5
+      ],
+      "motion": [
+       0,
+       -0.5,
+       0
+      ],
+      "block": "minecraft:sand"
+     }
+    }
+   ],
+   "watch": [
+    [
+     0,
+     70,
+     0
+    ],
+    [
+     0,
+     71,
+     0
+    ]
+   ],
+   "ticks": 6,
+   "interval": 1,
+   "recordEntities": true,
+   "recordFallingMotion": true,
+   "item": "minecraft:sand",
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 133,
+     "states": [
+      "minecraft:stone_slab[type=bottom,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 0,
+     "fallingMotion": null
+    },
+    {
+     "tick": 1,
+     "gameTime": 134,
+     "states": [
+      "minecraft:stone_slab[type=bottom,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null
+     ],
+     "falling": 1,
+     "hurtingFalling": 0,
+     "items": 0,
+     "fallingMotion": [
+      70.66,
+      -0.5292000102996827,
+      0
+     ]
+    },
+    {
+     "tick": 2,
+     "gameTime": 135,
+     "states": [
+      "minecraft:stone_slab[type=bottom,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 1,
+     "fallingMotion": null
+    },
+    {
+     "tick": 3,
+     "gameTime": 136,
+     "states": [
+      "minecraft:stone_slab[type=bottom,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 1,
+     "fallingMotion": null
+    },
+    {
+     "tick": 4,
+     "gameTime": 137,
+     "states": [
+      "minecraft:stone_slab[type=bottom,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 1,
+     "fallingMotion": null
+    },
+    {
+     "tick": 5,
+     "gameTime": 138,
+     "states": [
+      "minecraft:stone_slab[type=bottom,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 1,
+     "fallingMotion": null
+    },
+    {
+     "tick": 6,
+     "gameTime": 139,
+     "states": [
+      "minecraft:stone_slab[type=bottom,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null
+     ],
+     "falling": 0,
+     "hurtingFalling": 0,
+     "items": 1,
+     "fallingMotion": null
+    }
+   ]
+  },
+  {
+   "name": "dripstone_up_column_shape",
+   "setup": [
+    {
+     "pos": [
+      0,
+      70,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:pointed_dripstone[vertical_direction=up]"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "pos": [
+      0,
+      72,
+      0
+     ],
+     "state": "minecraft:pointed_dripstone[vertical_direction=up]"
+    },
+    {
+     "tick": 2,
+     "pos": [
+      0,
+      73,
+      0
+     ],
+     "state": "minecraft:pointed_dripstone[vertical_direction=up]"
+    },
+    {
+     "tick": 3,
+     "pos": [
+      0,
+      73,
+      0
+     ],
+     "state": "minecraft:air"
+    }
+   ],
+   "watch": [
+    [
+     0,
+     71,
+     0
+    ],
+    [
+     0,
+     72,
+     0
+    ],
+    [
+     0,
+     73,
+     0
+    ]
+   ],
+   "ticks": 4,
+   "interval": 1,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 179,
+     "states": [
+      "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]",
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null
+     ]
+    },
+    {
+     "tick": 1,
+     "gameTime": 180,
+     "states": [
+      "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=up,waterlogged=false]",
+      "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null
+     ]
+    },
+    {
+     "tick": 2,
+     "gameTime": 181,
+     "states": [
+      "minecraft:pointed_dripstone[thickness=base,vertical_direction=up,waterlogged=false]",
+      "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=up,waterlogged=false]",
+      "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null
+     ]
+    },
+    {
+     "tick": 3,
+     "gameTime": 182,
+     "states": [
+      "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=up,waterlogged=false]",
+      "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null
+     ]
+    },
+    {
+     "tick": 4,
+     "gameTime": 183,
+     "states": [
+      "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=up,waterlogged=false]",
+      "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null
+     ]
+    }
+   ]
+  },
+  {
+   "name": "dripstone_down_column_shape",
+   "setup": [
+    {
+     "pos": [
+      0,
+      74,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      73,
+      0
+     ],
+     "state": "minecraft:pointed_dripstone[vertical_direction=down]"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "pos": [
+      0,
+      72,
+      0
+     ],
+     "state": "minecraft:pointed_dripstone[vertical_direction=down]"
+    },
+    {
+     "tick": 2,
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:pointed_dripstone[vertical_direction=down]"
+    },
+    {
+     "tick": 3,
+     "pos": [
+      0,
+      71,
+      0
+     ],
+     "state": "minecraft:air"
+    }
+   ],
+   "watch": [
+    [
+     0,
+     73,
+     0
+    ],
+    [
+     0,
+     72,
+     0
+    ],
+    [
+     0,
+     71,
+     0
+    ]
+   ],
+   "ticks": 4,
+   "interval": 1,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 223,
+     "states": [
+      "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]",
+      "minecraft:air",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null
+     ]
+    },
+    {
+     "tick": 1,
+     "gameTime": 224,
+     "states": [
+      "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]",
+      "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null
+     ]
+    },
+    {
+     "tick": 2,
+     "gameTime": 225,
+     "states": [
+      "minecraft:pointed_dripstone[thickness=base,vertical_direction=down,waterlogged=false]",
+      "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]",
+      "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null
+     ]
+    },
+    {
+     "tick": 3,
+     "gameTime": 226,
+     "states": [
+      "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]",
+      "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null
+     ]
+    },
+    {
+     "tick": 4,
+     "gameTime": 227,
+     "states": [
+      "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]",
+      "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null,
+      null,
+      null
+     ]
+    }
+   ]
   }
  ],
- "_notes": "Recorded from a frozen vanilla 26.3 server over RCON, seed test-seed. Setup and actions use setblock with updates. Each checkpoint records absolute game time, full states at watched positions and potent sulfur's saved countdown. Reload actions save and restart vanilla; their elapsed game ticks are retained. Other actions run before the next tick. Optional entity samples count live falling blocks, damaging falling blocks and total sulfur-spike items, and projectile samples count embedded projectiles. These samples do not record sound effects. CaptureCases selects individual scenarios without re-recording the Java probes."
+ "_notes": "Recorded from a frozen vanilla 26.3 server over RCON, seed test-seed. Setup and actions use setblock with updates. Each checkpoint records absolute game time, full states at watched positions and potent sulfur's saved countdown. Reload actions save and restart vanilla; their elapsed game ticks are retained. Other actions run before the next tick. Optional entity samples count live falling blocks, damaging falling blocks and total items (sulfur spikes unless item is supplied). Projectile samples count embedded projectiles. Falling-motion samples retain height, vertical velocity and OnGround for explicitly summoned falling blocks. withoutBlockEntity validates a bare moving_piston's absent block entity before stepping. These samples do not record sound effects. CaptureCases selects individual scenarios without re-recording the Java probes."
 }

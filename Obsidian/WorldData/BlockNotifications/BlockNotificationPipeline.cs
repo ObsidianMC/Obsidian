@@ -185,8 +185,10 @@ internal sealed class BlockNotificationPipeline
                 return;
 
             var rawBrightness = state.BlockClass() == "MushroomBlock" ? this.world.GetRawBrightness(work.Position) : 15;
+            ShapeUpdater.ScheduleFluidTick(this.shapeView, state, work.Position, source);
             var updated = this.world.UpdateShape(work.Position, state, work.Face, work.Source, source)
-                ?? ShapeUpdater.UpdateShape(this.shapeView, state, work.Position, work.Face, source, rawBrightness);
+                ?? ShapeUpdater.UpdateShape(this.shapeView, state, work.Position, work.Face, source,
+                    rawBrightness, scheduleFluidTick: false);
             if (!updated.IsSameState(state))
             {
                 if (updated.IsAir && !state.IsAir)

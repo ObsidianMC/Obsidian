@@ -13,10 +13,16 @@ replaces only what vanilla produced.
 - `sulfur_scenarios.json` (`VanillaSulfurBlocks`) defines setup, actions, watched positions and sampling intervals.
   It records full block states and potent sulfur countdowns at absolute game times, including elapsed ticks across
   save/restart actions. Its world seed is `test-seed`. Cases with `recordEntities` also sample live falling blocks,
-  damaging falling blocks and total sulfur-spike item counts. Extra `sampleTicks` check the interval before landing
+  damaging falling blocks and total item counts (`item` selects the item; sulfur spikes by default).
+  Extra `sampleTicks` check the interval before landing
   as well as the completed fall, so immediate disappearance, missing drops and endlessly falling entities fail.
   `recordProjectile` samples embedded projectiles; projectile actions exercise collision handling through the live
   entity tick. RCON samples do not record sound effects.
+  `spawnFalling` supplies a block, position and motion; `recordFallingMotion` records its height, vertical velocity
+  and grounded flag. The sand references cover a full floor, a partial floor and waiting for a moving piston to
+  clear. `withoutBlockEntity` validates the absence of a block entity after vanilla's bare moving-piston placement;
+  the replay removes Obsidian's automatically created default entity to reproduce that fixture's block view.
+  The dripstone column references cover shape changes on adding and removing tips in both vertical directions.
 - `sulfur_fixtures.json` (also `VanillaSulfurBlocks`) holds bounded Java probes for sulfur placement, growth and
   subsequent random draws, gas source/visibility, geyser force and fall-distance handling, trident thresholds and
   raw falling-spike damage. `Java/SulfurFixtures.java`, registered in `FixtureDumper.cs`, invokes vanilla's routines
@@ -26,6 +32,9 @@ replaces only what vanilla produced.
   The `review_landing_*` probes instead supply a resolved ground contact and invoke vanilla's falling entity tick;
   they record removal, item drops and level events for every combination of `entity_drops`, `DropItem`, `CancelDrop`
   and `Silent`. The replay checks both item totals and the clients' landing-effect packets.
+  The `shape_*` probes record vanilla's returned shape and scheduled water ticks for wet and dry panes, bars,
+  leaves, sulfur spikes and pointed dripstone. Each reference is replayed through both the notification pipeline
+  and the fluid shape-update path, including cases where a registered behavior returns an unchanged state.
 
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.

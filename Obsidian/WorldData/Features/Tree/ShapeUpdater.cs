@@ -74,9 +74,13 @@ internal static class ShapeUpdater
         Vector position,
         BlockFace direction,
         IBlock neighbor,
-        int rawBrightness = 15)
+        int rawBrightness = 15,
+        bool scheduleFluidTick = true)
     {
-        ScheduleFluidTick(level, state, position, neighbor);
+        if (scheduleFluidTick)
+        {
+            ScheduleFluidTick(level, state, position, neighbor);
+        }
 
         switch (state.BlockClass())
         {
@@ -248,7 +252,7 @@ internal static class ShapeUpdater
     /// The fluid tick vanilla's <c>updateShape</c> schedules: liquids when they or the changed neighbor are a source, every
     /// waterlogged block, and seagrass, kelp and bubble columns (always full of water).
     /// </summary>
-    private static void ScheduleFluidTick(IWorldGenLevel level, IBlock state, Vector position, IBlock neighbor)
+    internal static void ScheduleFluidTick(IWorldGenLevel level, IBlock state, Vector position, IBlock neighbor)
     {
         if (state.IsLiquidBlock())
         {
