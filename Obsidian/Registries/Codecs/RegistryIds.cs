@@ -36,6 +36,7 @@ internal static class RegistryIds
     // Vanilla's placed features, the keys of Obsidian's placed feature assets.
     private static readonly Lazy<FrozenSet<string>> placedFeatures = new(() => AssetNames("worldgen.placed_features")
         .SelectMany(Keys)
+        .Concat(CurrentReferences("placed_feature"))
         .ToFrozenSet());
 
     // Vanilla's configured carvers, one asset each.
@@ -53,6 +54,20 @@ internal static class RegistryIds
 
     public static bool IsConfiguredCarver(string identifier) => configuredCarvers.Value.Contains(identifier);
 
+    // Terrain still uses legacy feature assets during Phase 5. Format-121 readers also recognize the current
+    // registry's identifiers, including entries not referenced by vanilla biomes.
+    private static IEnumerable<string> CurrentReferences(string registry)
+    {
+        var resource = $"Obsidian.Assets.data_pack.{registry}_ids.json";
+        using var stream = typeof(RegistryIds).Assembly.GetManifestResourceStream(resource)!;
+        using var document = JsonDocument.Parse(stream);
+
+        foreach (var identifier in document.RootElement.EnumerateArray())
+        {
+            yield return identifier.GetString()!;
+        }
+    }
+
     /// <summary>
     /// Whether an entity type is vanilla's or a loaded plugin's.
     /// </summary>
@@ -66,6 +81,7 @@ internal static class RegistryIds
 
     private static FrozenSet<string> ReadConfiguredCarvers() => AssetNames("configured_carver")
         .Select(resource => $"minecraft:{Path.GetFileNameWithoutExtension(resource).Split('.')[^1]}")
+        .Concat(CurrentReferences("carver"))
         .ToFrozenSet();
 
     // The keys of a JSON object asset, like the identifiers of sounds.json.

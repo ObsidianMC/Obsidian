@@ -1,12 +1,14 @@
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.Nbt;
+using System.IO;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using static Obsidian.Registries.Codecs.CodecJson;
 
 namespace Obsidian.Registries.Codecs;
 
 /// <summary>
-/// A plugin's biome as vanilla 1.21.11's Biome.DIRECT_CODEC reads a data pack's: its climate, attributes, effects,
+/// A plugin's biome as vanilla 26.3's Biome.DIRECT_CODEC reads a data pack's: its climate, attributes, effects,
 /// generation and mob spawns.
 /// </summary>
 /// <remarks>
@@ -51,6 +53,7 @@ internal sealed record BiomeData(
         Func<string, bool>? isConfiguredCarver = null)
     {
         Object(root, "");
+        root = MigrateLegacySpawns(root);
 
         var effects = Object(Required(root, "", "effects"), "effects");
         var attributes = TryGet(root, "attributes", out var attributesValue)
@@ -60,9 +63,12 @@ internal sealed record BiomeData(
         var carvers = ReadHolderSet(
             Required(root, "", "carvers"),
             "carvers",
-            "worldgen/configured_carver",
+            "worldgen/carver",
             isConfiguredCarver ?? RegistryIds.IsConfiguredCarver,
             inline: true);
+
+        var (spawners, spawnCosts) = ReadBiomeSpawns(root);
+        var spawnProbability = attributes.Apply("minecraft:gameplay/creature_world_gen_spawn_probability", 0.1f);
 
         return new BiomeData(
             HasPrecipitation: Bool(Required(root, "", "has_precipitation"), "has_precipitation"),
@@ -80,11 +86,187 @@ internal sealed record BiomeData(
                 Required(root, "", "features"),
                 "features",
                 isPlacedFeature ?? RegistryIds.IsPlacedFeature),
-            CreatureSpawnProbability: TryGet(root, "creature_spawn_probability", out var probability)
-                ? Float(probability, "creature_spawn_probability", 0f, 0.9999999f)
-                : 0.1f,
-            Spawners: ReadSpawners(Required(root, "", "spawners"), "spawners"),
-            SpawnCosts: ReadSpawnCosts(Required(root, "", "spawn_costs"), "spawn_costs"));
+            CreatureSpawnProbability: Math.Clamp(spawnProbability, 0f, 0.9999999f),
+            Spawners: spawners,
+            SpawnCosts: spawnCosts);
+    }
+
+    private static JsonElement MigrateLegacySpawns(JsonElement root)
+    {
+        var hasSpawners = TryGet(root, "spawners", out var spawners);
+        var hasCosts = TryGet(root, "spawn_costs", out var costs);
+        var hasProbability = TryGet(root, "creature_spawn_probability", out var probability);
+
+        if (!hasSpawners && !hasCosts && !hasProbability)
+            return root;
+
+        var attributes = TryGet(root, "attributes", out var attributesValue)
+            ? JsonNode.Parse(Object(attributesValue, "attributes").GetRawText())!.AsObject()
+            : new JsonObject();
+
+        if (hasSpawners || hasCosts)
+        {
+            const string attribute = "minecraft:gameplay/natural_mob_spawns";
+            RejectLegacySpawnConflict(attributes, "spawners, spawn_costs", attribute);
+
+            var settings = new JsonObject
+            {
+                ["spawns_by_category"] = hasSpawners ? MigrateLegacySpawners(spawners) : new JsonObject(),
+                ["spawn_costs"] = hasCosts ? JsonNode.Parse(costs.GetRawText()) : new JsonObject()
+            };
+
+            // Like 26.3's vanilla biomes, overlay the dimension's categories and costs with this biome's entries.
+            attributes[attribute] = new JsonObject
+            {
+                ["modifier"] = "overlay",
+                ["argument"] = settings
+            };
+        }
+
+        if (hasProbability)
+        {
+            const string attribute = "minecraft:gameplay/creature_world_gen_spawn_probability";
+            RejectLegacySpawnConflict(attributes, "creature_spawn_probability", attribute);
+            attributes[attribute] = JsonNode.Parse(probability.GetRawText());
+        }
+
+        // Reuse the 26.3 readers so migrated attributes and the server's spawn model have the same validation.
+        var converted = JsonNode.Parse(root.GetRawText())!.AsObject();
+        converted["attributes"] = attributes;
+        converted.Remove("spawners");
+        converted.Remove("spawn_costs");
+        converted.Remove("creature_spawn_probability");
+
+        return JsonSerializer.SerializeToElement(converted);
+    }
+
+    private static void RejectLegacySpawnConflict(JsonObject attributes, string fields, string attribute)
+    {
+        foreach (var property in attributes)
+        {
+            if (TryParseIdentifier(property.Key, out var id) && id == attribute)
+            {
+                throw Error(fields, $"cannot combine legacy fields with attributes.{attribute}; "
+                    + $"use only attributes.{attribute} in 26.3");
+            }
+        }
+    }
+
+    private static JsonObject MigrateLegacySpawners(JsonElement value)
+    {
+        Object(value, "spawners");
+
+        var categories = new JsonObject();
+
+        foreach (var property in value.EnumerateObject())
+        {
+            var categoryPath = Field("spawners", property.Name);
+            var list = Array(property.Value, categoryPath);
+            var mobs = new JsonArray();
+
+            foreach (var item in list.EnumerateArray())
+            {
+                var mob = ReadSpawner(item, Index(categoryPath, mobs.Count));
+                var count = TryGet(item, "count", out var provider)
+                    ? JsonNode.Parse(provider.GetRawText())
+                    : new JsonObject
+                    {
+                        ["type"] = IntProviderTypes.Uniform,
+                        ["min_inclusive"] = mob.MinCount,
+                        ["max_inclusive"] = mob.MaxCount
+                    };
+
+                mobs.Add(new JsonObject
+                {
+                    ["type"] = mob.Type,
+                    ["weight"] = mob.Weight,
+                    ["count"] = count
+                });
+            }
+
+            categories[property.Name] = mobs;
+        }
+
+        return categories;
+    }
+
+    // Spawns are server-only attributes in 26.3. Keep their providers in the attribute map as well as exposing the
+    // biome's own values through the existing server model. Dimension/biome overlay composition belongs to spawning.
+    private static (Dictionary<string, SpawnerMob[]> Spawners, Dictionary<string, SpawnCost> Costs)
+        ReadBiomeSpawns(JsonElement root)
+    {
+        if (!TryGet(root, "attributes", out var attributes))
+            return ([], []);
+
+        foreach (var property in attributes.EnumerateObject().Reverse())
+        {
+            if (!TryParseIdentifier(property.Name, out var id) || id != "minecraft:gameplay/natural_mob_spawns")
+                continue;
+
+            var value = property.Value;
+
+            // Match the attribute codec's precedence: a complete value wins even if it has unknown modifier fields.
+            try
+            {
+                return ReadSpawnSettings(value, "attributes.natural_mob_spawns");
+            }
+            catch (InvalidDataException) when (TryGet(value, "modifier", out _))
+            {
+                var argument = Required(value, "attributes.natural_mob_spawns", "argument");
+                return ReadSpawnSettings(argument, "attributes.natural_mob_spawns.argument");
+            }
+        }
+
+        return ([], []);
+    }
+
+    private static (Dictionary<string, SpawnerMob[]> Spawners, Dictionary<string, SpawnCost> Costs)
+        ReadSpawnSettings(JsonElement value, string path)
+    {
+        Object(value, path);
+
+        var spawners = ReadSpawners(
+            Required(value, path, "spawns_by_category"),
+            Field(path, "spawns_by_category"));
+        var costs = ReadSpawnCosts(Required(value, path, "spawn_costs"), Field(path, "spawn_costs"));
+
+        return (spawners, costs);
+    }
+
+    internal static NbtCompound ReadMobSpawns(JsonElement value, string path, string name)
+    {
+        var (spawners, costs) = ReadSpawnSettings(value, path);
+        var categories = new NbtCompound("spawns_by_category");
+
+        foreach (var (category, mobs) in spawners)
+        {
+            var list = new NbtList(NbtTagType.Compound, category);
+
+            foreach (var mob in mobs)
+            {
+                list.Add(new NbtCompound
+                {
+                    new NbtTag<string>("type", mob.Type),
+                    IntProviderCodec.ToNbt(mob.Count!, "count"),
+                    new NbtTag<int>("weight", mob.Weight)
+                });
+            }
+
+            categories.Add(list);
+        }
+
+        var spawnCosts = new NbtCompound("spawn_costs");
+
+        foreach (var (type, cost) in costs)
+        {
+            spawnCosts.Add(new NbtCompound(type)
+            {
+                new NbtTag<double>("energy_budget", cost.EnergyBudget),
+                new NbtTag<double>("charge", cost.Charge)
+            });
+        }
+
+        return new NbtCompound(name) { categories, spawnCosts };
     }
 
     /// <summary>
@@ -236,7 +418,7 @@ internal sealed record BiomeData(
         return exists(id) ? id : throw Error(path, $"{id} isn't a {registry}");
     }
 
-    // Vanilla's spawners: lists of {type, minCount, maxCount, weight} by mob category.
+    // Vanilla 26.3's weighted spawners, by mob category.
     private static Dictionary<string, SpawnerMob[]> ReadSpawners(JsonElement value, string path)
     {
         Object(value, path);
@@ -256,7 +438,7 @@ internal sealed record BiomeData(
 
             foreach (var item in property.Value.EnumerateArray())
             {
-                var mob = ReadSpawner(item, Index(categoryPath, mobs.Count));
+                var mob = ReadSpawner(item, Index(categoryPath, mobs.Count), requireCount: true);
                 totalWeight += mob.Weight;
                 mobs.Add(mob);
             }
@@ -272,10 +454,9 @@ internal sealed record BiomeData(
     }
 
     /// <summary>
-    /// Reads a spawner like vanilla's weighted SpawnerData: <c>{type, weight, minCount, maxCount}</c>, of vanilla's
-    /// or a loaded plugin's entity type.
+    /// Reads a 26.3 spawner's <c>count</c> provider. Obsidian's biome modifiers also accept their older bounds.
     /// </summary>
-    public static SpawnerMob ReadSpawner(JsonElement value, string path)
+    public static SpawnerMob ReadSpawner(JsonElement value, string path, bool requireCount = false)
     {
         Object(value, path);
 
@@ -283,9 +464,24 @@ internal sealed record BiomeData(
         if (!RegistryIds.IsEntityType(type))
             throw Error(Field(path, "type"), $"{type} isn't an entity type");
 
+        var weight = Int(Required(value, path, "weight"), Field(path, "weight"), 0, int.MaxValue);
+
+        if (requireCount || TryGet(value, "count", out _))
+        {
+            var count = IntProviderCodec.Read(Required(value, path, "count"), Field(path, "count"));
+
+            return new SpawnerMob
+            {
+                Type = type,
+                Count = count,
+                MinCount = count.MinValue,
+                MaxCount = count.MaxValue,
+                Weight = weight
+            };
+        }
+
         var minCount = Int(Required(value, path, "minCount"), Field(path, "minCount"), 1, int.MaxValue);
         var maxCount = Int(Required(value, path, "maxCount"), Field(path, "maxCount"), 1, int.MaxValue);
-        var weight = Int(Required(value, path, "weight"), Field(path, "weight"), 0, int.MaxValue);
 
         if (minCount > maxCount)
             throw Error(path, $"minCount ({minCount}) is more than maxCount ({maxCount})");

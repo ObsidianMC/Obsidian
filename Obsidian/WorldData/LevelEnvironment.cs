@@ -403,7 +403,7 @@ internal sealed record BedRule(string CanSleep, string CanSetSpawn, bool Explode
             return null;
         }
 
-        var explodes = rule.TryGetTag<NbtTag<byte>>("explodes", out var flag) && flag.Value != 0;
+        var explodes = rule.TryGetTag<NbtTag<byte>>("destroy_on_use", out var flag) && flag.Value != 0;
         var message = rule.TryGetTag<NbtTag<string>>("error_message", out var json) ? Message(json.Value) : null;
 
         return new BedRule(canSleep.Value, canSetSpawn.Value, explodes, message);
