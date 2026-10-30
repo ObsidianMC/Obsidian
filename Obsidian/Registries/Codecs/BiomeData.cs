@@ -101,7 +101,7 @@ internal sealed record BiomeData(
             return root;
 
         var attributes = TryGet(root, "attributes", out var attributesValue)
-            ? JsonNode.Parse(Object(attributesValue, "attributes").GetRawText())!.AsObject()
+            ? ToNode(Object(attributesValue, "attributes")).AsObject()
             : new JsonObject();
 
         if (hasSpawners || hasCosts)
@@ -112,7 +112,7 @@ internal sealed record BiomeData(
             var settings = new JsonObject
             {
                 ["spawns_by_category"] = hasSpawners ? MigrateLegacySpawners(spawners) : new JsonObject(),
-                ["spawn_costs"] = hasCosts ? JsonNode.Parse(costs.GetRawText()) : new JsonObject()
+                ["spawn_costs"] = hasCosts ? ToNode(costs) : new JsonObject()
             };
 
             // Like 26.3's vanilla biomes, overlay the dimension's categories and costs with this biome's entries.
@@ -127,11 +127,11 @@ internal sealed record BiomeData(
         {
             const string attribute = "minecraft:gameplay/creature_world_gen_spawn_probability";
             RejectLegacySpawnConflict(attributes, "creature_spawn_probability", attribute);
-            attributes[attribute] = JsonNode.Parse(probability.GetRawText());
+            attributes[attribute] = ToNode(probability);
         }
 
         // Reuse the 26.3 readers so migrated attributes and the server's spawn model have the same validation.
-        var converted = JsonNode.Parse(root.GetRawText())!.AsObject();
+        var converted = ToNode(root).AsObject();
         converted["attributes"] = attributes;
         converted.Remove("spawners");
         converted.Remove("spawn_costs");
@@ -139,6 +139,10 @@ internal sealed record BiomeData(
 
         return JsonSerializer.SerializeToElement(converted);
     }
+
+    // Copies an element already read (leniently, like vanilla's Gson: comments and trailing commas allowed) into a
+    // node without parsing its raw text again, which would reject those.
+    private static JsonNode ToNode(JsonElement element) => JsonSerializer.SerializeToNode(element)!;
 
     private static void RejectLegacySpawnConflict(JsonObject attributes, string fields, string attribute)
     {
@@ -168,7 +172,7 @@ internal sealed record BiomeData(
             {
                 var mob = ReadSpawner(item, Index(categoryPath, mobs.Count));
                 var count = TryGet(item, "count", out var provider)
-                    ? JsonNode.Parse(provider.GetRawText())
+                    ? ToNode(provider)
                     : new JsonObject
                     {
                         ["type"] = IntProviderTypes.Uniform,
