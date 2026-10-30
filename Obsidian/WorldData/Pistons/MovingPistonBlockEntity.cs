@@ -68,48 +68,28 @@ internal sealed class MovingPistonBlockEntity : BlockEntity
 
     protected internal override void Load(NbtCompound tag)
     {
-        this.movedState = BlocksRegistry.Get(tag.TryGetTagValue<int>("MovedState", out var state) ? state : BlockIds.Air);
-        this.facing = Enum.TryParse<BlockFace>(tag.TryGetTagValue<string>("Facing", out var face) ? face : null, true, out var parsed)
-            ? parsed
-            : BlockFace.North;
-        this.extending = tag.TryGetTagValue<bool>("Extending", out var extend) && extend;
-        this.source = tag.TryGetTagValue<bool>("Source", out var isSource) && isSource;
-        this.progress = tag.TryGetTagValue<float>("Progress", out var saved) ? saved : 0;
+        this.movedState = tag.TryGetTag("blockState", out var state) ? BlockStateNbt.Read(state) : BlocksRegistry.Air;
+        this.facing = tag.TryGetTagValue<int>("facing", out var face) && face is >= 0 and <= 5
+            ? (BlockFace)face : BlockFace.North;
+        this.extending = tag.TryGetBool("extending", out var extend) && extend;
+        this.source = tag.TryGetBool("source", out var isSource) && isSource;
+        this.progress = tag.TryGetTagValue<float>("progress", out var saved) ? saved : 0;
         this.progressO = this.progress;
     }
 
     protected internal override void Save(NbtCompound tag)
     {
-        // The full state id, so properties such as facing or axis survive a reload.
-        tag.Add(new NbtTag<int>("MovedState", this.movedState.GetHashCode()));
-        tag.Add(new NbtTag<string>("Facing", this.facing.ToString().ToLowerInvariant()));
-        tag.Add(new NbtTag<bool>("Extending", this.extending));
-        tag.Add(new NbtTag<bool>("Source", this.source));
-        tag.Add(new NbtTag<float>("Progress", this.progress));
+        tag.Add(BlockStateNbt.Write(this.movedState, "blockState"));
+        tag.Add(new NbtTag<int>("facing", (int)this.facing));
+        tag.Add(new NbtTag<bool>("extending", this.extending));
+        tag.Add(new NbtTag<bool>("source", this.source));
+        tag.Add(new NbtTag<float>("progress", this.progressO));
     }
 
-    // Vanilla getUpdateTag: the client rebuilds the moving block from its blockState, facing and progress.
     protected internal override NbtCompound? GetUpdateData()
     {
-        var state = new NbtCompound("blockState") { new NbtTag<string>("Name", this.movedState.UnlocalizedName) };
-        var properties = this.movedState.GetProperties();
-        if (properties.Count > 0)
-        {
-            var values = new NbtCompound("Properties");
-            foreach (var (name, value) in properties)
-                values.Add(new NbtTag<string>(name, value));
-
-            state.Add(values);
-        }
-
-        var tag = new NbtCompound
-        {
-            state,
-            new NbtTag<string>("facing", this.facing.ToString().ToLowerInvariant()),
-            new NbtTag<float>("progress", this.progress),
-            new NbtTag<bool>("extending", this.extending),
-            new NbtTag<bool>("source", this.source)
-        };
+        var tag = new NbtCompound();
+        this.Save(tag);
         return tag;
     }
 

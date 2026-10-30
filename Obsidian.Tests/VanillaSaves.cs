@@ -50,11 +50,10 @@ public sealed class VanillaSaves : IDisposable
             Directory.Delete(this.folder, recursive: true);
     }
 
-    [Fact(DisplayName = "Obsidian saves chunks in vanilla's section shape and reloads them unchanged",
-        Skip = "Phase 3: the fixture is a 1.21.11 save, whose structure references are only kept once it's upgraded")]
+    [Fact(DisplayName = "Obsidian saves chunks in vanilla's section shape and reloads them unchanged")]
     public async Task SavedChunkHasVanillaShape()
     {
-        await WriteChunkAsync(this.folder, VanillaChunk());
+        await WriteChunkAsync(this.folder, Obsidian.WorldData.Upgrade.LegacyChunkUpgrade.UpgradeChunk(VanillaChunk()));
         var loaded = await LoadChunkAsync(this.folder);
 
         Assert.Equal(ChunkGenStage.full, loaded.ChunkStatus);
@@ -88,8 +87,8 @@ public sealed class VanillaSaves : IDisposable
         var palette = ((NbtList)blockStates["palette"]).Cast<NbtCompound>().ToList();
         Assert.All(palette, entry => Assert.False(entry.HasTag("Id")));
 
-        var savedStairs = palette.Single(entry => entry.GetString("Name") == "minecraft:oak_stairs");
-        Assert.Equal("top", ((NbtCompound)savedStairs["Properties"]).GetString("half"));
+        var savedStairs = palette.Single(entry => entry.TryGetTagValue<string>("id", out var id) && id == "minecraft:oak_stairs");
+        Assert.Equal("top", ((NbtCompound)savedStairs["properties"]).GetString("half"));
 
         // Two states pack 4 bits per block (16 per long), as vanilla requires.
         Assert.Equal(256, ((NbtArray<long>)blockStates["data"]).Count);
@@ -412,7 +411,7 @@ public sealed class VanillaSaves : IDisposable
     /// <summary>
     /// A complete chunk as vanilla 1.21.11 saves it, with two sections. Section 0 holds stone with oak stairs
     /// (by name and properties) at <see cref="stairs"/>, over plains with a desert cell at <see cref="desert"/>.
-    /// Section 1 is granite in Obsidian's previous format, by state id.
+    /// Section 1 is granite.
     /// </summary>
     private static NbtCompound VanillaChunk()
     {
@@ -491,7 +490,6 @@ public sealed class VanillaSaves : IDisposable
                             new NbtCompound
                             {
                                 new NbtTag<string>("Name", "minecraft:granite"),
-                                new NbtTag<int>("Id", BlocksRegistry.Granite.GetHashCode())
                             }
                         }
                     }

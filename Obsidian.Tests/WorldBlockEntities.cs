@@ -305,10 +305,11 @@ public sealed class WorldBlockEntities : IDisposable
                     Slotted(new ItemStack(ItemsRegistry.Stone, 3), 0),
                     Slotted(new ItemStack(ItemsRegistry.Apple, 5), 2)),
                 ChatMessage.Simple("Smeltery").ToNbt("CustomName"),
-                new NbtTag<short>("cooking_time_spent", 40),
-                new NbtTag<short>("cooking_total_time", 200),
-                new NbtTag<short>("lit_time_remaining", 900),
-                new NbtTag<short>("lit_total_time", 1600),
+                new NbtTag<int>("cooking_time_spent", 40),
+                new NbtTag<int>("cooking_total_time", 200),
+                new NbtTag<int>("lit_time_remaining", 90000),
+                new NbtTag<int>("lit_total_time", 160000),
+                new NbtTag<float>("speed_multiplier", 2.5f),
                 new NbtCompound("RecipesUsed") { new NbtTag<int>("minecraft:stone", 2) }
             ]),
             ("minecraft:chest", typeof(VanillaContainerBlockEntity),
@@ -319,8 +320,11 @@ public sealed class WorldBlockEntities : IDisposable
             ("minecraft:brewing_stand", typeof(BrewingStandBlockEntity),
             [
                 Items(Slotted(new ItemStack(ItemsRegistry.NetherWart, 2), BrewingStand.IngredientSlot)),
-                new NbtTag<short>("BrewTime", 100),
-                new NbtTag<byte>("Fuel", 5)
+                new NbtTag<int>("BrewTime", 50000),
+                new NbtTag<int>("Fuel", 300),
+                new NbtTag<int>("total_brew_time", 55000),
+                new NbtTag<int>("total_fuel", 400),
+                new NbtTag<float>("speed_multiplier", 0.5f)
             ]),
             ("minecraft:hopper", typeof(HopperBlockEntity),
             [
@@ -334,6 +338,11 @@ public sealed class WorldBlockEntities : IDisposable
                 {
                     new NbtCompound("entity") { new NbtTag<string>("id", "minecraft:zombie") }
                 }
+            ]),
+            ("minecraft:sign", typeof(DataBlockEntity),
+            [
+                new NbtTag<byte>("allow_op_features", 1),
+                new NbtTag<byte>("is_waxed", 1)
             ]),
             ("othermod:machine", typeof(DataBlockEntity), [new NbtTag<int>("energy", 5)])
         ];
@@ -352,6 +361,7 @@ public sealed class WorldBlockEntities : IDisposable
             foreach (var field in fields)
                 tag.Add(field);
 
+            BlockEntityNbt.EnsureSaveDefaults(tag);
             var loaded = BlockEntityNbt.Load(tag, id, origin);
 
             Assert.IsType(expectedClass, loaded);
@@ -970,21 +980,24 @@ public sealed class WorldBlockEntities : IDisposable
         var pot = BlocksRegistry.DecoratedPot.WithProperty("cracked", "true");
         await context.World.SetBlockAsync(position, pot);
         var potEntity = Assert.IsType<DataBlockEntity>(chunk.GetBlockEntity(4, 70, 4));
-        var sherds = new NbtList(NbtTagType.String, "sherds");
-        foreach (var sherd in new[] { "minecraft:angler_pottery_sherd", "minecraft:brick" })
-            sherds.Add(new NbtTag<string>(string.Empty, sherd));
-        potEntity.Set(sherds);
-        var filledPot = new ItemStack(ItemsRegistry.DecoratedPot, 1, ComponentBuilder.Container with
+        var decoratedSherd = new ItemStack(ItemsRegistry.AnglerPotterySherd, 1, ComponentBuilder.CustomData with
         {
-            Value = [new ItemStack(ItemsRegistry.Diamond, 7)]
+            Value = new NbtCompound { new NbtTag<int>("pattern", 7) }
         });
+        var filledPot = new ItemStack(ItemsRegistry.DecoratedPot, 1,
+            ComponentBuilder.Container with { Value = [new ItemStack(ItemsRegistry.Diamond, 7)] },
+            ComponentBuilder.PotDecorations with
+            {
+                Value = [decoratedSherd, new ItemStack(ItemsRegistry.Brick), new ItemStack(ItemsRegistry.Brick), new ItemStack(ItemsRegistry.Brick)]
+            });
         await BlockEntityComponents.ApplyAsync(context.World, position, filledPot);
 
         await context.EventDispatcher.ExecuteEventAsync(new BlockBreakEventArgs(context.Server, human,
             pot, position, context.World));
 
         var pieces = ItemsIn(context.World).Select(drop => drop.Item).ToList();
-        Assert.Single(pieces, item => item.Is(ItemsRegistry.AnglerPotterySherd));
+        var droppedSherd = Assert.Single(pieces, item => item.Is(ItemsRegistry.AnglerPotterySherd));
+        Assert.Equal(7, droppedSherd.GetComponent<SimpleDataComponent<NbtCompound>>(DataComponentType.CustomData)!.Value.GetInt("pattern"));
         Assert.Equal(3, pieces.Count(item => item.Is(ItemsRegistry.Brick)));
         Assert.Equal(7, pieces.Where(item => item.Is(ItemsRegistry.Diamond)).Sum(item => item.Count));
         Assert.False(potEntity.Data.HasTag("item"));

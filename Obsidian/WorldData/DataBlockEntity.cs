@@ -169,7 +169,7 @@ public sealed class DataBlockEntity : BlockEntity
     {
         var copy = new NbtCompound(compound.Name ?? string.Empty);
         foreach (var (name, tag) in compound)
-            copy.Add(name, Copy(tag));
+            copy.SetReadTag(name, Copy(tag));
 
         return copy;
     }

@@ -21,7 +21,7 @@ internal static partial class BlockEntityNbt
     /// </remarks>
     public static NbtCompound? Save(IBlockEntity blockEntity)
     {
-        if (blockEntity is not BlockEntity { Id.Length: > 0 } saved)
+        if (blockEntity is not BlockEntity { Id.Length: > 0 } saved || saved.Id == "minecraft:bed")
             return null;
 
         var tag = Header(saved.Id, saved.BlockPosition);
@@ -45,7 +45,53 @@ internal static partial class BlockEntityNbt
             });
         }
 
+        EnsureSaveDefaults(tag);
         return tag;
+    }
+
+    // Fields vanilla writes even when the block entity was newly placed with no saved data. Unmodeled non-default
+    // values (speed multipliers, fuel totals and components) remain in the block entity's retained data.
+    internal static void EnsureSaveDefaults(NbtCompound tag)
+    {
+        Add(new NbtCompound("components"));
+        Add(new NbtTag<byte>("keepPacked", 0));
+        switch (tag.GetString("id"))
+        {
+            case "minecraft:furnace":
+            case "minecraft:blast_furnace":
+            case "minecraft:smoker":
+                Add(new NbtTag<float>("speed_multiplier", 1f));
+                break;
+            case "minecraft:brewing_stand":
+                Add(new NbtTag<int>("total_brew_time", 400));
+                Add(new NbtTag<int>("total_fuel", 20));
+                Add(new NbtTag<float>("speed_multiplier", 1f));
+                break;
+            case "minecraft:decorated_pot":
+                if (tag.TryGetTag<NbtList>("sherds", out var sherds))
+                {
+                    var decorations = new NbtCompound("sherds");
+                    for (var i = 0; i < BlockEntityComponents.PotFaceNames.Length; i++)
+                        decorations.Add(new NbtCompound(BlockEntityComponents.PotFaceNames[i])
+                        {
+                            new NbtTag<string>("id", i < sherds.Count && sherds[i] is NbtTag<string> item
+                                ? item.Value! : "minecraft:brick")
+                        });
+                    tag.Remove("sherds");
+                    tag.Add(decorations);
+                }
+                break;
+            case "minecraft:sign":
+            case "minecraft:hanging_sign":
+                Signs.EnsureSaveDefaults(tag);
+                break;
+        }
+
+        void Add(INbtTag field)
+        {
+            if (!tag.HasTag(field.Name!))
+                tag.Add(field);
+        }
     }
 
     /// <summary>

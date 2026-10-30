@@ -777,7 +777,6 @@ public class Region : IRegion
         await using MemoryStream strm = new();
         await using (NbtWriterStream writer = new(strm, ChunkCompression, ""))
         {
-            // Entities are saved in 1.21.11's format too (items with components).
             writer.WriteInt("DataVersion", ServerConstants.DataVersion);
             writer.WriteArray("Position", [chunkX, chunkZ]);
             writer.WriteTag(entities);
@@ -835,8 +834,7 @@ public class Region : IRegion
     }
 
     #region NBT Ops
-    // The chunk tags SerializeChunk writes. isLightOn is left out on purpose: without it, vanilla relights the chunk
-    // rather than trusting light Obsidian computed.
+    // The chunk tags SerializeChunk writes. Lighting is marked for recomputation by vanilla.
     private static readonly HashSet<string> modeledChunkTags =
     [
         "DataVersion",
@@ -941,7 +939,7 @@ public class Region : IRegion
 
             foreach (var blockEntityCompound in blockEntities.Cast<NbtCompound>())
             {
-                if (!blockEntityCompound.TryGetTag<NbtTag<string>>("id", out var id))
+                if (!blockEntityCompound.TryGetTag<NbtTag<string>>("id", out var id) || id.Value == "minecraft:bed")
                     continue;
 
                 var position = new Vector(blockEntityCompound.GetInt("x"), blockEntityCompound.GetInt("y"), blockEntityCompound.GetInt("z"));
@@ -976,21 +974,31 @@ public class Region : IRegion
         if (hasStructures && structures!.TryGetTag<NbtCompound>("starts", out var starts))
             chunk.StructureStarts = starts;
 
-        // Data from another version is in that version's shape, which the current DataVersion would misrepresent.
-        if (chunkCompound.TryGetTagValue<int>("DataVersion", out var dataVersion)
-            && dataVersion == ServerConstants.DataVersion)
+        // The world upgrade converts legacy data before loading. Keep fields we do not model, including structure
+        // references; a version mismatch must never silently discard them.
+        foreach (var (name, tag) in chunkCompound)
         {
-            foreach (var (name, tag) in chunkCompound)
-            {
-                if (!modeledChunkTags.Contains(name))
-                    chunk.UnmodeledTags.Add(tag);
-            }
-
-            if (hasStructures && structures!.TryGetTag<NbtCompound>("References", out var references))
-                chunk.StructureReferences = references;
+            if (!modeledChunkTags.Contains(name))
+                chunk.UnmodeledTags.Add(tag);
         }
+        if (hasStructures && structures!.TryGetTag<NbtCompound>("References", out var references))
+            chunk.StructureReferences = references;
 
         chunk.SetChunkStatus(ParseStatus(chunkCompound.TryGetTag<NbtTag<string>>("Status", out var status) ? status.Value : null));
+
+        // Completing generation releases optional maps. A loaded vanilla chunk still owns the maps it saved,
+        // including OCEAN_FLOOR and MOTION_BLOCKING_NO_LEAVES, so retain those through subsequent saves.
+        if (heightmapsMatch)
+        {
+            foreach (var (name, heightmap) in heightmaps!)
+            {
+                if (!Enum.TryParse<HeightmapType>(name.Replace("_", ""), true, out var type) || chunk.Heightmaps.ContainsKey(type))
+                    continue;
+                var retained = new Heightmap(type, chunk);
+                retained.data.storage = ((NbtArray<long>)heightmap).GetArray();
+                chunk.Heightmaps[type] = retained;
+            }
+        }
 
         return chunk;
     }
@@ -1016,6 +1024,10 @@ public class Region : IRegion
         const string Namespace = "minecraft:";
 
         var name = status is not null && status.StartsWith(Namespace, StringComparison.Ordinal) ? status[Namespace.Length..] : status;
+
+        // The old generators still have separate steps. A loaded terrain chunk has completed all three.
+        if (name == "terrain")
+            return ChunkGenStage.carvers;
 
         // Compared back to the name, since parsing also accepts numbers.
         return Enum.TryParse<ChunkGenStage>(name, out var stage) && stage.ToString() == name ? stage : ChunkGenStage.full;
@@ -1126,7 +1138,6 @@ public class Region : IRegion
         // Vanilla's structures.starts. Obsidian follows references from the starts, which are recomputed from the seed,
         // so it only keeps the references a chunk was loaded with, for vanilla to read.
         var structureReferences = (chunk as Chunk)?.StructureReferences;
-        if (structureStarts is { Count: > 0 } || structureReferences is not null)
         {
             writer.WriteCompoundStart("structures");
             writer.WriteCompoundStart("starts");
@@ -1135,8 +1146,7 @@ public class Region : IRegion
 
             writer.EndCompound();
 
-            if (structureReferences is not null)
-                writer.WriteTag(structureReferences);
+            writer.WriteTag(structureReferences ?? new NbtCompound("References"));
 
             writer.EndCompound();
         }
@@ -1146,8 +1156,7 @@ public class Region : IRegion
             foreach (var tag in generated.UnmodeledTags)
                 writer.WriteTag(tag);
 
-            if (generated.PostProcessing.Count > 0)
-                WritePostProcessing(writer, generated);
+            WritePostProcessing(writer, generated);
 
             // Scheduled block and fluid ticks, like vanilla's "block_ticks" and "fluid_ticks".
             generated.BlockTicks.Write(writer);
@@ -1183,9 +1192,15 @@ public class Region : IRegion
         writer.WriteInt("zPos", chunk.Z);
         writer.WriteInt("yPos", chunk.MinY >> 4);
 
-        // Chunks are saved in 1.21.11's format, so vanilla reads them without upgrading them.
+        // Legacy generation stages share 26.3's terrain status on disk.
         writer.WriteInt("DataVersion", ServerConstants.DataVersion);
-        writer.WriteString("Status", $"minecraft:{chunk.ChunkStatus}");
+        var status = chunk.ChunkStatus is ChunkGenStage.noise or ChunkGenStage.surface or ChunkGenStage.carvers
+            ? "terrain" : chunk.ChunkStatus.ToString();
+        writer.WriteString("Status", $"minecraft:{status}");
+        // Lighting is recomputed when vanilla opens an Obsidian save.
+        writer.WriteBool("isLightOn", false);
+        if (chunk is not Chunk stored || !stored.UnmodeledTags.Any(tag => tag.Name == "LastUpdate"))
+            writer.WriteLong("LastUpdate", 0);
 
         // Every heightmap the chunk still has. Chunks that aren't fully generated keep their world generation heightmaps,
         // which later generation steps read.

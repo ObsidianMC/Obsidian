@@ -604,17 +604,7 @@ public abstract class AbstractMinecart : VehicleEntity
 
         tag.Remove("DisplayState");
         if (this.displayBlock is IBlock shown)
-        {
-            var state = new NbtCompound("DisplayState") { new NbtTag<string>("Name", shown.UnlocalizedName) };
-            var properties = new NbtCompound("Properties");
-            foreach (var property in BlockStateProperties.GetProperties(shown))
-                properties.Add(new NbtTag<string>(property.Key, property.Value));
-
-            if (properties.Count > 0)
-                state.Add(properties);
-
-            tag.Add(state);
-        }
+            tag.Add(Obsidian.WorldData.BlockStateNbt.Write(shown, "DisplayState"));
 
         tag.SetOrRemove("DisplayOffset", this.DisplayOffset == this.DefaultDisplayOffset
             ? null
@@ -627,14 +617,8 @@ public abstract class AbstractMinecart : VehicleEntity
     {
         base.ReadNbt(tag);
 
-        if (tag.TryGetTag<NbtCompound>("DisplayState", out var state) && state.TryGetTagValue<string>("Name", out var name))
-        {
-            var properties = state.TryGetTag<NbtCompound>("Properties", out var saved)
-                ? saved.Where(entry => entry.Value is NbtTag<string>)
-                    .Select(entry => $"{entry.Key}={((NbtTag<string>)entry.Value).Value}")
-                : [];
-            this.displayBlock = BlockStateParser.TryParse($"{name}[{string.Join(',', properties)}]");
-        }
+        if (tag.TryGetTag("DisplayState", out var state))
+            this.displayBlock = Obsidian.WorldData.BlockStateNbt.Read(state);
 
         this.displayOffset = tag.TryGetTagValue<int>("DisplayOffset", out var offset) ? offset : null;
         this.flipped = tag.TryGetBool("FlippedRotation", out var flipped) && flipped;

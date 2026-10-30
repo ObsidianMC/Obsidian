@@ -118,16 +118,8 @@ public partial class Mob
         {
             writer.WriteInt("AngerTime", (int)enderman.AngerTicks);
             WriteReference(writer, "AngryAt", enderman.AngryAt);
-            if (enderman.CarriedBlock is { } carried)
-            {
-                writer.WriteCompoundStart("carriedBlockState");
-                writer.WriteString("Name", carried.UnlocalizedName);
-                writer.WriteCompoundStart("Properties");
-                foreach (var property in BlockStateProperties.GetProperties(carried))
-                    writer.WriteString(property.Key, property.Value);
-                writer.EndCompound();
-                writer.EndCompound();
-            }
+            if (enderman.CarriedBlock is IBlock carried)
+                writer.WriteTag(Obsidian.WorldData.BlockStateNbt.Write(carried, "carriedBlockState"));
         }
         if (this is SnowGolem snowGolem)
             writer.WriteBool("Pumpkin", snowGolem.Pumpkin);
@@ -330,14 +322,8 @@ public partial class Mob
         {
             enderman.AngryAt = ReadReference(tag, "AngryAt");
             if (tag.TryGetTagValue<int>("AngerTime", out var anger)) enderman.AngerTicks = Math.Max(0, anger);
-            if (tag.TryGetTag<NbtCompound>("carriedBlockState", out var state) && state.TryGetTagValue<string>("Name", out var blockName))
-            {
-                var properties = state.TryGetTag<NbtCompound>("Properties", out var savedProperties)
-                    ? savedProperties.Where(entry => entry.Value is NbtTag<string>).ToDictionary(entry => entry.Key, entry => ((NbtTag<string>)entry.Value).Value)
-                    : new Dictionary<string, string>();
-                enderman.CarriedBlock = Obsidian.WorldData.Structures.BlockStateParser.TryParse(
-                    $"{blockName}[{string.Join(',', properties.Select(entry => $"{entry.Key}={entry.Value}"))}]");
-            }
+            if (tag.TryGetTag("carriedBlockState", out var state))
+                enderman.CarriedBlock = Obsidian.WorldData.BlockStateNbt.Read(state);
             else if (tag.TryGetTagValue<string>("ObsidianCarriedBlock", out var carried))
                 enderman.CarriedBlock = Obsidian.WorldData.Structures.BlockStateParser.TryParse(carried);
         }
