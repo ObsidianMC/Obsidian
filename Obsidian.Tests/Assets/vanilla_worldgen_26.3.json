@@ -106554,6 +106554,410 @@
       "step": 0,
       "layers": [
         [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "disk_removes_plant_support",
+      "feature": {
+        "feature": {
+          "type": "minecraft:disk",
+          "state_provider": {
+            "id": "minecraft:air"
+          },
+          "target": {
+            "type": "minecraft:matching_blocks",
+            "blocks": "minecraft:stone"
+          },
+          "radius": 0,
+          "half_height": 2
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          0,
+          1,
+          0,
+          {
+            "id": "minecraft:dandelion"
+          }
+        ],
+        [
+          0,
+          2,
+          0,
+          {
+            "id": "minecraft:dandelion"
+          }
+        ]
+      ],
+      "postProcess": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          -2,
+          0,
+          "minecraft:air"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:air"
+        ],
+        [
+          0,
+          0,
+          0,
+          "minecraft:air"
+        ]
+      ],
+      "marks": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ]
+      ],
+      "postChanges": [
+        [
+          0,
+          -2,
+          0,
+          "minecraft:air"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:air"
+        ],
+        [
+          0,
+          0,
+          0,
+          "minecraft:air"
+        ],
+        [
+          0,
+          1,
+          0,
+          "minecraft:air"
+        ],
+        [
+          0,
+          2,
+          0,
+          "minecraft:air"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          2
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "disk_segment_marks",
+      "feature": {
+        "feature": {
+          "type": "minecraft:disk",
+          "state_provider": {
+            "id": "minecraft:gold_block"
+          },
+          "target": {
+            "type": "minecraft:matching_blocks",
+            "blocks": "minecraft:stone"
+          },
+          "radius": 0,
+          "half_height": 2
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          0,
+          1,
+          0,
+          {
+            "id": "minecraft:dirt"
+          }
+        ],
+        [
+          0,
+          3,
+          0,
+          {
+            "id": "minecraft:oak_fence"
+          }
+        ],
+        [
+          0,
+          4,
+          0,
+          {
+            "id": "minecraft:dandelion"
+          }
+        ]
+      ],
+      "postProcess": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          -2,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          0,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          2,
+          0,
+          "minecraft:gold_block"
+        ]
+      ],
+      "marks": [
+        [
+          0,
+          3,
+          0
+        ],
+        [
+          0,
+          4,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ]
+      ],
+      "postChanges": [
+        [
+          0,
+          -2,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          0,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          2,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          4,
+          0,
+          "minecraft:air"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "disk_air_stops_marks",
+      "feature": {
+        "feature": {
+          "type": "minecraft:disk",
+          "state_provider": {
+            "id": "minecraft:gold_block"
+          },
+          "target": {
+            "type": "minecraft:matching_blocks",
+            "blocks": "minecraft:stone"
+          },
+          "radius": 0,
+          "half_height": 2
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          0,
+          2,
+          0,
+          {
+            "id": "minecraft:dandelion"
+          }
+        ]
+      ],
+      "postProcess": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          -2,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          0,
+          0,
+          "minecraft:gold_block"
+        ]
+      ],
+      "marks": [],
+      "postChanges": [
+        [
+          0,
+          -2,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          0,
+          0,
+          "minecraft:gold_block"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "disk_null_keeps_segment",
+      "feature": {
+        "feature": {
+          "type": "minecraft:disk",
+          "state_provider": {
+            "type": "minecraft:rule_based",
+            "rules": []
+          },
+          "target": {
+            "type": "minecraft:matching_blocks",
+            "blocks": "minecraft:stone"
+          },
+          "radius": 0,
+          "half_height": 2
+        },
+        "placement": []
+      },
+      "edits": [],
+      "postProcess": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": false,
+      "changes": [],
+      "marks": [],
+      "postChanges": []
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
           "minecraft:air",
           -64
         ]
@@ -106653,6 +107057,148 @@
       "regionRadius": 10,
       "placed": false,
       "changes": []
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          2
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "disk_null_inside_segment",
+      "feature": {
+        "feature": {
+          "type": "minecraft:disk",
+          "state_provider": {
+            "type": "minecraft:rule_based",
+            "rules": [
+              {
+                "if_true": {
+                  "type": "minecraft:not",
+                  "predicate": {
+                    "type": "minecraft:matching_blocks",
+                    "blocks": "minecraft:dirt",
+                    "offset": [
+                      1,
+                      0,
+                      0
+                    ]
+                  }
+                },
+                "then": {
+                  "id": "minecraft:gold_block"
+                }
+              }
+            ]
+          },
+          "target": {
+            "type": "minecraft:matching_blocks",
+            "blocks": "minecraft:stone"
+          },
+          "radius": 0,
+          "half_height": 2
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          1,
+          1,
+          0,
+          {
+            "id": "minecraft:dirt"
+          }
+        ],
+        [
+          0,
+          3,
+          0,
+          {
+            "id": "minecraft:dandelion"
+          }
+        ]
+      ],
+      "postProcess": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          -2,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          0,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          2,
+          0,
+          "minecraft:gold_block"
+        ]
+      ],
+      "marks": [
+        [
+          0,
+          3,
+          0
+        ]
+      ],
+      "postChanges": [
+        [
+          0,
+          -2,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          0,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          2,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          3,
+          0,
+          "minecraft:air"
+        ]
+      ]
     }
   ],
   "biomes": [

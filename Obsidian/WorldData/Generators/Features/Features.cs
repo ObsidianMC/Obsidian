@@ -230,12 +230,15 @@ internal sealed partial class FeatureRegistry
                         continue;
                     }
 
+                    var replacingSegment = false;
+
                     for (var y = top; y > bottom; y--)
                     {
                         var position = new Vector(x, y, z);
 
                         if (!target(level, position))
                         {
+                            replacingSegment = false;
                             continue;
                         }
 
@@ -244,6 +247,14 @@ internal sealed partial class FeatureRegistry
                         if (state is not null)
                         {
                             level.SetBlock(position, state);
+
+                            // Mark only at the start of each matching segment, as 26.3 DiskFeature does.
+                            if (!replacingSegment)
+                            {
+                                MarkAboveDisk(level, position);
+                            }
+
+                            replacingSegment = true;
                             placed = true;
                         }
                     }
@@ -252,6 +263,21 @@ internal sealed partial class FeatureRegistry
 
             return placed;
         };
+    }
+
+    private static void MarkAboveDisk(IWorldGenLevel level, Vector position)
+    {
+        for (var i = 0; i < 2; i++)
+        {
+            position += Vector.Up;
+
+            if (level.GetBlock(position).IsAir)
+            {
+                return;
+            }
+
+            level.MarkForPostProcessing(position);
+        }
     }
 
     // Moves down to a block it can sit on, then places three small, randomly sized and drifting balls.
