@@ -35,11 +35,12 @@ public sealed class ItemCommandModule : CommandModuleBase
                 var visited = 0;
                 foreach (var slot in targets)
                 {
-                    if (visited >= slot.Limit)
+                    // Vanilla only selects non-empty slots, and only those count towards a slot limit.
+                    var current = slot.Get();
+                    if (current is null || current.IsAir || visited >= slot.Limit)
                         continue;
 
                     visited++;
-                    var current = slot.Get() ?? ItemStack.Air;
                     var result = Modify(modifier, new ItemStack(current, current.Count), loot);
                     count += await ReplaceAsync(slot, result);
                 }

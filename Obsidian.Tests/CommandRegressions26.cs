@@ -41,6 +41,32 @@ public sealed class CommandRegressions26
         Assert.Equal(5, stack.Count);
     }
 
+    [Fact]
+    public async Task ItemModifySkipsEmptySlots()
+    {
+        await using var server = TestServerFactory.CreateServer($"item-modify-empty-{Guid.NewGuid():N}");
+        var handler = (CommandHandler)server.Server.CommandHandler;
+        handler.RegisterCommandClass<ItemCommandModule>(null);
+        var player = AddPlayer(server);
+        var empty = Context(server.Server, "item modify entity Fixture hotbar.* {type:'set_count',count:3}");
+
+        await handler.ProcessCommand(empty);
+        player.Inventory.SetItem(FirstHotbarSlot + 4, new ItemStack(ItemsRegistry.Stone, 5));
+        var one = Context(server.Server, "item modify entity Fixture hotbar.* {type:'set_count',count:3}");
+        await handler.ProcessCommand(one);
+
+        Assert.False(empty.Succeeded);
+        Assert.Equal(0, empty.Result);
+        Assert.True(one.Succeeded);
+        Assert.Equal(1, one.Result);
+        for (var slot = 0; slot < 9; slot++)
+        {
+            var stack = player.Inventory.GetItem(FirstHotbarSlot + slot);
+            var count = stack is { IsAir: false } ? stack.Count : 0;
+            Assert.Equal(slot == 4 ? 3 : 0, count);
+        }
+    }
+
     [Theory]
     [InlineData("posteffect list MissingPlayer", false)]
     [InlineData("posteffect list @a", false)]
