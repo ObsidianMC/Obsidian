@@ -22,6 +22,8 @@ namespace Obsidian.Tests;
 [Collection(WorldgenCollection.Name)]
 public class VanillaTerrainGeneration
 {
+    private static readonly Dictionary<(long Seed, string Settings), TerrainGenerator> aquiferGenerators = [];
+
     public sealed record TerrainCase(JsonElement Entry)
     {
         public override string ToString() =>
@@ -113,30 +115,57 @@ public class VanillaTerrainGeneration
         }
     }
 
-    public static TheoryData<TerrainCase> AquiferCases()
+    public sealed record AquiferCase(JsonElement Entry, JsonElement[] Samples)
     {
-        var cases = new TheoryData<TerrainCase>();
+        public override string ToString() => this.Entry.TryGetProperty("name", out var name)
+            ? name.GetString()!
+            : new TerrainCase(this.Entry).ToString();
+    }
+
+    public static TheoryData<AquiferCase> AquiferCases()
+    {
+        var cases = new TheoryData<AquiferCase>();
 
         foreach (var entry in VanillaWorldgenCaptures.CurrentCases("terrain"))
         {
-            if (entry.TryGetProperty("aquiferFluids", out _))
+            if (entry.TryGetProperty("aquiferFluids", out var samples))
             {
-                cases.Add(new TerrainCase(entry));
+                cases.Add(new AquiferCase(entry, [.. samples.EnumerateArray()]));
             }
+        }
+
+        // A standalone aquifer position is its own sample.
+        foreach (var entry in AquiferPositions())
+        {
+            cases.Add(new AquiferCase(entry, [entry]));
         }
 
         return cases;
     }
 
+    public static TheoryData<AquiferCase> AquiferPositionCases()
+    {
+        var cases = new TheoryData<AquiferCase>();
+
+        foreach (var entry in AquiferPositions())
+        {
+            cases.Add(new AquiferCase(entry, [entry]));
+        }
+
+        return cases;
+    }
+
+    private static IEnumerable<JsonElement> AquiferPositions() => VanillaWorldgenCaptures.CurrentCases("aquifers");
+
     [Theory]
     [MemberData(nameof(AquiferCases))]
-    public void AquiferFluidLevelsMatchVanilla(TerrainCase testCase)
+    public void AquiferFluidLevelsMatchVanilla(AquiferCase testCase)
     {
-        var replay = new Replay(testCase.Entry);
+        var aquifer = AquiferContext(testCase.Entry).Aquifer;
 
-        foreach (var sample in testCase.Entry.GetProperty("aquiferFluids").EnumerateArray())
+        foreach (var sample in testCase.Samples)
         {
-            var fluid = replay.Context.Aquifer.FluidAt(
+            var fluid = aquifer.FluidAt(
                 sample.GetProperty("x").GetInt32(),
                 sample.GetProperty("y").GetInt32(),
                 sample.GetProperty("z").GetInt32());
@@ -144,6 +173,59 @@ public class VanillaTerrainGeneration
             Assert.Equal(sample.GetProperty("level").GetInt32(), fluid.FluidLevel);
             Assert.Equal(sample.GetProperty("fluid").GetString(), fluid.FluidType.UnlocalizedName);
         }
+    }
+
+    [Theory]
+    [MemberData(nameof(AquiferPositionCases))]
+    public void AquiferSubstanceMatchesVanilla(AquiferCase testCase)
+    {
+        var entry = testCase.Entry;
+        var aquifer = AquiferContext(entry).Aquifer;
+
+        var block = aquifer.ComputeSubstance(
+            entry.GetProperty("x").GetInt32(),
+            entry.GetProperty("y").GetInt32(),
+            entry.GetProperty("z").GetInt32(),
+            entry.GetProperty("density").GetDouble());
+
+        Assert.Equal(entry.GetProperty("scheduled").GetBoolean(), aquifer.ShouldScheduleFluidUpdate);
+
+        if (entry.GetProperty("block").ValueKind == JsonValueKind.Null)
+        {
+            Assert.Null(block);
+            return;
+        }
+
+        var expected = ParseBlock(entry.GetProperty("block").GetString()!);
+        Assert.NotNull(block);
+        Assert.Equal(expected.RegistryId, block.RegistryId);
+        Assert.Equal(expected.State?.Id ?? expected.DefaultId, block.State?.Id ?? block.DefaultId);
+    }
+
+    /// <summary>
+    /// The terrain context of an aquifer case's chunk. A terrain case names its chunk, and a standalone position uses
+    /// the chunk containing it, like the probe. Aquifers never look up biomes.
+    /// </summary>
+    private static TerrainContext AquiferContext(JsonElement entry)
+    {
+        var seed = entry.GetProperty("seed").GetInt64();
+        var settings = entry.GetProperty("settings").GetString()!;
+        var minY = entry.GetProperty("minY").GetInt32();
+        var height = entry.GetProperty("height").GetInt32();
+        var chunkX = entry.TryGetProperty("chunkX", out var x) ? x.GetInt32() : entry.GetProperty("x").GetInt32() >> 4;
+        var chunkZ = entry.TryGetProperty("chunkZ", out var z) ? z.GetInt32() : entry.GetProperty("z").GetInt32() >> 4;
+
+        if (!aquiferGenerators.TryGetValue((seed, settings), out var generator))
+        {
+            generator = new TerrainGenerator(WorldgenData.Vanilla, seed, settings);
+            aquiferGenerators.Add((seed, settings), generator);
+        }
+
+        var chunk = new Chunk(chunkX, chunkZ, minY, height);
+
+        return generator.CreateContext(
+            chunk,
+            (_, _, _) => throw new InvalidOperationException("Aquifers use no biome."));
     }
 
     [Theory]

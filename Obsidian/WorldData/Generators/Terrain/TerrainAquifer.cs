@@ -465,9 +465,11 @@ internal sealed class TerrainAquifer
         var cellZ = (int)Math.Floor(z / 16.0);
         var cellMiddleY = cellY * 40 + 20;
 
-        // Vanilla samples the spread noise at the cell indices, not at block coordinates.
-        var spread = this.Sample("fluid_level_spread", cellX, cellY, cellZ) * 10.0;
-        var quantizedSpread = (int)Math.Floor(spread / 3) * 3;
+        // Vanilla samples the spread noise at the cell indices, not at block coordinates. It scales the float sample by
+        // 10.0f before widening, so the product rounds to a float first: -0.3f * 10.0f is exactly -3.0f, where the
+        // double product is just below it and quantizes a whole step lower.
+        var spread = this.Sample("fluid_level_spread", cellX, cellY, cellZ) * 10.0f;
+        var quantizedSpread = (int)Math.Floor(spread / 3.0) * 3;
 
         return Math.Min(lowestPreliminarySurface, cellMiddleY + quantizedSpread);
     }

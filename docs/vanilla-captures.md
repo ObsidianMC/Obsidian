@@ -9,8 +9,9 @@ Phase 5 of `docs/porting-26.3-plan.md` builds the 26.3 generator beside the lega
   at block positions (`router`), and inline density functions at block positions (`functions`), for what no router
   reaches. 26.3 evaluates noise and density in single precision, so the values are floats and must match bit for bit;
   `functions` records them as `Float.floatToIntBits` in hex too (`bits`), since JSON numbers hold neither NaN nor
-  infinities. `terrain` holds chunks at the merged terrain status, and `materials` holds small, single-rule boundary
-  cases. `VanillaTerrainGeneration` and `VanillaMaterialRules` replay those sections; see below.
+  infinities. `terrain` holds chunks at the merged terrain status, `materials` holds small, single-rule boundary
+  cases, and `aquifers` holds single aquifer positions. `VanillaTerrainGeneration` and `VanillaMaterialRules` replay
+  those sections; see below.
 - `Obsidian.Tests/Assets/vanilla_worldgen.json` holds the 1.21.11 references of the legacy generator, which
   `VanillaWorldGeneration` and `VanillaStructureGeneration` replay: noise router values, biomes, chunks after the
   surface, carver and decoration steps, full chunks, the spawn, light, structure piece lists, structure blocks and a
@@ -63,6 +64,9 @@ Nothing is reimplemented:
   biome, column depths, water height and surface gradients, and the rule evaluates one block. These cases exercise
   depth and height boundaries, gradients, biome conditions, 2D/3D noise thresholds, sequence fallthrough, block
   properties, terracotta bands and the ore rule's acceptance/filler/raw-ore paths.
+- **Aquifers:** a `NoiseChunk` for the chunk containing an overworld position runs its aquifer's `computeSubstance`
+  with the case's density, which records the block (or `null` for a barrier) and `shouldScheduleFluidUpdate`. Then
+  `computeFluid` records the fluid status of the position as an aquifer center.
 
 ## Terrain references
 
@@ -104,6 +108,16 @@ are implemented. None of this switches the live generator or changes its 1.21.11
 Chunk replays have `Category=Worldgen` and stay out of CI. The 64 small material-rule replays run in CI alongside the
 density tests. Biome selection, features, structures, the remaining Nether/End pipeline and performance work remain
 for the later Phase 5 steps. The noise-input point-sampling allocations noted in #597 are unchanged.
+
+## Aquifer references
+
+`aquifers` cases name a position, a seed and a density. They cover the aquifer centers whose fluid level depends on
+vanilla scaling the spread noise by `10.0f` in float, `(-48572, -31, -7773)` and `(-48572, -19, -7774)` on seed
+`12345`, and spread samples just beside a multiple of 3, where the level quantizes. They also cover lava-noise samples
+just inside and outside `|0.3|`, lava aquifers, nearest-center ties (which favor the later center in search order) and
+the global lava level at `y = -55` and `-54`, on seed `12345` and on a second seed. `AquiferFluidLevelsMatchVanilla`
+replays their fluid statuses together with the terrain cases' `aquiferFluids`, and `AquiferSubstanceMatchesVanilla`
+replays their blocks and scheduling decisions. They have `Category=Worldgen` too.
 
 The 1.21.11 probe also captured lit/full chunks, structure pieces and blocks, the spawn and a treasure map (in git
 history before Phase 5). The feature and structure steps adapt those captures to 26.3 as they need them.

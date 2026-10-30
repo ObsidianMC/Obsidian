@@ -41,16 +41,18 @@ internal sealed partial class MaterialRules
         return value - (noise + y - snowLine) * 0.05f / 40.0f;
     }
 
-    private double Noise(string name, double x, double z) =>
+    private float Noise(string name, double x, double z) =>
         this.generator.Compiler.Noise($"minecraft:{name}").Get(x, 0.0, z);
 
     private void ExtendBadlands(MaterialContext context, int startY)
     {
         var x = context.X;
         var z = context.Z;
+
+        // Vanilla widens the surface noise before scaling it, but scales the pillar noise by 15.0f in float.
         var pillar = Math.Min(
             Math.Abs(this.Noise("badlands_surface", x, z) * 8.25),
-            this.Noise("badlands_pillar", x * 0.2, z * 0.2) * 15.0);
+            this.Noise("badlands_pillar", x * 0.2, z * 0.2) * 15.0f);
 
         if (pillar <= 0.0)
         {
@@ -91,9 +93,11 @@ internal sealed partial class MaterialRules
         var x = context.X;
         var z = context.Z;
         var sea = this.generator.Settings.SeaLevel;
+
+        // As for badlands pillars, only the pillar noise is scaled in float.
         var iceberg = Math.Min(
             Math.Abs(this.Noise("iceberg_surface", x, z) * 8.25),
-            this.Noise("iceberg_pillar", x * 1.28, z * 1.28) * 15.0);
+            this.Noise("iceberg_pillar", x * 1.28, z * 1.28) * 15.0f);
 
         if (iceberg <= 1.8)
         {

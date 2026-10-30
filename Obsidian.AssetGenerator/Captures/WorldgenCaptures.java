@@ -53,6 +53,7 @@ class WorldgenCaptures {
         SECTIONS.put("functions", false);
         SECTIONS.put("terrain", false);
         SECTIONS.put("materials", false);
+        SECTIONS.put("aquifers", false);
     }
 
     static MinecraftServer server;
@@ -223,6 +224,7 @@ class WorldgenCaptures {
                     case "functions" -> function(entry);
                     case "terrain" -> terrain(entry);
                     case "materials" -> materialRule(entry);
+                    case "aquifers" -> aquifer(entry);
                     default -> throw new IllegalArgumentException(section);
                 }
                 return null;
@@ -413,10 +415,7 @@ class WorldgenCaptures {
         var biomeSource = generator.getBiomeSource();
         var resolver = biomeSource.createUncachedResolver(random);
         var manager = new BiomeManager(resolver, BiomeManager.obfuscateSeed(entry.get("seed").getAsLong()));
-        var fluidMethod = NoiseBasedChunkGenerator.class.getDeclaredMethod(
-            "createFluidPicker", NoiseGeneratorSettings.class);
-        fluidMethod.setAccessible(true);
-        var fluidPicker = (Aquifer.FluidPicker) fluidMethod.invoke(null, settings);
+        var fluidPicker = fluidPicker(settings);
         int minY = settings.noiseSettings().minY();
         int height = settings.noiseSettings().height();
         var volume = new DensityVolume(16, height, 16, chunkX * 16, minY, chunkZ * 16);
@@ -479,16 +478,16 @@ class WorldgenCaptures {
             if (settings.aquifers().isPresent()) {
                 var fluids = new JsonArray();
                 var aquifer = noiseChunk.aquifer();
-                var computeFluid = aquifer.getClass().getDeclaredMethod("computeFluid", int.class, int.class, int.class);
-                computeFluid.setAccessible(true);
+                int sampleX = chunkX * 16 + 7;
+                int sampleZ = chunkZ * 16 + 9;
                 for (int y : List.of(-48, -8, 24, 56, 96)) {
-                    var fluid = (Aquifer.FluidStatus) computeFluid.invoke(aquifer, chunkX * 16 + 7, y, chunkZ * 16 + 9);
+                    var fluid = computeFluid(aquifer, sampleX, y, sampleZ);
                     var sample = new JsonObject();
-                    sample.addProperty("x", chunkX * 16 + 7);
+                    sample.addProperty("x", sampleX);
                     sample.addProperty("y", y);
-                    sample.addProperty("z", chunkZ * 16 + 9);
+                    sample.addProperty("z", sampleZ);
                     sample.addProperty("level", fluid.fluidLevel());
-                    sample.addProperty("fluid", BuiltInRegistries.BLOCK.getKey(fluid.fluidType().getBlock()).toString());
+                    sample.addProperty("fluid", fluidName(fluid));
                     fluids.add(sample);
                 }
                 entry.add("aquiferFluids", fluids);
@@ -559,6 +558,67 @@ class WorldgenCaptures {
             }
         }
         entry.add("carverSources", carvers);
+    }
+
+    // Single overworld aquifer positions: the block vanilla's aquifer picks there for the entry's density, whether it
+    // schedules a fluid update, and the fluid status it computes for the position as an aquifer center. Each position
+    // gets a fresh noise chunk for the chunk containing it, as density fill would use.
+    static void aquifer(JsonObject entry) {
+        try {
+            aquiferChecked(entry);
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    static void aquiferChecked(JsonObject entry) throws Exception {
+        var level = server.overworld();
+        var generator = (NoiseBasedChunkGenerator) level.getChunkSource().getGenerator();
+        var settings = generator.generatorSettings().value();
+        var random = level.getChunkSource().randomState();
+        int x = entry.get("x").getAsInt();
+        int y = entry.get("y").getAsInt();
+        int z = entry.get("z").getAsInt();
+        double density = entry.get("density").getAsDouble();
+        int minY = settings.noiseSettings().minY();
+        int height = settings.noiseSettings().height();
+        var volume = new DensityVolume(16, height, 16, (x >> 4) * 16, minY, (z >> 4) * 16);
+        var settingsId = generator.generatorSettings().unwrapKey().orElseThrow().identifier();
+
+        entry.addProperty("minY", level.getMinY());
+        entry.addProperty("height", level.getHeight());
+        entry.addProperty("settings", settingsId.toString());
+
+        var picker = fluidPicker(settings);
+        try (var noiseChunk = new NoiseChunk(random, Beardifier.EMPTY, settings, picker, Blender.empty(), volume)) {
+            var aquifer = noiseChunk.aquifer();
+            var substance = aquifer.computeSubstance(x, y, z, density);
+            var block = substance == null ? JsonNull.INSTANCE : new JsonPrimitive(stateName(substance));
+            entry.add("block", block);
+            entry.addProperty("scheduled", aquifer.shouldScheduleFluidUpdate());
+
+            var fluid = computeFluid(aquifer, x, y, z);
+            entry.addProperty("level", fluid.fluidLevel());
+            entry.addProperty("fluid", fluidName(fluid));
+        }
+    }
+
+    static Aquifer.FluidPicker fluidPicker(NoiseGeneratorSettings settings) throws Exception {
+        var method = NoiseBasedChunkGenerator.class.getDeclaredMethod(
+            "createFluidPicker",
+            NoiseGeneratorSettings.class);
+        method.setAccessible(true);
+        return (Aquifer.FluidPicker) method.invoke(null, settings);
+    }
+
+    static Aquifer.FluidStatus computeFluid(Aquifer aquifer, int x, int y, int z) throws Exception {
+        var method = aquifer.getClass().getDeclaredMethod("computeFluid", int.class, int.class, int.class);
+        method.setAccessible(true);
+        return (Aquifer.FluidStatus) method.invoke(aquifer, x, y, z);
+    }
+
+    static String fluidName(Aquifer.FluidStatus fluid) {
+        return BuiltInRegistries.BLOCK.getKey(fluid.fluidType().getBlock()).toString();
     }
 
     static void invokeStage(Object target, String name, Object... arguments) throws Exception {
@@ -654,10 +714,7 @@ class WorldgenCaptures {
                 PalettedContainerFactory.create(server.registryAccess()), null);
             var biomeKey = ResourceKey.create(Registries.BIOME, Identifier.parse(entry.get("biome").getAsString()));
             var biome = server.registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(biomeKey);
-            var fluidMethod = NoiseBasedChunkGenerator.class.getDeclaredMethod(
-                "createFluidPicker", NoiseGeneratorSettings.class);
-            fluidMethod.setAccessible(true);
-            var picker = (Aquifer.FluidPicker) fluidMethod.invoke(null, settings);
+            var picker = fluidPicker(settings);
             try (var noiseChunk = new NoiseChunk(random, Beardifier.EMPTY, settings, picker, Blender.empty(), volume)) {
                 var constructor = MaterialRuleContext.class.getDeclaredConstructors()[0];
                 constructor.setAccessible(true);
