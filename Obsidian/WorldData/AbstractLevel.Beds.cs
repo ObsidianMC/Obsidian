@@ -53,10 +53,14 @@ public abstract partial class AbstractLevel
         if (sleeping < needed || players.Count(player => player.SleptLongEnough) < needed)
             return;
 
-        if (LevelData.GetBooleanRule("advance_time"))
+        // ServerLevel uses the dimension's optional default clock, and only that clock's wake-up marker.
+        if (LevelData.GetBooleanRule("advance_time")
+            && WorldTimelines.DefaultClock(this) is string clockId
+            && WorldTimelines.Markers.TryGetValue("minecraft:wake_up_from_sleep", out var marker)
+            && marker.Clock == clockId
+            && LevelData.WorldClocks.States.TryGetValue(clockId, out var clock)
+            && !marker.OccursAt(clock.TotalTicks))
         {
-            var marker = WorldTimelines.Markers["minecraft:wake_up_from_sleep"];
-            var clock = LevelData.WorldClocks.States[marker.Clock];
             clock.SetTime(marker.Next(clock.TotalTicks));
             this.BroadcastTime();
         }

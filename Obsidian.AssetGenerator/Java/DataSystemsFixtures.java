@@ -297,6 +297,45 @@ class DataSystemsFixtures {
         return samples;
     }
 
+    @SuppressWarnings("unchecked")
+    static JsonArray sleepClocks() throws Exception {
+        var samples = new JsonArray();
+        var markerField = ServerClockManager.ServerClockInstance.class.getDeclaredField("timeMarkers");
+        markerField.setAccessible(true);
+        // Invoke the original marker transition, excluding only the manager's network broadcast.
+        var move = ServerClockManager.class.getDeclaredMethod(
+            "lambda$moveToTimeMarker$0",
+            net.minecraft.resources.ResourceKey.class,
+            org.apache.commons.lang3.mutable.MutableObject.class,
+            ServerClockManager.ServerClockInstance.class);
+        move.setAccessible(true);
+
+        for (var clock : access.lookupOrThrow(Registries.WORLD_CLOCK).listElements().toList()) {
+            for (long time : new long[] { 18000, 24000 }) {
+                var instance = new ServerClockManager.ServerClockInstance();
+                instance.loadFrom(new ClockState(time, 0.5f, 1, false));
+                var markers = (Map<net.minecraft.resources.ResourceKey<ClockTimeMarker>, ClockTimeMarker>)
+                    markerField.get(instance);
+                for (var timeline : access.lookupOrThrow(Registries.TIMELINE)) {
+                    timeline.registerTimeMarkers((key, marker) -> {
+                        if (marker.clock().equals(clock)) {
+                            markers.put(key, marker);
+                        }
+                    });
+                }
+                move.invoke(null, ClockTimeMarkers.WAKE_UP_FROM_SLEEP,
+                    new org.apache.commons.lang3.mutable.MutableObject<>(), instance);
+
+                var sample = new JsonObject();
+                sample.addProperty("clock", clock.key().identifier().toString());
+                sample.addProperty("time", time);
+                sample.add("after", clockState(instance.packState()));
+                samples.add(sample);
+            }
+        }
+        return samples;
+    }
+
     public static void main(String[] args) throws Exception {
         SharedConstants.tryDetectVersion();
         Bootstrap.bootStrap();
@@ -312,6 +351,7 @@ class DataSystemsFixtures {
         result.add("pottery", pottery());
         result.add("trims", trims());
         result.add("chest_uses", chestUses());
+        result.add("sleep_clocks", sleepClocks());
 
         Files.writeString(Path.of(args[0]), new Gson().toJson(result));
     }

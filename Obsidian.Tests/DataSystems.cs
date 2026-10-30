@@ -3,6 +3,7 @@ using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
+using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.API.Utilities;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -60,6 +61,8 @@ public sealed class DataSystems
     private sealed record PotteryCase(string Item, string Pattern, string Asset);
 
     private sealed record ChestCase(JsonElement Input, bool Consumes);
+
+    private sealed record SleepClockCase(string Clock, long Time, ClockStateCase After);
 
     private static JsonElement LoadCapture()
     {
@@ -310,6 +313,58 @@ public sealed class DataSystems
                 Assert.Null(player.OpenedContainer);
             else
                 Assert.NotNull(player.OpenedContainer);
+        }
+    }
+
+    [Theory]
+    [InlineData("minecraft:overworld", true)]
+    [InlineData("minecraft:the_end", true)]
+    [InlineData(null, true)]
+    [InlineData("minecraft:overworld", false)]
+    public async Task CompletedSleepUsesDimensionClock(string? defaultClock, bool advanceTime)
+    {
+        foreach (var sample in Cases<SleepClockCase>("sleep_clocks").Where(row =>
+            row.Clock == (defaultClock ?? WorldClocks.Overworld)))
+        {
+            await using var context = TestServerFactory.CreateServer($"sleep-clock-{Guid.NewGuid():N}");
+            var world = context.World;
+            world.DimensionType.Element.DefaultClock = defaultClock;
+            if (defaultClock is null)
+            {
+                world.Initialize(new DimensionCodec
+                {
+                    Name = "review:no_clock",
+                    Id = -1,
+                    Element = world.DimensionType.Element
+                });
+            }
+
+            world.LevelData.GameRules["minecraft:advance_time"] = advanceTime.ToString();
+            foreach (var clock in world.LevelData.WorldClocks.States.Values)
+            {
+                clock.TotalTicks = sample.Time;
+                clock.PartialTick = 0.5f;
+            }
+            var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Sleeper");
+            world.Players.TryAdd(player.Uuid, player);
+            player.Sleeping = true;
+            player.SleepTimer = 100;
+
+            // Isolate completed sleep from ordinary clock and entity ticks.
+            var tick = typeof(AbstractLevel).GetMethod(
+                "TickSleepingAsync",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+            await (ValueTask)tick.Invoke(world, null)!;
+
+            Assert.False(player.Sleeping);
+            foreach (var (id, clock) in world.LevelData.WorldClocks.States)
+            {
+                var expected = new ClockStateCase(sample.Time, 0.5f);
+                if (advanceTime && defaultClock == id)
+                    expected = sample.After;
+
+                AssertClock(expected, clock);
+            }
         }
     }
 
