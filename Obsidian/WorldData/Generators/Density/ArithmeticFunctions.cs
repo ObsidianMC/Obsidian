@@ -259,8 +259,8 @@ internal abstract class BinaryFunction : DensityFunction
 }
 
 /// <summary>
-/// <c>pow</c>: <c>base</c> to the power of <c>exponent</c>, computed in double and narrowed. Build it with
-/// <see cref="Create"/>, which rewrites some constant exponents like vanilla's compiler.
+/// <c>pow</c>: <c>base</c> to the power of <c>exponent</c>, computed in double with Java's Math.pow rules and
+/// narrowed. Build it with <see cref="Create"/>, which rewrites some constant exponents like vanilla's compiler.
 /// </summary>
 /// <remarks>
 /// Over a volume both operands are sampled as volumes first, like vanilla's PowFunction samplers. Java's Math.pow may
@@ -317,5 +317,6 @@ internal sealed class PowFunction(DensityFunction baseFunction, DensityFunction 
         return exponent < 0.0f ? new UnaryFunction(UnaryOperation.Reciprocal, power) : power;
     }
 
-    private static float Pow(float value, float exponent) => (float)Math.Pow(value, exponent);
+    // Java's special cases differ from .NET's: 1 to a NaN power and ±1 to an infinite power are NaN, not 1.
+    private static float Pow(float value, float exponent) => (float)JavaMath.Pow(value, exponent);
 }

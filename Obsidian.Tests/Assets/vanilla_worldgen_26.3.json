@@ -3693,6 +3693,139 @@
     {
       "seed": 12345,
       "function": {
+        "type": "minecraft:pow",
+        "base": -1.0,
+        "exponent": {
+          "type": "minecraft:reciprocal",
+          "input": 0.0
+        }
+      },
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "value": "NaN",
+      "bits": "0x7FC00000"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:pow",
+        "base": -1.0,
+        "exponent": {
+          "type": "minecraft:negate",
+          "input": {
+            "type": "minecraft:reciprocal",
+            "input": 0.0
+          }
+        }
+      },
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "value": "NaN",
+      "bits": "0x7FC00000"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:pow",
+        "base": 1.0,
+        "exponent": {
+          "type": "minecraft:reciprocal",
+          "input": 0.0
+        }
+      },
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "value": "NaN",
+      "bits": "0x7FC00000"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:pow",
+        "base": 1.0,
+        "exponent": {
+          "type": "minecraft:log",
+          "input": -1.0
+        }
+      },
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "value": "NaN",
+      "bits": "0x7FC00000"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:pow",
+        "base": 0.5,
+        "exponent": {
+          "type": "minecraft:reciprocal",
+          "input": 0.0
+        }
+      },
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "value": "0.0",
+      "bits": "0x00000000"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:pow",
+        "base": {
+          "type": "minecraft:log",
+          "input": -1.0
+        },
+        "exponent": 0.0
+      },
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "value": "1.0",
+      "bits": "0x3F800000"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:pow",
+        "base": -8.0,
+        "exponent": 0.33333334
+      },
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "value": "NaN",
+      "bits": "0x7FC00000"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:pow",
+          "base": -1.0,
+          "exponent": {
+            "type": "minecraft:reciprocal",
+            "input": 0.0
+          }
+        }
+      },
+      "x": 1,
+      "y": 2,
+      "z": 3,
+      "value": "NaN",
+      "bits": "0x7FC00000"
+    },
+    {
+      "seed": 12345,
+      "function": {
         "type": "minecraft:interpolated",
         "cell_size_xz": 4,
         "cell_size_y": 8,
