@@ -243,6 +243,38 @@ public sealed class VanillaSaves : IDisposable
         }
     }
 
+    [Fact(DisplayName = "The local player loads the saved singleplayer owner's data, and becomes the owner once saved")]
+    public async Task LocalPlayerLoadsSavedOwner()
+    {
+        var world = this.CreateWorld();
+        var savedOwner = Guid.Parse("a0000000-0000-0000-0000-00000000000a");
+        world.SingleplayerOwner = savedOwner;
+        await PlayerDataFile.WriteAsync(world.GetPlayerDataPath(savedOwner), VanillaPlayer(xpLevel: 30));
+        var player = CreatePlayer(world, owner: true);
+
+        try
+        {
+            await player.LoadAsync(loadFromPersistentWorld: false);
+            Assert.Equal(30, player.XpLevel);
+
+            // A save that fails leaves the saved owner's data the one the world opens with.
+            var path = world.GetPlayerDataPath(player.Uuid);
+            Directory.CreateDirectory(path);
+            await Assert.ThrowsAnyAsync<Exception>(player.SaveAsync);
+            Assert.Equal(savedOwner, world.SingleplayerOwner);
+            Directory.Delete(path);
+
+            await player.SaveAsync();
+            Assert.Equal(player.Uuid, world.SingleplayerOwner);
+            Assert.Equal(30, PlayerDataFile.Read(path, NullLogger.Instance)!.GetInt("XpLevel"));
+            Assert.Equal(30, PlayerDataFile.Read(world.GetPlayerDataPath(savedOwner), NullLogger.Instance)!.GetInt("XpLevel"));
+        }
+        finally
+        {
+            DeletePersistentData(player);
+        }
+    }
+
     [Fact(DisplayName = "Concurrent saves of a player all succeed and leave a readable file and its backup")]
     public async Task ConcurrentSavesSucceed()
     {

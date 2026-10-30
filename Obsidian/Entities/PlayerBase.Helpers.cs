@@ -22,6 +22,10 @@ public partial class PlayerBase
     // as leaving during login or configuration would.
     private bool dataLoaded;
 
+    // Whose files LoadAsync read: the player's own, or the world's singleplayer owner's (see LoadDataAsync). The player
+    // always saves as themself.
+    private Guid loadedUuid;
+
     /// <summary>
     /// Whether this is the singleplayer owner (an integrated server's local player), whose data vanilla also keeps in
     /// level.dat.
@@ -62,9 +66,9 @@ public partial class PlayerBase
     }
 
     /// <summary>
-    /// Saves the player in vanilla's shape to the world's <c>playerdata/&lt;uuid&gt;.dat</c> (and for the singleplayer
-    /// owner of a vanilla-shaped world, to its level.dat's <c>Data.Player</c> too), and the world they're in to
-    /// <see cref="PersistentDataFile"/>.
+    /// Saves the player in vanilla's shape to the world's <c>players/data/&lt;uuid&gt;.dat</c> and their progress beside
+    /// it, and the world they're in to <see cref="PersistentDataFile"/>. An integrated server's local player then becomes
+    /// the world's singleplayer owner.
     /// </summary>
     public virtual async Task SaveAsync() => await this.RunTickAsync(this.SavePlayerAsync, allowStopped: true);
 
@@ -81,12 +85,13 @@ public partial class PlayerBase
             //TODO make sure to save inventory in the right location if has using global data set to true
             await PlayerDataFile.WriteAsync(this.PersistentDataFile, new NbtCompound { new NbtTag<string>("worldName", world.Name) });
 
-            // Vanilla's singleplayer game opens the world as its owner, recorded in level.dat.
-            if (this.IsSingleplayerOwner && world is World ownedWorld)
-                ownedWorld.SingleplayerOwner = this.Uuid;
-
             await PlayerDataFile.WriteAsync(world.GetPlayerDataPath(this.Uuid), this.SaveData());
             await this.SaveProgressAsync();
+
+            // Vanilla's singleplayer game opens the world as its owner, recorded in level.dat. Only once the player's
+            // files are written: until then, the owner's files are the ones with their progress.
+            if (this.IsSingleplayerOwner && world is World ownedWorld)
+                ownedWorld.SingleplayerOwner = this.Uuid;
         }
         finally
         {
@@ -108,8 +113,9 @@ public partial class PlayerBase
     }
 
     /// <summary>
-    /// Loads the player's saved data in their world, like vanilla's <c>PlayerList.loadPlayerData</c>: the singleplayer
-    /// owner's from level.dat when it has it, otherwise from <c>playerdata</c>. A player without data starts at the spawn.
+    /// Loads the player's saved data in their world from <c>players/data</c>, like vanilla's
+    /// <c>PlayerList.loadPlayerData</c>: an integrated server's local player loads the world's saved singleplayer owner's,
+    /// whoever they are, and everyone else their own. A player without data starts at the spawn.
     /// </summary>
     /// <param name="loadFromPersistentWorld">Whether to move the player to the world they were last saved in first.</param>
     public virtual async Task LoadAsync(bool loadFromPersistentWorld = true)
@@ -141,7 +147,8 @@ public partial class PlayerBase
         await LoadPermsAsync();
 
         var world = this.Level is IDimension currentDimension ? currentDimension.ParentWorld : (IWorld)this.Level;
-        var data = PlayerDataFile.Read(world.GetPlayerDataPath(this.Uuid), this.Logger);
+        this.loadedUuid = this.IsSingleplayerOwner && world is World { SingleplayerOwner: Guid owner } ? owner : this.Uuid;
+        var data = PlayerDataFile.Read(world.GetPlayerDataPath(this.loadedUuid), this.Logger);
         if (loadFromPersistentWorld)
             IsFirstJoin = data is null;
 
