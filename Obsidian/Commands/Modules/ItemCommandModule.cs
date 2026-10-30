@@ -128,7 +128,10 @@ public sealed class ItemCommandModule : CommandModuleBase
         return result;
     }
 
-    internal static async Task<int> DistributeAsync(List<CommandSlots.Slot> targets, List<ItemStack> items, string operation)
+    internal static async Task<int> DistributeAsync(
+        List<CommandSlots.Slot> targets,
+        List<ItemStack> items,
+        string operation)
     {
         var count = 0;
         var visited = 0;
@@ -137,6 +140,18 @@ public sealed class ItemCommandModule : CommandModuleBase
             var index = 0;
             foreach (var target in group)
             {
+                if (target.Growth is { } growth)
+                {
+                    var (added, next, selected) = Grow(growth, target.Limit, items, operation, index, visited);
+                    if (added > 0)
+                        await target.Sync();
+
+                    count += added;
+                    index = next;
+                    visited = selected;
+                    continue;
+                }
+
                 if (visited >= target.Limit)
                     continue;
 
@@ -154,9 +169,65 @@ public sealed class ItemCommandModule : CommandModuleBase
         return count;
     }
 
+    /// <summary>
+    /// The tail of vanilla's <c>GrowableMutableContainer.replaceSlotItems</c>: while items remain, the component has
+    /// room and the slot limit allows, appends the next non-empty item. A bundle that can't take it stops there.
+    /// </summary>
+    private static (int Added, int Index, int Visited) Grow(
+        CommandSlots.GrowableContents growth,
+        int limit,
+        List<ItemStack> items,
+        string operation,
+        int index,
+        int visited)
+    {
+        var cycles = operation == "fill";
+        var added = 0;
+        while (HasNext(items, operation, index) && growth.CanInsertNewSlots && visited < limit)
+        {
+            visited++;
+            var next = NextNonEmpty(items, cycles, index);
+            if (next < 0)
+                break;
+
+            index = next;
+            if (!growth.Append(items[index % items.Count]))
+                break;
+
+            index++;
+            added++;
+        }
+
+        return (added, index, visited);
+    }
+
+    // Vanilla's providers: fill cycles, override falls back to air forever, replace runs out.
+    private static bool HasNext(List<ItemStack> items, string operation, int index) => operation switch
+    {
+        "fill" => items.Count > 0,
+        "override" => true,
+        _ => index < items.Count
+    };
+
+    // Vanilla's findNextNonEmpty; a cycling provider looks through one full cycle. Air from override never qualifies.
+    private static int NextNonEmpty(List<ItemStack> items, bool cycles, int index)
+    {
+        var end = cycles ? index + items.Count : items.Count;
+        for (var candidate = index; candidate < end; candidate++)
+        {
+            if (!items[candidate % items.Count].IsAir)
+                return candidate;
+        }
+
+        return -1;
+    }
+
     private static async ValueTask<int> ReplaceAsync(CommandSlots.Slot slot, ItemStack item)
     {
-        slot.Set(new ItemStack(item, item.Count));
+        var accepted = slot.Set(new ItemStack(item, item.Count));
+        if (!accepted)
+            return 0;
+
         await slot.Sync();
         return 1;
     }

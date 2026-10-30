@@ -10,8 +10,16 @@ namespace Obsidian.Commands;
 /// <summary>Slot sources shared by /item and /execute. Slot ids come from the generated vanilla ranges.</summary>
 internal static class CommandSlots
 {
-    internal sealed record Slot(object Owner, Func<ItemStack?> Get, Action<ItemStack?> Set, Func<ValueTask> Sync,
-        bool Visible = true, int Limit = int.MaxValue);
+    /// <summary>One selected slot. <see cref="Set"/> reports whether the slot accepted the stack.</summary>
+    internal sealed record Slot(object Owner, Func<ItemStack?> Get, Func<ItemStack?, bool> Set, Func<ValueTask> Sync,
+        bool Visible = true, int Limit = int.MaxValue)
+    {
+        /// <summary>Set on the extra slot after a growable component's entries, which appends new entries.</summary>
+        public GrowableContents? Growth { get; init; }
+    }
+
+    // Vanilla's ChargedProjectiles.Mutable stops adding entries at this many.
+    private const int MaxChargedProjectiles = 1024;
 
     internal static int CountVisible(IEnumerable<Slot> slots) => slots.Count(slot => slot.Visible);
 
@@ -130,6 +138,14 @@ internal static class CommandSlots
         if (parent.Get() is not { IsAir: false })
             yield break;
 
+        if (type != DataComponentType.Container)
+        {
+            foreach (var slot in GrowableSlots(parent, type))
+                yield return slot;
+
+            yield break;
+        }
+
         var component = parent.Get()!.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(type);
         var count = component?.Value.Length ?? 0;
         var capacity = type == DataComponentType.Container ? ContainerBlockEntity.MaxSlots : count;
@@ -142,7 +158,7 @@ internal static class CommandSlots
                 item =>
                 {
                     if (parent.Get() is not { } current)
-                        return;
+                        return false;
 
                     var contents = current.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(type);
                     contents ??= type switch
@@ -165,8 +181,137 @@ internal static class CommandSlots
 
                     var copy = new ItemStack(current, current.Count);
                     copy[type] = contents with { Value = [.. items] };
-                    parent.Set(copy);
+                    return parent.Set(copy);
                 }, parent.Sync, index < count, parent.Limit);
+        }
+    }
+
+    // The entries of a bundle or charged projectiles, then one invisible slot that appends while there's room.
+    private static IEnumerable<Slot> GrowableSlots(Slot parent, DataComponentType type)
+    {
+        var contents = new GrowableContents(parent, type);
+        for (var index = 0; index < contents.Count; index++)
+        {
+            var captured = index;
+            yield return new Slot(parent.Owner, () => contents.Get(captured), item => contents.Set(captured, item),
+                parent.Sync, true, parent.Limit);
+        }
+
+        yield return new Slot(parent.Owner, () => null, _ => false, parent.Sync, false, parent.Limit)
+        {
+            Growth = contents
+        };
+    }
+
+    /// <summary>
+    /// Vanilla's <c>GrowableMutableContainer</c> for bundle contents and charged projectiles: entries are replaced in
+    /// place and new ones appended at the end while there's room, then written back with empty entries removed (and a
+    /// bundle's identical stacks merged). Indices stay put until the command is done with the stack.
+    /// </summary>
+    internal sealed class GrowableContents
+    {
+        private readonly Slot parent;
+        private readonly DataComponentType type;
+        private readonly List<ItemStack> items;
+
+        public GrowableContents(Slot parent, DataComponentType type)
+        {
+            this.parent = parent;
+            this.type = type;
+            var stored = parent.Get()?.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(type);
+            this.items = [.. stored?.Value ?? []];
+        }
+
+        public int Count => this.items.Count;
+
+        /// <summary>Vanilla's <c>canInsertNewSlots</c>: a bundle with room left, or fewer than 1024 projectiles.</summary>
+        public bool CanInsertNewSlots => this.IsBundle
+            ? this.Weight(-1).Subtract(Bundles.Weight.One).Numerator < 0
+            : this.items.Count < MaxChargedProjectiles;
+
+        private bool IsBundle => this.type == DataComponentType.BundleContents;
+
+        public ItemStack Get(int index) => this.items[index];
+
+        /// <summary>Vanilla's <c>setItem</c>: a bundle refuses a stack that doesn't fit or would overfill it.</summary>
+        public bool Set(int index, ItemStack? item)
+        {
+            var replacement = item ?? ItemStack.Air;
+            if (this.IsBundle && !replacement.IsAir && !this.Fits(index, replacement))
+                return false;
+
+            this.items[index] = new ItemStack(replacement, replacement.Count);
+            return this.Commit();
+        }
+
+        /// <summary>Vanilla's <c>addSlotWithItem</c> for a non-empty stack.</summary>
+        public bool Append(ItemStack item)
+        {
+            if (this.IsBundle && !this.Fits(-1, item))
+                return false;
+
+            this.items.Add(new ItemStack(item, item.Count));
+            return this.Commit();
+        }
+
+        private bool Fits(int replacedIndex, ItemStack item)
+        {
+            if (!ItemOwners.FitsInContainerItems(item))
+                return false;
+
+            var stacked = Bundles.ItemWeight(item).Times(item.Count);
+            var total = this.Weight(replacedIndex).Add(stacked);
+            return total.Subtract(Bundles.Weight.One).Numerator <= 0;
+        }
+
+        // The bundle's weight, leaving out the entry at excludedIndex.
+        private Bundles.Weight Weight(int excludedIndex)
+        {
+            var total = Bundles.Weight.Zero;
+            for (var index = 0; index < this.items.Count; index++)
+            {
+                var stack = this.items[index];
+                if (index == excludedIndex || stack.IsAir)
+                    continue;
+
+                total = total.Add(Bundles.ItemWeight(stack).Times(stack.Count));
+            }
+
+            return total;
+        }
+
+        private bool Commit()
+        {
+            if (this.parent.Get() is not { } current)
+                return false;
+
+            var entries = this.items.Where(stack => !stack.IsAir).ToList();
+            if (this.IsBundle)
+                MergeIdenticalStacks(entries);
+
+            var component = this.IsBundle ? ComponentBuilder.BundleContents : ComponentBuilder.ChargedProjectiles;
+            var copy = new ItemStack(current, current.Count);
+            copy[this.type] = component with { Value = [.. entries] };
+            return this.parent.Set(copy);
+        }
+
+        // Vanilla's mergeIdenticalStacks: each stackable entry joins the next identical one after it.
+        private static void MergeIdenticalStacks(List<ItemStack> entries)
+        {
+            for (var index = 0; index < entries.Count; index++)
+            {
+                var stack = entries[index];
+                if (stack.MaxStackSize <= 1)
+                    continue;
+
+                var later = entries.FindIndex(index + 1, other => Bundles.SameKind(stack, other));
+                if (later < 0)
+                    continue;
+
+                entries[later] = new ItemStack(stack, stack.Count + entries[later].Count);
+                entries.RemoveAt(index);
+                index--;
+            }
         }
     }
 
@@ -256,14 +401,25 @@ internal static class CommandSlots
                 104 => EquipmentSlot.Body,
                 _ => EquipmentSlot.Saddle
             };
-            return new Slot(mob, () => mob.GetEquipment(equipment),
-                stack => mob.SetEquipment(equipment, stack ?? ItemStack.Air), () => default);
+            return new Slot(mob, () => mob.GetEquipment(equipment), stack =>
+            {
+                mob.SetEquipment(equipment, stack ?? ItemStack.Air);
+                return true;
+            }, () => default);
         }
 
         return null;
     }
 
-    private static Slot? InventorySlot(BaseContainer inventory, int slot, Func<ValueTask> sync, object? owner = null) =>
-        slot < 0 || slot >= inventory.Size ? null : new Slot(owner ?? inventory,
-            () => inventory.GetItem(slot), stack => inventory.SetItem(slot, stack), sync);
+    private static Slot? InventorySlot(BaseContainer inventory, int slot, Func<ValueTask> sync, object? owner = null)
+    {
+        if (slot < 0 || slot >= inventory.Size)
+            return null;
+
+        return new Slot(owner ?? inventory, () => inventory.GetItem(slot), stack =>
+        {
+            inventory.SetItem(slot, stack);
+            return true;
+        }, sync);
+    }
 }

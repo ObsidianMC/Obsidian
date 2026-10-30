@@ -324,17 +324,30 @@ public final class CommandFixtures {
         return rows;
     }
 
-    private static SimpleContainer slotContainer(boolean nested) {
+    /** Four slots of planks, with slot 0 holding the item whose contents an expression reaches into, if any. */
+    private static SimpleContainer slotContainer(String holder) {
         var container = new SimpleContainer(4);
         for (int slot = 0; slot < 4; slot++) {
             container.setItem(slot, new ItemStack(Items.OAK_PLANKS, 3));
         }
-        if (nested) {
-            var chest = new ItemStack(Items.CHEST);
-            chest.set(net.minecraft.core.component.DataComponents.CONTAINER,
-                net.minecraft.world.item.component.ItemContainerContents.fromItems(
-                    List.of(new ItemStack(Items.OAK_PLANKS, 3), new ItemStack(Items.OAK_PLANKS, 4))));
-            container.setItem(0, chest);
+        switch (holder) {
+            case "chest" -> {
+                var chest = new ItemStack(Items.CHEST);
+                chest.set(net.minecraft.core.component.DataComponents.CONTAINER,
+                    net.minecraft.world.item.component.ItemContainerContents.fromItems(
+                        List.of(new ItemStack(Items.OAK_PLANKS, 3), new ItemStack(Items.OAK_PLANKS, 4))));
+                container.setItem(0, chest);
+            }
+            case "bundle" -> container.setItem(0, new ItemStack(Items.BUNDLE));
+            case "dirt_bundle" -> {
+                var bundle = new ItemStack(Items.BUNDLE);
+                var contents = new net.minecraft.world.item.component.BundleContents.Mutable();
+                contents.tryInsert(new ItemStack(Items.DIRT, 60));
+                bundle.set(net.minecraft.core.component.DataComponents.BUNDLE_CONTENTS, contents.toImmutable());
+                container.setItem(0, bundle);
+            }
+            case "crossbow" -> container.setItem(0, new ItemStack(Items.CROSSBOW));
+            default -> { }
         }
         return container;
     }
@@ -343,10 +356,17 @@ public final class CommandFixtures {
         var row = new JsonObject();
         row.addProperty("item", BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
         row.addProperty("count", stack.getCount());
-        var contents = stack.get(net.minecraft.core.component.DataComponents.CONTAINER);
-        if (contents != null) {
+        var components = Map.of("minecraft:container", net.minecraft.core.component.DataComponents.CONTAINER,
+            "minecraft:bundle_contents", net.minecraft.core.component.DataComponents.BUNDLE_CONTENTS,
+            "minecraft:charged_projectiles", net.minecraft.core.component.DataComponents.CHARGED_PROJECTILES);
+        for (var entry : components.entrySet()) {
+            var contents = (net.minecraft.world.item.component.ContainerComponent<?>)stack.get(entry.getValue());
+            if (contents == null) {
+                continue;
+            }
             var items = new JsonArray();
             contents.itemCopies().forEach(item -> items.add(stack(item)));
+            row.addProperty("component", entry.getKey());
             row.add("contents", items);
         }
         return row;
@@ -357,18 +377,39 @@ public final class CommandFixtures {
         var setter = ItemCommands.class.getDeclaredMethod("lambda$setItems$0", ItemProvider.class, SlotSelector.class,
             net.minecraft.server.commands.CommandResponseTracker.class, Object.class, SlotCollection.class);
         setter.setAccessible(true);
-        for (var expression : List.of("container.*", "container.0", "{type:'minecraft:empty'}",
+        var holders = Map.of(
+            "{type:'minecraft:contents',component:'minecraft:container',"
+                + "slot_source:{type:'minecraft:slot_range',slots:'container.0'}}", List.of("chest"),
+            "{type:'minecraft:contents',component:'minecraft:bundle_contents',"
+                + "slot_source:{type:'minecraft:slot_range',slots:'container.0'}}", List.of("bundle", "dirt_bundle"),
+            "{type:'minecraft:limit_slots',limit:3,slot_source:{type:'minecraft:contents',"
+                + "component:'minecraft:charged_projectiles',"
+                + "slot_source:{type:'minecraft:slot_range',slots:'container.0'}}}", List.of("crossbow"));
+        var expressions = List.of("container.*", "container.0", "{type:'minecraft:empty'}",
             "{type:'minecraft:slot_range',slots:'container.*'}",
             "{type:'minecraft:limit_slots',limit:2,slot_source:{type:'minecraft:slot_range',slots:'container.*'}}",
             "[{type:'minecraft:slot_range',slots:'container.1'},{type:'minecraft:slot_range',slots:'container.0'}]",
             "{type:'minecraft:filtered',item_filter:{items:'minecraft:oak_planks'},"
                 + "slot_source:{type:'minecraft:slot_range',slots:'container.*'}}",
             "{type:'minecraft:contents',component:'minecraft:container',"
-                + "slot_source:{type:'minecraft:slot_range',slots:'container.0'}}")) {
+                + "slot_source:{type:'minecraft:slot_range',slots:'container.0'}}",
+            "{type:'minecraft:contents',component:'minecraft:bundle_contents',"
+                + "slot_source:{type:'minecraft:slot_range',slots:'container.0'}}",
+            "{type:'minecraft:limit_slots',limit:3,slot_source:{type:'minecraft:contents',"
+                + "component:'minecraft:charged_projectiles',"
+                + "slot_source:{type:'minecraft:slot_range',slots:'container.0'}}}");
+        var cases = new ArrayList<String[]>();
+        for (var expression : expressions) {
+            for (var holder : holders.getOrDefault(expression, List.of("none"))) {
+                cases.add(new String[]{expression, holder});
+            }
+        }
+        for (var testCase : cases) {
+            var expression = testCase[0];
+            var holder = testCase[1];
             for (var operation : List.of("replace", "fill", "override")) {
-                var nested = expression.contains("minecraft:contents");
-                var container = slotContainer(nested);
-                var other = slotContainer(nested);
+                var container = slotContainer(holder);
+                var other = slotContainer(holder);
                 var source = SlotSourceArgument.slotSource(context).parse(new com.mojang.brigadier.StringReader(expression));
                 var selected = source.value().provide(loot(access, Map.of(LootContextParams.CONTAINER, container)));
                 var second = source.value().provide(loot(access, Map.of(LootContextParams.CONTAINER, other)));
@@ -383,7 +424,7 @@ public final class CommandFixtures {
                 var row = new JsonObject();
                 row.addProperty("expression", expression);
                 row.addProperty("operation", operation);
-                row.addProperty("nested", nested);
+                row.addProperty("holder", holder);
                 row.addProperty("slots", selected.size());
                 int changed = (int)setter.invoke(null, provider, selector, tracker, container, selected);
                 int otherChanged = (int)setter.invoke(null, provider, selector, tracker, other, second);

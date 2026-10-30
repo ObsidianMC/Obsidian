@@ -493,7 +493,8 @@ The generated `commands-26.3.json` supplies vanilla's client grammar, argument b
 restriction flags and redirects. It describes the complete vanilla trees, including older branches the existing
 command implementations still lack. Server completion handles the new literals, clock markers, timelines, provider
 identifiers and slot names. `CommandFixtures.java` captures the grammar and execution references;
-`VanillaCommands26` replays them, including nested container contents and distribution across targets.
+`VanillaCommands26` replays them, including nested container contents, bundles and charged projectiles growing
+within their limits, and distribution across targets.
 
 - Number providers share the data-system evaluator. Score and storage inputs work; numeric environment-attribute
   sampling fails explicitly until the environment runtime supplies a general numeric sampler. Predicates inherit

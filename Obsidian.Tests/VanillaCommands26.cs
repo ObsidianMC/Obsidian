@@ -140,13 +140,8 @@ public sealed class VanillaCommands26
             for (var slot = 0; slot < inventory.Size; slot++)
                 inventory.SetItem(slot, new ItemStack(ItemsRegistry.OakPlanks, 3));
 
-            if (row.GetProperty("nested").GetBoolean())
-            {
-                inventory.SetItem(0, new ItemStack(ItemsRegistry.Chest, 1, ComponentBuilder.Container with
-                {
-                    Value = [new ItemStack(ItemsRegistry.OakPlanks, 3), new ItemStack(ItemsRegistry.OakPlanks, 4)]
-                }));
-            }
+            if (Holder(row.GetProperty("holder").GetString()!) is { } holder)
+                inventory.SetItem(0, holder);
 
             var at = position + new Vector(target, 0, 0);
             await server.World.SetBlockEntity(at, new ContainerBlockEntity(inventory)
@@ -707,6 +702,32 @@ public sealed class VanillaCommands26
         }
     }
 
+    // The captured slot 0 item whose contents an expression reaches into.
+    private static ItemStack? Holder(string holder)
+    {
+        switch (holder)
+        {
+            case "chest":
+                return new ItemStack(ItemsRegistry.Chest, 1, ComponentBuilder.Container with
+                {
+                    Value = [new ItemStack(ItemsRegistry.OakPlanks, 3), new ItemStack(ItemsRegistry.OakPlanks, 4)]
+                });
+
+            case "bundle":
+                return new ItemStack(ItemsRegistry.Bundle, 1);
+
+            case "dirt_bundle":
+                var contents = ComponentBuilder.BundleContents with { Value = [new ItemStack(ItemsRegistry.Dirt, 60)] };
+                return new ItemStack(ItemsRegistry.Bundle, 1, contents);
+
+            case "crossbow":
+                return new ItemStack(ItemsRegistry.Crossbow, 1);
+
+            default:
+                return null;
+        }
+    }
+
     private static void AssertStack(JsonElement expected, ItemStack stack)
     {
         Assert.Equal(expected.GetProperty("item").GetString(), stack.Holder.UnlocalizedName);
@@ -714,11 +735,17 @@ public sealed class VanillaCommands26
         if (!expected.TryGetProperty("contents", out var contents))
             return;
 
-        var component = stack.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(DataComponentType.Container);
-        Assert.NotNull(component);
+        var type = expected.GetProperty("component").GetString() switch
+        {
+            "minecraft:bundle_contents" => DataComponentType.BundleContents,
+            "minecraft:charged_projectiles" => DataComponentType.ChargedProjectiles,
+            _ => DataComponentType.Container
+        };
+        var component = stack.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(type);
+        var actual = component?.Value ?? [];
         var items = contents.EnumerateArray().ToArray();
-        Assert.Equal(items.Length, component.Value.Length);
+        Assert.Equal(items.Length, actual.Length);
         for (var index = 0; index < items.Length; index++)
-            AssertStack(items[index], component.Value[index]);
+            AssertStack(items[index], actual[index]);
     }
 }

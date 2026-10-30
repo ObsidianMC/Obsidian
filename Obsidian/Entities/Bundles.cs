@@ -146,7 +146,7 @@ internal static class Bundles
         return total;
     }
 
-    private static bool SameKind(ItemStack left, ItemStack right) =>
+    internal static bool SameKind(ItemStack left, ItemStack right) =>
         left.Holder == right.Holder && new ItemStack(left, 1).Equals(new ItemStack(right, 1));
 
     private static void Write(ItemStack bundle, List<ItemStack> contents) =>
