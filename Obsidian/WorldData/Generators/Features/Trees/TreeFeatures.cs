@@ -19,4 +19,27 @@ internal sealed partial class FeatureRegistry
 
         return fallenTree.Place;
     }
+
+    private Feature Spike(JsonElement json)
+    {
+        var spike = new SpikeFeature(this, json);
+
+        return spike.Place;
+    }
+
+    private Feature HugeMushroom(JsonElement json, bool red)
+    {
+        HugeMushroomFeature mushroom = red
+            ? new HugeRedMushroomFeature(this, json)
+            : new HugeBrownMushroomFeature(this, json);
+
+        return mushroom.Place;
+    }
+
+    private Feature HugeFungus(JsonElement json)
+    {
+        var fungus = new HugeFungusFeature(this, json);
+
+        return fungus.Place;
+    }
 }

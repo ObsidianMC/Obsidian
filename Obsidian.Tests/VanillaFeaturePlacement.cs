@@ -33,10 +33,7 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
     private const int RegionRadius = 2;
 
     // Captured placed features whose feature types aren't implemented yet.
-    private static readonly HashSet<string> pending =
-    [
-        "minecraft:ice_spike"
-    ];
+    private static readonly HashSet<string> pending = [];
 
     private static readonly FeatureRegistry registry = new(WorldgenData.Vanilla);
 
