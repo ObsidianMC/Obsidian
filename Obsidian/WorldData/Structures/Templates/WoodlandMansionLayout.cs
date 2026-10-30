@@ -11,34 +11,53 @@ internal sealed class WoodlandMansionLayout
 {
     // Cell values of the floor plans.
     private const int Clear = 0;
+
     private const int Corridor = 1;
+
     private const int Room = 2;
+
     private const int StartRoom = 3;
+
     private const int Blocked = 5;
 
     // Flags of the room grids: the room size, its origin cell, door, stairs and corridor cells, and the room id below.
     private const int Room1x1 = 0x10000;
+
     private const int Room1x2 = 0x20000;
+
     private const int Room2x2 = 0x40000;
+
     private const int RoomOriginFlag = 0x100000;
+
     private const int RoomDoorFlag = 0x200000;
+
     private const int RoomStairsFlag = 0x400000;
+
     private const int RoomCorridorFlag = 0x800000;
+
     private const int RoomTypeMask = 0xF0000;
+
     private const int RoomIdMask = 0xFFFF;
 
     private static readonly BlockFace[] horizontal = [BlockFace.North, BlockFace.East, BlockFace.South, BlockFace.West];
 
     // Vanilla Direction.from2DDataValue order.
-    private static readonly BlockFace[] byDataValue = [BlockFace.South, BlockFace.West, BlockFace.North, BlockFace.East];
+    private static readonly BlockFace[] byDataValue =
+        [BlockFace.South, BlockFace.West, BlockFace.North, BlockFace.East];
 
     private readonly IRandomSource random;
+
     private readonly Grid baseGrid;
+
     private readonly Grid thirdFloorGrid;
+
     private readonly Grid[] floorRooms;
+
     private readonly int entranceX = 7;
+
     private readonly int entranceY = 4;
     private int startX;
+
     private int startY;
 
     /// <summary>Vanilla <c>MansionGrid</c>'s constructor: the floor plans and room assignment.</summary>
@@ -67,8 +86,18 @@ internal sealed class WoodlandMansionLayout
         this.floorRooms = [new Grid(11, 11, Blocked), new Grid(11, 11, Blocked), new Grid(11, 11, Blocked)];
         this.IdentifyRooms(this.baseGrid, this.floorRooms[0]);
         this.IdentifyRooms(this.baseGrid, this.floorRooms[1]);
-        this.floorRooms[0].Set(this.entranceX + 1, this.entranceY, this.entranceX + 1, this.entranceY + 1, RoomCorridorFlag);
-        this.floorRooms[1].Set(this.entranceX + 1, this.entranceY, this.entranceX + 1, this.entranceY + 1, RoomCorridorFlag);
+        this.floorRooms[0].Set(
+            this.entranceX + 1,
+            this.entranceY,
+            this.entranceX + 1,
+            this.entranceY + 1,
+            RoomCorridorFlag);
+        this.floorRooms[1].Set(
+            this.entranceX + 1,
+            this.entranceY,
+            this.entranceX + 1,
+            this.entranceY + 1,
+            RoomCorridorFlag);
         this.thirdFloorGrid = new Grid(this.baseGrid.Width, this.baseGrid.Height, Blocked);
         this.SetupThirdFloor();
         this.IdentifyRooms(this.thirdFloorGrid, this.floorRooms[2]);
@@ -85,7 +114,8 @@ internal sealed class WoodlandMansionLayout
 
     private static bool IsHouse(Grid grid, int x, int y) => grid.Get(x, y) is Corridor or Room or StartRoom or 4;
 
-    private bool IsRoomId(int x, int y, int floor, int roomId) => (this.floorRooms[floor].Get(x, y) & RoomIdMask) == roomId;
+    private bool IsRoomId(int x, int y, int floor, int roomId) =>
+        (this.floorRooms[floor].Get(x, y) & RoomIdMask) == roomId;
 
     private BlockFace? Get1x2RoomDirection(int x, int y, int floor, int roomId)
     {
@@ -93,7 +123,9 @@ internal sealed class WoodlandMansionLayout
         {
             var step = direction.ToVector();
             if (this.IsRoomId(x + step.X, y + step.Z, floor, roomId))
+            {
                 return direction;
+            }
         }
 
         return null;
@@ -102,7 +134,9 @@ internal sealed class WoodlandMansionLayout
     private void RecursiveCorridor(Grid grid, int x, int y, BlockFace direction, int length)
     {
         if (length <= 0)
+        {
             return;
+        }
 
         var step = direction.ToVector();
         grid.Set(x, y, Corridor);
@@ -112,12 +146,15 @@ internal sealed class WoodlandMansionLayout
         {
             var turn = byDataValue[this.random.NextInt(4)];
             if (turn == direction.Opposite() || turn == BlockFace.East && this.random.NextBoolean())
+            {
                 continue;
+            }
 
             var nextX = x + step.X;
             var nextY = y + step.Z;
             var turnStep = turn.ToVector();
-            if (grid.Get(nextX + turnStep.X, nextY + turnStep.Z) == Clear && grid.Get(nextX + turnStep.X * 2, nextY + turnStep.Z * 2) == Clear)
+            if (grid.Get(nextX + turnStep.X, nextY + turnStep.Z) == Clear
+                && grid.Get(nextX + turnStep.X * 2, nextY + turnStep.Z * 2) == Clear)
             {
                 this.RecursiveCorridor(grid, x + step.X + turnStep.X, y + step.Z + turnStep.Z, turn, length - 1);
                 break;
@@ -144,7 +181,9 @@ internal sealed class WoodlandMansionLayout
             for (var x = 0; x < grid.Width; x++)
             {
                 if (grid.Get(x, y) != Clear)
+                {
                     continue;
+                }
 
                 var sides = (IsHouse(grid, x + 1, y) ? 1 : 0) + (IsHouse(grid, x - 1, y) ? 1 : 0)
                     + (IsHouse(grid, x, y + 1) ? 1 : 0) + (IsHouse(grid, x, y - 1) ? 1 : 0);
@@ -170,7 +209,8 @@ internal sealed class WoodlandMansionLayout
     }
 
     /// <summary>
-    /// Vanilla <c>setupThirdFloor</c>: picks a 1x2 room of the second floor for the stairs and grows corridors from them.
+    /// Vanilla <c>setupThirdFloor</c>: picks a 1x2 room of the second floor for the stairs and grows corridors from
+    /// them.
     /// </summary>
     private void SetupThirdFloor()
     {
@@ -183,7 +223,9 @@ internal sealed class WoodlandMansionLayout
             {
                 var cell = secondFloor.Get(x, y);
                 if ((cell & RoomTypeMask) == Room1x2 && (cell & RoomDoorFlag) == RoomDoorFlag)
+                {
                     candidates.Add((x, y));
+                }
             }
         }
 
@@ -200,6 +242,36 @@ internal sealed class WoodlandMansionLayout
         var otherX = stairsX + direction.X;
         var otherY = stairsY + direction.Z;
 
+        this.InitializeThirdFloor(stairsX, stairsY, otherX, otherY);
+
+        List<BlockFace> exits = [];
+        foreach (var face in horizontal)
+        {
+            var step = face.ToVector();
+            if (this.thirdFloorGrid.Get(otherX + step.X, otherY + step.Z) == Clear)
+            {
+                exits.Add(face);
+            }
+        }
+
+        if (exits.Count == 0)
+        {
+            this.thirdFloorGrid.Set(0, 0, this.thirdFloorGrid.Width, this.thirdFloorGrid.Height, Blocked);
+            secondFloor.Set(stairsX, stairsY, stairsCell);
+            return;
+        }
+
+        var exit = exits[this.random.NextInt(exits.Count)];
+        var exitStep = exit.ToVector();
+        this.RecursiveCorridor(this.thirdFloorGrid, otherX + exitStep.X, otherY + exitStep.Z, exit, 4);
+
+        while (CleanEdges(this.thirdFloorGrid))
+        {
+        }
+    }
+
+    private void InitializeThirdFloor(int stairsX, int stairsY, int otherX, int otherY)
+    {
         for (var y = 0; y < this.thirdFloorGrid.Height; y++)
         {
             for (var x = 0; x < this.thirdFloorGrid.Width; x++)
@@ -219,33 +291,11 @@ internal sealed class WoodlandMansionLayout
                 }
             }
         }
-
-        List<BlockFace> exits = [];
-        foreach (var face in horizontal)
-        {
-            var step = face.ToVector();
-            if (this.thirdFloorGrid.Get(otherX + step.X, otherY + step.Z) == Clear)
-                exits.Add(face);
-        }
-
-        if (exits.Count == 0)
-        {
-            this.thirdFloorGrid.Set(0, 0, this.thirdFloorGrid.Width, this.thirdFloorGrid.Height, Blocked);
-            secondFloor.Set(stairsX, stairsY, stairsCell);
-            return;
-        }
-
-        var exit = exits[this.random.NextInt(exits.Count)];
-        var exitStep = exit.ToVector();
-        this.RecursiveCorridor(this.thirdFloorGrid, otherX + exitStep.X, otherY + exitStep.Z, exit, 4);
-
-        while (CleanEdges(this.thirdFloorGrid))
-        {
-        }
     }
 
     /// <summary>
-    /// Vanilla <c>identifyRooms</c>: groups the room cells, in a random order, into 2x2, 1x2 and 1x1 rooms with a door cell.
+    /// Vanilla <c>identifyRooms</c>: groups the room cells, in a random order, into 2x2, 1x2 and 1x1 rooms with a door
+    /// cell.
     /// </summary>
     private void IdentifyRooms(Grid plan, Grid rooms)
     {
@@ -255,7 +305,9 @@ internal sealed class WoodlandMansionLayout
             for (var x = 0; x < plan.Width; x++)
             {
                 if (plan.Get(x, y) == Room)
+                {
                     cells.Add((x, y));
+                }
             }
         }
 
@@ -265,86 +317,22 @@ internal sealed class WoodlandMansionLayout
         foreach (var (x, y) in cells)
         {
             if (rooms.Get(x, y) != Clear)
+            {
                 continue;
-
-            var minX = x;
-            var maxX = x;
-            var minY = y;
-            var maxY = y;
-            var size = Room1x1;
-
-            if (rooms.Get(x + 1, y) == Clear && rooms.Get(x, y + 1) == Clear && rooms.Get(x + 1, y + 1) == Clear
-                && plan.Get(x + 1, y) == Room && plan.Get(x, y + 1) == Room && plan.Get(x + 1, y + 1) == Room)
-            {
-                maxX++;
-                maxY++;
-                size = Room2x2;
-            }
-            else if (rooms.Get(x - 1, y) == Clear && rooms.Get(x, y + 1) == Clear && rooms.Get(x - 1, y + 1) == Clear
-                && plan.Get(x - 1, y) == Room && plan.Get(x, y + 1) == Room && plan.Get(x - 1, y + 1) == Room)
-            {
-                minX--;
-                maxY++;
-                size = Room2x2;
-            }
-            else if (rooms.Get(x - 1, y) == Clear && rooms.Get(x, y - 1) == Clear && rooms.Get(x - 1, y - 1) == Clear
-                && plan.Get(x - 1, y) == Room && plan.Get(x, y - 1) == Room && plan.Get(x - 1, y - 1) == Room)
-            {
-                minX--;
-                minY--;
-                size = Room2x2;
-            }
-            else if (rooms.Get(x + 1, y) == Clear && plan.Get(x + 1, y) == Room)
-            {
-                maxX++;
-                size = Room1x2;
-            }
-            else if (rooms.Get(x, y + 1) == Clear && plan.Get(x, y + 1) == Room)
-            {
-                maxY++;
-                size = Room1x2;
-            }
-            else if (rooms.Get(x - 1, y) == Clear && plan.Get(x - 1, y) == Room)
-            {
-                minX--;
-                size = Room1x2;
-            }
-            else if (rooms.Get(x, y - 1) == Clear && plan.Get(x, y - 1) == Room)
-            {
-                minY--;
-                size = Room1x2;
             }
 
-            // The door cell: a random corner next to a corridor, trying the others in vanilla's order.
-            var doorX = this.random.NextBoolean() ? minX : maxX;
-            var doorY = this.random.NextBoolean() ? minY : maxY;
-            var door = RoomDoorFlag;
-            if (!plan.EdgesTo(doorX, doorY, Corridor))
-            {
-                doorX = doorX == minX ? maxX : minX;
-                doorY = doorY == minY ? maxY : minY;
-                if (!plan.EdgesTo(doorX, doorY, Corridor))
-                {
-                    doorY = doorY == minY ? maxY : minY;
-                    if (!plan.EdgesTo(doorX, doorY, Corridor))
-                    {
-                        doorX = doorX == minX ? maxX : minX;
-                        doorY = doorY == minY ? maxY : minY;
-                        if (!plan.EdgesTo(doorX, doorY, Corridor))
-                        {
-                            door = 0;
-                            doorX = minX;
-                            doorY = minY;
-                        }
-                    }
-                }
-            }
+            var (minX, maxX, minY, maxY, size) = FindRoomBounds(plan, rooms, x, y);
+
+            var (doorX, doorY, door) = this.ChooseRoomDoor(plan, minX, maxX, minY, maxY);
 
             for (var cellY = minY; cellY <= maxY; cellY++)
             {
                 for (var cellX = minX; cellX <= maxX; cellX++)
                 {
-                    rooms.Set(cellX, cellY, cellX == doorX && cellY == doorY ? RoomOriginFlag | door | size | roomId : size | roomId);
+                    var flags = cellX == doorX && cellY == doorY
+                        ? RoomOriginFlag | door | size | roomId
+                        : size | roomId;
+                    rooms.Set(cellX, cellY, flags);
                 }
             }
 
@@ -352,12 +340,109 @@ internal sealed class WoodlandMansionLayout
         }
     }
 
+    private static (int MinX, int MaxX, int MinY, int MaxY, int Size) FindRoomBounds(
+        Grid plan,
+        Grid rooms,
+        int x,
+        int y)
+    {
+        var minX = x;
+        var maxX = x;
+        var minY = y;
+        var maxY = y;
+        var size = Room1x1;
+
+        if (rooms.Get(x + 1, y) == Clear && rooms.Get(x, y + 1) == Clear && rooms.Get(x + 1, y + 1) == Clear
+            && plan.Get(x + 1, y) == Room && plan.Get(x, y + 1) == Room && plan.Get(x + 1, y + 1) == Room)
+        {
+            maxX++;
+            maxY++;
+            size = Room2x2;
+        }
+        else if (rooms.Get(x - 1, y) == Clear && rooms.Get(x, y + 1) == Clear && rooms.Get(x - 1, y + 1) == Clear
+            && plan.Get(x - 1, y) == Room && plan.Get(x, y + 1) == Room && plan.Get(x - 1, y + 1) == Room)
+        {
+            minX--;
+            maxY++;
+            size = Room2x2;
+        }
+        else if (rooms.Get(x - 1, y) == Clear && rooms.Get(x, y - 1) == Clear && rooms.Get(x - 1, y - 1) == Clear
+            && plan.Get(x - 1, y) == Room && plan.Get(x, y - 1) == Room && plan.Get(x - 1, y - 1) == Room)
+        {
+            minX--;
+            minY--;
+            size = Room2x2;
+        }
+        else if (rooms.Get(x + 1, y) == Clear && plan.Get(x + 1, y) == Room)
+        {
+            maxX++;
+            size = Room1x2;
+        }
+        else if (rooms.Get(x, y + 1) == Clear && plan.Get(x, y + 1) == Room)
+        {
+            maxY++;
+            size = Room1x2;
+        }
+        else if (rooms.Get(x - 1, y) == Clear && plan.Get(x - 1, y) == Room)
+        {
+            minX--;
+            size = Room1x2;
+        }
+        else if (rooms.Get(x, y - 1) == Clear && plan.Get(x, y - 1) == Room)
+        {
+            minY--;
+            size = Room1x2;
+        }
+
+        return (minX, maxX, minY, maxY, size);
+    }
+
+    private (int X, int Y, int Flag) ChooseRoomDoor(Grid plan, int minX, int maxX, int minY, int maxY)
+    {
+        // The door cell: a random corner next to a corridor, trying the others in vanilla's order.
+        var doorX = this.random.NextBoolean() ? minX : maxX;
+        var doorY = this.random.NextBoolean() ? minY : maxY;
+        var door = RoomDoorFlag;
+        if (!plan.EdgesTo(doorX, doorY, Corridor))
+        {
+            doorX = doorX == minX ? maxX : minX;
+            doorY = doorY == minY ? maxY : minY;
+            if (!plan.EdgesTo(doorX, doorY, Corridor))
+            {
+                doorY = doorY == minY ? maxY : minY;
+                if (!plan.EdgesTo(doorX, doorY, Corridor))
+                {
+                    doorX = doorX == minX ? maxX : minX;
+                    doorY = doorY == minY ? maxY : minY;
+                    if (!plan.EdgesTo(doorX, doorY, Corridor))
+                    {
+                        door = 0;
+                        doorX = minX;
+                        doorY = minY;
+                    }
+                }
+            }
+        }
+
+        return (doorX, doorY, door);
+    }
+
     /// <summary>Vanilla <c>MansionPiecePlacer.createMansion</c>.</summary>
     private void CreateMansion(Vector origin, StructureRotation rotation, List<WoodlandMansionPiece> pieces)
     {
-        var firstFloor = new PlacementData { Position = origin, Rotation = rotation, WallType = "wall_flat" };
+        var firstFloor = new PlacementData
+        {
+            Position = origin,
+            Rotation = rotation,
+            WallType = "wall_flat"
+        };
         Entrance(pieces, firstFloor);
-        var secondFloor = new PlacementData { Position = firstFloor.Position + (0, 8, 0), Rotation = firstFloor.Rotation, WallType = "wall_window" };
+        var secondFloor = new PlacementData
+        {
+            Position = firstFloor.Position + (0, 8, 0),
+            Rotation = firstFloor.Rotation,
+            WallType = "wall_window"
+        };
 
         this.startX = this.entranceX + 1;
         this.startY = this.entranceY + 1;
@@ -366,27 +451,13 @@ internal sealed class WoodlandMansionLayout
         TraverseOuterWalls(pieces, firstFloor, this.baseGrid, BlockFace.South, this.startX, this.startY, endX, endY);
         TraverseOuterWalls(pieces, secondFloor, this.baseGrid, BlockFace.South, this.startX, this.startY, endX, endY);
 
-        var thirdFloor = new PlacementData { Position = firstFloor.Position + (0, 19, 0), Rotation = firstFloor.Rotation, WallType = "wall_window" };
-        var found = false;
-        for (var y = 0; y < this.thirdFloorGrid.Height && !found; y++)
-        {
-            for (var x = this.thirdFloorGrid.Width - 1; x >= 0 && !found; x--)
-            {
-                if (!IsHouse(this.thirdFloorGrid, x, y))
-                    continue;
-
-                thirdFloor.Position = Relative(thirdFloor.Position, rotation.Rotate(BlockFace.South), 8 + (y - this.startY) * 8);
-                thirdFloor.Position = Relative(thirdFloor.Position, rotation.Rotate(BlockFace.East), (x - this.startX) * 8);
-                TraverseWallPiece(pieces, thirdFloor);
-                TraverseOuterWalls(pieces, thirdFloor, this.thirdFloorGrid, BlockFace.South, x, y, x, y);
-                found = true;
-            }
-        }
+        this.CreateThirdFloorWalls(pieces, firstFloor, rotation);
 
         this.CreateRoof(pieces, origin + (0, 16, 0), rotation, this.baseGrid, this.thirdFloorGrid);
         this.CreateRoof(pieces, origin + (0, 27, 0), rotation, this.thirdFloorGrid, null);
 
-        RoomCollection[] collections = [RoomCollection.FirstFloor, RoomCollection.SecondFloor, RoomCollection.SecondFloor];
+        RoomCollection[] collections =
+            [RoomCollection.FirstFloor, RoomCollection.SecondFloor, RoomCollection.SecondFloor];
         List<BlockFace> doors = [];
 
         for (var floor = 0; floor < 3; floor++)
@@ -397,134 +468,282 @@ internal sealed class WoodlandMansionLayout
             var carpetSouth = floor == 0 ? "carpet_south_1" : "carpet_south_2";
             var carpetWest = floor == 0 ? "carpet_west_1" : "carpet_west_2";
 
-            for (var y = 0; y < plan.Height; y++)
+            this.CreateCorridors(pieces, floorOrigin, rotation, plan, rooms, carpetSouth, carpetWest);
+
+            this.CreateRooms(pieces, floorOrigin, rotation, plan, rooms, floor, collections[floor], doors);
+        }
+    }
+
+    private void CreateThirdFloorWalls(
+        List<WoodlandMansionPiece> pieces,
+        PlacementData firstFloor,
+        StructureRotation rotation)
+    {
+        var thirdFloor = new PlacementData
+        {
+            Position = firstFloor.Position + (0, 19, 0),
+            Rotation = firstFloor.Rotation,
+            WallType = "wall_window"
+        };
+        var found = false;
+        for (var y = 0; y < this.thirdFloorGrid.Height && !found; y++)
+        {
+            for (var x = this.thirdFloorGrid.Width - 1; x >= 0 && !found; x--)
             {
-                for (var x = 0; x < plan.Width; x++)
+                if (!IsHouse(this.thirdFloorGrid, x, y))
                 {
-                    if (plan.Get(x, y) != Corridor)
-                        continue;
-
-                    var position = Relative(floorOrigin, rotation.Rotate(BlockFace.South), 8 + (y - this.startY) * 8);
-                    position = Relative(position, rotation.Rotate(BlockFace.East), (x - this.startX) * 8);
-                    pieces.Add(new WoodlandMansionPiece("corridor_floor", position, rotation));
-
-                    if (plan.Get(x, y - 1) == Corridor || (rooms.Get(x, y - 1) & RoomCorridorFlag) == RoomCorridorFlag)
-                    {
-                        pieces.Add(new WoodlandMansionPiece("carpet_north",
-                            Relative(position, rotation.Rotate(BlockFace.East), 1) + (0, 1, 0), rotation));
-                    }
-
-                    if (plan.Get(x + 1, y) == Corridor || (rooms.Get(x + 1, y) & RoomCorridorFlag) == RoomCorridorFlag)
-                    {
-                        var carpet = Relative(Relative(position, rotation.Rotate(BlockFace.South), 1),
-                            rotation.Rotate(BlockFace.East), 5) + (0, 1, 0);
-                        pieces.Add(new WoodlandMansionPiece("carpet_east", carpet, rotation));
-                    }
-
-                    if (plan.Get(x, y + 1) == Corridor || (rooms.Get(x, y + 1) & RoomCorridorFlag) == RoomCorridorFlag)
-                    {
-                        var carpet = Relative(Relative(position, rotation.Rotate(BlockFace.South), 5), rotation.Rotate(BlockFace.West), 1);
-                        pieces.Add(new WoodlandMansionPiece(carpetSouth, carpet, rotation));
-                    }
-
-                    if (plan.Get(x - 1, y) == Corridor || (rooms.Get(x - 1, y) & RoomCorridorFlag) == RoomCorridorFlag)
-                    {
-                        var carpet = Relative(Relative(position, rotation.Rotate(BlockFace.West), 1), rotation.Rotate(BlockFace.North), 1);
-                        pieces.Add(new WoodlandMansionPiece(carpetWest, carpet, rotation));
-                    }
+                    continue;
                 }
+
+                thirdFloor.Position = Relative(
+                    thirdFloor.Position,
+                    rotation.Rotate(BlockFace.South),
+                    8 + (y - this.startY) * 8);
+                thirdFloor.Position = Relative(
+                    thirdFloor.Position,
+                    rotation.Rotate(BlockFace.East),
+                    (x - this.startX) * 8);
+                TraverseWallPiece(pieces, thirdFloor);
+                TraverseOuterWalls(pieces, thirdFloor, this.thirdFloorGrid, BlockFace.South, x, y, x, y);
+                found = true;
             }
+        }
+    }
 
-            var wall = floor == 0 ? "indoors_wall_1" : "indoors_wall_2";
-            var doorName = floor == 0 ? "indoors_door_1" : "indoors_door_2";
-
-            for (var y = 0; y < plan.Height; y++)
+    private void CreateCorridors(
+        List<WoodlandMansionPiece> pieces,
+        Vector floorOrigin,
+        StructureRotation rotation,
+        Grid plan,
+        Grid rooms,
+        string carpetSouth,
+        string carpetWest)
+    {
+        for (var y = 0; y < plan.Height; y++)
+        {
+            for (var x = 0; x < plan.Width; x++)
             {
-                for (var x = 0; x < plan.Width; x++)
+                if (plan.Get(x, y) != Corridor)
                 {
-                    var stairsCorridor = floor == 2 && plan.Get(x, y) == StartRoom;
-                    if (plan.Get(x, y) != Room && !stairsCorridor)
-                        continue;
+                    continue;
+                }
 
-                    var cell = rooms.Get(x, y);
-                    var size = cell & RoomTypeMask;
-                    var roomId = cell & RoomIdMask;
-                    stairsCorridor = stairsCorridor && (cell & RoomCorridorFlag) == RoomCorridorFlag;
-                    doors.Clear();
+                var position = Relative(floorOrigin, rotation.Rotate(BlockFace.South), 8 + (y - this.startY) * 8);
+                position = Relative(position, rotation.Rotate(BlockFace.East), (x - this.startX) * 8);
+                pieces.Add(new WoodlandMansionPiece(
+                    "corridor_floor",
+                    position,
+                    rotation));
 
-                    if ((cell & RoomDoorFlag) == RoomDoorFlag)
-                    {
-                        foreach (var face in horizontal)
-                        {
-                            var step = face.ToVector();
-                            if (plan.Get(x + step.X, y + step.Z) == Corridor)
-                                doors.Add(face);
-                        }
-                    }
+                if (plan.Get(x, y - 1) == Corridor || (rooms.Get(x, y - 1) & RoomCorridorFlag) == RoomCorridorFlag)
+                {
+                    var piecePosition = Relative(position, rotation.Rotate(BlockFace.East), 1) + (0, 1, 0);
+                    pieces.Add(new WoodlandMansionPiece(
+                        "carpet_north",
+                        piecePosition,
+                        rotation));
+                }
 
-                    BlockFace? door = null;
-                    if (doors.Count > 0)
-                        door = doors[this.random.NextInt(doors.Count)];
-                    else if ((cell & RoomOriginFlag) == RoomOriginFlag)
-                        door = BlockFace.Up;
+                if (plan.Get(x + 1, y) == Corridor || (rooms.Get(x + 1, y) & RoomCorridorFlag) == RoomCorridorFlag)
+                {
+                    var carpet = Relative(position, rotation.Rotate(BlockFace.South), 1);
+                    carpet = Relative(carpet, rotation.Rotate(BlockFace.East), 5) + (0, 1, 0);
+                    pieces.Add(new WoodlandMansionPiece(
+                        "carpet_east",
+                        carpet,
+                        rotation));
+                }
 
-                    var position = Relative(floorOrigin, rotation.Rotate(BlockFace.South), 8 + (y - this.startY) * 8);
-                    position = Relative(position, rotation.Rotate(BlockFace.East), -1 + (x - this.startX) * 8);
+                if (plan.Get(x, y + 1) == Corridor || (rooms.Get(x, y + 1) & RoomCorridorFlag) == RoomCorridorFlag)
+                {
+                    var carpet = Relative(position, rotation.Rotate(BlockFace.South), 5);
+                    carpet = Relative(carpet, rotation.Rotate(BlockFace.West), 1);
+                    pieces.Add(new WoodlandMansionPiece(
+                        carpetSouth,
+                        carpet,
+                        rotation));
+                }
 
-                    if (IsHouse(plan, x - 1, y) && !this.IsRoomId(x - 1, y, floor, roomId))
-                        pieces.Add(new WoodlandMansionPiece(door == BlockFace.West ? doorName : wall, position, rotation));
-
-                    if (plan.Get(x + 1, y) == Corridor && !stairsCorridor)
-                    {
-                        pieces.Add(new WoodlandMansionPiece(door == BlockFace.East ? doorName : wall,
-                            Relative(position, rotation.Rotate(BlockFace.East), 8), rotation));
-                    }
-
-                    if (IsHouse(plan, x, y + 1) && !this.IsRoomId(x, y + 1, floor, roomId))
-                    {
-                        var wallPosition = Relative(Relative(position, rotation.Rotate(BlockFace.South), 7), rotation.Rotate(BlockFace.East), 7);
-                        pieces.Add(new WoodlandMansionPiece(door == BlockFace.South ? doorName : wall,
-                            wallPosition, rotation.GetRotated(StructureRotation.Clockwise90)));
-                    }
-
-                    if (plan.Get(x, y - 1) == Corridor && !stairsCorridor)
-                    {
-                        var wallPosition = Relative(Relative(position, rotation.Rotate(BlockFace.North), 1), rotation.Rotate(BlockFace.East), 7);
-                        pieces.Add(new WoodlandMansionPiece(door == BlockFace.North ? doorName : wall,
-                            wallPosition, rotation.GetRotated(StructureRotation.Clockwise90)));
-                    }
-
-                    if (size == Room1x1)
-                    {
-                        this.AddRoom1x1(pieces, position, rotation, door, collections[floor]);
-                    }
-                    else if (size == Room1x2 && door is not null)
-                    {
-                        var roomDirection = this.Get1x2RoomDirection(x, y, floor, roomId);
-                        var hasStairs = (cell & RoomStairsFlag) == RoomStairsFlag;
-                        this.AddRoom1x2(pieces, position, rotation, roomDirection, door.Value, collections[floor], hasStairs);
-                    }
-                    else if (size == Room2x2 && door is not null && door != BlockFace.Up)
-                    {
-                        var side = door.Value.ClockWise();
-                        var sideStep = side.ToVector();
-                        if (!this.IsRoomId(x + sideStep.X, y + sideStep.Z, floor, roomId))
-                            side = side.Opposite();
-
-                        this.AddRoom2x2(pieces, position, rotation, side, door.Value, collections[floor]);
-                    }
-                    else if (size == Room2x2 && door == BlockFace.Up)
-                    {
-                        pieces.Add(new WoodlandMansionPiece(RoomCollection.Get2x2Secret(),
-                            Relative(position, rotation.Rotate(BlockFace.East), 1), rotation));
-                    }
+                if (plan.Get(x - 1, y) == Corridor || (rooms.Get(x - 1, y) & RoomCorridorFlag) == RoomCorridorFlag)
+                {
+                    var carpet = Relative(position, rotation.Rotate(BlockFace.West), 1);
+                    carpet = Relative(carpet, rotation.Rotate(BlockFace.North), 1);
+                    pieces.Add(new WoodlandMansionPiece(
+                        carpetWest,
+                        carpet,
+                        rotation));
                 }
             }
         }
     }
 
-    private static void TraverseOuterWalls(List<WoodlandMansionPiece> pieces, PlacementData data, Grid grid, BlockFace direction,
-        int startX, int startY, int endX, int endY)
+    private void CreateRooms(
+        List<WoodlandMansionPiece> pieces,
+        Vector floorOrigin,
+        StructureRotation rotation,
+        Grid plan,
+        Grid rooms,
+        int floor,
+        RoomCollection collection,
+        List<BlockFace> doors)
+    {
+        var wall = floor == 0 ? "indoors_wall_1" : "indoors_wall_2";
+        var doorName = floor == 0 ? "indoors_door_1" : "indoors_door_2";
+
+        for (var y = 0; y < plan.Height; y++)
+        {
+            for (var x = 0; x < plan.Width; x++)
+            {
+                var stairsCorridor = floor == 2 && plan.Get(x, y) == StartRoom;
+                if (plan.Get(x, y) != Room && !stairsCorridor)
+                {
+                    continue;
+                }
+
+                var cell = rooms.Get(x, y);
+                var size = cell & RoomTypeMask;
+                var roomId = cell & RoomIdMask;
+                stairsCorridor = stairsCorridor && (cell & RoomCorridorFlag) == RoomCorridorFlag;
+                doors.Clear();
+
+                if ((cell & RoomDoorFlag) == RoomDoorFlag)
+                {
+                    foreach (var face in horizontal)
+                    {
+                        var step = face.ToVector();
+                        if (plan.Get(x + step.X, y + step.Z) == Corridor)
+                        {
+                            doors.Add(face);
+                        }
+                    }
+                }
+
+                BlockFace? door = null;
+                if (doors.Count > 0)
+                {
+                    door = doors[this.random.NextInt(doors.Count)];
+                }
+                else if ((cell & RoomOriginFlag) == RoomOriginFlag)
+                {
+                    door = BlockFace.Up;
+                }
+
+                var position = Relative(floorOrigin, rotation.Rotate(BlockFace.South), 8 + (y - this.startY) * 8);
+                position = Relative(position, rotation.Rotate(BlockFace.East), -1 + (x - this.startX) * 8);
+
+                this.CreateRoomWalls(
+                    pieces,
+                    position,
+                    rotation,
+                    plan,
+                    x,
+                    y,
+                    floor,
+                    roomId,
+                    stairsCorridor,
+                    door,
+                    doorName,
+                    wall);
+
+                if (size == Room1x1)
+                {
+                    this.AddRoom1x1(pieces, position, rotation, door, collection);
+                }
+                else if (size == Room1x2 && door is not null)
+                {
+                    var roomDirection = this.Get1x2RoomDirection(x, y, floor, roomId);
+                    var hasStairs = (cell & RoomStairsFlag) == RoomStairsFlag;
+                    this.AddRoom1x2(pieces, position, rotation, roomDirection, door.Value, collection, hasStairs);
+                }
+                else if (size == Room2x2 && door is not null && door != BlockFace.Up)
+                {
+                    var side = door.Value.ClockWise();
+                    var sideStep = side.ToVector();
+                    if (!this.IsRoomId(x + sideStep.X, y + sideStep.Z, floor, roomId))
+                    {
+                        side = side.Opposite();
+                    }
+
+                    this.AddRoom2x2(pieces, position, rotation, side, door.Value, collection);
+                }
+                else if (size == Room2x2 && door == BlockFace.Up)
+                {
+                    var roomName = RoomCollection.Get2x2Secret();
+                    var piecePosition = Relative(position, rotation.Rotate(BlockFace.East), 1);
+                    pieces.Add(new WoodlandMansionPiece(
+                        roomName,
+                        piecePosition,
+                        rotation));
+                }
+            }
+        }
+    }
+
+    private void CreateRoomWalls(
+        List<WoodlandMansionPiece> pieces,
+        Vector position,
+        StructureRotation rotation,
+        Grid plan,
+        int x,
+        int y,
+        int floor,
+        int roomId,
+        bool stairsCorridor,
+        BlockFace? door,
+        string doorName,
+        string wall)
+    {
+        if (IsHouse(plan, x - 1, y) && !this.IsRoomId(x - 1, y, floor, roomId))
+        {
+            var roomName = door == BlockFace.West ? doorName : wall;
+            pieces.Add(new WoodlandMansionPiece(
+                roomName,
+                position,
+                rotation));
+        }
+
+        if (plan.Get(x + 1, y) == Corridor && !stairsCorridor)
+        {
+            var roomName = door == BlockFace.East ? doorName : wall;
+            var piecePosition = Relative(position, rotation.Rotate(BlockFace.East), 8);
+            pieces.Add(new WoodlandMansionPiece(
+                roomName,
+                piecePosition,
+                rotation));
+        }
+
+        if (IsHouse(plan, x, y + 1) && !this.IsRoomId(x, y + 1, floor, roomId))
+        {
+            var wallPosition = Relative(position, rotation.Rotate(BlockFace.South), 7);
+            wallPosition = Relative(wallPosition, rotation.Rotate(BlockFace.East), 7);
+            var roomName = door == BlockFace.South ? doorName : wall;
+            pieces.Add(new WoodlandMansionPiece(
+                roomName,
+                wallPosition,
+                rotation.GetRotated(StructureRotation.Clockwise90)));
+        }
+
+        if (plan.Get(x, y - 1) == Corridor && !stairsCorridor)
+        {
+            var wallPosition = Relative(position, rotation.Rotate(BlockFace.North), 1);
+            wallPosition = Relative(wallPosition, rotation.Rotate(BlockFace.East), 7);
+            var roomName = door == BlockFace.North ? doorName : wall;
+            pieces.Add(new WoodlandMansionPiece(
+                roomName,
+                wallPosition,
+                rotation.GetRotated(StructureRotation.Clockwise90)));
+        }
+    }
+
+    private static void TraverseOuterWalls(
+        List<WoodlandMansionPiece> pieces,
+        PlacementData data,
+        Grid grid,
+        BlockFace direction,
+        int startX,
+        int startY,
+        int endX,
+        int endY)
     {
         var x = startX;
         var y = startY;
@@ -538,9 +757,14 @@ internal sealed class WoodlandMansionLayout
                 TraverseTurn(pieces, data);
                 direction = direction.ClockWise();
                 if (x != endX || y != endY || endDirection != direction)
+                {
                     TraverseWallPiece(pieces, data);
+                }
             }
-            else if (IsHouse(grid, x + step.X + direction.CounterClockWise().ToVector().X, y + step.Z + direction.CounterClockWise().ToVector().Z))
+            else if (IsHouse(
+                grid,
+                x + step.X + direction.CounterClockWise().ToVector().X,
+                y + step.Z + direction.CounterClockWise().ToVector().Z))
             {
                 TraverseInnerTurn(data);
                 x += step.X;
@@ -552,163 +776,311 @@ internal sealed class WoodlandMansionLayout
                 x += step.X;
                 y += step.Z;
                 if (x != endX || y != endY || endDirection != direction)
+                {
                     TraverseWallPiece(pieces, data);
+                }
             }
         }
         while (x != endX || y != endY || endDirection != direction);
     }
 
-    private void CreateRoof(List<WoodlandMansionPiece> pieces, Vector origin, StructureRotation rotation, Grid plan, Grid? above)
+    private void CreateRoof(
+        List<WoodlandMansionPiece> pieces,
+        Vector origin,
+        StructureRotation rotation,
+        Grid plan,
+        Grid? above)
     {
         var east = rotation.Rotate(BlockFace.East);
         var south = rotation.Rotate(BlockFace.South);
         var west = rotation.Rotate(BlockFace.West);
         var north = rotation.Rotate(BlockFace.North);
 
+        this.CreateRoofSurfaces(pieces, origin, rotation, plan, above, east, south, west, north);
+
+        if (above is not null)
+        {
+            this.CreateRoofParapets(pieces, origin, rotation, plan, above, east, south, west, north);
+        }
+
+        this.CreateRoofCorners(pieces, origin, rotation, plan, above, east, south, west, north);
+    }
+
+    private void CreateRoofSurfaces(
+        List<WoodlandMansionPiece> pieces,
+        Vector origin,
+        StructureRotation rotation,
+        Grid plan,
+        Grid? above,
+        BlockFace east,
+        BlockFace south,
+        BlockFace west,
+        BlockFace north)
+    {
         for (var y = 0; y < plan.Height; y++)
         {
             for (var x = 0; x < plan.Width; x++)
             {
-                var position = Relative(Relative(origin, south, 8 + (y - this.startY) * 8), east, (x - this.startX) * 8);
+                var position = Relative(origin, south, 8 + (y - this.startY) * 8);
+                position = Relative(position, east, (x - this.startX) * 8);
                 var covered = above is not null && IsHouse(above, x, y);
                 if (!IsHouse(plan, x, y) || covered)
+                {
                     continue;
+                }
 
-                pieces.Add(new WoodlandMansionPiece("roof", position + (0, 3, 0), rotation));
+                pieces.Add(new WoodlandMansionPiece(
+                    "roof",
+                    position + (0, 3, 0),
+                    rotation));
                 if (!IsHouse(plan, x + 1, y))
-                    pieces.Add(new WoodlandMansionPiece("roof_front", Relative(position, east, 6), rotation));
+                {
+                    var piecePosition = Relative(position, east, 6);
+                    pieces.Add(new WoodlandMansionPiece(
+                        "roof_front",
+                        piecePosition,
+                        rotation));
+                }
 
                 if (!IsHouse(plan, x - 1, y))
                 {
-                    pieces.Add(new WoodlandMansionPiece("roof_front",
-                        Relative(Relative(position, east, 0), south, 7), rotation.GetRotated(StructureRotation.Clockwise180)));
+                    var piecePosition = Relative(position, east, 0);
+                    piecePosition = Relative(piecePosition, south, 7);
+                    pieces.Add(new WoodlandMansionPiece(
+                        "roof_front",
+                        piecePosition,
+                        rotation.GetRotated(StructureRotation.Clockwise180)));
                 }
 
                 if (!IsHouse(plan, x, y - 1))
                 {
-                    pieces.Add(new WoodlandMansionPiece("roof_front",
-                        Relative(position, west, 1), rotation.GetRotated(StructureRotation.CounterClockwise90)));
+                    var piecePosition = Relative(position, west, 1);
+                    pieces.Add(new WoodlandMansionPiece(
+                        "roof_front",
+                        piecePosition,
+                        rotation.GetRotated(StructureRotation.CounterClockwise90)));
                 }
 
                 if (!IsHouse(plan, x, y + 1))
                 {
-                    pieces.Add(new WoodlandMansionPiece("roof_front",
-                        Relative(Relative(position, east, 6), south, 6), rotation.GetRotated(StructureRotation.Clockwise90)));
+                    var piecePosition = Relative(position, east, 6);
+                    piecePosition = Relative(piecePosition, south, 6);
+                    pieces.Add(new WoodlandMansionPiece(
+                        "roof_front",
+                        piecePosition,
+                        rotation.GetRotated(StructureRotation.Clockwise90)));
                 }
             }
         }
+    }
 
-        if (above is not null)
-        {
-            for (var y = 0; y < plan.Height; y++)
-            {
-                for (var x = 0; x < plan.Width; x++)
-                {
-                    var position = Relative(Relative(origin, south, 8 + (y - this.startY) * 8), east, (x - this.startX) * 8);
-                    if (!IsHouse(plan, x, y) || !IsHouse(above, x, y))
-                        continue;
-
-                    if (!IsHouse(plan, x + 1, y))
-                        pieces.Add(new WoodlandMansionPiece("small_wall", Relative(position, east, 7), rotation));
-
-                    if (!IsHouse(plan, x - 1, y))
-                    {
-                        pieces.Add(new WoodlandMansionPiece("small_wall",
-                            Relative(Relative(position, west, 1), south, 6), rotation.GetRotated(StructureRotation.Clockwise180)));
-                    }
-
-                    if (!IsHouse(plan, x, y - 1))
-                    {
-                        pieces.Add(new WoodlandMansionPiece("small_wall",
-                            Relative(Relative(position, west, 0), north, 1), rotation.GetRotated(StructureRotation.CounterClockwise90)));
-                    }
-
-                    if (!IsHouse(plan, x, y + 1))
-                    {
-                        pieces.Add(new WoodlandMansionPiece("small_wall",
-                            Relative(Relative(position, east, 6), south, 7), rotation.GetRotated(StructureRotation.Clockwise90)));
-                    }
-
-                    if (!IsHouse(plan, x + 1, y))
-                    {
-                        if (!IsHouse(plan, x, y - 1))
-                            pieces.Add(new WoodlandMansionPiece("small_wall_corner", Relative(Relative(position, east, 7), north, 2), rotation));
-
-                        if (!IsHouse(plan, x, y + 1))
-                        {
-                            pieces.Add(new WoodlandMansionPiece("small_wall_corner",
-                                Relative(Relative(position, east, 8), south, 7), rotation.GetRotated(StructureRotation.Clockwise90)));
-                        }
-                    }
-
-                    if (!IsHouse(plan, x - 1, y))
-                    {
-                        if (!IsHouse(plan, x, y - 1))
-                        {
-                            pieces.Add(new WoodlandMansionPiece("small_wall_corner",
-                                Relative(Relative(position, west, 2), north, 1), rotation.GetRotated(StructureRotation.CounterClockwise90)));
-                        }
-
-                        if (!IsHouse(plan, x, y + 1))
-                        {
-                            pieces.Add(new WoodlandMansionPiece("small_wall_corner",
-                                Relative(Relative(position, west, 1), south, 8), rotation.GetRotated(StructureRotation.Clockwise180)));
-                        }
-                    }
-                }
-            }
-        }
-
+    private void CreateRoofParapets(
+        List<WoodlandMansionPiece> pieces,
+        Vector origin,
+        StructureRotation rotation,
+        Grid plan,
+        Grid above,
+        BlockFace east,
+        BlockFace south,
+        BlockFace west,
+        BlockFace north)
+    {
         for (var y = 0; y < plan.Height; y++)
         {
             for (var x = 0; x < plan.Width; x++)
             {
-                var position = Relative(Relative(origin, south, 8 + (y - this.startY) * 8), east, (x - this.startX) * 8);
+                var position = Relative(origin, south, 8 + (y - this.startY) * 8);
+                position = Relative(position, east, (x - this.startX) * 8);
+                if (!IsHouse(plan, x, y) || !IsHouse(above, x, y))
+                {
+                    continue;
+                }
+
+                if (!IsHouse(plan, x + 1, y))
+                {
+                    var piecePosition = Relative(position, east, 7);
+                    pieces.Add(new WoodlandMansionPiece(
+                        "small_wall",
+                        piecePosition,
+                        rotation));
+                }
+
+                if (!IsHouse(plan, x - 1, y))
+                {
+                    var piecePosition = Relative(position, west, 1);
+                    piecePosition = Relative(piecePosition, south, 6);
+                    pieces.Add(new WoodlandMansionPiece(
+                        "small_wall",
+                        piecePosition,
+                        rotation.GetRotated(StructureRotation.Clockwise180)));
+                }
+
+                if (!IsHouse(plan, x, y - 1))
+                {
+                    var piecePosition = Relative(position, west, 0);
+                    piecePosition = Relative(piecePosition, north, 1);
+                    pieces.Add(new WoodlandMansionPiece(
+                        "small_wall",
+                        piecePosition,
+                        rotation.GetRotated(StructureRotation.CounterClockwise90)));
+                }
+
+                if (!IsHouse(plan, x, y + 1))
+                {
+                    var piecePosition = Relative(position, east, 6);
+                    piecePosition = Relative(piecePosition, south, 7);
+                    pieces.Add(new WoodlandMansionPiece(
+                        "small_wall",
+                        piecePosition,
+                        rotation.GetRotated(StructureRotation.Clockwise90)));
+                }
+
+                if (!IsHouse(plan, x + 1, y))
+                {
+                    if (!IsHouse(plan, x, y - 1))
+                    {
+                        var piecePosition = Relative(position, east, 7);
+                        piecePosition = Relative(piecePosition, north, 2);
+                        pieces.Add(new WoodlandMansionPiece(
+                            "small_wall_corner",
+                            piecePosition,
+                            rotation));
+                    }
+
+                    if (!IsHouse(plan, x, y + 1))
+                    {
+                        var piecePosition = Relative(position, east, 8);
+                        piecePosition = Relative(piecePosition, south, 7);
+                        pieces.Add(new WoodlandMansionPiece(
+                            "small_wall_corner",
+                            piecePosition,
+                            rotation.GetRotated(StructureRotation.Clockwise90)));
+                    }
+                }
+
+                if (!IsHouse(plan, x - 1, y))
+                {
+                    if (!IsHouse(plan, x, y - 1))
+                    {
+                        var piecePosition = Relative(position, west, 2);
+                        piecePosition = Relative(piecePosition, north, 1);
+                        pieces.Add(new WoodlandMansionPiece(
+                            "small_wall_corner",
+                            piecePosition,
+                            rotation.GetRotated(StructureRotation.CounterClockwise90)));
+                    }
+
+                    if (!IsHouse(plan, x, y + 1))
+                    {
+                        var piecePosition = Relative(position, west, 1);
+                        piecePosition = Relative(piecePosition, south, 8);
+                        pieces.Add(new WoodlandMansionPiece(
+                            "small_wall_corner",
+                            piecePosition,
+                            rotation.GetRotated(StructureRotation.Clockwise180)));
+                    }
+                }
+            }
+        }
+    }
+
+    private void CreateRoofCorners(
+        List<WoodlandMansionPiece> pieces,
+        Vector origin,
+        StructureRotation rotation,
+        Grid plan,
+        Grid? above,
+        BlockFace east,
+        BlockFace south,
+        BlockFace west,
+        BlockFace north)
+    {
+        for (var y = 0; y < plan.Height; y++)
+        {
+            for (var x = 0; x < plan.Width; x++)
+            {
+                var position = Relative(origin, south, 8 + (y - this.startY) * 8);
+                position = Relative(position, east, (x - this.startX) * 8);
                 var covered = above is not null && IsHouse(above, x, y);
                 if (!IsHouse(plan, x, y) || covered)
+                {
                     continue;
+                }
 
                 if (!IsHouse(plan, x + 1, y))
                 {
                     var corner = Relative(position, east, 6);
                     if (!IsHouse(plan, x, y + 1))
-                        pieces.Add(new WoodlandMansionPiece("roof_corner", Relative(corner, south, 6), rotation));
+                    {
+                        var piecePosition = Relative(corner, south, 6);
+                        pieces.Add(new WoodlandMansionPiece(
+                            "roof_corner",
+                            piecePosition,
+                            rotation));
+                    }
                     else if (IsHouse(plan, x + 1, y + 1))
-                        pieces.Add(new WoodlandMansionPiece("roof_inner_corner", Relative(corner, south, 5), rotation));
+                    {
+                        var piecePosition = Relative(corner, south, 5);
+                        pieces.Add(new WoodlandMansionPiece(
+                            "roof_inner_corner",
+                            piecePosition,
+                            rotation));
+                    }
 
                     if (!IsHouse(plan, x, y - 1))
                     {
-                        pieces.Add(new WoodlandMansionPiece("roof_corner", corner, rotation.GetRotated(StructureRotation.CounterClockwise90)));
+                        pieces.Add(new WoodlandMansionPiece(
+                            "roof_corner",
+                            corner,
+                            rotation.GetRotated(StructureRotation.CounterClockwise90)));
                     }
                     else if (IsHouse(plan, x + 1, y - 1))
                     {
-                        pieces.Add(new WoodlandMansionPiece("roof_inner_corner",
-                            Relative(Relative(position, east, 9), north, 2), rotation.GetRotated(StructureRotation.Clockwise90)));
+                        var piecePosition = Relative(position, east, 9);
+                        piecePosition = Relative(piecePosition, north, 2);
+                        pieces.Add(new WoodlandMansionPiece(
+                            "roof_inner_corner",
+                            piecePosition,
+                            rotation.GetRotated(StructureRotation.Clockwise90)));
                     }
                 }
 
                 if (!IsHouse(plan, x - 1, y))
                 {
-                    var corner = Relative(Relative(position, east, 0), south, 0);
+                    var corner = Relative(position, east, 0);
+                    corner = Relative(corner, south, 0);
                     if (!IsHouse(plan, x, y + 1))
                     {
-                        pieces.Add(new WoodlandMansionPiece("roof_corner",
-                            Relative(corner, south, 6), rotation.GetRotated(StructureRotation.Clockwise90)));
+                        var piecePosition = Relative(corner, south, 6);
+                        pieces.Add(new WoodlandMansionPiece(
+                            "roof_corner",
+                            piecePosition,
+                            rotation.GetRotated(StructureRotation.Clockwise90)));
                     }
                     else if (IsHouse(plan, x - 1, y + 1))
                     {
-                        pieces.Add(new WoodlandMansionPiece("roof_inner_corner",
-                            Relative(Relative(corner, south, 8), west, 3), rotation.GetRotated(StructureRotation.CounterClockwise90)));
+                        var piecePosition = Relative(corner, south, 8);
+                        piecePosition = Relative(piecePosition, west, 3);
+                        pieces.Add(new WoodlandMansionPiece(
+                            "roof_inner_corner",
+                            piecePosition,
+                            rotation.GetRotated(StructureRotation.CounterClockwise90)));
                     }
 
                     if (!IsHouse(plan, x, y - 1))
                     {
-                        pieces.Add(new WoodlandMansionPiece("roof_corner", corner, rotation.GetRotated(StructureRotation.Clockwise180)));
+                        pieces.Add(new WoodlandMansionPiece(
+                            "roof_corner",
+                            corner,
+                            rotation.GetRotated(StructureRotation.Clockwise180)));
                     }
                     else if (IsHouse(plan, x - 1, y - 1))
                     {
-                        pieces.Add(new WoodlandMansionPiece("roof_inner_corner",
-                            Relative(corner, south, 1), rotation.GetRotated(StructureRotation.Clockwise180)));
+                        var piecePosition = Relative(corner, south, 1);
+                        pieces.Add(new WoodlandMansionPiece(
+                            "roof_inner_corner",
+                            piecePosition,
+                            rotation.GetRotated(StructureRotation.Clockwise180)));
                     }
                 }
             }
@@ -717,20 +1089,31 @@ internal sealed class WoodlandMansionLayout
 
     private static void Entrance(List<WoodlandMansionPiece> pieces, PlacementData data)
     {
-        pieces.Add(new WoodlandMansionPiece("entrance", Relative(data.Position, data.Rotation.Rotate(BlockFace.West), 9), data.Rotation));
+        var piecePosition = Relative(data.Position, data.Rotation.Rotate(BlockFace.West), 9);
+        pieces.Add(new WoodlandMansionPiece(
+            "entrance",
+            piecePosition,
+            data.Rotation));
         data.Position = Relative(data.Position, data.Rotation.Rotate(BlockFace.South), 16);
     }
 
     private static void TraverseWallPiece(List<WoodlandMansionPiece> pieces, PlacementData data)
     {
-        pieces.Add(new WoodlandMansionPiece(data.WallType, Relative(data.Position, data.Rotation.Rotate(BlockFace.East), 7), data.Rotation));
+        var piecePosition = Relative(data.Position, data.Rotation.Rotate(BlockFace.East), 7);
+        pieces.Add(new WoodlandMansionPiece(
+            data.WallType,
+            piecePosition,
+            data.Rotation));
         data.Position = Relative(data.Position, data.Rotation.Rotate(BlockFace.South), 8);
     }
 
     private static void TraverseTurn(List<WoodlandMansionPiece> pieces, PlacementData data)
     {
         data.Position = Relative(data.Position, data.Rotation.Rotate(BlockFace.South), -1);
-        pieces.Add(new WoodlandMansionPiece("wall_corner", data.Position, data.Rotation));
+        pieces.Add(new WoodlandMansionPiece(
+            "wall_corner",
+            data.Position,
+            data.Rotation));
         data.Position = Relative(data.Position, data.Rotation.Rotate(BlockFace.South), -7);
         data.Position = Relative(data.Position, data.Rotation.Rotate(BlockFace.West), -6);
         data.Rotation = data.Rotation.GetRotated(StructureRotation.Clockwise90);
@@ -743,30 +1126,57 @@ internal sealed class WoodlandMansionLayout
         data.Rotation = data.Rotation.GetRotated(StructureRotation.CounterClockwise90);
     }
 
-    private void AddRoom1x1(List<WoodlandMansionPiece> pieces, Vector position, StructureRotation rotation, BlockFace? door, RoomCollection rooms)
+    private void AddRoom1x1(
+        List<WoodlandMansionPiece> pieces,
+        Vector position,
+        StructureRotation rotation,
+        BlockFace? door,
+        RoomCollection rooms)
     {
         var roomRotation = StructureRotation.None;
         var name = rooms.Get1x1(this.random);
         if (door != BlockFace.East)
         {
             if (door == BlockFace.North)
+            {
                 roomRotation = roomRotation.GetRotated(StructureRotation.CounterClockwise90);
+            }
             else if (door == BlockFace.West)
+            {
                 roomRotation = roomRotation.GetRotated(StructureRotation.Clockwise180);
+            }
             else if (door == BlockFace.South)
+            {
                 roomRotation = roomRotation.GetRotated(StructureRotation.Clockwise90);
+            }
             else
+            {
                 name = RoomCollection.Get1x1Secret(this.random);
+            }
         }
 
-        var offset = StructureTemplate.GetZeroPositionWithTransform(new Vector(1, 0, 0), StructureMirror.None, roomRotation, 7, 7);
+        var offset = StructureTemplate.GetZeroPositionWithTransform(
+            new Vector(1, 0, 0),
+            StructureMirror.None,
+            roomRotation,
+            7,
+            7);
         roomRotation = roomRotation.GetRotated(rotation);
         offset = RotateVector(offset, rotation);
-        pieces.Add(new WoodlandMansionPiece(name, position + (offset.X, 0, offset.Z), roomRotation));
+        pieces.Add(new WoodlandMansionPiece(
+            name,
+            position + (offset.X, 0, offset.Z),
+            roomRotation));
     }
 
-    private void AddRoom1x2(List<WoodlandMansionPiece> pieces, Vector position, StructureRotation rotation, BlockFace? side, BlockFace door,
-        RoomCollection rooms, bool hasStairs)
+    private void AddRoom1x2(
+        List<WoodlandMansionPiece> pieces,
+        Vector position,
+        StructureRotation rotation,
+        BlockFace? side,
+        BlockFace door,
+        RoomCollection rooms,
+        bool hasStairs)
     {
         var east = rotation.Rotate(BlockFace.East);
         var south = rotation.Rotate(BlockFace.South);
@@ -774,65 +1184,166 @@ internal sealed class WoodlandMansionLayout
         switch (door, side)
         {
             case (BlockFace.East, BlockFace.South):
-                pieces.Add(new WoodlandMansionPiece(rooms.Get1x2SideEntrance(this.random, hasStairs), Relative(position, east, 1), rotation));
-                break;
+                {
+                    var roomName = rooms.Get1x2SideEntrance(this.random, hasStairs);
+                    var piecePosition = Relative(position, east, 1);
+                    pieces.Add(new WoodlandMansionPiece(
+                        roomName,
+                        piecePosition,
+                        rotation));
+                    break;
+                }
             case (BlockFace.East, BlockFace.North):
-                pieces.Add(new WoodlandMansionPiece(rooms.Get1x2SideEntrance(this.random, hasStairs),
-                    Relative(Relative(position, east, 1), south, 6), rotation, StructureMirror.LeftRight));
-                break;
+                {
+                    var roomName = rooms.Get1x2SideEntrance(this.random, hasStairs);
+                    var piecePosition = Relative(position, east, 1);
+                    piecePosition = Relative(piecePosition, south, 6);
+                    pieces.Add(new WoodlandMansionPiece(
+                        roomName,
+                        piecePosition,
+                        rotation,
+                        StructureMirror.LeftRight));
+                    break;
+                }
             case (BlockFace.West, BlockFace.North):
-                pieces.Add(new WoodlandMansionPiece(rooms.Get1x2SideEntrance(this.random, hasStairs), Relative(Relative(position, east, 7), south, 6),
-                    rotation.GetRotated(StructureRotation.Clockwise180)));
-                break;
+                {
+                    var roomName = rooms.Get1x2SideEntrance(this.random, hasStairs);
+                    var piecePosition = Relative(position, east, 7);
+                    piecePosition = Relative(piecePosition, south, 6);
+                    pieces.Add(new WoodlandMansionPiece(
+                        roomName,
+                        piecePosition,
+                        rotation.GetRotated(StructureRotation.Clockwise180)));
+                    break;
+                }
             case (BlockFace.West, BlockFace.South):
-                pieces.Add(new WoodlandMansionPiece(rooms.Get1x2SideEntrance(this.random, hasStairs), Relative(position, east, 7), rotation,
-                    StructureMirror.FrontBack));
-                break;
+                {
+                    var roomName = rooms.Get1x2SideEntrance(this.random, hasStairs);
+                    var piecePosition = Relative(position, east, 7);
+                    pieces.Add(new WoodlandMansionPiece(
+                        roomName,
+                        piecePosition,
+                        rotation,
+                        StructureMirror.FrontBack));
+                    break;
+                }
             case (BlockFace.South, BlockFace.East):
-                pieces.Add(new WoodlandMansionPiece(rooms.Get1x2SideEntrance(this.random, hasStairs), Relative(position, east, 1),
-                    rotation.GetRotated(StructureRotation.Clockwise90), StructureMirror.LeftRight));
-                break;
+                {
+                    var roomName = rooms.Get1x2SideEntrance(this.random, hasStairs);
+                    var piecePosition = Relative(position, east, 1);
+                    pieces.Add(new WoodlandMansionPiece(
+                        roomName,
+                        piecePosition,
+                        rotation.GetRotated(StructureRotation.Clockwise90),
+                        StructureMirror.LeftRight));
+                    break;
+                }
             case (BlockFace.South, BlockFace.West):
-                pieces.Add(new WoodlandMansionPiece(rooms.Get1x2SideEntrance(this.random, hasStairs), Relative(position, east, 7),
-                    rotation.GetRotated(StructureRotation.Clockwise90)));
-                break;
+                {
+                    var roomName = rooms.Get1x2SideEntrance(this.random, hasStairs);
+                    var piecePosition = Relative(position, east, 7);
+                    pieces.Add(new WoodlandMansionPiece(
+                        roomName,
+                        piecePosition,
+                        rotation.GetRotated(StructureRotation.Clockwise90)));
+                    break;
+                }
             case (BlockFace.North, BlockFace.West):
-                pieces.Add(new WoodlandMansionPiece(rooms.Get1x2SideEntrance(this.random, hasStairs), Relative(Relative(position, east, 7), south, 6),
-                    rotation.GetRotated(StructureRotation.Clockwise90), StructureMirror.FrontBack));
-                break;
+                {
+                    var roomName = rooms.Get1x2SideEntrance(this.random, hasStairs);
+                    var piecePosition = Relative(position, east, 7);
+                    piecePosition = Relative(piecePosition, south, 6);
+                    pieces.Add(new WoodlandMansionPiece(
+                        roomName,
+                        piecePosition,
+                        rotation.GetRotated(StructureRotation.Clockwise90),
+                        StructureMirror.FrontBack));
+                    break;
+                }
             case (BlockFace.North, BlockFace.East):
-                pieces.Add(new WoodlandMansionPiece(rooms.Get1x2SideEntrance(this.random, hasStairs), Relative(Relative(position, east, 1), south, 6),
-                    rotation.GetRotated(StructureRotation.CounterClockwise90)));
-                break;
+                {
+                    var roomName = rooms.Get1x2SideEntrance(this.random, hasStairs);
+                    var piecePosition = Relative(position, east, 1);
+                    piecePosition = Relative(piecePosition, south, 6);
+                    pieces.Add(new WoodlandMansionPiece(
+                        roomName,
+                        piecePosition,
+                        rotation.GetRotated(StructureRotation.CounterClockwise90)));
+                    break;
+                }
             case (BlockFace.South, BlockFace.North):
-                pieces.Add(new WoodlandMansionPiece(rooms.Get1x2FrontEntrance(this.random, hasStairs),
-                    Relative(Relative(position, east, 1), rotation.Rotate(BlockFace.North), 8), rotation));
-                break;
+                {
+                    var roomName = rooms.Get1x2FrontEntrance(this.random, hasStairs);
+                    var piecePosition = Relative(position, east, 1);
+                    piecePosition = Relative(piecePosition, rotation.Rotate(BlockFace.North), 8);
+                    pieces.Add(new WoodlandMansionPiece(
+                        roomName,
+                        piecePosition,
+                        rotation));
+                    break;
+                }
             case (BlockFace.North, BlockFace.South):
-                pieces.Add(new WoodlandMansionPiece(rooms.Get1x2FrontEntrance(this.random, hasStairs),
-                    Relative(Relative(position, east, 7), south, 14), rotation.GetRotated(StructureRotation.Clockwise180)));
-                break;
+                {
+                    var roomName = rooms.Get1x2FrontEntrance(this.random, hasStairs);
+                    var piecePosition = Relative(position, east, 7);
+                    piecePosition = Relative(piecePosition, south, 14);
+                    pieces.Add(new WoodlandMansionPiece(
+                        roomName,
+                        piecePosition,
+                        rotation.GetRotated(StructureRotation.Clockwise180)));
+                    break;
+                }
             case (BlockFace.West, BlockFace.East):
-                pieces.Add(new WoodlandMansionPiece(rooms.Get1x2FrontEntrance(this.random, hasStairs), Relative(position, east, 15),
-                    rotation.GetRotated(StructureRotation.Clockwise90)));
-                break;
+                {
+                    var roomName = rooms.Get1x2FrontEntrance(this.random, hasStairs);
+                    var piecePosition = Relative(position, east, 15);
+                    pieces.Add(new WoodlandMansionPiece(
+                        roomName,
+                        piecePosition,
+                        rotation.GetRotated(StructureRotation.Clockwise90)));
+                    break;
+                }
             case (BlockFace.East, BlockFace.West):
-                pieces.Add(new WoodlandMansionPiece(rooms.Get1x2FrontEntrance(this.random, hasStairs),
-                    Relative(Relative(position, rotation.Rotate(BlockFace.West), 7), south, 6),
-                    rotation.GetRotated(StructureRotation.CounterClockwise90)));
-                break;
+                {
+                    var roomName = rooms.Get1x2FrontEntrance(this.random, hasStairs);
+                    var piecePosition = Relative(position, rotation.Rotate(BlockFace.West), 7);
+                    piecePosition = Relative(piecePosition, south, 6);
+                    pieces.Add(new WoodlandMansionPiece(
+                        roomName,
+                        piecePosition,
+                        rotation.GetRotated(StructureRotation.CounterClockwise90)));
+                    break;
+                }
             case (BlockFace.Up, BlockFace.East):
-                pieces.Add(new WoodlandMansionPiece(rooms.Get1x2Secret(this.random), Relative(position, east, 15),
-                    rotation.GetRotated(StructureRotation.Clockwise90)));
-                break;
+                {
+                    var roomName = rooms.Get1x2Secret(this.random);
+                    var piecePosition = Relative(position, east, 15);
+                    pieces.Add(new WoodlandMansionPiece(
+                        roomName,
+                        piecePosition,
+                        rotation.GetRotated(StructureRotation.Clockwise90)));
+                    break;
+                }
             case (BlockFace.Up, BlockFace.South):
-                pieces.Add(new WoodlandMansionPiece(rooms.Get1x2Secret(this.random),
-                    Relative(Relative(position, east, 1), rotation.Rotate(BlockFace.North), 0), rotation));
-                break;
+                {
+                    var roomName = rooms.Get1x2Secret(this.random);
+                    var piecePosition = Relative(position, east, 1);
+                    piecePosition = Relative(piecePosition, rotation.Rotate(BlockFace.North), 0);
+                    pieces.Add(new WoodlandMansionPiece(
+                        roomName,
+                        piecePosition,
+                        rotation));
+                    break;
+                }
         }
     }
 
-    private void AddRoom2x2(List<WoodlandMansionPiece> pieces, Vector position, StructureRotation rotation, BlockFace side, BlockFace door,
+    private void AddRoom2x2(
+        List<WoodlandMansionPiece> pieces,
+        Vector position,
+        StructureRotation rotation,
+        BlockFace side,
+        BlockFace door,
         RoomCollection rooms)
     {
         var east = 0;
@@ -883,11 +1394,18 @@ internal sealed class WoodlandMansionLayout
                 break;
         }
 
-        var roomPosition = Relative(Relative(position, rotation.Rotate(BlockFace.East), east), rotation.Rotate(BlockFace.South), south);
-        pieces.Add(new WoodlandMansionPiece(rooms.Get2x2(this.random), roomPosition, roomRotation, mirror));
+        var roomPosition = Relative(position, rotation.Rotate(BlockFace.East), east);
+        roomPosition = Relative(roomPosition, rotation.Rotate(BlockFace.South), south);
+        var roomName = rooms.Get2x2(this.random);
+        pieces.Add(new WoodlandMansionPiece(
+            roomName,
+            roomPosition,
+            roomRotation,
+            mirror));
     }
 
-    private static Vector Relative(Vector position, BlockFace direction, int distance) => position + direction.ToVector() * distance;
+    private static Vector Relative(Vector position, BlockFace direction, int distance) =>
+        position + direction.ToVector() * distance;
 
     /// <summary>Vanilla <c>BlockPos.rotate</c>: turns the vector around the origin.</summary>
     private static Vector RotateVector(Vector vector, StructureRotation rotation) => rotation switch
@@ -911,7 +1429,9 @@ internal sealed class WoodlandMansionLayout
         public void Set(int x, int y, int value)
         {
             if (x >= 0 && x < this.Width && y >= 0 && y < this.Height)
+            {
                 this.cells[y * this.Width + x] = value;
+            }
         }
 
         public void Set(int minX, int minY, int maxX, int maxY, int value)
@@ -919,21 +1439,31 @@ internal sealed class WoodlandMansionLayout
             for (var y = minY; y <= maxY; y++)
             {
                 for (var x = minX; x <= maxX; x++)
+                {
                     this.Set(x, y, value);
+                }
             }
         }
 
-        public int Get(int x, int y) => x >= 0 && x < this.Width && y >= 0 && y < this.Height ? this.cells[y * this.Width + x] : valueIfOutside;
+        public int Get(int x, int y) =>
+            x >= 0 && x < this.Width && y >= 0 && y < this.Height
+                ? this.cells[y * this.Width + x]
+                : valueIfOutside;
 
         public void SetIf(int x, int y, int expected, int value)
         {
             if (this.Get(x, y) == expected)
+            {
                 this.Set(x, y, value);
+            }
         }
 
         /// <summary>Whether a horizontal neighbor of the cell has <paramref name="value"/>.</summary>
         public bool EdgesTo(int x, int y, int value) =>
-            this.Get(x - 1, y) == value || this.Get(x + 1, y) == value || this.Get(x, y + 1) == value || this.Get(x, y - 1) == value;
+            this.Get(x - 1, y) == value
+                || this.Get(x + 1, y) == value
+                || this.Get(x, y + 1) == value
+                || this.Get(x, y - 1) == value;
     }
 
     private sealed class PlacementData
@@ -965,7 +1495,9 @@ internal sealed class WoodlandMansionLayout
         public string Get1x2SideEntrance(IRandomSource random, bool hasStairs)
         {
             if (this.firstFloor)
+            {
                 return "1x2_a" + (random.NextInt(9) + 1);
+            }
 
             return hasStairs ? "1x2_c_stairs" : "1x2_c" + (random.NextInt(4) + 1);
         }
@@ -973,14 +1505,20 @@ internal sealed class WoodlandMansionLayout
         public string Get1x2FrontEntrance(IRandomSource random, bool hasStairs)
         {
             if (this.firstFloor)
+            {
                 return "1x2_b" + (random.NextInt(5) + 1);
+            }
 
             return hasStairs ? "1x2_d_stairs" : "1x2_d" + (random.NextInt(5) + 1);
         }
 
-        public string Get1x2Secret(IRandomSource random) => this.firstFloor ? "1x2_s" + (random.NextInt(2) + 1) : "1x2_se" + (random.NextInt(1) + 1);
+        public string Get1x2Secret(IRandomSource random) => this.firstFloor
+            ? "1x2_s" + (random.NextInt(2) + 1)
+            : "1x2_se" + (random.NextInt(1) + 1);
 
-        public string Get2x2(IRandomSource random) => this.firstFloor ? "2x2_a" + (random.NextInt(4) + 1) : "2x2_b" + (random.NextInt(5) + 1);
+        public string Get2x2(IRandomSource random) => this.firstFloor
+            ? "2x2_a" + (random.NextInt(4) + 1)
+            : "2x2_b" + (random.NextInt(5) + 1);
 
         public static string Get2x2Secret() => "2x2_s1";
     }
