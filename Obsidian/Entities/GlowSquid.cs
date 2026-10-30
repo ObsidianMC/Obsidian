@@ -34,5 +34,5 @@ public sealed partial class GlowSquid : Squid
         writer.WriteVarInt(DarkTicks);
     }
     protected override void WriteAdditionalSave(INbtWriter writer) => writer.WriteInt("DarkTicksRemaining", DarkTicks);
-    protected override void ReadAdditionalSave(NbtCompound tag) => DarkTicks = Math.Clamp((tag.TryGetTagValue<int>("DarkTicksRemaining", out var savedDarkTicksRemaining) ? savedDarkTicksRemaining : 0), 0, 100);
+    protected override void ReadAdditionalSave(NbtCompound tag) => DarkTicks = Math.Clamp((tag.TryGetNumber<int>("DarkTicksRemaining", out var savedDarkTicksRemaining) ? savedDarkTicksRemaining : 0), 0, 100);
 }

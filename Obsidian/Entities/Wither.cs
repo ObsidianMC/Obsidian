@@ -207,7 +207,7 @@ public sealed partial class Wither : BossMob
 
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
-        invulnerableTicks = Math.Clamp(tag.TryGetTagValue<int>("Invul", out var ticks) ? ticks : 0, 0, SpawnCharge);
+        invulnerableTicks = Math.Clamp(tag.TryGetNumber<int>("Invul", out var ticks) ? ticks : 0, 0, SpawnCharge);
         breakBlocksTicks = Math.Clamp(tag.GetInt("ObsidianWitherBreakTicks"), 0, 20);
         if (tag.TryGetTag<NbtArray<int>>("ObsidianWitherHeadTimers", out var timers))
         {

@@ -426,6 +426,29 @@ public final class CommandFixtures {
         return rows;
     }
 
+    /** How vanilla's NumericTag converts each number type, which entity loading relies on. */
+    private static JsonArray numericTags() {
+        var rows = new JsonArray();
+        var tags = List.<net.minecraft.nbt.NumericTag>of(net.minecraft.nbt.ByteTag.valueOf((byte)-1),
+            net.minecraft.nbt.ShortTag.valueOf((short)300), net.minecraft.nbt.IntTag.valueOf(70000),
+            net.minecraft.nbt.LongTag.valueOf(1L << 40), net.minecraft.nbt.FloatTag.valueOf(-2.5f),
+            net.minecraft.nbt.FloatTag.valueOf(3.0e9f), net.minecraft.nbt.DoubleTag.valueOf(1.0e20),
+            net.minecraft.nbt.DoubleTag.valueOf(Double.NaN), net.minecraft.nbt.DoubleTag.valueOf(65537.75));
+        for (var tag : tags) {
+            var row = new JsonObject();
+            row.addProperty("type", tag.getType().getName());
+            row.addProperty("value", tag.toString());
+            row.addProperty("byte", tag.byteValue());
+            row.addProperty("short", tag.shortValue());
+            row.addProperty("int", tag.intValue());
+            row.addProperty("long", tag.longValue());
+            row.addProperty("float", Float.toString(tag.floatValue()));
+            row.addProperty("double", Double.toString(tag.doubleValue()));
+            rows.add(row);
+        }
+        return rows;
+    }
+
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static JsonObject node(CommandNode<CommandSourceStack> node, Commands commands) {
         var output = ArgumentUtils.serializeNodeToJson(commands.getDispatcher(), node);
@@ -489,6 +512,7 @@ public final class CommandFixtures {
         output.add("compute", compute(commands, access));
         output.add("slots", slots(context, access));
         output.add("item_counts", itemCounts(context));
+        output.add("numeric_tags", numericTags());
         output.add("time", time(commands, access));
         output.add("marker_completions", markerCompletions);
         output.add("posteffect", postEffects());

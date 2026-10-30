@@ -357,13 +357,13 @@ public partial class Mob
             Pitch = pitch.Value;
         }
 
-        if (tag.TryGetTagValue<float>("Health", out var health))
+        if (tag.TryGetNumber<float>("Health", out var health))
             Health = health;
-        if (tag.TryGetTagValue<float>("AbsorptionAmount", out var absorption))
+        if (tag.TryGetNumber<float>("AbsorptionAmount", out var absorption))
             AbsorptionHealth = float.IsFinite(absorption) ? Math.Max(0, absorption) : 0;
-        if (tag.TryGetTagValue<short>("Air", out var air))
+        if (tag.TryGetNumber<short>("Air", out var air))
             Air = air;
-        if (tag.TryGetTagValue<short>("Fire", out var fire))
+        if (tag.TryGetNumber<short>("Fire", out var fire))
             FireTicks = Math.Max(0, (int)fire);
 
         if (tag.TryGetTag<NbtList>("ObsidianEffects", out var effects))
@@ -373,8 +373,8 @@ public partial class Mob
         }
 
         MovementFlags = ReadFlag(tag, "OnGround") ? MovementFlags.OnGround : MovementFlags.None;
-        PowderedSnowTicks = tag.TryGetTagValue<int>("TicksFrozen", out var frozen) ? Math.Clamp(frozen, 0, 140) : 0;
-        if (tag.TryGetTagValue<float>("FallDistance", out var fallen) && float.IsFinite(fallen))
+        PowderedSnowTicks = tag.TryGetNumber<int>("TicksFrozen", out var frozen) ? Math.Clamp(frozen, 0, 140) : 0;
+        if (tag.TryGetNumber<float>("FallDistance", out var fallen) && float.IsFinite(fallen))
             fallDistance = Math.Max(0, fallen);
     }
 
@@ -426,9 +426,9 @@ public partial class Mob
     // One check per species, in the order they apply; a subclass matches its base's checks too.
     private void ReadSpeciesSave(NbtCompound tag)
     {
-        if (this is AgeableMob ageable && tag.TryGetTagValue<int>("Age", out var age))
+        if (this is AgeableMob ageable && tag.TryGetNumber<int>("Age", out var age))
             ageable.Age = age;
-        if (this is Animal animal && tag.TryGetTagValue<int>("InLove", out var love))
+        if (this is Animal animal && tag.TryGetNumber<int>("InLove", out var love))
             animal.LoveTicks = love;
         if (this is AbstractHorse horse)
             ReadHorseSave(tag, horse);
@@ -462,7 +462,7 @@ public partial class Mob
         if (this is Skeleton { Type: EntityType.Skeleton } skeleton)
             ReadSkeletonSave(tag, skeleton);
 
-        if (tag.TryGetTagValue<int>("ObsidianVariant", out var variant))
+        if (tag.TryGetNumber<int>("ObsidianVariant", out var variant))
             this.ReadFarmAnimalVariant(variant);
         if (this is Mooshroom mooshroom)
             ReadMooshroomSave(tag, mooshroom);
@@ -472,7 +472,7 @@ public partial class Mob
             ReadSheepSave(tag, sheep);
         if (this is Bogged bogged)
             bogged.Sheared = ReadFlag(tag, "sheared");
-        if (this is Slime slime && tag.TryGetTagValue<int>("Size", out var size))
+        if (this is Slime slime && tag.TryGetNumber<int>("Size", out var size))
             slime.Size = size + 1;
         if (this is Creeper creeper)
             ReadCreeperSave(tag, creeper);
@@ -483,11 +483,11 @@ public partial class Mob
         var tamed = ReadFlag(tag, "Tame") ? HorseMask.Tamed : HorseMask.None;
         var bred = ReadFlag(tag, "Bred") ? HorseMask.HasBred : HorseMask.None;
         horse.HorseMask = tamed | bred;
-        if (tag.TryGetTagValue<int>("Temper", out var temper))
+        if (tag.TryGetNumber<int>("Temper", out var temper))
             horse.Temper = Math.Clamp(temper, 0, 100);
 
         horse.Owner = ReadOwner(tag);
-        if (horse is Horse normalHorse && tag.TryGetTagValue<int>("Variant", out var horseVariant))
+        if (horse is Horse normalHorse && tag.TryGetNumber<int>("Variant", out var horseVariant))
             normalHorse.Variant = horseVariant;
     }
 
@@ -498,7 +498,7 @@ public partial class Mob
         PersistenceRequired |= wolf.Tamed;
         wolf.OrderedToSit = wolf.Tamed && ReadFlag(tag, "Sitting");
         wolf.IsSitting = wolf.OrderedToSit;
-        if (tag.TryGetTagValue<int>("AngerTime", out var anger))
+        if (tag.TryGetNumber<int>("AngerTime", out var anger))
             wolf.AngerTicks = Math.Max(0, anger);
 
         if (tag.TryGetTagValue<string>("variant", out var wolfVariant))
@@ -522,7 +522,7 @@ public partial class Mob
     private static void ReadEndermanSave(NbtCompound tag, Enderman enderman)
     {
         enderman.AngryAt = ReadReference(tag, "AngryAt");
-        if (tag.TryGetTagValue<int>("AngerTime", out var anger))
+        if (tag.TryGetNumber<int>("AngerTime", out var anger))
             enderman.AngerTicks = Math.Max(0, anger);
 
         if (tag.TryGetTag("carriedBlockState", out var state))
@@ -577,7 +577,7 @@ public partial class Mob
             return true;
         }
 
-        if (!tag.TryGetTagValue<byte>("CollarColor", out var legacyColor))
+        if (!tag.TryGetNumber<byte>("CollarColor", out var legacyColor))
             return false;
 
         color = (byte)(legacyColor & 15);
@@ -587,11 +587,11 @@ public partial class Mob
     private static void ReadCamelSave(NbtCompound tag, Camel camel)
     {
         camel.HorseMask |= HorseMask.Tamed;
-        if (tag.TryGetTagValue<long>("LastPoseTick", out var poseTick))
+        if (tag.TryGetNumber<long>("LastPoseTick", out var poseTick))
             camel.LastPoseChangeTick = poseTick;
 
         camel.Pose = camel.IsSitting ? Pose.Sitting : Pose.Standing;
-        if (tag.TryGetTagValue<int>("ObsidianDashCooldown", out var cooldown))
+        if (tag.TryGetNumber<int>("ObsidianDashCooldown", out var cooldown))
             camel.DashCooldown = Math.Clamp(cooldown, 0, Camel.DashCooldownTicks);
     }
 
@@ -599,36 +599,36 @@ public partial class Mob
     {
         zombie.IsBaby = ReadFlag(tag, "IsBaby");
         zombie.CanBreakDoors = ReadFlag(tag, "CanBreakDoors");
-        if (tag.TryGetTagValue<float>("ObsidianReinforcementChance", out var chance))
+        if (tag.TryGetNumber<float>("ObsidianReinforcementChance", out var chance))
             zombie.ReinforcementChance = chance;
 
         if (zombie is Husk husk)
         {
-            if (tag.TryGetTagValue<int>("InWaterTime", out var water))
+            if (tag.TryGetNumber<int>("InWaterTime", out var water))
                 husk.WaterTicks = water;
-            if (tag.TryGetTagValue<int>("DrownedConversionTime", out var conversion))
+            if (tag.TryGetNumber<int>("DrownedConversionTime", out var conversion))
                 husk.ConversionTicks = conversion;
         }
         else if (zombie.Type == EntityType.Zombie)
         {
-            if (tag.TryGetTagValue<int>("InWaterTime", out var water))
+            if (tag.TryGetNumber<int>("InWaterTime", out var water))
                 zombie.DrowningWaterTicks = water;
-            if (tag.TryGetTagValue<int>("DrownedConversionTime", out var conversion))
+            if (tag.TryGetNumber<int>("DrownedConversionTime", out var conversion))
                 zombie.DrowningConversionTicks = conversion;
         }
     }
 
     private static int ReadAngerTime(NbtCompound tag)
     {
-        var anger = tag.TryGetTagValue<int>("AngerTime", out var saved) ? saved : 0;
+        var anger = tag.TryGetNumber<int>("AngerTime", out var saved) ? saved : 0;
         return Math.Max(0, anger);
     }
 
     private static void ReadSkeletonSave(NbtCompound tag, Skeleton skeleton)
     {
-        if (tag.TryGetTagValue<int>("StrayConversionTime", out var conversion))
+        if (tag.TryGetNumber<int>("StrayConversionTime", out var conversion))
             skeleton.StrayConversionTicks = conversion;
-        if (tag.TryGetTagValue<int>("ObsidianPowderSnowTicks", out var snow))
+        if (tag.TryGetNumber<int>("ObsidianPowderSnowTicks", out var snow))
             skeleton.PowderSnowTicks = snow;
     }
 
@@ -651,7 +651,7 @@ public partial class Mob
 
     private static void ReadChickenSave(NbtCompound tag, Chicken chicken)
     {
-        if (tag.TryGetTagValue<int>("EggLayTime", out var eggTime))
+        if (tag.TryGetNumber<int>("EggLayTime", out var eggTime))
             chicken.EggLayTime = eggTime;
 
         chicken.IsChickenJockey = ReadFlag(tag, "IsChickenJockey");
@@ -659,7 +659,7 @@ public partial class Mob
 
     private static void ReadSheepSave(NbtCompound tag, Sheep sheep)
     {
-        if (tag.TryGetTagValue<byte>("Color", out var color))
+        if (tag.TryGetNumber<byte>("Color", out var color))
             sheep.Color = (byte)(color & 15);
 
         sheep.Sheared = ReadFlag(tag, "Sheared");
@@ -669,9 +669,9 @@ public partial class Mob
     {
         creeper.Powered = ReadFlag(tag, "powered");
         creeper.Ignited = ReadFlag(tag, "ignited");
-        if (tag.TryGetTagValue<short>("Fuse", out var fuse))
+        if (tag.TryGetNumber<short>("Fuse", out var fuse))
             creeper.Fuse = Math.Max(1, (int)fuse);
-        if (tag.TryGetTagValue<byte>("ExplosionRadius", out var radius))
+        if (tag.TryGetNumber<byte>("ExplosionRadius", out var radius))
             creeper.ExplosionRadius = Math.Max(1, (int)radius);
     }
 

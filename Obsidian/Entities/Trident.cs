@@ -75,7 +75,7 @@ public sealed partial class Trident : Arrow
         base.ReadNbt(tag);
         dealtDamage = tag.TryGetBool("DealtDamage", out var dealt) && dealt;
         LoyaltyLevel = Weapon != null ? CombatItems.EnchantmentLevel(Weapon, EnchantmentsRegistry.Loyalty) :
-            tag.TryGetTagValue<int>("ObsidianLoyalty", out var loyalty) ? Math.Clamp(loyalty, 0, 127) : 0;
+            tag.TryGetNumber<int>("ObsidianLoyalty", out var loyalty) ? Math.Clamp(loyalty, 0, 127) : 0;
     }
 
     public override void Write(INetStreamWriter writer)

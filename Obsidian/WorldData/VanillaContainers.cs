@@ -130,7 +130,7 @@ internal sealed class HopperBlockEntity : VanillaContainerBlockEntity
     protected internal override void Load(NbtCompound tag)
     {
         base.Load(tag);
-        this.Cooldown = tag.TryGetTagValue<int>("TransferCooldown", out var cooldown) ? cooldown : -1;
+        this.Cooldown = tag.TryGetNumber<int>("TransferCooldown", out var cooldown) ? cooldown : -1;
     }
 
     protected internal override void Save(NbtCompound tag)

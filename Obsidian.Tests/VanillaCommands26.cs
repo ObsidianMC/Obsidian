@@ -19,6 +19,7 @@ using Obsidian.Tests.Fakes;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -47,6 +48,7 @@ public sealed class VanillaCommands26
     public static IEnumerable<object[]> DataCases => Rows("data");
     public static IEnumerable<object[]> SpamCases => Rows("spam");
     public static IEnumerable<object[]> ItemCountCases => Rows("item_counts");
+    public static IEnumerable<object[]> NumericTagCases => Rows("numeric_tags");
 
     private static IEnumerable<object[]> Rows(string section) => fixture.GetProperty(section).EnumerateArray()
         .Select((row, index) => new object[] { $"{section}-{index}", row.GetRawText() });
@@ -325,6 +327,30 @@ public sealed class VanillaCommands26
         }
     }
 
+    [Theory]
+    [MemberData(nameof(NumericTagCases))]
+    public void NumericNbtConvertsLikeVanilla(string name, string json)
+    {
+        Assert.StartsWith("numeric_tags-", name);
+        using var document = JsonDocument.Parse(json);
+        var row = document.RootElement;
+        var tag = NumericTag(row.GetProperty("type").GetString()!, row.GetProperty("value").GetString()!);
+
+        Assert.True(tag.TryGetNumber(out byte asByte));
+        Assert.True(tag.TryGetNumber(out short asShort));
+        Assert.True(tag.TryGetNumber(out int asInt));
+        Assert.True(tag.TryGetNumber(out long asLong));
+        Assert.True(tag.TryGetNumber(out float asFloat));
+        Assert.True(tag.TryGetNumber(out double asDouble));
+
+        Assert.Equal(row.GetProperty("byte").GetInt32(), unchecked((sbyte)asByte));
+        Assert.Equal(row.GetProperty("short").GetInt16(), asShort);
+        Assert.Equal(row.GetProperty("int").GetInt32(), asInt);
+        Assert.Equal(row.GetProperty("long").GetInt64(), asLong);
+        Assert.Equal(float.Parse(row.GetProperty("float").GetString()!, CultureInfo.InvariantCulture), asFloat);
+        Assert.Equal(double.Parse(row.GetProperty("double").GetString()!, CultureInfo.InvariantCulture), asDouble);
+    }
+
     [Fact]
     public async Task PostEffectResultsAndPacketsMatchVanilla()
     {
@@ -466,6 +492,26 @@ public sealed class VanillaCommands26
         Assert.True(File.Exists(Path.Combine(server.World.WorldFolderPath, "data", "test", "command_storage.dat")));
     }
 
+    [Theory]
+    [InlineData("integer", "5", 5f)]
+    [InlineData("float", "7.5", 7.5f)]
+    public async Task ComputedEntityDataReachesTheLiveEntity(string kind, string value, float health)
+    {
+        await using var server = TestServerFactory.CreateServer($"command-entity-data-{Guid.NewGuid():N}");
+        var handler = (CommandHandler)server.Server.CommandHandler;
+        handler.RegisterCommandClass<DataCommandModule>(null);
+        WorldBlockEntities.AddEmptyChunk(server.World);
+        var zombie = (Obsidian.Entities.Living)server.World.SpawnEntity(new VectorD(0.5, 64, 0.5), EntityType.Zombie);
+        var provider = $"{{type:'constant',value:{value}}}";
+        var command = $"data modify entity {zombie.Uuid} Health set compute default {kind} {provider}";
+        var context = Context(server.Server, command);
+
+        await handler.ProcessCommand(context);
+
+        Assert.True(context.Succeeded);
+        Assert.Equal(health, zombie.Health);
+    }
+
     [Fact]
     public async Task InlineFeaturesUseTheCurrentFeatureMachinery()
     {
@@ -571,6 +617,22 @@ public sealed class VanillaCommands26
         var player = TestServerFactory.CreateConnectedPlayer(server.Server, server.World, "Fixture");
         server.Server.AddPlayer(player);
         return player;
+    }
+
+    // Builds the tag a captured SNBT number (like -2.5f or 300s) stands for.
+    private static INbtTag NumericTag(string type, string snbt)
+    {
+        var text = snbt == "NaNd" ? "NaN" : snbt.TrimEnd('b', 's', 'L', 'f', 'd');
+
+        return type switch
+        {
+            "BYTE" => new NbtTag<byte>("", unchecked((byte)sbyte.Parse(text, CultureInfo.InvariantCulture))),
+            "SHORT" => new NbtTag<short>("", short.Parse(text, CultureInfo.InvariantCulture)),
+            "INT" => new NbtTag<int>("", int.Parse(text, CultureInfo.InvariantCulture)),
+            "LONG" => new NbtTag<long>("", long.Parse(text, CultureInfo.InvariantCulture)),
+            "FLOAT" => new NbtTag<float>("", float.Parse(text, CultureInfo.InvariantCulture)),
+            _ => new NbtTag<double>("", double.Parse(text, CultureInfo.InvariantCulture))
+        };
     }
 
     private static CommandContext Context(Server server, string command) =>

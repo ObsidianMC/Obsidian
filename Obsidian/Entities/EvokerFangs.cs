@@ -43,7 +43,7 @@ public sealed partial class EvokerFangs : Entity
     internal override void ReadNbt(NbtCompound tag)
     {
         base.ReadNbt(tag);
-        Warmup = Math.Clamp(tag.TryGetTagValue<int>("Warmup", out var warmup) ? warmup : 0, -30, 1000);
+        Warmup = Math.Clamp(tag.TryGetNumber<int>("Warmup", out var warmup) ? warmup : 0, -30, 1000);
         life = Warmup < 0 ? Math.Max(0, 22 + Warmup) : 22;
         if (tag.TryGetTag<NbtArray<int>>("Owner", out var owner) && owner.Count == 4) OwnerUuid = EntityNbt.UuidFromInts(owner.GetArray());
     }

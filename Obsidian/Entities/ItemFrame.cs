@@ -164,7 +164,7 @@ public partial class ItemFrame : HangingEntity
         base.ReadNbt(tag);
 
         this.Item = tag.TryGetTag<NbtCompound>("Item", out var item) ? item.ItemFromNbt() : null;
-        this.Rotation = tag.TryGetTag<NbtTag<byte>>("ItemRotation", out var rotation) ? rotation.Value : 0;
+        this.Rotation = tag.TryGetNumber<byte>("ItemRotation", out var rotation) ? rotation : 0;
         this.Fixed = tag.TryGetBool("Fixed", out var isFixed) && isFixed;
     }
 }

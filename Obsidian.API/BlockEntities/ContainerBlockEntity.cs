@@ -126,7 +126,7 @@ public partial class ContainerBlockEntity : BlockEntity, IItemAccessProvider
             this.Inventory.SetItem(slot, null);
 
         this.LootTable = tag.TryGetTagValue<string>("LootTable", out var lootTable) ? lootTable : null;
-        this.LootTableSeed = tag.TryGetTagValue<long>("LootTableSeed", out var seed) ? seed : 0;
+        this.LootTableSeed = tag.TryGetNumber<long>("LootTableSeed", out var seed) ? seed : 0;
 
         // Like vanilla, a container waiting for its loot table has no items yet.
         if (this.LootTable is null && tag.TryGetTag<NbtList>("Items", out var items))

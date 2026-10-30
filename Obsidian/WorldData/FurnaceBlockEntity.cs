@@ -54,7 +54,7 @@ internal sealed partial class FurnaceBlockEntity
         this.CookingTotal = Read("cooking_total_time");
         this.LitRemaining = Read("lit_time_remaining");
         this.LitTotal = Read("lit_total_time");
-        this.SpeedMultiplier = tag.TryGetTagValue<float>("speed_multiplier", out var speed) ? speed : 1f;
+        this.SpeedMultiplier = tag.TryGetNumber<float>("speed_multiplier", out var speed) ? speed : 1f;
         this.previousInput = this.Inventory[IngredientSlot] is ItemStack input
             ? NetworkBuffer.SnapshotItemStack(input)
             : null;
@@ -68,8 +68,8 @@ internal sealed partial class FurnaceBlockEntity
             }
         }
 
-        int Read(string name) => tag.TryGetTagValue<int>(name, out var value) ? Math.Max(0, value)
-            : tag.TryGetTagValue<short>(name, out var legacy) ? Math.Max(0, (int)legacy) : 0;
+        int Read(string name) => tag.TryGetNumber<int>(name, out var value) ? Math.Max(0, value)
+            : tag.TryGetNumber<short>(name, out var legacy) ? Math.Max(0, (int)legacy) : 0;
     }
 
     internal override void SaveMachineState(NbtCompound tag)

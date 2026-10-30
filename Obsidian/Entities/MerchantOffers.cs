@@ -67,7 +67,7 @@ internal static class MerchantOffers
         if (first is null || second is null)
             return null;
 
-        var multiplier = entry.TryGetTagValue<float>("Multiplier", out var saved) && float.IsFinite(saved)
+        var multiplier = entry.TryGetNumber<float>("Multiplier", out var saved) && float.IsFinite(saved)
             ? saved
             : 0.05f;
         var offer = new TradeEntry
@@ -115,13 +115,13 @@ internal static class MerchantOffers
                     ? new TradeItem(ItemsRegistry.Air.Id, 0, [])
                     : new TradeItem(second.Holder.Id, second.Count, [.. second.Patch]),
                 Output = output,
-                UsedCount = recipe.TryGetTagValue<int>("uses", out var uses) ? uses : 0,
-                MaxCount = recipe.TryGetTagValue<int>("maxUses", out var maximum) ? maximum : 4,
-                XP = recipe.TryGetTagValue<int>("xp", out var xp) ? xp : 1,
+                UsedCount = recipe.TryGetNumber<int>("uses", out var uses) ? uses : 0,
+                MaxCount = recipe.TryGetNumber<int>("maxUses", out var maximum) ? maximum : 4,
+                XP = recipe.TryGetNumber<int>("xp", out var xp) ? xp : 1,
                 RewardExp = !recipe.TryGetBool("rewardExp", out var reward) || reward,
-                Demand = recipe.TryGetTagValue<int>("demand", out var demand) ? demand : 0,
-                Discount = recipe.TryGetTagValue<int>("specialPrice", out var specialPrice) ? specialPrice : 0,
-                Multiplier = recipe.TryGetTagValue<float>("priceMultiplier", out var multiplier) ? multiplier : 0
+                Demand = recipe.TryGetNumber<int>("demand", out var demand) ? demand : 0,
+                Discount = recipe.TryGetNumber<int>("specialPrice", out var specialPrice) ? specialPrice : 0,
+                Multiplier = recipe.TryGetNumber<float>("priceMultiplier", out var multiplier) ? multiplier : 0
             };
             offer.IsDisabled = offer.UsedCount >= offer.MaxCount;
             offers.Add(offer);

@@ -25,7 +25,7 @@ internal sealed class ComparatorBlockEntity : BlockEntity
     internal override bool SavesOnAnyThread => true;
 
     protected internal override void Load(NbtCompound tag) =>
-        this.OutputSignal = tag.TryGetTagValue<int>("OutputSignal", out var signal) ? signal : 0;
+        this.OutputSignal = tag.TryGetNumber<int>("OutputSignal", out var signal) ? signal : 0;
 
     protected internal override void Save(NbtCompound tag) =>
         tag.Add(new NbtTag<int>("OutputSignal", this.OutputSignal));

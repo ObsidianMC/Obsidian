@@ -124,9 +124,9 @@ public sealed partial class Ravager : PathfinderMob
 
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
-        attackTicks = Math.Clamp(tag.TryGetTagValue<int>("AttackTick", out var attack) ? attack : 0, 0, 10);
-        stunTicks = Math.Clamp(tag.TryGetTagValue<int>("StunTick", out var stun) ? stun : 0, 0, 40);
-        roarTicks = Math.Clamp(tag.TryGetTagValue<int>("RoarTick", out var roar) ? roar : 0, 0, 20);
+        attackTicks = Math.Clamp(tag.TryGetNumber<int>("AttackTick", out var attack) ? attack : 0, 0, 10);
+        stunTicks = Math.Clamp(tag.TryGetNumber<int>("StunTick", out var stun) ? stun : 0, 0, 40);
+        roarTicks = Math.Clamp(tag.TryGetNumber<int>("RoarTick", out var roar) ? roar : 0, 0, 20);
     }
 }
 

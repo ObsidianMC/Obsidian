@@ -519,28 +519,28 @@ public partial class Arrow : Entity
         if (tag.TryGetTag<NbtArray<int>>("Owner", out var owner) && owner.Count == 4)
             ownerUuid = EntityNbt.UuidFromInts(owner.GetArray());
 
-        if (tag.TryGetTagValue<int>("ObsidianLife", out var life))
+        if (tag.TryGetNumber<int>("ObsidianLife", out var life))
             age = Math.Clamp(life, 0, 1200);
 
         embedded = tag.TryGetBool("inGround", out var ground) && ground;
 
-        if (tag.TryGetTagValue<double>("damage", out var damage) && double.IsFinite(damage))
+        if (tag.TryGetNumber<double>("damage", out var damage) && double.IsFinite(damage))
             Damage = (float)Math.Clamp(damage, 0, float.MaxValue);
 
-        if (tag.TryGetTagValue<int>("ObsidianEffect", out var effect))
+        if (tag.TryGetNumber<int>("ObsidianEffect", out var effect))
             Effect = effect;
 
-        if (tag.TryGetTagValue<int>("ObsidianEffectDuration", out var duration))
+        if (tag.TryGetNumber<int>("ObsidianEffectDuration", out var duration))
             EffectDuration = Math.Max(0, duration);
 
-        if (tag.TryGetTagValue<int>("ObsidianFireSeconds", out var fire))
+        if (tag.TryGetNumber<int>("ObsidianFireSeconds", out var fire))
             FireSeconds = Math.Clamp(fire, 0, int.MaxValue / 20);
 
         Crit = tag.TryGetBool("crit", out var crit) && crit;
-        PiercingLevel = tag.TryGetTagValue<byte>("PierceLevel", out var pierce) ? pierce : 0;
-        var knownPickup = tag.TryGetTagValue<byte>("pickup", out var pickup) && pickup <= 2;
+        PiercingLevel = tag.TryGetNumber<byte>("PierceLevel", out var pierce) ? pierce : 0;
+        var knownPickup = tag.TryGetNumber<byte>("pickup", out var pickup) && pickup <= 2;
         Pickup = knownPickup ? (ArrowPickup)pickup : ArrowPickup.Disallowed;
-        KnockbackLevel = tag.TryGetTagValue<int>("ObsidianPunch", out var punch) ? Math.Clamp(punch, 0, 255) : 0;
+        KnockbackLevel = tag.TryGetNumber<int>("ObsidianPunch", out var punch) ? Math.Clamp(punch, 0, 255) : 0;
         PickupItem = tag.TryGetTag<NbtCompound>("item", out var item) ? item.ItemFromNbt() : null;
         Weapon = tag.TryGetTag<NbtCompound>("weapon", out var weapon) ? weapon.ItemFromNbt() : null;
         BoundingBox = Dimension.CreateBBFromPosition(Position);

@@ -176,11 +176,11 @@ public sealed partial class TntMinecart : AbstractMinecart
     internal override void ReadNbt(NbtCompound tag)
     {
         base.ReadNbt(tag);
-        this.Fuse = tag.TryGetTagValue<int>("fuse", out var fuse) ? fuse : -1;
-        this.ExplosionPower = tag.TryGetTagValue<float>("explosion_power", out var power)
+        this.Fuse = tag.TryGetNumber<int>("fuse", out var fuse) ? fuse : -1;
+        this.ExplosionPower = tag.TryGetNumber<float>("explosion_power", out var power)
             ? Math.Clamp(power, 0, 128)
             : DefaultPower;
-        this.ExplosionSpeedFactor = tag.TryGetTagValue<float>("explosion_speed_factor", out var factor)
+        this.ExplosionSpeedFactor = tag.TryGetNumber<float>("explosion_speed_factor", out var factor)
             ? Math.Clamp(factor, 0, 128)
             : DefaultSpeedFactor;
     }

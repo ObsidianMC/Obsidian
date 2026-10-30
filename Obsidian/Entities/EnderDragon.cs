@@ -814,30 +814,30 @@ public sealed partial class EnderDragon : BossMob
 
     private void ReadDragonNbt(NbtCompound tag)
     {
-        var savedPhase = tag.TryGetTagValue<int>("DragonPhase", out var saved) ? saved : 10;
+        var savedPhase = tag.TryGetNumber<int>("DragonPhase", out var saved) ? saved : 10;
         phase = (DragonPhase)Math.Clamp(savedPhase, 0, 10);
-        phaseTicks = phase == DragonPhase.Dying && tag.TryGetTagValue<int>("DragonDeathTime", out var ticks)
+        phaseTicks = phase == DragonPhase.Dying && tag.TryGetNumber<int>("DragonDeathTime", out var ticks)
             ? Math.Clamp(ticks, 0, 199)
             : 0;
         PreviouslyKilled = !tag.TryGetBool("ObsidianPreviouslyKilled", out var killed) || killed;
         arenaKnown = EntityNbt.TryReadVector(tag, "ObsidianDragonArena", out arena);
 
-        if (tag.TryGetTagValue<int>("ObsidianPhaseTicks", out var phaseTime))
+        if (tag.TryGetNumber<int>("ObsidianPhaseTicks", out var phaseTime))
             phaseTicks = Math.Clamp(phaseTime, 0, 72000);
 
-        if (tag.TryGetTagValue<int>("ObsidianFlameCount", out var flames))
+        if (tag.TryGetNumber<int>("ObsidianFlameCount", out var flames))
             flameCount = Math.Clamp(flames, 0, 4);
 
-        if (tag.TryGetTagValue<int>("ObsidianFlightPoint", out var point))
+        if (tag.TryGetNumber<int>("ObsidianFlightPoint", out var point))
             flightPoint = Math.Clamp(point, 0, 11);
 
-        if (tag.TryGetTagValue<float>("ObsidianSittingDamage", out var sitting) && float.IsFinite(sitting))
+        if (tag.TryGetNumber<float>("ObsidianSittingDamage", out var sitting) && float.IsFinite(sitting))
             sittingDamage = Math.Max(0, sitting);
 
         if (EntityNbt.TryReadVector(tag, "ObsidianDestination", out var savedDestination))
             destination = savedDestination;
 
-        var deathTime = tag.TryGetTagValue<int>("DragonDeathTime", out var savedDeathTime) ? savedDeathTime : 0;
+        var deathTime = tag.TryGetNumber<int>("DragonDeathTime", out var savedDeathTime) ? savedDeathTime : 0;
         if (phase == DragonPhase.Dying && deathTime > 0)
             Health = 0;
     }

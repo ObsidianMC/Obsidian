@@ -174,8 +174,8 @@ public partial class ItemEntity : Entity
         if (tag.TryGetTag<NbtCompound>("Item", out var item) && item.ItemFromNbt() is ItemStack stack)
             this.Item = stack;
 
-        if (tag.TryGetTag<NbtTag<short>>("Age", out var savedAge)) age = savedAge.Value;
-        this.pickupDelay = tag.TryGetTag<NbtTag<short>>("PickupDelay", out var delay) ? Math.Max(0, (int)delay.Value) : 10;
+        if (tag.TryGetNumber<short>("Age", out var savedAge)) age = savedAge;
+        this.pickupDelay = tag.TryGetNumber<short>("PickupDelay", out var delay) ? Math.Max(0, (int)delay) : 10;
     }
 
     public async override ValueTask TickAsync()

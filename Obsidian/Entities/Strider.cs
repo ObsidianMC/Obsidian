@@ -164,7 +164,7 @@ public sealed partial class Strider : FarmAnimal, IItemSteerable
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         cold = tag.TryGetBool("Suffocating", out var saved) && saved;
-        boostDuration = tag.TryGetTagValue<int>("ObsidianBoostDuration", out var duration) ? Math.Clamp(duration, 0, 980) : 0;
-        boostTicks = tag.TryGetTagValue<int>("ObsidianBoostTicks", out var ticks) ? Math.Clamp(ticks, 0, boostDuration) : 0;
+        boostDuration = tag.TryGetNumber<int>("ObsidianBoostDuration", out var duration) ? Math.Clamp(duration, 0, 980) : 0;
+        boostTicks = tag.TryGetNumber<int>("ObsidianBoostTicks", out var ticks) ? Math.Clamp(ticks, 0, boostDuration) : 0;
     }
 }

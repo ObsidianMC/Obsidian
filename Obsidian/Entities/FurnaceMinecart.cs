@@ -129,10 +129,10 @@ public sealed partial class FurnaceMinecart : AbstractMinecart
     internal override void ReadNbt(NbtCompound tag)
     {
         base.ReadNbt(tag);
-        var x = tag.TryGetTagValue<double>("PushX", out var pushX) ? pushX : 0;
-        var z = tag.TryGetTagValue<double>("PushZ", out var pushZ) ? pushZ : 0;
+        var x = tag.TryGetNumber<double>("PushX", out var pushX) ? pushX : 0;
+        var z = tag.TryGetNumber<double>("PushZ", out var pushZ) ? pushZ : 0;
         this.Push = new VectorD(x, 0, z);
-        this.Fuel = tag.TryGetTagValue<short>("Fuel", out var fuel) ? fuel : 0;
+        this.Fuel = tag.TryGetNumber<short>("Fuel", out var fuel) ? fuel : 0;
         this.hasFuel = this.Fuel > 0;
     }
 }

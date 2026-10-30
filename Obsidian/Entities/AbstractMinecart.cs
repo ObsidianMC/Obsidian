@@ -622,7 +622,7 @@ public abstract class AbstractMinecart : VehicleEntity
         if (tag.TryGetTag("DisplayState", out var state))
             this.displayBlock = Obsidian.WorldData.BlockStateNbt.Read(state);
 
-        this.displayOffset = tag.TryGetTagValue<int>("DisplayOffset", out var offset) ? offset : null;
+        this.displayOffset = tag.TryGetNumber<int>("DisplayOffset", out var offset) ? offset : null;
         this.flipped = tag.TryGetBool("FlippedRotation", out var flipped) && flipped;
         this.hasTicked = tag.TryGetBool("HasTicked", out var ticked) && ticked;
         this.yaw = this.Yaw.Degrees;

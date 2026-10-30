@@ -147,7 +147,7 @@ public sealed partial class CommandBlockMinecart : AbstractMinecart
     {
         base.ReadNbt(tag);
         this.Command = tag.TryGetTagValue<string>("Command", out var command) ? command : string.Empty;
-        this.SuccessCount = tag.TryGetTagValue<int>("SuccessCount", out var successes) ? successes : 0;
+        this.SuccessCount = tag.TryGetNumber<int>("SuccessCount", out var successes) ? successes : 0;
         this.TrackOutput = !tag.TryGetBool("TrackOutput", out var track) || track;
         this.lastOutput = this.TrackOutput && tag.TryGetTag("LastOutput", out var output) ? output.TextFromNbt() : null;
     }

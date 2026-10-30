@@ -138,12 +138,12 @@ public sealed partial class Axolotl : FarmAnimal
 
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
-        Variant = Math.Clamp((tag.TryGetTagValue<int>("Variant", out var savedVariant) ? savedVariant : 0), 0, 4);
+        Variant = Math.Clamp((tag.TryGetNumber<int>("Variant", out var savedVariant) ? savedVariant : 0), 0, 4);
         FromBucket = tag.TryGetBool("FromBucket", out var bucket) && bucket;
         PersistenceRequired |= FromBucket;
-        PlayingDeadTicks = Math.Clamp((tag.TryGetTagValue<int>("ObsidianPlayDead", out var savedObsidianPlayDead) ? savedObsidianPlayDead : 0), 0, 200);
-        huntingCooldown = Math.Clamp((tag.TryGetTagValue<int>("ObsidianHuntingCooldown", out var savedObsidianHuntingCooldown) ? savedObsidianHuntingCooldown : 0), 0, 2400);
-        dryTicks = Math.Max(0, (tag.TryGetTagValue<int>("ObsidianDryTicks", out var savedObsidianDryTicks) ? savedObsidianDryTicks : 0));
+        PlayingDeadTicks = Math.Clamp((tag.TryGetNumber<int>("ObsidianPlayDead", out var savedObsidianPlayDead) ? savedObsidianPlayDead : 0), 0, 200);
+        huntingCooldown = Math.Clamp((tag.TryGetNumber<int>("ObsidianHuntingCooldown", out var savedObsidianHuntingCooldown) ? savedObsidianHuntingCooldown : 0), 0, 2400);
+        dryTicks = Math.Max(0, (tag.TryGetNumber<int>("ObsidianDryTicks", out var savedObsidianDryTicks) ? savedObsidianDryTicks : 0));
     }
 }
 

@@ -193,7 +193,7 @@ public partial class Nautilus : FarmAnimal, IRideableJumping
     {
         if (tag.TryGetTag<NbtArray<int>>("Owner", out var owner) && owner.Count == 4)
             Owner = EntityNbt.UuidFromInts(owner.GetArray());
-        dashCooldown = Math.Clamp(tag.TryGetTagValue<int>("ObsidianDashCooldown", out var cooldown) ? cooldown : 0, 0, 40);
+        dashCooldown = Math.Clamp(tag.TryGetNumber<int>("ObsidianDashCooldown", out var cooldown) ? cooldown : 0, 0, 40);
     }
 }
 

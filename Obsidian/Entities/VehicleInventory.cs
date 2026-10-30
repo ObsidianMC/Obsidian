@@ -59,15 +59,15 @@ internal sealed class VehicleInventory
                 this.Items.SetItem(slot, null);
 
             this.LootTable = tag.TryGetTagValue<string>("LootTable", out var lootTable) ? lootTable : null;
-            this.LootTableSeed = tag.TryGetTagValue<long>("LootTableSeed", out var seed) ? seed : 0;
+            this.LootTableSeed = tag.TryGetNumber<long>("LootTableSeed", out var seed) ? seed : 0;
 
             if (this.LootTable is not null || !tag.TryGetTag<NbtList>("Items", out var items))
                 return;
 
             foreach (var itemTag in items.OfType<NbtCompound>())
             {
-                if (itemTag.TryGetTag<NbtTag<byte>>("Slot", out var slot) && slot.Value < this.Items.Size)
-                    this.Items.SetItem(slot.Value, itemTag.ItemFromNbt());
+                if (itemTag.TryGetNumber<byte>("Slot", out var slot) && slot < this.Items.Size)
+                    this.Items.SetItem(slot, itemTag.ItemFromNbt());
             }
         }
     }

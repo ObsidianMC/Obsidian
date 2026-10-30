@@ -107,7 +107,7 @@ public sealed partial class SkeletonHorse : AbstractHorse
     protected override void ReadAdditionalSave(Obsidian.Nbt.NbtCompound tag)
     {
         SkeletonTrap = tag.TryGetBool("SkeletonTrap", out var trap) && trap;
-        TrapTime = Math.Clamp((tag.TryGetTagValue<int>("SkeletonTrapTime", out var savedSkeletonTrapTime) ? savedSkeletonTrapTime : 0), 0, 18000);
+        TrapTime = Math.Clamp((tag.TryGetNumber<int>("SkeletonTrapTime", out var savedSkeletonTrapTime) ? savedSkeletonTrapTime : 0), 0, 18000);
         if (tag.TryGetTag<Obsidian.Nbt.NbtArray<int>>("ObsidianSkeletonRider", out var rider) && rider.Count == 4)
             skeletonRiderUuid = EntityNbt.UuidFromInts(rider.GetArray());
     }

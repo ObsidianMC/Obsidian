@@ -204,9 +204,11 @@ internal static class EntityNbt
     public static bool TryReadVector(NbtCompound compound, string name, out VectorD vector)
     {
         if (compound.TryGetTag<NbtList>(name, out var list) && list.Count >= 3
-            && list[0] is NbtTag<double> x && list[1] is NbtTag<double> y && list[2] is NbtTag<double> z)
+            && list[0].TryGetNumber(out double x)
+            && list[1].TryGetNumber(out double y)
+            && list[2].TryGetNumber(out double z))
         {
-            vector = new VectorD(x.Value, y.Value, z.Value);
+            vector = new VectorD(x, y, z);
             return true;
         }
 

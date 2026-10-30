@@ -148,15 +148,15 @@ internal sealed partial class BrewingStandBlockEntity : VanillaContainerBlockEnt
         base.Load(tag);
 
         var stand = this.Stand;
-        stand.BrewTime = tag.TryGetTagValue<int>("BrewTime", out var brewTime) ? brewTime
-            : tag.TryGetTagValue<short>("BrewTime", out var legacyTime) ? legacyTime : 0;
-        stand.Fuel = tag.TryGetTagValue<int>("Fuel", out var fuel) ? fuel
-            : tag.TryGetTagValue<byte>("Fuel", out var legacyFuel) ? legacyFuel : 0;
-        stand.TotalBrewTime = tag.TryGetTagValue<int>("total_brew_time", out var totalBrewTime)
+        stand.BrewTime = tag.TryGetNumber<int>("BrewTime", out var brewTime) ? brewTime
+            : tag.TryGetNumber<short>("BrewTime", out var legacyTime) ? legacyTime : 0;
+        stand.Fuel = tag.TryGetNumber<int>("Fuel", out var fuel) ? fuel
+            : tag.TryGetNumber<byte>("Fuel", out var legacyFuel) ? legacyFuel : 0;
+        stand.TotalBrewTime = tag.TryGetNumber<int>("total_brew_time", out var totalBrewTime)
             ? totalBrewTime
             : Brewing.BrewTime;
-        stand.TotalFuel = tag.TryGetTagValue<int>("total_fuel", out var totalFuel) ? totalFuel : 20;
-        stand.SpeedMultiplier = tag.TryGetTagValue<float>("speed_multiplier", out var speed) ? speed : 1f;
+        stand.TotalFuel = tag.TryGetNumber<int>("total_fuel", out var totalFuel) ? totalFuel : 20;
+        stand.SpeedMultiplier = tag.TryGetNumber<float>("speed_multiplier", out var speed) ? speed : 1f;
 
         // A brew in progress takes its unsaved ingredient from the ingredient slot, so it goes on after a reload
         // instead of stopping and spending another fuel use.

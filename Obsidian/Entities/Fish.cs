@@ -272,7 +272,7 @@ public sealed partial class TropicalFish : SchoolingFish
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         base.ReadAdditionalSave(tag);
-        if (tag.TryGetTagValue<int>("Variant", out var variant))
+        if (tag.TryGetNumber<int>("Variant", out var variant))
             Variant = (variant & 1) | Math.Clamp((variant >> 8) & 255, 0, 5) << 8 | (variant & 0x0f0f0000);
     }
 }
@@ -368,6 +368,6 @@ public sealed partial class Pufferfish : Fish
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         base.ReadAdditionalSave(tag);
-        PuffState = Math.Clamp(tag.TryGetTagValue<int>("PuffState", out var state) ? state : 0, 0, 2);
+        PuffState = Math.Clamp(tag.TryGetNumber<int>("PuffState", out var state) ? state : 0, 0, 2);
     }
 }

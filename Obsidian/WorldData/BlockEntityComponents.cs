@@ -229,7 +229,7 @@ internal sealed partial class BlockEntityComponents : IAsyncDisposable
             if (loot is not null && loot.TryGetTagValue<string>("loot_table", out var table))
             {
                 container.LootTable = table;
-                container.LootTableSeed = loot.TryGetTagValue<long>("seed", out var seed) ? seed : 0;
+                container.LootTableSeed = loot.TryGetNumber<long>("seed", out var seed) ? seed : 0;
             }
         }
         }

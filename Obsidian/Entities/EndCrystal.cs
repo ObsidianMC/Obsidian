@@ -90,8 +90,8 @@ public sealed partial class EndCrystal : Entity
         Invulnerable = tag.TryGetBool("Invulnerable", out var invulnerable) && invulnerable;
         ShowBottom = !tag.TryGetBool("ShowBottom", out var bottom) || bottom;
         if (tag.TryGetTag<NbtCompound>("BeamTarget", out var beam) &&
-            beam.TryGetTagValue<int>("X", out var x) && beam.TryGetTagValue<int>("Y", out var y) &&
-            beam.TryGetTagValue<int>("Z", out var z))
+            beam.TryGetNumber<int>("X", out var x) && beam.TryGetNumber<int>("Y", out var y) &&
+            beam.TryGetNumber<int>("Z", out var z))
         {
             beamTarget = new Vector(x, y, z);
         }

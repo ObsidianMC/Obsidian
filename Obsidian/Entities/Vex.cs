@@ -89,7 +89,7 @@ public sealed partial class Vex : PathfinderMob
 
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
-        LifeTicks = tag.TryGetTagValue<int>("life_ticks", out var life) ? Math.Max(0, life) : null;
+        LifeTicks = tag.TryGetNumber<int>("life_ticks", out var life) ? Math.Max(0, life) : null;
         if (tag.TryGetTag<NbtArray<int>>("bound_pos", out var bound) && bound.Count == 3)
         {
             var coordinates = bound.GetArray();
