@@ -26,8 +26,9 @@
 
 	<ItemGroup>
 		<!-- Capture source inputs before the build adds generated assembly attributes under obj. -->
-		<!-- The capture driver only runs on request (CaptureVanillaWorldgen), so editing it doesn't regenerate the assets. -->
-		<VanillaGeneratorInput Include="@(Compile)" Exclude="WorldgenCaptures.cs" />
+		<!-- The capture driver only runs on request (CaptureVanillaWorldgen), so editing it doesn't regenerate the
+		     assets. -->
+		<VanillaGeneratorInput Include="@(Compile)" Exclude="WorldgenCaptures.cs;WorldgenFixtureFiles.cs" />
 		<VanillaDumperInput Include="Java\**\*.java;Java\**\*.json" />
 		<None Update="@(VanillaDumperInput)" CopyToOutputDirectory="PreserveNewest" />
 		<!-- On-request captures (CaptureVanillaWorldgen); not asset inputs, so editing them doesn't regenerate the assets. -->
@@ -105,7 +106,7 @@
 	     server (docs/vanilla-captures.md). Slow, so only on request:
 	     dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen -->
 	<PropertyGroup>
-		<VanillaWorldgenFixture>$(MSBuildThisFileDirectory)..\Obsidian.Tests\Assets\vanilla_worldgen_26.3.json</VanillaWorldgenFixture>
+		<VanillaWorldgenFixture>$(MSBuildThisFileDirectory)..\Obsidian.Tests\Assets\vanilla_worldgen_26.3</VanillaWorldgenFixture>
 	</PropertyGroup>
 
 	<Target Name="CaptureVanillaWorldgen" DependsOnTargets="Build;ReadMinecraftVersion">

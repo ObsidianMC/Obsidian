@@ -1,11 +1,11 @@
-using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Obsidian.AssetGenerator;
 
 /// <summary>
 /// Re-records the 26.3 vanilla worldgen references the parity tests replay
-/// (<c>Obsidian.Tests/Assets/vanilla_worldgen_26.3.json</c>), by running <c>Captures/WorldgenCaptures.java</c> against
-/// the vanilla server. See <c>docs/vanilla-captures.md</c>.
+/// (<c>Obsidian.Tests/Assets/vanilla_worldgen_26.3</c>, see <see cref="WorldgenFixtureFile"/>), by running
+/// <c>Captures/WorldgenCaptures.java</c> against the vanilla server. See <c>docs/vanilla-captures.md</c>.
 /// </summary>
 /// <remarks>
 /// The capture runs a headless vanilla server per world (seed, with and without structures), which evaluates every
@@ -15,34 +15,84 @@ namespace Obsidian.AssetGenerator;
 internal static class WorldgenCaptures
 {
     // A world's server can hang rather than exit when it fails (the probe waits for it to become ready and for chunks to
-    // load), so each run is killed after this long. A whole capture takes about a minute.
+    // load), so each run is killed after this long. A whole capture takes a few minutes.
     private static readonly TimeSpan WorldTimeout = TimeSpan.FromMinutes(15);
 
     private static string Source(string name) => Path.Combine(AppContext.BaseDirectory, name);
 
-    public static async Task RunAsync(VanillaServer server, string fixturePath)
+    public static async Task RunAsync(VanillaServer server, string fixtureDirectory)
     {
-        // Each world rewrites its own cases, so they're captured into a copy that replaces the fixture only once every
-        // world succeeded. A failed capture never leaves a fixture mixing versions.
-        var capturing = fixturePath + ".capturing";
-        File.Copy(fixturePath, capturing, overwrite: true);
-        try
+        var files = WorldgenFixtureFile.Load(fixtureDirectory);
+
+        // The probe captures the cases in a fixture of their own, by section, which replaces them in their files only
+        // once every world succeeded. A failed capture never leaves files mixing versions.
+        var selected = Select(files);
+        var capturing = Path.Combine(server.ScratchDirectory, "captures", "fixture.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(capturing)!);
+        await File.WriteAllTextAsync(capturing, WorldgenFixtureFile.Serialize(Fixture(selected)));
+
+        Console.WriteLine($"Capturing {selected.Count} cases...");
+        await CaptureWorldsAsync(server, capturing, Seeds(selected));
+
+        var captured = JsonNode.Parse(await File.ReadAllTextAsync(capturing))!.AsObject();
+        Replace(selected, captured);
+        File.Delete(capturing);
+
+        foreach (var file in selected.Select(entry => entry.File).Distinct())
         {
-            await CaptureWorldsAsync(server, fixturePath, capturing);
-            File.Move(capturing, fixturePath, overwrite: true);
-        }
-        finally
-        {
-            File.Delete(capturing);
+            file.Root["version"] = server.Version;
+            var outcome = file.Save() ? "Rewrote" : "Unchanged:";
+            Console.WriteLine($"{outcome} {file.Name}.json");
         }
     }
 
-    private static async Task CaptureWorldsAsync(VanillaServer server, string fixturePath, string capturing)
+    // The cases, in the files' order.
+    private static List<SelectedCase> Select(List<WorldgenFixtureFile> files)
+    {
+        var selected = new List<SelectedCase>();
+        foreach (var file in files)
+        {
+            for (var index = 0; index < file.Cases.Count; index++)
+                selected.Add(new SelectedCase(file, index));
+        }
+
+        return selected;
+    }
+
+    // The probe's input: the cases by section, in the files' order.
+    private static JsonObject Fixture(List<SelectedCase> selected)
+    {
+        var fixture = new JsonObject();
+        foreach (var (file, index) in selected)
+        {
+            if (fixture[file.Section] is not JsonArray section)
+                fixture[file.Section] = section = new JsonArray();
+
+            section.Add(file.Cases[index]!.DeepClone());
+        }
+
+        return fixture;
+    }
+
+    // Puts the probe's captured cases back in their files, at their positions.
+    private static void Replace(List<SelectedCase> selected, JsonObject captured)
+    {
+        var positions = new Dictionary<string, int>();
+        foreach (var (file, index) in selected)
+        {
+            var position = positions.GetValueOrDefault(file.Section);
+            positions[file.Section] = position + 1;
+
+            file.Cases[index] = captured[file.Section]![position]!.DeepClone();
+        }
+    }
+
+    private static async Task CaptureWorldsAsync(VanillaServer server, string capturing, List<long> seeds)
     {
         var classpath = string.Join(Path.PathSeparator, server.ClassPath);
         var source = Source(Path.Combine("Captures", "WorldgenCaptures.java"));
 
-        foreach (var seed in Seeds(fixturePath))
+        foreach (var seed in seeds)
         {
             foreach (var structures in new[] { false, true })
             {
@@ -64,7 +114,8 @@ internal static class WorldgenCaptures
                 await VanillaServer.RunJavaAsync(world, WorldTimeout, [.. arguments, "create"]);
                 foreach (var folder in new[] { "region", "entities", "poi" })
                 {
-                    foreach (var chunks in Directory.EnumerateDirectories(world, folder, SearchOption.AllDirectories).ToList())
+                    var chunkFolders = Directory.EnumerateDirectories(world, folder, SearchOption.AllDirectories);
+                    foreach (var chunks in chunkFolders.ToList())
                         Directory.Delete(chunks, recursive: true);
                 }
 
@@ -74,16 +125,12 @@ internal static class WorldgenCaptures
         }
     }
 
-    // The seeds of the fixture's cases, each captured in a world of its own.
-    private static List<long> Seeds(string fixturePath)
-    {
-        using var fixture = JsonDocument.Parse(File.ReadAllText(fixturePath));
-        return fixture.RootElement.EnumerateObject()
-            .Where(section => section.Value.ValueKind == JsonValueKind.Array)
-            .SelectMany(section => section.Value.EnumerateArray())
-            .Select(entry => entry.GetProperty("seed").GetInt64())
+    // The seeds of the cases, each captured in a world of its own.
+    private static List<long> Seeds(List<SelectedCase> selected) =>
+        [.. selected
+            .Select(entry => entry.File.Cases[entry.Index]!["seed"]!.GetValue<long>())
             .Distinct()
-            .Order()
-            .ToList();
-    }
+            .Order()];
+
+    private readonly record struct SelectedCase(WorldgenFixtureFile File, int Index);
 }

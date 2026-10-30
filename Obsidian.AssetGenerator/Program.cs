@@ -4,7 +4,8 @@ using System.Diagnostics;
 
 // Usage: Obsidian.AssetGenerator <minecraft version> <legacy version> <cache directory> <scratch directory>
 //            <assets directory>
-//        Obsidian.AssetGenerator capture-worldgen <minecraft version> <cache directory> <scratch directory> <fixture>
+//        Obsidian.AssetGenerator capture-worldgen <minecraft version> <cache directory> <scratch directory>
+//            <fixture directory>
 //
 // Downloads the vanilla server jar of the version, runs its data generators and the Java dumper against it, and writes
 // the assets the source generators and the server read into the assets directory (replacing what's there). The worldgen
@@ -12,8 +13,8 @@ using System.Diagnostics;
 // until Phase 5 of docs/porting-26.3-plan.md; see DatagenAssets.WriteLegacy). The jars and data generator output are
 // cached per version in the cache directory, which checkouts share; this checkout's runs work in the scratch directory.
 //
-// capture-worldgen instead re-records the vanilla worldgen references in the fixture (in place) with the version's
-// server; see docs/vanilla-captures.md.
+// capture-worldgen instead re-records the vanilla worldgen references in the fixture directory (in place) with the
+// version's server; see docs/vanilla-captures.md.
 var timer = Stopwatch.StartNew();
 using var httpClient = new HttpClient();
 
@@ -34,7 +35,7 @@ if (args.Length != 5)
     Console.Error.WriteLine("Usage: Obsidian.AssetGenerator <minecraft version> <legacy version> <cache directory>");
     Console.Error.WriteLine("           <scratch directory> <assets directory>");
     Console.Error.WriteLine("       Obsidian.AssetGenerator capture-worldgen <minecraft version> <cache directory>");
-    Console.Error.WriteLine("           <scratch directory> <fixture>");
+    Console.Error.WriteLine("           <scratch directory> <fixture directory>");
     return 1;
 }
 

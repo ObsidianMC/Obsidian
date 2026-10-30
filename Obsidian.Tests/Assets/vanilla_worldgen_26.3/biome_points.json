@@ -1,0 +1,660 @@
+{
+  "version": "26.3",
+  "cases": [
+    {
+      "seed": 12345,
+      "dimension": "minecraft:overworld",
+      "quartX": 2,
+      "quartY": 18,
+      "quartZ": 2,
+      "climate": [
+        -255,
+        6821,
+        -4060,
+        -7379,
+        -1862,
+        1665,
+        0
+      ],
+      "biome": "minecraft:ocean"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:overworld",
+      "quartX": -38,
+      "quartY": 18,
+      "quartZ": 2,
+      "climate": [
+        194,
+        4802,
+        -3811,
+        -7563,
+        -1862,
+        -4248,
+        0
+      ],
+      "biome": "minecraft:ocean"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:overworld",
+      "quartX": 122,
+      "quartY": 18,
+      "quartZ": 162,
+      "climate": [
+        -4197,
+        650,
+        3048,
+        -3030,
+        3539,
+        6803,
+        0
+      ],
+      "biome": "minecraft:meadow"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:overworld",
+      "quartX": 402,
+      "quartY": 18,
+      "quartZ": -398,
+      "climate": [
+        -5202,
+        2535,
+        -4740,
+        -2138,
+        -2351,
+        1141,
+        0
+      ],
+      "biome": "minecraft:deep_frozen_ocean"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_nether",
+      "quartX": 2,
+      "quartY": 18,
+      "quartZ": 2,
+      "climate": [
+        649,
+        -891,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:nether_wastes"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_nether",
+      "quartX": 82,
+      "quartY": 18,
+      "quartZ": -118,
+      "climate": [
+        -456,
+        6939,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:warped_forest"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_end",
+      "quartX": 2,
+      "quartY": 18,
+      "quartZ": 2,
+      "climate": [
+        0,
+        0,
+        0,
+        5625,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:the_end"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_end",
+      "quartX": 322,
+      "quartY": 18,
+      "quartZ": -238,
+      "climate": [
+        0,
+        0,
+        0,
+        226,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:end_midlands"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:overworld",
+      "quartX": -174,
+      "quartY": 18,
+      "quartZ": -62,
+      "climate": [
+        2191,
+        -345,
+        1151,
+        -8146,
+        6280,
+        -4358,
+        0
+      ],
+      "biome": "minecraft:stony_peaks"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:overworld",
+      "quartX": -94,
+      "quartY": 18,
+      "quartZ": 194,
+      "climate": [
+        -877,
+        -1565,
+        2208,
+        -6348,
+        5146,
+        4543,
+        0
+      ],
+      "biome": "minecraft:snowy_slopes"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:overworld",
+      "quartX": -1214,
+      "quartY": 18,
+      "quartZ": -1118,
+      "climate": [
+        6652,
+        -1674,
+        6868,
+        -136,
+        -745,
+        645,
+        0
+      ],
+      "biome": "minecraft:eroded_badlands"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:overworld",
+      "quartX": -558,
+      "quartY": 18,
+      "quartZ": 114,
+      "climate": [
+        5514,
+        366,
+        2433,
+        5305,
+        -1383,
+        -788,
+        0
+      ],
+      "biome": "minecraft:desert"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:overworld",
+      "quartX": 226,
+      "quartY": 18,
+      "quartZ": 274,
+      "climate": [
+        -8537,
+        591,
+        -2430,
+        752,
+        -1862,
+        -6527,
+        0
+      ],
+      "biome": "minecraft:frozen_ocean"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_nether",
+      "quartX": -62,
+      "quartY": 18,
+      "quartZ": 66,
+      "climate": [
+        -3770,
+        -428,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:basalt_deltas"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_nether",
+      "quartX": -94,
+      "quartY": 18,
+      "quartZ": 18,
+      "climate": [
+        -222,
+        -2863,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:soul_sand_valley"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:overworld",
+      "quartX": -1406,
+      "quartY": 18,
+      "quartZ": 994,
+      "climate": [
+        -2684,
+        2228,
+        -586,
+        6153,
+        -920,
+        -3137,
+        0
+      ],
+      "biome": "minecraft:swamp"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:overworld",
+      "quartX": -402,
+      "quartY": 18,
+      "quartZ": -366,
+      "climate": [
+        2149,
+        4519,
+        5188,
+        5653,
+        201,
+        10059,
+        0
+      ],
+      "biome": "minecraft:mangrove_swamp"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:overworld",
+      "quartX": 162,
+      "quartY": 18,
+      "quartZ": -178,
+      "climate": [
+        -4436,
+        -3711,
+        4328,
+        -1224,
+        -409,
+        2998,
+        0
+      ],
+      "biome": "minecraft:dappled_forest"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_nether",
+      "quartX": -10,
+      "quartY": 18,
+      "quartZ": 14,
+      "climate": [
+        2367,
+        -1491,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:crimson_forest"
+    },
+    {
+      "seed": -3141592653589793238,
+      "dimension": "minecraft:overworld",
+      "quartX": 2,
+      "quartY": 18,
+      "quartZ": 2,
+      "climate": [
+        2231,
+        57,
+        1249,
+        -226,
+        985,
+        4313,
+        0
+      ],
+      "biome": "minecraft:plains"
+    },
+    {
+      "seed": -3141592653589793238,
+      "dimension": "minecraft:overworld",
+      "quartX": -334,
+      "quartY": 18,
+      "quartZ": 134,
+      "climate": [
+        -2427,
+        2190,
+        686,
+        5561,
+        -56,
+        -3317,
+        0
+      ],
+      "biome": "minecraft:swamp"
+    },
+    {
+      "seed": -3141592653589793238,
+      "dimension": "minecraft:the_nether",
+      "quartX": 10,
+      "quartY": 18,
+      "quartZ": -6,
+      "climate": [
+        2207,
+        740,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:crimson_forest"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_end",
+      "quartX": 256,
+      "quartY": -3,
+      "quartZ": 0,
+      "climate": [
+        0,
+        0,
+        0,
+        -8437,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:the_end"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_end",
+      "quartX": 257,
+      "quartY": -3,
+      "quartZ": 0,
+      "climate": [
+        0,
+        0,
+        0,
+        -8437,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:the_end"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_end",
+      "quartX": 260,
+      "quartY": -3,
+      "quartZ": 0,
+      "climate": [
+        0,
+        0,
+        0,
+        -8437,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:small_end_islands"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_end",
+      "quartX": -256,
+      "quartY": -3,
+      "quartZ": 0,
+      "climate": [
+        0,
+        0,
+        0,
+        -5409,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:the_end"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_end",
+      "quartX": -257,
+      "quartY": -3,
+      "quartZ": 0,
+      "climate": [
+        0,
+        0,
+        0,
+        -5409,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:small_end_islands"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_end",
+      "quartX": 7499952,
+      "quartY": -3,
+      "quartZ": 0,
+      "climate": [
+        0,
+        0,
+        0,
+        558,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:end_midlands"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_end",
+      "quartX": -7499964,
+      "quartY": -3,
+      "quartZ": 0,
+      "climate": [
+        0,
+        0,
+        0,
+        4977,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:end_highlands"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_end",
+      "quartX": 260,
+      "quartY": 13,
+      "quartZ": 0,
+      "erosion": -0.21875001,
+      "climate": [
+        0,
+        0,
+        0,
+        -2187,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:small_end_islands"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_end",
+      "quartX": 260,
+      "quartY": 13,
+      "quartZ": 0,
+      "erosion": -0.21875,
+      "climate": [
+        0,
+        0,
+        0,
+        -2187,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:end_barrens"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_end",
+      "quartX": 260,
+      "quartY": 13,
+      "quartZ": 0,
+      "erosion": -0.21874999,
+      "climate": [
+        0,
+        0,
+        0,
+        -2187,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:end_barrens"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_end",
+      "quartX": 260,
+      "quartY": 13,
+      "quartZ": 0,
+      "erosion": -0.06250001,
+      "climate": [
+        0,
+        0,
+        0,
+        -625,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:end_barrens"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_end",
+      "quartX": 260,
+      "quartY": 13,
+      "quartZ": 0,
+      "erosion": -0.0625,
+      "climate": [
+        0,
+        0,
+        0,
+        -625,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:end_midlands"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_end",
+      "quartX": 260,
+      "quartY": 13,
+      "quartZ": 0,
+      "erosion": -0.06249999,
+      "climate": [
+        0,
+        0,
+        0,
+        -624,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:end_midlands"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_end",
+      "quartX": 260,
+      "quartY": 13,
+      "quartZ": 0,
+      "erosion": 0.24999999,
+      "climate": [
+        0,
+        0,
+        0,
+        2499,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:end_midlands"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_end",
+      "quartX": 260,
+      "quartY": 13,
+      "quartZ": 0,
+      "erosion": 0.25,
+      "climate": [
+        0,
+        0,
+        0,
+        2500,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:end_midlands"
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_end",
+      "quartX": 260,
+      "quartY": 13,
+      "quartZ": 0,
+      "erosion": 0.25000003,
+      "climate": [
+        0,
+        0,
+        0,
+        2500,
+        0,
+        0,
+        0
+      ],
+      "biome": "minecraft:end_highlands"
+    }
+  ]
+}
