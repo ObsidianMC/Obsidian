@@ -76,7 +76,8 @@ public sealed partial class DataCommandModule
                 if (!CommandCoordinates.TryParse(input.Position(), this.CommandContext, false, true, out var position))
                     throw new FormatException("Invalid block position");
 
-                var blockEntity = await CommandFeedback.LevelOf(this.CommandContext).GetBlockEntityAsync((Vector)position);
+                var level = CommandFeedback.LevelOf(this.CommandContext);
+                var blockEntity = await level.GetBlockEntityAsync((Vector)position);
                 if (blockEntity is not BlockEntity concrete || BlockEntityNbt.Save(concrete) is not NbtCompound saved)
                     throw new FormatException("The target block is not a block entity");
 

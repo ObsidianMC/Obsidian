@@ -82,8 +82,8 @@ public sealed partial class DataCommandModule : CommandModuleBase
         }
 
         /// <summary>
-        /// Vanilla's <c>/data get</c> result: 1 for the whole data, otherwise a number floored, a collection's size or a
-        /// string's length. Other tags have no result and fail.
+        /// Vanilla's <c>/data get</c> result: 1 for the whole data, otherwise a number floored, a collection's size
+        /// or a string's length. Other tags have no result and fail.
         /// </summary>
         internal static int? Result(INbtTag found, bool whole)
         {

@@ -47,7 +47,8 @@ public final class CommandFixtures {
             } else if (operation.equals("clear")) {
                 types = new Class<?>[]{CommandSourceStack.class, Collection.class};
             } else {
-                types = new Class<?>[]{CommandSourceStack.class, Collection.class, net.minecraft.resources.Identifier.class};
+                types = new Class<?>[]{CommandSourceStack.class, Collection.class,
+                    net.minecraft.resources.Identifier.class};
             }
             var method = command.getDeclaredMethod(name, types);
             method.setAccessible(true);
@@ -132,7 +133,8 @@ public final class CommandFixtures {
                     row.addProperty("success", false);
                     row.addProperty("result", 0);
                 }
-                var after = net.minecraft.nbt.NbtOps.INSTANCE.convertTo(com.mojang.serialization.JsonOps.INSTANCE, root);
+                var after = net.minecraft.nbt.NbtOps.INSTANCE.convertTo(
+                    com.mojang.serialization.JsonOps.INSTANCE, root);
                 row.add("after", after);
                 rows.add(row);
             }
@@ -260,10 +262,12 @@ public final class CommandFixtures {
     }
 
     private static LootContext loot(HolderLookup.Provider access, Map<?, ?> parameters) {
-        var map = Vanilla.create(Vanilla.constructor("net.minecraft.util.context.ContextMap", "java.util.Map"), parameters);
-        var params = Vanilla.create(Vanilla.constructor("net.minecraft.world.level.storage.loot.LootParams",
-            "net.minecraft.server.level.ServerLevel", "net.minecraft.util.context.ContextMap", "java.util.Map", "float"),
-            null, map, Map.of(), 0f);
+        var mapType = Vanilla.constructor("net.minecraft.util.context.ContextMap", "java.util.Map");
+        var map = Vanilla.create(mapType, parameters);
+        var paramsType = Vanilla.constructor("net.minecraft.world.level.storage.loot.LootParams",
+            "net.minecraft.server.level.ServerLevel", "net.minecraft.util.context.ContextMap", "java.util.Map",
+            "float");
+        var params = Vanilla.create(paramsType, null, map, Map.of(), 0f);
         return (LootContext)Vanilla.create(Vanilla.constructor("net.minecraft.world.level.storage.loot.LootContext",
             "net.minecraft.world.level.storage.loot.LootParams", "net.minecraft.util.RandomSource",
             "net.minecraft.core.HolderGetter$Provider"), params, RandomSource.create(1), access);
@@ -410,7 +414,8 @@ public final class CommandFixtures {
             for (var operation : List.of("replace", "fill", "override")) {
                 var container = slotContainer(holder);
                 var other = slotContainer(holder);
-                var source = SlotSourceArgument.slotSource(context).parse(new com.mojang.brigadier.StringReader(expression));
+                var source = SlotSourceArgument.slotSource(context)
+                    .parse(new com.mojang.brigadier.StringReader(expression));
                 var selected = source.value().provide(loot(access, Map.of(LootContextParams.CONTAINER, container)));
                 var second = source.value().provide(loot(access, Map.of(LootContextParams.CONTAINER, other)));
                 var items = List.of(new ItemStack(Items.STONE, 2), new ItemStack(Items.DIRT, 1));
@@ -592,7 +597,8 @@ public final class CommandFixtures {
             }
 
             if (argument.getCustomSuggestions() != null) {
-                output.addProperty("suggestions", SuggestionProviders.getName(argument.getCustomSuggestions()).toString());
+                var suggestions = SuggestionProviders.getName(argument.getCustomSuggestions());
+                output.addProperty("suggestions", suggestions.toString());
             }
         }
 

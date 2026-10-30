@@ -26,7 +26,9 @@ public sealed class PlaceCommandModule : CommandModuleBase
                 definition = CommandInput.QualifyTypes(definition);
 
             var origin = CommandFeedback.OriginOf(this.CommandContext);
-            if (!input.End && !CommandCoordinates.TryParse(input.Position(), this.CommandContext, false, true, out origin))
+            var positioned = input.End
+                || CommandCoordinates.TryParse(input.Position(), this.CommandContext, false, true, out origin);
+            if (!positioned)
                 throw new FormatException("Invalid feature position");
 
             input.ExpectEnd();
@@ -53,7 +55,8 @@ public sealed class PlaceCommandModule : CommandModuleBase
             lock (level.Fluids.TickLock)
             {
                 var view = new LiveFeatureLevel(level);
-                var context = new DecorationContext(registry, view, at => view.GetBiome(at).Name, level.MinY, level.Height);
+                var context = new DecorationContext(registry, view, at => view.GetBiome(at).Name, level.MinY,
+                    level.Height);
                 try
                 {
                     if (!feature(context, view.Random, position) || view.ReachedUnloaded)

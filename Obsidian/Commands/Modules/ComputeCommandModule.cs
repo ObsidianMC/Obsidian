@@ -124,8 +124,10 @@ public sealed class ComputeCommandModule : CommandModuleBase
         {
             Random = loot.Random,
             TestCondition = condition => LootTableJson.ReadCondition(condition).Test(loot),
-            IntEnvironmentAttribute = _ => throw new FormatException("Numeric environment sampling is not implemented"),
-            FloatEnvironmentAttribute = _ => throw new FormatException("Numeric environment sampling is not implemented"),
+            IntEnvironmentAttribute = _ =>
+                throw new FormatException("Numeric environment sampling is not implemented"),
+            FloatEnvironmentAttribute = _ =>
+                throw new FormatException("Numeric environment sampling is not implemented"),
             IntStorage = (id, path) => StorageInt(context.Server, id, path),
             FloatStorage = (id, path) => StorageFloat(context.Server, id, path),
             Score = (holder, objective) => Score(context, loot, holder, objective)

@@ -414,7 +414,8 @@ public sealed class VanillaCommands26
         var configuration = ServerConfiguration.CreateDefault();
 
         Assert.Equal(expected.GetProperty("whitelist").GetBoolean(), configuration.Whitelist);
-        Assert.Equal(expected.GetProperty("chatSpamThresholdSeconds").GetInt32(), configuration.ChatSpamThresholdSeconds);
+        Assert.Equal(expected.GetProperty("chatSpamThresholdSeconds").GetInt32(),
+            configuration.ChatSpamThresholdSeconds);
         Assert.Equal(expected.GetProperty("commandSpamThresholdSeconds").GetInt32(),
             configuration.CommandSpamThresholdSeconds);
     }
@@ -603,7 +604,8 @@ public sealed class VanillaCommands26
         Assert.Equal(1, context.Result);
         var packet = Assert.Single(client.SentPackets.OfType<SwingAnimationPacket>());
         Assert.Equal(hand, packet.Hand);
-        Assert.Equal(fixture.GetProperty("swing_default").GetProperty("duration").GetInt32(), packet.Animation.Duration);
+        var swing = fixture.GetProperty("swing_default");
+        Assert.Equal(swing.GetProperty("duration").GetInt32(), packet.Animation.Duration);
         Assert.Equal(fixture.GetProperty("swing_default").GetProperty("type").GetString(),
             packet.Animation.Type.ToString().ToLowerInvariant());
     }
@@ -713,7 +715,8 @@ public sealed class VanillaCommands26
         Assert.Same(actual, nodes[actual.Index]);
         var executable = expected.TryGetProperty("executable", out var flag) && flag.GetBoolean();
         Assert.Equal(executable, actual.Type.HasFlag(CommandNodeType.IsExecutable));
-        Assert.Equal(expected.GetProperty("restricted").GetBoolean(), actual.Type.HasFlag(CommandNodeType.IsRestricted));
+        var restricted = expected.GetProperty("restricted").GetBoolean();
+        Assert.Equal(restricted, actual.Type.HasFlag(CommandNodeType.IsRestricted));
         var suggestion = expected.TryGetProperty("suggestions", out var provider) ? provider.GetString() : null;
         Assert.Equal(suggestion, actual.SuggestionType);
         Assert.Equal(suggestion is not null, actual.Type.HasFlag(CommandNodeType.HasSuggestions));

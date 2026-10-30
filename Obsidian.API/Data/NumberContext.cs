@@ -90,7 +90,9 @@ public sealed class ContextFloatProvider
 
     internal float Evaluate(NumberContext context) => this.evaluate(context);
 
-    /// <summary>Evaluates a command expression, preserving arithmetic failures and rejecting non-finite output.</summary>
+    /// <summary>
+    /// Evaluates a command expression, preserving arithmetic failures and rejecting non-finite output.
+    /// </summary>
     public float GetFloatOrThrow(NumberContext context)
     {
         var value = this.Evaluate(context);

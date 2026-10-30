@@ -64,9 +64,10 @@ public static class ConfigFiles
             IgnoreReadOnlyProperties = true
         };
 
+        var schemaFile = Path.GetFileName(path);
         var json = new JsonObject
         {
-            ["$schema"] = $"https://raw.githubusercontent.com/ObsidianMC/Obsidian/master/.schema/{Path.GetFileName(path)}"
+            ["$schema"] = $"https://raw.githubusercontent.com/ObsidianMC/Obsidian/master/.schema/{schemaFile}"
         };
 
         foreach (var property in JsonSerializer.SerializeToNode(configuration, options)!.AsObject())

@@ -224,7 +224,9 @@ internal static class CommandSlots
 
         public int Count => this.items.Count;
 
-        /// <summary>Vanilla's <c>canInsertNewSlots</c>: a bundle with room left, or fewer than 1024 projectiles.</summary>
+        /// <summary>
+        /// Vanilla's <c>canInsertNewSlots</c>: a bundle with room left, or fewer than 1024 projectiles.
+        /// </summary>
         public bool CanInsertNewSlots => this.IsBundle
             ? this.Weight(-1).Subtract(Bundles.Weight.One).Numerator < 0
             : this.items.Count < MaxChargedProjectiles;

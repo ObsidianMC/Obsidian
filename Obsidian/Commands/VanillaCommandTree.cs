@@ -17,7 +17,8 @@ internal static class VanillaCommandTree
 
     internal static bool Owns(Obsidian.API.Commands.Command command,
         IEnumerable<Obsidian.API.Commands.Command> commands) => command.PluginContainer is null
-        && command.Overloads.Concat(commands.Where(child => child.Parent == command).SelectMany(child => child.Overloads))
+        && command.Overloads
+        .Concat(commands.Where(child => child.Parent == command).SelectMany(child => child.Overloads))
         .OfType<CommandExecutor>().Any(executor => executor.ModuleType == (command.Name switch
         {
             "time" => typeof(TimeCommandModule),
@@ -184,7 +185,8 @@ internal static class VanillaCommandTree
 
         return parser switch
         {
-            "minecraft:slot_source" => Reference.GetProperty("slot_ranges").EnumerateObject().Select(range => range.Name),
+            "minecraft:slot_source" => Reference.GetProperty("slot_ranges").EnumerateObject()
+                .Select(range => range.Name),
             "minecraft:context_int_provider" => ContextNumberProviders.Ints.Keys,
             "minecraft:context_float_provider" => ContextNumberProviders.Floats.Keys,
             "minecraft:entity" => context.Server.OnlinePlayers.Values.Select(player => player.Username)

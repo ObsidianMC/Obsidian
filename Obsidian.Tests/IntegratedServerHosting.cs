@@ -62,7 +62,8 @@ public sealed class IntegratedServerHosting : IDisposable
     {
         var world = Path.Combine(this.root, "saves", "Publication");
         using var running = this.StartServer(world);
-        var ready = await running.WaitForEventAsync(line => line.Contains("\"event\":\"ready\"", StringComparison.Ordinal));
+        var ready = await running.WaitForEventAsync(
+            line => line.Contains("\"event\":\"ready\"", StringComparison.Ordinal));
         using var readyData = JsonDocument.Parse(ready["@obsidian:".Length..]);
         var localPort = readyData.RootElement.GetProperty("port").GetInt32();
         var service = running.Services.GetRequiredService<IntegratedServerService>();
