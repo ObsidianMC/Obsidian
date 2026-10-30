@@ -17,7 +17,16 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.item.equipment.trim.TrimMaterial;
 import net.minecraft.world.attribute.EnvironmentAttribute;
 import net.minecraft.world.attribute.EnvironmentAttributes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.flag.FeatureFlags;
+import net.minecraft.world.level.gamerules.GameRules;
+import net.minecraft.world.level.storage.loot.LootContext;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.resources.RegistryOps;
 
 /**
  * Captures transformer providers, mushroom survival, clocks/markers and item-supplied pottery/trim data.
@@ -279,6 +288,107 @@ class DataSystemsFixtures {
         return samples;
     }
 
+    // Only the world services are replaced; vanilla constructs and emits the actual item entities.
+    static class ResourceLevel extends ServerLevel {
+        RandomSource source;
+        GameRules rules;
+        JsonArray drops;
+
+        ResourceLevel() {
+            super(null, null, null, null, null, null, false, 0, null, false);
+        }
+
+        @Override public RandomSource getRandom() {
+            return source;
+        }
+
+        @Override public int getNextEntityId() {
+            return 1;
+        }
+
+        @Override public GameRules getGameRules() {
+            return rules;
+        }
+
+        @Override public RegistryAccess registryAccess() {
+            return access;
+        }
+
+        @Override public net.minecraft.world.flag.FeatureFlagSet enabledFeatures() {
+            return FeatureFlags.DEFAULT_FLAGS;
+        }
+
+        @Override public boolean addFreshEntity(Entity entity) {
+            var item = (ItemEntity)entity;
+            var drop = new JsonObject();
+            drop.addProperty("item", BuiltInRegistries.ITEM.getKey(item.getItem().getItem()).toString());
+            drop.addProperty("count", item.getItem().getCount());
+            drop.add("position", vector(item.position()));
+            drop.add("motion", vector(item.getDeltaMovement()));
+            drops.add(drop);
+            return true;
+        }
+    }
+
+    static JsonArray vector(Vec3 value) {
+        var result = new JsonArray();
+        result.add(value.x);
+        result.add(value.y);
+        result.add(value.z);
+        return result;
+    }
+
+    static JsonArray resourceDrops() throws Exception {
+        var unsafeField = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
+        unsafeField.setAccessible(true);
+        var unsafe = (sun.misc.Unsafe)unsafeField.get(null);
+        var samples = new JsonArray();
+        var ops = RegistryOps.create(JsonOps.INSTANCE, access);
+        var pack = net.minecraft.server.packs.repository.ServerPacksSource.createVanillaPackSource().fullResources();
+
+        try (pack) {
+            var hoe = access.lookupOrThrow(Registries.BLOCK_TRANSFORMER)
+                .getValue(net.minecraft.resources.Identifier.parse("minecraft:hoe"));
+            var id = hoe.transforms().stream()
+                .flatMap(transform -> transform.loot().stream())
+                .findFirst().orElseThrow().identifier();
+            var path = id.withPath("loot_table/" + id.getPath() + ".json");
+            var resource = pack.getResource(net.minecraft.server.packs.PackType.SERVER_DATA, path);
+            JsonElement json;
+            try (var reader = new java.io.InputStreamReader(resource.get())) {
+                json = JsonParser.parseReader(reader);
+            }
+            var table = LootTable.DIRECT_CODEC.parse(ops, json).getOrThrow();
+            var constructor = LootContext.class.getDeclaredConstructor(
+                LootParams.class, RandomSource.class, HolderGetter.Provider.class);
+            constructor.setAccessible(true);
+
+            for (var face : Direction.values()) {
+                long seed = 42;
+                var level = (ResourceLevel)unsafe.allocateInstance(ResourceLevel.class);
+                level.source = RandomSource.create(seed);
+                level.rules = new GameRules(FeatureFlags.DEFAULT_FLAGS);
+                level.drops = new JsonArray();
+                var params = new LootParams.Builder(level)
+                    .withParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_STATE,
+                        Blocks.ROOTED_DIRT.defaultBlockState())
+                    .withParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.ORIGIN, Vec3.ZERO)
+                    .create(net.minecraft.world.level.storage.loot.parameters.LootContextParamSets.BLOCK_INTERACT);
+                var context = constructor.newInstance(params, RandomSource.create(seed), access);
+                table.getRandomItems(context,
+                    stack -> Block.popResourceFromFace(level, BlockPos.ZERO, face, stack));
+
+                var sample = new JsonObject();
+                sample.addProperty("loot", id.toString());
+                sample.addProperty("face", face.getSerializedName());
+                sample.addProperty("seed", seed);
+                sample.add("drops", level.drops);
+                samples.add(sample);
+            }
+        }
+        return samples;
+    }
+
     static JsonArray chestUses() {
         var samples = new JsonArray();
         for (var block : BuiltInRegistries.BLOCK) {
@@ -350,6 +460,7 @@ class DataSystemsFixtures {
         result.add("tracks", tracks());
         result.add("pottery", pottery());
         result.add("trims", trims());
+        result.add("resource_drops", resourceDrops());
         result.add("chest_uses", chestUses());
         result.add("sleep_clocks", sleepClocks());
 

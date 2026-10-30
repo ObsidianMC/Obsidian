@@ -5,6 +5,7 @@ using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.API.Utilities;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Nbt;
@@ -63,6 +64,10 @@ public sealed class DataSystems
     private sealed record ChestCase(JsonElement Input, bool Consumes);
 
     private sealed record SleepClockCase(string Clock, long Time, ClockStateCase After);
+
+    private sealed record ResourceCase(string Loot, string Face, long Seed, DropCase[] Drops);
+
+    private sealed record DropCase(string Item, int Count, double[] Position, double[] Motion);
 
     private static JsonElement LoadCapture()
     {
@@ -233,17 +238,26 @@ public sealed class DataSystems
         }
     }
 
-    [Fact]
-    public async Task TransformerUseCommitsCapturedStateAndDamage()
+    [Theory]
+    [InlineData("down")]
+    [InlineData("up")]
+    [InlineData("north")]
+    [InlineData("south")]
+    [InlineData("west")]
+    [InlineData("east")]
+    public async Task TransformerUseCommitsCapturedStateAndDamage(string faceName)
     {
         // Prepare a real packet use from a captured rooted-dirt case.
         var sample = Cases<TransformerCase>("transformers").First(row =>
             row.Transformer == "minecraft:hoe"
             && row.Input.GetProperty("id").GetString() == "minecraft:rooted_dirt"
             && row.Above == "minecraft:stone"
-            && row.Face == "down");
+            && row.Face == faceName);
+        var resources = Cases<ResourceCase>("resource_drops").Single(row =>
+            row.Loot == sample.Loot && row.Face == faceName);
         await using var context = TestServerFactory.CreateServer($"transformer-{Guid.NewGuid():N}");
         var world = context.World;
+        world.GrowthRandom = new LegacyRandomSource(resources.Seed);
         var position = new Vector(8, 70, 8);
         AddChunk(world);
         var input = ItemUseOnBehaviors.ReadState(sample.Input);
@@ -256,7 +270,8 @@ public sealed class DataSystems
         player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.IronHoe));
 
         // Run the serverbound packet, including component lookup and inventory wear.
-        var packet = BlockUpdates.UseOn(position, BlockFace.Down);
+        var face = Enum.Parse<BlockFace>(faceName, ignoreCase: true);
+        var packet = BlockUpdates.UseOn(position, face);
         await packet.HandleAsync(context.Server, player);
 
         // The committed block and wear must agree with the captured transformer.
@@ -268,9 +283,26 @@ public sealed class DataSystems
 
         // Publish queued item entities before checking the interaction's loot.
         await world.DoWorldTickAsync();
-        var drops = world.GetNonPlayerEntitiesInRange((VectorD)position, 3).OfType<Entities.ItemEntity>();
-        Assert.Contains(drops, entity =>
-            entity.Item.Holder == ItemsRegistry.HangingRoots);
+        var drops = world.GetNonPlayerEntitiesInRange((VectorD)position, 3)
+            .OfType<Entities.ItemEntity>().ToArray();
+        Assert.Equal(resources.Drops.Length, drops.Length);
+
+        for (var index = 0; index < drops.Length; index++)
+        {
+            var expectedDrop = resources.Drops[index];
+            var drop = drops[index];
+            Assert.Equal(expectedDrop.Item, drop.Item.Holder.UnlocalizedName);
+            Assert.Equal(expectedDrop.Count, drop.Item.Count);
+            AssertVector(expectedDrop.Position, drop.Position - (VectorD)position);
+            AssertVector(expectedDrop.Motion, drop.Motion);
+        }
+    }
+
+    private static void AssertVector(double[] expected, VectorD actual)
+    {
+        Assert.Equal(expected[0], actual.X, precision: 12);
+        Assert.Equal(expected[1], actual.Y, precision: 12);
+        Assert.Equal(expected[2], actual.Z, precision: 12);
     }
 
     [Theory]
