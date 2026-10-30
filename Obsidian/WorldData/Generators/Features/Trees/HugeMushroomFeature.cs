@@ -6,11 +6,14 @@ namespace Obsidian.WorldData.Generators.Features.Trees;
 
 /// <summary>
 /// 26.3's huge red and brown mushrooms: a stem four to six blocks tall (doubled one time in twelve) under a cap, on a
-/// block <c>can_place_on</c> accepts, where the space around stem and cap is air or leaves. Mushroom blocks replace
-/// only air and <c>#replaceable_by_mushrooms</c>.
+/// block <c>can_place_on</c> accepts, where the stem's column is air or leaves, and for brown mushrooms the space
+/// around the stem from its fifth block up. Mushroom blocks replace only air and <c>#replaceable_by_mushrooms</c>.
 /// </summary>
 internal abstract class HugeMushroomFeature
 {
+    // The height vanilla validates the space with, instead of the stem's: no y is in a red cap's rows below it.
+    private const int ClearanceHeight = -1;
+
     private readonly StateProvider stemProvider;
     private readonly BlockPredicate canPlaceOn;
     private readonly HashSet<int> leaves;
@@ -108,7 +111,8 @@ internal abstract class HugeMushroomFeature
 
         for (var y = 0; y <= height; y++)
         {
-            var radius = this.RadiusForHeight(height, y);
+            // Red mushrooms only check their stem's column; their cap may replace what it finds.
+            var radius = this.RadiusForHeight(ClearanceHeight, y);
 
             for (var dx = -radius; dx <= radius; dx++)
             {
