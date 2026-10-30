@@ -79,6 +79,7 @@ internal static partial class BlockLoot
 
             return table.GetRandomItems(new LootContext
             {
+                EntityVillagerVariant = LootEntityComponents.VillagerVariant,
                 Random = random,
                 Tool = tool ?? new ItemStack(ItemsRegistry.Air, 0),
                 BlockState = block,

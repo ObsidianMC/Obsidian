@@ -44,6 +44,9 @@ public sealed record TradeEntry : INetworkSerializable<TradeEntry>
     /// </summary>
     public int XP { get; set; }
 
+    /// <summary>Whether completing this offer rewards the player with experience orbs.</summary>
+    public bool RewardExp { get; set; } = true;
+
     /// <summary>
     /// Used in calculating the final price. Can be zero or negative.
     /// </summary>

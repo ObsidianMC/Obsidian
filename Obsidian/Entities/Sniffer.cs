@@ -90,7 +90,14 @@ public sealed partial class Sniffer : FarmAnimal
     internal void DropSeed()
     {
         var table = LootTables.All["minecraft:gameplay/sniffer_digging"];
-        foreach (var item in table.GetRandomItems(new LootContext { Random = table.CreateRandom(Random.NextInt64()), Origin = Position, ThisEntity = this }))
+        var context = new LootContext
+        {
+            Random = table.CreateRandom(Random.NextInt64()),
+            Origin = Position,
+            ThisEntity = this,
+            EntityVillagerVariant = LootEntityComponents.VillagerVariant
+        };
+        foreach (var item in table.GetRandomItems(context))
             DropItem(item);
     }
 

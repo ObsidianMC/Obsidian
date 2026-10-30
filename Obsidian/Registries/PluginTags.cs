@@ -38,7 +38,8 @@ internal static partial class PluginTags
     /// The registries plugins' tags may be for.
     /// </summary>
     public static FrozenSet<string> Registries { get; } =
-        FrozenSet.Create("block", "item", "entity_type", Biome, PlacedFeature, ConfiguredCarver, Structure);
+        FrozenSet.Create("block", "item", "entity_type", "potion", "enchantment", Biome,
+            PlacedFeature, ConfiguredCarver, Structure);
 
     // Worldgen registries that aren't synced and have no ids: their tags hold identifiers, and aren't sent to clients.
     private static readonly FrozenSet<string> identifierRegistries =
@@ -538,6 +539,18 @@ internal static partial class PluginTags
 
                 case "item":
                     return ItemsRegistry.TryGet(identifier, out var item) ? item.Id : null;
+
+                case "enchantment":
+                    return EnchantmentsRegistry.All.FirstOrDefault(value => value.Identifier == identifier)?.Id;
+
+                case "potion":
+                    if (!identifier.StartsWith("minecraft:", StringComparison.Ordinal))
+                        return null;
+
+                    var potionName = identifier["minecraft:".Length..].Replace("_", "");
+                    return Enum.TryParse<Potion>(potionName, true, out var potion) && Enum.IsDefined(potion)
+                        ? (int)potion
+                        : null;
 
                 case Biome:
                     return CodecRegistry.TryGetBiome(identifier, out var biome) ? biome!.Id : null;

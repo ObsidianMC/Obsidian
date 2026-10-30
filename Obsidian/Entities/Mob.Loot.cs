@@ -64,6 +64,7 @@ public partial class Mob
         var recipes = (this.Level as AbstractLevel)?.CookingRecipes;
         return new LootContext
         {
+            EntityVillagerVariant = LootEntityComponents.VillagerVariant,
             Random = random ?? table.CreateRandom(0, BlockLoot.SequencesFor(this.Level)),
             Luck = player?.GetAttributeValue("minecraft:luck") ?? 0,
             Origin = this.Position,

@@ -107,9 +107,9 @@ Source: `Entities/Wither.cs`, `Entities/EnderDragon.cs`, `Entities/Warden.cs`, t
 
 | Mob/system | Missing or approximate behavior |
 | --- | --- |
-| Villager | Full profession offer pools/random selection and component-sensitive enchanted, dyed and explorer-map trades. Gossip/reputation/cure/Hero discounts; full schedules, POI competition, food inventory/sharing, farming, breeding, village golem spawning, social behavior and hero gifts. Restock/work/sleep behavior uses a reduced model. |
+| Villager | Explorer-map trades find structures with Obsidian's 1.21.11-based worldgen. Gossip/reputation/cure/Hero discounts; full schedules, POI competition, food inventory/sharing, farming, breeding, village golem spawning, social behavior and hero gifts. Restock/work/sleep behavior uses a reduced model. |
 | Zombie Villager | Full gossip/offer/discount transfer through infection and cure; cure-player reputation and complete equipment/conversion rules. Copying villager data and XP does not restore the full merchant state. |
-| Wandering Trader | Complete randomized offer selection, potion/enchanted-tool components and vanilla wander/avoid/drink/despawn interaction rules. |
+| Wandering Trader | Vanilla wander/avoid/drink/despawn interaction rules. |
 | Trader Llama | Actual trader leash, detachment/lead drops and caravan behavior; full trader-linked despawn/taming/loading rules. |
 | Raids | Exact wave bonuses, mounted raiders, equipment progression, captain banner components/replacement, witch support, celebration and village/raid-center rules. Nearby loaded raiders determine wave completion, so unloaded or distant raiders are not tracked with vanilla semantics. |
 | Patrols | Full patrol leader/follower navigation, recruitment, biome exclusions and placement rules. Captain equipment is a plain white banner rather than the full ominous banner. |

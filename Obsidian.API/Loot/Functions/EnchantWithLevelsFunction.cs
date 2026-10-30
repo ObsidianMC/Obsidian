@@ -1,4 +1,6 @@
+using System.Text.Json;
 using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Loot.Numbers;
 using Obsidian.API.Registries;
 
@@ -17,10 +19,25 @@ public sealed class EnchantWithLevelsFunction : LootFunction
     /// </summary>
     public ImmutableArray<EnchantmentDefinition>? Options { get; init; }
 
+    internal JsonElement? OptionsSet { get; init; }
+
+    /// <summary>
+    /// Adds the levels to the price of a trade selling the stack, when the context allows it
+    /// (<see cref="LootContext.AdditionalCostComponentAllowed"/>).
+    /// </summary>
+    public bool IncludeAdditionalCostComponent { get; init; }
+
     protected override ItemStack Run(ItemStack stack, LootContext context)
     {
         var levels = this.Levels.GetInt(context);
-        IReadOnlyList<EnchantmentDefinition> options = this.Options.HasValue ? this.Options.Value : EnchantmentsRegistry.All;
-        return EnchantmentHelper.EnchantItem(context.Random, stack, levels, options);
+        var resolved = LootTableJson.ReadEnchantmentOptions(this.OptionsSet) ?? this.Options;
+        IReadOnlyList<EnchantmentDefinition> options = resolved.HasValue ? resolved.Value : EnchantmentsRegistry.All;
+        var enchanted = EnchantmentHelper.EnchantItem(context.Random, stack, levels, options);
+
+        var addsCost = this.IncludeAdditionalCostComponent && context.AdditionalCostComponentAllowed;
+        if (addsCost && !LootItems.IsEmpty(enchanted) && levels > 0)
+            LootItems.Set(enchanted, ComponentBuilder.AdditionalTradeCost with { Value = levels });
+
+        return enchanted;
     }
 }

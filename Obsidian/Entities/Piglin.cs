@@ -135,7 +135,14 @@ public sealed partial class Piglin : PathfinderMob, IAgeable
                 {
                     SetEquipment(EquipmentSlot.OffHand, ItemStack.Air);
                     var table = LootTables.All["minecraft:gameplay/piglin_bartering"];
-                    foreach (var stack in table.GetRandomItems(new LootContext { Random = table.CreateRandom(Random.NextInt64()), Origin = Position, ThisEntity = this }))
+                    var context = new LootContext
+                    {
+                        Random = table.CreateRandom(Random.NextInt64()),
+                        Origin = Position,
+                        ThisEntity = this,
+                        EntityVillagerVariant = LootEntityComponents.VillagerVariant
+                    };
+                    foreach (var stack in table.GetRandomItems(context))
                         DropItem(stack);
                 }
                 SynchronizeMetadata();

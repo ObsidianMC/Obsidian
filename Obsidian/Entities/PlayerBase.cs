@@ -311,6 +311,9 @@ public abstract partial class PlayerBase : Avatar, IPlayer
         if (!this.Alive)
             return;
 
+        if (OpenedContainer is MerchantContainer previousMerchant)
+            await previousMerchant.CloseAsync(this, notify: false);
+
         if (OpenedContainer is EnchantmentTable previousTable)
             await Obsidian.Events.MainEventHandler.ReturnEnchantingItemsAsync(this, previousTable);
         if (Obsidian.Events.MainEventHandler.HoldsItemsWhileOpen(OpenedContainer))
@@ -456,6 +459,9 @@ public abstract partial class PlayerBase : Avatar, IPlayer
             return;
 
         var containerId = this.CurrentContainerId;
+        if (container is MerchantContainer merchant)
+            await merchant.CloseAsync(this, notify: false);
+
         var closed = new ContainerClosedEventArgs(this, this.Server, container, containerId);
 
         if (unloading is not null && this.EventDispatcher is EventDispatcher dispatcher)

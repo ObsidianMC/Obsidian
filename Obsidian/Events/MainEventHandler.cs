@@ -113,6 +113,9 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
         var player = e.Player;
 
+        if (player.Alive && e.Container is MerchantContainer merchant)
+            await merchant.CloseAsync(player, notify: false);
+
         if (player.Alive && e.Container is CraftingTable { Type: InventoryType.Crafting })
             await ReturnCraftingItemsAsync(player, e.Container, 3);
         if (player.Alive && e.Container is EnchantmentTable enchantingTable)
@@ -530,6 +533,9 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
     {
         var player = e.Player;
         var server = e.Server;
+
+        if (player.OpenedContainer is MerchantContainer merchant)
+            await merchant.CloseAsync(player, notify: false);
 
         if (player.OpenedContainer is CraftingTable { Type: InventoryType.Crafting } table)
             await ReturnCraftingItemsAsync(player, table, 3);

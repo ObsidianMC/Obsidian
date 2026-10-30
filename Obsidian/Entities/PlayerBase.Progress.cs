@@ -245,6 +245,7 @@ public partial class PlayerBase
 
             var context = new LootContext
             {
+                EntityVillagerVariant = LootEntityComponents.VillagerVariant,
                 Random = table.CreateRandom(0),
                 ThisEntity = this,
                 Origin = this.Position,

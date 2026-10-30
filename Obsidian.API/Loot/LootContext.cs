@@ -78,6 +78,18 @@ public sealed class LootContext
     /// </summary>
     internal Func<IEntity, bool?>? EntityFishingOpenWater { get; init; }
 
+    /// <summary>
+    /// The villager variant (<c>minecraft:villager/variant</c>, like <c>minecraft:plains</c>) of an entity, for
+    /// component predicates, or null when the entity has none.
+    /// </summary>
+    internal Func<IEntity, string?>? EntityVillagerVariant { get; init; }
+
+    /// <summary>
+    /// Whether enchanting modifiers may add an additional trade cost to the item (vanilla's
+    /// <c>additional_cost_component_allowed</c> parameter), as merchants' trade drawing allows.
+    /// </summary>
+    public bool AdditionalCostComponentAllowed { get; init; }
+
     /// <summary>The identifier of the biome at a position, for biome location checks, or null when it is not loaded.</summary>
     internal Func<VectorD, string?>? OriginBiome { get; init; }
 

@@ -13,23 +13,41 @@ public partial class Mob
     private NbtCompound? originalSave;
     protected virtual void WriteAdditionalSave(INbtWriter writer) { }
     protected virtual void ReadAdditionalSave(NbtCompound tag) { }
-    private static readonly HashSet<string> saveFields = ["id", "UUID", "Pos", "Motion", "Rotation", "Health", "AbsorptionAmount", "Air", "Fire", "OnGround", "TicksFrozen", "FallDistance",
-        "NoAI", "LeftHanded", "CanPickUpLoot", "PersistenceRequired", "Silent", "NoGravity", "Glowing", "CustomNameVisible", "CustomName",
-        "attributes", "ObsidianEquipment", "Age", "InLove", "IsBaby", "ObsidianVariant", "Type", "EggLayTime", "IsChickenJockey", "Color",
-        "Sheared", "sheared", "Size", "powered", "ignited", "Fuse", "ExplosionRadius", "ObsidianEffects", "InWaterTime",
-        "DrownedConversionTime", "StrayConversionTime", "ObsidianPowderSnowTicks", "ObsidianStewEffect", "CanBreakDoors", "ObsidianReinforcementChance",
-        "Tame", "Temper", "Owner", "EatingHaystack", "Bred", "Variant", "PlayerCreated", "Trusting", "Sitting", "variant",
-        "CollarColor", "LastPoseTick", "ObsidianDashCooldown", "AngerTime", "Pumpkin", "ObsidianCarriedBlock", "sound_variant", "AngryAt", "carriedBlockState",
-        "BatFlags", "DarkTicksRemaining", "FromBucket", "ObsidianPregnant", "ObsidianPlayDead", "ObsidianHuntingCooldown", "ObsidianDryTicks",
-        "HasNectar", "HasStung", "ObsidianStingTicks", "ObsidianHivePos", "ObsidianFlowerPos", "GotFish", "Moistness", "ObsidianTreasurePos",
-        "Sleeping", "ObsidianTrusted", "ObsidianSecondTrusted", "ObsidianBreedingPlayer", "IsScreamingGoat", "HasLeftHorn", "HasRightHorn",
-        "ObsidianRamCooldown", "ObsidianLongJumpCooldown", "MainGene", "HiddenGene", "ObsidianEatingTicks", "SkeletonTrap", "SkeletonTrapTime",
+    private static readonly HashSet<string> saveFields =
+    [
+        "id", "UUID", "Pos", "Motion", "Rotation", "Health", "AbsorptionAmount", "Air", "Fire", "OnGround",
+        "TicksFrozen", "FallDistance", "NoAI", "LeftHanded", "CanPickUpLoot", "PersistenceRequired", "Silent",
+        "NoGravity", "Glowing", "CustomNameVisible", "CustomName", "attributes", "ObsidianEquipment", "Age",
+        "InLove", "IsBaby", "ObsidianVariant", "Type", "EggLayTime", "IsChickenJockey", "Color", "Sheared",
+        "sheared", "Size", "powered", "ignited", "Fuse", "ExplosionRadius", "ObsidianEffects", "InWaterTime",
+        "DrownedConversionTime", "StrayConversionTime", "ObsidianPowderSnowTicks", "ObsidianStewEffect",
+        "CanBreakDoors", "ObsidianReinforcementChance", "Tame", "Temper", "Owner", "EatingHaystack", "Bred",
+        "Variant", "PlayerCreated", "Trusting", "Sitting", "variant", "CollarColor", "LastPoseTick",
+        "ObsidianDashCooldown", "AngerTime", "Pumpkin", "ObsidianCarriedBlock", "sound_variant", "AngryAt",
+        "carriedBlockState", "BatFlags", "DarkTicksRemaining", "FromBucket", "ObsidianPregnant",
+        "ObsidianPlayDead", "ObsidianHuntingCooldown", "ObsidianDryTicks", "HasNectar", "HasStung",
+        "ObsidianStingTicks", "ObsidianHivePos", "ObsidianFlowerPos", "GotFish", "Moistness",
+        "ObsidianTreasurePos", "Sleeping", "ObsidianTrusted", "ObsidianSecondTrusted", "ObsidianBreedingPlayer",
+        "IsScreamingGoat", "HasLeftHorn", "HasRightHorn", "ObsidianRamCooldown", "ObsidianLongJumpCooldown",
+        "MainGene", "HiddenGene", "ObsidianEatingTicks", "SkeletonTrap", "SkeletonTrapTime",
         "ObsidianSkeletonRider", "ChestedHorse", "Strength", "Lifetime", "Johnny", "type", "PuffState",
-        "IsImmuneToZombification", "CannotBeHunted", "TimeInOverworld", "RabbitType", "life_ticks", "bound_pos", "owner", "AttackTick", "StunTick", "RoarTick", "SpellTicks", "size", "anchor_pos", "ObsidianDrinkTicks", "ObsidianDrinkEffect", "ObsidianAdmireTicks", "AttachFace", "Peek",
-        "DuplicationCooldown", "ObsidianLikedPlayer", "ObsidianCollected", "state", "scute_time", "ObsidianDigCooldown", "ObsidianExplored",
-        "Suffocating", "weather_state", "next_weather_age", "home_pos", "has_egg", "Invul", "DragonPhase", "DragonDeathTime", "ObsidianPreviouslyKilled", "ObsidianDragonArena",
-        "ObsidianWardenIdle", "ObsidianWardenPoseTicks", "ObsidianWardenPose", "ObsidianWardenSonicCooldown", "ObsidianWardenSonicTicks", "ObsidianWardenAnger",
-        "ObsidianWardenSniffCooldown", "ObsidianWardenVibrationCooldown", "ObsidianWardenMeleeCooldown", "ObsidianWardenTouchCooldown", "ObsidianPhaseTicks", "ObsidianFlameCount", "ObsidianFlightPoint", "ObsidianSittingDamage", "ObsidianDestination", "DespawnDelay", "ObsidianTrader", "ConversionTime", "ConversionPlayer", "Xp", "WanderTarget", "ObsidianWitherHeadTimers", "ObsidianWitherIdleShots", "ObsidianWitherBreakTicks", "VillagerData", "ObsidianTradingLevel", "RestocksToday", "LastRestock", "ObsidianRestockDay", "ObsidianHome", "ObsidianJobSite", "ObsidianOffers", "ObsidianNoteBlockTicks", "ObsidianThrowCooldown", "ObsidianNoteBlock", "still_timeout", "ObsidianBoostTicks", "ObsidianBoostDuration", "ObsidianWardenProjectileMemory"];
+        "IsImmuneToZombification", "CannotBeHunted", "TimeInOverworld", "RabbitType", "life_ticks", "bound_pos",
+        "owner", "AttackTick", "StunTick", "RoarTick", "SpellTicks", "size", "anchor_pos", "ObsidianDrinkTicks",
+        "ObsidianDrinkEffect", "ObsidianAdmireTicks", "AttachFace", "Peek", "DuplicationCooldown",
+        "ObsidianLikedPlayer", "ObsidianCollected", "state", "scute_time", "ObsidianDigCooldown",
+        "ObsidianExplored", "Suffocating", "weather_state", "next_weather_age", "home_pos", "has_egg", "Invul",
+        "DragonPhase", "DragonDeathTime", "ObsidianPreviouslyKilled", "ObsidianDragonArena",
+        "ObsidianWardenIdle", "ObsidianWardenPoseTicks", "ObsidianWardenPose", "ObsidianWardenSonicCooldown",
+        "ObsidianWardenSonicTicks", "ObsidianWardenAnger", "ObsidianWardenSniffCooldown",
+        "ObsidianWardenVibrationCooldown", "ObsidianWardenMeleeCooldown", "ObsidianWardenTouchCooldown",
+        "ObsidianPhaseTicks", "ObsidianFlameCount", "ObsidianFlightPoint", "ObsidianSittingDamage",
+        "ObsidianDestination", "DespawnDelay", "ObsidianTrader", "ConversionTime", "ConversionPlayer", "Xp",
+        "WanderTarget", "ObsidianWitherHeadTimers", "ObsidianWitherIdleShots", "ObsidianWitherBreakTicks",
+        "VillagerData", "Offers", "ObsidianTradingLevel", "RestocksToday", "LastRestock", "ObsidianRestockDay",
+        "ObsidianHome", "ObsidianJobSite", "ObsidianOffers", "ObsidianNoteBlockTicks", "ObsidianThrowCooldown",
+        "ObsidianNoteBlock", "still_timeout", "ObsidianBoostTicks", "ObsidianBoostDuration",
+        "ObsidianWardenProjectileMemory"
+    ];
     internal void WriteSave(INbtWriter writer, bool writeCompound = true)
     {
         if (writeCompound)

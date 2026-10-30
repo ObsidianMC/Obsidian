@@ -339,8 +339,13 @@ in the parts we model.
    - required cooking times, with speed from fuel components, replacing `FurnaceFuels`;
    - composting, villager food and mob visibility from components;
    - `crafting_dye`, `crafting_imbue`, and transmute map cloning.
-4. **Trades.** Trades, trade sets and trade tags, with world-seeded random sequences. That draw order is a parity
-   point and needs a capture.
+4. **Trades — complete.** Villagers and wandering traders draw their offers from the 26.3 trades and trade sets.
+   The generator expands the trade tags (the `villager_trade` registry and its tags stay server-side). Each trade
+   set draws from the world's random sequence it names, in vanilla's order, through the shared context number
+   providers and the loot modifiers trades use (random dyes and potions, enchanting with an additional trade cost,
+   filtered discards). `TradeFixtures.java` captures vanilla's offers for two seeds across every profession and
+   level, villager types and wandering traders; `VillagerTrades` replays them, and saved offers keep their cost
+   components.
 5. **Other systems:**
    - World clocks and timelines
    - Entity sub-predicates: namespaced map format complete with loot (step 1); unsupported predicate kinds remain gaps.

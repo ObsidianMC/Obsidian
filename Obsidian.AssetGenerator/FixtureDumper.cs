@@ -35,6 +35,8 @@ internal static class FixtureDumper
             Path.Combine(output, $"join-payloads-{server.Version}.json"), Path.Combine(output, "synced_registries.json"));
         await VanillaServer.RunJavaAsync(server.Directory, "-cp", classpath, Source("DataSystemsFixtures.java"),
             Path.Combine(output, $"data-systems-{server.Version}.json"));
+        await VanillaServer.RunJavaAsync(server.Directory, "-cp", classpath, Source("TradeFixtures.java"),
+            Path.Combine(output, $"villager-trades-{server.Version}.json"));
     }
 
     public static async Task DumpClientAsync(VanillaServer server, IReadOnlyList<string> classpath, string output)

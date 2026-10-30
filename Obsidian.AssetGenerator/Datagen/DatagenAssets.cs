@@ -60,6 +60,7 @@ internal static class DatagenAssets
         WriteJson(Path.Combine(outputDirectory, "block_transformer_loot.json"), tillTables);
 
         WriteTags(Path.Combine(data, "tags"), outputDirectory);
+        TradeAssets.Write(data, outputDirectory);
         CodecAssets.Write(data, outputDirectory);
     }
 

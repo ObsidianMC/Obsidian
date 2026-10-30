@@ -323,7 +323,8 @@ public class VanillaLoot
         _ => new NbtTag<float>(name, value.GetSingle())
     };
 
-    private static NbtCompound CapturedCompound(string name, JsonElement value)
+    // A vanilla codec JSON value as NBT, for the item readers.
+    internal static NbtCompound CapturedCompound(string name, JsonElement value)
     {
         var compound = new NbtCompound(name);
         foreach (var property in value.EnumerateObject())

@@ -2,6 +2,7 @@ using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Maps;
 
 namespace Obsidian.Entities;
 
@@ -101,18 +102,31 @@ public sealed partial class Villager : AgeableMob
             return true;
 
         EnsureTrades();
-        await MerchantTrading.OpenAsync(this, player, offers, VillagerLevel, VillagerXp, true, offer =>
-        {
-            VillagerXp += offer.XP;
-            var newLevel = VillagerXp >= 250 ? 5 : VillagerXp >= 150 ? 4 : VillagerXp >= 70 ? 3 : VillagerXp >= 10 ? 2 : 1;
-            if (newLevel > VillagerLevel)
-            {
-                VillagerLevel = newLevel;
-                Health = GetAttributeValue("minecraft:generic.max_health");
-                SynchronizeMetadata();
-            }
-        });
+        await MerchantTrading.OpenAsync(this, player, offers, VillagerLevel, VillagerXp, true, CompleteTrade);
         return true;
+    }
+
+    private MerchantTradeUpdate CompleteTrade(TradeEntry offer)
+    {
+        VillagerXp += offer.XP;
+        var nextLevelXp = VillagerLevel switch
+        {
+            1 => 10,
+            2 => 70,
+            3 => 150,
+            4 => 250,
+            _ => int.MaxValue
+        };
+        if (VillagerLevel < 5 && VillagerXp >= nextLevelXp)
+        {
+            // Vanilla increases the career once per trade, then draws that level before updating the open menu.
+            VillagerLevel++;
+            EnsureTrades();
+            Health = GetAttributeValue("minecraft:generic.max_health");
+            SynchronizeMetadata();
+        }
+
+        return new MerchantTradeUpdate(offers, VillagerLevel, VillagerXp);
     }
 
     private async ValueTask TickVillageAsync(AbstractLevel level)
@@ -233,15 +247,25 @@ public sealed partial class Villager : AgeableMob
         }
     }
 
+    // Draws the offers of each level reached since the last draw, from the profession's trade set for that level.
     private void EnsureTrades()
     {
         if (VillagerProfession is <= 0 or 11 or > 14)
             return;
+
+        var profession = Professions[VillagerProfession];
+        var sequences = BlockLoot.SequencesFor(Level);
+        var explorationMaps = ExplorationMaps.For(Level);
+
+        var drawn = new List<TradeEntry>();
         while (tradingLevel < VillagerLevel)
         {
             tradingLevel++;
-            offers = offers.AddRange(VillagerTrades.ForLevel(VillagerProfession, tradingLevel));
+            var tradeSet = VillagerTrades.LevelTradeSet(profession, tradingLevel);
+            VillagerTrades.AddOffers(tradeSet, this, sequences, explorationMaps, drawn);
         }
+
+        offers = offers.AddRange(drawn);
     }
 
     public override void Write(INetStreamWriter writer)
@@ -289,7 +313,10 @@ public sealed partial class Villager : AgeableMob
         }
         VillagerXp = tag.TryGetTagValue<int>("Xp", out var xp) ? Math.Max(0, xp) : 0;
         offers = MerchantOffers.Read(tag);
-        tradingLevel = tag.TryGetTagValue<int>("ObsidianTradingLevel", out var unlocked) ? Math.Clamp(unlocked, 0, 5) : offers.IsEmpty ? 0 : VillagerLevel;
+        if (tag.TryGetTagValue<int>("ObsidianTradingLevel", out var unlocked))
+            tradingLevel = Math.Clamp(unlocked, 0, 5);
+        else
+            tradingLevel = tag.HasTag("ObsidianOffers") || tag.HasTag("Offers") ? VillagerLevel : 0;
         restocks = tag.TryGetTagValue<int>("RestocksToday", out var stock) ? Math.Clamp(stock, 0, 2) : 0;
         if (tag.TryGetTagValue<long>("LastRestock", out var last))
             lastRestock = last;
@@ -317,7 +344,7 @@ public sealed partial class Villager : AgeableMob
     internal void RestoreVillagerOffers(NbtCompound tag)
     {
         offers = MerchantOffers.Read(tag);
-        if (!offers.IsEmpty)
+        if (tag.HasTag("ObsidianOffers") || tag.HasTag("Offers"))
             tradingLevel = VillagerLevel;
     }
 
