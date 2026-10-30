@@ -9,6 +9,7 @@ public sealed record class MapDecorationDataComponent : DataComponent
     private ComponentValueKey Comparison => new(new object?[]
     {
         this.decorations.OrderBy(entry => entry.Key, StringComparer.Ordinal)
+            .Select(entry => (entry.Key, entry.Value))
     });
 
     public bool Equals(MapDecorationDataComponent? other) => ReferenceEquals(this, other)

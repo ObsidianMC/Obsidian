@@ -33,7 +33,22 @@ internal sealed class ComponentValueKey : IEquatable<ComponentValueKey>
     {
         null => null,
         string => value,
+        float number => ComponentFloatingPoint.Key(number),
+        double number => ComponentFloatingPoint.Key(number),
         ITuple tuple => Enumerable.Range(0, tuple.Length).Select(index => Key(tuple[index])).ToArray(),
+        ToolRule rule => Key((rule.Blocks, rule.Speed, rule.CorrectDropForBlocks)),
+        AttributeModifier modifier => Key((
+            modifier.Id,
+            modifier.Uuid,
+            modifier.Name,
+            modifier.Value,
+            modifier.Operation,
+            modifier.Slot)),
+        MapDecoration decoration => Key((decoration.Type, decoration.X, decoration.Z, decoration.Rotation)),
+        SoundEvent sound => Key((sound.ResourceLocation, sound.FixedRange, sound.RegistryId)),
+        ComponentFloatValue number => Key((number.Constant, number.Provider)),
+        FuelComponentData fuel => Key((fuel.Amount, fuel.SpeedMultiplier)),
+        JukeboxSong song => Key((song.SoundEvent, song.Description, song.LengthInSeconds, song.ComparatorOutput)),
         SkinProperty property => new object?[]
         {
             property.Name,
@@ -75,8 +90,8 @@ internal sealed class ComponentValueKey : IEquatable<ComponentValueKey>
         NbtTag<short> tag => tag.Value,
         NbtTag<int> tag => tag.Value,
         NbtTag<long> tag => tag.Value,
-        NbtTag<float> tag => tag.Value,
-        NbtTag<double> tag => tag.Value,
+        NbtTag<float> tag => Key(tag.Value),
+        NbtTag<double> tag => Key(tag.Value),
         NbtTag<string> tag => tag.Value,
         ChatMessage chat => new object?[]
         {
@@ -131,14 +146,14 @@ internal sealed class ComponentValueKey : IEquatable<ComponentValueKey>
         {
             visibility.TargetingEntityTypes.TagName,
             visibility.TargetingEntityTypes.Ids?.ToArray(),
-            visibility.Visibility
+            Key(visibility.Visibility)
         },
         InstrumentData instrument => new object?[]
         {
             instrument.Identifier,
-            instrument.SoundEvent,
-            instrument.UseDuration,
-            instrument.Range,
+            Key(instrument.SoundEvent),
+            Key(instrument.UseDuration),
+            Key(instrument.Range),
             instrument.DurabilityDamage,
             Key(instrument.Description)
         },
@@ -146,11 +161,11 @@ internal sealed class ComponentValueKey : IEquatable<ComponentValueKey>
         {
             effect.Id,
             Key(Sequence(effect.Effects)),
-            effect.Probability,
+            Key(effect.Probability),
             Key(effect.RemovedEffects),
-            effect.Diameter,
+            Key(effect.Diameter),
             effect.DirectionalParticles,
-            effect.Sound
+            Key(effect.Sound)
         },
         IEnumerable values => values.Cast<object?>().Select(Key).ToArray(),
         _ => value

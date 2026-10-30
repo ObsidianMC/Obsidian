@@ -2,6 +2,19 @@
 
 public sealed record class JukeboxPlayableDataComponent : DataComponent
 {
+    private ComponentValueKey Comparison => new(new object?[]
+    {
+        this.song.Left,
+        this.song.Right,
+        this.registryId,
+        this.showInTooltip
+    });
+
+    public bool Equals(JukeboxPlayableDataComponent? other) => ReferenceEquals(this, other)
+        || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
+
+    public override int GetHashCode() => HashCode.Combine(base.GetHashCode(), this.Comparison);
+
     public override DataComponentType Type => DataComponentType.JukeboxPlayable;
 
     public override string Identifier => "minecraft:jukebox_playable";
