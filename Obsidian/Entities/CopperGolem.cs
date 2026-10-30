@@ -67,9 +67,13 @@ public sealed partial class CopperGolem : PathfinderMob
             var origin = (Vector)Position.Floor();
             var candidates = new List<IBlockEntity>();
             for (var cx = (origin.X - 32) >> 4; cx <= (origin.X + 32) >> 4; cx++)
-            for (var cz = (origin.Z - 32) >> 4; cz <= (origin.Z + 32) >> 4; cz++)
+            {
+                for (var cz = (origin.Z - 32) >> 4; cz <= (origin.Z + 32) >> 4; cz++)
+                {
                     if (level.GetLoadedChunk(cx, cz) is { } chunk)
-                        candidates.AddRange(chunk.GetBlockEntities());
+                            candidates.AddRange(chunk.GetBlockEntities());
+                }
+            }
             var held = GetEquipment(EquipmentSlot.MainHand);
             destination = candidates.Where(entity => Math.Abs(entity.BlockPosition.Y - origin.Y) <= 8 &&
                 (new VectorD(entity.BlockPosition.X, entity.BlockPosition.Y, entity.BlockPosition.Z) - Position).MagnitudeSquared() <= 1024 &&
@@ -100,6 +104,7 @@ public sealed partial class CopperGolem : PathfinderMob
             if (held.IsAir)
             {
                 for (var i = 0; i < container.Size; i++)
+                {
                     if (container[i] is { Count: > 0 } item && !item.IsAir)
                     {
                         var amount = Math.Min(16, item.Count);
@@ -109,6 +114,7 @@ public sealed partial class CopperGolem : PathfinderMob
                             container[i] = null;
                         break;
                     }
+                }
             }
             else
             {
@@ -148,7 +154,9 @@ public sealed partial class CopperGolem : PathfinderMob
         if (held.IsAir
             ? !copper
             : block?.RegistryId != BlockIds.Chest && block?.RegistryId != BlockIds.TrappedChest)
+        {
             return false;
+        }
 
         var container = ReadContainer(entity);
         if (container == null)
@@ -167,7 +175,10 @@ public sealed partial class CopperGolem : PathfinderMob
             || player.GameMode == GameMode.Spectator
             || !IsInRange(player, 4)
             || !CanSee(player))
+        {
             return false;
+        }
+
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (item is { Count: > 0, Holder.Id: ItemIds.Honeycomb } && nextWeather != -2)
         {
@@ -183,7 +194,9 @@ public sealed partial class CopperGolem : PathfinderMob
             SynchronizeMetadata();
         }
         else
+        {
             return false;
+        }
 
         return true;
     }

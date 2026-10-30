@@ -14,8 +14,10 @@ internal static partial class BlockBehaviors
         IPlayer player, Vector position, IBlock block)
     {
         if (!TryEnter(block, out var behavior, out var call))
+        {
             return new PlayerBreakResult(HasBehavior(block)
                 || (BlocksRegistry.TryGetPluginBlock(block.GetHashCode(), out var type) && type.Binding is null), []);
+        }
 
         using (call)
         {

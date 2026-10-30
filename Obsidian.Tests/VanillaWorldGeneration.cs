@@ -119,9 +119,13 @@ public class VanillaWorldGeneration(WorldgenFixture worldgen)
 
         var biomes = new StringBuilder();
         for (var quartY = -16; quartY < 80; quartY++)
+        {
             for (var quartZ = 0; quartZ < 4; quartZ++)
+            {
                 for (var quartX = 0; quartX < 4; quartX++)
                     biomes.Append(chunk.GetBiome(quartX << 2, quartY << 2, quartZ << 2).Name).Append('\n');
+            }
+        }
 
         Assert.Equal(expectedBlocks, Sha256(BlockNames(chunk)));
         Assert.Equal(expectedBiomes, Sha256(biomes.ToString(0, biomes.Length - 1)));
@@ -421,12 +425,16 @@ public class VanillaWorldGeneration(WorldgenFixture worldgen)
     {
         var blocks = new StringBuilder();
         for (var y = chunk.MinY; y < chunk.MinY + chunk.Height; y++)
+        {
             for (var z = 0; z < 16; z++)
+            {
                 for (var x = 0; x < 16; x++)
                 {
                     var block = chunk.GetBlock(x, y, z);
                     blocks.Append(block.IsAir ? "minecraft:air" : block.UnlocalizedName).Append('\n');
                 }
+            }
+        }
 
         return blocks.ToString(0, blocks.Length - 1);
     }

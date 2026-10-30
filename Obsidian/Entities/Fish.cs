@@ -40,7 +40,9 @@ public abstract class Fish : PathfinderMob
     protected override async ValueTask TickAirSupplyAsync()
     {
         if (InWater)
+        {
             Air = 300;
+        }
         else if (--Air <= -20)
         {
             Air = 0;
@@ -298,8 +300,11 @@ public sealed partial class Pufferfish : Fish
         if (MobBitMask.HasFlag(MobBitmask.NoAi))
             return;
         if (AiTick % 200 == 0)
+        {
             foreach (var id in nextSting.Where(entry => entry.Value <= AiTick).Select(entry => entry.Key).ToArray())
                 nextSting.Remove(id);
+        }
+
         var bounds = Dimension.CreateBBFromPosition(Position);
         var nearby = GetEntitiesNear(4).Where(IsThreat).ToArray();
         var threatened = nearby.Any(target => MobTerrain.Overlaps(new BoundingBox(bounds.Min - 2, bounds.Max + 2), target.Dimension.CreateBBFromPosition(target.Position)));

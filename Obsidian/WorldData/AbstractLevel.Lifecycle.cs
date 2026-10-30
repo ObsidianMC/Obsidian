@@ -127,7 +127,9 @@ public abstract partial class AbstractLevel
         blockEntity.LoadPending = false;
         if (blockEntity.IsRemoved
             || !ReferenceEquals(this.GetResidentBlockEntity(blockEntity.BlockPosition), blockEntity))
+        {
             return;
+        }
 
         this.CallPlugin(blockEntity, blockEntity.Owner as PluginContainer, static loaded => loaded.OnLoad());
 

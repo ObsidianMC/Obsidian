@@ -31,7 +31,9 @@ internal static class GameRuleSynchronization
         };
         if (value.StartsWith('+') || !int.TryParse(value, NumberStyles.AllowLeadingSign,
             CultureInfo.InvariantCulture, out var number) || number < min || number > max)
+        {
             return false;
+        }
 
         normalized = number.ToString(CultureInfo.InvariantCulture);
         return true;

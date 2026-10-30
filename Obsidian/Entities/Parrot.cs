@@ -86,7 +86,10 @@ public sealed partial class Parrot : Animal
             || player.Level != Level
             || player.GameMode == GameMode.Spectator
             || !IsInRange(player, 4))
+        {
             return false;
+        }
+
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (item is { Count: > 0, Holder.Id: ItemIds.Cookie })
         {
@@ -122,7 +125,9 @@ public sealed partial class Parrot : Animal
             SynchronizeMetadata();
         }
         else
+        {
             return false;
+        }
 
         return true;
     }
@@ -269,7 +274,10 @@ internal sealed class ParrotFollowGoal(Parrot parrot) : NavigationGoal(parrot, 1
                 new WalkNodeEvaluator(parrot.PathBody).GetCost(destination) != 0 ||
                 !parrot.Terrain.IsFree(parrot.Dimension.CreateBBFromPosition(destination)) ||
                 !level.TryMoveEntity(parrot, parrot.Position, destination))
+            {
                 continue;
+            }
+
             parrot.CompleteTeleport(destination);
             Navigation.Stop();
             break;

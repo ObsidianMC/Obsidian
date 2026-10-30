@@ -46,7 +46,10 @@ public sealed partial class IronGolem : PathfinderMob
     {
         if (!Alive || IsRemoved || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator ||
             !IsInRange(player, 3) || !CanSee(player))
+        {
             return false;
+        }
+
         var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (held is not { Count: > 0, Holder.Id: ItemIds.IronIngot })
             return false;

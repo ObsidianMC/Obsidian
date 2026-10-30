@@ -31,14 +31,18 @@ internal static class PortalTravel
         var max = new VectorD(
             entity.Position.X + width / 2, entity.Position.Y + height, entity.Position.Z + width / 2);
         for (var x = (int)Math.Floor(min.X + 1e-7); x <= (int)Math.Floor(max.X - 1e-7); x++)
+        {
             for (var y = (int)Math.Floor(min.Y + 1e-7); y <= (int)Math.Floor(max.Y - 1e-7); y++)
+            {
                 for (var z = (int)Math.Floor(min.Z + 1e-7); z <= (int)Math.Floor(max.Z - 1e-7); z++)
                 {
                     var position = new Vector(x, y, z);
                     var block = await BlockAtAsync(entity.Level, position);
                     if (includeEnd && block?.RegistryId == BlockIds.EndPortal
                         && min.Y < y + 0.75 && max.Y > y + 0.375)
+                    {
                         return new(position, BlockIds.EndPortal, null);
+                    }
 
                     // End gateways are whole blocks to entities inside them.
                     if (includeGateways && block?.RegistryId == BlockIds.EndGateway)
@@ -46,14 +50,20 @@ internal static class PortalTravel
 
                     if (block is null || !PortalTypesRegistry.MayBePortalBlock(block.RegistryId)
                         || TypeAt(entity.Level, position, block) is not PortalType type)
+                    {
                         continue;
+                    }
 
                     // Vanilla's thin portal contact shape is a quarter block wide, centred in its plane.
                     if (block.GetProperty("axis") == "x"
                         ? min.Z < z + 0.625 && max.Z > z + 0.375
                         : min.X < x + 0.625 && max.X > x + 0.375)
+                    {
                         return new(position, block.RegistryId, type);
+                    }
                 }
+            }
+        }
 
         return null;
     }
@@ -133,6 +143,7 @@ internal static class PortalTravel
             {
                 positionAtExit = PortalCollision.FindFreePosition(exitArea.Read, positionAtExit, width, height);
                 if (CanContinue())
+                {
                     return new(
                         destination,
                         positionAtExit,
@@ -142,6 +153,8 @@ internal static class PortalTravel
                         exitArea,
                         type,
                         generation);
+                }
+
                 exitArea.Dispose();
                 return null;
             }

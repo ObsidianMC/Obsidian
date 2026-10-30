@@ -371,8 +371,10 @@ public class VanillaLoot
         var stew = stack.GetComponent<SimpleDataComponent<ImmutableArray<SuspiciousStewEffect>>>(
             DataComponentType.SuspiciousStewEffects)?.Value;
         if (stew is not null)
+        {
             builder.Append(
                 $",stew={string.Join("/", stew.Value.Select(effect => $"{effect.EffectId}:{effect.Duration}"))}");
+        }
 
         if (stack.ItemName is not null)
             builder.Append($",item_name={stack.ItemName.Translate}");

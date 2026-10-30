@@ -19,12 +19,16 @@ internal static class EndTravel
     internal static async ValueTask BuildArrivalPlatformAsync(AbstractLevel end)
     {
         for (var x = EndSpawnPoint.X - 2; x <= EndSpawnPoint.X + 2; x++)
+        {
             for (var z = EndSpawnPoint.Z - 2; z <= EndSpawnPoint.Z + 2; z++)
+            {
                 for (var y = EndSpawnPoint.Y - 2; y <= EndSpawnPoint.Y + 1; y++)
                 {
                     var block = y == EndSpawnPoint.Y - 2 ? BlocksRegistry.ObsidianBlock : BlocksRegistry.Air;
                     await end.SetBlockAsync(x, y, z, block, true);
                 }
+            }
+        }
     }
 
     /// <summary>

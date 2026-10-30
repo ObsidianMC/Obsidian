@@ -56,7 +56,9 @@ public sealed partial class Vex : PathfinderMob
             return;
         if (OwnerUuid != Guid.Empty && AiTick % 20 == 0 &&
             Level.FindEntityInRange(OwnerUuid, Position, 64) is Mob { AttackTarget: { } target } && IsValidTarget(target))
+        {
             AttackTarget = target;
+        }
     }
 
     protected override VectorD Travel()

@@ -30,9 +30,11 @@ public sealed class RequirePermissionAttribute : BaseExecutionCheckAttribute
             return Task.FromResult(true);
 
         if (_permissions.Length > 0)
+        {
             return Task.FromResult(_checkType == PermissionCheckType.All
                 ? player.HasAllPermissions(_permissions)
                 : player.HasAnyPermission(_permissions));
+        }
 
         return Task.FromResult(false);
     }

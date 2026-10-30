@@ -144,10 +144,12 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
         var (chunkX, chunkZ) = LevelData.SpawnPosition.ToChunkCoord();
         var index = 0;
         for (var cx = chunkX - Configuration.SpawnChunkRadius; cx < chunkX + Configuration.SpawnChunkRadius; cx++)
-        for (var cz = chunkZ - Configuration.SpawnChunkRadius; cz < chunkZ + Configuration.SpawnChunkRadius; cz++)
         {
-            spawnChunks[index++] = NumericsHelper.IntsToLong(cx, cz);
-            await GetChunkAsync(cx, cz);
+            for (var cz = chunkZ - Configuration.SpawnChunkRadius; cz < chunkZ + Configuration.SpawnChunkRadius; cz++)
+            {
+                spawnChunks[index++] = NumericsHelper.IntsToLong(cx, cz);
+                await GetChunkAsync(cx, cz);
+            }
         }
         Loaded = true;
         return true;

@@ -77,8 +77,10 @@ internal sealed class RedstoneEngine(IBlockChangeWorld world, RedstoneBehaviors 
     public bool HasNeighborSignal(Vector position)
     {
         foreach (var face in Directions)
+        {
             if (this.GetSignal(position.Offset(face), face) > 0)
                 return true;
+        }
 
         return false;
     }

@@ -31,8 +31,9 @@ public partial class WorldgenNoiseRegistryGenerator
                     dict[secondGroup] = [function];
             }
             else
+            {
                 groups[group] = new() { { secondGroup, new() { function } } };
-
+            }
         }
 
         foreach (var group in groups.OrderBy(x => x.Key))

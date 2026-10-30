@@ -14,19 +14,24 @@ public sealed class BreakDoorGoal(Zombie mob) : Goal
     {
         if (!mob.CanBreakDoors || mob.Level.LevelData.Difficulty != Difficulty.Hard ||
             !mob.MovementFlags.HasFlag(MovementFlags.HorizontalCollision))
+        {
             return false;
+        }
+
         var origin = (Vector)mob.Position.Floor();
         for (var x = origin.X - 1; x <= origin.X + 1; x++)
-        for (var z = origin.Z - 1; z <= origin.Z + 1; z++)
         {
-            var point = new Vector(x, origin.Y, z);
-            var block = mob.Terrain.GetBlock(point);
-            if (block != null && TagsRegistry.Block.WoodenDoors.Entries.Contains(block.RegistryId) &&
-                BlockCollisionShapes.Get(block).Any(shape =>
-                    MobTerrain.Overlaps(mob.Dimension.CreateBBFromPosition(mob.Position + mob.Motion + mob.MoveControl.Acceleration), shape.OffsetBy((VectorD)point))))
+            for (var z = origin.Z - 1; z <= origin.Z + 1; z++)
             {
-                door = point;
-                return true;
+                var point = new Vector(x, origin.Y, z);
+                var block = mob.Terrain.GetBlock(point);
+                if (block != null && TagsRegistry.Block.WoodenDoors.Entries.Contains(block.RegistryId) &&
+                    BlockCollisionShapes.Get(block).Any(shape =>
+                        MobTerrain.Overlaps(mob.Dimension.CreateBBFromPosition(mob.Position + mob.Motion + mob.MoveControl.Acceleration), shape.OffsetBy((VectorD)point))))
+                {
+                    door = point;
+                    return true;
+                }
             }
         }
         return false;

@@ -174,7 +174,9 @@ public static partial class LootTableJson
                     {
                         if ((includesAll || include.Contains(component.Identifier))
                             && !exclude.Contains(component.Identifier))
+                        {
                             stack[component.Type] = component;
+                        }
                     }
 
                     return stack;
@@ -291,7 +293,9 @@ public static partial class LootTableJson
         var formula = Qualify(Text(json, "formula"));
         if (formula is not ("minecraft:ore_drops" or "minecraft:uniform_bonus_count"
             or "minecraft:binomial_with_bonus_count"))
+        {
             throw new InvalidDataException($"Unsupported bonus formula {formula}.");
+        }
 
         var parameters = json.TryGetProperty("parameters", out var value) ? value.Clone() : default;
         var multiplier = formula == "minecraft:uniform_bonus_count"

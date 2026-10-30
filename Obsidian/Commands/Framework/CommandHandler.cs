@@ -163,7 +163,9 @@ public sealed class CommandHandler : ICommandHandler
         {
             if (AssemblyLoadContext.GetLoadContext(type.Assembly) == pluginContext
                 || AssemblyLoadContext.GetLoadContext(parser.GetType().Assembly) == pluginContext)
+            {
                 _argumentParsers.TryRemove(type, out _);
+            }
         }
     }
 

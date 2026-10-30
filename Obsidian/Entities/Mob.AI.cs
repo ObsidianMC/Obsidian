@@ -279,6 +279,7 @@ public partial class Mob
         if (ActivePotionEffects.TryGetValue((int)PotionEffect.Strength - 1, out var stronger)) damage += 3 * (stronger.EffectData.Amplifier + 1);
         if (ActivePotionEffects.TryGetValue((int)PotionEffect.Weakness - 1, out var weaker)) damage = Math.Max(0, damage - 4 * (weaker.EffectData.Amplifier + 1));
         if (target is IPlayer)
+        {
             damage = Level.LevelData.Difficulty switch
             {
                 Difficulty.Peaceful => 0,
@@ -286,6 +287,8 @@ public partial class Mob
                 Difficulty.Hard => damage * 1.5f,
                 _ => damage
             };
+        }
+
         var weapon = GetEquipment(EquipmentSlot.MainHand);
         damage += CombatEffects.DamageBonus(weapon, target);
         var health = target.Health;
@@ -440,11 +443,13 @@ public partial class Mob
             }
         }
         else if (rotated)
+        {
             PacketBroadcaster.BroadcastToLevelInRange(Level, Position, new MoveEntityRotPacket
             {
                 EntityId = EntityId, Yaw = Yaw, Pitch = Pitch,
                 OnGround = MovementFlags.HasFlag(MovementFlags.OnGround)
             }, EntityId);
+        }
 
         lastSentYaw = Yaw;
         lastSentPitch = Pitch;
@@ -532,7 +537,10 @@ public partial class Mob
         if (IsRemoved || !Alive || source.Level != Level || !float.IsFinite(amount) || amount <= 0 || kind != CombatDamageKind.Void && !CanTakeDamage(source))
             return;
         if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact &&
-            (IsFireImmune || HasPotionEffect((int)PotionEffect.FireResistance - 1))) return;
+            (IsFireImmune || HasPotionEffect((int)PotionEffect.FireResistance - 1)))
+        {
+            return;
+        }
 
         if (await FilterIncomingDamageAsync(source, amount, kind) is not float filtered)
             return;
@@ -555,10 +563,12 @@ public partial class Mob
             var horizontal = Math.Sqrt(direction.X * direction.X + direction.Z * direction.Z);
             var strength = 0.4f * (1 - Math.Clamp(GetAttributeValue("minecraft:generic.knockback_resistance"), 0, 1));
             if (horizontal > 0.0001f && strength > 0)
+            {
                 // Vanilla only knocks a mob upwards while it's on the ground, so hits can't juggle it in the air.
                 Motion = new VectorD(Motion.X / 2 + direction.X / horizontal * strength,
                     MovementFlags.HasFlag(MovementFlags.OnGround) ? Math.Min(0.4f, Motion.Y / 2 + strength) : Motion.Y,
                     Motion.Z / 2 + direction.Z / horizontal * strength);
+            }
         }
 
         lastDamage = incoming;
@@ -595,8 +605,10 @@ public partial class Mob
         var previousHealth = Health;
         await base.DamageAsync(source, amount);
         if (source is IPlayer attackingPlayer && Health < previousHealth)
+        {
             attackingPlayer.Statistics.Increment("minecraft:damage_dealt",
                 (int)Math.Clamp(Math.Floor(Math.Min(previousHealth, amount) * 10 + 0.5), 0, int.MaxValue));
+        }
 
         await OnHurtAsync(source);
         if (Alive && !absorbedByEquipment)

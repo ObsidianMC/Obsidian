@@ -361,7 +361,9 @@ internal static class ShapeUpdater
             var neighborType = neighbor.GetProperty("type");
             if (state.GetProperty("type") == "single" && neighborType != "single" && state.GetProperty("facing") == neighbor.GetProperty("facing")
                 && ChestConnectedDirection(neighbor) == direction.Opposite())
+            {
                 return state.WithProperty("type", neighborType == "left" ? "right" : "left");
+            }
         }
         else if (ChestConnectedDirection(state) == direction)
         {
@@ -463,8 +465,10 @@ internal static class ShapeUpdater
             return state;
 
         if (direction == BlockFace.Up)
+        {
             return UpdateWallShape(state, neighbor, IsWallConnected(state, "north"), IsWallConnected(state, "east"),
                 IsWallConnected(state, "south"), IsWallConnected(state, "west"));
+        }
 
         var side = direction.Opposite();
         var connects = WallConnectsTo(neighbor, neighbor.IsFaceSturdy(side), side);

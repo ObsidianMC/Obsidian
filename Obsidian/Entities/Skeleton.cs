@@ -105,11 +105,16 @@ public partial class Skeleton : PathfinderMob
         if (this is Illusioner)
         {
             if (!Silent)
+            {
                 PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new Obsidian.Net.Packets.Play.Clientbound.SoundEntityPacket
                 { EntityId = EntityId, SoundLocation = "minecraft:entity.skeleton.shoot", Category = SoundCategory.Hostile,
                     Volume = 1, Pitch = 1 / (Random.NextSingle() * 0.4f + 0.8f), Seed = Random.NextInt64() }, EntityId);
+            }
         }
-        else PlayMobSound("shoot");
+        else
+        {
+            PlayMobSound("shoot");
+        }
     }
 
     protected override ValueTask OnDeathAsync(IEntity source)
@@ -254,7 +259,10 @@ public sealed class Bogged : Skeleton
     {
         if (Sheared || !Alive || IsRemoved || player.Level != Level || player.Health <= 0 || player.GameMode == GameMode.Spectator ||
             !IsInRange(player, 4) || !CanSee(player))
+        {
             return false;
+        }
+
         var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (held is not { Count: > 0, Holder.Id: ItemIds.Shears })
             return false;
@@ -295,7 +303,10 @@ internal sealed class SkeletonShelterGoal(Skeleton skeleton) : NavigationGoal(sk
     {
         if (skeleton.Type == EntityType.Parched || !skeleton.Burning || skeleton.Level.DayTime is < 0 or >= 12000 ||
             !skeleton.GetEquipment(EquipmentSlot.Helmet).IsAir || skeleton.Terrain.GetSkyLight((Vector)skeleton.Position.Floor()) < 15)
+        {
             return false;
+        }
+
         var evaluator = new WalkNodeEvaluator(skeleton.PathBody);
         for (var attempt = 0; attempt < 10; attempt++)
         {

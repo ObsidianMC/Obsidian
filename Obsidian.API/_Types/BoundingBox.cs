@@ -39,7 +39,9 @@ public readonly struct BoundingBox : IEquatable<BoundingBox>
             || box.Min.Y > Max.Y
             || box.Max.Z < Min.Z
             || box.Min.Z > Max.Z)
+        {
             return ContainmentType.Disjoint;
+        }
 
         if (box.Min.X >= Min.X
             && box.Max.X <= Max.X
@@ -47,7 +49,9 @@ public readonly struct BoundingBox : IEquatable<BoundingBox>
             && box.Max.Y <= Max.Y
             && box.Min.Z >= Min.Z
             && box.Max.Z <= Max.Z)
+        {
             return ContainmentType.Contains;
+        }
 
         return ContainmentType.Intersects;
     }

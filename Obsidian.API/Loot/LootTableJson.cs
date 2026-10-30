@@ -143,7 +143,9 @@ public static partial class LootTableJson
         {
             if (!json.TryGetProperty("value", out var value)
                 || value.ValueKind is not (JsonValueKind.String or JsonValueKind.Object))
+            {
                 throw new InvalidDataException("A loot_table entry needs a table identifier or inline table value.");
+            }
 
             if (value.ValueKind == JsonValueKind.String)
             {
@@ -281,8 +283,10 @@ public static partial class LootTableJson
         foreach (var key in new[] { "functions", "conditions", "function" })
         {
             if (json.TryGetProperty(key, out _))
+            {
                 throw new InvalidDataException(
                     $"Loot key '{key}' was replaced in 26.3; use type, condition and modifier.");
+            }
         }
     }
 

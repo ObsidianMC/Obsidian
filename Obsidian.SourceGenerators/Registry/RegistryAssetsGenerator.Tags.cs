@@ -68,14 +68,18 @@ public partial class RegistryAssetsGenerator
             foreach (Tag tag in tagItem.Value)
             {
                 if(tag.Type == tag.Parent)
+                {
                     builder.Append(tag.Type.ToPascalCase()).Append(".").Append(tag.PropertyName).Append(", ");
+                }
                 else
+                {
                     builder.Append(tag.Parent.ToPascalCase())
                         .Append(".")
                         .Append(tag.Type.GetActualType(1).ToPascalCase())
                         .Append(".")
                         .Append(tag.PropertyName)
                         .Append(", ");
+                }
             }
             builder.Append("} }, ");
             builder.Line();

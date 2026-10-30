@@ -40,9 +40,14 @@ public partial class Player
                 await vehicle.SendPassengersToAsync(this);
 
             if (entity is Living living)
+            {
                 foreach (var (id, effect) in living.ActivePotionEffects)
+                {
                     await Client.QueuePacketAsync(new UpdateMobEffectPacket(entity.EntityId, id, effect.CurrentDuration)
                     { Amplifier = effect.EffectData.Amplifier, Flags = PotionEffectFlags(effect.EffectData) });
+                }
+            }
+
             TrackedEntities[entity.EntityId] = entity.Uuid;
         }
         // Read in place: copying the keys takes all the dictionary's locks.

@@ -203,14 +203,18 @@ public partial class Extensions
         };
 
         if (hoverComponent.Contents is HoverChatContent chatContent)
+        {
             compound.Add(chatContent.ChatMessage.ToNbt("value"));
+        }
         else if (hoverComponent.Contents is HoverItemContent itemContent)
         {
             foreach (var (name, tag) in itemContent.Item.ToNbt())
                 compound.Add(name, tag);
         }
         else if (hoverComponent.Contents is HoverEntityComponent)
+        {
             throw new NotSupportedException("Entity hover text cannot be represented without a live entity.");
+        }
 
         return compound;
     }

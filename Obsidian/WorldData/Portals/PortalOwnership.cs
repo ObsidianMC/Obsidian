@@ -53,7 +53,9 @@ internal static class PortalOwnership
             && claimed.PortalOwners.TryGetValue(position, out var claim)
             && claim.Block != block?.UnlocalizedName
             && claimed.PortalOwners.TryRemove(position, out _))
+        {
             claimed.MarkUnsaved();
+        }
     }
 
     internal static void Read(Chunk chunk, NbtCompound compound)
@@ -65,7 +67,9 @@ internal static class PortalOwnership
         {
             if (!claim.TryGetTag<NbtTag<string>>("type", out var type)
                 || !claim.TryGetTag<NbtTag<string>>("block", out var block))
+            {
                 continue;
+            }
 
             var position = new Vector(claim.GetInt("x"), claim.GetInt("y"), claim.GetInt("z"));
             chunk.PortalOwners[position] = new PortalOwner(type.Value!, block.Value!);

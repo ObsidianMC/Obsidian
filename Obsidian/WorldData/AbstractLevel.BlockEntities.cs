@@ -92,7 +92,9 @@ public abstract partial class AbstractLevel
 
         if (prepared is null && existing is not null
             && string.Equals(existing.Id, type, StringComparison.OrdinalIgnoreCase))
+        {
             return null;
+        }
 
         BlockEntity? removed = null;
         if (existing is not null)

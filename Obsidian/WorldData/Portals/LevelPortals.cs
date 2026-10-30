@@ -39,7 +39,9 @@ internal sealed class LevelPortals(AbstractLevel level)
                     var block = await level.GetBlockAsync(position);
                     if (block is null || this.TypeAt(position, block) is not PortalType type
                         || !PortalTypesRegistry.TryEnter(type, out var properties, out var call))
+                    {
                         continue;
+                    }
 
                     using var behavior = call;
                     var axis = block.GetProperty("axis") ?? "x";
@@ -92,7 +94,9 @@ internal sealed class LevelPortals(AbstractLevel level)
             if (igniter is not null && !(properties.Igniter is Item item && igniter.Is(item))
                 && !(type == PortalTypesRegistry.Nether
                     && igniter.Holder.Id is ItemIds.FlintAndSteel or ItemIds.FireCharge))
+            {
                 continue;
+            }
 
             if (properties.ResolveTarget(level) is null)
                 continue;
@@ -143,8 +147,11 @@ internal sealed class LevelPortals(AbstractLevel level)
                 if (!await EndPortalFrames.IsCompleteAsync(level.GetBlockAsync, origin))
                     continue;
                 for (var x = 0; x < 3; x++)
+                {
                     for (var z = 0; z < 3; z++)
                         await level.SetBlockAsync(origin + new Vector(x, 0, z), BlocksRegistry.EndPortal, true);
+                }
+
                 level.BroadcastLevelEvent(1038, origin + new Vector(1, 0, 1), 0);
                 break;
             }
@@ -186,7 +193,10 @@ internal sealed class LevelPortals(AbstractLevel level)
                     if (Math.Abs(position.X - target.X) > radius || Math.Abs(position.Z - target.Z) > radius ||
                         !InsideBorder(position)
                         || PortalOwnership.TypeAt(chunk, position, area.Read(position)) != type)
+                    {
                         continue;
+                    }
+
                     var distance = DistanceSquared(position, target);
                     if (distance < nearestDistance || distance == nearestDistance && position.Y < nearest?.Y)
                     {
@@ -248,7 +258,10 @@ internal sealed class LevelPortals(AbstractLevel level)
                 if (y + height + 1 > top
                     || ceiling - y > 0 && ceiling - y < height
                     || !CanHost(area, origin, step, normal, 0, width, height))
+                {
                     continue;
+                }
+
                 var distance = DistanceSquared(origin, target);
                 if (CanHost(area, origin, step, normal, -1, width, height)
                     && CanHost(area, origin, step, normal, 1, width, height)
@@ -275,17 +288,30 @@ internal sealed class LevelPortals(AbstractLevel level)
             origin.Y = Math.Clamp(origin.Y, min, max);
             best = origin;
             for (var side = -1; side <= 1; side++)
+            {
                 for (var x = 0; x < width; x++)
+                {
                     for (var y = -1; y < height; y++)
+                    {
                         await level.SetBlockAsync(origin + step * x + normal * side + Vector.Up * y,
                             y < 0 ? properties.FrameBlock : BlocksRegistry.Air);
+                    }
+                }
+            }
         }
         var frame = new PortalFrame(best.Value, axis, width, height, width * height);
         for (var x = -1; x < width + 1; x++)
+        {
             for (var y = -1; y < height + 1; y++)
+            {
                 if (x == -1 || x == width || y == -1 || y == height)
+                {
                     await level.SetBlockAsync(
                         frame.Origin + step * x + Vector.Up * y, properties.FrameBlock, true);
+                }
+            }
+        }
+
         await this.FillAsync(frame, type, properties);
         return frame;
     }
@@ -305,12 +331,15 @@ internal sealed class LevelPortals(AbstractLevel level)
         PortalArea area, Vector origin, Vector step, Vector normal, int side, int width, int height)
     {
         for (var x = -1; x < width + 1; x++)
+        {
             for (var y = -1; y < height + 1; y++)
             {
                 var block = area.Read(origin + step * x + normal * side + Vector.Up * y);
                 if (y < 0 ? !block.IsSolid() : !IsFree(block))
                     return false;
             }
+        }
+
         return true;
     }
 
@@ -335,13 +364,24 @@ internal sealed class LevelPortals(AbstractLevel level)
             var palette = section.BlockStateContainer.Palette;
             if (palette.BitCount <= 8 && !Enumerable.Range(0, palette.Count)
                 .Any(index => palette.GetValueFromIndex(index)?.RegistryId == portalId))
+            {
                 continue;
+            }
+
             for (var y = 0; y < 16; y++)
+            {
                 for (var z = 0; z < 16; z++)
+                {
                     for (var x = 0; x < 16; x++)
+                    {
                         if (section.GetBlock(x, y, z).RegistryId == portalId)
+                        {
                             yield return new Vector(
                                 (chunk.X << 4) + x, chunk.MinY + sectionIndex * 16 + y, (chunk.Z << 4) + z);
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -380,6 +420,7 @@ internal sealed class LevelPortals(AbstractLevel level)
         Vector[] directions = [new(1, 0, 0), new(0, 0, 1), new(-1, 0, 0), new(0, 0, -1)];
         var direction = 0;
         for (var length = 1; length <= radius * 2 + 1; length++)
+        {
             for (var side = 0; side < 2; side++)
             {
                 for (var i = 0; i < length; i++)
@@ -390,5 +431,6 @@ internal sealed class LevelPortals(AbstractLevel level)
                 }
                 direction++;
             }
+        }
     }
 }

@@ -65,7 +65,10 @@ public sealed partial class Bee : FarmAnimal
             searchCooldown--;
         if (HivePosition is Vector hive
             && Terrain.GetBlock(hive)?.RegistryId is not BlockIds.BeeNest and not BlockIds.Beehive)
+        {
             HivePosition = null;
+        }
+
         if (FlowerPosition is Vector flower && (Terrain.GetBlock(flower) is not { } plant || !TagsRegistry.Block.Flowers.Entries.Contains(plant.RegistryId)))
         {
             FlowerPosition = null;
@@ -77,18 +80,25 @@ public sealed partial class Bee : FarmAnimal
             var origin = (Vector)Position.Floor();
             var candidates = new List<(Vector Position, double Distance)>();
             for (var x = -8; x <= 8; x++)
-            for (var y = -5; y <= 5; y++)
-            for (var z = -8; z <= 8; z++)
             {
-                var point = new Vector(origin.X + x, origin.Y + y, origin.Z + z);
+                for (var y = -5; y <= 5; y++)
+                {
+                    for (var z = -8; z <= 8; z++)
+                    {
+                        var point = new Vector(origin.X + x, origin.Y + y, origin.Z + z);
                         if (Terrain.GetBlock(point) is not { } block)
                             continue;
-                if (HivePosition == null && block.RegistryId is BlockIds.BeeNest or BlockIds.Beehive &&
-                    GetHive(point) is DataBlockEntity entity &&
-                    (!entity.Data.TryGetTag<NbtList>("bees", out var occupants) || occupants.Count < 3))
-                    candidates.Add((point, ((VectorD)point - Position).MagnitudeSquared()));
-                if (FlowerPosition == null && TagsRegistry.Block.Flowers.Entries.Contains(block.RegistryId))
-                    FlowerPosition = point;
+                        if (HivePosition == null && block.RegistryId is BlockIds.BeeNest or BlockIds.Beehive &&
+                            GetHive(point) is DataBlockEntity entity &&
+                            (!entity.Data.TryGetTag<NbtList>("bees", out var occupants) || occupants.Count < 3))
+                        {
+                            candidates.Add((point, ((VectorD)point - Position).MagnitudeSquared()));
+                        }
+
+                        if (FlowerPosition == null && TagsRegistry.Block.Flowers.Entries.Contains(block.RegistryId))
+                            FlowerPosition = point;
+                    }
+                }
             }
             if (candidates.Count > 0)
                 HivePosition = candidates.MinBy(candidate => candidate.Distance).Position;
@@ -197,11 +207,16 @@ public sealed partial class Bee : FarmAnimal
             };
             IBlock? grown = null;
             if (maxAge >= 0 && int.TryParse(block.GetProperty("age"), out var age) && age < maxAge)
+            {
                 grown = block.RegistryId == BlockIds.TorchflowerCrop && age + 1 == maxAge
                     ? BlocksRegistry.Torchflower
                     : block.WithProperty("age", age + 1);
+            }
             else if (block.RegistryId is BlockIds.CaveVines or BlockIds.CaveVinesPlant && block.GetProperty("berries") == "false")
+            {
                 grown = block.WithProperty("berries", true);
+            }
+
             if (grown == null)
                 continue;
             if (Level is AbstractLevel level)

@@ -32,7 +32,10 @@ public sealed record OpaqueDataComponent(DataComponentType ComponentType, Immuta
             var split = name.IndexOf('_');
             if (type == DataComponentType.TropicalFishPattern || type == DataComponentType.TropicalFishBaseColor
                 || type == DataComponentType.TropicalFishPatternColor)
+            {
                 split = "tropical_fish".Length;
+            }
+
             if (type == DataComponentType.ZombieNautilusVariant)
                 split = "zombie_nautilus".Length;
             if (split >= 0)

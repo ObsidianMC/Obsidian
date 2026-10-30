@@ -130,9 +130,13 @@ internal static class CombatItems
             && Component(item, "attribute_modifiers") is { ValueKind: JsonValueKind.Array } modifiers)
         {
             foreach (var modifier in modifiers.EnumerateArray())
+            {
                 if (modifier.GetProperty("type").GetString() == "minecraft:" + name &&
                     MatchesSlot(modifier.TryGetProperty("slot", out var group) ? group.GetString()! : "any", slot))
+                {
                     Apply(modifier.GetProperty("amount").GetSingle(), modifier.GetProperty("operation").GetString()!);
+                }
+            }
         }
         return (baseValue + additions) * (1 + baseMultiplier) * totalMultiplier;
     }
@@ -270,8 +274,11 @@ internal static class CombatItems
         var unbreaking = EnchantmentLevel(item, EnchantmentsRegistry.Unbreaking);
         var applied = 0;
         for (var point = 0; point < amount; point++)
+        {
             if (unbreaking == 0 || armor && Globals.Random.NextSingle() < 0.6f || Globals.Random.Next(unbreaking + 1) == 0)
                 applied++;
+        }
+
         if (applied == 0) return false;
         item[DataComponentType.Damage] = ComponentBuilder.Damage with { Value = item.Damage + applied };
         if (item.Damage < maximum) return false;

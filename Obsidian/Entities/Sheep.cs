@@ -51,7 +51,10 @@ public sealed partial class Sheep : FarmAnimal
     {
         if (!Alive || IsRemoved || player.Level != Level || player.Health <= 0 || player.GameMode == GameMode.Spectator ||
             !IsInRange(player, 4) || !CanSee(player))
+        {
             return false;
+        }
+
         var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (!IsBaby && !Sheared && held is { Count: > 0, Holder.Id: ItemIds.Shears })
         {

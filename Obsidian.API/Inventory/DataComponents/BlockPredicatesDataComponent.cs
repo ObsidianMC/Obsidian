@@ -86,7 +86,9 @@ public abstract record class BlockPredicatesDataComponent : DataComponent
                     writer.WriteString(property.Name);
                     writer.WriteBoolean(property.IsExactMatch);
                     if (property.IsExactMatch)
+                    {
                         writer.WriteString(property.ExactValue!);
+                    }
                     else
                     {
                         writer.WriteOptional(property.MinValue);

@@ -198,7 +198,9 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
 
         if (!DataComponentTypesRegistry.TryBind(
             entry, codec, networkCodec, container, () => container.IsClosing, () => container.TryEnter()))
+        {
             throw new InvalidOperationException($"{container.Info.Name} is unloading.");
+        }
 
         return new PluginComponentType<TValue>(entry.Type, entry.Identifier, codec, () => container.TryEnter());
     }
@@ -594,7 +596,9 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
         if (path.Length == 0
             || !container.Info.Id.All(c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c is '_' or '-' or '.')
             || !path.All(c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c is '_' or '-' or '.' or '/'))
+        {
             throw new ArgumentException($"{identifier} isn't a valid identifier.");
+        }
     }
 
     public IPluginRegistry RegisterCommandArgumentHandler<T>(BaseArgumentParser<T> parser) 

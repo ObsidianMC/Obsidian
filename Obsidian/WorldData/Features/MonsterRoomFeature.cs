@@ -76,7 +76,9 @@ public sealed class MonsterRoomFeature : ConfiguredFeatureBase
                     if (x == minX || y == -1 || z == minZ || x == maxX || y == 4 || z == maxZ)
                     {
                         if (position.Y >= level.MinY && !level.GetBlock(position + Vector.Down).IsSolid())
+                        {
                             level.SetBlock(position, CaveAir);
+                        }
                         else if (existing.IsSolid() && !existing.Is(BlockIds.Chest))
                         {
                             FeatureHelpers.SafeSetBlock(level, position, y == -1 && random.NextInt(4) != 0 ? MossyCobblestone : Cobblestone,

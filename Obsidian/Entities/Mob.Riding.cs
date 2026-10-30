@@ -26,7 +26,9 @@ public partial class Mob
                 || !passenger.IsActive
                 || passenger is IPlayer && passenger.Sneaking
                 || !this.Alive)
+            {
                 passenger.LeaveVehicle();
+            }
         }
     }
 }

@@ -100,7 +100,9 @@ internal static class BubbleColumns
         if (!canSurvive
             || direction == BlockFace.Down
             || direction == BlockFace.Up && !neighbor.Is(BlockIds.BubbleColumn) && CanExistIn(neighbor))
+        {
             level.ScheduleTick(position, state, CheckPeriod);
+        }
     }
 }
 

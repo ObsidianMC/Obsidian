@@ -111,21 +111,27 @@ internal sealed class RabbitRaidGardenGoal(Rabbit rabbit) : NavigationGoal(rabbi
         Vector? closest = null;
         var distance = double.MaxValue;
         for (var x = -8; x <= 8; x++)
-        for (var y = -2; y <= 2; y++)
-        for (var z = -8; z <= 8; z++)
         {
-            var point = origin + new Vector(x, y, z);
-            if (!IsMature(point)
-                || rabbit.Terrain.GetBlock(point - new Vector(0, 1, 0))?.RegistryId != BlockIds.Farmland)
-                continue;
+            for (var y = -2; y <= 2; y++)
+            {
+                for (var z = -8; z <= 8; z++)
+                {
+                    var point = origin + new Vector(x, y, z);
+                    if (!IsMature(point)
+                        || rabbit.Terrain.GetBlock(point - new Vector(0, 1, 0))?.RegistryId != BlockIds.Farmland)
+                    {
+                        continue;
+                    }
 
-            var squared = x * x + y * y + z * z;
+                    var squared = x * x + y * y + z * z;
                     if (squared < distance)
                     {
                         closest = point;
                         distance = squared;
-        }
+                    }
                 }
+            }
+        }
         if (closest == null)
             return false;
         carrot = closest.Value;

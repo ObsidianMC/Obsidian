@@ -59,13 +59,14 @@ csharp_space_between_method_declaration_parameter_list_parentheses = false
 
 #leave code block on single line
 csharp_preserve_single_line_blocks = true
-#leave statements and member declarations on the same line
-csharp_preserve_single_line_statements = true
+#put each statement and member declaration on its own line
+csharp_preserve_single_line_statements = false
 
 #Style - Code block preferences
 
-#prefer no curly braces if allowed
-csharp_prefer_braces = false:suggestion
+#require braces when a control statement spans several lines; a one-line guard like `if (x is null) return;` may skip them
+csharp_prefer_braces = when_multiline:warning
+dotnet_diagnostic.IDE0011.severity = warning
 
 #Style - expression bodied member options
 
@@ -152,6 +153,9 @@ dotnet_style_prefer_simplified_boolean_expressions=true:warning
 dotnet_style_prefer_conditional_expression_over_assignment=true:suggestion
 dotnet_style_prefer_conditional_expression_over_return=true:suggestion
 dotnet_code_quality_unused_parameters=all:warning
+# The build doesn't report unused parameters (IDE0060): many mirror vanilla method signatures or are attribute
+# arguments the source generator reads.
+dotnet_diagnostic.IDE0060.severity = suggestion
 
 # IDE0305: Simplify collection initializers (IDE0305) - See https://github.com/dotnet/roslyn/issues/70656
 dotnet_diagnostic.IDE0305.severity = none
@@ -160,3 +164,10 @@ dotnet_diagnostic.IDE0305.severity = none
 dotnet_analyzer_diagnostic.category-Performance.severity = warning
 # Public members can't be made static without breaking the API or reflection-discovered handlers and commands.
 dotnet_code_quality.CA1822.api_surface = private, internal
+
+# Generated code (source-generator output, build intermediates) is exempt from the style rules.
+[**/Generated/**.cs]
+generated_code = true
+
+[**/obj/**.cs]
+generated_code = true

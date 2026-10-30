@@ -50,10 +50,15 @@ internal abstract class FlowingFluid
                 if ((below.IsEmpty || IsSame(below.Kind)) && below.OwnHeight > 0)
                     difference = fluid.OwnHeight - (below.OwnHeight - 8f / 9f);
             }
-            else difference = fluid.OwnHeight - neighborFluid.OwnHeight;
+            else
+            {
+                difference = fluid.OwnHeight - neighborFluid.OwnHeight;
+            }
+
             flow += new VectorD(neighborPosition.X - position.X, 0, neighborPosition.Z - position.Z) * difference;
         }
         if (fluid.Falling)
+        {
             foreach (var face in horizontal)
             {
                 var neighbor = position.Offset(face);
@@ -62,6 +67,8 @@ internal abstract class FlowingFluid
                 flow.Y -= 6;
                 break;
             }
+        }
+
         return flow.Magnitude > 0 ? flow / flow.Magnitude : VectorD.Zero;
 
         bool IsSolidFace(Vector point, BlockFace face)
@@ -157,7 +164,9 @@ internal abstract class FlowingFluid
 
         if (!block.IsAir && FluidState.IsWaterKind(fluid.Kind)
             && level.TryWashAway(position, fluid.CreateLegacyBlock()))
+        {
             return;
+        }
 
         if (!block.IsAir)
             this.BeforeDestroyingBlock(level, position, block);

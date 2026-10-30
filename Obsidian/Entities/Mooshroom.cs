@@ -49,7 +49,9 @@ public sealed partial class Mooshroom : Cow
             await ConvertToAsync(EntityType.Cow);
         }
         else
+        {
             return await base.FeedAsync(player, hand);
+        }
 
         return true;
     }

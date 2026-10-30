@@ -132,8 +132,10 @@ internal static class ProgressConditions
     {
         var type = AdvancementsRegistry.Qualify(condition.GetProperty("condition").GetString()!);
         if (type == "minecraft:all_of")
+        {
             return condition.EnumerateObject().All(property => property.Name is "condition" or "terms")
                 && condition.GetProperty("terms").EnumerateArray().All(term => LootCondition(entity, term));
+        }
 
         if (type == "minecraft:entity_properties"
             && condition.EnumerateObject().All(property => property.Name is "condition" or "entity" or "predicate")

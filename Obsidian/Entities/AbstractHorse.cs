@@ -69,7 +69,10 @@ public class AbstractHorse : Animal, IRideable
     {
         if (!HasAi || !Alive || IsRemoved || player.Health <= 0 || player.Level != Level ||
             player.GameMode == GameMode.Spectator || !IsInRange(player, 4) || !CanSee(player))
+        {
             return false;
+        }
+
         var slot = hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
         var item = player.Inventory.GetItem(slot);
         var tamed = HorseMask.HasFlag(HorseMask.Tamed);
@@ -87,11 +90,16 @@ public class AbstractHorse : Animal, IRideable
             var breedingFood = IsBreedingFood(food);
             if (Health >= GetAttributeValue("minecraft:generic.max_health") && !IsBaby &&
                 (tamed || Temper >= MaximumTemper) && !(tamed && breedingFood && Age == 0 && LoveTicks == 0))
+            {
                 return false;
+            }
+
             Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + heal);
             Temper = Math.Min(MaximumTemper, Temper + (breedingFood ? 5 : 3));
             if (IsBaby)
+            {
                 Age = Math.Min(0, Age + (food == ItemsRegistry.HayBlock ? 3600 : 1200));
+            }
             else if (tamed && breedingFood && Age == 0)
             {
                 LoveTicks = 600;

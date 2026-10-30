@@ -49,29 +49,33 @@ public sealed class MobTestGenerator : ILevelGenerator
         var originX = x / 2 * PenSize;
         var originZ = z / 2 * PenSize;
         for (var bx = 0; bx < 16; bx++)
-        for (var bz = 0; bz < 16; bz++)
         {
-            var px = x * 16 + bx - originX;
-            var pz = z * 16 + bz - originZ;
-            var inside = px is >= 3 and <= 28 && pz is >= 3 and <= 28;
-            var edge = inside && (px is 3 or 28 || pz is 3 or 28);
-            if (!inside) continue;
-            result.SetBlock(bx, Floor, bz, BlocksRegistry.Bedrock);
-            if (edge)
+            for (var bz = 0; bz < 16; bz++)
             {
-                result.SetBlock(bx, Floor + 1, bz, BlocksRegistry.OakFence);
-                for (var y = Floor + 2; y < Roof; y++) result.SetBlock(bx, y, bz, BlocksRegistry.Barrier);
+                var px = x * 16 + bx - originX;
+                var pz = z * 16 + bz - originZ;
+                var inside = px is >= 3 and <= 28 && pz is >= 3 and <= 28;
+                var edge = inside && (px is 3 or 28 || pz is 3 or 28);
+                if (!inside) continue;
+                result.SetBlock(bx, Floor, bz, BlocksRegistry.Bedrock);
+                if (edge)
+                {
+                    result.SetBlock(bx, Floor + 1, bz, BlocksRegistry.OakFence);
+                    for (var y = Floor + 2; y < Roof; y++) result.SetBlock(bx, y, bz, BlocksRegistry.Barrier);
+                }
+                else
+                {
+                    result.SetBlock(bx, Floor, bz, exhibit.Type == EntityType.Turtle ? BlocksRegistry.Sand : BlocksRegistry.GrassBlock);
+                    if (exhibit.Water || exhibit.Type == EntityType.Strider)
+                    {
+                        for (var y = Floor - 3; y <= Floor; y++)
+                            result.SetBlock(bx, y, bz, exhibit.Type == EntityType.Strider ? BlocksRegistry.Lava : BlocksRegistry.Water);
+                    }
+                }
+                result.SetBlock(bx, Roof, bz, BlocksRegistry.Barrier);
+                for (var y = Floor + 1; y <= Roof; y++) result.SetLightLevel(bx, y, bz, LightType.Sky, 15);
+                result.Heightmaps[HeightmapType.MotionBlocking].Set(bx, bz, Roof);
             }
-            else
-            {
-                result.SetBlock(bx, Floor, bz, exhibit.Type == EntityType.Turtle ? BlocksRegistry.Sand : BlocksRegistry.GrassBlock);
-                if (exhibit.Water || exhibit.Type == EntityType.Strider)
-                    for (var y = Floor - 3; y <= Floor; y++)
-                        result.SetBlock(bx, y, bz, exhibit.Type == EntityType.Strider ? BlocksRegistry.Lava : BlocksRegistry.Water);
-            }
-            result.SetBlock(bx, Roof, bz, BlocksRegistry.Barrier);
-            for (var y = Floor + 1; y <= Roof; y++) result.SetLightLevel(bx, y, bz, LightType.Sky, 15);
-            result.Heightmaps[HeightmapType.MotionBlocking].Set(bx, bz, Roof);
         }
 
         // Each exhibit belongs to exactly one chunk; reloaded chunks use their saved entities.

@@ -19,17 +19,24 @@ public sealed class FallingBlocks
         await using var context = TestServerFactory.CreateServer($"fall-{Guid.NewGuid():N}");
         var world = context.World;
         for (var chunkX = -1; chunkX <= 1; chunkX++)
+        {
             for (var chunkZ = -1; chunkZ <= 1; chunkZ++)
             {
                 var chunk = new Obsidian.WorldData.Chunk(chunkX, chunkZ);
                 for (var x = 0; x < 16; x += 4)
+                {
                     for (var z = 0; z < 16; z += 4)
+                    {
                         for (var y = -64; y < 320; y += 4)
                             chunk.SetBiome(x, y, z, CodecRegistry.Biomes.Plains);
+                    }
+                }
+
                 chunk.SetChunkStatus(ChunkGenStage.full);
                 world.LoadRegionByChunk(chunkX, chunkZ).SetChunk(chunk);
                 world.Fluids.Track(chunk);
             }
+        }
 
         // Chunks only tick while a player is near them.
         var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Digger", new VectorD(0.5, 64, 0.5));
@@ -93,16 +100,23 @@ public sealed class FallingBlocks
     private static void AddFlatChunks(WorldData.World world)
     {
         for (var chunkX = -1; chunkX <= 1; chunkX++)
+        {
             for (var chunkZ = -1; chunkZ <= 1; chunkZ++)
             {
                 var chunk = new Obsidian.WorldData.Chunk(chunkX, chunkZ);
                 for (var x = 0; x < 16; x += 4)
+                {
                     for (var z = 0; z < 16; z += 4)
+                    {
                         for (var y = -64; y < 320; y += 4)
                             chunk.SetBiome(x, y, z, CodecRegistry.Biomes.Plains);
+                    }
+                }
+
                 chunk.SetChunkStatus(ChunkGenStage.full);
                 world.LoadRegionByChunk(chunkX, chunkZ).SetChunk(chunk);
                 world.Fluids.Track(chunk);
             }
+        }
     }
 }

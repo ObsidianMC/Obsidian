@@ -571,11 +571,15 @@ public sealed partial class FishingHook : Entity
     {
         var result = (OpenWaterType?)null;
         for (var x = min.X; x <= max.X; x++)
-        for (var y = min.Y; y <= max.Y; y++)
-        for (var z = min.Z; z <= max.Z; z++)
         {
-            var type = OpenWaterTypeOfBlock(terrain, new Vector(x, y, z));
-            result = result is null || result == type ? type : OpenWaterType.Invalid;
+            for (var y = min.Y; y <= max.Y; y++)
+            {
+                for (var z = min.Z; z <= max.Z; z++)
+                {
+                    var type = OpenWaterTypeOfBlock(terrain, new Vector(x, y, z));
+                    result = result is null || result == type ? type : OpenWaterType.Invalid;
+                }
+            }
         }
 
         return result ?? OpenWaterType.Invalid;

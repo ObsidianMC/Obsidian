@@ -52,7 +52,10 @@ public sealed partial class Warden : PathfinderMob
             projectileMemoryTicks = 100;
         }
         else if (vibration.Source is { } source)
+        {
             IncreaseAnger(source, 35);
+        }
+
         if (AttackTarget == null && poseTicks == 0)
             Navigator?.NavigateTo(destination);
     }
@@ -146,8 +149,10 @@ public sealed partial class Warden : PathfinderMob
         if (AiTick % 20 == 0)
         {
             foreach (var id in anger.Keys.ToArray())
+            {
                 if (--anger[id] <= 0)
                     anger.Remove(id);
+            }
         }
         var mostAngry = nearby.Where(entity => anger.GetValueOrDefault(entity.Uuid) >= AngryThreshold)
             .OrderByDescending(entity => anger[entity.Uuid]).ThenBy(entity => entity is IPlayer ? 0 : 1)
@@ -169,8 +174,10 @@ public sealed partial class Warden : PathfinderMob
             SynchronizeMetadata();
         }
         if (AiTick % 120 == 0)
+        {
             foreach (var player in Level.GetPlayersInRange(Position, 20).Where(player => player.GameMode is GameMode.Survival or GameMode.Adventure))
                 player.AddPotionEffect((int)PotionEffect.Darkness - 1, 260);
+        }
 
         if (poseTicks > 0)
         {
@@ -210,9 +217,14 @@ public sealed partial class Warden : PathfinderMob
                     var beam = target.Position + new VectorD(0, target.Dimension.Height * 0.85f, 0) - EyePosition;
                     var beamLength = beam.Magnitude;
                     if (beamLength > 0)
+                    {
                         for (var step = 1; step < beamLength + 7; step++)
+                        {
                             PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new LevelParticlesPacket
                             { Position = EyePosition + beam / beamLength * step, ParticleCount = 1, Data = new SonicParticle() });
+                        }
+                    }
+
                     if (InSonicRange(target))
                     {
                         var damage = target is IPlayer ? Level.LevelData.Difficulty switch
@@ -341,13 +353,22 @@ public sealed partial class Warden : PathfinderMob
         sonicTicks = ReadTimer(tag, "ObsidianWardenSonicTicks", 60);
         if (tag.TryGetTagValue<int>("ObsidianWardenPose", out var pose) &&
             (Pose)pose is Pose.Standing or Pose.Roaring or Pose.Sniffing or Pose.Digging or Pose.Emerging)
+        {
             Pose = (Pose)pose;
+        }
+
         anger.Clear();
         if (tag.TryGetTag<NbtList>("ObsidianWardenAnger", out var saved))
+        {
             foreach (var entry in saved.OfType<NbtCompound>())
+            {
                 if (entry.TryGetTagValue<string>("uuid", out var text) && Guid.TryParse(text, out var id) &&
                     entry.TryGetTagValue<int>("anger", out var value) && value > 0)
+                {
                     anger[id] = Math.Min(150, value);
+                }
+            }
+        }
     }
 
     private static int ReadTimer(NbtCompound tag, string name, int maximum) =>
@@ -362,7 +383,10 @@ internal sealed class WardenStrollGoal(Warden warden) : NavigationGoal(warden, 0
     {
         if (warden.Pose != Pose.Standing || warden.AttackTarget != null || warden.Random.Next(60) != 0 ||
             RandomPosition.Find(warden, 10) is not VectorD point)
+        {
             return false;
+        }
+
         destination = point;
         return true;
     }

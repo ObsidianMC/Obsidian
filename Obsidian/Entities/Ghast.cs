@@ -28,14 +28,20 @@ public sealed partial class Ghast : Mob
         if (MobBitMask.HasFlag(MobBitmask.NoAi))
             return default;
         if (AttackTarget == null || !IsValidTarget(AttackTarget) || (AttackTarget.Position - Position).MagnitudeSquared() > 10000)
+        {
             AttackTarget = Level.GetPlayersInRange(Position, 100).Where(player => IsValidTarget(player) && CanSee(player))
                 .MinBy(player => (player.Position - Position).MagnitudeSquared());
+        }
+
         if (--flightTicks <= 0)
         {
             flightTicks = Random.Next(2, 7);
             if ((destination - Position).MagnitudeSquared() < 1 || (destination - Position).MagnitudeSquared() > 3600)
+            {
                 destination = Position + new VectorD((Random.NextSingle() * 2 - 1) * 16,
                     (Random.NextSingle() * 2 - 1) * 16, (Random.NextSingle() * 2 - 1) * 16);
+            }
+
             var delta = destination - Position;
             if (delta.Magnitude > 0.001f)
             {
@@ -43,11 +49,14 @@ public sealed partial class Ghast : Mob
                 var bounds = Dimension.CreateBBFromPosition(Position);
                 var clear = true;
                 for (var distance = 1f; distance < delta.Magnitude; distance++)
+                {
                     if (!Terrain.IsFree(bounds.OffsetBy(direction * distance)))
                     {
                         clear = false;
                         break;
                     }
+                }
+
                 if (clear)
                     Motion += direction * 0.1f;
                 else

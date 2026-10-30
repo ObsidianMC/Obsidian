@@ -78,7 +78,9 @@ public sealed class IceSpikeFeature : ConfiguredFeatureBase
                     var existing = level.GetBlock(position);
                     if (!existing.IsAir && !FeatureHelpers.IsDirt(existing)
                         && existing.RegistryId is not (BlockIds.SnowBlock or BlockIds.Ice or BlockIds.PackedIce))
+                    {
                         break;
+                    }
 
                     level.SetBlock(position, PackedIce);
                     position += Vector.Down;
