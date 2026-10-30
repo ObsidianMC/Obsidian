@@ -46,8 +46,7 @@ internal sealed partial class FeatureRegistry
             {
                 var state = ReadBlock(json.GetProperty("state"));
 
-                // Shared with the legacy features, so its survival rules read the legacy block tags.
-                return (level, position) => state.CanSurvive(level, position + offset);
+                return (level, position) => this.CanSurvive(state, level, position + offset);
             }
             case "minecraft:has_sturdy_face":
             {
@@ -73,6 +72,35 @@ internal sealed partial class FeatureRegistry
             }
             default:
                 throw new NotSupportedException($"The 26.3 block predicate {type} isn't implemented yet.");
+        }
+    }
+
+    // New 26.x support-sensitive blocks use current tags; unchanged classes retain the shared survival rules.
+    private bool CanSurvive(IBlock state, IWorldGenLevel level, Vector position)
+    {
+        switch (state.BlockClass())
+        {
+            case "SulfurSpikeBlock":
+            case "PointedDripstoneBlock":
+            {
+                var direction = FeatureHelpers.ParseFace(state.GetProperty("vertical_direction"));
+                var support = level.GetBlock(position.Offset(direction.Opposite()));
+                var speleothems = this.BlockTag("minecraft:speleothems");
+
+                return support.IsFaceSturdy(direction)
+                    || speleothems.Contains(support.RegistryId)
+                    && support.RegistryId == state.RegistryId
+                    && support.GetProperty("vertical_direction") == state.GetProperty("vertical_direction");
+            }
+            case "ShelfMushroomBlock":
+            {
+                var facing = FeatureHelpers.ParseFace(state.GetProperty("facing"));
+                var support = level.GetBlock(position.Offset(facing.Opposite()));
+
+                return support.IsFaceSturdy(facing);
+            }
+            default:
+                return state.CanSurvive(level, position);
         }
     }
 

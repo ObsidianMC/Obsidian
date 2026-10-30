@@ -20,7 +20,7 @@ internal sealed partial class FeatureRegistry
             var level = context.Level;
             var state = provider(level, random, origin);
 
-            if (state is null || !state.CanSurvive(level, origin))
+            if (state is null || !this.CanSurvive(state, level, origin))
             {
                 return false;
             }

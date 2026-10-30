@@ -105356,6 +105356,844 @@
       ],
       "state": "minecraft:cactus{age=11}",
       "nextRandom": 1260042744
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "sulfur_spike_support_air_up",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:sulfur_spike",
+          "properties": {
+            "vertical_direction": "up"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          -1,
+          0,
+          {
+            "id": "minecraft:air"
+          }
+        ]
+      ],
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "sulfur_spike_support_stone_up",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:sulfur_spike",
+          "properties": {
+            "vertical_direction": "up"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          -1,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ]
+      ],
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "sulfur_spike_support_sulfur_spike_up",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:sulfur_spike",
+          "properties": {
+            "vertical_direction": "up"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          -1,
+          0,
+          {
+            "id": "minecraft:sulfur_spike",
+            "properties": {
+              "vertical_direction": "up"
+            }
+          }
+        ]
+      ],
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "sulfur_spike_support_sulfur_spike_down",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:sulfur_spike",
+          "properties": {
+            "vertical_direction": "up"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          -1,
+          0,
+          {
+            "id": "minecraft:sulfur_spike",
+            "properties": {
+              "vertical_direction": "down"
+            }
+          }
+        ]
+      ],
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "sulfur_spike_support_pointed_dripstone_up",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:sulfur_spike",
+          "properties": {
+            "vertical_direction": "up"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          -1,
+          0,
+          {
+            "id": "minecraft:pointed_dripstone",
+            "properties": {
+              "vertical_direction": "up"
+            }
+          }
+        ]
+      ],
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "sulfur_spike_hanging_unsupported",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:sulfur_spike",
+          "properties": {
+            "vertical_direction": "down"
+          }
+        }
+      },
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "sulfur_spike_hanging_stone",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:sulfur_spike",
+          "properties": {
+            "vertical_direction": "down"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          1,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ]
+      ],
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "pointed_dripstone_support_air_up",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:pointed_dripstone",
+          "properties": {
+            "vertical_direction": "up"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          -1,
+          0,
+          {
+            "id": "minecraft:air"
+          }
+        ]
+      ],
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "pointed_dripstone_support_stone_up",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:pointed_dripstone",
+          "properties": {
+            "vertical_direction": "up"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          -1,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ]
+      ],
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "pointed_dripstone_support_pointed_dripstone_up",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:pointed_dripstone",
+          "properties": {
+            "vertical_direction": "up"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          -1,
+          0,
+          {
+            "id": "minecraft:pointed_dripstone",
+            "properties": {
+              "vertical_direction": "up"
+            }
+          }
+        ]
+      ],
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "pointed_dripstone_support_pointed_dripstone_down",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:pointed_dripstone",
+          "properties": {
+            "vertical_direction": "up"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          -1,
+          0,
+          {
+            "id": "minecraft:pointed_dripstone",
+            "properties": {
+              "vertical_direction": "down"
+            }
+          }
+        ]
+      ],
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "pointed_dripstone_support_sulfur_spike_up",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:pointed_dripstone",
+          "properties": {
+            "vertical_direction": "up"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          -1,
+          0,
+          {
+            "id": "minecraft:sulfur_spike",
+            "properties": {
+              "vertical_direction": "up"
+            }
+          }
+        ]
+      ],
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "pointed_dripstone_hanging_unsupported",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:pointed_dripstone",
+          "properties": {
+            "vertical_direction": "down"
+          }
+        }
+      },
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "pointed_dripstone_hanging_stone",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:pointed_dripstone",
+          "properties": {
+            "vertical_direction": "down"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          1,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ]
+      ],
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "shelf_mushroom_air",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:shelf_mushroom",
+          "properties": {
+            "facing": "north"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          0,
+          1,
+          {
+            "id": "minecraft:air"
+          }
+        ]
+      ],
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "shelf_mushroom_stone",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:shelf_mushroom",
+          "properties": {
+            "facing": "north"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          0,
+          1,
+          {
+            "id": "minecraft:stone"
+          }
+        ]
+      ],
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "shelf_mushroom_oak_leaves",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:shelf_mushroom",
+          "properties": {
+            "facing": "north"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          0,
+          1,
+          {
+            "id": "minecraft:oak_leaves"
+          }
+        ]
+      ],
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:air",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "sulfur_simple_unsupported",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:sulfur_spike"
+          }
+        },
+        "placement": []
+      },
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": false,
+      "changes": []
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -1
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "sulfur_simple_supported",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:sulfur_spike"
+          }
+        },
+        "placement": []
+      },
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          0,
+          0,
+          "minecraft:sulfur_spike{thickness=tip, vertical_direction=up, waterlogged=false}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:air",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "shelf_simple_unsupported",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:shelf_mushroom"
+          }
+        },
+        "placement": []
+      },
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": false,
+      "changes": []
     }
   ],
   "biomes": [
