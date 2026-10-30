@@ -1,0 +1,2 @@
+# The capture writes LF; keep it in checkouts too, so a re-record is byte-for-byte comparable.
+* text eol=lf

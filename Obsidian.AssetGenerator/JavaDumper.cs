@@ -4,7 +4,7 @@ namespace Obsidian.AssetGenerator;
 /// Runs <c>Java/VanillaDumper.java</c> against a vanilla server, which writes the assets the data generators don't
 /// report: per block state light, physics, transforms, map colors and wall shape covers, entity data, and the vanilla
 /// types packets write (<c>packet_types.json</c>). It also writes
-/// <see cref="WorldgenGroupsPath"/> and <see cref="PacketFieldsPath"/> into the server's directory for
+/// <see cref="WorldgenGroupsPath"/> and <see cref="PacketFieldsPath"/> into the server's scratch directory for
 /// <see cref="Datagen.DatagenAssets"/>.
 /// </summary>
 /// <remarks>
@@ -19,17 +19,19 @@ internal static class JavaDumper
     /// The vanilla class (e.g. <c>TreeFeatures</c>, <c>TreePlacements</c>) that registers each configured and placed
     /// feature, which the worldgen assets are grouped by.
     /// </summary>
-    public static string WorldgenGroupsPath(VanillaServer server) => Path.Combine(server.Directory, "worldgen_groups.json");
+    public static string WorldgenGroupsPath(VanillaServer server) =>
+        Path.Combine(server.ScratchDirectory, "worldgen_groups.json");
 
     /// <summary>
     /// The fields of each packet's class and how vanilla writes them, as
     /// <c>direction → packet id → [{ name, type, sent, encoding, conditional, repeated, packed }]</c>, which are added to
     /// <c>packets.json</c>.
     /// </summary>
-    public static string PacketFieldsPath(VanillaServer server) => Path.Combine(server.Directory, "packet_fields.json");
+    public static string PacketFieldsPath(VanillaServer server) =>
+        Path.Combine(server.ScratchDirectory, "packet_fields.json");
 
     public static Task RunAsync(VanillaServer server, string outputDirectory) =>
-        VanillaServer.RunJavaAsync(server.Directory,
+        VanillaServer.RunJavaAsync(server.ScratchDirectory,
             "-cp", string.Join(Path.PathSeparator, server.ClassPath),
-            SourcePath, outputDirectory, server.Directory);
+            SourcePath, outputDirectory, server.ScratchDirectory);
 }

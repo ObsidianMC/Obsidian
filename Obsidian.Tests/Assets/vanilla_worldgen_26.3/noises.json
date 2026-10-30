@@ -1,0 +1,517 @@
+{
+  "version": "26.3",
+  "cases": [
+    {
+      "seed": 12345,
+      "noise": "minecraft:continentalness",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": -0.40261573
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:continentalness",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": -0.061927088
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:continentalness",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": -0.33715537
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:continentalness",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": -0.037729293
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:temperature",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": -0.024734471
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:temperature",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": -0.033629816
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:temperature",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": -0.82040364
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:temperature",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": -0.20409183
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:offset",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": -0.537155
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:offset",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": 0.034794677
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:offset",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": -0.11144609
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:offset",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": -0.4706601
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:aquifer_barrier",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": 0.012174994
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:aquifer_barrier",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": -0.021883488
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:aquifer_barrier",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": -0.40447742
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:aquifer_barrier",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": -0.54901516
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:ridge",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": 0.17544213
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:ridge",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": 0.2527751
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:ridge",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": -0.082491785
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:ridge",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": 0.3434748
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:spaghetti_3d_1",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": 0.003558738
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:spaghetti_3d_1",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": 0.23559014
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:spaghetti_3d_1",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": 0.3995814
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:spaghetti_3d_1",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": 0.64851624
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:cave_cheese",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": 0.6132534
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:cave_cheese",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": 0.30501017
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:cave_cheese",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": -0.16129206
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:cave_cheese",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": 0.46942905
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:noodle",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": 0.6335792
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:noodle",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": 0.47346404
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:noodle",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": 0.29663867
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:noodle",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": -0.37442654
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:continentalness",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": -0.30933696
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:continentalness",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": -0.1652207
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:continentalness",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": -0.15599456
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:continentalness",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": -0.084457345
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:temperature",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": 0.42213753
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:temperature",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": 0.3478585
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:temperature",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": -0.1605234
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:temperature",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": 0.45249984
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:offset",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": 0.1389302
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:offset",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": 0.26076856
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:offset",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": 0.13934128
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:offset",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": 0.05350183
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:aquifer_barrier",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": 0.12520927
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:aquifer_barrier",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": 0.1770286
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:aquifer_barrier",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": 0.06449263
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:aquifer_barrier",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": -0.29589432
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:ridge",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": -0.27783152
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:ridge",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": 0.038823035
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:ridge",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": -0.29056877
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:ridge",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": 0.028203543
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:spaghetti_3d_1",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": 0.1298197
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:spaghetti_3d_1",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": 0.4824916
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:spaghetti_3d_1",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": 0.016352028
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:spaghetti_3d_1",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": 0.095225595
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:cave_cheese",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": -0.4418532
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:cave_cheese",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": -0.32742247
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:cave_cheese",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": 0.25019744
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:cave_cheese",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": -0.5222973
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:noodle",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": -0.21814331
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:noodle",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": -0.12741795
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:noodle",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": 0.44591576
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:noodle",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": 0.4350365
+    }
+  ]
+}

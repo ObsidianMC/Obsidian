@@ -81,50 +81,82 @@ final class PacketFormats {
 
     // Buffer write methods (by name) and codecs (by Owner.FIELD) that write the same thing, by encoding kind.
     private static final Map<String, String> KINDS = Map.ofEntries(
-        Map.entry("ByteBufCodecs.BOOL", "boolean"), Map.entry("writeBoolean", "boolean"),
-        Map.entry("ByteBufCodecs.BYTE", "byte"), Map.entry("writeByte", "byte"),
-        Map.entry("ByteBufCodecs.SHORT", "short"), Map.entry("writeShort", "short"),
+        Map.entry("ByteBufCodecs.BOOL", "boolean"),
+        Map.entry("writeBoolean", "boolean"),
+        Map.entry("ByteBufCodecs.BYTE", "byte"),
+        Map.entry("writeByte", "byte"),
+        Map.entry("ByteBufCodecs.SHORT", "short"),
+        Map.entry("writeShort", "short"),
         Map.entry("ByteBufCodecs.UNSIGNED_SHORT", "unsigned_short"),
-        Map.entry("ByteBufCodecs.INT", "int"), Map.entry("writeInt", "int"),
-        Map.entry("ByteBufCodecs.VAR_INT", "var_int"), Map.entry("writeVarInt", "var_int"), Map.entry("VarInt.write", "var_int"),
-        Map.entry("ByteBufCodecs.LONG", "long"), Map.entry("writeLong", "long"),
-        Map.entry("ByteBufCodecs.VAR_LONG", "var_long"), Map.entry("writeVarLong", "var_long"), Map.entry("VarLong.write", "var_long"),
-        Map.entry("ByteBufCodecs.FLOAT", "float"), Map.entry("writeFloat", "float"),
-        Map.entry("ByteBufCodecs.DOUBLE", "double"), Map.entry("writeDouble", "double"),
-        Map.entry("ByteBufCodecs.BYTE_ARRAY", "byte_array"), Map.entry("writeByteArray", "byte_array"),
-        Map.entry("ByteBufCodecs.LONG_ARRAY", "long_array"), Map.entry("writeLongArray", "long_array"),
+        Map.entry("ByteBufCodecs.INT", "int"),
+        Map.entry("writeInt", "int"),
+        Map.entry("ByteBufCodecs.VAR_INT", "var_int"),
+        Map.entry("writeVarInt", "var_int"),
+        Map.entry("VarInt.write", "var_int"),
+        Map.entry("ByteBufCodecs.LONG", "long"),
+        Map.entry("writeLong", "long"),
+        Map.entry("ByteBufCodecs.VAR_LONG", "var_long"),
+        Map.entry("writeVarLong", "var_long"),
+        Map.entry("VarLong.write", "var_long"),
+        Map.entry("ByteBufCodecs.FLOAT", "float"),
+        Map.entry("writeFloat", "float"),
+        Map.entry("ByteBufCodecs.DOUBLE", "double"),
+        Map.entry("writeDouble", "double"),
+        Map.entry("ByteBufCodecs.BYTE_ARRAY", "byte_array"),
+        Map.entry("writeByteArray", "byte_array"),
+        Map.entry("ByteBufCodecs.LONG_ARRAY", "long_array"),
+        Map.entry("writeLongArray", "long_array"),
         Map.entry("writeVarIntArray", "var_int_array"),
-        Map.entry("UUIDUtil.STREAM_CODEC", "uuid"), Map.entry("writeUUID", "uuid"),
-        Map.entry("Identifier.STREAM_CODEC", "identifier"), Map.entry("writeIdentifier", "identifier"),
+        Map.entry("UUIDUtil.STREAM_CODEC", "uuid"),
+        Map.entry("writeUUID", "uuid"),
+        Map.entry("Identifier.STREAM_CODEC", "identifier"),
+        Map.entry("writeIdentifier", "identifier"),
         Map.entry("writeResourceKey", "identifier"),
-        Map.entry("BlockPos.STREAM_CODEC", "block_pos"), Map.entry("writeBlockPos", "block_pos"),
-        Map.entry("Vec3.STREAM_CODEC", "vec3"), Map.entry("writeVec3", "vec3"),
-        Map.entry("Vec3.LP_STREAM_CODEC", "lp_vec3"), Map.entry("LpVec3.write", "lp_vec3"), Map.entry("writeLpVec3", "lp_vec3"),
-        Map.entry("ByteBufCodecs.CONTAINER_ID", "container_id"), Map.entry("writeContainerId", "container_id"),
+        Map.entry("BlockPos.STREAM_CODEC", "block_pos"),
+        Map.entry("writeBlockPos", "block_pos"),
+        Map.entry("Vec3.STREAM_CODEC", "vec3"),
+        Map.entry("writeVec3", "vec3"),
+        Map.entry("Vec3.LP_STREAM_CODEC", "lp_vec3"),
+        Map.entry("LpVec3.write", "lp_vec3"),
+        Map.entry("writeLpVec3", "lp_vec3"),
+        Map.entry("ByteBufCodecs.CONTAINER_ID", "container_id"),
+        Map.entry("writeContainerId", "container_id"),
         Map.entry("ByteBufCodecs.ROTATION_BYTE", "angle"),
         Map.entry("ComponentSerialization.TRUSTED_STREAM_CODEC", "component"),
         Map.entry("ComponentSerialization.TRUSTED_CONTEXT_FREE_STREAM_CODEC", "component"),
         Map.entry("ComponentSerialization.STREAM_CODEC", "component"),
-        Map.entry("ItemStack.OPTIONAL_STREAM_CODEC", "item_stack"), Map.entry("ItemStack.STREAM_CODEC", "required_item_stack"),
+        Map.entry("ItemStack.OPTIONAL_STREAM_CODEC", "item_stack"),
+        Map.entry("ItemStack.STREAM_CODEC", "required_item_stack"),
         Map.entry("ItemStack.OPTIONAL_UNTRUSTED_STREAM_CODEC", "untrusted_item_stack"),
-        Map.entry("ByteBufCodecs.COMPOUND_TAG", "nbt"), Map.entry("ByteBufCodecs.TRUSTED_COMPOUND_TAG", "nbt"),
-        Map.entry("ByteBufCodecs.OPTIONAL_COMPOUND_TAG", "optional_nbt"), Map.entry("writeNbt", "optional_nbt"),
-        Map.entry("ByteBufCodecs.TAG", "tag"), Map.entry("writeBitSet", "bit_set"),
-        Map.entry("ChunkPos.STREAM_CODEC", "chunk_pos"), Map.entry("writeChunkPos", "chunk_pos"));
+        Map.entry("ByteBufCodecs.COMPOUND_TAG", "nbt"),
+        Map.entry("ByteBufCodecs.TRUSTED_COMPOUND_TAG", "nbt"),
+        Map.entry("ByteBufCodecs.OPTIONAL_COMPOUND_TAG", "optional_nbt"),
+        Map.entry("writeNbt", "optional_nbt"),
+        Map.entry("ByteBufCodecs.TAG", "tag"),
+        Map.entry("writeBitSet", "bit_set"),
+        Map.entry("ChunkPos.STREAM_CODEC", "chunk_pos"),
+        Map.entry("writeChunkPos", "chunk_pos"));
 
     // FriendlyByteBuf.writeUtf's and ByteBufCodecs.STRING_UTF8's maximum length.
     private static final int MAX_STRING = 32767;
 
     // The marker field of a collection's element, for describing what a writer lambda writes per element.
     private static final String ELEMENT = "\0element";
+
     private static final int MAX_DEPTH = 8;
 
     private final Class<?> byteBuf;
+
     private final Class<?> streamEncoder;
+
     private final Class<?> codec;
+
     private final Class<?> codecOperation;
+
     private final Map<String, ClassModel> models = new HashMap<>();
+
     private final Map<Class<?>, Map<String, Node>> statics = new HashMap<>();
+
     private final Map<String, TypeDefinition> types = new TreeMap<>();
 
     PacketFormats() {
@@ -141,8 +173,9 @@ final class PacketFormats {
     Map<String, Write> writes(Class<?> packet) {
         var own = staticsOf(packet);
         var codecs = own.keySet().stream().filter(name -> name.endsWith("STREAM_CODEC")).sorted().toList();
-        if (codecs.isEmpty())
+        if (codecs.isEmpty()) {
             return null;
+        }
         return recordWrites(packet, own.get(codecs.contains("STREAM_CODEC") ? "STREAM_CODEC" : codecs.getFirst()));
     }
 
@@ -156,14 +189,16 @@ final class PacketFormats {
         var analysis = new Analysis(type);
         analysis.statics.putAll(staticsOf(type));
         var events = new ArrayList<Event>();
-        if (!readCodec(analysis, codec, events))
+        if (!readCodec(analysis, codec, events)) {
             return null;
+        }
 
         // Codecs with a hand-written decoder (Packet.codec(X::write, X::new)) can read differently from how they write.
         var writes = aggregate(events);
         if (codec.kind() == Kind.CALL && codec.arguments().size() > 1 && codec.arguments().get(1).kind() == Kind.LAMBDA
-            && Set.of("Packet.codec", "StreamCodec.ofMember", "StreamCodec.of").contains(codec.name()))
+            && Set.of("Packet.codec", "StreamCodec.ofMember", "StreamCodec.of").contains(codec.name())) {
             applyReadHints(writes, decoderHints(type, codec.arguments().get(1)));
+        }
         return writes;
     }
 
@@ -178,15 +213,18 @@ final class PacketFormats {
         if (handle.kind() == DirectMethodHandleDesc.Kind.CONSTRUCTOR) {
             var owner = classOf(handle.owner());
             var constructor = owner == null ? null : method(owner, "<init>", handle.lookupDescriptor());
-            if (constructor != null)
+            if (constructor != null) {
                 readConstructor(analysis, owner, constructor);
+            }
         } else {
             runLambda(analysis, decoder, new ArrayList<>());
         }
         return analysis.readHints;
     }
 
-    /** The read hints of a class's constructor that reads it from a buffer ({@code X(FriendlyByteBuf)}), if it has one. */
+    /**
+     * The read hints of a class's constructor that reads it from a buffer ({@code X(FriendlyByteBuf)}), if it has one.
+     */
     private Map<String, Map<String, Object>> constructorHints(Class<?> type) {
         var analysis = new Analysis(type);
         analysis.statics.putAll(staticsOf(type));
@@ -194,8 +232,10 @@ final class PacketFormats {
         for (var method : model == null ? List.<MethodModel>of() : model.methods()) {
             var parameters = MethodTypeDesc.ofDescriptor(method.methodType().stringValue()).parameterList();
             var parameter = parameters.size() == 1 ? classOf(parameters.getFirst()) : null;
-            if (method.methodName().equalsString("<init>") && parameter != null && byteBuf.isAssignableFrom(parameter))
+            if (method.methodName().equalsString("<init>") && parameter != null
+                && byteBuf.isAssignableFrom(parameter)) {
                 readConstructor(analysis, type, method);
+            }
         }
         return analysis.readHints;
     }
@@ -204,7 +244,9 @@ final class PacketFormats {
         var arguments = new ArrayList<Node>(List.of(Node.of(Kind.PACKET, owner)));
         for (var parameter : MethodTypeDesc.ofDescriptor(constructor.methodType().stringValue()).parameterList()) {
             var parameterType = classOf(parameter);
-            arguments.add(parameterType != null && byteBuf.isAssignableFrom(parameterType) ? Node.of(Kind.BUFFER, parameterType) : Node.value(Set.of(), parameterType));
+            arguments.add(
+                parameterType != null && byteBuf.isAssignableFrom(parameterType) ? Node.of(Kind.BUFFER, parameterType)
+                                                                                 : Node.value(Set.of(), parameterType));
         }
         interpret(analysis, owner, constructor, arguments, Flow.ALWAYS, new ArrayList<>());
     }
@@ -215,16 +257,22 @@ final class PacketFormats {
         for (var hint : hints.entrySet()) {
             var write = writes.get(hint.getKey());
             if (write == null || !(write.encoding() instanceof Map<?, ?> encoding))
+                {
                 continue;
+            }
 
             var narrowed = new LinkedHashMap<>((Map<String, Object>) encoding);
             var kind = narrowed.get("kind");
             if ("string".equals(kind) && hint.getValue().get("max") instanceof Integer max
-                && (!(narrowed.get("max") instanceof Integer written) || max < written))
+                && (!(narrowed.get("max") instanceof Integer written) || max < written)) {
                 narrowed.put("max", max);
-            if (("byte".equals(kind) || "short".equals(kind)) && Boolean.TRUE.equals(hint.getValue().get("unsigned")))
+            }
+            if (("byte".equals(kind) || "short".equals(kind)) && Boolean.TRUE.equals(hint.getValue().get("unsigned"))) {
                 narrowed.put("unsigned", true);
-            writes.put(hint.getKey(), new Write(write.order(), narrowed, write.conditional(), write.repeated(), write.packed()));
+            }
+            writes.put(
+                hint.getKey(),
+                new Write(write.order(), narrowed, write.conditional(), write.repeated(), write.packed()));
         }
     }
 
@@ -236,16 +284,18 @@ final class PacketFormats {
         var analysis = new Analysis(type);
         analysis.statics.putAll(staticsOf(type));
         var arguments = new ArrayList<Node>();
-        if (!write.method().flags().has(java.lang.reflect.AccessFlag.STATIC))
+        if (!write.method().flags().has(java.lang.reflect.AccessFlag.STATIC)) {
             arguments.add(Node.of(Kind.PACKET, type));
+        }
         for (var parameter : MethodTypeDesc.ofDescriptor(write.method().methodType().stringValue()).parameterList()) {
             var parameterType = classOf(parameter);
-            if (parameterType != null && byteBuf.isAssignableFrom(parameterType))
+            if (parameterType != null && byteBuf.isAssignableFrom(parameterType)) {
                 arguments.add(Node.of(Kind.BUFFER, parameterType));
-            else if (parameterType != null && parameterType != Object.class && parameterType.isAssignableFrom(type))
+            } else if (parameterType != null && parameterType != Object.class && parameterType.isAssignableFrom(type)) {
                 arguments.add(Node.of(Kind.PACKET, parameterType));
-            else
+            } else {
                 arguments.add(Node.value(Set.of(), parameterType));
+            }
         }
         var events = new ArrayList<Event>();
         interpret(analysis, write.owner(), write.method(), arguments, Flow.ALWAYS, events);
@@ -258,21 +308,26 @@ final class PacketFormats {
     private static Map<String, Write> aggregate(List<Event> events) {
         var writes = new LinkedHashMap<String, List<Event>>();
         for (var event : events) {
-            for (var field : event.fields())
+            for (var field : event.fields()) {
                 writes.computeIfAbsent(field, key -> new ArrayList<>()).add(event);
+            }
         }
 
         var result = new HashMap<String, Write>();
         for (var entry : writes.entrySet()) {
             var encodings = new ArrayList<Object>();
-            for (var event : entry.getValue())
+            for (var event : entry.getValue()) {
                 encodings.add(event.encoding());
+            }
             var fieldEvents = entry.getValue();
-            result.put(entry.getKey(), new Write(events.indexOf(fieldEvents.getFirst()),
-                encodings.size() == 1 ? encodings.getFirst() : node("sequence", "of", encodings),
-                fieldEvents.stream().allMatch(event -> event.flow().conditional()),
-                fieldEvents.stream().allMatch(event -> event.flow().repeated()),
-                fieldEvents.stream().anyMatch(event -> event.fields().size() > 1)));
+            result.put(
+                entry.getKey(),
+                new Write(
+                    events.indexOf(fieldEvents.getFirst()),
+                    encodings.size() == 1 ? encodings.getFirst() : node("sequence", "of", encodings),
+                    fieldEvents.stream().allMatch(event -> event.flow().conditional()),
+                    fieldEvents.stream().allMatch(event -> event.flow().repeated()),
+                    fieldEvents.stream().anyMatch(event -> event.fields().size() > 1)));
         }
 
         return result;
@@ -281,42 +336,55 @@ final class PacketFormats {
     /** The static fields a class's initializer sets, as the expressions that build them, by name. */
     private Map<String, Node> staticsOf(Class<?> type) {
         var known = statics.get(type);
-        if (known != null)
+        if (known != null) {
             return known;
+        }
 
         var analysis = new Analysis(type);
         statics.put(type, analysis.statics); // before interpreting, for initializers that read their own codecs
         var initializer = method(type, "<clinit>", "()V");
-        if (initializer != null)
+        if (initializer != null) {
             interpret(analysis, type, initializer, List.of(), Flow.ALWAYS, new ArrayList<>());
+        }
         return analysis.statics;
     }
 
-    /** Records what a codec expression writes of the class it encodes, or returns false for codecs this doesn't understand. */
+    /**
+     * Records what a codec expression writes of the class it encodes, or returns false for codecs this doesn't
+     * understand.
+     */
     private boolean readCodec(Analysis analysis, Node codec, List<Event> events) {
         // A codec that's another static codec (STREAM_CODEC = DETAILS_STREAM_CODEC) is that codec.
-        while (codec != null && codec.kind() == Kind.STATIC && codec.owner() != null)
+        while (codec != null && codec.kind() == Kind.STATIC && codec.owner() != null) {
             codec = staticsOf(codec.owner()).get(codec.name().substring(codec.name().lastIndexOf('.') + 1));
-        if (codec == null || codec.kind() != Kind.CALL)
+        }
+        if (codec == null || codec.kind() != Kind.CALL) {
             return false;
+        }
 
         var arguments = codec.arguments();
         switch (codec.name()) {
             case "StreamCodec.composite" -> {
                 // composite(codec1, getter1, ..., codecN, getterN, constructor)
-                for (var i = 0; i + 1 < arguments.size(); i += 2)
-                    events.add(new Event(getterFields(analysis, arguments.get(i + 1)), describe(arguments.get(i)), Flow.ALWAYS));
+                for (var i = 0; i + 1 < arguments.size(); i += 2) {
+                    events.add(new Event(
+                        getterFields(analysis, arguments.get(i + 1)),
+                        describe(arguments.get(i)),
+                        Flow.ALWAYS));
+                }
                 return true;
             }
             case "StreamCodec.unit" -> {
                 return true;
             }
             case "Packet.codec", "StreamCodec.ofMember", "StreamCodec.of" -> {
-                return arguments.getFirst().kind() == Kind.LAMBDA && runLambda(analysis, arguments.getFirst(), events) != null;
+                return arguments.getFirst().kind() == Kind.LAMBDA
+                    && runLambda(analysis, arguments.getFirst(), events) != null;
             }
             case "StreamCodec.map" -> {
                 // codec.map(constructor, getter)
-                events.add(new Event(getterFields(analysis, arguments.get(1)), describe(codec.receiver()), Flow.ALWAYS));
+                events.add(
+                    new Event(getterFields(analysis, arguments.get(1)), describe(codec.receiver()), Flow.ALWAYS));
                 return true;
             }
             case "StreamCodec.cast" -> {
@@ -330,8 +398,9 @@ final class PacketFormats {
 
     /** The packet fields a getter lambda (Packet::field, p -> p.field) reads. */
     private Set<String> getterFields(Analysis analysis, Node getter) {
-        if (getter.kind() != Kind.LAMBDA)
+        if (getter.kind() != Kind.LAMBDA) {
             return Set.of();
+        }
         var returned = runLambda(analysis, getter, new ArrayList<>());
         return returned == null ? Set.of() : returned.fields();
     }
@@ -343,22 +412,25 @@ final class PacketFormats {
     private Node runLambda(Analysis analysis, Node lambda, List<Event> events) {
         var handle = lambda.handle();
         var owner = classOf(handle.owner());
-        if (owner == null)
+        if (owner == null) {
             return null;
+        }
         var type = handle.invocationType();
         var method = method(owner, handle.methodName(), handle.lookupDescriptor());
-        if (method == null || method.code().isEmpty())
+        if (method == null || method.code().isEmpty()) {
             return null;
+        }
 
         var arguments = new ArrayList<Node>(lambda.arguments());
         for (var i = arguments.size(); i < type.parameterCount(); i++) {
             var parameter = classOf(type.parameterType(i));
-            if (parameter != null && byteBuf.isAssignableFrom(parameter))
+            if (parameter != null && byteBuf.isAssignableFrom(parameter)) {
                 arguments.add(Node.of(Kind.BUFFER, parameter));
-            else if (parameter != null && parameter != Object.class && parameter.isAssignableFrom(analysis.packet))
+            } else if (parameter != null && parameter != Object.class && parameter.isAssignableFrom(analysis.packet)) {
                 arguments.add(Node.of(Kind.PACKET, parameter));
-            else
+            } else {
                 arguments.add(new Node(Kind.VALUE, "element", null, List.of(), Set.of(ELEMENT), parameter, null, null));
+            }
         }
 
         return interpret(analysis, owner, method, arguments, Flow.ALWAYS, events);
@@ -369,7 +441,9 @@ final class PacketFormats {
     /** One packet's analysis: its class and the static fields its initializer sets. */
     private static final class Analysis {
         final Class<?> packet;
+
         final Map<String, Node> statics = new HashMap<>();
+
         final Set<String> running = new HashSet<>();
         // How decoders read the class's fields, by field (see decoderHints).
         final Map<String, Map<String, Object>> readHints = new HashMap<>();
@@ -385,8 +459,15 @@ final class PacketFormats {
      * A symbolic value: the packet, the buffer, a static field, a call building a codec, a lambda, a constant or any
      * other value; each with the packet fields it's computed from.
      */
-    private record Node(Kind kind, String name, Node receiver, List<Node> arguments, Set<String> fields, Class<?> type,
-                        DirectMethodHandleDesc handle, Class<?> owner) {
+    private record Node(
+        Kind kind,
+        String name,
+        Node receiver,
+        List<Node> arguments,
+        Set<String> fields,
+        Class<?> type,
+        DirectMethodHandleDesc handle,
+        Class<?> owner) {
         static Node of(Kind kind, Class<?> type) {
             return new Node(kind, null, null, List.of(), Set.of(), type, null, null);
         }
@@ -416,125 +497,198 @@ final class PacketFormats {
      * Interprets a method from top to bottom with the given arguments (the receiver first), adding the writes it makes
      * to {@code events}, and returns what it returns.
      */
-    private Node interpret(Analysis analysis, Class<?> owner, MethodModel method, List<Node> arguments, Flow flow, List<Event> events) {
+    private Node interpret(
+        Analysis analysis,
+        Class<?> owner,
+        MethodModel method,
+        List<Node> arguments,
+        Flow flow,
+        List<Event> events) {
         var code = method.code().orElse(null);
-        if (code == null)
+        if (code == null) {
             return Node.value(Set.of(), null);
+        }
 
         var elements = code.elementList();
         var labels = new HashMap<Label, Integer>();
         for (var i = 0; i < elements.size(); i++) {
-            if (elements.get(i) instanceof LabelTarget target)
+            if (elements.get(i) instanceof LabelTarget target) {
                 labels.put(target.label(), i);
+            }
         }
         var branches = new Branches(elements, labels);
 
-        var locals = new HashMap<Integer, Node>();
+        var frame = new Frame();
         var slot = 0;
         for (var argument : arguments) {
-            locals.put(slot, argument);
+            frame.locals.put(slot, argument);
             slot += argument.wide() ? 2 : 1;
         }
-
-        var stack = new ArrayList<Node>();
-        var saved = new HashMap<Label, List<Node>>();
-        var returned = new ArrayList<Node>();
-        var reachable = true;
         for (var i = 0; i < elements.size(); i++) {
             var element = elements.get(i);
             if (element instanceof LabelTarget target) {
                 // Code after a jump continues with the stack of the branch that jumps here.
-                if (!reachable) {
-                    var at = saved.get(target.label());
-                    stack = at == null ? new ArrayList<>() : new ArrayList<>(at);
-                    reachable = true;
+                if (!frame.reachable) {
+                    var at = frame.saved.get(target.label());
+                    frame.stack = at == null ? new ArrayList<>() : new ArrayList<>(at);
+                    frame.reachable = true;
                 }
                 continue;
             }
-            if (!reachable || !(element instanceof Instruction instruction))
+            if (!frame.reachable || !(element instanceof Instruction instruction)) {
                 continue;
+            }
 
             var at = flow.and(branches.conditional[i], branches.repeated[i]);
-            switch (instruction) {
-                case LoadInstruction load -> stack.add(locals.getOrDefault(load.slot(), Node.value(Set.of(), kindClass(load.typeKind()))));
-                case StoreInstruction store -> locals.put(store.slot(), pop(stack));
-                case ConstantInstruction constant -> stack.add(new Node(Kind.CONSTANT, String.valueOf(constant.constantValue()), null,
-                    List.of(), branches.conditionFields(i), kindClass(constant.typeKind()), null, null));
-                case FieldInstruction field -> field(analysis, field, stack);
-                case InvokeInstruction invoke -> invoke(analysis, invoke, stack, at, events);
-                case InvokeDynamicInstruction dynamic -> stack.add(dynamic(dynamic, popArguments(stack, dynamic.typeSymbol().parameterCount())));
-                case StackInstruction shuffle -> shuffle(shuffle.opcode(), stack);
-                case OperatorInstruction operator -> {
-                    var unary = switch (operator.opcode()) {
-                        case INEG, LNEG, FNEG, DNEG, ARRAYLENGTH -> true;
-                        default -> false;
-                    };
-                    var operands = unary ? List.of(pop(stack)) : popArguments(stack, 2);
-                    var result = switch (operator.opcode()) {
-                        case LCMP, FCMPL, FCMPG, DCMPL, DCMPG, ARRAYLENGTH -> int.class;
-                        default -> kindClass(operator.typeKind());
-                    };
-                    stack.add(derive(operands, result));
-                }
-                case ConvertInstruction convert -> stack.add(derive(List.of(pop(stack)), kindClass(convert.toType())));
-                case TypeCheckInstruction check -> {
-                    if (check.opcode() == Opcode.INSTANCEOF)
-                        stack.add(derive(List.of(pop(stack)), int.class));
-                }
-                case NewObjectInstruction created -> stack.add(Node.value(Set.of(), classOf(created.className().asSymbol())));
-                case NewPrimitiveArrayInstruction ignored -> {
-                    pop(stack);
-                    stack.add(Node.value(Set.of(), null));
-                }
-                case NewReferenceArrayInstruction ignored -> {
-                    pop(stack);
-                    stack.add(Node.value(Set.of(), null));
-                }
-                case NewMultiArrayInstruction array -> {
-                    popArguments(stack, array.dimensions());
-                    stack.add(Node.value(Set.of(), null));
-                }
-                case ArrayLoadInstruction load -> stack.add(derive(popArguments(stack, 2), kindClass(load.typeKind())));
-                case ArrayStoreInstruction ignored -> popArguments(stack, 3);
-                case BranchInstruction branch -> {
-                    var name = branch.opcode().name();
-                    var operands = name.startsWith("IF_") ? popArguments(stack, 2) : name.startsWith("IF") ? List.of(pop(stack)) : List.<Node>of();
-                    branches.reached(i, operands);
-                    saved.putIfAbsent(branch.target(), new ArrayList<>(stack));
-                    if (branch.opcode() == Opcode.GOTO || branch.opcode() == Opcode.GOTO_W)
-                        reachable = false;
-                }
-                case TableSwitchInstruction table -> {
-                    branches.reached(i, List.of(pop(stack)));
-                    saved.putIfAbsent(table.defaultTarget(), new ArrayList<>(stack));
-                    for (var target : table.cases())
-                        saved.putIfAbsent(target.target(), new ArrayList<>(stack));
-                    reachable = false;
-                }
-                case LookupSwitchInstruction lookup -> {
-                    branches.reached(i, List.of(pop(stack)));
-                    saved.putIfAbsent(lookup.defaultTarget(), new ArrayList<>(stack));
-                    for (var target : lookup.cases())
-                        saved.putIfAbsent(target.target(), new ArrayList<>(stack));
-                    reachable = false;
-                }
-                case ReturnInstruction result -> {
-                    if (result.typeKind() != TypeKind.VOID)
-                        returned.add(pop(stack));
-                    reachable = false;
-                }
-                case ThrowInstruction ignored -> {
-                    pop(stack);
-                    reachable = false;
-                }
-                case MonitorInstruction ignored -> pop(stack);
-                default -> { } // nop, iinc
-            }
+            executeInstruction(analysis, instruction, frame, branches, i, at, events);
         }
 
-        if (returned.size() == 1)
-            return returned.getFirst();
-        return derive(returned, returned.isEmpty() ? null : returned.getFirst().type());
+        if (frame.returned.size() == 1) {
+            return frame.returned.getFirst();
+        }
+        return derive(frame.returned, frame.returned.isEmpty() ? null : frame.returned.getFirst().type());
+    }
+
+    private static final class Frame {
+        final Map<Integer, Node> locals = new HashMap<>();
+
+        List<Node> stack = new ArrayList<>();
+
+        final Map<Label, List<Node>> saved = new HashMap<>();
+
+        final List<Node> returned = new ArrayList<>();
+
+        boolean reachable = true;
+    }
+
+    private void executeInstruction(
+        Analysis analysis,
+        Instruction instruction,
+        Frame frame,
+        Branches branches,
+        int index,
+        Flow at,
+        List<Event> events) {
+        switch (instruction) {
+            case LoadInstruction load -> {
+                var fallback = Node.value(Set.of(), kindClass(load.typeKind()));
+                var value = frame.locals.getOrDefault(load.slot(), fallback);
+                frame.stack.add(value);
+            }
+            case StoreInstruction store -> frame.locals.put(store.slot(), pop(frame.stack));
+            case ConstantInstruction constant -> {
+                var value = new Node(
+                    Kind.CONSTANT,
+                    String.valueOf(constant.constantValue()),
+                    null,
+                    List.of(),
+                    branches.conditionFields(index),
+                    kindClass(constant.typeKind()),
+                    null,
+                    null);
+                frame.stack.add(value);
+            }
+            case FieldInstruction field -> field(analysis, field, frame.stack);
+            case InvokeInstruction invoke -> invoke(analysis, invoke, frame.stack, at, events);
+            case InvokeDynamicInstruction dynamic -> {
+                var arguments = popArguments(frame.stack, dynamic.typeSymbol().parameterCount());
+                var value = dynamic(dynamic, arguments);
+                frame.stack.add(value);
+            }
+            case StackInstruction shuffle -> shuffle(shuffle.opcode(), frame.stack);
+            case OperatorInstruction operator -> applyOperator(operator, frame.stack);
+            case ConvertInstruction convert -> {
+                var operands = List.of(pop(frame.stack));
+                var value = derive(operands, kindClass(convert.toType()));
+                frame.stack.add(value);
+            }
+            case TypeCheckInstruction check -> {
+                if (check.opcode() == Opcode.INSTANCEOF) {
+                    frame.stack.add(derive(List.of(pop(frame.stack)), int.class));
+                }
+            }
+            case NewObjectInstruction created -> {
+                var type = classOf(created.className().asSymbol());
+                frame.stack.add(Node.value(Set.of(), type));
+            }
+            case NewPrimitiveArrayInstruction ignored -> {
+                pop(frame.stack);
+                frame.stack.add(Node.value(Set.of(), null));
+            }
+            case NewReferenceArrayInstruction ignored -> {
+                pop(frame.stack);
+                frame.stack.add(Node.value(Set.of(), null));
+            }
+            case NewMultiArrayInstruction array -> {
+                popArguments(frame.stack, array.dimensions());
+                frame.stack.add(Node.value(Set.of(), null));
+            }
+            case ArrayLoadInstruction load -> {
+                var operands = popArguments(frame.stack, 2);
+                var value = derive(operands, kindClass(load.typeKind()));
+                frame.stack.add(value);
+            }
+            case ArrayStoreInstruction ignored -> popArguments(frame.stack, 3);
+            case BranchInstruction branch -> {
+                var name = branch.opcode().name();
+
+                List<Node> operands;
+                if (name.startsWith("IF_")) {
+                    operands = popArguments(frame.stack, 2);
+                } else if (name.startsWith("IF")) {
+                    operands = List.of(pop(frame.stack));
+                } else {
+                    operands = List.of();
+                }
+                branches.reached(index, operands);
+                frame.saved.putIfAbsent(branch.target(), new ArrayList<>(frame.stack));
+                if (branch.opcode() == Opcode.GOTO || branch.opcode() == Opcode.GOTO_W) {
+                    frame.reachable = false;
+                }
+            }
+            case TableSwitchInstruction table -> {
+                branches.reached(index, List.of(pop(frame.stack)));
+                frame.saved.putIfAbsent(table.defaultTarget(), new ArrayList<>(frame.stack));
+                for (var target : table.cases()) {
+                    frame.saved.putIfAbsent(target.target(), new ArrayList<>(frame.stack));
+                }
+                frame.reachable = false;
+            }
+            case LookupSwitchInstruction lookup -> {
+                branches.reached(index, List.of(pop(frame.stack)));
+                frame.saved.putIfAbsent(lookup.defaultTarget(), new ArrayList<>(frame.stack));
+                for (var target : lookup.cases()) {
+                    frame.saved.putIfAbsent(target.target(), new ArrayList<>(frame.stack));
+                }
+                frame.reachable = false;
+            }
+            case ReturnInstruction result -> {
+                if (result.typeKind() != TypeKind.VOID) {
+                    frame.returned.add(pop(frame.stack));
+                }
+                frame.reachable = false;
+            }
+            case ThrowInstruction ignored -> {
+                pop(frame.stack);
+                frame.reachable = false;
+            }
+            case MonitorInstruction ignored -> pop(frame.stack);
+            default -> {
+            } // nop, iinc
+        }
+    }
+
+    private static void applyOperator(OperatorInstruction operator, List<Node> stack) {
+        var unary = switch (operator.opcode()) {
+            case INEG, LNEG, FNEG, DNEG, ARRAYLENGTH -> true;
+            default -> false;
+        };
+        var operands = unary ? List.of(pop(stack)) : popArguments(stack, 2);
+        var result = switch (operator.opcode()) {
+            case LCMP, FCMPL, FCMPG, DCMPL, DCMPG, ARRAYLENGTH -> int.class;
+            default -> kindClass(operator.typeKind());
+        };
+        stack.add(derive(operands, result));
     }
 
     private void field(Analysis analysis, FieldInstruction field, List<Node> stack) {
@@ -548,20 +702,24 @@ final class PacketFormats {
             }
             case PUTSTATIC -> {
                 var value = pop(stack);
-                if (owner == analysis.packet)
+                if (owner == analysis.packet) {
                     analysis.statics.put(name, value);
+                }
             }
             case GETFIELD -> {
                 var receiver = pop(stack);
-                stack.add(receiver.kind() == Kind.PACKET ? Node.value(Set.of(name), type) : derive(List.of(receiver), type));
+                stack.add(
+                    receiver.kind() == Kind.PACKET ? Node.value(Set.of(name), type) : derive(List.of(receiver), type));
             }
             case PUTFIELD -> {
                 var value = pop(stack);
                 var receiver = pop(stack);
-                if (receiver.kind() == Kind.PACKET && value.name() != null && value.name().startsWith(READ_HINT))
+                if (receiver.kind() == Kind.PACKET && value.name() != null && value.name().startsWith(READ_HINT)) {
                     analysis.readHints.computeIfAbsent(name, key -> new HashMap<>()).putAll(readHint(value.name()));
+                }
             }
-            default -> { }
+            default -> {
+            }
         }
     }
 
@@ -575,73 +733,135 @@ final class PacketFormats {
         var name = invoke.name().stringValue();
 
         var all = new ArrayList<Node>();
-        if (receiver != null)
+        if (receiver != null) {
             all.add(receiver);
+        }
         all.addAll(arguments);
 
         // A constructed object stands for the values it was constructed from. Constructing the analyzed class (or
         // this(...)/super(...) in its constructor) is followed, for the fields it reads from the buffer.
         if (name.equals("<init>")) {
-            var key = owner == null ? null : owner.getName() + ".<init>" + type.descriptorString();
-            var constructor = key == null ? null : method(owner, "<init>", type.descriptorString());
-            if (constructor != null && constructor.code().isPresent() && (receiver.kind() == Kind.PACKET || receiver.type() == analysis.packet)
-                && analysis.running.size() < MAX_DEPTH && analysis.running.add(key)) {
-                var constructorArguments = new ArrayList<Node>(List.of(Node.of(Kind.PACKET, owner)));
-                constructorArguments.addAll(arguments);
-                interpret(analysis, owner, constructor, constructorArguments, flow, new ArrayList<>());
-                analysis.running.remove(key);
-            }
-            var constructed = derive(arguments, receiver.type());
-            for (var i = 0; i < stack.size(); i++) {
-                if (stack.get(i) == receiver)
-                    stack.set(i, constructed);
-            }
+            invokeConstructor(analysis, owner, type, receiver, arguments, stack, flow);
             return;
         }
 
         Node result;
-        var target = owner == null ? null : target(analysis, owner, name, type.descriptorString(), isStatic, receiver, invoke.opcode());
+        var target = owner == null
+            ? null
+            : target(analysis, owner, name, type.descriptorString(), isStatic, receiver, invoke.opcode());
         var key = target == null ? null : target.owner().getName() + "." + name + type.descriptorString();
         if (target != null && analysis.running.size() < MAX_DEPTH && analysis.running.add(key)) {
             // The packet's own code (super.write(buf), a helper): follow it with the values it's given.
             result = interpret(analysis, target.owner(), target.method(), all, flow, events);
             analysis.running.remove(key);
         } else if (owner != null && all.stream().anyMatch(node -> node.kind() == Kind.BUFFER)) {
-            var fields = new LinkedHashSet<String>();
-            for (var node : all) {
-                if (node.kind() != Kind.BUFFER)
-                    fields.addAll(node.fields());
-            }
-            var method = methodName(owner, name, type);
-            if (!fields.isEmpty())
-                events.add(new Event(fields, encoding(analysis, owner, method, name, type.descriptorString(), receiver, arguments), flow));
-            // Buffer writes return the buffer, for chaining; some reads say how the value is read.
-            var hint = receiver != null && receiver.kind() == Kind.BUFFER ? readHint(method.substring(method.lastIndexOf('.') + 1), arguments) : null;
-            result = receiver != null && receiver.kind() == Kind.BUFFER && returnType != null && byteBuf.isAssignableFrom(returnType)
-                ? receiver
-                : hint != null ? new Node(Kind.VALUE, hint, null, List.of(), Set.of(), returnType, null, null) : Node.value(Set.of(), returnType);
+            result = invokeBuffer(analysis, owner, name, type, receiver, arguments, all, returnType, flow, events);
         } else if (owner != null && (isCodec(returnType) || returnType == codecOperation)) {
-            result = new Node(Kind.CALL, methodName(owner, name, type), receiver, arguments, Set.of(), returnType, null, null);
+            result = new Node(
+                Kind.CALL,
+                methodName(owner, name, type),
+                receiver,
+                arguments,
+                Set.of(),
+                returnType,
+                null,
+                null);
         } else {
             result = derive(all, returnType);
         }
 
-        if (returnType != void.class)
+        if (returnType != void.class) {
             stack.add(result);
+        }
+    }
+
+    private void invokeConstructor(
+        Analysis analysis,
+        Class<?> owner,
+        MethodTypeDesc type,
+        Node receiver,
+        List<Node> arguments,
+        List<Node> stack,
+        Flow flow) {
+        var key = owner == null ? null : owner.getName() + ".<init>" + type.descriptorString();
+        var constructor = key == null ? null : method(owner, "<init>", type.descriptorString());
+        if (constructor != null && constructor.code().isPresent()
+            && (receiver.kind() == Kind.PACKET || receiver.type() == analysis.packet)
+            && analysis.running.size() < MAX_DEPTH && analysis.running.add(key)) {
+            var constructorArguments = new ArrayList<Node>(List.of(Node.of(Kind.PACKET, owner)));
+            constructorArguments.addAll(arguments);
+            interpret(analysis, owner, constructor, constructorArguments, flow, new ArrayList<>());
+            analysis.running.remove(key);
+        }
+        var constructed = derive(arguments, receiver.type());
+        for (var i = 0; i < stack.size(); i++) {
+            if (stack.get(i) == receiver) {
+                stack.set(i, constructed);
+            }
+        }
+    }
+
+    private Node invokeBuffer(
+        Analysis analysis,
+        Class<?> owner,
+        String name,
+        MethodTypeDesc type,
+        Node receiver,
+        List<Node> arguments,
+        List<Node> all,
+        Class<?> returnType,
+        Flow flow,
+        List<Event> events) {
+        var fields = new LinkedHashSet<String>();
+        for (var node : all) {
+            if (node.kind() != Kind.BUFFER) {
+                fields.addAll(node.fields());
+            }
+        }
+        var method = methodName(owner, name, type);
+        if (!fields.isEmpty()) {
+            events.add(new Event(
+                fields,
+                encoding(analysis, owner, method, name, type.descriptorString(), receiver, arguments),
+                flow));
+        }
+        // Buffer writes return the buffer, for chaining; some reads say how the value is read.
+        var hint = receiver != null && receiver.kind() == Kind.BUFFER
+            ? readHint(method.substring(method.lastIndexOf('.') + 1), arguments)
+            : null;
+        if (receiver != null && receiver.kind() == Kind.BUFFER && returnType != null
+            && byteBuf.isAssignableFrom(returnType)) {
+            return receiver;
+        }
+        if (hint != null) {
+            return new Node(Kind.VALUE, hint, null, List.of(), Set.of(), returnType, null, null);
+        }
+        return Node.value(Set.of(), returnType);
     }
 
     private record Target(Class<?> owner, MethodModel method) {}
 
     /** The code a call runs when it's the packet's own (in its class or superclasses), else null. */
-    private Target target(Analysis analysis, Class<?> owner, String name, String descriptor, boolean isStatic, Node receiver, Opcode opcode) {
+    private Target target(
+        Analysis analysis,
+        Class<?> owner,
+        String name,
+        String descriptor,
+        boolean isStatic,
+        Node receiver,
+        Opcode opcode) {
         // Virtual calls on the packet run its most derived override.
-        var start = !isStatic && opcode != Opcode.INVOKESPECIAL && receiver.kind() == Kind.PACKET ? analysis.packet : owner;
-        for (var type = start; type != null && type != Object.class && type != Record.class; type = type.getSuperclass()) {
-            if (!type.isAssignableFrom(analysis.packet))
+        var start =
+            !isStatic && opcode != Opcode.INVOKESPECIAL && receiver.kind() == Kind.PACKET ? analysis.packet : owner;
+        for (var type = start; type != null && type != Object.class && type != Record.class;
+             type = type.getSuperclass()) {
+            if (!type.isAssignableFrom(analysis.packet)) {
                 return null;
+            }
             var method = method(type, name, descriptor);
-            if (method != null)
+            if (method != null) {
                 return method.code().isPresent() ? new Target(type, method) : null;
+            }
         }
 
         return null;
@@ -652,11 +872,21 @@ final class PacketFormats {
         if (dynamic.bootstrapMethod().owner().descriptorString().equals("Ljava/lang/invoke/LambdaMetafactory;")
             && arguments.size() > 1 && arguments.get(1) instanceof DirectMethodHandleDesc handle) {
             var owner = classOf(handle.owner());
-            var name = owner == null ? handle.methodName() : methodName(owner, handle.methodName(), MethodTypeDesc.ofDescriptor(handle.lookupDescriptor()));
+            var name = owner == null
+                ? handle.methodName()
+                : methodName(owner, handle.methodName(), MethodTypeDesc.ofDescriptor(handle.lookupDescriptor()));
             var separator = name.lastIndexOf('.');
             var method = name.substring(separator + 1).startsWith("lambda$") ? "lambda" : name.substring(separator + 1);
             var reference = (separator < 0 ? "" : name.substring(0, separator)) + "::" + method;
-            return new Node(Kind.LAMBDA, reference, null, captured, Set.of(), classOf(dynamic.typeSymbol().returnType()), handle, null);
+            return new Node(
+                Kind.LAMBDA,
+                reference,
+                null,
+                captured,
+                Set.of(),
+                classOf(dynamic.typeSymbol().returnType()),
+                handle,
+                null);
         }
 
         // String concatenation and other dynamic values.
@@ -669,23 +899,37 @@ final class PacketFormats {
      * How a call that got the buffer encodes the values it was given: a buffer method, a codec's {@code encode}, or a
      * value's own {@code write} method.
      */
-    private Object encoding(Analysis analysis, Class<?> owner, String method, String name, String descriptor,
-                            Node receiver, List<Node> arguments) {
+    private Object encoding(
+        Analysis analysis,
+        Class<?> owner,
+        String method,
+        String name,
+        String descriptor,
+        Node receiver,
+        List<Node> arguments) {
         var simpleName = method.substring(method.lastIndexOf('.') + 1);
         var isBufferMethod = receiver != null ? receiver.kind() == Kind.BUFFER : byteBuf.isAssignableFrom(owner);
-        if (isBufferMethod)
-            return bufferWrite(analysis, simpleName, arguments.stream().filter(node -> node.kind() != Kind.BUFFER).toList());
-        if (receiver != null && isCodec(receiver.type()) && simpleName.equals("encode"))
+        if (isBufferMethod) {
+            return bufferWrite(
+                analysis,
+                simpleName,
+                arguments.stream().filter(node -> node.kind() != Kind.BUFFER).toList());
+        }
+        if (receiver != null && isCodec(receiver.type()) && simpleName.equals("encode")) {
             return describe(receiver);
-        if (KINDS.containsKey(method))
+        }
+        if (KINDS.containsKey(method)) {
             return node(KINDS.get(method));
+        }
 
         // value.write(buf) or Value.write(buf, value): the value's class describes itself.
-        var writesValue = receiver != null || arguments.stream().anyMatch(argument -> argument.kind() != Kind.BUFFER && argument.type() == owner);
+        var writesValue = receiver != null
+            || arguments.stream().anyMatch(argument -> argument.kind() != Kind.BUFFER && argument.type() == owner);
         if (writesValue && simpleName.equals("write")) {
             var reference = writeReference(owner, name, descriptor);
-            if (reference != null)
+            if (reference != null) {
                 return reference;
+            }
         }
         return opaque(method);
     }
@@ -693,14 +937,23 @@ final class PacketFormats {
     /** What a buffer method ({@code FriendlyByteBuf.writeX}) writes, given its arguments other than the buffer. */
     private Object bufferWrite(Analysis analysis, String name, List<Node> values) {
         return switch (name) {
-            case "writeUtf" -> node("string", "max", values.size() > 1 ? constant(values, 1) : Integer.valueOf(MAX_STRING));
+            case "writeUtf" ->
+                node("string", "max", values.size() > 1 ? constant(values, 1) : Integer.valueOf(MAX_STRING));
             case "writeEnum" -> enumNode(values.isEmpty() ? null : values.getFirst().type(), null, node("var_int"));
-            case "writeCollection" -> values.size() > 1 ? node("list", "of", describeWriter(analysis, values.get(1))) : opaque(name);
-            case "writeOptional" -> values.size() > 1 ? node("optional", "of", describeWriter(analysis, values.get(1))) : opaque(name);
-            case "writeNullable" -> values.size() > 1 ? node("nullable", "of", describeWriter(analysis, values.get(1))) : opaque(name);
-            case "writeMap" -> values.size() > 2
-                ? node("map", "key", describeWriter(analysis, values.get(1)), "value", describeWriter(analysis, values.get(2)))
-                : opaque(name);
+            case "writeCollection" ->
+                values.size() > 1 ? node("list", "of", describeWriter(analysis, values.get(1))) : opaque(name);
+            case "writeOptional" ->
+                values.size() > 1 ? node("optional", "of", describeWriter(analysis, values.get(1))) : opaque(name);
+            case "writeNullable" ->
+                values.size() > 1 ? node("nullable", "of", describeWriter(analysis, values.get(1))) : opaque(name);
+            case "writeMap" ->
+                values.size() > 2 ? node(
+                                        "map",
+                                        "key",
+                                        describeWriter(analysis, values.get(1)),
+                                        "value",
+                                        describeWriter(analysis, values.get(2)))
+                                  : opaque(name);
             case "writeFixedBitSet" -> node("fixed_bit_set", "size", constant(values, 1));
             default -> KINDS.containsKey(name) ? node(KINDS.get(name)) : opaque("FriendlyByteBuf." + name);
         };
@@ -708,31 +961,38 @@ final class PacketFormats {
 
     /** What a writer passed to a buffer method writes: a method reference, a codec or a lambda writing each element. */
     private Object describeWriter(Analysis analysis, Node writer) {
-        if (writer.kind() != Kind.LAMBDA)
+        if (writer.kind() != Kind.LAMBDA) {
             return describe(writer);
+        }
 
         var handle = writer.handle();
         var owner = classOf(handle.owner());
         var method = writer.name().substring(writer.name().lastIndexOf(':') + 1);
-        if (owner != null && byteBuf.isAssignableFrom(owner))
+        if (owner != null && byteBuf.isAssignableFrom(owner)) {
             return bufferWrite(analysis, method, List.of());
+        }
         // A bound codec::encode
-        if (method.equals("encode") && !writer.arguments().isEmpty() && isCodec(writer.arguments().getFirst().type()))
+        if (method.equals("encode") && !writer.arguments().isEmpty() && isCodec(writer.arguments().getFirst().type())) {
             return describe(writer.arguments().getFirst());
+        }
         // Element::write
         if (method.equals("write") && owner != null) {
             var reference = writeReference(owner, handle.methodName(), handle.lookupDescriptor());
-            if (reference != null)
+            if (reference != null) {
                 return reference;
+            }
         }
 
         var events = new ArrayList<Event>();
         if (owner != null && owner.isAssignableFrom(analysis.packet) && runLambda(analysis, writer, events) != null) {
-            var encodings = events.stream().filter(event -> event.fields().contains(ELEMENT)).map(Event::encoding).toList();
-            if (encodings.size() == 1)
+            var encodings =
+                events.stream().filter(event -> event.fields().contains(ELEMENT)).map(Event::encoding).toList();
+            if (encodings.size() == 1) {
                 return encodings.getFirst();
-            if (!encodings.isEmpty())
+            }
+            if (!encodings.isEmpty()) {
                 return node("sequence", "of", encodings);
+            }
         }
 
         return opaque(writer.name());
@@ -752,8 +1012,9 @@ final class PacketFormats {
     }
 
     private Object describeStatic(Node node) {
-        if (KINDS.containsKey(node.name()))
+        if (KINDS.containsKey(node.name())) {
             return node(KINDS.get(node.name()));
+        }
         switch (node.name()) {
             case "ByteBufCodecs.STRING_UTF8" -> {
                 return node("string", "max", MAX_STRING);
@@ -761,11 +1022,14 @@ final class PacketFormats {
             case "ItemStack.OPTIONAL_LIST_STREAM_CODEC" -> {
                 return node("list", "of", node("item_stack"));
             }
-            default -> { }
+            default -> {
+            }
         }
 
         // Another class's codec: describe the expression its initializer builds it with.
-        var tree = node.owner() == null ? null : staticsOf(node.owner()).get(node.name().substring(node.name().lastIndexOf('.') + 1));
+        var tree = node.owner() == null
+            ? null
+            : staticsOf(node.owner()).get(node.name().substring(node.name().lastIndexOf('.') + 1));
         var described = tree == null ? null : describe(tree);
         return described == null || isOpaque(described) ? opaque(node.name()) : described;
     }
@@ -778,9 +1042,13 @@ final class PacketFormats {
                 // codec.map(constructor, getter): a record of one field, an enum written as its id, or the same values.
                 case "map" -> {
                     var record = recordReference(call, arguments.getFirst());
-                    if (record != null)
+                    if (record != null) {
                         return record;
-                    return enumNode(enumType(arguments.getFirst(), arguments.get(1)), idMethod(arguments.get(1)), describe(receiver));
+                    }
+                    return enumNode(
+                        enumType(arguments.getFirst(), arguments.get(1)),
+                        idMethod(arguments.get(1)),
+                        describe(receiver));
                 }
                 case "cast", "mapStream" -> {
                     return describe(receiver);
@@ -788,33 +1056,50 @@ final class PacketFormats {
                 case "apply" -> {
                     return applied(receiver, arguments.getFirst());
                 }
-                default -> { }
+                default -> {
+                }
             }
         }
 
         return switch (call.name()) {
             case "StreamCodec.composite" -> orOpaque(recordReference(call, arguments.getLast()), call);
-            case "Packet.codec", "StreamCodec.ofMember", "StreamCodec.of" -> orOpaque(recordReference(call, arguments.get(1)), call);
+            case "Packet.codec", "StreamCodec.ofMember", "StreamCodec.of" ->
+                orOpaque(recordReference(call, arguments.get(1)), call);
             case "StreamCodec.unit" -> node("unit");
             case "ByteBufCodecs.optional" -> node("optional", "of", describe(arguments.getFirst()));
-            case "ByteBufCodecs.collection" -> node("list", "of", describe(arguments.get(1)), "max", constant(arguments, 2));
-            case "ByteBufCodecs.map" -> node("map", "key", describe(arguments.get(1)), "value", describe(arguments.get(2)), "max", constant(arguments, 3));
+            case "ByteBufCodecs.collection" ->
+                node("list", "of", describe(arguments.get(1)), "max", constant(arguments, 2));
+            case "ByteBufCodecs.map" ->
+                node(
+                    "map",
+                    "key",
+                    describe(arguments.get(1)),
+                    "value",
+                    describe(arguments.get(2)),
+                    "max",
+                    constant(arguments, 3));
             case "ByteBufCodecs.stringUtf8" -> node("string", "max", constant(arguments, 0));
             case "ByteBufCodecs.byteArray" -> node("byte_array", "max", constant(arguments, 0));
             case "ByteBufCodecs.registry" -> node("registry_id", "registry", registryId(arguments.getFirst()));
             case "ByteBufCodecs.holderRegistry" -> node("holder", "registry", registryId(arguments.getFirst()));
             // idMapper(byId, getId) writes an id as a VarInt; with an IdMap it's the map's id.
-            case "ByteBufCodecs.idMapper" -> arguments.size() == 2
-                ? enumNode(enumType(arguments.getFirst(), arguments.get(1)), idMethod(arguments.get(1)), node("var_int"))
-                : node("var_int");
+            case "ByteBufCodecs.idMapper" ->
+                arguments.size() == 2 ? enumNode(
+                                            enumType(arguments.getFirst(), arguments.get(1)),
+                                            idMethod(arguments.get(1)),
+                                            node("var_int"))
+                                      : node("var_int");
             // A nameless NBT tag, or an end tag for none (the lambda only sets the NBT size budget).
             case "ByteBufCodecs.optionalTagCodec" -> node("optional_nbt");
             // A resource key is written as its identifier; its registry is implied.
             case "ResourceKey.streamCodec" -> node("identifier");
             // The channel id, then the payload to the end of the packet: each channel's codec writes it, and unknown
             // channels fall back to DiscardedPayload.codec(id, limit), which copies the bytes up to the packet's limit.
-            case "CustomPacketPayload.codec" -> node("sequence", "of",
-                List.of(node("identifier"), node("remaining_bytes", "max", payloadLimit(arguments.getFirst()))));
+            case "CustomPacketPayload.codec" ->
+                node(
+                    "sequence",
+                    "of",
+                    List.of(node("identifier"), node("remaining_bytes", "max", payloadLimit(arguments.getFirst()))));
             default -> opaque(text(call));
         };
     }
@@ -828,12 +1113,22 @@ final class PacketFormats {
             case "ByteBufCodecs.collection" -> node("list", "of", describe(codec), "max", constant(parameters, 1));
             case "ByteBufCodecs.optional" -> node("optional", "of", describe(codec));
             // The codec's bytes after their VarInt length.
-            case "ByteBufCodecs.lengthPrefixed" -> node("length_prefixed", "of", describe(codec), "max", constant(parameters, 0));
+            case "ByteBufCodecs.lengthPrefixed" ->
+                node("length_prefixed", "of", describe(codec), "max", constant(parameters, 0));
             // A serialization codec's value as a JSON string of at most the limit's length.
-            case "ByteBufCodecs.fromCodec" -> codec.kind() == Kind.CALL && codec.name().equals("ByteBufCodecs.lenientJson")
-                ? node("json", "codec", parameters.stream().filter(node -> isCodec(node.type())).findFirst().map(this::text).orElse(null),
-                    "max", constant(codec.arguments(), 0))
-                : opaque(text(codec) + ".apply(" + text(operation) + ")");
+            case "ByteBufCodecs.fromCodec" ->
+                codec.kind() == Kind.CALL&& codec.name().equals("ByteBufCodecs.lenientJson")
+                    ? node(
+                          "json",
+                          "codec",
+                          parameters.stream()
+                              .filter(node -> isCodec(node.type()))
+                              .findFirst()
+                              .map(this::text)
+                              .orElse(null),
+                          "max",
+                          constant(codec.arguments(), 0))
+                    : opaque(text(codec) + ".apply(" + text(operation) + ")");
             default -> opaque(text(codec) + ".apply(" + text(operation) + ")");
         };
     }
@@ -846,15 +1141,17 @@ final class PacketFormats {
      */
     private Object recordReference(Node codec, Node constructor) {
         var type = returnType(constructor);
-        if (!isDescribable(type))
+        if (!isDescribable(type)) {
             return null;
+        }
         return typeReference(type, () -> recordWrites(type, codec));
     }
 
     /** A record type for a class written by its own {@code write} method, or null. */
     private Object writeReference(Class<?> type, String name, String descriptor) {
-        if (!isDescribable(type))
+        if (!isDescribable(type)) {
             return null;
+        }
         for (var owner = type; owner != null && owner != Object.class; owner = owner.getSuperclass()) {
             var method = method(owner, name, descriptor);
             if (method != null) {
@@ -887,36 +1184,44 @@ final class PacketFormats {
      * {@code id} returns for it. For other types it's just the number.
      */
     private Object enumNode(Class<?> type, java.lang.reflect.Method id, Object wire) {
-        if (type == null || !type.isEnum())
+        if (type == null || !type.isEnum()) {
             return wire;
+        }
 
         var values = new LinkedHashMap<String, Integer>();
         for (var field : type.getDeclaredFields()) {
-            if (!field.isEnumConstant())
+            if (!field.isEnumConstant()) {
                 continue;
+            }
             field.setAccessible(true);
             var constant = (Enum<?>) Vanilla.getStatic(field);
-            values.put(field.getName(), id == null ? constant.ordinal() : ((Number) Vanilla.call(id, constant)).intValue());
+            values.put(
+                field.getName(),
+                id == null ? constant.ordinal() : ((Number) Vanilla.call(id, constant)).intValue());
         }
 
         var name = Vanilla.nestedName(type);
         var known = types.get(name);
-        if (known == null)
+        if (known == null) {
             types.put(name, new TypeDefinition(type, null, values));
-        else if (!values.equals(known.values()))
-            System.out.println("Vanilla writes " + name + " with different values in different places; using the first");
+        } else if (!values.equals(known.values())) {
+            System.out.println(
+                "Vanilla writes " + name + " with different values in different places; using the first");
+        }
         return node("enum", "type", name, "as", wire);
     }
 
     /** The no-argument method a lambda refers to on its own class (Enum::getId), for an enum's ids; else null. */
     private java.lang.reflect.Method idMethod(Node lambda) {
-        if (lambda.kind() != Kind.LAMBDA || !lambda.handle().lookupDescriptor().startsWith("()"))
+        if (lambda.kind() != Kind.LAMBDA || !lambda.handle().lookupDescriptor().startsWith("()")) {
             return null;
+        }
         var owner = classOf(lambda.handle().owner());
         try {
             var method = owner == null ? null : owner.getDeclaredMethod(lambda.handle().methodName());
-            if (method != null)
+            if (method != null) {
                 method.setAccessible(true);
+            }
             return method;
         } catch (NoSuchMethodException e) {
             return null;
@@ -926,8 +1231,9 @@ final class PacketFormats {
     /** The enum a (byId, getId) pair converts: what byId returns, or the class getId is declared on. */
     private Class<?> enumType(Node byId, Node getId) {
         var type = returnType(byId);
-        if (type != null && type.isEnum())
+        if (type != null && type.isEnum()) {
             return type;
+        }
         var owner = getId.kind() == Kind.LAMBDA ? classOf(getId.handle().owner()) : null;
         return owner != null && owner.isEnum() ? owner : type;
     }
@@ -940,17 +1246,20 @@ final class PacketFormats {
     /** Whether a class is a vanilla class this describes as a record: concrete, and not an enum. */
     private boolean isDescribable(Class<?> type) {
         return type != null && !type.isPrimitive() && !type.isArray() && !type.isInterface() && !type.isEnum()
-            && !java.lang.reflect.Modifier.isAbstract(type.getModifiers()) && type.getName().startsWith("net.minecraft.");
+            && !java.lang.reflect.Modifier.isAbstract(type.getModifiers())
+            && type.getName().startsWith("net.minecraft.");
     }
 
     private static boolean hasNoInstanceFields(Class<?> type) {
-        return java.util.Arrays.stream(type.getDeclaredFields()).allMatch(field -> java.lang.reflect.Modifier.isStatic(field.getModifiers()));
+        return java.util.Arrays.stream(type.getDeclaredFields())
+            .allMatch(field -> java.lang.reflect.Modifier.isStatic(field.getModifiers()));
     }
 
     /** A registry's id ({@code minecraft:entity_type}) from a {@code Registries.X} constant. */
     private String registryId(Node key) {
-        if (key.kind() != Kind.STATIC || key.owner() == null)
+        if (key.kind() != Kind.STATIC || key.owner() == null) {
             return null;
+        }
         var field = Vanilla.field(key.owner().getName(), key.name().substring(key.name().lastIndexOf('.') + 1));
         var value = Vanilla.getStatic(field);
         return Vanilla.call(Vanilla.method("net.minecraft.resources.ResourceKey", "identifier"), value).toString();
@@ -958,11 +1267,14 @@ final class PacketFormats {
 
     /** The limit a custom payload packet's fallback ({@code id -> DiscardedPayload.codec(id, limit)}) passes on. */
     private Integer payloadLimit(Node fallback) {
-        if (fallback.kind() != Kind.LAMBDA)
+        if (fallback.kind() != Kind.LAMBDA) {
             return null;
+        }
         var owner = classOf(fallback.handle().owner());
         var codec = owner == null ? null : runLambda(new Analysis(owner), fallback, new ArrayList<>());
-        return codec != null && codec.kind() == Kind.CALL && codec.name().equals("DiscardedPayload.codec") ? constant(codec.arguments(), 1) : null;
+        return codec != null && codec.kind() == Kind.CALL && codec.name().equals("DiscardedPayload.codec")
+            ? constant(codec.arguments(), 1)
+            : null;
     }
 
     // Encoding nodes.
@@ -972,8 +1284,9 @@ final class PacketFormats {
         var node = new LinkedHashMap<String, Object>();
         node.put("kind", kind);
         for (var i = 0; i + 1 < parameters.length; i += 2) {
-            if (parameters[i + 1] != null)
+            if (parameters[i + 1] != null) {
                 node.put((String) parameters[i], parameters[i + 1]);
+            }
         }
         return node;
     }
@@ -984,7 +1297,7 @@ final class PacketFormats {
     }
 
     private static boolean isOpaque(Object encoding) {
-        return encoding instanceof Map<?, ?> map && "codec".equals(map.get("kind"));
+        return encoding instanceof Map < ?, ? > map && "codec".equals(map.get("kind"));
     }
 
     private Object orOpaque(Object encoding, Node call) {
@@ -993,8 +1306,9 @@ final class PacketFormats {
 
     /** An integer constant argument, or null when the argument isn't a constant. */
     private static Integer constant(List<Node> arguments, int index) {
-        if (index >= arguments.size() || arguments.get(index).kind() != Kind.CONSTANT)
+        if (index >= arguments.size() || arguments.get(index).kind() != Kind.CONSTANT) {
             return null;
+        }
         try {
             return Integer.valueOf(arguments.get(index).name());
         } catch (NumberFormatException e) {
@@ -1002,17 +1316,22 @@ final class PacketFormats {
         }
     }
 
-    /** An expression as text, like {@code ByteBufCodecs.registry(Registries.BLOCK)}, for naming what isn't described. */
+    /**
+       An expression as text, like {@code ByteBufCodecs
+        .registry(Registries.BLOCK)}, for naming what isn't described.
+     */
     private String text(Node node) {
         return switch (node.kind()) {
             case STATIC, LAMBDA, CONSTANT -> node.name();
             case CALL -> {
                 var parts = new ArrayList<String>();
-                if (node.receiver() != null)
+                if (node.receiver() != null) {
                     parts.add(text(node.receiver()));
+                }
                 for (var argument : node.arguments()) {
-                    if (argument.kind() != Kind.VALUE)
+                    if (argument.kind() != Kind.VALUE) {
                         parts.add(text(argument));
+                    }
                 }
                 yield node.name() + "(" + String.join(", ", parts) + ")";
             }
@@ -1046,8 +1365,9 @@ final class PacketFormats {
     /** A value computed from others, from the fields they're computed from. */
     private static Node derive(List<Node> nodes, Class<?> type) {
         var fields = new LinkedHashSet<String>();
-        for (var node : nodes)
+        for (var node : nodes) {
             fields.addAll(node.fields());
+        }
         return Node.value(fields, type);
     }
 
@@ -1057,8 +1377,9 @@ final class PacketFormats {
 
     private static List<Node> popArguments(List<Node> stack, int count) {
         var arguments = new Node[count];
-        for (var i = count - 1; i >= 0; i--)
+        for (var i = count - 1; i >= 0; i--) {
             arguments[i] = pop(stack);
+        }
         return List.of(arguments);
     }
 
@@ -1067,8 +1388,9 @@ final class PacketFormats {
         switch (opcode) {
             case POP -> pop(stack);
             case POP2 -> {
-                if (!pop(stack).wide())
+                if (!pop(stack).wide()) {
                     pop(stack);
+                }
             }
             case DUP -> stack.add(stack.isEmpty() ? Node.value(Set.of(), null) : stack.getLast());
             case DUP_X1 -> {
@@ -1128,7 +1450,8 @@ final class PacketFormats {
                 var b = pop(stack);
                 stack.addAll(List.of(a, b));
             }
-            default -> { }
+            default -> {
+            }
         }
     }
 
@@ -1141,7 +1464,9 @@ final class PacketFormats {
     private static final class Branches {
         final boolean[] conditional;
         final boolean[] repeated;
+
         private final List<List<Integer>> containing = new ArrayList<>();
+
         private final Map<Integer, Set<String>> conditions = new HashMap<>();
         // The branches each goto at the end of an if block belongs to: its else block depends on their condition.
         private final Map<Integer, List<Integer>> elseOf = new HashMap<>();
@@ -1149,8 +1474,9 @@ final class PacketFormats {
         Branches(List<CodeElement> elements, Map<Label, Integer> labels) {
             conditional = new boolean[elements.size()];
             repeated = new boolean[elements.size()];
-            for (var i = 0; i < elements.size(); i++)
+            for (var i = 0; i < elements.size(); i++) {
                 containing.add(new ArrayList<>());
+            }
 
             for (var i = 0; i < elements.size(); i++) {
                 List<Label> targets = switch (elements.get(i)) {
@@ -1163,38 +1489,48 @@ final class PacketFormats {
                     var target = labels.get(label);
                     if (target <= i) {
                         // The jump back to a loop's test.
-                        for (var j = target; j <= i; j++)
+                        for (var j = target; j <= i; j++) {
                             repeated[j] = true;
+                        }
                         continue;
                     }
 
                     // A test that leaves a loop jumps to just after the loop's jump back.
                     var last = target - 1;
-                    while (last > i && !(elements.get(last) instanceof Instruction))
+                    while (last > i && !(elements.get(last) instanceof Instruction)) {
                         last--;
+                    }
                     var jump = last > i && elements.get(last) instanceof BranchInstruction branch
-                        && (branch.opcode() == Opcode.GOTO || branch.opcode() == Opcode.GOTO_W) ? branch : null;
+                            && (branch.opcode() == Opcode.GOTO || branch.opcode() == Opcode.GOTO_W)
+                        ? branch
+                        : null;
                     var leavesLoop = jump != null && labels.get(jump.target()) <= i;
-                    var selects = elements.subList(i + 1, target).stream().noneMatch(element -> element instanceof InvokeInstruction);
+                    var selects = elements.subList(i + 1, target)
+                                      .stream()
+                                      .noneMatch(element -> element instanceof InvokeInstruction);
                     for (var j = i + 1; j < target; j++) {
                         if (leavesLoop) {
                             repeated[j] = true;
                         } else {
                             conditional[j] = true;
-                            if (selects)
+                            if (selects) {
                                 containing.get(j).add(i);
+                            }
                         }
                     }
-                    if (jump != null && !leavesLoop)
+                    if (jump != null && !leavesLoop) {
                         elseOf.computeIfAbsent(last, key -> new ArrayList<>()).add(i);
+                    }
                 }
             }
 
             var exited = false;
             for (var i = 0; i < elements.size(); i++) {
                 conditional[i] |= exited;
-                if (conditional[i] && (elements.get(i) instanceof ReturnInstruction || elements.get(i) instanceof ThrowInstruction))
+                if (conditional[i]
+                    && (elements.get(i) instanceof ReturnInstruction || elements.get(i) instanceof ThrowInstruction)) {
                     exited = true;
+                }
             }
         }
 
@@ -1202,16 +1538,18 @@ final class PacketFormats {
         void reached(int index, List<Node> operands) {
             var fields = new LinkedHashSet<String>();
             operands.forEach(operand -> fields.addAll(operand.fields()));
-            for (var branch : elseOf.getOrDefault(index, List.of()))
+            for (var branch : elseOf.getOrDefault(index, List.of())) {
                 fields.addAll(conditions.getOrDefault(branch, Set.of()));
+            }
             conditions.put(index, fields);
         }
 
         /** The fields of the conditions that decide whether an instruction runs. */
         Set<String> conditionFields(int index) {
             var fields = new LinkedHashSet<String>();
-            for (var branch : containing.get(index))
+            for (var branch : containing.get(index)) {
                 fields.addAll(conditions.getOrDefault(branch, Set.of()));
+            }
             return fields;
         }
 
@@ -1225,25 +1563,29 @@ final class PacketFormats {
 
     private MethodModel method(Class<?> type, String name, String descriptor) {
         var model = model(type);
-        if (model == null)
+        if (model == null) {
             return null;
+        }
         for (var method : model.methods()) {
-            if (method.methodName().equalsString(name) && method.methodType().equalsString(descriptor))
+            if (method.methodName().equalsString(name) && method.methodType().equalsString(descriptor)) {
                 return method;
+            }
         }
 
         return null;
     }
 
     private ClassModel model(Class<?> type) {
-        if (models.containsKey(type.getName()))
+        if (models.containsKey(type.getName())) {
             return models.get(type.getName());
+        }
 
         var loader = type.getClassLoader() != null ? type.getClassLoader() : ClassLoader.getSystemClassLoader();
         ClassModel model = null;
         try (var input = loader.getResourceAsStream(type.getName().replace('.', '/') + ".class")) {
-            if (input != null)
+            if (input != null) {
                 model = ClassFile.of().parse(input.readAllBytes());
+            }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -1252,7 +1594,8 @@ final class PacketFormats {
     }
 
     /**
-     * A method as {@code Owner.name}, where the owner is the vanilla class or interface that declares it (the instruction
+     * A method as {@code Owner.name}, where the owner is the vanilla class or interface that declares it (the
+     * instruction
      * may name a subclass), or the instruction's owner when no vanilla class declares it (it's a library's).
      */
     private String methodName(Class<?> owner, String name, MethodTypeDesc type) {
@@ -1261,12 +1604,15 @@ final class PacketFormats {
         var seen = new HashSet<Class<?>>();
         while (!queue.isEmpty()) {
             var current = queue.removeFirst();
-            if (!seen.add(current))
+            if (!seen.add(current)) {
                 continue;
-            if (Vanilla.isVanilla(current) && declares(current, name, parameters))
+            }
+            if (Vanilla.isVanilla(current) && declares(current, name, parameters)) {
                 return Vanilla.nestedName(current) + "." + name;
-            if (current.getSuperclass() != null)
+            }
+            if (current.getSuperclass() != null) {
                 queue.add(current.getSuperclass());
+            }
             queue.addAll(List.of(current.getInterfaces()));
         }
 
@@ -1275,8 +1621,14 @@ final class PacketFormats {
 
     private static boolean declares(Class<?> type, String name, List<String> parameters) {
         try {
-            return Arrays.stream(type.getDeclaredMethods()).anyMatch(method -> method.getName().equals(name)
-                && Arrays.stream(method.getParameterTypes()).map(Class::descriptorString).toList().equals(parameters));
+            return Arrays.stream(type.getDeclaredMethods())
+                .anyMatch(
+                    method
+                    -> method.getName().equals(name)
+                        && Arrays.stream(method.getParameterTypes())
+                               .map(Class::descriptorString)
+                               .toList()
+                               .equals(parameters));
         } catch (LinkageError e) {
             return false;
         }
@@ -1298,7 +1650,8 @@ final class PacketFormats {
         }
 
         var descriptor = type.descriptorString();
-        var name = type.isArray() ? descriptor.replace('/', '.') : descriptor.substring(1, descriptor.length() - 1).replace('/', '.');
+        var name = type.isArray() ? descriptor.replace('/', '.')
+                                  : descriptor.substring(1, descriptor.length() - 1).replace('/', '.');
         try {
             return Class.forName(name, false, PacketFormats.class.getClassLoader());
         } catch (ClassNotFoundException | LinkageError e) {

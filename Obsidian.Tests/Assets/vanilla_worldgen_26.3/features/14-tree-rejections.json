@@ -1,0 +1,2177 @@
+{
+  "version": "26.3",
+  "cases": [
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 1,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "tree_oak_no_room_1",
+      "feature": {
+        "feature": "minecraft:oak",
+        "placement": []
+      },
+      "expectChanges": false,
+      "edits": [
+        [
+          8,
+          66,
+          8,
+          "minecraft:stone"
+        ]
+      ],
+      "nextRandom": 1761283695,
+      "regionRadius": 10,
+      "placed": false,
+      "changes": []
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 1,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "tree_spruce_no_room_1",
+      "feature": {
+        "feature": "minecraft:spruce",
+        "placement": []
+      },
+      "expectChanges": false,
+      "edits": [
+        [
+          8,
+          67,
+          8,
+          "minecraft:stone"
+        ]
+      ],
+      "nextRandom": 892128508,
+      "regionRadius": 10,
+      "placed": false,
+      "changes": []
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:sand",
+          62
+        ],
+        [
+          "minecraft:sand",
+          63
+        ]
+      ],
+      "randomSeed": 1,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "filter_oak_checked_sand_1",
+      "feature": "minecraft:oak_checked",
+      "expectChanges": false,
+      "nextRandom": -1155869325,
+      "regionRadius": 10,
+      "placed": false,
+      "changes": []
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:sand",
+          62
+        ],
+        [
+          "minecraft:sand",
+          63
+        ]
+      ],
+      "randomSeed": 1,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "filter_mangrove_checked_sand_1",
+      "feature": "minecraft:mangrove_checked",
+      "expectChanges": false,
+      "nextRandom": -1155869325,
+      "regionRadius": 10,
+      "placed": false,
+      "changes": []
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:sand",
+          62
+        ],
+        [
+          "minecraft:sand",
+          63
+        ]
+      ],
+      "randomSeed": 1,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "filter_dark_oak_checked_sand_1",
+      "feature": "minecraft:dark_oak_checked",
+      "expectChanges": false,
+      "nextRandom": -1155869325,
+      "regionRadius": 10,
+      "placed": false,
+      "changes": []
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:sand",
+          62
+        ],
+        [
+          "minecraft:sand",
+          63
+        ]
+      ],
+      "randomSeed": 1,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "filter_cherry_checked_sand_1",
+      "feature": "minecraft:cherry_checked",
+      "expectChanges": false,
+      "nextRandom": -1155869325,
+      "regionRadius": 10,
+      "placed": false,
+      "changes": []
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 1,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "filter_oak_checked_grass_1",
+      "feature": "minecraft:oak_checked",
+      "expectChanges": true,
+      "nextRandom": -270230103,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          6,
+          65,
+          6,
+          "minecraft:oak_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          65,
+          6,
+          "minecraft:oak_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          66,
+          6,
+          "minecraft:oak_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          65,
+          6,
+          "minecraft:oak_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          66,
+          6,
+          "minecraft:oak_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          65,
+          6,
+          "minecraft:oak_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          66,
+          6,
+          "minecraft:oak_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          65,
+          6,
+          "minecraft:oak_leaves{distance=5, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          66,
+          6,
+          "minecraft:oak_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          6,
+          65,
+          7,
+          "minecraft:oak_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          6,
+          66,
+          7,
+          "minecraft:oak_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          65,
+          7,
+          "minecraft:oak_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          66,
+          7,
+          "minecraft:oak_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          65,
+          7,
+          "minecraft:oak_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          66,
+          7,
+          "minecraft:oak_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          67,
+          7,
+          "minecraft:oak_leaves{distance=1, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          68,
+          7,
+          "minecraft:oak_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          65,
+          7,
+          "minecraft:oak_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          66,
+          7,
+          "minecraft:oak_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          67,
+          7,
+          "minecraft:oak_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          65,
+          7,
+          "minecraft:oak_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          66,
+          7,
+          "minecraft:oak_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          6,
+          65,
+          8,
+          "minecraft:oak_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          6,
+          66,
+          8,
+          "minecraft:oak_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          65,
+          8,
+          "minecraft:oak_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          66,
+          8,
+          "minecraft:oak_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          67,
+          8,
+          "minecraft:oak_leaves{distance=1, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          68,
+          8,
+          "minecraft:oak_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          63,
+          8,
+          "minecraft:dirt"
+        ],
+        [
+          8,
+          64,
+          8,
+          "minecraft:oak_log{axis=y}"
+        ],
+        [
+          8,
+          65,
+          8,
+          "minecraft:oak_log{axis=y}"
+        ],
+        [
+          8,
+          66,
+          8,
+          "minecraft:oak_log{axis=y}"
+        ],
+        [
+          8,
+          67,
+          8,
+          "minecraft:oak_log{axis=y}"
+        ],
+        [
+          8,
+          68,
+          8,
+          "minecraft:oak_leaves{distance=1, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          65,
+          8,
+          "minecraft:oak_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          66,
+          8,
+          "minecraft:oak_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          67,
+          8,
+          "minecraft:oak_leaves{distance=1, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          68,
+          8,
+          "minecraft:oak_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          65,
+          8,
+          "minecraft:oak_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          66,
+          8,
+          "minecraft:oak_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          6,
+          65,
+          9,
+          "minecraft:oak_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          6,
+          66,
+          9,
+          "minecraft:oak_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          65,
+          9,
+          "minecraft:oak_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          66,
+          9,
+          "minecraft:oak_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          67,
+          9,
+          "minecraft:oak_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          65,
+          9,
+          "minecraft:oak_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          66,
+          9,
+          "minecraft:oak_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          67,
+          9,
+          "minecraft:oak_leaves{distance=1, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          68,
+          9,
+          "minecraft:oak_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          65,
+          9,
+          "minecraft:oak_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          66,
+          9,
+          "minecraft:oak_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          67,
+          9,
+          "minecraft:oak_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          65,
+          9,
+          "minecraft:oak_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          66,
+          9,
+          "minecraft:oak_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          6,
+          65,
+          10,
+          "minecraft:oak_leaves{distance=5, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          65,
+          10,
+          "minecraft:oak_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          66,
+          10,
+          "minecraft:oak_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          65,
+          10,
+          "minecraft:oak_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          66,
+          10,
+          "minecraft:oak_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          65,
+          10,
+          "minecraft:oak_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          66,
+          10,
+          "minecraft:oak_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          65,
+          10,
+          "minecraft:oak_leaves{distance=5, persistent=false, waterlogged=false}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:mud",
+          62
+        ],
+        [
+          "minecraft:mud",
+          63
+        ]
+      ],
+      "randomSeed": 1,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "filter_mangrove_checked_mud_1",
+      "feature": "minecraft:mangrove_checked",
+      "expectChanges": true,
+      "nextRandom": 370136165,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          8,
+          60,
+          4,
+          "minecraft:muddy_mangrove_roots{axis=y}"
+        ],
+        [
+          8,
+          61,
+          4,
+          "minecraft:muddy_mangrove_roots{axis=y}"
+        ],
+        [
+          8,
+          62,
+          4,
+          "minecraft:muddy_mangrove_roots{axis=y}"
+        ],
+        [
+          8,
+          60,
+          5,
+          "minecraft:muddy_mangrove_roots{axis=y}"
+        ],
+        [
+          8,
+          61,
+          5,
+          "minecraft:muddy_mangrove_roots{axis=y}"
+        ],
+        [
+          8,
+          62,
+          5,
+          "minecraft:muddy_mangrove_roots{axis=y}"
+        ],
+        [
+          8,
+          63,
+          5,
+          "minecraft:muddy_mangrove_roots{axis=y}"
+        ],
+        [
+          8,
+          64,
+          5,
+          "minecraft:mangrove_roots{waterlogged=false}"
+        ],
+        [
+          8,
+          65,
+          5,
+          "minecraft:moss_carpet"
+        ],
+        [
+          8,
+          66,
+          5,
+          "minecraft:vine{east=false, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          8,
+          67,
+          5,
+          "minecraft:vine{east=false, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          8,
+          68,
+          5,
+          "minecraft:vine{east=false, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          8,
+          69,
+          5,
+          "minecraft:vine{east=false, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          7,
+          67,
+          6,
+          "minecraft:vine{east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          7,
+          68,
+          6,
+          "minecraft:vine{east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          7,
+          69,
+          6,
+          "minecraft:vine{east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          7,
+          70,
+          6,
+          "minecraft:vine{east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          7,
+          71,
+          6,
+          "minecraft:vine{east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          7,
+          73,
+          6,
+          "minecraft:mangrove_leaves{distance=5, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          64,
+          6,
+          "minecraft:mangrove_roots{waterlogged=false}"
+        ],
+        [
+          8,
+          65,
+          6,
+          "minecraft:moss_carpet"
+        ],
+        [
+          8,
+          69,
+          6,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          70,
+          6,
+          "minecraft:vine{east=false, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          8,
+          71,
+          6,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          72,
+          6,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          73,
+          6,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          9,
+          69,
+          6,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          71,
+          6,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          72,
+          6,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          68,
+          6,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          69,
+          6,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          70,
+          6,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          71,
+          6,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          72,
+          6,
+          "minecraft:mangrove_leaves{distance=5, persistent=false, waterlogged=false}"
+        ],
+        [
+          11,
+          68,
+          6,
+          "minecraft:mangrove_leaves{distance=6, persistent=false, waterlogged=false}"
+        ],
+        [
+          11,
+          69,
+          6,
+          "minecraft:mangrove_leaves{distance=5, persistent=false, waterlogged=false}"
+        ],
+        [
+          11,
+          70,
+          6,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          11,
+          71,
+          6,
+          "minecraft:mangrove_leaves{distance=5, persistent=false, waterlogged=false}"
+        ],
+        [
+          12,
+          69,
+          6,
+          "minecraft:mangrove_leaves{distance=6, persistent=false, waterlogged=false}"
+        ],
+        [
+          12,
+          70,
+          6,
+          "minecraft:vine{east=false, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          6,
+          71,
+          7,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          6,
+          72,
+          7,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          68,
+          7,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          69,
+          7,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          70,
+          7,
+          "minecraft:vine{east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          7,
+          71,
+          7,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          72,
+          7,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          73,
+          7,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          64,
+          7,
+          "minecraft:mangrove_roots{waterlogged=false}"
+        ],
+        [
+          8,
+          65,
+          7,
+          "minecraft:mangrove_roots{waterlogged=false}"
+        ],
+        [
+          8,
+          66,
+          7,
+          "minecraft:mangrove_roots{waterlogged=false}"
+        ],
+        [
+          8,
+          67,
+          7,
+          "minecraft:moss_carpet"
+        ],
+        [
+          8,
+          68,
+          7,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          69,
+          7,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          70,
+          7,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          71,
+          7,
+          "minecraft:mangrove_leaves{distance=1, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          72,
+          7,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          68,
+          7,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          69,
+          7,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          70,
+          7,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          71,
+          7,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          72,
+          7,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          73,
+          7,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          68,
+          7,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          69,
+          7,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          70,
+          7,
+          "minecraft:mangrove_leaves{distance=1, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          71,
+          7,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          72,
+          7,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          73,
+          7,
+          "minecraft:mangrove_leaves{distance=5, persistent=false, waterlogged=false}"
+        ],
+        [
+          11,
+          69,
+          7,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          11,
+          70,
+          7,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          11,
+          71,
+          7,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          11,
+          72,
+          7,
+          "minecraft:mangrove_leaves{distance=5, persistent=false, waterlogged=false}"
+        ],
+        [
+          12,
+          69,
+          7,
+          "minecraft:mangrove_leaves{distance=5, persistent=false, waterlogged=false}"
+        ],
+        [
+          12,
+          70,
+          7,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          12,
+          71,
+          7,
+          "minecraft:mangrove_leaves{distance=5, persistent=false, waterlogged=false}"
+        ],
+        [
+          12,
+          72,
+          7,
+          "minecraft:mangrove_leaves{distance=6, persistent=false, waterlogged=false}"
+        ],
+        [
+          13,
+          67,
+          7,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          13,
+          68,
+          7,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          13,
+          69,
+          7,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          13,
+          70,
+          7,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          13,
+          71,
+          7,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          4,
+          60,
+          8,
+          "minecraft:muddy_mangrove_roots{axis=y}"
+        ],
+        [
+          5,
+          60,
+          8,
+          "minecraft:muddy_mangrove_roots{axis=y}"
+        ],
+        [
+          5,
+          61,
+          8,
+          "minecraft:muddy_mangrove_roots{axis=y}"
+        ],
+        [
+          5,
+          62,
+          8,
+          "minecraft:muddy_mangrove_roots{axis=y}"
+        ],
+        [
+          5,
+          63,
+          8,
+          "minecraft:muddy_mangrove_roots{axis=y}"
+        ],
+        [
+          5,
+          64,
+          8,
+          "minecraft:mangrove_roots{waterlogged=false}"
+        ],
+        [
+          5,
+          65,
+          8,
+          "minecraft:mangrove_roots{waterlogged=false}"
+        ],
+        [
+          5,
+          66,
+          8,
+          "minecraft:moss_carpet"
+        ],
+        [
+          6,
+          65,
+          8,
+          "minecraft:mangrove_roots{waterlogged=false}"
+        ],
+        [
+          6,
+          71,
+          8,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          6,
+          72,
+          8,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          6,
+          73,
+          8,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          65,
+          8,
+          "minecraft:mangrove_roots{waterlogged=false}"
+        ],
+        [
+          7,
+          66,
+          8,
+          "minecraft:mangrove_roots{waterlogged=false}"
+        ],
+        [
+          7,
+          67,
+          8,
+          "minecraft:moss_carpet"
+        ],
+        [
+          7,
+          69,
+          8,
+          "minecraft:mangrove_leaves{distance=1, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          71,
+          8,
+          "minecraft:mangrove_leaves{distance=1, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          72,
+          8,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          73,
+          8,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          65,
+          8,
+          "minecraft:mangrove_roots{waterlogged=false}"
+        ],
+        [
+          8,
+          66,
+          8,
+          "minecraft:mangrove_log{axis=y}"
+        ],
+        [
+          8,
+          67,
+          8,
+          "minecraft:mangrove_log{axis=y}"
+        ],
+        [
+          8,
+          68,
+          8,
+          "minecraft:mangrove_log{axis=y}"
+        ],
+        [
+          8,
+          69,
+          8,
+          "minecraft:mangrove_log{axis=y}"
+        ],
+        [
+          8,
+          70,
+          8,
+          "minecraft:mangrove_log{axis=y}"
+        ],
+        [
+          8,
+          71,
+          8,
+          "minecraft:mangrove_log{axis=y}"
+        ],
+        [
+          8,
+          72,
+          8,
+          "minecraft:mangrove_leaves{distance=1, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          73,
+          8,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          66,
+          8,
+          "minecraft:mangrove_roots{waterlogged=false}"
+        ],
+        [
+          9,
+          67,
+          8,
+          "minecraft:moss_carpet"
+        ],
+        [
+          9,
+          68,
+          8,
+          "minecraft:mangrove_leaves{distance=1, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          69,
+          8,
+          "minecraft:mangrove_log{axis=y}"
+        ],
+        [
+          9,
+          70,
+          8,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          71,
+          8,
+          "minecraft:mangrove_leaves{distance=1, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          72,
+          8,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          66,
+          8,
+          "minecraft:mangrove_roots{waterlogged=false}"
+        ],
+        [
+          10,
+          68,
+          8,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          69,
+          8,
+          "minecraft:mangrove_leaves{distance=1, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          70,
+          8,
+          "minecraft:mangrove_log{axis=y}"
+        ],
+        [
+          10,
+          71,
+          8,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          72,
+          8,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          73,
+          8,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          11,
+          60,
+          8,
+          "minecraft:muddy_mangrove_roots{axis=y}"
+        ],
+        [
+          11,
+          61,
+          8,
+          "minecraft:muddy_mangrove_roots{axis=y}"
+        ],
+        [
+          11,
+          62,
+          8,
+          "minecraft:muddy_mangrove_roots{axis=y}"
+        ],
+        [
+          11,
+          63,
+          8,
+          "minecraft:muddy_mangrove_roots{axis=y}"
+        ],
+        [
+          11,
+          64,
+          8,
+          "minecraft:mangrove_roots{waterlogged=false}"
+        ],
+        [
+          11,
+          65,
+          8,
+          "minecraft:mangrove_roots{waterlogged=false}"
+        ],
+        [
+          11,
+          66,
+          8,
+          "minecraft:mangrove_roots{waterlogged=false}"
+        ],
+        [
+          11,
+          68,
+          8,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          11,
+          69,
+          8,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          11,
+          70,
+          8,
+          "minecraft:mangrove_leaves{distance=1, persistent=false, waterlogged=false}"
+        ],
+        [
+          11,
+          71,
+          8,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          12,
+          67,
+          8,
+          "minecraft:mangrove_propagule{age=1, hanging=true, stage=0, waterlogged=false}"
+        ],
+        [
+          12,
+          68,
+          8,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          12,
+          70,
+          8,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          12,
+          72,
+          8,
+          "minecraft:mangrove_leaves{distance=6, persistent=false, waterlogged=false}"
+        ],
+        [
+          13,
+          64,
+          8,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          13,
+          65,
+          8,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          13,
+          66,
+          8,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          13,
+          67,
+          8,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          13,
+          68,
+          8,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          5,
+          68,
+          9,
+          "minecraft:vine{east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          5,
+          69,
+          9,
+          "minecraft:vine{east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          5,
+          70,
+          9,
+          "minecraft:vine{east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          5,
+          71,
+          9,
+          "minecraft:vine{east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          5,
+          72,
+          9,
+          "minecraft:vine{east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          6,
+          72,
+          9,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          67,
+          9,
+          "minecraft:vine{east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          7,
+          68,
+          9,
+          "minecraft:vine{east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          7,
+          69,
+          9,
+          "minecraft:vine{east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          7,
+          70,
+          9,
+          "minecraft:vine{east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          7,
+          71,
+          9,
+          "minecraft:vine{east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          7,
+          72,
+          9,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          73,
+          9,
+          "minecraft:vine{east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          8,
+          65,
+          9,
+          "minecraft:mangrove_roots{waterlogged=false}"
+        ],
+        [
+          8,
+          66,
+          9,
+          "minecraft:mangrove_roots{waterlogged=false}"
+        ],
+        [
+          8,
+          67,
+          9,
+          "minecraft:moss_carpet"
+        ],
+        [
+          8,
+          69,
+          9,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          70,
+          9,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          71,
+          9,
+          "minecraft:mangrove_leaves{distance=1, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          72,
+          9,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          73,
+          9,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          68,
+          9,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          69,
+          9,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          70,
+          9,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          71,
+          9,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          72,
+          9,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          73,
+          9,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          68,
+          9,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          69,
+          9,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          70,
+          9,
+          "minecraft:mangrove_leaves{distance=1, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          71,
+          9,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          72,
+          9,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          11,
+          64,
+          9,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          11,
+          65,
+          9,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          11,
+          66,
+          9,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          11,
+          67,
+          9,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          11,
+          68,
+          9,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          11,
+          69,
+          9,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          11,
+          70,
+          9,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          11,
+          71,
+          9,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          11,
+          72,
+          9,
+          "minecraft:mangrove_leaves{distance=5, persistent=false, waterlogged=false}"
+        ],
+        [
+          12,
+          68,
+          9,
+          "minecraft:mangrove_leaves{distance=6, persistent=false, waterlogged=false}"
+        ],
+        [
+          12,
+          69,
+          9,
+          "minecraft:mangrove_leaves{distance=5, persistent=false, waterlogged=false}"
+        ],
+        [
+          12,
+          70,
+          9,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          12,
+          72,
+          9,
+          "minecraft:mangrove_leaves{distance=6, persistent=false, waterlogged=false}"
+        ],
+        [
+          13,
+          66,
+          9,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          13,
+          67,
+          9,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          13,
+          68,
+          9,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          13,
+          69,
+          9,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          13,
+          70,
+          9,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          6,
+          72,
+          10,
+          "minecraft:mangrove_leaves{distance=5, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          68,
+          10,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          71,
+          10,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          7,
+          72,
+          10,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          65,
+          10,
+          "minecraft:mangrove_roots{waterlogged=false}"
+        ],
+        [
+          8,
+          67,
+          10,
+          "minecraft:mangrove_propagule{age=2, hanging=true, stage=0, waterlogged=false}"
+        ],
+        [
+          8,
+          68,
+          10,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          69,
+          10,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          71,
+          10,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          72,
+          10,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          8,
+          73,
+          10,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          68,
+          10,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          69,
+          10,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          70,
+          10,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          71,
+          10,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          9,
+          73,
+          10,
+          "minecraft:mangrove_leaves{distance=5, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          68,
+          10,
+          "minecraft:mangrove_leaves{distance=5, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          69,
+          10,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          70,
+          10,
+          "minecraft:mangrove_leaves{distance=2, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          71,
+          10,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          72,
+          10,
+          "minecraft:mangrove_leaves{distance=5, persistent=false, waterlogged=false}"
+        ],
+        [
+          10,
+          73,
+          10,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          11,
+          68,
+          10,
+          "minecraft:mangrove_leaves{distance=6, persistent=false, waterlogged=false}"
+        ],
+        [
+          11,
+          69,
+          10,
+          "minecraft:mangrove_leaves{distance=5, persistent=false, waterlogged=false}"
+        ],
+        [
+          11,
+          70,
+          10,
+          "minecraft:mangrove_leaves{distance=3, persistent=false, waterlogged=false}"
+        ],
+        [
+          12,
+          68,
+          10,
+          "minecraft:mangrove_leaves{distance=6, persistent=false, waterlogged=false}"
+        ],
+        [
+          12,
+          69,
+          10,
+          "minecraft:mangrove_leaves{distance=6, persistent=false, waterlogged=false}"
+        ],
+        [
+          12,
+          70,
+          10,
+          "minecraft:mangrove_leaves{distance=4, persistent=false, waterlogged=false}"
+        ],
+        [
+          12,
+          71,
+          10,
+          "minecraft:vine{east=false, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          12,
+          72,
+          10,
+          "minecraft:vine{east=false, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          13,
+          66,
+          10,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          13,
+          67,
+          10,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          13,
+          68,
+          10,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          13,
+          69,
+          10,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          13,
+          70,
+          10,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          8,
+          60,
+          11,
+          "minecraft:muddy_mangrove_roots{axis=y}"
+        ],
+        [
+          8,
+          61,
+          11,
+          "minecraft:muddy_mangrove_roots{axis=y}"
+        ],
+        [
+          8,
+          62,
+          11,
+          "minecraft:muddy_mangrove_roots{axis=y}"
+        ],
+        [
+          8,
+          63,
+          11,
+          "minecraft:muddy_mangrove_roots{axis=y}"
+        ],
+        [
+          8,
+          64,
+          11,
+          "minecraft:mangrove_roots{waterlogged=false}"
+        ],
+        [
+          8,
+          65,
+          11,
+          "minecraft:mangrove_roots{waterlogged=false}"
+        ],
+        [
+          8,
+          66,
+          11,
+          "minecraft:moss_carpet"
+        ],
+        [
+          8,
+          67,
+          11,
+          "minecraft:vine{east=false, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          8,
+          68,
+          11,
+          "minecraft:vine{east=false, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          8,
+          69,
+          11,
+          "minecraft:vine{east=false, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          9,
+          66,
+          11,
+          "minecraft:vine{east=false, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          9,
+          67,
+          11,
+          "minecraft:vine{east=false, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          9,
+          68,
+          11,
+          "minecraft:vine{east=false, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          9,
+          69,
+          11,
+          "minecraft:vine{east=false, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          9,
+          70,
+          11,
+          "minecraft:vine{east=false, north=true, south=false, up=false, west=false}"
+        ]
+      ]
+    }
+  ]
+}

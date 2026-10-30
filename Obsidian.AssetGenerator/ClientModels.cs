@@ -39,7 +39,8 @@ internal static class ClientModels
             }
         }
         Console.WriteLine("Dumping all installed-client model layers...");
-        await VanillaServer.RunJavaAsync(server.Directory, "-Djava.awt.headless=true", "-cp", string.Join(Path.PathSeparator, classpath),
+        await VanillaServer.RunJavaAsync(server.ScratchDirectory, "-Djava.awt.headless=true",
+            "-cp", string.Join(Path.PathSeparator, classpath),
             Path.Combine(AppContext.BaseDirectory, "Java", "ClientModelDumper.java"), Path.Combine(output, "client_models.json"));
         await FixtureDumper.DumpClientAsync(server, classpath, output);
     }
