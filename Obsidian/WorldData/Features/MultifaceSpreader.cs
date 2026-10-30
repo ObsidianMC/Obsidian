@@ -80,13 +80,19 @@ internal sealed class MultifaceSpreader
     /// <summary>
     /// Vanilla <c>spreadFromFaceTowardRandomDirection</c>: tries all directions in shuffled order, stopping at the first spread.
     /// </summary>
-    public bool SpreadFromFaceTowardRandomDirection(IBlock state, IWorldGenLevel level, Vector position, BlockFace fromFace, IRandomSource random)
+    public bool SpreadFromFaceTowardRandomDirection(
+        IBlock state,
+        IWorldGenLevel level,
+        Vector position,
+        BlockFace fromFace,
+        IRandomSource random,
+        bool markForPostProcessing = false)
     {
         Span<BlockFace> directions = stackalloc BlockFace[FeatureHelpers.Directions.Length];
         FeatureHelpers.Directions.CopyTo(directions);
         FeatureHelpers.Shuffle(directions, random);
 
-        var blocks = new Neighborhood(level, position);
+        var blocks = new Neighborhood(level, position, markForPostProcessing);
         var stateInfo = Info(state);
         foreach (var direction in directions)
         {
@@ -334,7 +340,7 @@ internal sealed class MultifaceSpreader
     /// The level as a spread sees it, remembering the blocks it read around its position until it writes them: a spread
     /// checks the same few blocks many times, and only reads and writes within one block of its position.
     /// </summary>
-    private ref struct Neighborhood(IWorldGenLevel level, Vector center)
+    private ref struct Neighborhood(IWorldGenLevel level, Vector center, bool markForPostProcessing = false)
     {
         private NeighborhoodInts states;
         private NeighborhoodInts infos;
@@ -376,6 +382,12 @@ internal sealed class MultifaceSpreader
                 this.infos[index] = 0;
 
             this.checkedCenterFaces = 0;
+
+            if (markForPostProcessing)
+            {
+                level.MarkForPostProcessing(position);
+            }
+
             return level.SetBlock(position, block);
         }
 

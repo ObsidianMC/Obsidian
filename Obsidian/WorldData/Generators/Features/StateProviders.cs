@@ -64,6 +64,13 @@ internal sealed partial class FeatureRegistry
                 return this.RuleBased(json);
             case "minecraft:noise_threshold":
                 return NoiseThreshold(json);
+            case "minecraft:noise_provider":
+            case "minecraft:noise":
+                return NoiseProvider(json);
+            case "minecraft:dual_noise":
+                return DualNoiseProvider(json);
+            case "minecraft:random_block":
+                return this.RandomBlockProvider(json);
             default:
                 throw new NotSupportedException($"The 26.3 block state provider {type} isn't implemented yet.");
         }

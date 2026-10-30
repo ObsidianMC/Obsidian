@@ -41,7 +41,10 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
         "minecraft:ice_spike"
     ];
 
-    private static readonly FeatureRegistry registry = new(WorldgenData.Vanilla);
+    private static readonly FeatureRegistry registry = new(WorldgenData.Vanilla)
+    {
+        Template = VanillaFeatureTemplates.Get
+    };
 
     public sealed record FeatureCase(JsonElement Entry)
     {

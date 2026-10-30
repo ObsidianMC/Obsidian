@@ -49,6 +49,10 @@ internal sealed class WorldGenRegion : IWorldGenLevel
     private readonly ChunkSection?[] areaSections;
     private readonly int sectionCount;
 
+    // ProtoChunk hides cave/void air when a section has no non-air blocks. Count only sections whose air variants
+    // are read, so ordinary feature reads and terrain sections need no volume scan.
+    private readonly Dictionary<ChunkSection, int> nonAirCounts = [];
+
     // Heights computed from the blocks of a chunk when first needed, for the chunks outside the writable area and the
     // world generation heightmaps a chunk no longer has. They don't follow writes.
     private readonly Dictionary<(int X, int Z), FinalHeightmaps> snapshots = [];
@@ -122,7 +126,9 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         {
             var section = this.areaSections[index * this.sectionCount + ((position.Y - this.MinY) >> 4)];
             if (section is not null)
-                return section.GetBlock(position.X & 15, position.Y & 15, position.Z & 15);
+            {
+                return BlocksRegistry.Get(this.SectionState(section, position));
+            }
         }
 
         var chunk = this.FindChunk(position.X >> 4, position.Z >> 4);
@@ -139,7 +145,9 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         {
             var section = this.areaSections[index * this.sectionCount + ((position.Y - this.MinY) >> 4)];
             if (section is not null)
-                return section.GetStateId(position.X & 15, position.Y & 15, position.Z & 15);
+            {
+                return this.SectionState(section, position);
+            }
         }
 
         var chunk = this.FindChunk(position.X >> 4, position.Z >> 4);
@@ -147,6 +155,39 @@ internal sealed class WorldGenRegion : IWorldGenLevel
     }
 
     public bool IsOutsideBuildHeight(int y) => y < this.MinY || y >= this.MinY + this.Height;
+
+    private int SectionState(ChunkSection section, Vector position)
+    {
+        var state = section.GetStateId(position.X & 15, position.Y & 15, position.Z & 15);
+
+        if (state == airStateId || !BlockPhysics.IsAir(state))
+        {
+            return state;
+        }
+
+        if (!this.nonAirCounts.TryGetValue(section, out var count))
+        {
+            count = 0;
+
+            for (var y = 0; y < 16; y++)
+            {
+                for (var z = 0; z < 16; z++)
+                {
+                    for (var x = 0; x < 16; x++)
+                    {
+                        if (!BlockPhysics.IsAir(section.GetStateId(x, y, z)))
+                        {
+                            count++;
+                        }
+                    }
+                }
+            }
+
+            this.nonAirCounts.Add(section, count);
+        }
+
+        return count == 0 ? airStateId : state;
+    }
 
     public bool EnsureCanWrite(Vector position) => this.AreaIndex(position.X >> 4, position.Z >> 4) >= 0;
 
@@ -177,6 +218,14 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         // A state id outside the registry can only come from a block the caller passed.
         var knownState = (uint)stateId < (uint)writeInfos.Length;
         var section = this.areaSections[index * this.sectionCount + ((position.Y - this.MinY) >> 4)];
+        if (section is not null && this.nonAirCounts.TryGetValue(section, out var nonAir))
+        {
+            var previous = section.GetStateId(position.X & 15, position.Y & 15, position.Z & 15);
+            var wasAir = BlockPhysics.IsAir(previous);
+            var nowAir = knownState ? BlockPhysics.IsAir(stateId) : block!.IsAir;
+            this.nonAirCounts[section] = nonAir + (wasAir ? 0 : -1) + (nowAir ? 0 : 1);
+        }
+
         if (chunk.IsGenerated)
             chunk.SetBlock(position.X, position.Y, position.Z, block ??= BlocksRegistry.Get(stateId));
         else if (section is not null && knownState)

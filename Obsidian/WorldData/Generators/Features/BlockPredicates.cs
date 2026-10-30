@@ -55,6 +55,10 @@ internal sealed partial class FeatureRegistry
             }
             case "minecraft:inside_world_bounds":
                 return (level, position) => !level.IsOutsideBuildHeight(position.Y + offset.Y);
+            case "minecraft:height_range":
+                return HeightPredicate(json);
+            case "minecraft:volume_match":
+                return this.VolumeMatch(json);
             case "minecraft:not":
             {
                 var predicate = this.Predicate(json.GetProperty("predicate"));

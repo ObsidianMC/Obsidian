@@ -94,6 +94,14 @@ internal sealed partial class FeatureRegistry
                 return NoiseBasedCount(json);
             case "minecraft:environment_scan":
                 return this.EnvironmentScan(json);
+            case "minecraft:fixed_placement":
+                return FixedPlacement(json);
+            case "minecraft:count_on_every_layer":
+                return CountOnEveryLayer(json);
+            case "minecraft:randomly_selected":
+                return this.RandomlySelectedPlacement(json);
+            case "minecraft:cuboid":
+                return CuboidPlacement(json);
             default:
                 throw new NotSupportedException($"The 26.3 placement modifier {type} isn't implemented yet.");
         }
