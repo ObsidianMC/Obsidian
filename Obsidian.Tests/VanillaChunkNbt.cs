@@ -213,6 +213,37 @@ public sealed class VanillaChunkNbt
         Assert.Null(BlockEntityNbt.Save(new DataBlockEntity { Id = "minecraft:bed", BlockPosition = Vector.Zero }));
     }
 
+    [Fact(DisplayName = "Legacy palette entries with a numeric state id keep that state's properties")]
+    public void LegacyPaletteIdsKeepTheirState()
+    {
+        var stairs = BlocksRegistry.OakStairs.WithProperty("facing", "east").WithProperty("half", "top");
+        var furnace = BlockStateProperties.GetState("minecraft:furnace").WithProperty("lit", "true");
+        var palette = new NbtList(NbtTagType.Compound, "palette")
+        {
+            // The name without properties, as Obsidian saved it beside the id.
+            WithId(LegacyState("", "minecraft:oak_stairs"), LegacyWorldgenBlockStates.StateId(stairs)),
+            WithId(new NbtCompound(), LegacyWorldgenBlockStates.StateId(furnace)),
+            // An id past 1.21.11's table falls back to the name.
+            WithId(LegacyState("", "minecraft:granite"), int.MaxValue)
+        };
+        var chunk = new NbtCompound
+        {
+            new NbtList(NbtTagType.Compound, "sections") { new NbtCompound { new NbtCompound("block_states") { palette } } }
+        };
+
+        LegacyChunkUpgrade.UpgradeChunk(chunk);
+
+        var upgraded = (NbtList)((NbtCompound)((NbtCompound)((NbtList)chunk["sections"])[0])["block_states"])["palette"];
+        Assert.Equal([stairs, furnace, BlockStateProperties.GetState("minecraft:granite")], upgraded.Select(BlockStateNbt.Read));
+        Assert.All(upgraded.OfType<NbtCompound>(), entry => Assert.False(entry.HasTag("Id")));
+
+        static NbtCompound WithId(NbtCompound state, int id)
+        {
+            state.Add(new NbtTag<int>("Id", id));
+            return state;
+        }
+    }
+
     [Theory]
     [InlineData("legacy")]
     [InlineData("mixed")]

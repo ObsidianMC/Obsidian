@@ -97,7 +97,20 @@ internal static class LegacyChunkUpgrade
 
     private static INbtTag UpgradeState(INbtTag tag)
     {
-        if (tag is not NbtCompound state || !state.TryGetTagValue<string>("Name", out var name))
+        if (tag is not NbtCompound state)
+            return tag;
+
+        // Obsidian's earlier palettes saved the state id, in 1.21.11's numbering, often beside a Name without the
+        // state's Properties. 1.21.11's reader went by the id, so it wins over the Name; one the table can't decode
+        // falls back to the Name and Properties.
+        if (state.TryGetTag<NbtTag<int>>("Id", out var stateId))
+        {
+            state.Remove("Id");
+            if (LegacyState(stateId.Value) is IBlock legacy)
+                return BlockStateNbt.Write(legacy, tag.Name!);
+        }
+
+        if (!state.TryGetTagValue<string>("Name", out var name))
             return tag;
 
         var properties = state.TryGetTag<NbtCompound>("Properties", out var values)
@@ -173,8 +186,7 @@ internal static class LegacyChunkUpgrade
             case "minecraft:piston":
                 if (entity.TryGetTagValue<int>("MovedState", out var state))
                 {
-                    var legacy = legacyStates.Value;
-                    if (state < 0 || state >= legacy.Length || BlockStateParser.TryParse(legacy[state]) is not IBlock block)
+                    if (LegacyState(state) is not IBlock block)
                         throw new InvalidDataException($"Cannot upgrade legacy moving-piston state {state}.");
                     entity.Remove("MovedState");
                     Set(entity, BlockStateNbt.Write(block, "blockState"));
@@ -190,6 +202,13 @@ internal static class LegacyChunkUpgrade
                 break;
         }
         BlockEntityNbt.EnsureSaveDefaults(entity);
+    }
+
+    // A state id in 1.21.11's numbering, or null for one that isn't in its table or whose state 26.3 doesn't have.
+    private static IBlock? LegacyState(int id)
+    {
+        var legacy = legacyStates.Value;
+        return id >= 0 && id < legacy.Length ? BlockStateParser.TryParse(legacy[id]) : null;
     }
 
     private static readonly Lazy<string[]> legacyStates = new(() =>
