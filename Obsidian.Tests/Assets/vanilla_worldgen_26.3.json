@@ -170200,6 +170200,311 @@
       "expectBlocks": [
         "minecraft:gold_block"
       ]
+    },
+    {
+      "name": "review_end_platform_overlap",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 2,
+      "layers": [
+        [
+          "minecraft:stone",
+          4
+        ]
+      ],
+      "origin": [
+        32,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:end_platform"
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          30,
+          -1,
+          -2,
+          "minecraft:obsidian"
+        ],
+        [
+          30,
+          0,
+          -2,
+          "minecraft:air"
+        ],
+        [
+          30,
+          1,
+          -2,
+          "minecraft:air"
+        ],
+        [
+          30,
+          2,
+          -2,
+          "minecraft:air"
+        ],
+        [
+          31,
+          -1,
+          -2,
+          "minecraft:obsidian"
+        ],
+        [
+          31,
+          0,
+          -2,
+          "minecraft:air"
+        ],
+        [
+          31,
+          1,
+          -2,
+          "minecraft:air"
+        ],
+        [
+          31,
+          2,
+          -2,
+          "minecraft:air"
+        ],
+        [
+          30,
+          -1,
+          -1,
+          "minecraft:obsidian"
+        ],
+        [
+          30,
+          0,
+          -1,
+          "minecraft:air"
+        ],
+        [
+          30,
+          1,
+          -1,
+          "minecraft:air"
+        ],
+        [
+          30,
+          2,
+          -1,
+          "minecraft:air"
+        ],
+        [
+          31,
+          -1,
+          -1,
+          "minecraft:obsidian"
+        ],
+        [
+          31,
+          0,
+          -1,
+          "minecraft:air"
+        ],
+        [
+          31,
+          1,
+          -1,
+          "minecraft:air"
+        ],
+        [
+          31,
+          2,
+          -1,
+          "minecraft:air"
+        ],
+        [
+          30,
+          -1,
+          0,
+          "minecraft:obsidian"
+        ],
+        [
+          30,
+          0,
+          0,
+          "minecraft:air"
+        ],
+        [
+          30,
+          1,
+          0,
+          "minecraft:air"
+        ],
+        [
+          30,
+          2,
+          0,
+          "minecraft:air"
+        ],
+        [
+          31,
+          -1,
+          0,
+          "minecraft:obsidian"
+        ],
+        [
+          31,
+          0,
+          0,
+          "minecraft:air"
+        ],
+        [
+          31,
+          1,
+          0,
+          "minecraft:air"
+        ],
+        [
+          31,
+          2,
+          0,
+          "minecraft:air"
+        ],
+        [
+          30,
+          -1,
+          1,
+          "minecraft:obsidian"
+        ],
+        [
+          30,
+          0,
+          1,
+          "minecraft:air"
+        ],
+        [
+          30,
+          1,
+          1,
+          "minecraft:air"
+        ],
+        [
+          30,
+          2,
+          1,
+          "minecraft:air"
+        ],
+        [
+          31,
+          -1,
+          1,
+          "minecraft:obsidian"
+        ],
+        [
+          31,
+          0,
+          1,
+          "minecraft:air"
+        ],
+        [
+          31,
+          1,
+          1,
+          "minecraft:air"
+        ],
+        [
+          31,
+          2,
+          1,
+          "minecraft:air"
+        ],
+        [
+          30,
+          -1,
+          2,
+          "minecraft:obsidian"
+        ],
+        [
+          30,
+          0,
+          2,
+          "minecraft:air"
+        ],
+        [
+          30,
+          1,
+          2,
+          "minecraft:air"
+        ],
+        [
+          30,
+          2,
+          2,
+          "minecraft:air"
+        ],
+        [
+          31,
+          -1,
+          2,
+          "minecraft:obsidian"
+        ],
+        [
+          31,
+          0,
+          2,
+          "minecraft:air"
+        ],
+        [
+          31,
+          1,
+          2,
+          "minecraft:air"
+        ],
+        [
+          31,
+          2,
+          2,
+          "minecraft:air"
+        ]
+      ]
+    },
+    {
+      "name": "review_end_platform_outside",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 2,
+      "layers": [
+        [
+          "minecraft:stone",
+          4
+        ]
+      ],
+      "origin": [
+        34,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:end_platform"
+        },
+        "placement": []
+      },
+      "expectChanges": false,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": []
     }
   ],
   "biomes": [

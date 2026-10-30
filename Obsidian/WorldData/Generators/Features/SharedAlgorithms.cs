@@ -28,8 +28,6 @@ internal sealed partial class FeatureRegistry
 
     private static Feature MonsterRoom() => SharedAlgorithm(new MonsterRoomFeature());
 
-    private static Feature EndPlatform() => SharedAlgorithm(new EndPlatformFeature());
-
     private static Feature Vines() => SharedAlgorithm(new VinesFeature());
 
     private static Feature VoidStartPlatform() => SharedAlgorithm(new VoidStartPlatformFeature());
