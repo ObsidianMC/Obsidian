@@ -50,11 +50,10 @@ public sealed class VanillaSaves : IDisposable
             Directory.Delete(this.folder, recursive: true);
     }
 
-    [Fact(DisplayName = "Obsidian saves chunks in vanilla's section shape and reloads them unchanged",
-        Skip = "Phase 3: the fixture is a 1.21.11 save, whose structure references are only kept once it's upgraded")]
+    [Fact(DisplayName = "Obsidian saves chunks in vanilla's section shape and reloads them unchanged")]
     public async Task SavedChunkHasVanillaShape()
     {
-        await WriteChunkAsync(this.folder, VanillaChunk());
+        await WriteChunkAsync(this.folder, Obsidian.WorldData.Upgrade.LegacyChunkUpgrade.UpgradeChunk(VanillaChunk()));
         var loaded = await LoadChunkAsync(this.folder);
 
         Assert.Equal(ChunkGenStage.full, loaded.ChunkStatus);
@@ -88,8 +87,8 @@ public sealed class VanillaSaves : IDisposable
         var palette = ((NbtList)blockStates["palette"]).Cast<NbtCompound>().ToList();
         Assert.All(palette, entry => Assert.False(entry.HasTag("Id")));
 
-        var savedStairs = palette.Single(entry => entry.GetString("Name") == "minecraft:oak_stairs");
-        Assert.Equal("top", ((NbtCompound)savedStairs["Properties"]).GetString("half"));
+        var savedStairs = palette.Single(entry => entry.TryGetTagValue<string>("id", out var id) && id == "minecraft:oak_stairs");
+        Assert.Equal("top", ((NbtCompound)savedStairs["properties"]).GetString("half"));
 
         // Two states pack 4 bits per block (16 per long), as vanilla requires.
         Assert.Equal(256, ((NbtArray<long>)blockStates["data"]).Count);
@@ -214,14 +213,13 @@ public sealed class VanillaSaves : IDisposable
         }
     }
 
-    [Fact(DisplayName = "The singleplayer owner loads from level.dat's Data.Player and saves to it and playerdata")]
+    [Fact(DisplayName = "The singleplayer owner loads from and saves to players/data, and level.dat names them")]
     public async Task OwnerUsesLevelData()
     {
         var world = this.CreateWorld();
         var player = CreatePlayer(world, owner: true);
 
-        await PlayerDataFile.WriteAsync(world.GetPlayerDataPath(player.Uuid), VanillaPlayer(xpLevel: 1));
-        world.SingleplayerPlayerData = VanillaPlayer(xpLevel: 30);
+        await PlayerDataFile.WriteAsync(world.GetPlayerDataPath(player.Uuid), VanillaPlayer(xpLevel: 30));
 
         try
         {
@@ -236,8 +234,40 @@ public sealed class VanillaSaves : IDisposable
             Assert.Equal(31, playerData.GetInt("XpLevel"));
 
             var levelData = World.ReadLevelData(Path.Join(this.folder, "level.dat"), NullLogger.Instance)!;
-            var owner = (NbtCompound)((NbtCompound)levelData["Data"])["Player"];
-            Assert.Equal(31, owner.GetInt("XpLevel"));
+            var owner = (NbtArray<int>)((NbtCompound)levelData["Data"])["singleplayer_uuid"];
+            Assert.Equal(player.Uuid, Obsidian.Entities.EntityNbt.UuidFromInts(owner.GetArray()));
+        }
+        finally
+        {
+            DeletePersistentData(player);
+        }
+    }
+
+    [Fact(DisplayName = "The local player loads the saved singleplayer owner's data, and becomes the owner once saved")]
+    public async Task LocalPlayerLoadsSavedOwner()
+    {
+        var world = this.CreateWorld();
+        var savedOwner = Guid.Parse("a0000000-0000-0000-0000-00000000000a");
+        world.SingleplayerOwner = savedOwner;
+        await PlayerDataFile.WriteAsync(world.GetPlayerDataPath(savedOwner), VanillaPlayer(xpLevel: 30));
+        var player = CreatePlayer(world, owner: true);
+
+        try
+        {
+            await player.LoadAsync(loadFromPersistentWorld: false);
+            Assert.Equal(30, player.XpLevel);
+
+            // A save that fails leaves the saved owner's data the one the world opens with.
+            var path = world.GetPlayerDataPath(player.Uuid);
+            Directory.CreateDirectory(path);
+            await Assert.ThrowsAnyAsync<Exception>(player.SaveAsync);
+            Assert.Equal(savedOwner, world.SingleplayerOwner);
+            Directory.Delete(path);
+
+            await player.SaveAsync();
+            Assert.Equal(player.Uuid, world.SingleplayerOwner);
+            Assert.Equal(30, PlayerDataFile.Read(path, NullLogger.Instance)!.GetInt("XpLevel"));
+            Assert.Equal(30, PlayerDataFile.Read(world.GetPlayerDataPath(savedOwner), NullLogger.Instance)!.GetInt("XpLevel"));
         }
         finally
         {
@@ -270,11 +300,14 @@ public sealed class VanillaSaves : IDisposable
     [Fact(DisplayName = "A new world reads its game rules, and its dimensions share its difficulty")]
     public void NewWorldLevelData()
     {
-        var world = this.CreateWorld(new NbtCompound("Data")
+        var world = this.CreateWorld(new LevelFiles
         {
-            new NbtTag<string>("LevelName", "world"),
-            new NbtTag<byte>("Difficulty", (byte)Difficulty.Peaceful),
-            new NbtCompound("game_rules") { new NbtTag<int>("minecraft:random_tick_speed", 0) }
+            Data =
+            {
+                new NbtTag<string>("LevelName", "world"),
+                new NbtCompound("difficulty_settings") { new NbtTag<string>("difficulty", "peaceful") }
+            },
+            GameRules = { new NbtTag<int>("minecraft:random_tick_speed", 0) }
         });
 
         Assert.Equal(0, world.LevelData.GetIntegerRule("random_tick_speed"));
@@ -305,7 +338,7 @@ public sealed class VanillaSaves : IDisposable
         }
     };
 
-    private World CreateWorld(NbtCompound? data = null)
+    private World CreateWorld(LevelFiles? files = null)
     {
         var world = new World(
             NullLogger<World>.Instance,
@@ -317,10 +350,10 @@ public sealed class VanillaSaves : IDisposable
             "world",
             "0");
 
-        world.UseVanillaLayout(this.folder);
+        world.UseFolder(this.folder);
         CodecRegistry.TryGetDimension("minecraft:overworld", out var overworld);
         world.Initialize(overworld!);
-        world.CreateVanillaLevel(data ?? new NbtCompound("Data") { new NbtTag<string>("LevelName", "world") });
+        world.CreateLevel(files ?? new LevelFiles { Data = { new NbtTag<string>("LevelName", "world") } });
 
         return world;
     }
@@ -412,7 +445,7 @@ public sealed class VanillaSaves : IDisposable
     /// <summary>
     /// A complete chunk as vanilla 1.21.11 saves it, with two sections. Section 0 holds stone with oak stairs
     /// (by name and properties) at <see cref="stairs"/>, over plains with a desert cell at <see cref="desert"/>.
-    /// Section 1 is granite in Obsidian's previous format, by state id.
+    /// Section 1 is granite.
     /// </summary>
     private static NbtCompound VanillaChunk()
     {
@@ -491,7 +524,6 @@ public sealed class VanillaSaves : IDisposable
                             new NbtCompound
                             {
                                 new NbtTag<string>("Name", "minecraft:granite"),
-                                new NbtTag<int>("Id", BlocksRegistry.Granite.GetHashCode())
                             }
                         }
                     }

@@ -61,6 +61,19 @@ the level's `data/chunks.dat`, including forced chunks changed by `/forceload`; 
 **Where to start:** capture a 1.21.11 forced-ticket save and replay it through an engine-owned saved-data codec;
 add `/forceload` and the separate block-ticking border when a concrete user needs vanilla interoperability.
 
+## Structure pieces in saved chunks
+
+**Status:** vanilla drops the pieces of every structure Obsidian saved.
+
+Obsidian recomputes structure starts from the seed, so `StructureStart.SaveState` writes only each piece's own state
+(its bounding box and what it has placed) under `structures.starts.<id>.Children`, without vanilla's piece `id` or
+its type's fields. Vanilla 26.3 opening such a world logs `Unknown structure piece id: minecraft:` for every piece
+and keeps the start without them, so it loses the structure's bounds (fortress and monument spawns, for example).
+Obsidian itself reads its own saves correctly. Worlds Obsidian wrote for 1.21.11 have the same shape.
+
+**Where to start:** Phase 5's structure work (`porting-26.3-plan.md`): write vanilla's piece NBT, checked against
+starts captured from vanilla, and keep Obsidian's piece state beside it.
+
 ## Attachment interoperability and saved-data migrations
 
 **Status:** deliberately scoped to Obsidian mods.

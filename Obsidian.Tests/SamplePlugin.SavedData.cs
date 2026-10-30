@@ -68,7 +68,7 @@ public sealed partial class SamplePlugin
         await player.SaveAsync();
         await world.FlushRegionsAsync();
         var levelPath = Path.Combine(world.FolderPath, "data", "sample", "networks.dat");
-        var globalPath = Path.Combine(world.FolderPath, "data", "obsidian", "world", "sample", "networks.dat");
+        var globalPath = Path.Combine(world.WorldFolderPath, "data", "sample", "networks.dat");
         Assert.Equal([2, 4], ReadValues(globalPath));
         using (var data = File.OpenRead(levelPath))
         {

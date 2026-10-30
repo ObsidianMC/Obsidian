@@ -288,6 +288,20 @@ internal static class Signs
         return difference <= 90;
     }
 
+    internal static void EnsureSaveDefaults(NbtCompound data)
+    {
+        foreach (var side in new[] { "front_text", "back_text" })
+        {
+            if (!data.HasTag(side))
+                data.Add(Text(data, side));
+        }
+        if (!data.HasTag("is_waxed"))
+            data.Add(new NbtTag<byte>("is_waxed", 0));
+        // SignBlockEntity only writes this permission flag when enabled.
+        if (data.TryGetBool("allow_op_features", out var allowed) && !allowed)
+            data.Remove("allow_op_features");
+    }
+
     // A side's text, with vanilla's defaults for what's missing.
     private static NbtCompound Text(NbtCompound data, string side)
     {

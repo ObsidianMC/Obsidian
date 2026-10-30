@@ -9,12 +9,9 @@ namespace Obsidian.WorldData;
 
 /// <summary>
 /// Reads and writes a chunk section's <c>block_states</c> and <c>biomes</c> in vanilla's saved shape: a <c>palette</c> of
-/// values (block states by <c>Name</c> and <c>Properties</c>, biomes by name) and, with more than one value, their
+/// values (default block states as ids, other states by <c>id</c> and <c>properties</c>, biomes by name) and, with more than one value, their
 /// indices packed in <c>data</c>.
 /// </summary>
-/// <remarks>
-/// Obsidian's previous format had the same shape but named block states by their numeric <c>Id</c>, which is still read.
-/// </remarks>
 internal static class ChunkSectionNbt
 {
     // Blocks are 16 per axis and biomes 4, so their indices use 4 and 2 bits per axis.
@@ -26,27 +23,11 @@ internal static class ChunkSectionNbt
         var (palette, data) = Pack(container, BlocksRegistry.Air);
 
         writer.WriteCompoundStart("block_states");
-        writer.WriteListStart("palette", NbtTagType.Compound, palette.Count);
-
-        foreach (var block in palette)
-        {
-            writer.WriteCompoundStart();
-            writer.WriteString("Name", block.UnlocalizedName);
-
-            var properties = block.GetProperties();
-            if (properties.Count > 0)
-            {
-                writer.WriteCompoundStart("Properties");
-
-                foreach (var (name, value) in properties)
-                    writer.WriteString(name, value);
-
-                writer.EndCompound();
-            }
-
-            writer.EndCompound();
-        }
-
+        var entries = palette.Select(block => BlockStateNbt.Write(block)).ToList();
+        var stringsOnly = entries.All(entry => entry is NbtTag<string>);
+        writer.WriteListStart("palette", stringsOnly ? NbtTagType.String : NbtTagType.Compound, entries.Count);
+        foreach (var entry in entries)
+            writer.WriteListTag(stringsOnly ? entry : BlockStateNbt.WrapPaletteEntry(entry));
         writer.EndList();
 
         if (data is not null)
@@ -81,7 +62,7 @@ internal static class ChunkSectionNbt
         if (!states.TryGetTag<NbtList>("palette", out var paletteTag))
             return;
 
-        var palette = paletteTag.OfType<NbtCompound>().Select(ReadBlockState).ToList();
+        var palette = paletteTag.Select(BlockStateNbt.Read).ToList();
         Unpack(container, palette, ReadData(states), BlockAxisBits);
     }
 
@@ -100,21 +81,6 @@ internal static class ChunkSectionNbt
             .ToList();
 
         Unpack(container, palette, ReadData(biomes), BiomeAxisBits);
-    }
-
-    private static IBlock ReadBlockState(NbtCompound entry)
-    {
-        // Obsidian's previous format: the state id.
-        if (entry.TryGetTag<NbtTag<int>>("Id", out var id))
-            return BlocksRegistry.Get(id.Value);
-
-        var properties = entry.TryGetTag<NbtCompound>("Properties", out var propertiesTag)
-            ? propertiesTag.Where(property => property.Value is NbtTag<string>)
-                .ToDictionary(property => property.Key, property => ((NbtTag<string>)property.Value).Value!)
-            : null;
-
-        var name = entry.TryGetTag<NbtTag<string>>("Name", out var nameTag) ? nameTag.Value : null;
-        return name is not null && BlockStateProperties.TryGetState(name, properties, out var state) ? state : BlocksRegistry.Air;
     }
 
     private static long[]? ReadData(NbtCompound container) =>
@@ -222,4 +188,60 @@ internal static class ChunkSectionNbt
     /// </summary>
     private static int StorageBits(int paletteSize, int minimumBits) =>
         paletteSize <= 1 ? 0 : Math.Max(minimumBits, 32 - BitOperations.LeadingZeroCount((uint)paletteSize - 1));
+}
+
+/// <summary>
+/// BlockState.CODEC's saved form: the default state is a string, other states have an id and properties.
+/// Readers also accept 1.21.11 templates, which remain in data packs and the legacy worldgen assets.
+/// </summary>
+internal static class BlockStateNbt
+{
+    public static IBlock Read(INbtTag tag)
+    {
+        if (tag is NbtCompound compound && compound.Count == 1 && compound.TryGetTag("", out var wrapped))
+            tag = wrapped;
+
+        string? name = null;
+        IReadOnlyDictionary<string, string>? properties = null;
+        if (tag is NbtTag<string> bare)
+            name = bare.Value;
+        else if (tag is NbtCompound state)
+        {
+            name = state.TryGetTagValue<string>("id", out var id) ? id
+                : state.TryGetTagValue<string>("Name", out var legacy) ? legacy : null;
+            if (state.TryGetTag<NbtCompound>("properties", out var values)
+                || state.TryGetTag<NbtCompound>("Properties", out values))
+                properties = values.Where(entry => entry.Value is NbtTag<string>)
+                    .ToDictionary(entry => entry.Key, entry => ((NbtTag<string>)entry.Value).Value!);
+        }
+
+        return name is not null && BlockStateProperties.TryGetState(name, properties, out var block)
+            ? block : BlocksRegistry.Air;
+    }
+
+    public static INbtTag Write(IBlock block, string name = "")
+    {
+        if (BlockStateProperties.TryGetState(block.UnlocalizedName, null, out var defaultState)
+            && defaultState.GetHashCode() == block.GetHashCode())
+            return new NbtTag<string>(name, block.UnlocalizedName);
+
+        var state = new NbtCompound(name) { new NbtTag<string>("id", block.UnlocalizedName) };
+        var properties = new NbtCompound("properties");
+        foreach (var (key, value) in block.GetProperties())
+            properties.Add(new NbtTag<string>(key, value));
+        if (properties.Count > 0)
+            state.Add(properties);
+        return state;
+    }
+
+    // NBT lists must have one element type; a mixed palette wraps each string under an empty key.
+    public static NbtCompound WrapPaletteEntry(INbtTag entry)
+    {
+        if (entry is NbtCompound compound)
+            return compound;
+        var wrapper = new NbtCompound();
+        entry.Name = "";
+        wrapper.SetReadTag("", entry);
+        return wrapper;
+    }
 }

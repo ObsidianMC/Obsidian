@@ -373,6 +373,50 @@ public abstract partial class AbstractLevel
         SpawnEntity(crystalEntity);
     }
 
+    /// <summary>
+    /// Reads the fight from the payload of vanilla's <c>ender_dragon_fight.dat</c>, after <see cref="ReadEndFightNbt"/>
+    /// read Obsidian's own state: vanilla's file wins for what both keep, so a fight vanilla ran since Obsidian last saved
+    /// the world isn't undone.
+    /// </summary>
+    internal void ReadVanillaEndFight(NbtCompound fight)
+    {
+        // Vanilla scans the end for the fight's state until it has, as Obsidian does until the fight is initialized.
+        endFightInitialized = fight.TryGetBool("needs_state_scanning", out var scanning) && !scanning;
+        dragonKilled = fight.TryGetBool("dragon_killed", out var killed) && killed;
+        dragonPreviouslyKilled = fight.TryGetBool("previously_killed", out var previous) && previous;
+        fightDragon = fight.TryGetTag<NbtArray<int>>("dragon_uuid", out var dragon) && dragon.Count == 4
+            ? EntityNbt.UuidFromInts(dragon.GetArray())
+            : Guid.Empty;
+        if (fight.TryGetTag<NbtArray<int>>("exit_portal_location", out var portal) && portal.Count == 3)
+            exitPortal = new Vector(0, Math.Clamp(portal[1], MinY + 1, MinY + Height - 5), 0);
+
+        // The gateways not created yet, which vanilla creates from the end of the list.
+        if (fight.TryGetTag<NbtList>("gateways", out var gateways))
+            gatewaysCreated = Math.Clamp(20 - gateways.Count, 0, 20);
+    }
+
+    /// <summary>
+    /// Writes what Obsidian models of the fight to the payload of vanilla's <c>ender_dragon_fight.dat</c>, leaving the
+    /// rest (like vanilla's respawn stage) as it was.
+    /// </summary>
+    internal void WriteVanillaEndFight(NbtCompound fight)
+    {
+        fight.Set(new NbtTag<byte>("needs_state_scanning", (byte)(endFightInitialized ? 0 : 1)));
+        fight.Set(new NbtTag<byte>("dragon_killed", (byte)(dragonKilled ? 1 : 0)));
+        fight.Set(new NbtTag<byte>("previously_killed", (byte)(dragonPreviouslyKilled ? 1 : 0)));
+        fight.SetOrRemove("dragon_uuid", fightDragon == Guid.Empty
+            ? null
+            : new NbtArray<int>("dragon_uuid", EntityNbt.UuidToInts(fightDragon)));
+        if (endFightInitialized)
+            fight.Set(new NbtArray<int>("exit_portal_location", [exitPortal.X, exitPortal.Y, exitPortal.Z]));
+
+        var gatewayOrder = FeatureHelpers.ShuffledCopy(Enumerable.Range(0, 20), new LegacyRandomSource(RandomState.ParseSeed(Seed)));
+        var gateways = new NbtList(NbtTagType.Int, "gateways");
+        foreach (var gateway in gatewayOrder.Take(20 - gatewaysCreated))
+            gateways.Add(new NbtTag<int>(string.Empty, gateway));
+        fight.Set(gateways);
+    }
+
     internal void WriteEndFightNbt(INbtWriter writer)
     {
         if (!HasEndFight)

@@ -9,6 +9,7 @@ using Obsidian.Plugins;
 using Obsidian.Registries;
 using Obsidian.WorldData.Generators;
 using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Upgrade;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -116,10 +117,7 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         else
         {
             foreach (var serverWorld in await LoadServerWorldsAsync(cancellationToken))
-            {
-                var world = this.levelFactory.CreateWorld(serverWorld.Name, serverWorld.Seed, serverWorld.Generator);
-                await this.LoadWorldAsync((World)world, serverWorld, cancellationToken: cancellationToken);
-            }
+                await this.LoadServerWorldAsync(serverWorld, cancellationToken);
         }
 
         //No default world was defined so choose the first one to come up
@@ -185,13 +183,9 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
             dimension.Initialize(codec);
             world.RegisterDimension(dimension);
 
-            // A dimension saved before reads its own level data, if it saved any, and its chunks load as they're
-            // needed. One that wasn't is new, even in a loaded world, and is generated with its spawn.
-            if (dimension is Dimension { IsSaved: true })
-            {
-                await dimension.LoadAsync(codec);
-            }
-            else
+            // A dimension saved before reads its state, and its chunks load as they're needed. One that wasn't is new,
+            // even in a loaded world, and is generated with its spawn.
+            if (!await dimension.LoadAsync(codec))
             {
                 ThrowIfCantGenerate(dimension);
 
@@ -218,6 +212,32 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
             this.DefaultWorld = world;
     }
 
+    /// <summary>
+    /// Loads a world of <c>worlds.json</c> from <c>worlds/&lt;name&gt;</c>, upgrading it first if Obsidian saved it in
+    /// 1.21.11's layout, or creates it.
+    /// </summary>
+    private async Task LoadServerWorldAsync(ServerWorld serverWorld, CancellationToken cancellationToken)
+    {
+        var world = (World)this.levelFactory.CreateWorld(serverWorld.Name, serverWorld.Seed, serverWorld.Generator);
+
+        var folder = Path.Combine(ServerConstants.WorldsPath, serverWorld.Name);
+        if (WorldUpgrade.IsNeeded(folder))
+        {
+            var rootDimension = CodecRegistry.TryGetDimension(serverWorld.DefaultDimension, out var codec)
+                ? codec.Name
+                : "minecraft:overworld";
+
+            using (SessionLock.Acquire(folder))
+                await WorldUpgrade.UpgradeAsync(folder, rootDimension, this.logger, cancellationToken);
+        }
+
+        var seed = RandomState.ParseSeed(serverWorld.Seed);
+        await this.LoadWorldAsync(world, serverWorld,
+            createLevel: newWorld => newWorld.CreateLevel(VanillaLevelData.Create(new NewWorldConfiguration(),
+                serverWorld.Name, seed, serverWorld.Generator)),
+            cancellationToken);
+    }
+
     // A saved level whose plugin generator is missing loads stopped, but a new one would be created without its
     // spawn area, so it isn't created at all.
     private static void ThrowIfCantGenerate(ILevel level)
@@ -231,30 +251,28 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
 
     /// <summary>
     /// Loads the one world of an integrated server: a vanilla save in <paramref name="folder"/>, which is created from the
-    /// <c>NewWorld</c> settings when it has no level.dat. The folder stays locked while the world is open.
+    /// <c>NewWorld</c> settings when it has no level.dat, and upgraded first if Obsidian saved it in 1.21.11's layout. The
+    /// folder stays locked while the world is open.
     /// </summary>
     /// <exception cref="NotSupportedException">Obsidian can't generate the world.</exception>
     private async Task LoadSingleWorldAsync(string folder, CancellationToken cancellationToken)
     {
         this.sessionLock = SessionLock.Acquire(folder);
 
+        if (WorldUpgrade.IsNeeded(folder))
+            await WorldUpgrade.UpgradeAsync(folder, "minecraft:overworld", this.logger, cancellationToken);
+
         var settings = newWorldOptions.Value;
-        var levelDataPath = Path.Combine(folder, "level.dat");
-        var root = World.ReadLevelDataOrBackup(levelDataPath, this.logger);
-        var data = root is not null ? VanillaLevelData.GetData(root) : null;
+        var files = LevelFiles.Load(folder, this.logger);
 
         string name, generatorId;
         long seed;
-        if (data is not null)
+        if (files is not null)
         {
-            var hasName = data.TryGetTagValue<string>("LevelName", out var levelName) && !string.IsNullOrEmpty(levelName);
+            var hasName = files.Data.TryGetTagValue<string>("LevelName", out var levelName) && !string.IsNullOrEmpty(levelName);
             name = hasName ? levelName! : Path.GetFileName(folder);
-            generatorId = VanillaLevelData.GetGeneratorId(data, PluginDimensions.FindStem("minecraft:overworld"));
-            seed = VanillaLevelData.Read(data).RandomSeed;
-        }
-        else if (root is not null)
-        {
-            throw new NotSupportedException($"{levelDataPath} isn't a vanilla level.dat.");
+            generatorId = VanillaLevelData.GetGeneratorId(files, PluginDimensions.FindStem("minecraft:overworld"));
+            seed = VanillaLevelData.Read(files).RandomSeed;
         }
         else
         {
@@ -273,10 +291,10 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         };
 
         var world = (World)this.levelFactory.CreateWorld(serverWorld.Name, serverWorld.Seed, serverWorld.Generator);
-        world.UseVanillaLayout(folder);
+        world.UseFolder(folder);
 
         await this.LoadWorldAsync(world, serverWorld,
-            createLevel: newWorld => newWorld.CreateVanillaLevel(VanillaLevelData.Create(settings, name, seed, generatorId)),
+            createLevel: newWorld => newWorld.CreateLevel(VanillaLevelData.Create(settings, name, seed, generatorId)),
             cancellationToken);
     }
 

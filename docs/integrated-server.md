@@ -117,26 +117,40 @@ With `Integrated:WorldPath`, the server loads exactly that folder as a vanilla s
 `session.lock` (a snowman, locked exclusively) while it's open; a world that's already open elsewhere fails the start
 with a crash event. The folder holds:
 
-- `level.dat` in vanilla 1.21.11's shape (a root compound with `Data`), and its backup `level.dat_old`. When
-  level.dat is missing or can't be read, everything (generator, seed and level data) comes from `level.dat_old`, or
-  else Obsidian's own `level.dat.old`.
-- `region/` and `entities/` for the overworld, `DIM-1/` for the nether and `DIM1/` for the end with their own `region/`
-  and `entities/`, `data/` for maps and `playerdata/`. Obsidian doesn't write `poi/`.
+- `level.dat` in vanilla 26.3's shape (a root compound with `Data`), and its backup `level.dat_old`. When level.dat is
+  missing or can't be read, the level data comes from `level.dat_old`.
+- The world's saved data in `data/minecraft/`: `game_rules.dat`, `weather.dat`, `world_clocks.dat`,
+  `world_gen_settings.dat` (generator and seed) and `wandering_trader.dat`, and maps in `data/minecraft/maps/`
+  (`<id>.dat`, `last_id.dat`).
+- Every level, the overworld too, in `dimensions/<namespace>/<path>/` (`dimensions/minecraft/overworld/`,
+  `.../the_nether/`, `.../the_end/`) with its `region/`, `entities/` and its own saved data in `data/` (vanilla's
+  `ender_dragon_fight.dat` in the end's). Obsidian doesn't write `poi/`.
+- Players in `players/data/`, `players/stats/` and `players/advancements/`.
 
-level.dat keeps everything it was loaded with: on each save Obsidian only rewrites the fields it owns (`DataVersion`
-4671, `Version`, `GameType`, `hardcore`, `allowCommands`, `Difficulty`, `DifficultyLocked`, `initialized`,
-`LastPlayed`, `Time`, `DayTime`, weather, `spawn`, `ServerBrands` with `obsidian` added, and `WasModded`), so vanilla
-data Obsidian doesn't model (dragon fight, game rules, scheduled events and so on) survives. Obsidian has one clock: it
-runs on `DayTime`, and advances `Time` by as much as the clock moved.
+Server worlds (`worlds/<name>/`) are laid out the same way.
+
+Each of these files keeps everything it was loaded with: on each save Obsidian only rewrites the fields it owns
+(level.dat's `DataVersion`, `Version`, `version_history`, `GameType`, `difficulty_settings`, `allowCommands`,
+`initialized`, `LastPlayed`, `Time`, `spawn`, `ServerBrands` with `obsidian` added, `WasModded` and
+`singleplayer_uuid`; the weather; the overworld's clock; the game rules it has; the dragon fight's kill, dragon, exit
+portal and gateways; the wandering trader's delay and chance), so data Obsidian doesn't model (paused clocks, the world
+border, raids, scheduled events and so on) survives. Obsidian has one clock: it runs on the overworld's world clock, and
+advances `Time` by as much as the clock moved. What only Obsidian keeps (its raids, patrols, the dragon fight's
+respawn, a dimension's spawn and time) is in each level's `data/obsidian/level_state.dat`, which vanilla ignores.
+
+A world Obsidian saved for 1.21.11, in its own layout or vanilla 1.21.11's, is upgraded once when it loads: the world
+is first copied to `<folder>-1.21.11-backup` beside it (`-2`, `-3`... when that's taken), then its files are moved and
+level.dat split as above, and its chunks, entity chunks and saved structure templates rewritten. One info line names
+the backup. An upgrade that stops partway is redone from the backup the next time the world loads.
 
 Chunks and their entities are read and written in 1.21.11's format (data version 4671): sections name block states by
 `Name` and `Properties` and biomes by id, and statuses are namespaced (`minecraft:full`). A missing or unknown status
 counts as complete, so a chunk is never generated again over its data. Obsidian doesn't write light as complete
 (`isLightOn`), so vanilla lights its chunks again, and doesn't write structure references or block ticks.
 
-Players are saved in vanilla's shape (`playerdata/<uuid>.dat`, with the previous save as `<uuid>.dat_old`): the fields
-Obsidian models are rewritten and the rest is kept, and inventory items keep components Obsidian doesn't model. Like
-vanilla, the local player is loaded from level.dat's `Data.Player` when it has one, and saved to both. Obsidian keeps
+Players are saved in vanilla's shape (`players/data/<uuid>.dat`, with the previous save as `<uuid>.dat_old`): the
+fields Obsidian models are rewritten and the rest is kept, and inventory items keep components Obsidian doesn't model.
+Like vanilla 26.3, the local player is saved there too, and level.dat's `singleplayer_uuid` names them. Obsidian keeps
 players in the overworld, so a player saved in another dimension starts at the spawn.
 
 ### New worlds
@@ -149,7 +163,7 @@ When the folder has no level.dat, the world is created from these settings:
 | `NewWorld:Seed` | random | Vanilla's rule: a number is used as-is, other text is hashed with Java's `String.hashCode`, empty is random. |
 | `NewWorld:WorldType` | `default` | `default` (vanilla-parity generators for all three dimensions) or `flat` (Obsidian's superflat overworld, vanilla nether and end). `large_biomes`, `amplified` and `single_biome_surface` aren't supported yet and crash the start with a message saying so. |
 | `NewWorld:FlatPreset` | | Ignored: Obsidian's superflat generator has fixed layers (bedrock, 3 dirt, grass, plains), which level.dat describes. |
-| `NewWorld:GenerateStructures` | `true` | Stored (`generate_features`); generation doesn't read it yet. |
+| `NewWorld:GenerateStructures` | `true` | Stored (`generate_structures`); generation doesn't read it yet. |
 | `NewWorld:BonusChest` | `false` | Stored (`bonus_chest`); Obsidian doesn't place the chest. |
 | `NewWorld:GameMode` | `survival` | `survival`, `creative`, `adventure` or `spectator`; new players start in it. |
 | `NewWorld:Difficulty` | `normal` | `peaceful`, `easy`, `normal` or `hard`; stored. |

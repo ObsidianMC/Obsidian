@@ -51,9 +51,9 @@ public sealed class Cooking
             Assert.Equal(burn - time / 2 + 1, machine.LitRemaining);
             Assert.Equal("true", world.BlockUpdates.GetBlock(position).GetProperty("lit"));
             var saved = BlockEntityNbt.SaveData(machine);
-            Assert.Equal((short)(time / 2), saved.GetShort("cooking_time_spent"));
-            Assert.Equal((short)time, saved.GetShort("cooking_total_time"));
-            Assert.Equal((short)burn, saved.GetShort("lit_total_time"));
+            Assert.Equal(time / 2, saved.GetInt("cooking_time_spent"));
+            Assert.Equal(time, saved.GetInt("cooking_total_time"));
+            Assert.Equal(burn, saved.GetInt("lit_total_time"));
             var restored = Assert.IsType<FurnaceBlockEntity>(BlockEntityNbt.Create(machine.Id, position, saved));
             chunk.SetBlockEntity(position.X, position.Y, position.Z, restored);
             world.AttachBlockEntity(restored);

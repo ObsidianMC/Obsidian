@@ -60,16 +60,16 @@ internal sealed partial class FurnaceBlockEntity
             }
         }
 
-        int Read(string name) => tag.TryGetTagValue<short>(name, out var value) ? Math.Max(0, (int)value) : 0;
+        int Read(string name) => tag.TryGetTagValue<int>(name, out var value) ? Math.Max(0, value)
+            : tag.TryGetTagValue<short>(name, out var legacy) ? Math.Max(0, (int)legacy) : 0;
     }
 
     internal override void SaveMachineState(NbtCompound tag)
     {
-        // These shorts and the recipe-id -> int compound are AbstractFurnaceBlockEntity's 1.21.11 format.
-        tag.Add(new NbtTag<short>("cooking_time_spent", (short)this.CookingSpent));
-        tag.Add(new NbtTag<short>("cooking_total_time", (short)this.CookingTotal));
-        tag.Add(new NbtTag<short>("lit_time_remaining", (short)this.LitRemaining));
-        tag.Add(new NbtTag<short>("lit_total_time", (short)this.LitTotal));
+        tag.Add(new NbtTag<int>("cooking_time_spent", this.CookingSpent));
+        tag.Add(new NbtTag<int>("cooking_total_time", this.CookingTotal));
+        tag.Add(new NbtTag<int>("lit_time_remaining", this.LitRemaining));
+        tag.Add(new NbtTag<int>("lit_total_time", this.LitTotal));
         var used = new NbtCompound("RecipesUsed");
         foreach (var (name, count) in this.RecipesUsed)
             used.Add(new NbtTag<int>(name, count));

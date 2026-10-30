@@ -29,6 +29,8 @@ internal sealed partial class BlockEntityComponents : IAsyncDisposable
     public static readonly BlockEntityComponents None = new([], []);
 
     // Vanilla's PotDecorations: the back, left, right and front faces, bricks where they have no sherd.
+    internal static readonly string[] PotFaceNames = ["back", "left", "right", "front"];
+
     private const int PotFaces = 4;
 
     private readonly List<DataComponent> components;
@@ -157,9 +159,14 @@ internal sealed partial class BlockEntityComponents : IAsyncDisposable
                     DataComponentType.PotDecorations);
                 if (decorations is not null)
                 {
-                    var sherds = new NbtList(NbtTagType.String, "sherds");
-                    foreach (var face in decorations.Value.Take(PotFaces))
-                        sherds.Add(new NbtTag<string>(string.Empty, (face?.Holder ?? ItemsRegistry.Brick).UnlocalizedName));
+                    var sherds = new NbtCompound("sherds");
+                    for (var i = 0; i < PotFaces; i++)
+                    {
+                        var face = i < decorations.Value.Length ? decorations.Value[i] : null;
+                        var template = (face ?? new ItemStack(ItemsRegistry.Brick)).ToNbt(PotFaceNames[i]);
+                        template.Remove("count");
+                        sherds.Add(template);
+                    }
 
                     data.Set(sherds);
                 }
@@ -349,18 +356,20 @@ internal sealed partial class BlockEntityComponents : IAsyncDisposable
 
         if (blockEntity.Id == "minecraft:decorated_pot")
         {
-            var sherds = data.TryGetTag<NbtList>("sherds", out var list)
-                ? list.OfType<NbtTag<string>>().Select(sherd => ItemsRegistry.Get(sherd.Value!)).ToList()
-                : [];
+            var sherds = data.TryGetTag<NbtCompound>("sherds", out var decorations)
+                ? PotFaceNames.Select(face => decorations.TryGetTag<NbtCompound>(face, out var item)
+                    ? item.ItemFromNbt() : null).ToList()
+                : data.TryGetTag<NbtList>("sherds", out var list)
+                    ? list.OfType<NbtTag<string>>().Select(sherd => new ItemStack(ItemsRegistry.Get(sherd.Value!))).ToList()
+                    : [];
 
             var faces = Enumerable.Range(0, PotFaces)
-                .Select(face => face < sherds.Count && sherds[face] != ItemsRegistry.Air
-                    ? sherds[face]
-                    : ItemsRegistry.Brick)
+                .Select(face => face < sherds.Count && sherds[face] is ItemStack item && !item.IsAir
+                    ? item : new ItemStack(ItemsRegistry.Brick))
                 .ToImmutableArray();
 
-            components.Add(ComponentBuilder.PotDecorations with { Value = [.. faces.Select(face => new ItemStack(face))] });
-            dynamic["minecraft:sherds"] = [.. faces.Select(face => new ItemStack(face))];
+            components.Add(ComponentBuilder.PotDecorations with { Value = faces });
+            dynamic["minecraft:sherds"] = [.. faces];
         }
 
         return components.Count == 0 && dynamic.Count == 0 ? None : new BlockEntityComponents(components, dynamic);

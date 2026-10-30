@@ -49,21 +49,22 @@ public partial class PlayerBase
         this.craftedRecipes.Enqueue(AdvancementsRegistry.Qualify(identifier));
     }
 
-    private string ProgressPath(string folder)
+    private string ProgressPath(string folder, Guid uuid)
     {
         var world = this.Level is IDimension dimension ? dimension.ParentWorld : (IWorld)this.Level;
-        return Path.Combine(Path.GetDirectoryName(world.PlayerDataPath)!, folder, $"{this.Uuid}.json");
+        // Beside players/data: players/stats and players/advancements.
+        return Path.Combine(Path.GetDirectoryName(world.PlayerDataPath)!, folder, $"{uuid}.json");
     }
 
     private void LoadProgress()
     {
-        var statistics = ProgressFiles.Read(this.ProgressPath("stats"), this.Logger);
+        var statistics = ProgressFiles.Read(this.ProgressPath("stats", this.loadedUuid), this.Logger);
         this.ProgressStatistics.Load(statistics);
         if (statistics["stats"]?["minecraft:custom"]?["minecraft:time_since_rest"] is null && this.TimeSinceRest > 0)
             this.Statistics.Increment("minecraft:time_since_rest", this.TimeSinceRest);
 
         this.progressDead = false;
-        this.ProgressAdvancements.Load(ProgressFiles.Read(this.ProgressPath("advancements"), this.Logger));
+        this.ProgressAdvancements.Load(ProgressFiles.Read(this.ProgressPath("advancements", this.loadedUuid), this.Logger));
         this.progressDimension = this.Level.DimensionName;
         this.progressInventory = null;
         this.TimeSinceRest = this.Statistics.Get("minecraft:time_since_rest");
@@ -71,8 +72,8 @@ public partial class PlayerBase
 
     private async Task SaveProgressAsync()
     {
-        await ProgressFiles.WriteAsync(this.ProgressPath("stats"), this.ProgressStatistics.Save());
-        await ProgressFiles.WriteAsync(this.ProgressPath("advancements"), this.ProgressAdvancements.Save());
+        await ProgressFiles.WriteAsync(this.ProgressPath("stats", this.Uuid), this.ProgressStatistics.Save());
+        await ProgressFiles.WriteAsync(this.ProgressPath("advancements", this.Uuid), this.ProgressAdvancements.Save());
     }
 
     private async ValueTask TickProgressAsync()

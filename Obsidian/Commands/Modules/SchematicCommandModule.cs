@@ -172,13 +172,8 @@ public sealed class SchematicCommandModule : CommandModuleBase
             : throw new InvalidDataException("it has no palette");
 
         var states = new List<IBlock>(paletteList.Count);
-        foreach (NbtCompound entry in paletteList)
-        {
-            var properties = entry.TryGetTag<NbtCompound>("Properties", out var tag)
-                ? tag.ToDictionary(property => property.Key, property => ((NbtTag<string>)property.Value).Value!)
-                : null;
-            states.Add(BlockState(entry.GetString("Name")!, properties));
-        }
+        foreach (var entry in paletteList)
+            states.Add(Obsidian.WorldData.BlockStateNbt.Read(entry));
 
         var placed = new List<(Vector, IBlock)>();
         foreach (NbtCompound entry in (NbtList)root["blocks"])

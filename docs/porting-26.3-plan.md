@@ -105,11 +105,10 @@ below. Every number in this plan was measured from Mojang's jars, except where a
   - Signs gain `allow_op_features`.
   - The `bed` block entity is removed (26.2).
 - **`level.dat` gains `version_history`.**
-- **Obsidian has no data fixers.** It only checks for an exact DataVersion match. Its DataVersion constants are also
-  inconsistent:
-  - `MobStorage` writes the literal `4671`.
-  - `MapStorage` writes `3337`.
-  - `Obsidian.API`'s `LevelData` defines an unused `3337`.
+- **Obsidian has no data fixers.** Every save writes `ServerConstants.DataVersion`, its only data version constant.
+  Every world, server or integrated, now uses 26.3's layout (see the World section of `integrated-server.md`), and
+  `WorldUpgrade` upgrades a world Obsidian saved in either 1.21.11 layout once, after copying it to a backup beside it.
+  It detects them by layout, not by DataVersion, since builds for 26.3 wrote 5023 in 1.21.11's layout.
 
 ### Data-driven systems
 
@@ -366,14 +365,18 @@ Re-capture with the Phase 0 harness first, then work in this order. Each step ha
    - Replace the consolidated types with the general machinery.
    - Add the new feature and placement types and the block-state providers.
    - Speleothems, poplar trees, shelf mushrooms and red shrubs.
-6. **Structures.** Abandoned camps (jigsaw, so mostly data) and the changed templates.
+6. **Structures.** Abandoned camps (jigsaw, so mostly data) and the changed templates. Save structure starts with
+   vanilla's piece ids and fields: Obsidian writes only each piece's own state, so vanilla drops every piece (see
+   `known-gaps.md`, "Structure pieces in saved chunks").
 7. **The Nether and the End,** including the new End island composition.
 8. **Performance.** Re-record `WorldgenBench` and compare with the 1.21.x numbers in `worldgen-benchmarks.md`. Single
    precision may make generation faster.
 
 **Exit:** all re-captured `VanillaWorldGeneration` and `VanillaStructureGeneration` fixtures pass, the 1.21.11 data is
 gone (`LegacyMinecraftVersion`, `Assets/legacy-1.21.11`, the `obsidian_legacy` tags and the legacy state table), and
-throughput is no worse than on 1.21.x.
+throughput is no worse than on 1.21.x. The world upgrade (Phase 3) also reads the legacy state table, to convert
+moving pistons that 1.21.11 saved by numeric state; keep that one table for it, or have the upgrade drop those
+pistons.
 
 ### Phase 6: content and gameplay
 

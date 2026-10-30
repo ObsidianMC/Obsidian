@@ -141,8 +141,10 @@ internal sealed partial class BrewingStandBlockEntity : VanillaContainerBlockEnt
         base.Load(tag);
 
         var stand = this.Stand;
-        stand.BrewTime = tag.TryGetTagValue<short>("BrewTime", out var brewTime) ? brewTime : 0;
-        stand.Fuel = tag.TryGetTagValue<byte>("Fuel", out var fuel) ? fuel : 0;
+        stand.BrewTime = tag.TryGetTagValue<int>("BrewTime", out var brewTime) ? brewTime
+            : tag.TryGetTagValue<short>("BrewTime", out var legacyTime) ? legacyTime : 0;
+        stand.Fuel = tag.TryGetTagValue<int>("Fuel", out var fuel) ? fuel
+            : tag.TryGetTagValue<byte>("Fuel", out var legacyFuel) ? legacyFuel : 0;
 
         // A brew in progress takes its unsaved ingredient from the ingredient slot, so it goes on after a reload
         // instead of stopping and spending another fuel use.
@@ -153,8 +155,8 @@ internal sealed partial class BrewingStandBlockEntity : VanillaContainerBlockEnt
     {
         base.Save(tag);
 
-        tag.Add(new NbtTag<short>("BrewTime", (short)this.Stand.BrewTime));
-        tag.Add(new NbtTag<byte>("Fuel", (byte)this.Stand.Fuel));
+        tag.Add(new NbtTag<int>("BrewTime", this.Stand.BrewTime));
+        tag.Add(new NbtTag<int>("Fuel", this.Stand.Fuel));
     }
 
     protected internal override ValueTask TickAsync() =>

@@ -77,6 +77,10 @@ public abstract partial class AbstractLevel : ILevel
 
     public string Name { get; }
     public string Seed { get; }
+    /// <summary>
+    /// The level's folder, <c>dimensions/&lt;namespace&gt;/&lt;path&gt;</c> in its world's folder (see
+    /// <see cref="WorldLayout"/>): its chunks, entities and saved data.
+    /// </summary>
     public string FolderPath { get; protected set; } = string.Empty;
 
     public bool Loaded { get; protected set; }
@@ -133,10 +137,9 @@ public abstract partial class AbstractLevel : ILevel
     public string LevelDataFilePath { get; protected set; }
 
     /// <summary>
-    /// The folder of the level's chunk region files, inside <see cref="FolderPath"/>: Obsidian's <c>regions</c>, or
-    /// vanilla's <c>region</c> in worlds laid out like vanilla saves.
+    /// The folder of the level's chunk region files, inside <see cref="FolderPath"/>: vanilla's <c>region</c>.
     /// </summary>
-    protected virtual string RegionFolderName => "regions";
+    protected string RegionFolderName => WorldLayout.RegionFolder;
 
     /// <summary>
     /// Called while <see cref="GenerateAsync"/> runs, with the chunks generated so far and the chunks to generate.

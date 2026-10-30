@@ -569,13 +569,8 @@ public sealed class StructureTemplate
     private static List<IBlock> ReadPaletteStates(NbtList palette)
     {
         var states = new List<IBlock>(palette.Count);
-        foreach (NbtCompound entry in palette)
-        {
-            var properties = entry.TryGetTag<NbtCompound>("Properties", out var tag)
-                ? tag.ToDictionary(property => property.Key, property => ((NbtTag<string>)property.Value).Value!)
-                : null;
-            states.Add(BlockStateProperties.GetState(entry.GetString("Name")!, properties));
-        }
+        foreach (var entry in palette)
+            states.Add(BlockStateNbt.Read(entry));
 
         return states;
     }
@@ -897,6 +892,11 @@ public sealed class StructureTemplate
         var states = new List<IBlock>(count);
         for (var i = 0; i < count; i++)
         {
+            if (elementType == NbtTagType.String)
+            {
+                states.Add(BlockStateProperties.GetState(reader.ReadString()));
+                continue;
+            }
             if (elementType != NbtTagType.Compound)
             {
                 SkipPayload(reader, elementType, limits, 3);
@@ -912,9 +912,9 @@ public sealed class StructureTemplate
                     break;
 
                 var name = ReadFieldName(reader, nameBuffer);
-                if (type == NbtTagType.String && name.SequenceEqual("Name"u8))
+                if (type == NbtTagType.String && (name.SequenceEqual("Name"u8) || name.SequenceEqual("id"u8) || name.IsEmpty))
                     blockName = reader.ReadString();
-                else if (type == NbtTagType.Compound && name.SequenceEqual("Properties"u8))
+                else if (type == NbtTagType.Compound && (name.SequenceEqual("Properties"u8) || name.SequenceEqual("properties"u8)))
                     properties = ReadProperties(reader, limits);
                 else
                     SkipPayload(reader, type, limits, 4);

@@ -296,6 +296,27 @@ public abstract partial class AbstractLevel
     private static void ClearRaidBar(VillageRaid raid)
     { if (raid.Bar != null) foreach (var id in raid.Bar.Players.ToArray()) raid.Bar.RemovePlayer(id); }
 
+    /// <summary>
+    /// Reads the wandering trader's spawn delay and chance from the payload of vanilla's <c>wandering_trader.dat</c>,
+    /// after <see cref="ReadRaidsNbt"/>: vanilla's file wins, as it's the one vanilla changes.
+    /// </summary>
+    internal void ReadWanderingTrader(NbtCompound trader)
+    {
+        if (trader.TryGetTagValue<int>("spawn_delay", out var delay))
+            traderCountdown = Math.Clamp(delay, 1, 24000);
+        if (trader.TryGetTagValue<int>("spawn_chance", out var chance))
+            traderChance = Math.Clamp(chance, 25, 75);
+    }
+
+    /// <summary>
+    /// Writes the wandering trader's spawn delay and chance to the payload of vanilla's <c>wandering_trader.dat</c>.
+    /// </summary>
+    internal void WriteWanderingTrader(NbtCompound trader)
+    {
+        trader.Set(new NbtTag<int>("spawn_delay", traderCountdown));
+        trader.Set(new NbtTag<int>("spawn_chance", traderChance));
+    }
+
     internal void WriteRaidsNbt(INbtWriter writer)
     {
         writer.WriteInt("ObsidianPatrolCountdown", patrolCountdown);

@@ -23,10 +23,10 @@ public abstract partial class AbstractLevel
         if (string.IsNullOrEmpty(this.FolderPath))
             throw new InvalidOperationException("The level must be initialized before accessing saved data.");
 
-        // The overworld is also a level. Reserve an engine directory for world-wide data to keep scopes distinct.
+        // Like vanilla's, the world's data is in the world's folder and a level's in the level's.
         var storage = scope == SavedDataScope.World
             ? LazyInitializer.EnsureInitialized(ref this.worldSavedData,
-                () => new SavedDataStorage(Path.Combine(this.FolderPath, "data", "obsidian", "world")))
+                () => new SavedDataStorage(Path.Combine(((World)this).WorldFolderPath, "data")))
             : LazyInitializer.EnsureInitialized(ref this.levelSavedData,
                 () => new SavedDataStorage(Path.Combine(this.FolderPath, "data")));
 

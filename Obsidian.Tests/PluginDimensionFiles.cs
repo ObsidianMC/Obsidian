@@ -698,9 +698,9 @@ public sealed class PluginDimensionFiles : IDisposable
             "world",
             "1234");
 
-        world.UseVanillaLayout(this.folder);
+        world.UseFolder(this.folder);
         world.Initialize(CodecRegistry.Dimensions.All["minecraft:overworld"]);
-        world.CreateVanillaLevel(new NbtCompound("Data") { new NbtTag<string>("LevelName", "world") });
+        world.CreateLevel(new LevelFiles { Data = { new NbtTag<string>("LevelName", "world") } });
 
         return world;
     }

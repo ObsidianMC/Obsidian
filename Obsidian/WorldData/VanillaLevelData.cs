@@ -6,13 +6,13 @@ using System.Text.Json;
 namespace Obsidian.WorldData;
 
 /// <summary>
-/// <c>level.dat</c> in vanilla 1.21.11's shape: a root compound holding the level in <c>Data</c>, with the keys of
-/// vanilla's <c>PrimaryLevelData</c>. The names, tag types and nesting have to match vanilla's so the game reads the save.
+/// A world's level data in vanilla 26.3's shape (see <see cref="LevelFiles"/>): <c>level.dat</c>'s <c>Data</c> with the
+/// keys of vanilla's <c>PrimaryLevelData</c>, and the game rules, weather, clocks and world generation settings in their
+/// saved data files. The names, tag types and nesting have to match vanilla's so the game reads the save.
 /// </summary>
 /// <remarks>
-/// A world keeps the whole <c>Data</c> compound it was loaded with and only overwrites the fields Obsidian owns when it
-/// saves (see <see cref="Update"/>), so what Obsidian doesn't model (the dragon fight, scheduled events, game rules...)
-/// survives.
+/// A world keeps the whole compounds it was loaded with and only overwrites the fields Obsidian owns when it saves (see
+/// <see cref="Update"/>), so what Obsidian doesn't model (paused clocks, data packs, rules it doesn't have...) survives.
 /// </remarks>
 internal static class VanillaLevelData
 {
@@ -35,55 +35,70 @@ internal static class VanillaLevelData
     ];
 
     /// <summary>
-    /// The <c>Data</c> compound of a vanilla-shaped root, or <c>null</c> for Obsidian's flat shape.
-    /// </summary>
-    public static NbtCompound? GetData(NbtCompound root) => root.TryGetTag<NbtCompound>("Data", out var data) ? data : null;
-
-    /// <summary>
-    /// Reads the fields Obsidian models.
+    /// Reads the fields Obsidian models, but the game rules (see <see cref="AbstractLevel.ReadGameRules"/>).
     /// </summary>
     /// <remarks>
-    /// Obsidian has one clock for game and day time, so it runs on <c>DayTime</c>, where the sun is; <see cref="Update"/>
-    /// advances <c>Time</c> by as much as the clock moved.
+    /// Obsidian has one clock for game and day time, so it runs on the overworld's world clock, where the sun is;
+    /// <see cref="Update"/> advances <c>Time</c>, the game time, by as much as the clock moved.
     /// </remarks>
-    public static LevelData Read(NbtCompound data)
+    public static LevelData Read(LevelFiles files)
     {
+        var data = files.Data;
+        var difficulty = data.TryGetTag<NbtCompound>("difficulty_settings", out var settings) ? settings : new NbtCompound();
+        var weather = files.Weather;
+        var worldGen = files.WorldGenSettings;
+
         var level = new LevelData
         {
             LevelName = Get(data, "LevelName", string.Empty)!,
             DefaultGamemode = (GameMode)Get(data, "GameType", 0),
-            Hardcore = data.GetBool("hardcore"),
+            Hardcore = difficulty.GetBool("hardcore"),
+            Difficulty = Enum.TryParse<Difficulty>(Get(difficulty, "difficulty", "normal"), ignoreCase: true, out var value)
+                ? value
+                : Difficulty.Normal,
+            DifficultyLocked = difficulty.GetBool("locked"),
             AllowCommands = data.GetBool("allowCommands"),
-            Difficulty = (Difficulty)Get<byte>(data, "Difficulty", (byte)Difficulty.Normal),
-            DifficultyLocked = data.GetBool("DifficultyLocked"),
             Initialized = data.GetBool("initialized"),
             LastPlayed = Get(data, "LastPlayed", 0L),
-            Time = Get(data, "DayTime", Get(data, "Time", 0L)),
-            Raining = data.GetBool("raining"),
-            Thundering = data.GetBool("thundering"),
-            RainTime = Get(data, "rainTime", 0),
-            ThunderTime = Get(data, "thunderTime", 0),
-            ClearWeatherTime = Get(data, "clearWeatherTime", 0),
-            Version = Get(data, "version", StorageVersion)
+            Time = GetClock(files, Get(data, "Time", 0L)),
+            Raining = weather.GetBool("raining"),
+            Thundering = weather.GetBool("thundering"),
+            RainTime = Get(weather, "rain_time", 0),
+            ThunderTime = Get(weather, "thunder_time", 0),
+            ClearWeatherTime = Get(weather, "clear_weather_time", 0),
+            Version = Get(data, "version", StorageVersion),
+            RandomSeed = Get(worldGen, "seed", 0L),
+            MapFeatures = !worldGen.HasTag("generate_structures") || worldGen.GetBool("generate_structures")
         };
 
-        if (data.TryGetTag<NbtCompound>("WorldGenSettings", out var worldGen))
-        {
-            level.RandomSeed = Get(worldGen, "seed", 0L);
-            level.MapFeatures = !worldGen.HasTag("generate_features") || worldGen.GetBool("generate_features");
-        }
-
-        // The spawn is a block; players spawn at its center. Saves from before 1.21.9 keep it in SpawnX/Y/Z.
+        // The spawn is a block; players spawn at its center.
         if (data.TryGetTag<NbtCompound>("spawn", out var spawn) && spawn.TryGetTag<NbtArray<int>>("pos", out var pos) && pos.Count == 3)
             level.SpawnPosition = new VectorD(pos[0] + 0.5, pos[1], pos[2] + 0.5);
-        else if (data.HasTag("SpawnX"))
-            level.SpawnPosition = new VectorD(Get(data, "SpawnX", 0) + 0.5, Get(data, "SpawnY", 0), Get(data, "SpawnZ", 0) + 0.5);
 
         return level;
     }
 
+    // The overworld's world clock, or the fallback when there's none.
+    private static long GetClock(LevelFiles files, long fallback) =>
+        files.WorldClocks.TryGetTag<NbtCompound>(Overworld, out var clock) ? Get(clock, "total_ticks", fallback) : fallback;
+
     /// <summary>
-    /// Obsidian's generator for the overworld a level's <c>WorldGenSettings</c> describe.
+    /// The UUID of the singleplayer owner, whose player file the game loads for whoever opens the world in singleplayer,
+    /// or <c>null</c> when it was never opened that way.
+    /// </summary>
+    public static Guid? GetSingleplayerOwner(LevelFiles files) =>
+        files.Data.TryGetTag<NbtArray<int>>("singleplayer_uuid", out var uuid) && uuid.Count == 4
+            ? Entities.EntityNbt.UuidFromInts(uuid.GetArray())
+            : null;
+
+    /// <summary>
+    /// Records <paramref name="owner"/> as the singleplayer owner (see <see cref="GetSingleplayerOwner"/>).
+    /// </summary>
+    public static void SetSingleplayerOwner(LevelFiles files, Guid owner) =>
+        Set(files.Data, new NbtArray<int>("singleplayer_uuid", Entities.EntityNbt.UuidToInts(owner)));
+
+    /// <summary>
+    /// Obsidian's generator for the overworld a world's generation settings describe.
     /// </summary>
     /// <remarks>
     /// A world made in vanilla with a data pack changing the overworld, like Terralith, saves that pack's level stem.
@@ -96,10 +111,9 @@ internal static class VanillaLevelData
     /// Obsidian can't generate that overworld, including flat worlds with other layers or another biome than its superflat
     /// generator's: they'd silently get different terrain.
     /// </exception>
-    public static string GetGeneratorId(NbtCompound data, (string Source, byte[] Stem)? overworld = null)
+    public static string GetGeneratorId(LevelFiles files, (string Source, byte[] Stem)? overworld = null)
     {
-        if (!data.TryGetTag<NbtCompound>("WorldGenSettings", out var worldGen)
-            || !worldGen.TryGetTag<NbtCompound>("dimensions", out var dimensions)
+        if (!files.WorldGenSettings.TryGetTag<NbtCompound>("dimensions", out var dimensions)
             || !dimensions.TryGetTag<NbtCompound>(Overworld, out var savedStem)
             || !savedStem.TryGetTag<NbtCompound>("generator", out var generator))
             return MojangGeneratorId;
@@ -192,39 +206,45 @@ internal static class VanillaLevelData
     public static long ParseSeed(string? seed) => string.IsNullOrWhiteSpace(seed) ? Random.Shared.NextInt64() : RandomState.ParseSeed(seed);
 
     /// <summary>
-    /// The <c>Data</c> compound of a new level, as vanilla writes it for a world created with these settings. The fields
-    /// Obsidian owns are filled in by <see cref="Update"/> when it's saved.
+    /// The level data of a new world, as vanilla writes it for a world created with these settings. The fields Obsidian
+    /// owns are filled in by <see cref="Update"/> when it's saved.
     /// </summary>
-    public static NbtCompound Create(NewWorldConfiguration settings, string levelName, long seed, string generatorId)
+    public static LevelFiles Create(NewWorldConfiguration settings, string levelName, long seed, string generatorId)
     {
-        var data = new NbtCompound("Data")
+        var files = new LevelFiles
         {
-            new NbtTag<string>("LevelName", levelName),
-            new NbtTag<int>("GameType", (int)settings.GameMode),
-            new NbtTag<byte>("Difficulty", (byte)settings.Difficulty),
-            new NbtTag<byte>("hardcore", Byte(settings.Hardcore)),
-            new NbtTag<byte>("allowCommands", Byte(settings.AllowCommands)),
-            new NbtTag<int>("version", StorageVersion),
-            new NbtTag<byte>("WasModded", 1),
-            new NbtList(NbtTagType.String, "ServerBrands"),
-            CreateWorldGenSettings(settings, seed, generatorId),
-            new NbtCompound("DataPacks")
+            Data = new NbtCompound("Data")
             {
-                new NbtList(NbtTagType.String, "Enabled") { new NbtTag<string>(string.Empty, "vanilla") },
-                new NbtList(NbtTagType.String, "Disabled")
+                new NbtTag<string>("LevelName", levelName),
+                new NbtTag<int>("GameType", (int)settings.GameMode),
+                new NbtCompound("difficulty_settings")
+                {
+                    new NbtTag<string>("difficulty", DifficultyName(settings.Difficulty)),
+                    new NbtTag<byte>("hardcore", Byte(settings.Hardcore)),
+                    new NbtTag<byte>("locked", 0)
+                },
+                new NbtTag<byte>("allowCommands", Byte(settings.AllowCommands)),
+                new NbtTag<int>("version", StorageVersion),
+                new NbtTag<byte>("WasModded", 1),
+                new NbtList(NbtTagType.String, "ServerBrands"),
+                new NbtCompound("DataPacks")
+                {
+                    new NbtList(NbtTagType.String, "Enabled") { new NbtTag<string>(string.Empty, "vanilla") },
+                    new NbtList(NbtTagType.String, "Disabled")
+                }
             },
-            new NbtList(NbtTagType.String, "enabled_features") { new NbtTag<string>(string.Empty, "minecraft:vanilla") }
+            WorldGenSettings = CreateWorldGenSettings(settings, seed, generatorId)
         };
 
-        var gameRules = new NbtCompound("game_rules");
-        SetGameRules(gameRules, settings.GameRules);
-
-        data.Add(gameRules);
-        return data;
+        SetGameRules(files.GameRules, settings.GameRules);
+        return files;
     }
 
-    // Vanilla 1.21.11 keeps game rules by registry id, booleans as bytes and integers as ints.
-    private static void SetGameRules(NbtCompound gameRules, IEnumerable<KeyValuePair<string, string>> rules)
+    /// <summary>
+    /// Sets <paramref name="rules"/> in the payload of <c>game_rules.dat</c>, which keeps them by registry id, booleans as
+    /// bytes and integers as ints.
+    /// </summary>
+    public static void SetGameRules(NbtCompound gameRules, IEnumerable<KeyValuePair<string, string>> rules)
     {
         foreach (var (key, value) in rules)
         {
@@ -237,12 +257,14 @@ internal static class VanillaLevelData
     }
 
     /// <summary>
-    /// Overwrites the fields Obsidian owns in a level's <c>Data</c> with <paramref name="level"/>'s values, leaving the rest.
+    /// Overwrites the fields Obsidian owns in a world's level data with <paramref name="level"/>'s values, leaving the rest.
     /// </summary>
-    public static void Update(NbtCompound data, LevelData level)
+    public static void Update(LevelFiles files, LevelData level)
     {
+        var data = files.Data;
+
         // Advances the game time by as much as the clock moved since the last save (see Read).
-        var gameTime = Get(data, "Time", 0L) + Math.Max(0, level.Time - Get(data, "DayTime", level.Time));
+        var gameTime = Get(data, "Time", 0L) + Math.Max(0, level.Time - GetClock(files, level.Time));
 
         Set(data, new NbtTag<int>("DataVersion", ServerConstants.DataVersion));
         Set(data, new NbtCompound("Version")
@@ -252,27 +274,26 @@ internal static class VanillaLevelData
             new NbtTag<byte>("Snapshot", 0),
             new NbtTag<string>("Series", "main")
         });
+
+        // Vanilla adds every data version that saved the world.
+        if (!data.TryGetTag<NbtList>("version_history", out var history))
+            Set(data, history = new NbtList(NbtTagType.Int, "version_history"));
+        if (history.OfType<NbtTag<int>>().LastOrDefault()?.Value != ServerConstants.DataVersion)
+            history.Add(new NbtTag<int>(string.Empty, ServerConstants.DataVersion));
+
         Set(data, new NbtTag<int>("GameType", (int)level.DefaultGamemode));
-        Set(data, new NbtTag<byte>("hardcore", Byte(level.Hardcore)));
         Set(data, new NbtTag<byte>("allowCommands", Byte(level.AllowCommands)));
-        Set(data, new NbtTag<byte>("Difficulty", (byte)level.Difficulty));
-        Set(data, new NbtTag<byte>("DifficultyLocked", Byte(level.DifficultyLocked)));
         Set(data, new NbtTag<byte>("initialized", 1));
         Set(data, new NbtTag<long>("LastPlayed", DateTimeOffset.Now.ToUnixTimeMilliseconds()));
         Set(data, new NbtTag<long>("Time", gameTime));
-        Set(data, new NbtTag<long>("DayTime", level.Time));
-        Set(data, new NbtTag<byte>("raining", Byte(level.Raining)));
-        Set(data, new NbtTag<byte>("thundering", Byte(level.Thundering)));
-        Set(data, new NbtTag<int>("rainTime", level.RainTime));
-        Set(data, new NbtTag<int>("thunderTime", level.ThunderTime));
-        Set(data, new NbtTag<int>("clearWeatherTime", level.ClearWeatherTime));
 
-        // Rules Obsidian doesn't have stay as they were.
-        var gameRules = data.TryGetTag<NbtCompound>("game_rules", out var savedRules)
-            ? savedRules
-            : new NbtCompound("game_rules");
-        SetGameRules(gameRules, level.GameRules);
-        Set(data, gameRules);
+        var difficulty = data.TryGetTag<NbtCompound>("difficulty_settings", out var savedDifficulty)
+            ? savedDifficulty
+            : new NbtCompound("difficulty_settings");
+        Set(difficulty, new NbtTag<string>("difficulty", DifficultyName(level.Difficulty)));
+        Set(difficulty, new NbtTag<byte>("hardcore", Byte(level.Hardcore)));
+        Set(difficulty, new NbtTag<byte>("locked", Byte(level.DifficultyLocked)));
+        Set(data, difficulty);
 
         // Vanilla's RespawnData: a dimension, a block position and the facing, which Obsidian keeps as loaded.
         var spawn = level.SpawnPosition.Floor();
@@ -291,11 +312,28 @@ internal static class VanillaLevelData
         if (!brands.OfType<NbtTag<string>>().Any(brand => brand.Value == "obsidian"))
             brands.Add(new NbtTag<string>(string.Empty, "obsidian"));
         Set(data, new NbtTag<byte>("WasModded", 1));
+
+        Set(files.Weather, new NbtTag<byte>("raining", Byte(level.Raining)));
+        Set(files.Weather, new NbtTag<byte>("thundering", Byte(level.Thundering)));
+        Set(files.Weather, new NbtTag<int>("rain_time", level.RainTime));
+        Set(files.Weather, new NbtTag<int>("thunder_time", level.ThunderTime));
+        Set(files.Weather, new NbtTag<int>("clear_weather_time", level.ClearWeatherTime));
+
+        var clock = files.WorldClocks.TryGetTag<NbtCompound>(Overworld, out var savedClock) ? savedClock : new NbtCompound(Overworld);
+        Set(clock, new NbtTag<long>("total_ticks", level.Time));
+        Set(files.WorldClocks, clock);
+
+        // Rules Obsidian doesn't have stay as they were.
+        SetGameRules(files.GameRules, level.GameRules);
     }
 
+    // Vanilla's Difficulty by its serialized name, like "normal".
+    private static string DifficultyName(Difficulty difficulty) => difficulty.ToString().ToLowerInvariant();
+
     /// <summary>
-    /// Vanilla's <c>WorldGenSettings</c> for the world preset Obsidian generates: the overworld's generator, and vanilla's
-    /// nether and end, which Obsidian generates in every world.
+    /// The payload of vanilla's <c>world_gen_settings.dat</c> for the world preset Obsidian generates: the overworld's
+    /// generator, and vanilla's nether and end, which Obsidian generates in every world. A world with a plugin's generator
+    /// is described as vanilla's default overworld, which is what vanilla would generate for it.
     /// </summary>
     private static NbtCompound CreateWorldGenSettings(NewWorldConfiguration settings, long seed, string generatorId)
     {
@@ -314,10 +352,10 @@ internal static class VanillaLevelData
             }
             : NoiseGenerator(Overworld, MultiNoise(Overworld));
 
-        return new NbtCompound("WorldGenSettings")
+        return new NbtCompound("data")
         {
             new NbtTag<long>("seed", seed),
-            new NbtTag<byte>("generate_features", Byte(settings.GenerateStructures)),
+            new NbtTag<byte>("generate_structures", Byte(settings.GenerateStructures)),
             new NbtTag<byte>("bonus_chest", Byte(settings.BonusChest)),
             new NbtCompound("dimensions")
             {
