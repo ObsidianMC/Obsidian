@@ -1,6 +1,7 @@
 using Obsidian.API;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.API.Registries;
+using Obsidian.Nbt;
 using Obsidian.Registries;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Fluids;
@@ -10,8 +11,10 @@ using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Mojang.Features;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -107,6 +110,22 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
         Assert.Equal(entry.GetProperty("placed").GetBoolean(), placed);
         Assert.Equal(entry.GetProperty("nextRandom").GetInt32(), nextRandom);
 
+        if (entry.TryGetProperty("expectBlocks", out var expectBlocks))
+        {
+            foreach (var block in expectBlocks.EnumerateArray())
+            {
+                var statePrefix = $" {block.GetString()}[";
+
+                Assert.Contains(expected, change => change.Contains(statePrefix, StringComparison.Ordinal));
+                Assert.Contains(actual, change => change.Contains(statePrefix, StringComparison.Ordinal));
+            }
+        }
+
+        if (entry.TryGetProperty("nextRegionRandom", out var nextRegionRandom))
+        {
+            Assert.Equal(nextRegionRandom.GetInt32(), region.Random.NextInt());
+        }
+
         if (entry.TryGetProperty("fluidTicks", out var expectedTicks))
         {
             var expectedFluids = expectedTicks.EnumerateArray().Select(tick => FluidTick(
@@ -122,29 +141,15 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
             Assert.Equal(expectedFluids, actualFluids);
         }
 
-        if (entry.TryGetProperty("blockEntities", out var expectedEntities))
+        if (entry.TryGetProperty("recordBlockEntities", out _))
         {
-            var expectedBlockEntities = expectedEntities.EnumerateArray()
-                .Select(entity => BlockEntityState(Position(entity), entity[3].GetString()!)).ToList();
-            var actualBlockEntities = FeatureBlockEntities(chunks, chunkX, chunkZ);
+            var expectedEntities = entry.GetProperty("blockEntities")
+                .EnumerateArray()
+                .Select(ExpectedBlockEntity)
+                .ToList();
+            var actualEntities = BlockEntities(chunks, chunkX, chunkZ);
 
-            Assert.Equal(expectedBlockEntities, actualBlockEntities);
-        }
-
-        if (entry.TryGetProperty("expectBlocks", out var expectBlocks))
-        {
-            foreach (var block in expectBlocks.EnumerateArray())
-            {
-                var statePrefix = $" {block.GetString()}[";
-
-                Assert.Contains(expected, change => change.Contains(statePrefix, StringComparison.Ordinal));
-                Assert.Contains(actual, change => change.Contains(statePrefix, StringComparison.Ordinal));
-            }
-        }
-
-        if (entry.TryGetProperty("nextRegionRandom", out var nextRegionRandom))
-        {
-            Assert.Equal(nextRegionRandom.GetInt32(), region.Random.NextInt());
+            Assert.Equal(expectedEntities, actualEntities);
         }
 
         if (entry.TryGetProperty("marks", out var expectedMarksJson))
@@ -351,33 +356,112 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
     private static string FluidTick(Vector position, string type, int delay, int priority) =>
         $"{position.X},{position.Y},{position.Z} {type} {delay} {priority}";
 
-    private static List<string> FeatureBlockEntities(
-        Dictionary<(int X, int Z), IChunk> chunks, int centerX, int centerZ)
+    // A captured block entity as "x y z type data", with the data as canonical JSON.
+    private static string ExpectedBlockEntity(JsonElement record)
     {
-        var result = new List<string>();
+        var position = Position(record);
+        var type = record[3].GetString();
+        var data = CanonicalJson(record[4]);
+
+        return $"{position.X} {position.Y} {position.Z} {type} {data}";
+    }
+
+    // The block entities of the writable chunks by Y, Z and X, saved without their id and position, like the capture.
+    private static List<string> BlockEntities(Dictionary<(int X, int Z), IChunk> chunks, int centerX, int centerZ)
+    {
+        var saved = new List<(Vector Position, string Record)>();
 
         for (var z = centerZ - 1; z <= centerZ + 1; z++)
         {
             for (var x = centerX - 1; x <= centerX + 1; x++)
             {
                 var chunk = (Chunk)chunks[(x, z)];
-                var entities = chunk.BlockEntities.Values
-                    .OrderBy(entity => entity.BlockPosition.Z)
-                    .ThenBy(entity => entity.BlockPosition.X)
-                    .ThenBy(entity => entity.BlockPosition.Y);
 
-                foreach (var entity in entities)
+                foreach (var blockEntity in chunk.BlockEntities.Values)
                 {
-                    result.Add(BlockEntityState(entity.BlockPosition, entity.Id));
+                    var tag = BlockEntityNbt.Save(blockEntity);
+                    var type = tag.GetString("id");
+
+                    foreach (var metadata in (string[])["id", "x", "y", "z", "keepPacked"])
+                    {
+                        tag.Remove(metadata);
+                    }
+
+                    if (tag.TryGetTag<NbtCompound>("components", out var components) && components.Count == 0)
+                    {
+                        tag.Remove("components");
+                    }
+
+                    var position = blockEntity.BlockPosition;
+                    var data = CanonicalJson(JsonSerializer.SerializeToElement(NbtJson(tag)));
+                    var record = $"{position.X} {position.Y} {position.Z} {type} {data}";
+
+                    saved.Add((position, record));
                 }
             }
         }
 
-        return result;
+        return saved
+            .OrderBy(entity => entity.Position.Y)
+            .ThenBy(entity => entity.Position.Z)
+            .ThenBy(entity => entity.Position.X)
+            .Select(entity => entity.Record)
+            .ToList();
     }
 
-    private static string BlockEntityState(Vector position, string type) =>
-        $"{position.X},{position.Y},{position.Z} {type}";
+    // Vanilla's NbtOps-to-JsonOps form of a tag: compounds as objects, lists and arrays as arrays, booleans as bytes.
+    private static JsonNode NbtJson(INbtTag tag) => tag switch
+    {
+        NbtCompound compound => NbtObject(compound),
+        NbtList list => new JsonArray(list.Select(NbtJson).ToArray()),
+        NbtArray<byte> bytes => new JsonArray(bytes.GetArray().Select(value => (JsonNode)value).ToArray()),
+        NbtArray<int> ints => new JsonArray(ints.GetArray().Select(value => (JsonNode)value).ToArray()),
+        NbtArray<long> longs => new JsonArray(longs.GetArray().Select(value => (JsonNode)value).ToArray()),
+        NbtTag<string> text => text.Value,
+        NbtTag<bool> flag => flag.Value ? 1 : 0,
+        NbtTag<byte> value => value.Value,
+        NbtTag<short> value => value.Value,
+        NbtTag<int> value => value.Value,
+        NbtTag<long> value => value.Value,
+        NbtTag<float> value => value.Value,
+        NbtTag<double> value => value.Value,
+        _ => throw new InvalidOperationException($"Unexpected tag {tag}.")
+    };
+
+    private static JsonObject NbtObject(NbtCompound compound)
+    {
+        var fields = compound.Select(field => KeyValuePair.Create(field.Key, NbtJson(field.Value)));
+
+        return new JsonObject(fields);
+    }
+
+    // JSON with sorted keys and numbers by value, so vanilla's and Obsidian's data compare as text.
+    private static string CanonicalJson(JsonElement element)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Object:
+            {
+                var fields = element.EnumerateObject()
+                    .OrderBy(field => field.Name, StringComparer.Ordinal)
+                    .Select(field => $"{JsonSerializer.Serialize(field.Name)}:{CanonicalJson(field.Value)}");
+
+                return $"{{{string.Join(',', fields)}}}";
+            }
+            case JsonValueKind.Array:
+            {
+                var items = element.EnumerateArray().Select(CanonicalJson);
+
+                return $"[{string.Join(',', items)}]";
+            }
+            case JsonValueKind.Number:
+                return element.GetDouble().ToString("R", CultureInfo.InvariantCulture);
+            case JsonValueKind.String:
+                return JsonSerializer.Serialize(element.GetString());
+            default:
+                return element.GetRawText();
+        }
+    }
 
     // Vanilla's decoration random: a population seed from the chunk's corner, then the feature's step and index.
     private static WorldgenRandom DecorationRandom(JsonElement entry, int chunkX, int chunkZ)
@@ -482,7 +566,7 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
             {
                 chunk.SetBlock(position.X, position.Y, position.Z, block);
 
-                if (entry.TryGetProperty("captureBlockEntities", out _) && block.HasBlockEntity())
+                if (entry.TryGetProperty("recordBlockEntities", out _) && block.HasBlockEntity())
                 {
                     DataBlockEntity.ApplyBlockChange(chunk, position, block);
                 }

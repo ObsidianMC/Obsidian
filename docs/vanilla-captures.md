@@ -24,11 +24,11 @@ The 26.3 fixture is a folder with one file per section (`noises.json`, `terrain.
 is a folder of files, one per group of cases: `01-vegetation`, `02-ores` and `03-misc-placements` (registered placed
 features), `04-review` (components and review regressions), `05-non-tree`, `06-review-additions`, `07-coverage`,
 `08-nether-and-end`, `09-trees`, `10-fallen-trees`, `11-huge-mushrooms`, `12-fungi`, `13-ice-spikes`,
-`14-tree-rejections`, `16-last-feature-types` and `17-icebergs`. Each file holds
-`{ "version": ..., "cases": [...] }`, with the Minecraft version it was last
-recorded with. A section's cases are its files' cases in ordinal order of their names, which is the order the tests
-see. Put new cases in the group they belong to, or start a group with a new file numbered after the last one, so that
-changes in different groups touch different files.
+`14-tree-rejections`, `15-tree-coverage`, `16-last-feature-types` and `17-icebergs`. Each file holds
+`{ "version": ..., "cases": [...] }`, with the Minecraft version it was last recorded with. A section's cases are
+its files' cases in ordinal order of their names, which is the order the tests see. Put new cases in the group they
+belong to, or start a group with a new file numbered after the last one, so that changes in different groups touch
+different files.
 
 Groups 16 and 17 cover the last seven feature types: `end_podium`, `fossil`, `geode`, `iceberg`,
 `large_dripstone`, `sculk_patch` and `underwater_magma`. They record placement results, changed states and the
@@ -43,13 +43,13 @@ origins outside the writable region whose footprints overlap it. Additional case
 skulls, partial empty-corner limits, fluid corners and bottom-clamped burial; three-point geodes with crack
 orientations 0 and 3; snow-disabled icebergs and floating snow cleanup; shrinking dripstone radii, lava roots and
 irregular submerged terrain; obstructed podium domes and the build-height edge; and sculk/vein starts and vertical
-obstructions. Group 15 is reserved for the separate tree-coverage change.
+obstructions.
 
 Feature cases can opt into `captureFluidTicks` to record `fluidTicks` as `[x, y, z, fluid, delay, priority]`,
 in chunk z/x order and each chunk's scheduling order. `expectFluidTicks` requires a nonempty list in both vanilla
-and the replay. `captureBlockEntities` creates block entities for edited entity blocks before placement and records
-the surviving `blockEntities` as `[x, y, z, type]`, ordered by chunk z/x then position z/x/y. The replay checks both
-lists as well as changed block states, placement results and random consumption.
+and the replay. The podium case uses `recordBlockEntities` (described below), which also creates block entities
+for edited entity blocks before placement. The replay checks both lists as well as changed block states,
+placement results and random consumption.
 
 The recursive feature-data inventory contains 56 feature types, all implemented in the 26.3 registry.
 `VanillaFeatureRegistration.EveryVanillaFeatureCanBeCompiled` compiles every shipped feature, including nested
@@ -274,12 +274,22 @@ features replayed so far read no further. Cases whose feature types aren't imple
 listed as pending in the test. Biome decoration (each biome's ordered steps) waits for 26.3 biome
 selection. The replays have `Category=Worldgen`.
 
-Trees and large features have their own files of named cases (`features/09-trees` to `14-tree-rejections`): each
+Trees and large features have their own files of named cases (`features/09-trees` to `15-tree-coverage`): each
 tree family (oak, birch, fancy oak, spruce and pine, giant spruce and pine, jungle and mega jungle, dark oak,
-acacia, cherry, azalea, swamp oak, pale oak without moss, poplars, mangroves on mud) with bees and leaf litter
-variants, fallen trees, huge mushrooms, crimson and warped fungi (wild and planted) and spikes. Rejections cover
-blocked trunks, a blocked cap, wrong substrates, and the checked trees' sapling-survival filters on sand. Pale oaks
-with moss wait for `vegetation_patch`, which their moss decorator places.
+acacia, cherry, azalea, swamp oak, pale oak with and without moss, poplars, mangroves on mud) with bees and leaf
+litter variants, fallen trees, huge mushrooms, crimson and warped fungi (wild and planted) and spikes. Rejections
+cover blocked trunks, a blocked cap, wrong substrates, and the checked trees' sapling-survival filters on sand.
+Pale oaks with moss pin the region random with `regionRandomSeed` (see the moss carpet cases below), since their
+moss patch places carpets. `15-tree-coverage` holds placed cocoa, 3x3 fungus stems, a tall ice spike, waterlogged
+leaves and mangrove roots, preserved persistent leaves, a fancy oak clipped by a block and one clipped below its
+minimum height, trees at the top of the world, trees whose writes fall outside the writable chunks, and bee nests.
+
+Cases with `recordBlockEntities` record `blockEntities`, the block entities of the writable chunks as
+`[x, y, z, type, data]` by Y, Z and X, with the data vanilla saves for them less the id, position, `keepPacked` and
+empty `components`. A protochunk keeps only a pending tag for a block entity nothing has read yet, so the capture
+reads each one through the region first, which creates it from its block. The replay saves Obsidian's block entities
+the same way and compares them as JSON with sorted keys, so the bee nests' occupants (count, entity data and hive
+timers) and the creaking heart are checked against vanilla's.
 
 Feature review regressions are in `features/04-review` and `06-review-additions`. A named case may provide an inline
 placed feature, an explicit `origin`, a legacy `randomSeed`, and localized `edits` (`[x, y, z, block state]`). Edits

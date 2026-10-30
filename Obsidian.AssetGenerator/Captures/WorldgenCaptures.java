@@ -1120,11 +1120,11 @@ class WorldgenCaptures {
         if (entry.has("captureFluidTicks")) {
             entry.add("fluidTicks", featureFluidTicks(chunks, chunkX, chunkZ));
         }
-        if (entry.has("captureBlockEntities")) {
-            entry.add("blockEntities", featureBlockEntities(region, chunks, chunkX, chunkZ));
-        }
         if (entry.has("regionRandomSeed")) {
             entry.addProperty("nextRegionRandom", region.getRandom().nextInt());
+        }
+        if (entry.has("recordBlockEntities")) {
+            entry.add("blockEntities", blockEntities(region, chunks, chunkX, chunkZ));
         }
         if (entry.has("postProcess") || entry.has("captureMarks")) {
             var marks = featureMarks(chunks, chunkX, chunkZ);
@@ -1163,33 +1163,6 @@ class WorldgenCaptures {
         return result;
     }
 
-    static JsonArray featureBlockEntities(
-        WorldGenRegion region, Map<Long, ProtoChunk> chunks, int centerX, int centerZ) {
-        var result = new JsonArray();
-        var order = Comparator.<BlockPos>comparingInt(BlockPos::getZ)
-            .thenComparingInt(BlockPos::getX)
-            .thenComparingInt(BlockPos::getY);
-
-        for (int z = centerZ - 1; z <= centerZ + 1; z++) {
-            for (int x = centerX - 1; x <= centerX + 1; x++) {
-                var chunk = chunks.get(ChunkPos.pack(x, z));
-                var positions = new ArrayList<>(chunk.getBlockEntitiesPos());
-                positions.sort(order);
-                for (var pos : positions) {
-                    var entity = region.getBlockEntity(pos);
-                    if (entity == null) {
-                        continue;
-                    }
-
-                    var row = coordinates(pos);
-                    row.add(BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(entity.getType()).toString());
-                    result.add(row);
-                }
-            }
-        }
-        return result;
-    }
-
     static List<BlockPos> featureMarks(Map<Long, ProtoChunk> chunks, int centerX, int centerZ) {
         var result = new ArrayList<BlockPos>();
         for (int z = centerZ - 1; z <= centerZ + 1; z++) {
@@ -1206,6 +1179,47 @@ class WorldgenCaptures {
                     }
                 }
             }
+        }
+        return result;
+    }
+
+    // The block entities of the writable chunks, as [x, y, z, type, data] by Y, Z and X. The data is what
+    // vanilla saves for them without the id and position, in JSON. A block placed without reading its block entity
+    // leaves only a pending DUMMY tag in a protochunk, so each is read through the region first, which creates it
+    // the way the chunk's load would.
+    static JsonArray blockEntities(WorldGenRegion region, Map<Long, ProtoChunk> chunks, int centerX, int centerZ) {
+        var registries = server.registryAccess();
+        var saved = new ArrayList<Map.Entry<BlockPos, net.minecraft.nbt.CompoundTag>>();
+        for (int z = centerZ - 1; z <= centerZ + 1; z++) {
+            for (int x = centerX - 1; x <= centerX + 1; x++) {
+                var chunk = chunks.get(ChunkPos.pack(x, z));
+                for (var pos : Set.copyOf(chunk.getBlockEntitiesPos())) {
+                    region.getBlockEntity(pos);
+                    var tag = chunk.getBlockEntityNbtForSaving(pos, registries);
+                    saved.add(Map.entry(pos, tag));
+                }
+            }
+        }
+        Comparator<BlockPos> order = Comparator
+            .comparingInt((BlockPos pos) -> pos.getY())
+            .thenComparingInt(pos -> pos.getZ())
+            .thenComparingInt(pos -> pos.getX());
+        saved.sort(Map.Entry.comparingByKey(order));
+
+        var result = new JsonArray();
+        for (var blockEntity : saved) {
+            var data = blockEntity.getValue().copy();
+            var type = data.getStringOr("id", "");
+            for (var metadata : List.of("id", "x", "y", "z", "keepPacked")) {
+                data.remove(metadata);
+            }
+            if (data.getCompoundOrEmpty("components").isEmpty()) {
+                data.remove("components");
+            }
+            var record = coordinates(blockEntity.getKey());
+            record.add(type);
+            record.add(net.minecraft.nbt.NbtOps.INSTANCE.convertTo(JsonOps.INSTANCE, data));
+            result.add(record);
         }
         return result;
     }
@@ -1323,7 +1337,7 @@ class WorldgenCaptures {
                 if ((pos.getX() >> 4) == position.x() && (pos.getZ() >> 4) == position.z()) {
                     var state = BlockState.CODEC.parse(ops, edit.get(3)).getOrThrow();
                     chunk.setBlockState(pos, state);
-                    if (entry.has("captureBlockEntities")
+                    if (entry.has("recordBlockEntities")
                         && state.getBlock() instanceof net.minecraft.world.level.block.EntityBlock entityBlock) {
                         var entity = entityBlock.newBlockEntity(pos, state);
                         if (entity != null) {
