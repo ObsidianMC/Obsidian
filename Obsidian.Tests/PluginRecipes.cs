@@ -177,6 +177,41 @@ public sealed class PluginRecipes
         Assert.DoesNotContain(ItemsRegistry.Bedrock.Id, unloadedSets["minecraft:brewing_reagent"]);
     }
 
+    [Fact(DisplayName = "A plugin's transmute recipe file crafts and has a book entry per display until it unloads",
+        Timeout = TestServerFactory.TestTimeout)]
+    public async Task TransmuteRecipeFileCraftsUntilItsPluginUnloads()
+    {
+        await using var context = TestServerFactory.CreateServer($"transmute-file-{Guid.NewGuid():N}");
+        var plugin = Plugin();
+        const string identifier = "probe:bedrock_to_diamond";
+        ItemStack?[] grid =
+        [
+            new(ItemsRegistry.Bedrock, 1),
+            new(ItemsRegistry.Barrier, 1),
+            new(ItemsRegistry.Barrier, 1),
+            null
+        ];
+
+        context.Server.LoadRecipeFiles([(plugin, [TransmuteFile(identifier)])]);
+
+        var loaded = context.Server.RecipeRegistry.Current;
+        var crafted = loaded.EvaluateCrafting(grid, 2);
+        var loadedEntries = loaded.Book.Count(entry => entry?.Recipe.Identifier == identifier);
+
+        Assert.Equal(identifier, crafted?.RecipeIdentifier);
+        Assert.True(crafted?.Output.Is(ItemsRegistry.Diamond));
+        Assert.Equal(3, crafted?.Output.Count);
+        Assert.Equal(2, loadedEntries);
+
+        // Unloading the plugin reloads the recipe files without its own.
+        context.Server.LoadRecipeFiles([]);
+
+        var unloaded = context.Server.RecipeRegistry.Current;
+
+        Assert.Null(unloaded.EvaluateCrafting(grid, 2));
+        Assert.DoesNotContain(unloaded.Book, entry => entry?.Recipe.Identifier == identifier);
+    }
+
     [Fact(DisplayName = "A plugin's recipe crafts in the player's grid and leaves it and their book on unload",
         Timeout = TestServerFactory.TestTimeout)]
     public async Task RecipeCraftsUntilItsPluginUnloads()
@@ -522,6 +557,23 @@ public sealed class PluginRecipes
                     "id": "minecraft:potion",
                     "components": { "minecraft:potion_contents": { "potion": "minecraft:luck" } }
                 }
+            }
+            """);
+
+        return new RecipeFile(identifier, json.RootElement.Clone());
+    }
+
+    // A transmute recipe file in which bedrock and one or two barriers craft a diamond, and one more per barrier.
+    private static RecipeFile TransmuteFile(string identifier)
+    {
+        using var json = JsonDocument.Parse("""
+            {
+                "type": "minecraft:crafting_transmute",
+                "input": "minecraft:bedrock",
+                "material": "minecraft:barrier",
+                "material_count": { "min": 1, "max": 2 },
+                "add_material_count_to_result": true,
+                "result": { "id": "minecraft:diamond" }
             }
             """);
 

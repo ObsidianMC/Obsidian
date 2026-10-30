@@ -32,5 +32,10 @@ public enum CraftingType
 
     CraftingTransmute,
 
-    Brewing
+    Brewing,
+
+    // 26.1's dye and imbue recipes come after the existing members so that those keep their values, which compiled
+    // plugins compare against.
+    CraftingDye,
+    CraftingImbue
 }
