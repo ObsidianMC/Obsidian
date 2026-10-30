@@ -28,14 +28,19 @@ public sealed partial class Warden : PathfinderMob
         poseTicks = 134;
     }
 
-    internal bool AcceptsVibration(MobVibration vibration) => Alive && !MobBitMask.HasFlag(MobBitmask.NoAi) &&
-        vibrationCooldown == 0 && Pose is not (Pose.Digging or Pose.Emerging) &&
-        vibration.Source != this && (vibration.Source is not ILiving || CanSense(vibration.Source));
+    internal bool AcceptsVibration(MobVibration vibration) =>
+        Alive
+        && !MobBitMask.HasFlag(MobBitmask.NoAi)
+        && vibrationCooldown == 0
+        && Pose is not (Pose.Digging or Pose.Emerging)
+        && vibration.Source != this
+        && (vibration.Source is not ILiving || CanSense(vibration.Source));
 
     internal void ReceiveVibration(MobVibration vibration)
     {
         if (!AcceptsVibration(vibration))
             return;
+
         vibrationCooldown = 40;
         idleTicks = 0;
         SendEntityEvent(61);
@@ -49,6 +54,7 @@ public sealed partial class Warden : PathfinderMob
                 if (projectileMemoryTicks > 0 && CanSense(owner))
                     destination = owner.Position;
             }
+
             projectileMemoryTicks = 100;
         }
         else if (vibration.Source is { } source)
@@ -82,12 +88,14 @@ public sealed partial class Warden : PathfinderMob
         actions.AddGoal(8, new WardenStrollGoal(this));
     }
 
-    private bool CanSense(IEntity entity) => entity is ILiving && entity.Type != EntityType.Warden && IsValidTarget(entity);
+    private bool CanSense(IEntity entity) =>
+        entity is ILiving && entity.Type != EntityType.Warden && IsValidTarget(entity);
 
     private void IncreaseAnger(IEntity entity, int amount)
     {
         if (!CanSense(entity))
             return;
+
         anger[entity.Uuid] = Math.Min(150, anger.GetValueOrDefault(entity.Uuid) + amount);
         idleTicks = 0;
     }
@@ -108,11 +116,13 @@ public sealed partial class Warden : PathfinderMob
                 SetPose(Pose.Standing);
             }
         }
+
         if (Pose is Pose.Digging or Pose.Sniffing)
         {
             poseTicks = 0;
             SetPose(Pose.Standing);
         }
+
         return default;
     }
 
@@ -120,6 +130,7 @@ public sealed partial class Warden : PathfinderMob
     {
         if (Pose == pose)
             return;
+
         Pose = pose;
         SynchronizeMetadata();
     }
@@ -128,24 +139,60 @@ public sealed partial class Warden : PathfinderMob
     {
         if (MobBitMask.HasFlag(MobBitmask.NoAi))
             return;
+
+        TickCooldowns();
+        var nearby = GetEntitiesNear(32).Where(CanSense).ToArray();
+        UpdateAnger(nearby);
+        ChooseTarget(nearby);
+        SyncClientAnger(nearby);
+        if (AiTick % 120 == 0)
+            SpreadDarkness();
+
+        if (poseTicks > 0)
+        {
+            await TickPoseAsync(nearby);
+            return;
+        }
+
+        if (AttackTarget is { } target)
+        {
+            await TickAttackAsync(target);
+            return;
+        }
+
+        TickIdle();
+    }
+
+    private void TickCooldowns()
+    {
         if (meleeCooldown > 0)
             meleeCooldown--;
+
         if (sonicCooldown > 0)
             sonicCooldown--;
+
         if (vibrationCooldown > 0)
             vibrationCooldown--;
+
         if (projectileMemoryTicks > 0)
             projectileMemoryTicks--;
+
         if (touchCooldown > 0)
             touchCooldown--;
+
         if (sniffCooldown > 0)
             sniffCooldown--;
-        var nearby = GetEntitiesNear(32).Where(CanSense).ToArray();
+    }
+
+    /// <summary>An entity touching the warden angers it; every second, every grudge fades by one.</summary>
+    private void UpdateAnger(IEntity[] nearby)
+    {
         if (touchCooldown == 0 && nearby.FirstOrDefault(entity => IsInRange(entity, 1.5f)) is { } touching)
         {
             IncreaseAnger(touching, 35);
             touchCooldown = 20;
         }
+
         if (AiTick % 20 == 0)
         {
             foreach (var id in anger.Keys.ToArray())
@@ -154,11 +201,20 @@ public sealed partial class Warden : PathfinderMob
                     anger.Remove(id);
             }
         }
-        var mostAngry = nearby.Where(entity => anger.GetValueOrDefault(entity.Uuid) >= AngryThreshold)
-            .OrderByDescending(entity => anger[entity.Uuid]).ThenBy(entity => entity is IPlayer ? 0 : 1)
-            .ThenBy(entity => (entity.Position - Position).MagnitudeSquared()).FirstOrDefault();
+    }
+
+    /// <summary>Drops a target it can no longer sense, and roars at the angriest entity when it has none.</summary>
+    private void ChooseTarget(IEntity[] nearby)
+    {
+        var mostAngry = nearby
+            .Where(entity => anger.GetValueOrDefault(entity.Uuid) >= AngryThreshold)
+            .OrderByDescending(entity => anger[entity.Uuid])
+            .ThenBy(entity => entity is IPlayer ? 0 : 1)
+            .ThenBy(entity => (entity.Position - Position).MagnitudeSquared())
+            .FirstOrDefault();
         if (AttackTarget != null && (!CanSense(AttackTarget) || !IsInRange(AttackTarget, 32)))
             AttackTarget = null;
+
         if (AttackTarget == null && mostAngry != null && poseTicks == 0)
         {
             AttackTarget = mostAngry;
@@ -167,116 +223,188 @@ public sealed partial class Warden : PathfinderMob
             PlayMobSound("roar");
             sonicCooldown = 200;
         }
-        var nextAnger = nearby.Select(entity => anger.GetValueOrDefault(entity.Uuid)).DefaultIfEmpty(0).Max();
+    }
+
+    private void SyncClientAnger(IEntity[] nearby)
+    {
+        var nextAnger = nearby
+            .Select(entity => anger.GetValueOrDefault(entity.Uuid))
+            .DefaultIfEmpty(0)
+            .Max();
         if (nextAnger != clientAnger)
         {
             clientAnger = nextAnger;
             SynchronizeMetadata();
         }
-        if (AiTick % 120 == 0)
-        {
-            foreach (var player in Level.GetPlayersInRange(Position, 20).Where(player => player.GameMode is GameMode.Survival or GameMode.Adventure))
-                player.AddPotionEffect((int)PotionEffect.Darkness - 1, 260);
-        }
+    }
 
-        if (poseTicks > 0)
-        {
-            (Navigator as Navigator)?.Stop();
-            if (--poseTicks == 0)
-            {
-                if (Pose == Pose.Digging)
-                {
-                    await RemoveAsync();
-                    return;
-                }
-                if (Pose == Pose.Sniffing)
-                {
-                    var smelled = nearby.Where(entity => Math.Abs(entity.Position.Y - Position.Y) <= 20 &&
-                        Math.Pow(entity.Position.X - Position.X, 2) + Math.Pow(entity.Position.Z - Position.Z, 2) <= 36)
-                        .MinBy(entity => (entity.Position - Position).MagnitudeSquared());
-                    if (smelled != null)
-                    {
-                        IncreaseAnger(smelled, 35);
-                        Navigator?.NavigateTo(smelled.Position);
-                    }
-                }
-                SetPose(Pose.Standing);
-            }
-            return;
-        }
-        if (AttackTarget is { } target)
-        {
-            idleTicks = 0;
-            LookControl.LookAt(target.Position + new VectorD(0, target.Dimension.Height * 0.85f, 0), 30, 30);
-            if (sonicTicks > 0)
-            {
-                (Navigator as Navigator)?.Stop();
-                if (--sonicTicks == 26)
-                {
-                    PlayMobSound("sonic_boom");
-                    var beam = target.Position + new VectorD(0, target.Dimension.Height * 0.85f, 0) - EyePosition;
-                    var beamLength = beam.Magnitude;
-                    if (beamLength > 0)
-                    {
-                        for (var step = 1; step < beamLength + 7; step++)
-                        {
-                            PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new LevelParticlesPacket
-                            { Position = EyePosition + beam / beamLength * step, ParticleCount = 1, Data = new SonicParticle() });
-                        }
-                    }
+    private void SpreadDarkness()
+    {
+        var players = Level.GetPlayersInRange(Position, 20)
+            .Where(player => player.GameMode is GameMode.Survival or GameMode.Adventure);
+        foreach (var player in players)
+            player.AddPotionEffect((int)PotionEffect.Darkness - 1, 260);
+    }
 
-                    if (InSonicRange(target))
-                    {
-                        var damage = target is IPlayer ? Level.LevelData.Difficulty switch
-                        { Difficulty.Easy => 6, Difficulty.Hard => 15, Difficulty.Peaceful => 0, _ => 10 } : 10;
-                        if (target is Living living)
-                        {
-                            var accepted = living.AcceptedDamageCount;
-                            await living.DamageCombatAsync(this, damage, CombatDamageKind.SonicBoom);
-                            if (living.AcceptedDamageCount != accepted && beamLength > 0)
-                            {
-                                var resistance = 1 - Math.Clamp(living.GetAttributeValue("minecraft:generic.knockback_resistance"), 0, 1);
-                                living.Motion += new VectorD(beam.X / beamLength * 2.5 * resistance,
-                                    beam.Y / beamLength * 0.5 * resistance, beam.Z / beamLength * 2.5 * resistance);
-                            }
-                        }
-                    }
-                }
+    /// <summary>Holds still through a roar, sniff, dig or emergence, then acts on how it ended.</summary>
+    private async ValueTask TickPoseAsync(IEntity[] nearby)
+    {
+        (Navigator as Navigator)?.Stop();
+        if (--poseTicks == 0)
+        {
+            if (Pose == Pose.Digging)
+            {
+                await RemoveAsync();
                 return;
             }
-            if (IsWithinMeleeRange(target) && meleeCooldown == 0)
-            {
-                meleeCooldown = 18;
-                sonicCooldown = 40;
-                SendEntityEvent(4);
-                PlayMobSound("attack_impact");
-                var health = target.Health;
-                await base.PerformMeleeAttackAsync(target);
-                if (target.Health < health && target is Entity hit)
-                {
-                    var delta = target.Position - Position;
-                    var horizontal = Math.Sqrt(delta.X * delta.X + delta.Z * delta.Z);
-                    var strength = GetAttributeValue("minecraft:generic.attack_knockback") *
-                        (1 - Math.Clamp(hit.GetAttributeValue("minecraft:generic.knockback_resistance"), 0, 1));
-                    if (horizontal > 0 && strength > 0)
-                        hit.Motion += new VectorD(delta.X / horizontal * strength, 0.1, delta.Z / horizontal * strength);
-                }
-            }
-            else if (sonicCooldown == 0 && InSonicRange(target))
-            {
-                sonicTicks = 60;
-                sonicCooldown = 100;
-                SendEntityEvent(62);
-                PlayMobSound("sonic_charge");
-            }
-            else
-            {
-                if (Navigator is Navigator navigation)
-                    navigation.SpeedModifier = 1.2f;
-                Navigator?.NavigateTo(target);
-            }
+
+            if (Pose == Pose.Sniffing)
+                FollowScent(nearby);
+
+            SetPose(Pose.Standing);
+        }
+    }
+
+    /// <summary>A sniff angers the warden at, and sends it toward, the nearest entity within six blocks.</summary>
+    private void FollowScent(IEntity[] nearby)
+    {
+        var smelled = nearby
+            .Where(entity => Math.Abs(entity.Position.Y - Position.Y) <= 20
+                && Math.Pow(entity.Position.X - Position.X, 2) + Math.Pow(entity.Position.Z - Position.Z, 2) <= 36)
+            .MinBy(entity => (entity.Position - Position).MagnitudeSquared());
+        if (smelled != null)
+        {
+            IncreaseAnger(smelled, 35);
+            Navigator?.NavigateTo(smelled.Position);
+        }
+    }
+
+    private async ValueTask TickAttackAsync(IEntity target)
+    {
+        idleTicks = 0;
+        LookControl.LookAt(GetAimPoint(target), 30, 30);
+        if (sonicTicks > 0)
+        {
+            await TickSonicBoomAsync(target);
             return;
         }
+
+        if (IsWithinMeleeRange(target) && meleeCooldown == 0)
+        {
+            await MeleeAttackAsync(target);
+        }
+        else if (sonicCooldown == 0 && InSonicRange(target))
+        {
+            sonicTicks = 60;
+            sonicCooldown = 100;
+            SendEntityEvent(62);
+            PlayMobSound("sonic_charge");
+        }
+        else
+        {
+            if (Navigator is Navigator navigation)
+                navigation.SpeedModifier = 1.2f;
+
+            Navigator?.NavigateTo(target);
+        }
+    }
+
+    private static VectorD GetAimPoint(IEntity target) =>
+        target.Position + new VectorD(0, target.Dimension.Height * 0.85f, 0);
+
+    private async ValueTask TickSonicBoomAsync(IEntity target)
+    {
+        (Navigator as Navigator)?.Stop();
+        if (--sonicTicks == 26)
+            await FireSonicBoomAsync(target);
+    }
+
+    private async ValueTask FireSonicBoomAsync(IEntity target)
+    {
+        PlayMobSound("sonic_boom");
+        var beam = GetAimPoint(target) - EyePosition;
+        var beamLength = beam.Magnitude;
+        if (beamLength > 0)
+            ShowSonicBeam(beam, beamLength);
+
+        if (!InSonicRange(target))
+            return;
+
+        var damage = GetSonicBoomDamage(target);
+        if (target is Living living)
+        {
+            var accepted = living.AcceptedDamageCount;
+            await living.DamageCombatAsync(this, damage, CombatDamageKind.SonicBoom);
+            if (living.AcceptedDamageCount != accepted && beamLength > 0)
+                KnockBackSonicBoom(living, beam, beamLength);
+        }
+    }
+
+    private void ShowSonicBeam(VectorD beam, double beamLength)
+    {
+        for (var step = 1; step < beamLength + 7; step++)
+        {
+            var particle = new LevelParticlesPacket
+            {
+                Position = EyePosition + beam / beamLength * step,
+                ParticleCount = 1,
+                Data = new SonicParticle(),
+            };
+
+            PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, particle);
+        }
+    }
+
+    private int GetSonicBoomDamage(IEntity target)
+    {
+        if (target is not IPlayer)
+            return 10;
+
+        return Level.LevelData.Difficulty switch
+        {
+            Difficulty.Easy => 6,
+            Difficulty.Hard => 15,
+            Difficulty.Peaceful => 0,
+            _ => 10,
+        };
+    }
+
+    private static void KnockBackSonicBoom(Living living, VectorD beam, double beamLength)
+    {
+        var knockbackResistance = living.GetAttributeValue("minecraft:generic.knockback_resistance");
+        var resistance = 1 - Math.Clamp(knockbackResistance, 0, 1);
+        living.Motion += new VectorD(
+            beam.X / beamLength * 2.5 * resistance,
+            beam.Y / beamLength * 0.5 * resistance,
+            beam.Z / beamLength * 2.5 * resistance);
+    }
+
+    private async ValueTask MeleeAttackAsync(IEntity target)
+    {
+        meleeCooldown = 18;
+        sonicCooldown = 40;
+        SendEntityEvent(4);
+        PlayMobSound("attack_impact");
+        var health = target.Health;
+        await base.PerformMeleeAttackAsync(target);
+        if (target.Health < health && target is Entity hit)
+            KnockBackMelee(target, hit);
+    }
+
+    private void KnockBackMelee(IEntity target, Entity hit)
+    {
+        var delta = target.Position - Position;
+        var horizontal = Math.Sqrt(delta.X * delta.X + delta.Z * delta.Z);
+        var knockbackResistance = hit.GetAttributeValue("minecraft:generic.knockback_resistance");
+        var strength = GetAttributeValue("minecraft:generic.attack_knockback")
+            * (1 - Math.Clamp(knockbackResistance, 0, 1));
+        if (horizontal > 0 && strength > 0)
+            hit.Motion += new VectorD(delta.X / horizontal * strength, 0.1, delta.Z / horizontal * strength);
+    }
+
+    /// <summary>A warden left alone long enough digs back down; otherwise it sniffs around now and then.</summary>
+    private void TickIdle()
+    {
         sonicTicks = 0;
         if (++idleTicks >= 1200 && !PersistenceRequired && CustomName == null && !InWater && !InLava)
         {
@@ -337,6 +465,7 @@ public sealed partial class Warden : PathfinderMob
             writer.WriteInt("anger", value);
             writer.EndCompound();
         }
+
         writer.EndList();
     }
 
@@ -351,8 +480,8 @@ public sealed partial class Warden : PathfinderMob
         poseTicks = ReadTimer(tag, "ObsidianWardenPoseTicks", 134);
         sonicCooldown = ReadTimer(tag, "ObsidianWardenSonicCooldown", 200);
         sonicTicks = ReadTimer(tag, "ObsidianWardenSonicTicks", 60);
-        if (tag.TryGetTagValue<int>("ObsidianWardenPose", out var pose) &&
-            (Pose)pose is Pose.Standing or Pose.Roaring or Pose.Sniffing or Pose.Digging or Pose.Emerging)
+        if (tag.TryGetTagValue<int>("ObsidianWardenPose", out var pose)
+            && (Pose)pose is Pose.Standing or Pose.Roaring or Pose.Sniffing or Pose.Digging or Pose.Emerging)
         {
             Pose = (Pose)pose;
         }
@@ -362,8 +491,10 @@ public sealed partial class Warden : PathfinderMob
         {
             foreach (var entry in saved.OfType<NbtCompound>())
             {
-                if (entry.TryGetTagValue<string>("uuid", out var text) && Guid.TryParse(text, out var id) &&
-                    entry.TryGetTagValue<int>("anger", out var value) && value > 0)
+                if (entry.TryGetTagValue<string>("uuid", out var text)
+                    && Guid.TryParse(text, out var id)
+                    && entry.TryGetTagValue<int>("anger", out var value)
+                    && value > 0)
                 {
                     anger[id] = Math.Min(150, value);
                 }
@@ -381,8 +512,10 @@ internal sealed class WardenStrollGoal(Warden warden) : NavigationGoal(warden, 0
 
     public override bool CanUse()
     {
-        if (warden.Pose != Pose.Standing || warden.AttackTarget != null || warden.Random.Next(60) != 0 ||
-            RandomPosition.Find(warden, 10) is not VectorD point)
+        if (warden.Pose != Pose.Standing
+            || warden.AttackTarget != null
+            || warden.Random.Next(60) != 0
+            || RandomPosition.Find(warden, 10) is not VectorD point)
         {
             return false;
         }
@@ -392,5 +525,7 @@ internal sealed class WardenStrollGoal(Warden warden) : NavigationGoal(warden, 0
     }
 
     public override void Start() => MoveTo(destination);
-    public override bool CanContinue() => warden.Pose == Pose.Standing && warden.AttackTarget == null && Navigation.IsNavigating;
+
+    public override bool CanContinue() =>
+        warden.Pose == Pose.Standing && warden.AttackTarget == null && Navigation.IsNavigating;
 }
