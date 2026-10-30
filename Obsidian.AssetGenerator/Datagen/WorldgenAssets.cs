@@ -75,8 +75,9 @@ internal static class WorldgenAssets
     private const string SharedCategory = "common";
 
     /// <summary>
-    /// Copies the current version's noises, density functions and noise settings (the noise router's data) to
-    /// <c>Assets/worldgen_26_3</c>, per file in the data pack layout (<c>noise/temperature.json</c>).
+    /// Copies the current version's density and terrain registries to <c>Assets/worldgen_26_3</c>, per file in the
+    /// data pack layout (<c>noise/temperature.json</c>). Biomes supply material inputs; biome selection is a later
+    /// step.
     /// </summary>
     /// <remarks>
     /// Temporary, while Phase 5 of <c>docs/porting-26.3-plan.md</c> builds the 26.3 generator beside the legacy one:
@@ -87,8 +88,17 @@ internal static class WorldgenAssets
     {
         var worldgen = Path.Combine(dataDirectory, "worldgen");
 
-        foreach (var registry in new[] { "density_function", "noise", "noise_settings" })
+        foreach (var registry in new[]
+        {
+            "density_function", "noise", "noise_settings", "material_rule", "material_condition", "carver", "biome"
+        })
+        {
             CopyDirectory(Path.Combine(worldgen, registry), Path.Combine(outputDirectory, registry));
+        }
+
+        CopyDirectory(
+            Path.Combine(dataDirectory, "tags", "block"),
+            Path.Combine(outputDirectory, "block_tag"));
     }
 
     /// <param name="worldgenGroupsPath">

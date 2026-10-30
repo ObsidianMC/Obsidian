@@ -25,19 +25,30 @@ internal sealed partial class DensityCompiler
     private readonly long seed;
     private readonly bool legacyRandomSource;
     private readonly IPositionalRandomFactory random;
+    private readonly DensityFunction? beardifier;
     private readonly ConcurrentDictionary<string, NoiseStack> noises = new();
     private readonly ConcurrentDictionary<string, DensityFunction> functions = new();
 
     /// <param name="legacyRandomSource">The noise settings' <c>legacy_random_source</c>.</param>
-    public DensityCompiler(WorldgenData data, long seed, bool legacyRandomSource)
+    public DensityCompiler(
+        WorldgenData data,
+        long seed,
+        bool legacyRandomSource,
+        DensityFunction? beardifier = null)
     {
         IRandomSource worldRandom = legacyRandomSource ? new LegacyRandomSource(seed) : new XoroshiroRandomSource(seed);
 
         this.data = data;
+        this.beardifier = beardifier;
         this.seed = seed;
         this.legacyRandomSource = legacyRandomSource;
         this.random = worldRandom.ForkPositional();
     }
+
+    public IPositionalRandomFactory Random => this.random;
+
+    /// <summary>The named random sequence used by terrain's aquifers and materials.</summary>
+    public IPositionalRandomFactory RandomFactory(string id) => this.random.FromHashOf(id).ForkPositional();
 
     /// <summary>A registered density function, such as <c>minecraft:overworld/continents</c>.</summary>
     public DensityFunction Function(string id)
@@ -99,7 +110,8 @@ internal sealed partial class DensityCompiler
         {
             "constant" => new ConstantFunction(this.NoiseValue(json, path, "value")),
             "blend_alpha" => new ContextFunction(name, 1.0f),
-            "blend_offset" or "beardifier" => new ContextFunction(name, 0.0f),
+            "blend_offset" => new ContextFunction(name, 0.0f),
+            "beardifier" => this.beardifier ?? new ContextFunction(name, 0.0f),
             "noise" => this.CompileNoise(json, path),
             "end_outer_islands" => new EndOuterIslandsFunction(this.seed),
             "distance_to_point" => CompileDistance(json, path),
