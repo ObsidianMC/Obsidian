@@ -5068,5 +5068,541 @@
     "seed": 42,
     "bits": -822083584,
     "nextInt": -1170105035
+  },
+  {
+    "case": "int_conditional_default_false",
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:conditional",
+      "condition": {
+        "type": "minecraft:any_of",
+        "terms": []
+      },
+      "on_true": 7
+    },
+    "seed": 1,
+    "value": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "case": "int_conditional_default_false",
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:conditional",
+      "condition": {
+        "type": "minecraft:any_of",
+        "terms": []
+      },
+      "on_true": 7
+    },
+    "seed": 42,
+    "value": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "case": "int_conditional_default_true",
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:conditional",
+      "condition": {
+        "type": "minecraft:all_of",
+        "terms": []
+      },
+      "on_true": 7
+    },
+    "seed": 1,
+    "value": 7,
+    "nextInt": -1155869325
+  },
+  {
+    "case": "int_conditional_default_true",
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:conditional",
+      "condition": {
+        "type": "minecraft:all_of",
+        "terms": []
+      },
+      "on_true": 7
+    },
+    "seed": 42,
+    "value": 7,
+    "nextInt": -1170105035
+  },
+  {
+    "case": "int_dispatcher_default_empty",
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:number_dispatcher",
+      "cases": []
+    },
+    "seed": 1,
+    "value": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "case": "int_dispatcher_default_empty",
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:number_dispatcher",
+      "cases": []
+    },
+    "seed": 42,
+    "value": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "case": "int_dispatcher_default_unmatched",
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:number_dispatcher",
+      "cases": [
+        {
+          "condition": {
+            "type": "minecraft:any_of",
+            "terms": []
+          },
+          "value": 7
+        }
+      ]
+    },
+    "seed": 1,
+    "value": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "case": "int_dispatcher_default_unmatched",
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:number_dispatcher",
+      "cases": [
+        {
+          "condition": {
+            "type": "minecraft:any_of",
+            "terms": []
+          },
+          "value": 7
+        }
+      ]
+    },
+    "seed": 42,
+    "value": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "case": "int_dispatcher_default_matched",
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:number_dispatcher",
+      "cases": [
+        {
+          "condition": {
+            "type": "minecraft:all_of",
+            "terms": []
+          },
+          "value": 7
+        }
+      ]
+    },
+    "seed": 1,
+    "value": 7,
+    "nextInt": -1155869325
+  },
+  {
+    "case": "int_dispatcher_default_matched",
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:number_dispatcher",
+      "cases": [
+        {
+          "condition": {
+            "type": "minecraft:all_of",
+            "terms": []
+          },
+          "value": 7
+        }
+      ]
+    },
+    "seed": 42,
+    "value": 7,
+    "nextInt": -1170105035
+  },
+  {
+    "case": "int_storage_default",
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:storage",
+      "storage": "minecraft:fixture",
+      "path": "missing"
+    },
+    "evaluateStorageFallback": true,
+    "seed": 1,
+    "value": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "case": "int_storage_default",
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:storage",
+      "storage": "minecraft:fixture",
+      "path": "missing"
+    },
+    "evaluateStorageFallback": true,
+    "seed": 42,
+    "value": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "case": "int_storage_explicit",
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:storage",
+      "storage": "minecraft:fixture",
+      "path": "missing",
+      "fallback": 7
+    },
+    "evaluateStorageFallback": true,
+    "seed": 1,
+    "value": 7,
+    "nextInt": -1155869325
+  },
+  {
+    "case": "int_storage_explicit",
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:storage",
+      "storage": "minecraft:fixture",
+      "path": "missing",
+      "fallback": 7
+    },
+    "evaluateStorageFallback": true,
+    "seed": 42,
+    "value": 7,
+    "nextInt": -1170105035
+  },
+  {
+    "case": "float_conditional_default_false",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:conditional",
+      "condition": {
+        "type": "minecraft:any_of",
+        "terms": []
+      },
+      "on_true": 7
+    },
+    "seed": 1,
+    "bits": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "case": "float_conditional_default_false",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:conditional",
+      "condition": {
+        "type": "minecraft:any_of",
+        "terms": []
+      },
+      "on_true": 7
+    },
+    "seed": 42,
+    "bits": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "case": "float_conditional_default_true",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:conditional",
+      "condition": {
+        "type": "minecraft:all_of",
+        "terms": []
+      },
+      "on_true": 7
+    },
+    "seed": 1,
+    "bits": 1088421888,
+    "nextInt": -1155869325
+  },
+  {
+    "case": "float_conditional_default_true",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:conditional",
+      "condition": {
+        "type": "minecraft:all_of",
+        "terms": []
+      },
+      "on_true": 7
+    },
+    "seed": 42,
+    "bits": 1088421888,
+    "nextInt": -1170105035
+  },
+  {
+    "case": "float_dispatcher_default_empty",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:number_dispatcher",
+      "cases": []
+    },
+    "seed": 1,
+    "bits": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "case": "float_dispatcher_default_empty",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:number_dispatcher",
+      "cases": []
+    },
+    "seed": 42,
+    "bits": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "case": "float_dispatcher_default_unmatched",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:number_dispatcher",
+      "cases": [
+        {
+          "condition": {
+            "type": "minecraft:any_of",
+            "terms": []
+          },
+          "value": 7
+        }
+      ]
+    },
+    "seed": 1,
+    "bits": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "case": "float_dispatcher_default_unmatched",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:number_dispatcher",
+      "cases": [
+        {
+          "condition": {
+            "type": "minecraft:any_of",
+            "terms": []
+          },
+          "value": 7
+        }
+      ]
+    },
+    "seed": 42,
+    "bits": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "case": "float_dispatcher_default_matched",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:number_dispatcher",
+      "cases": [
+        {
+          "condition": {
+            "type": "minecraft:all_of",
+            "terms": []
+          },
+          "value": 7
+        }
+      ]
+    },
+    "seed": 1,
+    "bits": 1088421888,
+    "nextInt": -1155869325
+  },
+  {
+    "case": "float_dispatcher_default_matched",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:number_dispatcher",
+      "cases": [
+        {
+          "condition": {
+            "type": "minecraft:all_of",
+            "terms": []
+          },
+          "value": 7
+        }
+      ]
+    },
+    "seed": 42,
+    "bits": 1088421888,
+    "nextInt": -1170105035
+  },
+  {
+    "case": "float_storage_default",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:storage",
+      "storage": "minecraft:fixture",
+      "path": "missing"
+    },
+    "evaluateStorageFallback": true,
+    "seed": 1,
+    "bits": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "case": "float_storage_default",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:storage",
+      "storage": "minecraft:fixture",
+      "path": "missing"
+    },
+    "evaluateStorageFallback": true,
+    "seed": 42,
+    "bits": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "case": "float_storage_explicit",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:storage",
+      "storage": "minecraft:fixture",
+      "path": "missing",
+      "fallback": 7
+    },
+    "evaluateStorageFallback": true,
+    "seed": 1,
+    "bits": 1088421888,
+    "nextInt": -1155869325
+  },
+  {
+    "case": "float_storage_explicit",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:storage",
+      "storage": "minecraft:fixture",
+      "path": "missing",
+      "fallback": 7
+    },
+    "evaluateStorageFallback": true,
+    "seed": 42,
+    "bits": 1088421888,
+    "nextInt": -1170105035
+  },
+  {
+    "case": "int_score_default",
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:score",
+      "target": "this",
+      "score": "fixture"
+    },
+    "seed": 1,
+    "value": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "case": "int_score_default",
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:score",
+      "target": "this",
+      "score": "fixture"
+    },
+    "seed": 42,
+    "value": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "case": "float_from_score_default",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:from_int",
+      "input": {
+        "type": "minecraft:score",
+        "target": "this",
+        "score": "fixture"
+      }
+    },
+    "seed": 1,
+    "bits": 0,
+    "nextInt": -1155869325
+  },
+  {
+    "case": "float_from_score_default",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:from_int",
+      "input": {
+        "type": "minecraft:score",
+        "target": "this",
+        "score": "fixture"
+      }
+    },
+    "seed": 42,
+    "bits": 0,
+    "nextInt": -1170105035
+  },
+  {
+    "case": "int_score_explicit",
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:score",
+      "target": "this",
+      "score": "fixture",
+      "fallback": 7
+    },
+    "seed": 1,
+    "value": 7,
+    "nextInt": -1155869325
+  },
+  {
+    "case": "int_score_explicit",
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:score",
+      "target": "this",
+      "score": "fixture",
+      "fallback": 7
+    },
+    "seed": 42,
+    "value": 7,
+    "nextInt": -1170105035
+  },
+  {
+    "case": "float_from_score_explicit",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:from_int",
+      "input": {
+        "type": "minecraft:score",
+        "target": "this",
+        "score": "fixture",
+        "fallback": 7
+      }
+    },
+    "seed": 1,
+    "bits": 1088421888,
+    "nextInt": -1155869325
+  },
+  {
+    "case": "float_from_score_explicit",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:from_int",
+      "input": {
+        "type": "minecraft:score",
+        "target": "this",
+        "score": "fixture",
+        "fallback": 7
+      }
+    },
+    "seed": 42,
+    "bits": 1088421888,
+    "nextInt": -1170105035
   }
 ]

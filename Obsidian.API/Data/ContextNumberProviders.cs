@@ -126,12 +126,12 @@ public static partial class ContextNumberProviders
             case "storage":
                 var storage = json.GetProperty("storage").GetString()!;
                 var path = json.GetProperty("path").GetString()!;
-                var fallback = CompileInt(json.GetProperty("fallback"));
+                var fallback = ReadOrZero(json, "fallback", CompileInt);
                 return context => context.IntStorage?.Invoke(storage, path) ?? fallback(context);
             case "score":
                 var target = json.GetProperty("target").Clone();
                 var score = json.GetProperty("score").GetString()!;
-                var scoreFallback = CompileInt(json.GetProperty("fallback"));
+                var scoreFallback = ReadOrZero(json, "fallback", CompileInt);
                 return context => context.Score?.Invoke(target, score) ?? scoreFallback(context);
             default:
                 throw new InvalidDataException($"Unsupported integer provider {type}.");
@@ -234,7 +234,7 @@ public static partial class ContextNumberProviders
             case "storage":
                 var storage = json.GetProperty("storage").GetString()!;
                 var path = json.GetProperty("path").GetString()!;
-                var fallback = CompileFloat(json.GetProperty("fallback"));
+                var fallback = ReadOrZero(json, "fallback", CompileFloat);
                 return context => context.FloatStorage?.Invoke(storage, path) ?? fallback(context);
             case "enchantment_level":
                 var amount = ReadLevelValue(json.GetProperty("amount"));
@@ -246,11 +246,11 @@ public static partial class ContextNumberProviders
 
     private static Func<NumberContext, T> Conditional<T>(
         JsonElement json,
-        Func<JsonElement, Func<NumberContext, T>> compile)
+        Func<JsonElement, Func<NumberContext, T>> compile) where T : struct
     {
         var condition = json.GetProperty("condition").Clone();
         var onTrue = compile(json.GetProperty("on_true"));
-        var onFalse = compile(json.GetProperty("on_false"));
+        var onFalse = ReadOrZero(json, "on_false", compile);
         return context =>
         {
             var selected = Test(context, condition) ? onTrue : onFalse;
@@ -260,12 +260,12 @@ public static partial class ContextNumberProviders
 
     private static Func<NumberContext, T> Dispatcher<T>(
         JsonElement json,
-        Func<JsonElement, Func<NumberContext, T>> compile)
+        Func<JsonElement, Func<NumberContext, T>> compile) where T : struct
     {
         var cases = json.GetProperty("cases").EnumerateArray()
             .Select(row => CompileCase(row, compile))
             .ToArray();
-        var fallback = compile(json.GetProperty("default"));
+        var fallback = ReadOrZero(json, "default", compile);
         return context =>
         {
             foreach (var row in cases)
@@ -276,6 +276,20 @@ public static partial class ContextNumberProviders
 
             return fallback(context);
         };
+    }
+
+    private static Func<NumberContext, T> ReadOrZero<T>(
+        JsonElement json,
+        string property,
+        Func<JsonElement, Func<NumberContext, T>> compile) where T : struct
+    {
+        if (json.TryGetProperty(property, out var value))
+        {
+            return compile(value);
+        }
+
+        // Vanilla's optional fields use exactly(0) of the enclosing int or float provider type.
+        return _ => default;
     }
 
     private static Func<NumberContext, T> Weighted<T>(

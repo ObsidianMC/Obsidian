@@ -51,6 +51,14 @@ public final class ContextNumberFixtures {
         var holder = codec.parse(ops, input.get("provider")).getOrThrow();
         var provider = call("net.minecraft.core.Holder", "value", holder, new String[]{});
 
+        // This probe has no ServerLevel/command storage. For missing-storage cases, inspect and evaluate the
+        // fallback that vanilla's codec installed, rather than substituting a hand-written expected zero.
+        if (input.has("evaluateStorageFallback") && input.get("evaluateStorageFallback").getAsBoolean()) {
+            var fallback = call(packageName + (kind.equals("int") ? "ints." : "floats.") + "StorageValue",
+                "fallback", provider, new String[]{});
+            provider = call("net.minecraft.core.Holder", "value", fallback, new String[]{});
+        }
+
         // Only block state is needed for the built-in fuel and composting predicates.
         var random = call("net.minecraft.util.RandomSource", "create", null, new String[]{"long"}, seed);
         var parameters = new HashMap<Object, Object>();
