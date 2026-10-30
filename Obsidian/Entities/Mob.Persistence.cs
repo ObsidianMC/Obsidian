@@ -11,8 +11,11 @@ namespace Obsidian.Entities;
 public partial class Mob
 {
     private NbtCompound? originalSave;
+
     protected virtual void WriteAdditionalSave(INbtWriter writer) { }
+
     protected virtual void ReadAdditionalSave(NbtCompound tag) { }
+
     private static readonly HashSet<string> saveFields =
     [
         "id", "UUID", "Pos", "Motion", "Rotation", "Health", "AbsorptionAmount", "Air", "Fire", "OnGround",
@@ -48,22 +51,41 @@ public partial class Mob
         "ObsidianNoteBlock", "still_timeout", "ObsidianBoostTicks", "ObsidianBoostDuration",
         "ObsidianWardenProjectileMemory"
     ];
+
     internal void WriteSave(INbtWriter writer, bool writeCompound = true)
     {
         if (writeCompound)
             writer.WriteCompoundStart();
+
+        this.WriteEntitySave(writer);
+        this.WriteMobFlagsSave(writer);
+        writer.WriteTag(this.SaveAttributes());
+        this.WriteEquipmentSave(writer);
+        this.WriteEffectsSave(writer);
+        this.WriteSpeciesSave(writer);
+
+        var additionalTags = this.WriteAdditionalTags(writer);
+
+        // The live attachments, not those it was loaded or spawned with, which the copy below would bring back.
+        writer.WriteTag(API.Data.AttachmentStorage.For(this).Snapshot());
+        this.WriteUnknownOriginalTags(writer, additionalTags);
+
+        if (writeCompound)
+            writer.EndCompound();
+    }
+
+    private void WriteEntitySave(INbtWriter writer)
+    {
         writer.WriteString("id", EntityNbt.TypeId(this));
-        var uuidBytes = Uuid.ToByteArray(true);
-        var uuid = new int[4];
-        for (var index = 0; index < 4; index++)
-            uuid[index] = BinaryPrimitives.ReadInt32BigEndian(uuidBytes.AsSpan(index * 4, 4));
-        writer.WriteArray("UUID", uuid);
+        WriteReferenceArray(writer, "UUID", Uuid);
         WriteVector(writer, "Pos", Position);
         WriteVector(writer, "Motion", Motion);
+
         writer.WriteListStart("Rotation", NbtTagType.Float, 2);
         writer.WriteFloat(Yaw.Degrees);
         writer.WriteFloat(Pitch.Degrees);
         writer.EndList();
+
         writer.WriteFloat("Health", Health);
         writer.WriteFloat("AbsorptionAmount", AbsorptionHealth);
         writer.WriteShort("Air", Air);
@@ -71,6 +93,10 @@ public partial class Mob
         writer.WriteBool("OnGround", MovementFlags.HasFlag(MovementFlags.OnGround));
         writer.WriteInt("TicksFrozen", PowderedSnowTicks);
         writer.WriteFloat("FallDistance", fallDistance);
+    }
+
+    private void WriteMobFlagsSave(INbtWriter writer)
+    {
         writer.WriteBool("NoAI", MobBitMask.HasFlag(MobBitmask.NoAi));
         writer.WriteBool("LeftHanded", MobBitMask.HasFlag(MobBitmask.LeftHanded));
         writer.WriteBool("CanPickUpLoot", CanPickUpLoot);
@@ -79,13 +105,16 @@ public partial class Mob
         writer.WriteBool("NoGravity", NoGravity);
         writer.WriteBool("Glowing", Glowing);
         writer.WriteBool("CustomNameVisible", CustomNameVisible);
-        if (CustomName != null)
-        {
-            writer.WriteCompoundStart("CustomName");
-            writer.WriteChatMessage(CustomName);
-            writer.EndCompound();
-        }
-        writer.WriteTag(this.SaveAttributes());
+        if (CustomName == null)
+            return;
+
+        writer.WriteCompoundStart("CustomName");
+        writer.WriteChatMessage(CustomName);
+        writer.EndCompound();
+    }
+
+    private void WriteEquipmentSave(INbtWriter writer)
+    {
         writer.WriteListStart("ObsidianEquipment", NbtTagType.Compound, equipment.Count);
         foreach (var (slot, item) in equipment)
         {
@@ -94,155 +123,207 @@ public partial class Mob
             writer.WriteFloat("drop_chance", GetEquipmentDropChance(slot));
             writer.WriteString("id", item.Holder.UnlocalizedName);
             writer.WriteInt("count", item.Count);
+
             var buffer = new NetworkBuffer();
             buffer.WriteItemStack(item);
             writer.WriteArray("data", buffer.AsSpan(0, buffer.Size));
             writer.EndCompound();
         }
+
         writer.EndList();
+    }
+
+    private void WriteEffectsSave(INbtWriter writer)
+    {
         writer.WriteListStart("ObsidianEffects", NbtTagType.Compound, ActivePotionEffects.Count);
         foreach (var (id, effect) in ActivePotionEffects)
         {
+            var saved = effect.EffectData with { Id = id, Duration = effect.CurrentDuration };
             writer.WriteCompoundStart();
-            WritePotionEffect(writer, effect.EffectData with { Id = id, Duration = effect.CurrentDuration });
+            WritePotionEffect(writer, saved);
             writer.EndCompound();
         }
+
         writer.EndList();
+    }
+
+    // One check per species, in the order their tags are written; a subclass matches its base's checks too.
+    private void WriteSpeciesSave(INbtWriter writer)
+    {
         if (this is AgeableMob ageable)
             writer.WriteInt("Age", ageable.Age);
         if (this is Animal animal)
             writer.WriteInt("InLove", animal.LoveTicks);
         if (this is AbstractHorse horse)
-        {
-            writer.WriteBool("Tame", horse.HorseMask.HasFlag(HorseMask.Tamed));
-            writer.WriteBool("Bred", horse.HorseMask.HasFlag(HorseMask.HasBred));
-            writer.WriteBool("EatingHaystack", horse.HorseMask.HasFlag(HorseMask.Eating));
-            writer.WriteInt("Temper", horse.Temper);
-            WriteOwner(writer, horse.Owner);
-            if (horse is Horse normalHorse)
-                writer.WriteInt("Variant", normalHorse.Variant);
-        }
+            WriteHorseSave(writer, horse);
         if (this is Wolf wolf)
-        {
-            WriteOwner(writer, wolf.Owner);
-            writer.WriteBool("Sitting", wolf.OrderedToSit);
-            writer.WriteString("variant", $"minecraft:{Wolf.VariantNames[wolf.Variant]}");
-            writer.WriteString("sound_variant", $"minecraft:{Wolf.SoundVariantNames[wolf.SoundVariant]}");
-            writer.WriteString("CollarColor", Cat.DyeNames[wolf.CollarColor]);
-            writer.WriteInt("AngerTime", (int)wolf.AngerTicks);
-            WriteReference(writer, "AngryAt", wolf.AngryAt);
-        }
+            WriteWolfSave(writer, wolf);
         if (this is Enderman enderman)
-        {
-            writer.WriteInt("AngerTime", (int)enderman.AngerTicks);
-            WriteReference(writer, "AngryAt", enderman.AngryAt);
-            if (enderman.CarriedBlock is IBlock carried)
-                writer.WriteTag(Obsidian.WorldData.BlockStateNbt.Write(carried, "carriedBlockState"));
-        }
+            WriteEndermanSave(writer, enderman);
         if (this is SnowGolem snowGolem)
             writer.WriteBool("Pumpkin", snowGolem.Pumpkin);
         if (this is Ocelot ocelot)
             writer.WriteBool("Trusting", ocelot.Trusting);
         if (this is Cat cat)
-        {
-            WriteOwner(writer, cat.Owner);
-            writer.WriteBool("Sitting", cat.OrderedToSit);
-            writer.WriteString("variant", $"minecraft:{Cat.VariantNames[cat.Variant]}");
-            writer.WriteString("CollarColor", Cat.DyeNames[cat.CollarColor]);
-        }
+            WriteCatSave(writer, cat);
         if (this is Camel camel)
-        {
-            writer.WriteLong("LastPoseTick", camel.LastPoseChangeTick);
-            writer.WriteInt("ObsidianDashCooldown", camel.DashCooldown);
-        }
+            WriteCamelSave(writer, camel);
         if (this is IronGolem golem)
             writer.WriteBool("PlayerCreated", golem.PlayerCreated);
+
         if (this is Zombie zombie)
-        {
-            writer.WriteBool("IsBaby", zombie.IsBaby);
-            writer.WriteBool("CanBreakDoors", zombie.CanBreakDoors);
-            writer.WriteFloat("ObsidianReinforcementChance", zombie.ReinforcementChance);
-        }
-        if (this is Husk husk)
-        {
-            writer.WriteInt("InWaterTime", husk.WaterTicks);
-            writer.WriteInt("DrownedConversionTime", husk.ConversionTicks);
-        }
-        else if (this is Zombie { Type: EntityType.Zombie } drowningZombie)
-        {
-            writer.WriteInt("InWaterTime", drowningZombie.DrowningWaterTicks);
-            writer.WriteInt("DrownedConversionTime", drowningZombie.DrowningConversionTicks);
-        }
+            WriteZombieSave(writer, zombie);
         if (this is ZombifiedPiglin piglin)
-        {
-            writer.WriteInt("AngerTime", piglin.AngerTicks);
-            WriteReference(writer, "AngryAt", piglin.AngryAt);
-        }
+            WriteAngerSave(writer, piglin.AngerTicks, piglin.AngryAt);
         if (this is PolarBear bear)
-        {
-            writer.WriteInt("AngerTime", bear.AngerTicks);
-            WriteReference(writer, "AngryAt", bear.AngryAt);
-        }
+            WriteAngerSave(writer, bear.AngerTicks, bear.AngryAt);
         if (this is Skeleton { Type: EntityType.Skeleton } skeleton)
-        {
-            writer.WriteInt("StrayConversionTime", skeleton.StrayConversionTicks);
-            writer.WriteInt("ObsidianPowderSnowTicks", skeleton.PowderSnowTicks);
-        }
+            WriteSkeletonSave(writer, skeleton);
+
         if (this is Cow cow)
             writer.WriteInt("ObsidianVariant", cow.Variant);
         if (this is Mooshroom mooshroom)
-        {
-            writer.WriteString("Type", mooshroom.Brown ? "brown" : "red");
-            if (mooshroom.StewEffect is { } effect)
-                writer.WriteArray("ObsidianStewEffect", new[] { effect.EffectId, effect.Duration });
-        }
+            WriteMooshroomSave(writer, mooshroom);
         if (this is Pig pig)
             writer.WriteInt("ObsidianVariant", pig.Variant);
         if (this is Chicken chicken)
-        {
-            writer.WriteInt("ObsidianVariant", chicken.Variant);
-            writer.WriteInt("EggLayTime", chicken.EggLayTime);
-            writer.WriteBool("IsChickenJockey", chicken.IsChickenJockey);
-        }
+            WriteChickenSave(writer, chicken);
         if (this is Sheep sheep)
-        {
-            writer.WriteByte("Color", sheep.Color);
-            writer.WriteBool("Sheared", sheep.Sheared);
-        }
+            WriteSheepSave(writer, sheep);
         if (this is Bogged bogged)
             writer.WriteBool("sheared", bogged.Sheared);
         if (this is Slime slime)
             writer.WriteInt("Size", slime.Size - 1);
         if (this is Creeper creeper)
+            WriteCreeperSave(writer, creeper);
+    }
+
+    private static void WriteHorseSave(INbtWriter writer, AbstractHorse horse)
+    {
+        writer.WriteBool("Tame", horse.HorseMask.HasFlag(HorseMask.Tamed));
+        writer.WriteBool("Bred", horse.HorseMask.HasFlag(HorseMask.HasBred));
+        writer.WriteBool("EatingHaystack", horse.HorseMask.HasFlag(HorseMask.Eating));
+        writer.WriteInt("Temper", horse.Temper);
+        WriteOwner(writer, horse.Owner);
+        if (horse is Horse normalHorse)
+            writer.WriteInt("Variant", normalHorse.Variant);
+    }
+
+    private static void WriteWolfSave(INbtWriter writer, Wolf wolf)
+    {
+        WriteOwner(writer, wolf.Owner);
+        writer.WriteBool("Sitting", wolf.OrderedToSit);
+        writer.WriteString("variant", $"minecraft:{Wolf.VariantNames[wolf.Variant]}");
+        writer.WriteString("sound_variant", $"minecraft:{Wolf.SoundVariantNames[wolf.SoundVariant]}");
+        writer.WriteString("CollarColor", Cat.DyeNames[wolf.CollarColor]);
+        WriteAngerSave(writer, (int)wolf.AngerTicks, wolf.AngryAt);
+    }
+
+    private static void WriteEndermanSave(INbtWriter writer, Enderman enderman)
+    {
+        WriteAngerSave(writer, (int)enderman.AngerTicks, enderman.AngryAt);
+        if (enderman.CarriedBlock is IBlock carried)
+            writer.WriteTag(Obsidian.WorldData.BlockStateNbt.Write(carried, "carriedBlockState"));
+    }
+
+    private static void WriteCatSave(INbtWriter writer, Cat cat)
+    {
+        WriteOwner(writer, cat.Owner);
+        writer.WriteBool("Sitting", cat.OrderedToSit);
+        writer.WriteString("variant", $"minecraft:{Cat.VariantNames[cat.Variant]}");
+        writer.WriteString("CollarColor", Cat.DyeNames[cat.CollarColor]);
+    }
+
+    private static void WriteCamelSave(INbtWriter writer, Camel camel)
+    {
+        writer.WriteLong("LastPoseTick", camel.LastPoseChangeTick);
+        writer.WriteInt("ObsidianDashCooldown", camel.DashCooldown);
+    }
+
+    private static void WriteZombieSave(INbtWriter writer, Zombie zombie)
+    {
+        writer.WriteBool("IsBaby", zombie.IsBaby);
+        writer.WriteBool("CanBreakDoors", zombie.CanBreakDoors);
+        writer.WriteFloat("ObsidianReinforcementChance", zombie.ReinforcementChance);
+
+        if (zombie is Husk husk)
         {
-            writer.WriteBool("powered", creeper.Powered);
-            writer.WriteBool("ignited", creeper.Ignited);
-            writer.WriteShort("Fuse", (short)creeper.Fuse);
-            writer.WriteByte("ExplosionRadius", (byte)creeper.ExplosionRadius);
+            writer.WriteInt("InWaterTime", husk.WaterTicks);
+            writer.WriteInt("DrownedConversionTime", husk.ConversionTicks);
         }
+        else if (zombie.Type == EntityType.Zombie)
+        {
+            writer.WriteInt("InWaterTime", zombie.DrowningWaterTicks);
+            writer.WriteInt("DrownedConversionTime", zombie.DrowningConversionTicks);
+        }
+    }
+
+    private static void WriteAngerSave(INbtWriter writer, int angerTicks, Guid angryAt)
+    {
+        writer.WriteInt("AngerTime", angerTicks);
+        WriteReference(writer, "AngryAt", angryAt);
+    }
+
+    private static void WriteSkeletonSave(INbtWriter writer, Skeleton skeleton)
+    {
+        writer.WriteInt("StrayConversionTime", skeleton.StrayConversionTicks);
+        writer.WriteInt("ObsidianPowderSnowTicks", skeleton.PowderSnowTicks);
+    }
+
+    private static void WriteMooshroomSave(INbtWriter writer, Mooshroom mooshroom)
+    {
+        writer.WriteString("Type", mooshroom.Brown ? "brown" : "red");
+        if (mooshroom.StewEffect is { } effect)
+            writer.WriteArray("ObsidianStewEffect", new[] { effect.EffectId, effect.Duration });
+    }
+
+    private static void WriteChickenSave(INbtWriter writer, Chicken chicken)
+    {
+        writer.WriteInt("ObsidianVariant", chicken.Variant);
+        writer.WriteInt("EggLayTime", chicken.EggLayTime);
+        writer.WriteBool("IsChickenJockey", chicken.IsChickenJockey);
+    }
+
+    private static void WriteSheepSave(INbtWriter writer, Sheep sheep)
+    {
+        writer.WriteByte("Color", sheep.Color);
+        writer.WriteBool("Sheared", sheep.Sheared);
+    }
+
+    private static void WriteCreeperSave(INbtWriter writer, Creeper creeper)
+    {
+        writer.WriteBool("powered", creeper.Powered);
+        writer.WriteBool("ignited", creeper.Ignited);
+        writer.WriteShort("Fuse", (short)creeper.Fuse);
+        writer.WriteByte("ExplosionRadius", (byte)creeper.ExplosionRadius);
+    }
+
+    // Writes the subclass's own tags and returns them, so the unknown-tag copy can skip them.
+    private NbtCompound WriteAdditionalTags(INbtWriter writer)
+    {
         using var additionalWriter = new RawNbtWriter(string.Empty);
         WriteAdditionalSave(additionalWriter);
         additionalWriter.EndCompound();
+
         var additionalTags = (NbtCompound)NbtReader.ReadTag(additionalWriter.Data, true, out _)!;
         writer.WriteEntries(additionalTags);
+        return additionalTags;
+    }
 
-        // The live attachments, not those it was loaded or spawned with, which the copy below would bring back.
-        writer.WriteTag(API.Data.AttachmentStorage.For(this).Snapshot());
-        if (originalSave != null)
+    // Tags it was loaded with that nothing here understands, kept so a round trip doesn't lose them.
+    private void WriteUnknownOriginalTags(INbtWriter writer, NbtCompound additionalTags)
+    {
+        if (originalSave == null)
+            return;
+
+        foreach (var tag in originalSave)
         {
-            foreach (var tag in originalSave)
-            {
-                if (!saveFields.Contains(tag.Key)
-                    && tag.Key != API.Data.AttachmentStorage.NbtKey
-                    && !additionalTags.HasTag(tag.Key))
-                {
-                    writer.WriteTag(tag.Value);
-                }
-            }
+            var isKnown = saveFields.Contains(tag.Key)
+                || tag.Key == API.Data.AttachmentStorage.NbtKey
+                || additionalTags.HasTag(tag.Key);
+            if (!isKnown)
+                writer.WriteTag(tag.Value);
         }
-
-        if (writeCompound)
-            writer.EndCompound();
     }
 
     internal void ReadSave(NbtCompound tag)
@@ -252,19 +333,30 @@ public partial class Mob
         Position = ReadVector(tag, "Pos");
         LastPosition = Position;
         InitializeAi(false);
+
+        this.ReadEntitySave(tag);
+        this.ReadMobFlagsSave(tag);
+        this.LoadAttributes(tag);
+        this.ReadEquipmentSave(tag);
+        this.ReadSpeciesSave(tag);
+
+        ReadAdditionalSave(tag);
+        BoundingBox = Dimension.CreateBBFromPosition(Position);
+    }
+
+    private void ReadEntitySave(NbtCompound tag)
+    {
         if (tag.TryGetTag<NbtArray<int>>("UUID", out var uuid) && uuid.Count == 4)
-        {
-            Span<byte> bytes = stackalloc byte[16];
-            for (var index = 0; index < 4; index++)
-                BinaryPrimitives.WriteInt32BigEndian(bytes.Slice(index * 4, 4), uuid[index]);
-            Uuid = new Guid(bytes, true);
-        }
+            Uuid = ReadReferenceArray(uuid);
+
         Motion = ReadVector(tag, "Motion");
-        if (tag.TryGetTag<NbtList>("Rotation", out var rotation) && rotation is [NbtTag<float> yaw, NbtTag<float> pitch, ..])
+        if (tag.TryGetTag<NbtList>("Rotation", out var rotation)
+            && rotation is [NbtTag<float> yaw, NbtTag<float> pitch, ..])
         {
             Yaw = yaw.Value;
             Pitch = pitch.Value;
         }
+
         if (tag.TryGetTagValue<float>("Health", out var health))
             Health = health;
         if (tag.TryGetTagValue<float>("AbsorptionAmount", out var absorption))
@@ -273,6 +365,7 @@ public partial class Mob
             Air = air;
         if (tag.TryGetTagValue<short>("Fire", out var fire))
             FireTicks = Math.Max(0, (int)fire);
+
         if (tag.TryGetTag<NbtList>("ObsidianEffects", out var effects))
         {
             foreach (var effect in effects.OfType<NbtCompound>())
@@ -281,9 +374,15 @@ public partial class Mob
 
         MovementFlags = ReadFlag(tag, "OnGround") ? MovementFlags.OnGround : MovementFlags.None;
         PowderedSnowTicks = tag.TryGetTagValue<int>("TicksFrozen", out var frozen) ? Math.Clamp(frozen, 0, 140) : 0;
-        if (tag.TryGetTagValue<float>("FallDistance", out var fallen) && float.IsFinite(fallen)) fallDistance = Math.Max(0, fallen);
-        MobBitMask = (ReadFlag(tag, "NoAI") ? MobBitmask.NoAi : MobBitmask.None) |
-            (ReadFlag(tag, "LeftHanded") ? MobBitmask.LeftHanded : MobBitmask.None);
+        if (tag.TryGetTagValue<float>("FallDistance", out var fallen) && float.IsFinite(fallen))
+            fallDistance = Math.Max(0, fallen);
+    }
+
+    private void ReadMobFlagsSave(NbtCompound tag)
+    {
+        var noAi = ReadFlag(tag, "NoAI") ? MobBitmask.NoAi : MobBitmask.None;
+        var leftHanded = ReadFlag(tag, "LeftHanded") ? MobBitmask.LeftHanded : MobBitmask.None;
+        MobBitMask = noAi | leftHanded;
         CanPickUpLoot = ReadFlag(tag, "CanPickUpLoot");
         PersistenceRequired = ReadFlag(tag, "PersistenceRequired") || this is Villager or IronGolem;
         Silent = ReadFlag(tag, "Silent");
@@ -291,182 +390,289 @@ public partial class Mob
         Glowing = ReadFlag(tag, "Glowing");
         CustomNameVisible = ReadFlag(tag, "CustomNameVisible");
         if (tag.TryGetTag("CustomName", out var name))
-        {
-            CustomName = name is NbtTag<string> { Value: { } legacy } && legacy.TrimStart().StartsWith('{')
-                ? JsonSerializer.Deserialize<ChatMessage>(legacy) : name.TextFromNbt();
-        }
+            CustomName = ReadCustomName(name);
+    }
 
-        this.LoadAttributes(tag);
-        if (tag.TryGetTag<NbtList>("ObsidianEquipment", out var savedEquipment))
-        {
-            foreach (var entry in savedEquipment.OfType<NbtCompound>())
-            {
-                var slot = (EquipmentSlot)entry.GetInt("slot");
-                if (!Enum.IsDefined(slot))
-                    continue;
-                var item = entry.TryGetTag<NbtArray<byte>>("data", out var data)
-                    ? new NetworkBuffer(data.GetArray()).ReadItemStack() : null;
-                if (item != null)
-                    equipment[slot] = item;
-                equipmentDropChances[slot] = entry.GetFloat("drop_chance");
-            }
-        }
+    private static ChatMessage? ReadCustomName(INbtTag name)
+    {
+        // Older saves held the name as a JSON string.
+        if (name is NbtTag<string> { Value: { } legacy } && legacy.TrimStart().StartsWith('{'))
+            return JsonSerializer.Deserialize<ChatMessage>(legacy);
 
+        return name.TextFromNbt();
+    }
+
+    private void ReadEquipmentSave(NbtCompound tag)
+    {
+        if (!tag.TryGetTag<NbtList>("ObsidianEquipment", out var savedEquipment))
+            return;
+
+        foreach (var entry in savedEquipment.OfType<NbtCompound>())
+        {
+            var slot = (EquipmentSlot)entry.GetInt("slot");
+            if (!Enum.IsDefined(slot))
+                continue;
+
+            var item = entry.TryGetTag<NbtArray<byte>>("data", out var data)
+                ? new NetworkBuffer(data.GetArray()).ReadItemStack()
+                : null;
+            if (item != null)
+                equipment[slot] = item;
+
+            equipmentDropChances[slot] = entry.GetFloat("drop_chance");
+        }
+    }
+
+    // One check per species, in the order they apply; a subclass matches its base's checks too.
+    private void ReadSpeciesSave(NbtCompound tag)
+    {
         if (this is AgeableMob ageable && tag.TryGetTagValue<int>("Age", out var age))
             ageable.Age = age;
         if (this is Animal animal && tag.TryGetTagValue<int>("InLove", out var love))
             animal.LoveTicks = love;
         if (this is AbstractHorse horse)
-        {
-            horse.HorseMask = (ReadFlag(tag, "Tame") ? HorseMask.Tamed : HorseMask.None) |
-                (ReadFlag(tag, "Bred") ? HorseMask.HasBred : HorseMask.None);
-            if (tag.TryGetTagValue<int>("Temper", out var temper)) horse.Temper = Math.Clamp(temper, 0, 100);
-            horse.Owner = ReadOwner(tag);
-            if (horse is Horse normalHorse && tag.TryGetTagValue<int>("Variant", out var horseVariant))
-                normalHorse.Variant = horseVariant;
-        }
+            ReadHorseSave(tag, horse);
         if (this is Wolf wolf)
-        {
-            wolf.Owner = ReadOwner(tag);
-            wolf.AngryAt = ReadReference(tag, "AngryAt");
-            PersistenceRequired |= wolf.Tamed;
-            wolf.OrderedToSit = wolf.Tamed && ReadFlag(tag, "Sitting");
-            wolf.IsSitting = wolf.OrderedToSit;
-            if (tag.TryGetTagValue<int>("AngerTime", out var anger)) wolf.AngerTicks = Math.Max(0, anger);
-            if (tag.TryGetTagValue<string>("variant", out var wolfVariant))
-            {
-                var index = Array.IndexOf(Wolf.VariantNames, wolfVariant.Replace("minecraft:", ""));
-                if (index >= 0) wolf.Variant = index;
-            }
-            if (tag.TryGetTagValue<string>("sound_variant", out var soundVariant))
-            {
-                var index = Array.IndexOf(Wolf.SoundVariantNames, soundVariant.Replace("minecraft:", ""));
-                if (index >= 0) wolf.SoundVariant = index;
-            }
-            if (tag.TryGetTagValue<string>("CollarColor", out var collar))
-            {
-                var index = Array.IndexOf(Cat.DyeNames, collar);
-                if (index >= 0) wolf.CollarColor = (byte)index;
-            }
-            else if (tag.TryGetTagValue<byte>("CollarColor", out var legacyCollar))
-            {
-                wolf.CollarColor = (byte)(legacyCollar & 15);
-            }
-        }
+            this.ReadWolfSave(tag, wolf);
         if (this is Enderman enderman)
-        {
-            enderman.AngryAt = ReadReference(tag, "AngryAt");
-            if (tag.TryGetTagValue<int>("AngerTime", out var anger)) enderman.AngerTicks = Math.Max(0, anger);
-            if (tag.TryGetTag("carriedBlockState", out var state))
-                enderman.CarriedBlock = Obsidian.WorldData.BlockStateNbt.Read(state);
-            else if (tag.TryGetTagValue<string>("ObsidianCarriedBlock", out var carried))
-                enderman.CarriedBlock = Obsidian.WorldData.Structures.BlockStateParser.TryParse(carried);
-        }
+            ReadEndermanSave(tag, enderman);
         if (this is SnowGolem snowGolem)
-        {
-            if (tag.HasTag("Pumpkin")) snowGolem.Pumpkin = ReadFlag(tag, "Pumpkin");
-            PersistenceRequired = true;
-        }
+            this.ReadSnowGolemSave(tag, snowGolem);
         if (this is Ocelot ocelot)
-        {
-            ocelot.Trusting = ReadFlag(tag, "Trusting");
-            PersistenceRequired |= ocelot.Trusting;
-        }
+            this.ReadOcelotSave(tag, ocelot);
         if (this is Cat cat)
-        {
-            cat.Owner = ReadOwner(tag);
-            PersistenceRequired |= cat.Tamed;
-            cat.OrderedToSit = cat.Tamed && ReadFlag(tag, "Sitting");
-            cat.IsSitting = cat.OrderedToSit;
-            if (tag.TryGetTagValue<string>("variant", out var catVariant))
-            {
-                var index = Array.IndexOf(Cat.VariantNames, catVariant.StartsWith("minecraft:", StringComparison.Ordinal) ? catVariant[10..] : catVariant);
-                if (index >= 0) cat.Variant = index;
-            }
-            if (tag.TryGetTagValue<string>("CollarColor", out var collar))
-            {
-                var index = Array.IndexOf(Cat.DyeNames, collar);
-                if (index >= 0) cat.CollarColor = (byte)index;
-            }
-            else if (tag.TryGetTagValue<byte>("CollarColor", out var legacyCollar))
-            {
-                cat.CollarColor = (byte)(legacyCollar & 15);
-            }
-        }
+            this.ReadCatSave(tag, cat);
         if (this is Camel camel)
-        {
-            camel.HorseMask |= HorseMask.Tamed;
-            if (tag.TryGetTagValue<long>("LastPoseTick", out var poseTick)) camel.LastPoseChangeTick = poseTick;
-            camel.Pose = camel.IsSitting ? Pose.Sitting : Pose.Standing;
-            if (tag.TryGetTagValue<int>("ObsidianDashCooldown", out var cooldown))
-                camel.DashCooldown = Math.Clamp(cooldown, 0, Camel.DashCooldownTicks);
-        }
+            ReadCamelSave(tag, camel);
         if (this is IronGolem golem)
             golem.PlayerCreated = ReadFlag(tag, "PlayerCreated");
+
         if (this is Zombie zombie)
-        {
-            zombie.IsBaby = ReadFlag(tag, "IsBaby");
-            zombie.CanBreakDoors = ReadFlag(tag, "CanBreakDoors");
-            if (tag.TryGetTagValue<float>("ObsidianReinforcementChance", out var chance)) zombie.ReinforcementChance = chance;
-        }
-        if (this is Husk husk)
-        {
-            if (tag.TryGetTagValue<int>("InWaterTime", out var water)) husk.WaterTicks = water;
-            if (tag.TryGetTagValue<int>("DrownedConversionTime", out var conversion)) husk.ConversionTicks = conversion;
-        }
-        else if (this is Zombie { Type: EntityType.Zombie } drowningZombie)
-        {
-            if (tag.TryGetTagValue<int>("InWaterTime", out var water)) drowningZombie.DrowningWaterTicks = water;
-            if (tag.TryGetTagValue<int>("DrownedConversionTime", out var conversion)) drowningZombie.DrowningConversionTicks = conversion;
-        }
+            ReadZombieSave(tag, zombie);
         if (this is ZombifiedPiglin piglin)
         {
             piglin.AngryAt = ReadReference(tag, "AngryAt");
-            piglin.AngerTicks = Math.Max(0, tag.TryGetTagValue<int>("AngerTime", out var anger) ? anger : 0);
+            piglin.AngerTicks = ReadAngerTime(tag);
         }
         if (this is PolarBear bear)
         {
             bear.AngryAt = ReadReference(tag, "AngryAt");
-            bear.AngerTicks = Math.Max(0, tag.TryGetTagValue<int>("AngerTime", out var anger) ? anger : 0);
+            bear.AngerTicks = ReadAngerTime(tag);
         }
         if (this is Skeleton { Type: EntityType.Skeleton } skeleton)
-        {
-            if (tag.TryGetTagValue<int>("StrayConversionTime", out var conversion)) skeleton.StrayConversionTicks = conversion;
-            if (tag.TryGetTagValue<int>("ObsidianPowderSnowTicks", out var snow)) skeleton.PowderSnowTicks = snow;
-        }
+            ReadSkeletonSave(tag, skeleton);
+
         if (tag.TryGetTagValue<int>("ObsidianVariant", out var variant))
-        {
-            if (this is Cow cow) cow.Variant = variant;
-            if (this is Pig pig) pig.Variant = variant;
-            if (this is Chicken chicken) chicken.Variant = variant;
-        }
+            this.ReadFarmAnimalVariant(variant);
         if (this is Mooshroom mooshroom)
-        {
-            mooshroom.Brown = tag.TryGetTagValue<string>("Type", out var mushroomType) && mushroomType == "brown";
-            if (tag.TryGetTag<NbtArray<int>>("ObsidianStewEffect", out var stew) && stew.Count == 2)
-                mooshroom.StewEffect = new() { EffectId = stew[0], Duration = stew[1] };
-        }
+            ReadMooshroomSave(tag, mooshroom);
         if (this is Chicken bird)
-        {
-            if (tag.TryGetTagValue<int>("EggLayTime", out var eggTime)) bird.EggLayTime = eggTime;
-            bird.IsChickenJockey = ReadFlag(tag, "IsChickenJockey");
-        }
+            ReadChickenSave(tag, bird);
         if (this is Sheep sheep)
-        {
-            if (tag.TryGetTagValue<byte>("Color", out var color)) sheep.Color = (byte)(color & 15);
-            sheep.Sheared = ReadFlag(tag, "Sheared");
-        }
-        if (this is Bogged bogged) bogged.Sheared = ReadFlag(tag, "sheared");
-        if (this is Slime slime && tag.TryGetTagValue<int>("Size", out var size)) slime.Size = size + 1;
+            ReadSheepSave(tag, sheep);
+        if (this is Bogged bogged)
+            bogged.Sheared = ReadFlag(tag, "sheared");
+        if (this is Slime slime && tag.TryGetTagValue<int>("Size", out var size))
+            slime.Size = size + 1;
         if (this is Creeper creeper)
+            ReadCreeperSave(tag, creeper);
+    }
+
+    private static void ReadHorseSave(NbtCompound tag, AbstractHorse horse)
+    {
+        var tamed = ReadFlag(tag, "Tame") ? HorseMask.Tamed : HorseMask.None;
+        var bred = ReadFlag(tag, "Bred") ? HorseMask.HasBred : HorseMask.None;
+        horse.HorseMask = tamed | bred;
+        if (tag.TryGetTagValue<int>("Temper", out var temper))
+            horse.Temper = Math.Clamp(temper, 0, 100);
+
+        horse.Owner = ReadOwner(tag);
+        if (horse is Horse normalHorse && tag.TryGetTagValue<int>("Variant", out var horseVariant))
+            normalHorse.Variant = horseVariant;
+    }
+
+    private void ReadWolfSave(NbtCompound tag, Wolf wolf)
+    {
+        wolf.Owner = ReadOwner(tag);
+        wolf.AngryAt = ReadReference(tag, "AngryAt");
+        PersistenceRequired |= wolf.Tamed;
+        wolf.OrderedToSit = wolf.Tamed && ReadFlag(tag, "Sitting");
+        wolf.IsSitting = wolf.OrderedToSit;
+        if (tag.TryGetTagValue<int>("AngerTime", out var anger))
+            wolf.AngerTicks = Math.Max(0, anger);
+
+        if (tag.TryGetTagValue<string>("variant", out var wolfVariant))
         {
-            creeper.Powered = ReadFlag(tag, "powered");
-            creeper.Ignited = ReadFlag(tag, "ignited");
-            if (tag.TryGetTagValue<short>("Fuse", out var fuse)) creeper.Fuse = Math.Max(1, (int)fuse);
-            if (tag.TryGetTagValue<byte>("ExplosionRadius", out var radius)) creeper.ExplosionRadius = Math.Max(1, (int)radius);
+            var index = Array.IndexOf(Wolf.VariantNames, wolfVariant.Replace("minecraft:", ""));
+            if (index >= 0)
+                wolf.Variant = index;
         }
-        ReadAdditionalSave(tag);
-        BoundingBox = Dimension.CreateBBFromPosition(Position);
+
+        if (tag.TryGetTagValue<string>("sound_variant", out var soundVariant))
+        {
+            var index = Array.IndexOf(Wolf.SoundVariantNames, soundVariant.Replace("minecraft:", ""));
+            if (index >= 0)
+                wolf.SoundVariant = index;
+        }
+
+        if (TryReadCollarColor(tag, out var collar))
+            wolf.CollarColor = collar;
+    }
+
+    private static void ReadEndermanSave(NbtCompound tag, Enderman enderman)
+    {
+        enderman.AngryAt = ReadReference(tag, "AngryAt");
+        if (tag.TryGetTagValue<int>("AngerTime", out var anger))
+            enderman.AngerTicks = Math.Max(0, anger);
+
+        if (tag.TryGetTag("carriedBlockState", out var state))
+            enderman.CarriedBlock = Obsidian.WorldData.BlockStateNbt.Read(state);
+        else if (tag.TryGetTagValue<string>("ObsidianCarriedBlock", out var carried))
+            enderman.CarriedBlock = Obsidian.WorldData.Structures.BlockStateParser.TryParse(carried);
+    }
+
+    private void ReadSnowGolemSave(NbtCompound tag, SnowGolem snowGolem)
+    {
+        if (tag.HasTag("Pumpkin"))
+            snowGolem.Pumpkin = ReadFlag(tag, "Pumpkin");
+
+        PersistenceRequired = true;
+    }
+
+    private void ReadOcelotSave(NbtCompound tag, Ocelot ocelot)
+    {
+        ocelot.Trusting = ReadFlag(tag, "Trusting");
+        PersistenceRequired |= ocelot.Trusting;
+    }
+
+    private void ReadCatSave(NbtCompound tag, Cat cat)
+    {
+        cat.Owner = ReadOwner(tag);
+        PersistenceRequired |= cat.Tamed;
+        cat.OrderedToSit = cat.Tamed && ReadFlag(tag, "Sitting");
+        cat.IsSitting = cat.OrderedToSit;
+        if (tag.TryGetTagValue<string>("variant", out var catVariant))
+        {
+            var path = catVariant.StartsWith("minecraft:", StringComparison.Ordinal) ? catVariant[10..] : catVariant;
+            var index = Array.IndexOf(Cat.VariantNames, path);
+            if (index >= 0)
+                cat.Variant = index;
+        }
+
+        if (TryReadCollarColor(tag, out var collar))
+            cat.CollarColor = collar;
+    }
+
+    // A dye name, or the legacy byte. An unknown name leaves the collar as it is.
+    private static bool TryReadCollarColor(NbtCompound tag, out byte color)
+    {
+        color = 0;
+        if (tag.TryGetTagValue<string>("CollarColor", out var name))
+        {
+            var index = Array.IndexOf(Cat.DyeNames, name);
+            if (index < 0)
+                return false;
+
+            color = (byte)index;
+            return true;
+        }
+
+        if (!tag.TryGetTagValue<byte>("CollarColor", out var legacyColor))
+            return false;
+
+        color = (byte)(legacyColor & 15);
+        return true;
+    }
+
+    private static void ReadCamelSave(NbtCompound tag, Camel camel)
+    {
+        camel.HorseMask |= HorseMask.Tamed;
+        if (tag.TryGetTagValue<long>("LastPoseTick", out var poseTick))
+            camel.LastPoseChangeTick = poseTick;
+
+        camel.Pose = camel.IsSitting ? Pose.Sitting : Pose.Standing;
+        if (tag.TryGetTagValue<int>("ObsidianDashCooldown", out var cooldown))
+            camel.DashCooldown = Math.Clamp(cooldown, 0, Camel.DashCooldownTicks);
+    }
+
+    private static void ReadZombieSave(NbtCompound tag, Zombie zombie)
+    {
+        zombie.IsBaby = ReadFlag(tag, "IsBaby");
+        zombie.CanBreakDoors = ReadFlag(tag, "CanBreakDoors");
+        if (tag.TryGetTagValue<float>("ObsidianReinforcementChance", out var chance))
+            zombie.ReinforcementChance = chance;
+
+        if (zombie is Husk husk)
+        {
+            if (tag.TryGetTagValue<int>("InWaterTime", out var water))
+                husk.WaterTicks = water;
+            if (tag.TryGetTagValue<int>("DrownedConversionTime", out var conversion))
+                husk.ConversionTicks = conversion;
+        }
+        else if (zombie.Type == EntityType.Zombie)
+        {
+            if (tag.TryGetTagValue<int>("InWaterTime", out var water))
+                zombie.DrowningWaterTicks = water;
+            if (tag.TryGetTagValue<int>("DrownedConversionTime", out var conversion))
+                zombie.DrowningConversionTicks = conversion;
+        }
+    }
+
+    private static int ReadAngerTime(NbtCompound tag)
+    {
+        var anger = tag.TryGetTagValue<int>("AngerTime", out var saved) ? saved : 0;
+        return Math.Max(0, anger);
+    }
+
+    private static void ReadSkeletonSave(NbtCompound tag, Skeleton skeleton)
+    {
+        if (tag.TryGetTagValue<int>("StrayConversionTime", out var conversion))
+            skeleton.StrayConversionTicks = conversion;
+        if (tag.TryGetTagValue<int>("ObsidianPowderSnowTicks", out var snow))
+            skeleton.PowderSnowTicks = snow;
+    }
+
+    private void ReadFarmAnimalVariant(int variant)
+    {
+        if (this is Cow cow)
+            cow.Variant = variant;
+        if (this is Pig pig)
+            pig.Variant = variant;
+        if (this is Chicken chicken)
+            chicken.Variant = variant;
+    }
+
+    private static void ReadMooshroomSave(NbtCompound tag, Mooshroom mooshroom)
+    {
+        mooshroom.Brown = tag.TryGetTagValue<string>("Type", out var mushroomType) && mushroomType == "brown";
+        if (tag.TryGetTag<NbtArray<int>>("ObsidianStewEffect", out var stew) && stew.Count == 2)
+            mooshroom.StewEffect = new() { EffectId = stew[0], Duration = stew[1] };
+    }
+
+    private static void ReadChickenSave(NbtCompound tag, Chicken chicken)
+    {
+        if (tag.TryGetTagValue<int>("EggLayTime", out var eggTime))
+            chicken.EggLayTime = eggTime;
+
+        chicken.IsChickenJockey = ReadFlag(tag, "IsChickenJockey");
+    }
+
+    private static void ReadSheepSave(NbtCompound tag, Sheep sheep)
+    {
+        if (tag.TryGetTagValue<byte>("Color", out var color))
+            sheep.Color = (byte)(color & 15);
+
+        sheep.Sheared = ReadFlag(tag, "Sheared");
+    }
+
+    private static void ReadCreeperSave(NbtCompound tag, Creeper creeper)
+    {
+        creeper.Powered = ReadFlag(tag, "powered");
+        creeper.Ignited = ReadFlag(tag, "ignited");
+        if (tag.TryGetTagValue<short>("Fuse", out var fuse))
+            creeper.Fuse = Math.Max(1, (int)fuse);
+        if (tag.TryGetTagValue<byte>("ExplosionRadius", out var radius))
+            creeper.ExplosionRadius = Math.Max(1, (int)radius);
     }
 
     private static bool ReadFlag(NbtCompound tag, string name) => tag.TryGetBool(name, out var value) && value;
@@ -477,10 +683,18 @@ public partial class Mob
     {
         if (owner == Guid.Empty)
             return;
-        var bytes = owner.ToByteArray(true);
+
+        WriteReferenceArray(writer, name, owner);
+    }
+
+    // A UUID as vanilla saves it: four big-endian ints.
+    private static void WriteReferenceArray(INbtWriter writer, string name, Guid uuid)
+    {
+        var bytes = uuid.ToByteArray(true);
         var value = new int[4];
         for (var index = 0; index < value.Length; index++)
             value[index] = BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan(index * sizeof(int), sizeof(int)));
+
         writer.WriteArray(name, value);
     }
 
@@ -489,13 +703,18 @@ public partial class Mob
     private static Guid ReadReference(NbtCompound tag, string name)
     {
         if (tag.TryGetTag<NbtArray<int>>(name, out var owner) && owner.Count == 4)
-        {
-            Span<byte> bytes = stackalloc byte[16];
-            for (var index = 0; index < owner.Count; index++)
-                BinaryPrimitives.WriteInt32BigEndian(bytes.Slice(index * sizeof(int), sizeof(int)), owner[index]);
-            return new Guid(bytes, true);
-        }
+            return ReadReferenceArray(owner);
+
         return tag.TryGetTagValue<string>(name, out var text) && Guid.TryParse(text, out var uuid) ? uuid : Guid.Empty;
+    }
+
+    private static Guid ReadReferenceArray(NbtArray<int> ints)
+    {
+        Span<byte> bytes = stackalloc byte[16];
+        for (var index = 0; index < 4; index++)
+            BinaryPrimitives.WriteInt32BigEndian(bytes.Slice(index * sizeof(int), sizeof(int)), ints[index]);
+
+        return new Guid(bytes, true);
     }
 
     internal static void WriteVector(INbtWriter writer, string name, VectorD value)
@@ -507,7 +726,14 @@ public partial class Mob
         writer.EndList();
     }
 
-    internal static VectorD ReadVector(NbtCompound tag, string name) => tag.TryGetTag<NbtList>(name, out var list) &&
-        list is [NbtTag<double> x, NbtTag<double> y, NbtTag<double> z, ..]
-        ? new VectorD(x.Value, y.Value, z.Value) : VectorD.Zero;
+    internal static VectorD ReadVector(NbtCompound tag, string name)
+    {
+        if (tag.TryGetTag<NbtList>(name, out var list)
+            && list is [NbtTag<double> x, NbtTag<double> y, NbtTag<double> z, ..])
+        {
+            return new VectorD(x.Value, y.Value, z.Value);
+        }
+
+        return VectorD.Zero;
+    }
 }

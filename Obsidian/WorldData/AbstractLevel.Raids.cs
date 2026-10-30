@@ -56,133 +56,251 @@ public abstract partial class AbstractLevel
         {
             foreach (var raid in raids)
                 ClearRaidBar(raid);
+
             raids.Clear();
             pendingRaids.Clear();
             return;
         }
+
         foreach (var player in Players.Values)
-        {
-            // The village is looked for only for a player with Bad Omen where raids can start: searching 64 blocks
-            // around every player every tick cost more than the rest of the raids' tick.
-            if (CanStartRaidAt(player)
-                && player.ActivePotionEffects.TryGetValue((int)PotionEffect.BadOmen - 1, out var omen)
-                && GetEntitiesInRange(player.Position, 64).OfType<Villager>().Where(villager => villager.Alive && villager.Home != null)
-                    .MinBy(villager => (villager.Position - player.Position).MagnitudeSquared()) is Villager village)
-            {
-                player.RemovePotionEffect((int)PotionEffect.BadOmen - 1);
-                player.AddPotionEffect((int)PotionEffect.RaidOmen - 1, 600, omen.EffectData.Amplifier);
-                pendingRaids[player.Uuid] = ((Vector)village.Position.Floor(), 600, Math.Clamp(omen.EffectData.Amplifier + 1, 1, 5));
-            }
-            if (!pendingRaids.TryGetValue(player.Uuid, out var pending))
-                continue;
-            if (!player.HasPotionEffect((int)PotionEffect.RaidOmen - 1) && pending.Ticks > 1)
-            {
-                pendingRaids.Remove(player.Uuid);
-                continue;
-            }
-            if (pending.Ticks > 1)
-            {
-                pendingRaids[player.Uuid] = (pending.Center, pending.Ticks - 1, pending.Omen);
-                continue;
-            }
-            pendingRaids.Remove(player.Uuid);
-            player.RemovePotionEffect((int)PotionEffect.RaidOmen - 1);
-            var existing = raids.FirstOrDefault(raid => ((VectorD)raid.Center - (VectorD)pending.Center).MagnitudeSquared() < 96 * 96);
-            if (existing == null)
-                raids.Add(new VillageRaid { Center = pending.Center, Omen = pending.Omen });
-            else
-                existing.Omen = Math.Min(5, existing.Omen + pending.Omen);
-        }
+            TickRaidOmen(player);
+
         foreach (var raid in raids.ToArray())
+            TickRaid(raid);
+
+        await ValueTask.CompletedTask;
+    }
+
+    // Bad Omen turns into Raid Omen at a village, and the raid starts when the Raid Omen runs out.
+    private void TickRaidOmen(IPlayer player)
+    {
+        TryTakeBadOmen(player);
+        if (!pendingRaids.TryGetValue(player.Uuid, out var pending))
+            return;
+
+        if (!player.HasPotionEffect((int)PotionEffect.RaidOmen - 1) && pending.Ticks > 1)
         {
-            var observers = GetPlayersInRange((VectorD)raid.Center, 96).Where(player => player.GameMode != GameMode.Spectator).ToArray();
-            if (observers.Length == 0)
-            {
-                ClearRaidBar(raid);
-                continue;
-            }
-            raid.Bar ??= new BossBar(PacketBroadcaster, ChatMessage.Simple("Raid"), 1, BossBarColor.Red, BossBarDivisionType.None, BossBarFlags.None);
-            foreach (var id in raid.Bar.Players.Where(id => !observers.Any(player => player.EntityId == id)).ToArray())
-                raid.Bar.RemovePlayer(id);
-            foreach (var player in observers)
-                raid.Bar.AddPlayer(player.EntityId);
-            if (++raid.Age > 48000 || !GetEntitiesInRange((VectorD)raid.Center, 96).OfType<Villager>().Any(villager => villager.Alive && villager.Home != null))
-            {
-                raid.Bar.UpdateTitle(ChatMessage.Simple("Raid - Defeat"));
-                if (++raid.VictoryTicks > 600)
-                {
-                    ClearRaidBar(raid);
-                    raids.Remove(raid);
-                }
-                continue;
-            }
-            var living = GetEntitiesInRange((VectorD)raid.Center, 128).OfType<Mob>().Where(mob => raid.Raiders.Contains(mob.Uuid) && mob.Alive && !mob.IsRemoved).ToArray();
-            var health = living.Sum(mob => mob.Health);
-            raid.Bar.UpdateHealth(raid.TotalHealth > 0 ? Math.Clamp(health / raid.TotalHealth, 0, 1) : 1 - raid.Cooldown / 300f);
-            foreach (var mob in living.OfType<PathfinderMob>())
-            {
-                if (mob.AttackTarget == null && mob.Navigator is { } navigation && !navigation.IsNavigating)
-                    navigation.NavigateTo((VectorD)raid.Center);
-            }
+            pendingRaids.Remove(player.Uuid);
+            return;
+        }
 
-            if (living.Length != 0)
-                continue;
-            var waves = LevelData.Difficulty == Difficulty.Easy ? 3 : LevelData.Difficulty == Difficulty.Normal ? 5 : 7;
-            if (raid.Wave >= waves + (raid.Omen > 1 ? 1 : 0))
+        if (pending.Ticks > 1)
+        {
+            pendingRaids[player.Uuid] = (pending.Center, pending.Ticks - 1, pending.Omen);
+            return;
+        }
+
+        pendingRaids.Remove(player.Uuid);
+        player.RemovePotionEffect((int)PotionEffect.RaidOmen - 1);
+        StartOrStrengthenRaid(pending.Center, pending.Omen);
+    }
+
+    private void TryTakeBadOmen(IPlayer player)
+    {
+        // The village is looked for only for a player with Bad Omen where raids can start: searching 64 blocks
+        // around every player every tick cost more than the rest of the raids' tick.
+        if (!CanStartRaidAt(player))
+            return;
+        if (!player.ActivePotionEffects.TryGetValue((int)PotionEffect.BadOmen - 1, out var omen))
+            return;
+
+        var village = GetEntitiesInRange(player.Position, 64)
+            .OfType<Villager>()
+            .Where(villager => villager.Alive && villager.Home != null)
+            .MinBy(villager => (villager.Position - player.Position).MagnitudeSquared());
+        if (village is null)
+            return;
+
+        player.RemovePotionEffect((int)PotionEffect.BadOmen - 1);
+        var amplifier = omen.EffectData.Amplifier;
+        player.AddPotionEffect((int)PotionEffect.RaidOmen - 1, 600, amplifier);
+        var raidOmen = Math.Clamp(amplifier + 1, 1, 5);
+        pendingRaids[player.Uuid] = ((Vector)village.Position.Floor(), 600, raidOmen);
+    }
+
+    // A raid within 96 blocks of another joins it, adding its omen.
+    private void StartOrStrengthenRaid(Vector center, int omen)
+    {
+        var existing = raids.FirstOrDefault(raid =>
+            ((VectorD)raid.Center - (VectorD)center).MagnitudeSquared() < 96 * 96);
+        if (existing == null)
+            raids.Add(new VillageRaid { Center = center, Omen = omen });
+        else
+            existing.Omen = Math.Min(5, existing.Omen + omen);
+    }
+
+    private void TickRaid(VillageRaid raid)
+    {
+        var observers = GetPlayersInRange((VectorD)raid.Center, 96)
+            .Where(player => player.GameMode != GameMode.Spectator)
+            .ToArray();
+        if (observers.Length == 0)
+        {
+            ClearRaidBar(raid);
+            return;
+        }
+
+        var bar = ShowRaidBar(raid, observers);
+        if (++raid.Age > 48000 || !HasVillagers(raid))
+        {
+            bar.UpdateTitle(ChatMessage.Simple("Raid - Defeat"));
+            EndRaidAfterBanner(raid);
+            return;
+        }
+
+        var living = GetEntitiesInRange((VectorD)raid.Center, 128)
+            .OfType<Mob>()
+            .Where(mob => raid.Raiders.Contains(mob.Uuid) && mob.Alive && !mob.IsRemoved)
+            .ToArray();
+        var health = living.Sum(mob => mob.Health);
+        var progress = raid.TotalHealth > 0
+            ? Math.Clamp(health / raid.TotalHealth, 0, 1)
+            : 1 - raid.Cooldown / 300f;
+        bar.UpdateHealth(progress);
+        SendRaidersToVillage(raid, living);
+        if (living.Length != 0)
+            return;
+
+        var waves = LevelData.Difficulty switch
+        {
+            Difficulty.Easy => 3,
+            Difficulty.Normal => 5,
+            _ => 7
+        };
+        var bonusWave = raid.Omen > 1 ? 1 : 0;
+        if (raid.Wave >= waves + bonusWave)
+        {
+            TickRaidVictory(raid, bar);
+            return;
+        }
+
+        if (--raid.Cooldown > 0)
+            return;
+
+        var spawn = FindRaidSpawn(raid.Center, 64);
+        if (spawn == null)
+        {
+            raid.Cooldown = 20;
+            return;
+        }
+
+        SpawnRaidWave(raid, spawn.Value, waves);
+    }
+
+    private BossBar ShowRaidBar(VillageRaid raid, IPlayer[] observers)
+    {
+        raid.Bar ??= new BossBar(
+            PacketBroadcaster,
+            ChatMessage.Simple("Raid"),
+            1,
+            BossBarColor.Red,
+            BossBarDivisionType.None,
+            BossBarFlags.None);
+
+        var departed = raid.Bar.Players
+            .Where(id => !observers.Any(player => player.EntityId == id))
+            .ToArray();
+        foreach (var id in departed)
+            raid.Bar.RemovePlayer(id);
+
+        foreach (var player in observers)
+            raid.Bar.AddPlayer(player.EntityId);
+
+        return raid.Bar;
+    }
+
+    private bool HasVillagers(VillageRaid raid) => GetEntitiesInRange((VectorD)raid.Center, 96)
+        .OfType<Villager>()
+        .Any(villager => villager.Alive && villager.Home != null);
+
+    private static void SendRaidersToVillage(VillageRaid raid, Mob[] living)
+    {
+        foreach (var mob in living.OfType<PathfinderMob>())
+        {
+            if (mob.AttackTarget == null && mob.Navigator is { } navigation && !navigation.IsNavigating)
+                navigation.NavigateTo((VectorD)raid.Center);
+        }
+    }
+
+    private void TickRaidVictory(VillageRaid raid, BossBar bar)
+    {
+        bar.UpdateTitle(ChatMessage.Simple("Raid - Victory"));
+        if (++raid.VictoryTicks == 40)
+        {
+            foreach (var hero in Players.Values.Where(player => raid.Heroes.Contains(player.Uuid)))
+                hero.AddPotionEffect((int)PotionEffect.HeroOfTheVillage - 1, 48000, raid.Omen - 1);
+        }
+
+        if (raid.VictoryTicks > 600)
+        {
+            ClearRaidBar(raid);
+            raids.Remove(raid);
+        }
+    }
+
+    // The defeat banner shows for 30 seconds before the raid is forgotten.
+    private void EndRaidAfterBanner(VillageRaid raid)
+    {
+        if (++raid.VictoryTicks <= 600)
+            return;
+
+        ClearRaidBar(raid);
+        raids.Remove(raid);
+    }
+
+    private void SpawnRaidWave(VillageRaid raid, VectorD spawn, int waves)
+    {
+        raid.Wave++;
+        raid.Raiders.Clear();
+        raid.TotalHealth = 0;
+        raid.Cooldown = 300;
+
+        var captain = false;
+        foreach (var (type, counts) in raidWaves)
+        {
+            var count = RaidersInWave(type, counts[Math.Min(raid.Wave, waves)], raid.Wave);
+            for (var i = 0; i < count; i++)
             {
-                raid.Bar.UpdateTitle(ChatMessage.Simple("Raid - Victory"));
-                if (++raid.VictoryTicks == 40)
+                var mob = CreateRaider(raid, type, spawn);
+                var canLead = type is EntityType.Pillager or EntityType.Vindicator or EntityType.Evoker;
+                if (!captain && canLead)
                 {
-                    foreach (var hero in Players.Values.Where(player => raid.Heroes.Contains(player.Uuid)))
-                        hero.AddPotionEffect((int)PotionEffect.HeroOfTheVillage - 1, 48000, raid.Omen - 1);
+                    SetPatrolCaptain(mob);
+                    captain = true;
                 }
 
-                if (raid.VictoryTicks > 600)
-                {
-                    ClearRaidBar(raid);
-                    raids.Remove(raid);
-                }
-                continue;
-            }
-            if (--raid.Cooldown > 0)
-                continue;
-            var spawn = FindRaidSpawn(raid.Center, 64);
-            if (spawn == null)
-            {
-                raid.Cooldown = 20;
-                continue;
-            }
-            raid.Wave++;
-            raid.Raiders.Clear();
-            raid.TotalHealth = 0;
-            raid.Cooldown = 300;
-            var captain = false;
-            foreach (var (type, counts) in raidWaves)
-            {
-                var count = counts[Math.Min(raid.Wave, waves)];
-                if (type is EntityType.Pillager or EntityType.Vindicator)
-                    count += Random.Shared.Next(LevelData.Difficulty == Difficulty.Hard ? 3 : 2);
-                if (type == EntityType.Witch && LevelData.Difficulty != Difficulty.Easy && raid.Wave > 2 && raid.Wave != 4)
-                    count += Random.Shared.Next(2);
-                for (var i = 0; i < count; i++)
-                {
-                    var mob = EntitySpawner.CreateMob(this, type)!;
-                    mob.EntityId = Server.GetNextEntityId();
-                    mob.Position = spawn.Value + new VectorD(Random.Shared.NextDouble(), 0, Random.Shared.NextDouble());
-                    mob.PersistenceRequired = true;
-                    mob.UnmodeledData.Set(new NbtTag<string>("ObsidianRaid", raid.Id.ToString()));
-                    if (!captain && type is EntityType.Pillager or EntityType.Vindicator or EntityType.Evoker)
-                    {
-                        SetPatrolCaptain(mob);
-                        captain = true;
-                    }
-                    SpawnEntity(mob);
-                    raid.Raiders.Add(mob.Uuid);
-                    raid.TotalHealth += mob.Health;
-                }
+                SpawnEntity(mob);
+                raid.Raiders.Add(mob.Uuid);
+                raid.TotalHealth += mob.Health;
             }
         }
-        await ValueTask.CompletedTask;
+    }
+
+    private int RaidersInWave(EntityType type, int baseCount, int wave)
+    {
+        var count = baseCount;
+        if (type is EntityType.Pillager or EntityType.Vindicator)
+            count += Random.Shared.Next(LevelData.Difficulty == Difficulty.Hard ? 3 : 2);
+
+        var extraWitch = type == EntityType.Witch
+            && LevelData.Difficulty != Difficulty.Easy
+            && wave > 2
+            && wave != 4;
+        if (extraWitch)
+            count += Random.Shared.Next(2);
+
+        return count;
+    }
+
+    private Mob CreateRaider(VillageRaid raid, EntityType type, VectorD spawn)
+    {
+        var mob = EntitySpawner.CreateMob(this, type)!;
+        mob.EntityId = Server.GetNextEntityId();
+        var offset = new VectorD(Random.Shared.NextDouble(), 0, Random.Shared.NextDouble());
+        mob.Position = spawn + offset;
+        mob.PersistenceRequired = true;
+        mob.UnmodeledData.Set(new NbtTag<string>("ObsidianRaid", raid.Id.ToString()));
+        return mob;
     }
 
     // Vanilla's can_start_raid where the player with a bad omen is.

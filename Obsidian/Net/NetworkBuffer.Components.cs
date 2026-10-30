@@ -250,100 +250,100 @@ public partial class NetworkBuffer
     {
         switch (type)
         {
-            case DataComponentType.CustomData: case DataComponentType.IntangibleProjectile:
-            case DataComponentType.MapDecorations: case DataComponentType.DebugStickState:
-            case DataComponentType.BucketEntityData: case DataComponentType.Recipes:
-            case DataComponentType.Lock: case DataComponentType.ContainerLoot:
-            case DataComponentType.CustomName: case DataComponentType.ItemName:
+            case DataComponentType.CustomData:
+            case DataComponentType.IntangibleProjectile:
+            case DataComponentType.MapDecorations:
+            case DataComponentType.DebugStickState:
+            case DataComponentType.BucketEntityData:
+            case DataComponentType.Recipes:
+            case DataComponentType.Lock:
+            case DataComponentType.ContainerLoot:
+            case DataComponentType.CustomName:
+            case DataComponentType.ItemName:
                 this.SkipNbt();
                 break;
-            case DataComponentType.Unbreakable: case DataComponentType.CreativeSlotLock: case DataComponentType.Glider:
+            case DataComponentType.Unbreakable:
+            case DataComponentType.CreativeSlotLock:
+            case DataComponentType.Glider:
             case DataComponentType.Waxed:
                 break;
-            case DataComponentType.DamageType: case DataComponentType.ChickenVariant: case DataComponentType.ZombieNautilusVariant:
-            case DataComponentType.AdditionalTradeCost: case DataComponentType.VillagerFood:
-            case DataComponentType.Dye: case DataComponentType.CushionColor:
-            case DataComponentType.BlockTransformer: case DataComponentType.ProvidesPotteryPattern:
-            case DataComponentType.CatSoundVariant: case DataComponentType.ChickenSoundVariant:
-            case DataComponentType.CowSoundVariant: case DataComponentType.PigSoundVariant:
-            case DataComponentType.MaxStackSize: case DataComponentType.MaxDamage: case DataComponentType.Damage:
-            case DataComponentType.Rarity: case DataComponentType.RepairCost: case DataComponentType.Enchantable:
-            case DataComponentType.MapId: case DataComponentType.MapPostProcessing: case DataComponentType.OminousBottleAmplifier:
-            case DataComponentType.BaseColor: case DataComponentType.VillagerVariant: case DataComponentType.WolfVariant:
-            case DataComponentType.WolfSoundVariant: case DataComponentType.WolfCollar: case DataComponentType.FoxVariant:
-            case DataComponentType.SalmonSize: case DataComponentType.ParrotVariant: case DataComponentType.TropicalFishPattern:
-            case DataComponentType.TropicalFishBaseColor: case DataComponentType.TropicalFishPatternColor:
-            case DataComponentType.MooshroomVariant: case DataComponentType.RabbitVariant: case DataComponentType.PigVariant:
-            case DataComponentType.CowVariant: case DataComponentType.FrogVariant: case DataComponentType.HorseVariant:
-            case DataComponentType.LlamaVariant: case DataComponentType.AxolotlVariant: case DataComponentType.CatVariant:
-            case DataComponentType.CatCollar: case DataComponentType.SheepColor: case DataComponentType.ShulkerColor:
+            case DataComponentType.DamageType:
+            case DataComponentType.ChickenVariant:
+            case DataComponentType.ZombieNautilusVariant:
+            case DataComponentType.AdditionalTradeCost:
+            case DataComponentType.VillagerFood:
+            case DataComponentType.Dye:
+            case DataComponentType.CushionColor:
+            case DataComponentType.BlockTransformer:
+            case DataComponentType.ProvidesPotteryPattern:
+            case DataComponentType.CatSoundVariant:
+            case DataComponentType.ChickenSoundVariant:
+            case DataComponentType.CowSoundVariant:
+            case DataComponentType.PigSoundVariant:
+            case DataComponentType.MaxStackSize:
+            case DataComponentType.MaxDamage:
+            case DataComponentType.Damage:
+            case DataComponentType.Rarity:
+            case DataComponentType.RepairCost:
+            case DataComponentType.Enchantable:
+            case DataComponentType.MapId:
+            case DataComponentType.MapPostProcessing:
+            case DataComponentType.OminousBottleAmplifier:
+            case DataComponentType.BaseColor:
+            case DataComponentType.VillagerVariant:
+            case DataComponentType.WolfVariant:
+            case DataComponentType.WolfSoundVariant:
+            case DataComponentType.WolfCollar:
+            case DataComponentType.FoxVariant:
+            case DataComponentType.SalmonSize:
+            case DataComponentType.ParrotVariant:
+            case DataComponentType.TropicalFishPattern:
+            case DataComponentType.TropicalFishBaseColor:
+            case DataComponentType.TropicalFishPatternColor:
+            case DataComponentType.MooshroomVariant:
+            case DataComponentType.RabbitVariant:
+            case DataComponentType.PigVariant:
+            case DataComponentType.CowVariant:
+            case DataComponentType.FrogVariant:
+            case DataComponentType.HorseVariant:
+            case DataComponentType.LlamaVariant:
+            case DataComponentType.AxolotlVariant:
+            case DataComponentType.CatVariant:
+            case DataComponentType.CatCollar:
+            case DataComponentType.SheepColor:
+            case DataComponentType.ShulkerColor:
                 this.ReadVarInt();
                 break;
-            case DataComponentType.DyedColor: case DataComponentType.MinimumAttackCharge:
+            case DataComponentType.DyedColor:
+            case DataComponentType.MinimumAttackCharge:
             case DataComponentType.PotionDurationScale:
                 this.SkipBytes(4);
                 break;
             case DataComponentType.UseEffects:
                 this.SkipBytes(6);
                 break;
-            case DataComponentType.ItemModel: case DataComponentType.TooltipStyle:
+            case DataComponentType.ItemModel:
+            case DataComponentType.TooltipStyle:
             case DataComponentType.NoteBlockSound:
                 this.SkipString();
                 break;
             case DataComponentType.Lore:
                 this.SkipList(this.SkipNbt);
                 break;
-            case DataComponentType.Enchantments: case DataComponentType.StoredEnchantments:
-                this.SkipList(() =>
-                {
-                    this.ReadVarInt();
-                    this.ReadVarInt();
-                });
+            case DataComponentType.Enchantments:
+            case DataComponentType.StoredEnchantments:
+            case DataComponentType.SuspiciousStewEffects:
+                this.SkipList(this.SkipVarIntPair);
                 break;
-            case DataComponentType.CanPlaceOn: case DataComponentType.CanBreak:
-                this.SkipList(() =>
-                {
-                    this.SkipOptional(this.SkipIdSet);
-                    this.SkipOptional(() => this.SkipList(() =>
-                    {
-                        this.SkipString();
-                        this.SkipEither(this.SkipString, () =>
-                        {
-                            this.SkipOptional(this.SkipString);
-                            this.SkipOptional(this.SkipString);
-                        });
-                    }));
-                    this.SkipOptional(this.SkipNbt);
-                    this.SkipList(() => this.SkipComponent(this.ReadComponentType()));
-                    this.SkipList(() =>
-                    {
-                        this.SkipBytes(1);
-                        this.ReadVarInt();
-                        this.SkipNbt();
-                    });
-                });
+            case DataComponentType.CanPlaceOn:
+            case DataComponentType.CanBreak:
+                this.SkipList(this.SkipBlockPredicate);
                 break;
             case DataComponentType.AttributeModifiers:
-                this.SkipList(() =>
-                {
-                    this.ReadVarInt();
-                    this.SkipString();
-                    this.SkipBytes(8);
-                    this.ReadVarInt();
-                    this.ReadVarInt();
-
-                    var display = this.ReadVarInt();
-                    if (display == 2)
-                        this.SkipNbt();
-                    else if (display is not (0 or 1))
-                        throw new InvalidDataException("Unknown attribute display.");
-                });
+                this.SkipList(this.SkipAttributeModifier);
                 break;
             case DataComponentType.CustomModelData:
-                this.SkipList(() => this.SkipBytes(4));
-                this.SkipList(() => this.SkipBytes(1));
-                this.SkipList(this.SkipString);
-                this.SkipList(() => this.SkipBytes(4));
+                this.SkipCustomModelData();
                 break;
             case DataComponentType.TooltipDisplay:
                 this.SkipBytes(1);
@@ -357,11 +357,7 @@ public partial class NetworkBuffer
                 this.SkipBytes(5);
                 break;
             case DataComponentType.Consumable:
-                this.SkipBytes(4);
-                this.ReadVarInt();
-                this.SkipSound();
-                this.SkipBytes(1);
-                this.SkipList(this.SkipConsumeEffect);
+                this.SkipConsumable();
                 break;
             case DataComponentType.UseRemainder:
                 this.SkipItemTemplate();
@@ -371,15 +367,7 @@ public partial class NetworkBuffer
                 this.SkipOptional(this.SkipString);
                 break;
             case DataComponentType.Tool:
-                this.SkipList(() =>
-                {
-                    this.SkipIdSet();
-                    this.SkipOptional(() => this.SkipBytes(4));
-                    this.SkipOptional(() => this.SkipBytes(1));
-                });
-                this.SkipBytes(4);
-                this.ReadVarInt();
-                this.SkipBytes(1);
+                this.SkipTool();
                 break;
             case DataComponentType.Weapon:
                 this.ReadVarInt();
@@ -389,127 +377,66 @@ public partial class NetworkBuffer
                 this.SkipBytes(24);
                 break;
             case DataComponentType.Equippable:
-                this.ReadVarInt();
-                this.SkipSound();
-                this.SkipOptional(this.SkipString);
-                this.SkipOptional(this.SkipString);
-                this.SkipOptional(this.SkipIdSet);
-                this.SkipBytes(5);
-                this.SkipSound();
+                this.SkipEquippable();
                 break;
-            case DataComponentType.Repairable: case DataComponentType.DamageResistant: case DataComponentType.ProvidesBannerPatterns:
+            case DataComponentType.Repairable:
+            case DataComponentType.DamageResistant:
+            case DataComponentType.ProvidesBannerPatterns:
                 this.SkipIdSet();
                 break;
             case DataComponentType.DeathProtection:
                 this.SkipList(this.SkipConsumeEffect);
                 break;
             case DataComponentType.BlocksAttacks:
-                this.SkipBytes(8);
-                this.SkipList(() =>
-                {
-                    this.SkipBytes(4);
-                    this.SkipOptional(this.SkipIdSet);
-                    this.SkipBytes(8);
-                });
-                this.SkipBytes(12);
-                this.SkipOptional(this.SkipString);
-                this.SkipOptional(this.SkipSound);
-                this.SkipOptional(this.SkipSound);
+                this.SkipBlocksAttacks();
                 break;
             case DataComponentType.PiercingWeapon:
-                this.SkipBytes(2);
-                this.SkipOptional(this.SkipSound);
-                this.SkipOptional(this.SkipSound);
+                this.SkipPiercingWeapon();
                 break;
             case DataComponentType.KineticWeapon:
-                this.ReadVarInt();
-                this.ReadVarInt();
-                for (var i = 0; i < 3; i++)
-                {
-                    this.SkipOptional(() =>
-                    {
-                        this.ReadVarInt();
-                        this.SkipBytes(8);
-                    });
-                }
-                this.SkipBytes(8);
-                this.SkipOptional(this.SkipSound);
-                this.SkipOptional(this.SkipSound);
+                this.SkipKineticWeapon();
                 break;
             // 26.1 split swing_animation into these two, which keep its codec.
-            case DataComponentType.AttackAnimation: case DataComponentType.InteractAnimation:
-                this.ReadVarInt();
-                this.ReadVarInt();
+            case DataComponentType.AttackAnimation:
+            case DataComponentType.InteractAnimation:
+                this.SkipVarIntPair();
                 break;
-            case DataComponentType.ChargedProjectiles: case DataComponentType.BundleContents:
+            case DataComponentType.ChargedProjectiles:
+            case DataComponentType.BundleContents:
                 this.SkipList(this.SkipItemTemplate);
                 break;
             case DataComponentType.Container:
-                this.SkipList(() => this.SkipOptional(this.SkipItemTemplate));
+                this.SkipList(this.SkipOptionalItemTemplate);
                 break;
             case DataComponentType.PotionContents:
-                this.SkipOptional(this.SkipVarInt);
-                this.SkipOptional(() => this.SkipBytes(4));
-                this.SkipList(this.SkipEffect);
-                this.SkipOptional(this.SkipString);
-                break;
-            case DataComponentType.SuspiciousStewEffects:
-                this.SkipList(() =>
-                {
-                    this.ReadVarInt();
-                    this.ReadVarInt();
-                });
+                this.SkipPotionContents();
                 break;
             case DataComponentType.WritableBookContent:
-                this.SkipList(() => this.SkipFilterable(this.SkipString));
+                this.SkipList(this.SkipFilterableString);
                 break;
             case DataComponentType.WrittenBookContent:
-                this.SkipFilterable(this.SkipString);
-                this.SkipString();
-                this.ReadVarInt();
-                this.SkipList(() => this.SkipFilterable(this.SkipNbt));
-                this.SkipBytes(1);
+                this.SkipWrittenBookContent();
                 break;
             case DataComponentType.Trim:
                 this.SkipTrimMaterial();
-                this.SkipHolder(() =>
-                {
-                    this.SkipString();
-                    this.SkipNbt();
-                    this.SkipBytes(1);
-                });
+                this.SkipHolder(this.SkipInlineTrimPattern);
                 break;
-            case DataComponentType.EntityData: case DataComponentType.BlockEntityData:
+            case DataComponentType.EntityData:
+            case DataComponentType.BlockEntityData:
                 this.ReadVarInt();
                 this.SkipNbt();
                 break;
             case DataComponentType.Instrument:
-                this.SkipHolder(() =>
-                {
-                    this.SkipSound();
-                    this.SkipBytes(8);
-                    this.ReadVarInt();
-                    this.SkipNbt();
-                });
+                this.SkipHolder(this.SkipInlineInstrument);
                 break;
             case DataComponentType.ProvidesTrimMaterial:
                 this.SkipTrimMaterial();
                 break;
             case DataComponentType.JukeboxPlayable:
-                this.SkipHolder(() =>
-                {
-                    this.SkipSound();
-                    this.SkipNbt();
-                    this.SkipBytes(4);
-                    this.ReadVarInt();
-                });
+                this.SkipHolder(this.SkipInlineJukeboxSong);
                 break;
             case DataComponentType.LodestoneTracker:
-                this.SkipOptional(() =>
-                {
-                    this.SkipString();
-                    this.SkipBytes(8);
-                });
+                this.SkipOptional(this.SkipGlobalPosition);
                 this.SkipBytes(1);
                 break;
             case DataComponentType.FireworkExplosion:
@@ -520,88 +447,44 @@ public partial class NetworkBuffer
                 this.SkipList(this.SkipExplosion);
                 break;
             case DataComponentType.Profile:
-                this.SkipEither(() =>
-                {
-                    this.SkipBytes(16);
-                    this.SkipString();
-                }, () =>
-                {
-                    this.SkipOptional(this.SkipString);
-                    this.SkipOptional(() => this.SkipBytes(16));
-                });
-                this.SkipList(() =>
-                {
-                    this.SkipString();
-                    this.SkipString();
-                    this.SkipOptional(this.SkipString);
-                });
-                for (var i = 0; i < 3; i++)
-                    this.SkipOptional(this.SkipString);
-                this.SkipOptional(this.SkipVarInt);
+                this.SkipProfile();
                 break;
             case DataComponentType.BannerPatterns:
-                this.SkipList(() =>
-                {
-                    this.SkipHolder(() =>
-                    {
-                        this.SkipString();
-                        this.SkipString();
-                    });
-                    this.ReadVarInt();
-                });
+                this.SkipList(this.SkipBannerPatternLayer);
                 break;
             case DataComponentType.PotDecorations:
-                for (var i = 0; i < 4; i++)
-                    this.SkipOptional(this.SkipItemTemplate);
+                this.SkipPotDecorations();
                 break;
             case DataComponentType.SulfurCubeContent:
                 this.SkipItemTemplate();
                 break;
             case DataComponentType.Compostable:
-                this.SkipEither(() => this.SkipBytes(4), this.SkipString);
+                this.SkipFloatOrString();
                 break;
-            case DataComponentType.CookingFuel: case DataComponentType.BrewingFuel:
-                this.SkipEither(() => this.SkipBytes(4), this.SkipString);
-                this.SkipEither(() => this.SkipBytes(4), this.SkipString);
+            case DataComponentType.CookingFuel:
+            case DataComponentType.BrewingFuel:
+                this.SkipFloatOrString();
+                this.SkipFloatOrString();
                 break;
             case DataComponentType.MobVisibility:
                 this.SkipIdSet();
                 this.SkipBytes(4);
                 break;
-            case DataComponentType.SignTextFront: case DataComponentType.SignTextBack:
-                this.SkipSignMessages();
-                this.SkipOptional(this.SkipSignMessages);
-                this.ReadVarInt();
-                this.SkipBytes(1);
+            case DataComponentType.SignTextFront:
+            case DataComponentType.SignTextBack:
+                this.SkipSignText();
                 break;
             case DataComponentType.BlockState:
-                this.SkipList(() =>
-                {
-                    this.SkipString();
-                    this.SkipString();
-                });
+                this.SkipList(this.SkipStringPair);
                 break;
             case DataComponentType.Bees:
-                this.SkipList(() =>
-                {
-                    this.ReadVarInt();
-                    this.SkipNbt();
-                    this.ReadVarInt();
-                    this.ReadVarInt();
-                });
+                this.SkipList(this.SkipBee);
                 break;
             case DataComponentType.BreakSound:
                 this.SkipSound();
                 break;
             case DataComponentType.PaintingVariant:
-                this.SkipHolder(() =>
-                {
-                    this.ReadVarInt();
-                    this.ReadVarInt();
-                    this.SkipString();
-                    this.SkipOptional(this.SkipNbt);
-                    this.SkipOptional(this.SkipNbt);
-                });
+                this.SkipHolder(this.SkipInlinePaintingVariant);
                 break;
             case var _ when DataComponentTypesRegistry.TryGet(type, out _):
                 // A plugin's component in a nested stack: its codec is the only way past it.
@@ -610,6 +493,264 @@ public partial class NetworkBuffer
             default:
                 throw new InvalidDataException($"Unknown 26.3 component ID {(int)type}.");
         }
+    }
+
+    private void SkipVarIntPair()
+    {
+        this.ReadVarInt();
+        this.ReadVarInt();
+    }
+
+    private void SkipStringPair()
+    {
+        this.SkipString();
+        this.SkipString();
+    }
+
+    private void SkipFloatOrString() => this.SkipEither(() => this.SkipBytes(4), this.SkipString);
+
+    private void SkipFilterableString() => this.SkipFilterable(this.SkipString);
+
+    private void SkipOptionalItemTemplate() => this.SkipOptional(this.SkipItemTemplate);
+
+    private void SkipBlockPredicate()
+    {
+        this.SkipOptional(this.SkipIdSet);
+        this.SkipOptional(() => this.SkipList(this.SkipBlockPropertyMatcher));
+        this.SkipOptional(this.SkipNbt);
+        this.SkipList(() => this.SkipComponent(this.ReadComponentType()));
+        this.SkipList(this.SkipPartialComponentPredicate);
+    }
+
+    private void SkipBlockPropertyMatcher()
+    {
+        this.SkipString();
+        this.SkipEither(this.SkipString, this.SkipPropertyRange);
+    }
+
+    private void SkipPropertyRange()
+    {
+        this.SkipOptional(this.SkipString);
+        this.SkipOptional(this.SkipString);
+    }
+
+    private void SkipPartialComponentPredicate()
+    {
+        this.SkipBytes(1);
+        this.ReadVarInt();
+        this.SkipNbt();
+    }
+
+    private void SkipAttributeModifier()
+    {
+        this.ReadVarInt();
+        this.SkipString();
+        this.SkipBytes(8);
+        this.ReadVarInt();
+        this.ReadVarInt();
+
+        var display = this.ReadVarInt();
+        if (display == 2)
+            this.SkipNbt();
+        else if (display is not (0 or 1))
+            throw new InvalidDataException("Unknown attribute display.");
+    }
+
+    private void SkipCustomModelData()
+    {
+        this.SkipList(() => this.SkipBytes(4));
+        this.SkipList(() => this.SkipBytes(1));
+        this.SkipList(this.SkipString);
+        this.SkipList(() => this.SkipBytes(4));
+    }
+
+    private void SkipConsumable()
+    {
+        this.SkipBytes(4);
+        this.ReadVarInt();
+        this.SkipSound();
+        this.SkipBytes(1);
+        this.SkipList(this.SkipConsumeEffect);
+    }
+
+    private void SkipTool()
+    {
+        this.SkipList(this.SkipToolRule);
+        this.SkipBytes(4);
+        this.ReadVarInt();
+        this.SkipBytes(1);
+    }
+
+    private void SkipToolRule()
+    {
+        this.SkipIdSet();
+        this.SkipOptional(() => this.SkipBytes(4));
+        this.SkipOptional(() => this.SkipBytes(1));
+    }
+
+    private void SkipEquippable()
+    {
+        this.ReadVarInt();
+        this.SkipSound();
+        this.SkipOptional(this.SkipString);
+        this.SkipOptional(this.SkipString);
+        this.SkipOptional(this.SkipIdSet);
+        this.SkipBytes(5);
+        this.SkipSound();
+    }
+
+    private void SkipBlocksAttacks()
+    {
+        this.SkipBytes(8);
+        this.SkipList(this.SkipDamageReduction);
+        this.SkipBytes(12);
+        this.SkipOptional(this.SkipString);
+        this.SkipOptional(this.SkipSound);
+        this.SkipOptional(this.SkipSound);
+    }
+
+    private void SkipDamageReduction()
+    {
+        this.SkipBytes(4);
+        this.SkipOptional(this.SkipIdSet);
+        this.SkipBytes(8);
+    }
+
+    private void SkipPiercingWeapon()
+    {
+        this.SkipBytes(2);
+        this.SkipOptional(this.SkipSound);
+        this.SkipOptional(this.SkipSound);
+    }
+
+    private void SkipKineticWeapon()
+    {
+        this.ReadVarInt();
+        this.ReadVarInt();
+        for (var i = 0; i < 3; i++)
+            this.SkipOptional(this.SkipKineticCondition);
+
+        this.SkipBytes(8);
+        this.SkipOptional(this.SkipSound);
+        this.SkipOptional(this.SkipSound);
+    }
+
+    private void SkipKineticCondition()
+    {
+        this.ReadVarInt();
+        this.SkipBytes(8);
+    }
+
+    private void SkipPotionContents()
+    {
+        this.SkipOptional(this.SkipVarInt);
+        this.SkipOptional(() => this.SkipBytes(4));
+        this.SkipList(this.SkipEffect);
+        this.SkipOptional(this.SkipString);
+    }
+
+    private void SkipWrittenBookContent()
+    {
+        this.SkipFilterable(this.SkipString);
+        this.SkipString();
+        this.ReadVarInt();
+        this.SkipList(() => this.SkipFilterable(this.SkipNbt));
+        this.SkipBytes(1);
+    }
+
+    private void SkipInlineTrimPattern()
+    {
+        this.SkipString();
+        this.SkipNbt();
+        this.SkipBytes(1);
+    }
+
+    private void SkipInlineInstrument()
+    {
+        this.SkipSound();
+        this.SkipBytes(8);
+        this.ReadVarInt();
+        this.SkipNbt();
+    }
+
+    private void SkipInlineJukeboxSong()
+    {
+        this.SkipSound();
+        this.SkipNbt();
+        this.SkipBytes(4);
+        this.ReadVarInt();
+    }
+
+    private void SkipGlobalPosition()
+    {
+        this.SkipString();
+        this.SkipBytes(8);
+    }
+
+    private void SkipProfile()
+    {
+        this.SkipEither(this.SkipResolvedProfileIdentity, this.SkipPartialProfileIdentity);
+        this.SkipList(this.SkipProfileProperty);
+        for (var i = 0; i < 3; i++)
+            this.SkipOptional(this.SkipString);
+
+        this.SkipOptional(this.SkipVarInt);
+    }
+
+    private void SkipResolvedProfileIdentity()
+    {
+        this.SkipBytes(16);
+        this.SkipString();
+    }
+
+    private void SkipPartialProfileIdentity()
+    {
+        this.SkipOptional(this.SkipString);
+        this.SkipOptional(() => this.SkipBytes(16));
+    }
+
+    private void SkipProfileProperty()
+    {
+        this.SkipString();
+        this.SkipString();
+        this.SkipOptional(this.SkipString);
+    }
+
+    private void SkipBannerPatternLayer()
+    {
+        this.SkipHolder(this.SkipStringPair);
+        this.ReadVarInt();
+    }
+
+    private void SkipPotDecorations()
+    {
+        for (var i = 0; i < 4; i++)
+            this.SkipOptional(this.SkipItemTemplate);
+    }
+
+    private void SkipSignText()
+    {
+        this.SkipSignMessages();
+        this.SkipOptional(this.SkipSignMessages);
+        this.ReadVarInt();
+        this.SkipBytes(1);
+    }
+
+    private void SkipBee()
+    {
+        this.ReadVarInt();
+        this.SkipNbt();
+        this.ReadVarInt();
+        this.ReadVarInt();
+    }
+
+    private void SkipInlinePaintingVariant()
+    {
+        this.ReadVarInt();
+        this.ReadVarInt();
+        this.SkipString();
+        this.SkipOptional(this.SkipNbt);
+        this.SkipOptional(this.SkipNbt);
     }
 
     private void SkipSignMessages()
