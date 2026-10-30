@@ -54,6 +54,12 @@ DatagenAssets.WriteLegacy(legacy.GeneratedDirectory, JavaDumper.WorldgenGroupsPa
 WorldgenAssets.WriteRouterData(
     Path.Combine(server.GeneratedDirectory, "data", "minecraft"),
     Path.Combine(staging, "worldgen_26_3"));
+DatagenJson.CopyDirectory(
+    Path.Combine(server.GeneratedDirectory, "reports", "biome_parameters", "minecraft"),
+    Path.Combine(staging, "worldgen_26_3", "biome_parameters"));
+DatagenJson.CopyDirectory(
+    Path.Combine(server.GeneratedDirectory, "data", "minecraft", "dimension_type"),
+    Path.Combine(staging, "worldgen_26_3", "dimension_type"));
 server.CopyVersionInfo(Path.Combine(staging, "version.json"));
 
 await FixtureDumper.DumpServerAsync(server, staging);
