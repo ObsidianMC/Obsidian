@@ -16,6 +16,9 @@ namespace Obsidian.Tests;
 /// </summary>
 public class VanillaDensityFunctions
 {
+    // Java's Float.floatToIntBits of NaN, which the captures record for every NaN.
+    private const int JavaNaNBits = 0x7FC00000;
+
     // Building a world's routers reads and seeds every noise they use, so each is built once.
     private static readonly ConcurrentDictionary<(long Seed, string Settings), DensityRouter> routers = new();
 
@@ -57,7 +60,7 @@ public class VanillaDensityFunctions
 
         var value = noise.Get(noiseCase.X, noiseCase.Y, noiseCase.Z);
 
-        Assert.Equal(noiseCase.Expected, value);
+        AssertSameFloat(noiseCase.Expected, value);
     }
 
     // Vanilla: RandomState.sampleBlockValueUncached(function, x, y, z) for each router and aquifer function of a
@@ -92,12 +95,13 @@ public class VanillaDensityFunctions
         {
             var actual = RouterFunction(router, field).Sample(routerCase.X, routerCase.Y, routerCase.Z);
 
-            if (!actual.Equals(value))
+            if (!SameFloat(value, actual))
                 mismatches.Add(Mismatch(field, value, actual));
         }
 
         Assert.Empty(mismatches);
     }
+
 
     // Obsidian-only: the reader handles every registered function vanilla ships, including those no router reaches.
     [Fact]
@@ -112,8 +116,27 @@ public class VanillaDensityFunctions
         Assert.NotEmpty(ids);
     }
 
-    private static string Mismatch(string field, float expected, float actual) =>
-        FormattableString.Invariant($"{field}: expected {expected:R}, got {actual:R}");
+    // Floats must match bit for bit, so 0 and -0 differ. NaNs match each other: Java and .NET give NaNs different
+    // sign and payload bits, which vanilla never looks at.
+    private static bool SameFloat(float expected, float actual) => JavaBits(expected) == JavaBits(actual);
+
+    private static int JavaBits(float value) =>
+        float.IsNaN(value) ? JavaNaNBits : BitConverter.SingleToInt32Bits(value);
+
+    private static void AssertSameFloat(float expected, float actual)
+    {
+        if (!SameFloat(expected, actual))
+            Assert.Fail(Mismatch("value", expected, actual));
+    }
+
+    private static string Mismatch(string field, float expected, float actual)
+    {
+        var expectedBits = JavaBits(expected);
+        var actualBits = JavaBits(actual);
+
+        return FormattableString.Invariant(
+            $"{field}: expected {expected:R} (0x{expectedBits:X8}), got {actual:R} (0x{actualBits:X8})");
+    }
 
     // The identifiers of the embedded density functions, from their resource names
     // (Obsidian.Assets.worldgen_26_3.density_function.overworld.continents.json is minecraft:overworld/continents).
