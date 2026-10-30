@@ -279,7 +279,12 @@ public class ItemComponentWire
         Assert.Throws<InvalidDataException>(() => new NetworkBuffer([1, 0, 0, 0]).ReadItemStackTemplate());
         Assert.Throws<InvalidDataException>(() => new NetworkBuffer().WriteItemStackTemplate(ItemStack.Air));
         Assert.False(new NetworkBuffer().TryHashDataComponent(ComponentBuilder.AdditionalTradeCost with { Value = 131 }, out _));
-        Assert.Throws<InvalidDataException>(() => new NetworkBuffer([1, 1, 1, 0, 122]).ReadItemStack());
+
+        // A component type no registry has: the VarInt 2^31 - 1. Plugin types are numbered right after vanilla's, so
+        // the first id past vanilla's becomes valid as soon as any test registers one.
+        byte[] unknownComponentType = [1, 1, 1, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0x07];
+        Assert.Throws<InvalidDataException>(() => new NetworkBuffer(unknownComponentType).ReadItemStack());
+
         Assert.Throws<InvalidDataException>(
             () => new NetworkBuffer([1, 1, 1, 0, 3, 2, 12, 0]).ReadUntrustedItemStack());
 

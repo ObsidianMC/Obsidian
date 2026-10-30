@@ -18,8 +18,8 @@ namespace Obsidian.Tests;
 /// <summary>
 /// Parity checks for structures, replaying the references in <c>Assets/vanilla_worldgen.json</c>
 /// (<see cref="VanillaWorldgenCaptures"/>): vanilla's <c>Structure.generate</c> piece lists and blocks of vanilla server
-/// worlds with the same seeds. Re-record them with <c>dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen</c>
-/// (<c>docs/vanilla-captures.md</c>).
+/// worlds with the same seeds. They are 1.21.11 references of the legacy generator, which can't be re-recorded on 26.3;
+/// Phase 5 replaces them with 26.3 captures (<c>docs/vanilla-captures.md</c>).
 /// </summary>
 [Trait("Category", TestCategory.Worldgen)]
 [Collection(WorldgenCollection.Name)]

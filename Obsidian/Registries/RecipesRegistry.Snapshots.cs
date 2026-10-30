@@ -79,6 +79,40 @@ public static partial class RecipesRegistry
             Reagent = Snapshot(value.Reagent),
             Output = CopySavedComponents(NetworkBuffer.SnapshotItemStack(value.Output)),
         },
+        DyeRecipe value => new DyeRecipe
+        {
+            Identifier = value.Identifier,
+            Type = value.Type,
+            Group = value.Group,
+            Category = value.Category,
+            Target = Snapshot(value.Target),
+            Dye = Snapshot(value.Dye),
+            Result = CopySavedComponents(NetworkBuffer.SnapshotItemStack(value.Result)),
+        },
+        ImbueRecipe value => new ImbueRecipe
+        {
+            Identifier = value.Identifier,
+            Type = value.Type,
+            Group = value.Group,
+            Category = value.Category,
+            Source = Snapshot(value.Source),
+            Material = Snapshot(value.Material),
+            Result = CopySavedComponents(NetworkBuffer.SnapshotItemStack(value.Result)),
+        },
+        TransmuteRecipe value => new TransmuteRecipe
+        {
+            Identifier = value.Identifier,
+            Type = value.Type,
+            Group = value.Group,
+            Category = value.Category,
+            Input = Snapshot(value.Input),
+            Material = Snapshot(value.Material),
+            MinMaterialCount = value.MinMaterialCount,
+            MaxMaterialCount = value.MaxMaterialCount,
+            ResultItem = value.ResultItem,
+            ResultCount = value.ResultCount,
+            AddMaterialCountToResult = value.AddMaterialCountToResult,
+        },
         IRecipeWithResult value => new StoredRecipeWithResult
         {
             Identifier = value.Identifier,
