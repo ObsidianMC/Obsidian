@@ -581,6 +581,77 @@ public sealed class VanillaCommands26
     }
 
     [Theory]
+    [InlineData("stone")]
+    [InlineData("minecraft:stone")]
+    public async Task InlineFeaturesChangeTheWorld(string block)
+    {
+        await using var server = TestServerFactory.CreateServer($"command-feature-{Guid.NewGuid():N}");
+        var handler = (CommandHandler)server.Server.CommandHandler;
+        handler.RegisterCommandClass<PlaceCommandModule>(null);
+        AddFeatureArea(server.World);
+        var feature = $"{{type:'simple_block',to_place:{{id:'{block}'}}}}";
+        var command = Context(server.Server, $"place feature {feature} 0 64 0");
+
+        await handler.ProcessCommand(command);
+
+        Assert.True(command.Succeeded);
+        Assert.Equal(1, command.Result);
+        var placed = await server.World.GetBlockAsync(0, 64, 0);
+        Assert.Equal(BlocksRegistry.Stone, placed);
+    }
+
+    [Fact]
+    public async Task InlineFeaturesRunTheirProvidersAndPlacementFilters()
+    {
+        await using var server = TestServerFactory.CreateServer($"command-feature-{Guid.NewGuid():N}");
+        var handler = (CommandHandler)server.Server.CommandHandler;
+        handler.RegisterCommandClass<PlaceCommandModule>(null);
+        AddFeatureArea(server.World);
+        // Two placed simple blocks: the first's filter passes on air, the second's needs bedrock and skips it.
+        const string provider = "{type:'weighted',entries:[{data:{id:'oak_log',properties:{axis:'x'}},weight:1}]}";
+        const string feature = $"{{type:'simple_block',to_place:{provider}}}";
+        const string onAir = "{type:'block_predicate_filter',predicate:{type:'matching_blocks',blocks:['air']}}";
+        const string onBedrock = "{type:'block_predicate_filter',predicate:{type:'matching_blocks',blocks:'bedrock'}}";
+        const string east = $"{{feature:{feature},placement:[{{type:'offset',x:1,y:0,z:0}},{onAir}]}}";
+        const string west = $"{{feature:{feature},placement:[{{type:'offset',x:-1,y:0,z:0}},{onBedrock}]}}";
+        var command = Context(server.Server, $"place feature {{type:'overlay',features:[{east},{west}]}} 0 64 0");
+
+        await handler.ProcessCommand(command);
+
+        Assert.True(command.Succeeded);
+        var expected = BlocksRegistry.GetFromSimpleState(new SimpleBlockState
+        {
+            Name = "minecraft:oak_log",
+            Properties = new Dictionary<string, string> { ["axis"] = "x" }
+        });
+        Assert.Equal(expected, await server.World.GetBlockAsync(1, 64, 0));
+        Assert.True((await server.World.GetBlockAsync(-1, 64, 0))!.IsAir);
+        Assert.True((await server.World.GetBlockAsync(0, 64, 0))!.IsAir);
+    }
+
+    // Loads the chunks a feature placed at the origin may reach, as /place requires, with grass over stone below y 64.
+    private static void AddFeatureArea(Obsidian.WorldData.World world)
+    {
+        for (var chunkX = -1; chunkX <= 1; chunkX++)
+        {
+            for (var chunkZ = -1; chunkZ <= 1; chunkZ++)
+            {
+                var chunk = WorldBlockEntities.AddEmptyChunk(world, chunkX, chunkZ);
+                for (var x = 0; x < 16; x++)
+                {
+                    for (var z = 0; z < 16; z++)
+                    {
+                        for (var y = 56; y < 63; y++)
+                            chunk.SetBlock(x, y, z, BlocksRegistry.Stone);
+
+                        chunk.SetBlock(x, 63, z, BlocksRegistry.GrassBlock);
+                    }
+                }
+            }
+        }
+    }
+
+    [Theory]
     [InlineData("swing", InteractionHand.MainHand)]
     [InlineData("swing @s mainhand", InteractionHand.MainHand)]
     [InlineData("swing @s offhand", InteractionHand.OffHand)]

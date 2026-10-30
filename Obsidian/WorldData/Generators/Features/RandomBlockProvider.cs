@@ -42,7 +42,7 @@ internal sealed partial class FeatureRegistry
         }
         else
         {
-            yield return BlocksRegistry.Get(id);
+            yield return ReadBlock(json);
         }
     }
 }

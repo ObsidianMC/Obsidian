@@ -24,11 +24,18 @@ internal sealed class WorldgenData(Func<string, string, Stream?> open)
     public static WorldgenData Vanilla { get; } = new(OpenEmbedded);
 
     /// <summary>
-    /// An entry's JSON, such as <c>Read("noise", "minecraft:temperature")</c>.
+    /// An entry's JSON, such as <c>Read("noise", "minecraft:temperature")</c>. An identifier without a namespace is
+    /// vanilla's, as <c>Read("noise", "temperature")</c>.
     /// </summary>
     /// <exception cref="InvalidDataException">There is no such entry.</exception>
     public JsonElement Read(string registry, string id) =>
-        this.entries.GetOrAdd((registry, id), static (key, open) => Parse(open, key.Registry, key.Id), open);
+        this.entries.GetOrAdd((registry, Qualify(id)), static (key, open) => Parse(open, key.Registry, key.Id), open);
+
+    /// <summary>
+    /// An identifier with its namespace, which is vanilla's when it has none, as vanilla's codecs read identifiers:
+    /// data packs and the JSON typed into commands may write <c>stone</c> for <c>minecraft:stone</c>.
+    /// </summary>
+    public static string Qualify(string id) => id.Contains(':') ? id : $"minecraft:{id}";
 
     private static JsonElement Parse(Func<string, string, Stream?> open, string registry, string id)
     {
