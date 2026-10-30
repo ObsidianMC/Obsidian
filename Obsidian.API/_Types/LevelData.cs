@@ -182,9 +182,23 @@ public sealed class LevelData
     public int ThunderTime { get; set; }
 
     /// <summary>
-    /// The number of ticks since the start of the level.
+    /// The overworld clock's ticks. Setting the time does not change the elapsed game time.
     /// </summary>
-    public long Time { get; set; }
+    public long Time
+    {
+        get => this.WorldClocks.States[WorldClocks.Overworld].TotalTicks;
+        set => this.WorldClocks.States[WorldClocks.Overworld].SetTime(value);
+    }
+
+    /// <summary>The clocks shared by every dimension of this world.</summary>
+    public WorldClocks WorldClocks { get; set; } = new();
+
+    /// <summary>The elapsed simulation ticks, unaffected by clock commands or <c>advance_time</c>.</summary>
+    public long GameTime
+    {
+        get => this.WorldClocks.GameTime;
+        set => this.WorldClocks.GameTime = value;
+    }
 
     /// <summary>
     /// The NBT version of the level

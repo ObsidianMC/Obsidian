@@ -12,8 +12,6 @@ public abstract partial class AbstractLevel
 
     private const int MaxAnchorCharges = 4;
 
-    private const int DayLength = 24000;
-
     // How many players were asleep at the last tick, to tell players when it changes (vanilla's SleepStatus).
     private int previousSleepers;
 
@@ -57,8 +55,10 @@ public abstract partial class AbstractLevel
 
         if (LevelData.GetBooleanRule("advance_time"))
         {
-            var morning = LevelData.Time + DayLength;
-            this.Time = morning - morning % DayLength;
+            var marker = WorldTimelines.Markers["minecraft:wake_up_from_sleep"];
+            var clock = LevelData.WorldClocks.States[marker.Clock];
+            clock.SetTime(marker.Next(clock.TotalTicks));
+            this.BroadcastTime();
         }
 
         foreach (var player in players.Where(player => player.Sleeping))

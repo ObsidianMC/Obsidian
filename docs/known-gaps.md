@@ -437,15 +437,30 @@ and plugin unload/reload.
 
 ## Tilling and other block transformers
 
-**Status:** disabled during the 26.3 port; Phase 4 of [the porting plan](porting-26.3-plan.md) re-enables it.
+**Status:** implemented for vanilla 26.3's transformers.
 
-26.1 replaced `HoeItem.TILLABLES` (and the axe's and shovel's tables) with the data-driven `minecraft:block_transformer`
-item component: rule-based block state providers with tag and offset predicates, sounds, item damage and loot
-tables. The old dump can't be made from 26.3, so hoes no longer till; `ItemUseOnBehaviors` has no counterparts. A
-Phase 6 vanilla capture will cover tilling instead of a hand-written test.
+`UseItemOnPacket` runs the stack's `block_transformer` component after block and plugin interactions. Hoes till,
+axes strip, scrape and remove wax, and shovels make paths. The generated registry supplies predicates, states,
+sounds, particles, durability and rooted-dirt loot. Component overrides and removals work on other items too.
+`DataSystemsFixtures.java` captures vanilla's provider results; `DataSystems` replays them and exercises packet use.
 
-**Where to start:** read vanilla's `data/minecraft/block_transformer` files (`hoe`, `axe`, `shovel`) and run them from
-the item's `block_transformer` component in `UseItemOnPacket`.
+Gameplay tag uses were checked against 26.3's tags. Mushroom survival now uses
+`overrides_mushroom_light_requirement`; the removed `mushroom_grow_block` tag is only retained for Phase 5's legacy
+world generation.
+
+## World clocks, timelines and decorative registries
+
+**Status:** Phase 4 data support implemented.
+
+Game time and the overworld and End clocks are independent. Dimensions share the world's clocks; saves and full
+time syncs retain each clock's ticks, fractional tick, rate and paused state. Sky light, monster burning, early-game
+patrol tracks and sleep markers come from the generated timeline data. `/time of <clock>` selects a clock for
+set, add, pause, resume, rate and query operations. Vanilla's command failure semantics and timeline-specific
+queries remain Phase 6 work.
+
+Trim materials retain 26.3's `palette_id` and text description. Pottery patterns and their item components are read
+from the generated registries, including stack overrides. Their values, clocks and timeline sampling are compared
+with the real vanilla capture in `DataSystemsFixtures.java`.
 
 ## Entity behavior beyond 26.3 metadata
 

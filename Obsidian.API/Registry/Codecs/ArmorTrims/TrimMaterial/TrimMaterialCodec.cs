@@ -12,11 +12,12 @@ public sealed class TrimMaterialCodec : ICodec
 
     public void WriteElement(INbtWriter writer)
     {
-        var description = new NbtList(NbtTagType.String, "description")
+        var description = new NbtCompound("description")
         {
-            new NbtTag<string>("translate", this.Element.Description.Translate),
-            new NbtTag<string>("color", this.Element.Description.Color!)
+            new NbtTag<string>("translate", this.Element.Description.Translate)
         };
+        if (this.Element.Description.Color is string color)
+            description.Add(new NbtTag<string>("color", color));
 
         writer.WriteString("palette_id", this.Element.PaletteId);
         writer.WriteTag(description);

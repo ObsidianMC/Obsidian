@@ -85,7 +85,7 @@ internal sealed class BeaconBlockEntity : BlockEntity
 
     protected internal override async ValueTask TickAsync()
     {
-        if (this.Level is not AbstractLevel level || level.LevelData.Time % UpdateInterval != 0)
+        if (this.Level is not AbstractLevel level || level.LevelData.GameTime % UpdateInterval != 0)
             return;
 
         var position = this.BlockPosition;

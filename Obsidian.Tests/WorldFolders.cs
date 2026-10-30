@@ -150,7 +150,8 @@ public sealed class WorldFolders : IDisposable
         Assert.Equal(1234, level.RandomSeed);
         Assert.True(level.GetBooleanRule("keep_inventory", defaultValue: false));
         Assert.Equal(7, level.GetIntegerRule("random_tick_speed"));
-        Assert.Equal(42, nether.LevelData.Time);
+        Assert.Same(level.WorldClocks, nether.LevelData.WorldClocks);
+        Assert.Equal(level.Time, nether.LevelData.Time);
 
         // The dragon fight Obsidian kept is in vanilla's file once the world saves.
         await world.SaveAsync();

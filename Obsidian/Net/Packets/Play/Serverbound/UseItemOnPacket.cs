@@ -405,13 +405,11 @@ public partial class UseItemOnPacket
             return;
         }
 
-        // Vanilla's Item.useOn, by the item class that declares it (see ItemUseOnBehaviors): a hoe tills dirt. Adventure
-        // and spectator players can't use items on blocks.
+        // 26.3 Item.useOn delegates to the stack's block_transformer component, after the block and plugin use.
         if (player.Level is AbstractLevel useOnLevel
             && currentItem is { Count: > 0 }
             && player.GameMode is GameMode.Survival or GameMode.Creative
-            && ItemUseOnBehaviors.For(currentItem.Holder) is { } useOn
-            && await useOn.UseOnAsync(useOnLevel, player, currentItem, handSlot, position, b, this.Face))
+            && await ItemUseOnBehaviors.UseOnAsync(useOnLevel, player, currentItem, handSlot, position, this.Face))
         {
             player.Statistics.Increment(currentItem.Holder.UnlocalizedName, type: "minecraft:used");
             await player.FireProgressAsync("item_used_on_block",

@@ -31,30 +31,12 @@ internal static class LevelEnvironment
         ["minecraft:the_end"] = "#minecraft:in_end"
     }.ToFrozenDictionary();
 
-    // The keyframes of the minecraft:day timeline's monsters_burn track: true from 23460, false from 12542, over a
-    // 24000 tick day. They decide when undead mobs start and stop burning, so they match vanilla's.
-    private const int MonstersStopBurning = 12542;
-    private const int MonstersStartBurning = 23460;
-
-    private const int DayLength = 24000;
-
     // Vanilla's types' own minecraft:gameplay/sky_light_level, where it isn't the default 15. Plugins' types have
     // theirs in DimensionElement.SkyLightLevel.
     private static readonly FrozenDictionary<string, float> vanillaSkyLightLevels = new Dictionary<string, float>
     {
         ["minecraft:the_nether"] = 4f
     }.ToFrozenDictionary();
-
-    // The minecraft:day timeline's sky_light_level track, which multiplies the level by its value, eased linearly
-    // between these keyframes over a looping day. With the weather's blends below, they decide the sky's darkening
-    // and so where monsters spawn, so they match vanilla's (Timelines, WeatherAttributes).
-    private static readonly (int Ticks, float Value)[] daySkyLight =
-    [
-        (133, 1f),
-        (11867, 1f),
-        (13670, 0.26666668f),
-        (22330, 0.26666668f)
-    ];
 
     /// <summary>
     /// Vanilla's <c>minecraft:gameplay/can_start_raid</c>: whether a bad omen starts raids.
@@ -189,7 +171,10 @@ internal static class LevelEnvironment
     {
         var value = level.DimensionType.Gameplay(attribute);
 
-        return BiomeAt(level, position) is BiomeCodec biome ? ApplyBiome(biome, attribute, value) : value;
+        if (BiomeAt(level, position) is BiomeCodec biome)
+            value = ApplyBiome(biome, attribute, value);
+
+        return WorldTimelines.Apply(level, attribute, value);
     }
 
     /// <summary>
@@ -257,7 +242,7 @@ internal static class LevelEnvironment
     /// only vanilla's <c>#minecraft:in_overworld</c> tag does (plugins can only name vanilla's timeline tags).
     /// </summary>
     public static bool HasDayCycle(this ILevel level) =>
-        Timelines(level.DimensionType) == "#minecraft:in_overworld";
+        WorldTimelines.Contains(level, "minecraft:day");
 
     /// <summary>
     /// A boolean gameplay attribute of <see cref="GameplayDefaults"/> as the dimension type sets it: a plugin's or
@@ -307,13 +292,7 @@ internal static class LevelEnvironment
         if (BiomeAt(level, position) is BiomeCodec biome && attributeMaps.TryGetValue(biome.Element, out var map))
             burn = map.Apply(MonstersBurnAttribute, burn);
 
-        if (!burn && level.HasDayCycle())
-        {
-            var time = (level.DayTime % DayLength + DayLength) % DayLength;
-            burn = time is < MonstersStopBurning or >= MonstersStartBurning;
-        }
-
-        return burn;
+        return WorldTimelines.Apply(level, MonstersBurnAttribute, burn);
     }
 
     /// <summary>
@@ -326,8 +305,7 @@ internal static class LevelEnvironment
         var type = level.DimensionType;
         var light = type.Element.SkyLightLevel ?? vanillaSkyLightLevels.GetValueOrDefault(type.Name, 15f);
 
-        if (level.HasDayCycle())
-            light *= SampleDaySkyLight(level.DayTime);
+        light = WorldTimelines.Apply(level, "minecraft:gameplay/sky_light_level", light);
 
         if (level.CanHaveWeather())
         {
@@ -358,28 +336,6 @@ internal static class LevelEnvironment
         && !level.DimensionType.Element.HasCeiling
         && level.DimensionName != "minecraft:the_end";
 
-    // Samples the day's sky light track as vanilla's KeyframeTrackSampler does: the first segment ending after the
-    // time, the last keyframe wrapping round to the first a day later.
-    private static float SampleDaySkyLight(int dayTime)
-    {
-        var time = (dayTime % DayLength + DayLength) % DayLength;
-        var (fromTicks, fromValue) = (daySkyLight[^1].Ticks - DayLength, daySkyLight[^1].Value);
-
-        foreach (var (toTicks, toValue) in daySkyLight.Append((daySkyLight[0].Ticks + DayLength, daySkyLight[0].Value)))
-        {
-            if (time < toTicks)
-            {
-                var progress = (float)(time - fromTicks) / (toTicks - fromTicks);
-
-                return EnvironmentAttributeMap.Lerp(progress, fromValue, toValue);
-            }
-
-            (fromTicks, fromValue) = (toTicks, toValue);
-        }
-
-        return fromValue;
-    }
-
     // A weather's layer: its blend towards the night's light, applied by how strong the weather is.
     private static float BlendWeather(float light, float strength, float alpha)
     {
@@ -391,7 +347,7 @@ internal static class LevelEnvironment
         return EnvironmentAttributeMap.Lerp(strength, light, blended);
     }
 
-    private static string? Timelines(DimensionCodec type) =>
+    internal static string? Timelines(DimensionCodec type) =>
         type.Element.Timelines ?? vanillaTimelines.GetValueOrDefault(type.Name);
 }
 

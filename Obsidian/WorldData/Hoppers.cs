@@ -35,7 +35,7 @@ internal static class Hoppers
     public static async ValueTask TickAsync(AbstractLevel level, HopperBlockEntity hopper)
     {
         hopper.Cooldown--;
-        hopper.TickedGameTime = level.LevelData.Time;
+        hopper.TickedGameTime = level.LevelData.GameTime;
 
         if (hopper.Cooldown > 0)
             return;

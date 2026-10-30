@@ -21,6 +21,8 @@ internal static class FixtureDumper
         // Also writes synced_registries.json, which the server reads at runtime.
         await VanillaServer.RunJavaAsync(server.Directory, "-cp", classpath, Source("JoinFixtures.java"),
             Path.Combine(output, $"join-payloads-{server.Version}.json"), Path.Combine(output, "synced_registries.json"));
+        await VanillaServer.RunJavaAsync(server.Directory, "-cp", classpath, Source("DataSystemsFixtures.java"),
+            Path.Combine(output, $"data-systems-{server.Version}.json"));
     }
 
     public static async Task DumpClientAsync(VanillaServer server, IReadOnlyList<string> classpath, string output)

@@ -312,7 +312,7 @@ public sealed partial class Wolf : Animal
         writer.WriteEntityMetadataType(AgeableMetadataCount + 3, EntityMetadataType.VarInt);
         writer.WriteVarInt(CollarColor);
         writer.WriteEntityMetadataType(AgeableMetadataCount + 4, EntityMetadataType.VarLong);
-        writer.WriteVarLong(AngerTicks == 0 ? 0 : Level.LevelData.Time + AngerTicks);
+        writer.WriteVarLong(AngerTicks == 0 ? 0 : Level.LevelData.GameTime + AngerTicks);
         writer.WriteEntityMetadataType(AgeableMetadataCount + 5, EntityMetadataType.WolfVariant);
         writer.WriteVarInt(Variant);
         writer.WriteEntityMetadataType(AgeableMetadataCount + 6, EntityMetadataType.WolfSoundVariant);

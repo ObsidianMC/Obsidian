@@ -34,6 +34,11 @@ internal static partial class RandomTickBehaviors
 
     internal static IRandomTickBehavior SpreadingSnowyBlock { get; } = new SpreadingSnowy();
 
+    // Matches 26.3 MushroomBlock.canSurvive: this tag bypasses light and solid-render requirements.
+    internal static bool MushroomsCanSurvive(IBlock below, int brightness) =>
+        TagsRegistry.Block.OverridesMushroomLightRequirement.Entries.Contains(below.RegistryId)
+        || brightness < 13 && below.IsSolidRender();
+
     // NetherWartBlock.randomTick: below age 3, a draw of nextInt(10) that comes up 0 adds an age.
     private sealed class NetherWart : IRandomTickBehavior
     {
@@ -378,16 +383,11 @@ internal static partial class RandomTickBehaviors
             return origin + new Vector(x, y, z);
         }
 
-        // Vanilla MushroomBlock.canSurvive: a mushroom grow block below, or a solid render block below with a raw brightness under 13.
-        private static readonly BlockSet MushroomGrowBlock = new("#minecraft:mushroom_grow_block");
-
         private static bool CanSurvive(AbstractLevel level, Vector position, IBlock block)
         {
             var below = Growth.BlockAt(level, position + Vector.Down);
-            if (MushroomGrowBlock.Contains(below))
-                return true;
-
-            return Growth.RawBrightness(level, position, ambientDarkness: 0) < 13 && below.IsSolidRender();
+            var brightness = Growth.RawBrightness(level, position, ambientDarkness: 0);
+            return MushroomsCanSurvive(below, brightness);
         }
     }
 

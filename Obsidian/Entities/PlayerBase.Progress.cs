@@ -100,7 +100,7 @@ public partial class PlayerBase
             await this.FireProgressAsync("recipe_crafted", recipe: recipe);
 
         await this.FireProgressAsync("tick");
-        if (this.Level.LevelData.Time % 20 == 0)
+        if (this.Level.LevelData.GameTime % 20 == 0)
             await this.FireProgressAsync("location");
 
         if (this.progressDimension is string previous && previous != this.Level.DimensionName)
