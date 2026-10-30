@@ -105,11 +105,10 @@ below. Every number in this plan was measured from Mojang's jars, except where a
   - Signs gain `allow_op_features`.
   - The `bed` block entity is removed (26.2).
 - **`level.dat` gains `version_history`.**
-- **Obsidian has no data fixers.** It only checks for an exact DataVersion match. Its DataVersion constants are also
-  inconsistent:
-  - `MobStorage` writes the literal `4671`.
-  - `MapStorage` writes `3337`.
-  - `Obsidian.API`'s `LevelData` defines an unused `3337`.
+- **Obsidian has no data fixers.** Every save writes `ServerConstants.DataVersion`, its only data version constant.
+  Every world, server or integrated, now uses 26.3's layout (see the World section of `integrated-server.md`), and
+  `WorldUpgrade` upgrades a world Obsidian saved in either 1.21.11 layout once, after copying it to a backup beside it.
+  It detects them by layout, not by DataVersion, since builds for 26.3 wrote 5023 in 1.21.11's layout.
 
 ### Data-driven systems
 

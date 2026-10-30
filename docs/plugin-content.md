@@ -718,7 +718,7 @@ Obsidian client:
 ## Progress
 
 Connected players expose `IPlayer.Statistics` and `IPlayer.Advancements`. Both persist in the owning world's
-vanilla files: `stats/<uuid>.json` has `stats` grouped by registry type, and `advancements/<uuid>.json` has criterion
+vanilla files: `players/stats/<uuid>.json` has `stats` grouped by registry type, and `players/advancements/<uuid>.json` has criterion
 completion dates and `done`, with `DataVersion` in both. Dimension travel keeps the same world's progress.
 
 ```csharp
@@ -1000,9 +1000,9 @@ dimensions; `IServer.GetSavedData(type, create)` uses that scope in the default 
 and starts dirty. `Value` is the live plugin object; after changing it, `MarkDirty()` encodes a detached snapshot
 immediately. Only that snapshot is saved, so forgetting to mark dirty does not silently save partial changes.
 
-Level files are `<level>/data/<namespace>/<path>.dat`. World-wide files use the world's reserved engine directory,
-`<world>/data/obsidian/world/<namespace>/<path>.dat`, to distinguish them from the overworld's own level data. Both
-use vanilla's gzip NBT envelope (`DataVersion`, `data`), with the plugin codec's tag under `data`. Names follow the
+Level files are `<level>/data/<namespace>/<path>.dat`, where `<level>` is the level's folder in the world's
+(`dimensions/<namespace>/<path>`, the overworld's too). World-wide files are `<world>/data/<namespace>/<path>.dat`, in
+the world's own folder, like vanilla's world-wide saved data. Both use vanilla's gzip NBT envelope (`DataVersion`, `data`), with the plugin codec's tag under `data`. Names follow the
 plugin's namespace, with portable path segments; traversal and Windows device names are rejected, and `obsidian`
 is reserved for these types. Saved-data path segments ending in `.dat` or `.dat.tmp` are rejected to prevent
 file and directory collisions. Saves replace a temporary file atomically. World saves, region flushes and shutdown
@@ -3250,7 +3250,7 @@ The rules:
 - A file's path gives the dimension's identifier, and, as vanilla checks resource paths, one with an empty, `.` or
   `..` segment (like `data/ruby/dimension//world.json`) is refused. This holds for every plugin data file.
 - A dimension's level is created when its plugin loads, at startup or later, and is saved in the world's folder under
-  `dimensions/<namespace>/<path>`, where vanilla saves a data pack's dimensions, and loaded from there after a restart.
+  `dimensions/<namespace>/<path>`, where vanilla saves every dimension, and loaded from there after a restart.
   Players can reach it, and it ticks, once it's loaded or generated with its spawn. One that fails to load or generate
   is logged and left out, and the next plugin load tries it again. A plugin loading while the worlds load gets its
   dimensions' levels too, created after those of the plugins loaded before.
