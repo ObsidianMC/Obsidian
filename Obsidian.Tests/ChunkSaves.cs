@@ -86,7 +86,16 @@ public sealed class ChunkSaves
         {
             // The region asks for the starts of each chunk it writes, and only those.
             var written = new List<(int X, int Z)>();
-            await using (var region = new Region(0, 0, folder) { SaveStructureStarts = (x, z, loaded) => { written.Add((x, z)); return loaded; } })
+            var region = new Region(0, 0, folder)
+            {
+                SaveStructureStarts = (x, z, loaded) =>
+                {
+                    written.Add((x, z));
+                    return loaded;
+                },
+            };
+
+            await using (region)
             {
                 await region.InitAsync();
                 var changed = Complete(0, 0);
@@ -108,7 +117,8 @@ public sealed class ChunkSaves
             await using (var reloaded = new Region(0, 0, folder))
             {
                 await reloaded.InitAsync();
-                Assert.Equal(BlockIds.Stone, (await reloaded.GetChunkAsync(0, 0)).GetBlock(2, 70, 3).RegistryId);
+                var reloadedChunk = await reloaded.GetChunkAsync(0, 0);
+                Assert.Equal(BlockIds.Stone, reloadedChunk.GetBlock(2, 70, 3).RegistryId);
                 Assert.NotNull(await reloaded.GetChunkAsync(1, 0));
             }
         }
