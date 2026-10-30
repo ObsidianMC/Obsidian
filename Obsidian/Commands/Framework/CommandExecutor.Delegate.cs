@@ -21,6 +21,29 @@ internal sealed class CommandDelegateExecutor : IExecutor<CommandContext>
     {
         object[] args = [context, .. methodParams];
 
+        context.SetResult(true, 1);
+
+        if (this.MethodDelegate.Method.ReturnType == typeof(Task<int>))
+        {
+            var result = await (Task<int>)this.MethodDelegate.DynamicInvoke(args)!;
+            context.SetResult(context.Succeeded, result);
+            return;
+        }
+
+        if (this.MethodDelegate.Method.ReturnType == typeof(ValueTask<int>))
+        {
+            var result = await (ValueTask<int>)this.MethodDelegate.DynamicInvoke(args)!;
+            context.SetResult(context.Succeeded, result);
+            return;
+        }
+
+        if (this.MethodDelegate.Method.ReturnType == typeof(int))
+        {
+            var result = (int)this.MethodDelegate.DynamicInvoke(args)!;
+            context.SetResult(context.Succeeded, result);
+            return;
+        }
+
         if (this.MethodDelegate.Method.ReturnType == typeof(ValueTask))
         {
             await (ValueTask)this.MethodDelegate.DynamicInvoke(args)!;

@@ -271,7 +271,8 @@ public sealed partial class Client : IClient
             return false;
         }
         // Players whitelisted by name before their UUID was known match by name.
-        else if (this.HostServer.Configuration.Whitelist && !this.HostServer.IsWhitelisted(this.profile.Uuid)
+        else if (this.HostServer is not Server { Integrated: not null }
+            && this.HostServer.Configuration.Whitelist && !this.HostServer.IsWhitelisted(this.profile.Uuid)
             && !this.HostServer.IsWhitelisted(this.profile.Name))
         {
             await DisconnectAsync("You are not whitelisted on this server\nContact server administrator");

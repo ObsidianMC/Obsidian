@@ -27,6 +27,12 @@ public partial class Living
             _ => null
         });
 
+        return this.Swing(hand, animation, includeSelf: false);
+    }
+
+    internal bool Swing(InteractionHand hand, SwingAnimation animation, bool includeSelf)
+    {
+
         // Vanilla's SwingState.startIfAble: a new swing replaces one that has run past half its length, or one that
         // started this tick.
         var now = this.Level.LevelData.GameTime;
@@ -41,7 +47,7 @@ public partial class Living
             EntityId = this.EntityId,
             Hand = hand,
             Animation = animation
-        }, this.EntityId);
+        }, includeSelf ? [] : [this.EntityId]);
         return true;
     }
 

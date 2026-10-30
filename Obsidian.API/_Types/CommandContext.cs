@@ -15,6 +15,18 @@ public sealed class CommandContext(string message, ICommandSender commandSender,
     public ICommandSender Sender { get; } = commandSender;
     public bool IsPlayer => Player is not null;
 
+    /// <summary>The outcome of the last command, including a successful command whose result is zero.</summary>
+    public bool Succeeded { get; private set; }
+
+    public int Result { get; private set; }
+
+    /// <summary>Records the value consumed by command composition, independently of feedback messages.</summary>
+    public void SetResult(bool succeeded, int result = 0)
+    {
+        this.Succeeded = succeeded;
+        this.Result = succeeded ? result : 0;
+    }
+
     public PluginBase? Plugin { get; internal set; }
     internal string Message { get; } = message;
 

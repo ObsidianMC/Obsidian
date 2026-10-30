@@ -333,7 +333,7 @@ in the parts we model.
    int/float expressions, arithmetic, conversions, distributions, conditional dispatch and registry references.
    `NumberContext` supplies the random stream, predicates and optional world-dependent sources. The built-in provider
    definitions are generated from 26.3 data; loot uses typed adapters to keep the programmatic plugin API compatible.
-   `/compute` and `/data modify … compute` remain follow-up command work; both can use this component.
+   `/compute` and `/data modify … compute` now use this component (Phase 6).
 3. **Recipes:**
    - brewing recipes, replacing `BrewingRegistry`;
    - required cooking times, with speed from fuel components, replacing `FurnaceFuels`;
@@ -400,9 +400,14 @@ pistons.
    - the cushion (a seat entity);
    - poplar boats.
 3. **Mob changes:** age locking, baby hitboxes, persistent mobs idling, and spectators using portals.
-4. **Commands:** `/swing`, `/time` with clocks, `/posteffect`, `/item` and `/execute` slot sources, `/publish`, and
-   command errors.
-5. **Server defaults:** whitelist on by default, and separate chat and command spam thresholds.
+4. **Commands — implemented with documented limits:** `/swing`, `/time` with clocks and timeline queries,
+   `/compute`, `/data modify … compute`, `/posteffect`, `/item` and `/execute` slot sources, `/unpublish`, and
+   inline `/place feature`. Success/failure and integer results propagate through `/execute run`; command-class
+   permissions are enforced. `CommandFixtures.java` captures the client grammar, argument bytes, suggestions,
+   restrictions, clock/compute results, slot changes, post effects, NBT mutations and spam budgets. See
+   [known gaps](known-gaps.md#263-commands) for remaining provider contexts, NBT paths, inventory sources and older
+   command branches.
+5. **Server defaults — implemented:** whitelist on by default, and separate chat and command spam thresholds.
 6. **Fixtures.** Re-capture the fluid, redstone, progress and daylight-detector fixtures, and fix what drifted.
 7. **Hand-written tables.** Re-check those that mirror vanilla data: `BlockSoundPlayback`, `FluidRules`,
    `ShapeSupport`, `StructureBlockShapes`, placement rules, `EnvironmentAttributes`, `JukeboxSongsRegistry` and

@@ -15,12 +15,22 @@ namespace Obsidian.Commands.Modules;
 [CommandGroup("data")]
 [CommandInfo("Shows entity and block entity data.", "/data get <entity|block> …")]
 [RequirePermissionLevel(2)]
-public sealed class DataCommandModule : CommandModuleBase
+public sealed partial class DataCommandModule : CommandModuleBase
 {
     [CommandGroup("get")]
     [CommandInfo("Shows entity and block entity data.", "/data get <entity <target>|block <pos>> [<path>]")]
     public sealed class Get : CommandModuleBase
     {
+        [Command("storage")]
+        public Task StorageAsync(ResourceLocation target) => this.StorageAsync(target, null);
+
+        [CommandOverload]
+        public async Task StorageAsync(ResourceLocation target, string? path)
+        {
+            var tag = CommandStorage.Read(this.Server, target.ToString());
+            await this.ShowAsync(tag, path, $"{target} has the following contents: ");
+        }
+
         [Command("entity")]
         public Task EntityAsync(IEntity target) => this.EntityAsync(target, null);
 

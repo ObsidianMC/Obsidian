@@ -8,6 +8,7 @@ public partial class Server
 {
     // The listening sockets with their acceptors: the configured one, and Open to LAN's in integrated mode. Locked on itself.
     private readonly List<(Socket Socket, SocketAsyncEventArgs Acceptor)> listeners = [];
+    private readonly List<SocketAsyncEventArgs> retiredAcceptors = [];
 
     internal int bytesPending;
     internal int bytesReceived;
@@ -94,6 +95,21 @@ public partial class Server
         }
     }
 
+    internal void CloseListener(int port)
+    {
+        lock (this.listeners)
+        {
+            var listener = this.listeners.Find(entry => ((IPEndPoint)entry.Socket.LocalEndPoint!).Port == port);
+            if (listener.Socket is null)
+                return;
+
+            listener.Socket.Close();
+            // The pending accept completes as OperationAborted; disposal waits for normal server shutdown.
+            this.listeners.Remove(listener);
+            this.retiredAcceptors.Add(listener.Acceptor);
+        }
+    }
+
     private async ValueTask Accept(SocketAsyncEventArgs e)
     {
         try
@@ -153,7 +169,8 @@ public partial class Server
         }
 
         var whitelistedIps = this.WhitelistConfiguration.CurrentValue.WhitelistedIps;
-        if (Configuration.Whitelist && !whitelistedIps.Contains("*") && !whitelistedIps.Contains(ip))
+        if (Configuration.Whitelist && whitelistedIps.Count > 0
+            && !whitelistedIps.Contains("*") && !whitelistedIps.Contains(ip))
         {
             Log.NotWhitelisted(this.logger, ip);
             await client.DisconnectAsync("Not whitelisted.");
@@ -186,6 +203,12 @@ public partial class Server
         lock (this.listeners)
         {
             foreach (var (_, acceptor) in this.listeners)
+            {
+                acceptor.Completed -= this.OnAsyncCompleted;
+                acceptor.Dispose();
+            }
+
+            foreach (var acceptor in this.retiredAcceptors)
             {
                 acceptor.Completed -= this.OnAsyncCompleted;
                 acceptor.Dispose();

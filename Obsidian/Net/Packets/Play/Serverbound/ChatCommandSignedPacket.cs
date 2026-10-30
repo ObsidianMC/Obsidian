@@ -43,5 +43,6 @@ public partial class ChatCommandSignedPacket
         var context = new CommandContext($"/{this.Command}", new CommandSender(CommandIssuers.Client, player), player, server);
 
         await server.CommandHandler.ProcessCommand(context);
+        await Obsidian.Commands.CommandSpam.RecordAsync(server, player, command: true);
     }
 }

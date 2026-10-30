@@ -53,7 +53,13 @@ public sealed class ServerConfiguration
 
     public bool? Baah { get; set; }
 
-    public bool Whitelist { get; set; }
+    public bool Whitelist { get; set; } = true;
+
+    /// <summary>Chat burst budget in seconds of ticks. A non-positive value disables this limit.</summary>
+    public int ChatSpamThresholdSeconds { get; set; } = 10;
+
+    /// <summary>Command burst budget, independent of chat. A non-positive value disables this limit.</summary>
+    public int CommandSpamThresholdSeconds { get; set; } = 10;
 
     /// <summary>Discord webhook receiving player feedback. Null or empty disables the Feedback quick action.</summary>
     public string? FeedbackWebhookUrl { get; set; }
