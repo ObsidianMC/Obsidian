@@ -102,18 +102,31 @@ public sealed partial class Villager : AgeableMob
             return true;
 
         EnsureTrades();
-        await MerchantTrading.OpenAsync(this, player, offers, VillagerLevel, VillagerXp, true, offer =>
-        {
-            VillagerXp += offer.XP;
-            var newLevel = VillagerXp >= 250 ? 5 : VillagerXp >= 150 ? 4 : VillagerXp >= 70 ? 3 : VillagerXp >= 10 ? 2 : 1;
-            if (newLevel > VillagerLevel)
-            {
-                VillagerLevel = newLevel;
-                Health = GetAttributeValue("minecraft:generic.max_health");
-                SynchronizeMetadata();
-            }
-        });
+        await MerchantTrading.OpenAsync(this, player, offers, VillagerLevel, VillagerXp, true, CompleteTrade);
         return true;
+    }
+
+    private MerchantTradeUpdate CompleteTrade(TradeEntry offer)
+    {
+        VillagerXp += offer.XP;
+        var nextLevelXp = VillagerLevel switch
+        {
+            1 => 10,
+            2 => 70,
+            3 => 150,
+            4 => 250,
+            _ => int.MaxValue
+        };
+        if (VillagerLevel < 5 && VillagerXp >= nextLevelXp)
+        {
+            // Vanilla increases the career once per trade, then draws that level before updating the open menu.
+            VillagerLevel++;
+            EnsureTrades();
+            Health = GetAttributeValue("minecraft:generic.max_health");
+            SynchronizeMetadata();
+        }
+
+        return new MerchantTradeUpdate(offers, VillagerLevel, VillagerXp);
     }
 
     private async ValueTask TickVillageAsync(AbstractLevel level)

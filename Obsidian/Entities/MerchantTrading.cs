@@ -7,7 +7,7 @@ namespace Obsidian.Entities;
 internal static class MerchantTrading
 {
     internal static async ValueTask OpenAsync(Mob merchant, IPlayer player, ImmutableArray<TradeEntry> offers,
-        int level, int experience, bool canRestock, Action<TradeEntry>? completed = null)
+        int level, int experience, bool canRestock, Func<TradeEntry, MerchantTradeUpdate>? completed = null)
     {
         if (!merchant.Alive || player.Health <= 0 || player.GameMode == GameMode.Spectator ||
             merchant.Level != player.Level || !merchant.IsInRange(player, 4) || offers.IsEmpty ||
@@ -19,13 +19,15 @@ internal static class MerchantTrading
     }
 }
 
+internal readonly record struct MerchantTradeUpdate(ImmutableArray<TradeEntry> Offers, int Level, int Experience);
+
 internal sealed class MerchantContainer : BaseContainer
 {
     internal Mob Merchant { get; }
     private readonly IPlayer customer;
-    private readonly ImmutableArray<TradeEntry> offers;
+    private ImmutableArray<TradeEntry> offers;
     private readonly bool canRestock;
-    private readonly Action<TradeEntry>? completed;
+    private readonly Func<TradeEntry, MerchantTradeUpdate>? completed;
     private readonly System.Threading.SemaphoreSlim clicks = new(1, 1);
     private int level;
     private int experience;
@@ -34,7 +36,7 @@ internal sealed class MerchantContainer : BaseContainer
     private bool closed;
 
     internal MerchantContainer(Mob merchant, IPlayer player, ImmutableArray<TradeEntry> offers, int level,
-        int experience, bool canRestock, Action<TradeEntry>? completed) : base(3, InventoryType.Merchant)
+        int experience, bool canRestock, Func<TradeEntry, MerchantTradeUpdate>? completed) : base(3, InventoryType.Merchant)
     {
         Merchant = merchant;
         customer = player;
@@ -230,10 +232,17 @@ internal sealed class MerchantContainer : BaseContainer
                 RemoveItem(1, offer.SecondInput.Count);
             offer.UsedCount++;
             offer.IsDisabled = offer.UsedCount >= offer.MaxCount;
-            experience += offer.XP;
-            completed?.Invoke(offer);
-            if (canRestock)
-                level = experience >= 250 ? 5 : experience >= 150 ? 4 : experience >= 70 ? 3 : experience >= 10 ? 2 : 1;
+            if (completed is not null)
+            {
+                var update = completed(offer);
+                offers = update.Offers;
+                level = update.Level;
+                experience = update.Experience;
+            }
+            else
+            {
+                experience += offer.XP;
+            }
             if (Merchant.Level.LevelData.GetBooleanRule("mob_drops"))
                 Merchant.Level.SpawnExperienceOrbs(Merchant.Position, 3);
             if (!quickMove)

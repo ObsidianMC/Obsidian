@@ -90,6 +90,8 @@ public final class TradeFixtures {
         var output = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create().toJson(worlds);
         Files.writeString(Path.of(arguments[0]), output + "\n");
         captureSavedVillager(Path.of(arguments[0]).resolveSibling("villager-saved-26.3.nbt"));
+        Files.writeString(Path.of(arguments[0]).resolveSibling("merchant-transition-26.3.json"),
+            new GsonBuilder().setPrettyPrinting().create().toJson(captureTransition()) + "\n");
     }
 
     // The built-in registries and the vanilla pack's data pack registries, with their tags, as a server loads them.
@@ -251,6 +253,35 @@ public final class TradeFixtures {
             HolderSet.class, int.class);
         draw.setAccessible(true);
         draw.invoke(null, context, offers, tradeSet.trades(), amount);
+    }
+
+    private static JsonObject captureTransition() throws Exception {
+        var seed = "test-seed".hashCode();
+        var sequences = new RandomSequences();
+        var first = (Villager) allocate(Villager.class);
+        var following = (Villager) allocate(Villager.class);
+        var profession = access.lookupOrThrow(Registries.VILLAGER_PROFESSION)
+            .getOrThrow(ResourceKey.create(Registries.VILLAGER_PROFESSION,
+                Identifier.withDefaultNamespace("armorer")));
+        var type = access.lookupOrThrow(Registries.VILLAGER_TYPE)
+            .getOrThrow(ResourceKey.create(Registries.VILLAGER_TYPE, Identifier.withDefaultNamespace("plains")));
+        setVillagerData(first, new VillagerData(type, profession, 1));
+        setVillagerData(following, new VillagerData(type, profession, 1));
+        var offers = new MerchantOffers();
+        addOffers(first, offers, profession.value().getTrades(1), sequences, seed);
+
+        var row = new JsonObject();
+        row.add("initial", describe(offers));
+        row.addProperty("xpBefore", VillagerData.getMaxXpPerLevel(1) - offers.getFirst().getXp());
+        row.addProperty("xpAfter", VillagerData.getMaxXpPerLevel(1));
+        setVillagerData(first, new VillagerData(type, profession, 2));
+        addOffers(first, offers, profession.value().getTrades(2), sequences, seed);
+        row.add("afterTrade", describe(offers));
+
+        var nextOffers = new MerchantOffers();
+        addOffers(following, nextOffers, profession.value().getTrades(1), sequences, seed);
+        row.add("followingMerchant", describe(nextOffers));
+        return row;
     }
 
     // The same save sections and codecs used by Villager and AbstractVillager. Keep NBT types intact for replay.

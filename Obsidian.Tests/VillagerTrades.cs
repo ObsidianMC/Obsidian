@@ -81,6 +81,60 @@ public sealed class VillagerTrades
         Assert.Equal(offers.Select(Progress), restored.Select(Progress));
     }
 
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task LevelUpDrawsAndSendsOffersBeforeAnotherMerchantUsesTheSequence()
+    {
+        await using var context = TestServerFactory.CreateServer($"trade-level-{Guid.NewGuid():N}");
+        WorldBlockEntities.AddEmptyChunk(context.World);
+        using var stream = typeof(Server).Assembly.GetManifestResourceStream(
+            "Obsidian.Assets.merchant-transition-26.3.json")!;
+        using var captured = JsonDocument.Parse(stream);
+        var row = captured.RootElement;
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Customer");
+        var villager = NewVillager(context.World, player.Position);
+        villager.VillagerProfession = 1;
+        villager.VillagerXp = row.GetProperty("xpBefore").GetInt32();
+        await villager.InteractAsync(player, InteractionHand.MainHand);
+        var before = LastOffers(player);
+        Assert.Equal(row.GetProperty("initial").EnumerateArray().Select(DescribeCaptured),
+            before.Offers.Select(Describe));
+        SupplyCosts(player, before.Offers[0]);
+        var merchant = Assert.IsType<MerchantContainer>(player.OpenedContainer);
+        await merchant.SelectAsync(0);
+
+        await MenuClicks.ClickAsync(context.Server, player, 2, 0, ClickType.Pickup, StateId(player));
+        var after = LastOffers(player);
+        var saved = EntityNbt.Save(villager)!;
+        await merchant.CloseAsync(player);
+        var following = NewVillager(context.World, player.Position);
+        following.VillagerProfession = 1;
+        await following.InteractAsync(player, InteractionHand.MainHand);
+
+        Assert.Equal(row.GetProperty("afterTrade").EnumerateArray().Select(DescribeCaptured),
+            after.Offers.Select(Describe));
+        Assert.Equal(after.Offers.Select(Describe), MerchantOffers.Read(saved).Select(Describe));
+        Assert.Equal(2, saved.GetInt("ObsidianTradingLevel"));
+        Assert.Equal(2, after.VillagerLevel);
+        Assert.Equal(row.GetProperty("xpAfter").GetInt32(), after.VillagerExperience);
+        Assert.Equal(row.GetProperty("followingMerchant").EnumerateArray().Select(DescribeCaptured),
+            LastOffers(player).Offers.Select(Describe));
+    }
+
+    private static Obsidian.Net.Packets.Play.Clientbound.MerchantOffersPacket LastOffers(Obsidian.Entities.Player player) =>
+        ((TestClient)player.Client).SentPackets
+            .OfType<Obsidian.Net.Packets.Play.Clientbound.MerchantOffersPacket>().Last();
+
+    private static void SupplyCosts(Obsidian.Entities.Player player, TradeEntry offer)
+    {
+        player.Inventory.SetItem(9,
+            new ItemStack(ItemsRegistry.Get(offer.FirstInput.ID), 64, offer.FirstInput.Components));
+        if (offer.SecondInput.Count > 0)
+        {
+            player.Inventory.SetItem(10,
+                new ItemStack(ItemsRegistry.Get(offer.SecondInput.ID), 64, offer.SecondInput.Components));
+        }
+    }
+
     [Theory(Timeout = TestServerFactory.TestTimeout)]
     [InlineData(false)]
     [InlineData(true)]
@@ -350,13 +404,18 @@ public sealed class VillagerTrades
     private static ItemStack Potion(Potion potion) =>
         new(ItemsRegistry.Potion, 1, new PotionContentsDataComponent { Potion = potion });
 
-    private static Villager NewVillager(IWorld world, VectorD position) => new()
+    private static Villager NewVillager(IWorld world, VectorD position)
     {
-        Level = world,
-        EntityId = Server.GetNextEntityId(),
-        Position = position,
-        Health = 20
-    };
+        var villager = new Villager
+        {
+            Level = world,
+            EntityId = Server.GetNextEntityId(),
+            Position = position,
+            Health = 20
+        };
+        villager.InitializeAi(finalizeSpawn: false);
+        return villager;
+    }
 
     private static ImmutableArray<TradeEntry> Reload(ImmutableArray<TradeEntry> offers)
     {

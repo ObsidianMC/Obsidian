@@ -228,7 +228,8 @@ internal static class VillagerTrades
                 : ContextNumberProviders.ParseInt(fallback);
 
         // Vanilla's VillagerTrade.getOffer, in its order of random draws: the modifier, then the costs, uses,
-        // experience and price multiplier. Null when the merchant doesn't qualify, the item is discarded or a cost is below one.
+        // experience and price multiplier. Null when the merchant doesn't qualify, the item is discarded,
+        // or a cost is below one.
         public TradeEntry? GetOffer(LootContext context)
         {
             if (this.MerchantPredicate is not null && !this.MerchantPredicate.Test(context))
