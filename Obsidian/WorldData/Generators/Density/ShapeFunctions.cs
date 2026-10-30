@@ -147,13 +147,23 @@ internal sealed class IntervalSelectFunction(
 /// and trilinearly interpolated in between.
 /// </summary>
 /// <remarks>
+/// <para>
 /// At a point it matches vanilla's InterpolatedFunction: a cell corner is sampled directly, any other point samples
-/// the eight corners as a volume and interpolates them in float. A volume aligned to the cells samples the input
-/// directly, like vanilla's; vanilla interpolates other volumes cell by cell, which the terrain step of Phase 5
-/// matches against chunk captures, so for now they are sampled point by point.
+/// the eight corners as a volume and interpolates them in float.
+/// </para>
+/// <para>
+/// A volume aligned to the cells samples the input directly. Any other volume is interpolated cell by cell like
+/// vanilla's: each column steps up by a slope instead of interpolating every y, and a volume whose points are more
+/// than a block apart (an outer interpolation's corners, say) is first interpolated at every block of its extent. Both
+/// round differently from interpolating each point, so nested interpolations depend on them.
+/// </para>
 /// </remarks>
 internal sealed class InterpolatedFunction(DensityFunction input, int cellSizeXz, int cellSizeY) : DensityFunction
 {
+    // Vanilla multiplies by these reciprocals over a volume, but divides at a point.
+    private readonly float inverseCellSizeXz = 1.0f / cellSizeXz;
+    private readonly float inverseCellSizeY = 1.0f / cellSizeY;
+
     public override float Sample(int x, int y, int z)
     {
         var xInCell = FloatMath.FloorMod(x, cellSizeXz);
@@ -194,9 +204,17 @@ internal sealed class InterpolatedFunction(DensityFunction input, int cellSizeXz
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
     {
         if (this.IsAligned(volume))
+        {
             input.SampleVolume(output, volume);
+            return;
+        }
+
+        var blockStep = volume.StepX == 1 && volume.StepY == 1 && volume.StepZ == 1;
+
+        if (blockStep)
+            this.SampleBlocks(output, volume);
         else
-            base.SampleVolume(output, volume);
+            this.SampleSteppedVolume(output, volume);
     }
 
     private bool IsAligned(in DensityVolume volume)
@@ -209,6 +227,144 @@ internal sealed class InterpolatedFunction(DensityFunction input, int cellSizeXz
             && FloatMath.FloorMod(volume.MinBlockX, cellSizeXz) == 0
             && FloatMath.FloorMod(volume.MinBlockY, cellSizeY) == 0
             && FloatMath.FloorMod(volume.MinBlockZ, cellSizeXz) == 0;
+    }
+
+    // Vanilla interpolates every block from the volume's first point up to a step past its last, then keeps the
+    // points the volume steps on.
+    private void SampleSteppedVolume(Span<float> output, in DensityVolume volume)
+    {
+        var blocks = new DensityVolume(
+            volume.SizeX * volume.StepX,
+            volume.SizeY * volume.StepY,
+            volume.SizeZ * volume.StepZ,
+            volume.MinBlockX,
+            volume.MinBlockY,
+            volume.MinBlockZ);
+
+        using var values = new DensityBuffer(blocks.Size);
+        this.SampleBlocks(values.Span, blocks);
+
+        for (var indexZ = 0; indexZ < volume.SizeZ; indexZ++)
+        {
+            for (var indexX = 0; indexX < volume.SizeX; indexX++)
+            {
+                for (var indexY = 0; indexY < volume.SizeY; indexY++)
+                {
+                    var block = blocks.Index(indexX * volume.StepX, indexY * volume.StepY, indexZ * volume.StepZ);
+                    output[volume.Index(indexX, indexY, indexZ)] = values.Span[block];
+                }
+            }
+        }
+    }
+
+    // Samples the corners of every cell a volume of adjacent blocks touches as one volume, then fills each cell.
+    private void SampleBlocks(Span<float> output, in DensityVolume volume)
+    {
+        var maxBlockX = volume.MinBlockX + volume.SizeX - 1;
+        var maxBlockY = volume.MinBlockY + volume.SizeY - 1;
+        var maxBlockZ = volume.MinBlockZ + volume.SizeZ - 1;
+
+        var firstCellX = FloatMath.FloorDiv(volume.MinBlockX, cellSizeXz);
+        var firstCellY = FloatMath.FloorDiv(volume.MinBlockY, cellSizeY);
+        var firstCellZ = FloatMath.FloorDiv(volume.MinBlockZ, cellSizeXz);
+
+        var cellsX = FloatMath.FloorDiv(maxBlockX, cellSizeXz) - firstCellX + 1;
+        var cellsY = FloatMath.FloorDiv(maxBlockY, cellSizeY) - firstCellY + 1;
+        var cellsZ = FloatMath.FloorDiv(maxBlockZ, cellSizeXz) - firstCellZ + 1;
+
+        // A last cell the volume only touches at its first block needs no corners past it.
+        var cornersX = FloatMath.FloorMod(maxBlockX, cellSizeXz) == 0 ? cellsX : cellsX + 1;
+        var cornersY = FloatMath.FloorMod(maxBlockY, cellSizeY) == 0 ? cellsY : cellsY + 1;
+        var cornersZ = FloatMath.FloorMod(maxBlockZ, cellSizeXz) == 0 ? cellsZ : cellsZ + 1;
+
+        var corners = new DensityVolume(
+            cornersX,
+            cornersY,
+            cornersZ,
+            firstCellX * cellSizeXz,
+            firstCellY * cellSizeY,
+            firstCellZ * cellSizeXz,
+            cellSizeXz,
+            cellSizeY,
+            cellSizeXz);
+
+        using var cornerValues = DensityBuffer.Sample(input, corners);
+
+        for (var cellZ = 0; cellZ < cellsZ; cellZ++)
+        {
+            for (var cellX = 0; cellX < cellsX; cellX++)
+            {
+                for (var cellY = 0; cellY < cellsY; cellY++)
+                    this.FillCell(output, volume, cornerValues.Span, corners, cellX, cellY, cellZ);
+            }
+        }
+    }
+
+    // Interpolates the blocks of one cell that lie in the volume like vanilla's fillCell: along z, then x, then a
+    // slope added up each column.
+    private void FillCell(
+        Span<float> output,
+        in DensityVolume volume,
+        ReadOnlySpan<float> cornerValues,
+        in DensityVolume corners,
+        int cellX,
+        int cellY,
+        int cellZ)
+    {
+        // A cell the volume only touches at its first block uses its near corners as its far ones.
+        var nextX = Math.Min(cellX + 1, corners.SizeX - 1);
+        var nextY = Math.Min(cellY + 1, corners.SizeY - 1);
+        var nextZ = Math.Min(cellZ + 1, corners.SizeZ - 1);
+
+        var x0y0z0 = cornerValues[corners.Index(cellX, cellY, cellZ)];
+        var x1y0z0 = cornerValues[corners.Index(nextX, cellY, cellZ)];
+        var x0y1z0 = cornerValues[corners.Index(cellX, nextY, cellZ)];
+        var x1y1z0 = cornerValues[corners.Index(nextX, nextY, cellZ)];
+        var x0y0z1 = cornerValues[corners.Index(cellX, cellY, nextZ)];
+        var x1y0z1 = cornerValues[corners.Index(nextX, cellY, nextZ)];
+        var x0y1z1 = cornerValues[corners.Index(cellX, nextY, nextZ)];
+        var x1y1z1 = cornerValues[corners.Index(nextX, nextY, nextZ)];
+
+        // The cell's first block relative to the volume's, and the cell's blocks that lie in the volume.
+        var offsetX = corners.BlockX(cellX) - volume.MinBlockX;
+        var offsetY = corners.BlockY(cellY) - volume.MinBlockY;
+        var offsetZ = corners.BlockZ(cellZ) - volume.MinBlockZ;
+
+        var startX = Math.Max(0, -offsetX);
+        var startY = Math.Max(0, -offsetY);
+        var startZ = Math.Max(0, -offsetZ);
+
+        var endX = Math.Min(cellSizeXz, volume.SizeX - offsetX) - 1;
+        var endY = Math.Min(cellSizeY, volume.SizeY - offsetY) - 1;
+        var endZ = Math.Min(cellSizeXz, volume.SizeZ - offsetZ) - 1;
+
+        for (var z = startZ; z <= endZ; z++)
+        {
+            var alphaZ = z * this.inverseCellSizeXz;
+            var x0y0 = FloatMath.Lerp(alphaZ, x0y0z0, x0y0z1);
+            var x0y1 = FloatMath.Lerp(alphaZ, x0y1z0, x0y1z1);
+            var x1y0 = FloatMath.Lerp(alphaZ, x1y0z0, x1y0z1);
+            var x1y1 = FloatMath.Lerp(alphaZ, x1y1z0, x1y1z1);
+
+            for (var x = startX; x <= endX; x++)
+            {
+                var alphaX = x * this.inverseCellSizeXz;
+                var bottom = FloatMath.Lerp(alphaX, x0y0, x1y0);
+                var top = FloatMath.Lerp(alphaX, x0y1, x1y1);
+
+                // The slope is added once per block, so its rounding accumulates up the column as in vanilla.
+                var slope = (top - bottom) * this.inverseCellSizeY;
+                var value = bottom + slope * startY;
+                var index = volume.Index(offsetX + x, offsetY + startY, offsetZ + z);
+
+                for (var y = startY; y <= endY; y++)
+                {
+                    output[index] = value;
+                    index++;
+                    value += slope;
+                }
+            }
+        }
     }
 }
 

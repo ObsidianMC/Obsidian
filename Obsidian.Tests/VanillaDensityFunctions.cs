@@ -32,6 +32,11 @@ public class VanillaDensityFunctions
         public override string ToString() => $"{this.Settings} at {this.X}, {this.Y}, {this.Z} (seed {this.Seed})";
     }
 
+    public sealed record FunctionCase(long Seed, string FunctionJson, int X, int Y, int Z, int ExpectedBits)
+    {
+        public override string ToString() => $"{this.FunctionJson} at {this.X}, {this.Y}, {this.Z} (seed {this.Seed})";
+    }
+
     // Vanilla: RandomState.create(noises, seed, overworld).getOrCreateNoise(noise).get(x, y, z).
     public static TheoryData<NoiseCase> NoiseCases()
     {
@@ -102,6 +107,42 @@ public class VanillaDensityFunctions
         Assert.Empty(mismatches);
     }
 
+    // Vanilla: DensityFunction.CODEC parses the case's inline function, then
+    // RandomState.sampleBlockValueUncached(function, x, y, z) samples it with the overworld's random. The cases cover
+    // what no router reaches: nested interpolations and pow, near the world border and with Java's special cases.
+    public static TheoryData<FunctionCase> FunctionCases()
+    {
+        var cases = new TheoryData<FunctionCase>();
+
+        foreach (var entry in VanillaWorldgenCaptures.CurrentCases("functions"))
+        {
+            // Hex, since the bits of NaN and the infinities have no JSON number.
+            var bits = Convert.ToInt32(entry.GetProperty("bits").GetString(), 16);
+
+            cases.Add(new FunctionCase(
+                entry.GetProperty("seed").GetInt64(),
+                JsonSerializer.Serialize(entry.GetProperty("function")),
+                entry.GetProperty("x").GetInt32(),
+                entry.GetProperty("y").GetInt32(),
+                entry.GetProperty("z").GetInt32(),
+                bits));
+        }
+
+        return cases;
+    }
+
+    [Theory]
+    [MemberData(nameof(FunctionCases))]
+    public void FunctionMatchesVanilla(FunctionCase functionCase)
+    {
+        var compiler = new DensityCompiler(WorldgenData.Vanilla, functionCase.Seed, legacyRandomSource: false);
+        using var document = JsonDocument.Parse(functionCase.FunctionJson);
+        var function = compiler.Compile(document.RootElement, "function");
+
+        var value = function.Sample(functionCase.X, functionCase.Y, functionCase.Z);
+
+        AssertSameFloat(BitConverter.Int32BitsToSingle(functionCase.ExpectedBits), value);
+    }
 
     // Obsidian-only: the reader handles every registered function vanilla ships, including those no router reaches.
     [Fact]

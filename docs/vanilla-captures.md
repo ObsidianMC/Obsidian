@@ -5,9 +5,11 @@ noise...) and the values vanilla produced for them, and each entry is one test c
 Phase 5 of `docs/porting-26.3-plan.md` builds the 26.3 generator beside the legacy one:
 
 - `Obsidian.Tests/Assets/vanilla_worldgen_26.3.json` holds 26.3 references, which `VanillaDensityFunctions` replays:
-  noise samples (`noises`) and the value of every noise router and aquifer function of each dimension's noise
-  settings at block positions (`router`). 26.3 evaluates noise and density in single precision, so the values are
-  floats and must match bit for bit. Each step of Phase 5 adds its sections here.
+  noise samples (`noises`), the value of every noise router and aquifer function of each dimension's noise settings
+  at block positions (`router`), and inline density functions at block positions (`functions`), for what no router
+  reaches. 26.3 evaluates noise and density in single precision, so the values are floats and must match bit for bit;
+  `functions` records them as `Float.floatToIntBits` in hex too (`bits`), since JSON numbers hold neither NaN nor
+  infinities. Each step of Phase 5 adds its sections here.
 - `Obsidian.Tests/Assets/vanilla_worldgen.json` holds the 1.21.11 references of the legacy generator, which
   `VanillaWorldGeneration` and `VanillaStructureGeneration` replay: noise router values, biomes, chunks after the
   surface, carver and decoration steps, full chunks, the spawn, light, structure piece lists, structure blocks and a
@@ -51,6 +53,8 @@ Nothing is reimplemented:
 - **Noises:** `RandomState.create(noises, seed, overworld settings).getOrCreateNoise(noise).get(x, y, z)`.
 - **Router values:** `RandomState.create(noises, seed, settings)` for the case's noise settings, then
   `sampleBlockValueUncached(function, x, y, z)` for each function of its `noise_router` and `aquifers`.
+- **Functions:** `DensityFunction.CODEC` parses the case's `function` with the server's registries, then
+  `sampleBlockValueUncached(function, x, y, z)` samples it with the overworld's `RandomState`.
 
 The 1.21.11 probe also captured chunks at each status, lit and full chunks, structure pieces and blocks, the spawn and a
 treasure map (in git history before Phase 5). The terrain, feature and structure steps of Phase 5 adapt those captures

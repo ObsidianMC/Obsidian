@@ -1,4 +1,5 @@
 import com.google.gson.*;
+import com.mojang.serialization.JsonOps;
 import java.lang.reflect.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -7,6 +8,7 @@ import java.util.function.*;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
@@ -34,6 +36,7 @@ class WorldgenCaptures {
     static {
         SECTIONS.put("noises", false);
         SECTIONS.put("router", false);
+        SECTIONS.put("functions", false);
     }
 
     static MinecraftServer server;
@@ -142,8 +145,13 @@ class WorldgenCaptures {
         return "  " + section + " " + before + outcome;
     }
 
-    // Numbers compare by value, since the fixture may spell them differently (64 or 64.0).
+    // Numbers compare by value, since the fixture may spell them differently (64 or 64.0), also inside objects such as
+    // a router case's values.
     static boolean sameValue(JsonElement a, JsonElement b) {
+        if (a.isJsonObject() && b.isJsonObject()) {
+            return sameObject(a.getAsJsonObject(), b.getAsJsonObject());
+        }
+
         var bothNumbers = a.isJsonPrimitive()
             && b.isJsonPrimitive()
             && a.getAsJsonPrimitive().isNumber()
@@ -158,12 +166,27 @@ class WorldgenCaptures {
         return first.compareTo(second) == 0;
     }
 
+    static boolean sameObject(JsonObject a, JsonObject b) {
+        if (!a.keySet().equals(b.keySet())) {
+            return false;
+        }
+
+        for (var key : a.keySet()) {
+            if (!sameValue(a.get(key), b.get(key))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     static void capture(String section, JsonObject entry) {
         try {
             onServer(() -> {
                 switch (section) {
                     case "noises" -> noise(entry);
                     case "router" -> router(entry);
+                    case "functions" -> function(entry);
                     default -> throw new IllegalArgumentException(section);
                 }
                 return null;
@@ -244,13 +267,16 @@ class WorldgenCaptures {
         return server.registryAccess().lookupOrThrow(Registries.NOISE_SETTINGS).getOrThrow(key).value();
     }
 
-    // Vanilla: RandomState.getOrCreateNoise(noise).get(x, y, z), a 26.3 noise at a point, with the overworld's random.
-    static void noise(JsonObject entry) {
-        var overworld = server.registryAccess()
+    static NoiseGeneratorSettings overworld() {
+        return server.registryAccess()
             .lookupOrThrow(Registries.NOISE_SETTINGS)
             .getOrThrow(NoiseGeneratorSettings.OVERWORLD)
             .value();
-        var random = randomState(entry, overworld);
+    }
+
+    // Vanilla: RandomState.getOrCreateNoise(noise).get(x, y, z), a 26.3 noise at a point, with the overworld's random.
+    static void noise(JsonObject entry) {
+        var random = randomState(entry, overworld());
 
         var id = Identifier.parse(entry.get("noise").getAsString());
         var noise = random.getOrCreateNoise(ResourceKey.create(Registries.NOISE, id));
@@ -297,5 +323,23 @@ class WorldgenCaptures {
         });
 
         entry.add("values", values);
+    }
+
+    // Vanilla: DensityFunction.CODEC parses the case's inline function, then
+    // RandomState.sampleBlockValueUncached(function, x, y, z) samples it with the overworld's random. Besides the
+    // value, it records Float.floatToIntBits of it in hex, since JSON numbers hold neither NaN nor infinities.
+    static void function(JsonObject entry) {
+        var random = randomState(entry, overworld());
+        var ops = RegistryOps.create(JsonOps.INSTANCE, server.registryAccess());
+        var function = DensityFunction.CODEC.parse(ops, entry.get("function")).getOrThrow();
+
+        var value = random.sampleBlockValueUncached(
+            function,
+            entry.get("x").getAsInt(),
+            entry.get("y").getAsInt(),
+            entry.get("z").getAsInt());
+
+        entry.addProperty("value", Float.toString(value));
+        entry.addProperty("bits", String.format("0x%08X", Float.floatToIntBits(value)));
     }
 }
