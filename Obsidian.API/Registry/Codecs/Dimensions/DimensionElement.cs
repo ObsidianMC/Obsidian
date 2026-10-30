@@ -84,6 +84,9 @@ public sealed record class DimensionElement : INbtSerializable
     /// </summary>
     public bool HasCeiling { get; set; }
 
+    /// <summary>Whether this dimension runs an Ender Dragon fight.</summary>
+    public bool HasEnderDragonFight { get; set; }
+
     /// <summary>
     /// The tag of a plugin's dimension type's timelines, like <c>#minecraft:in_overworld</c>, or null for none or for
     /// vanilla's types. The server reads it for the day cycle. It isn't written: clients get it from the type's data.
@@ -128,6 +131,7 @@ public sealed record class DimensionElement : INbtSerializable
     {
         writer.WriteBool("has_skylight", this.HasSkylight);
         writer.WriteBool("has_ceiling", this.HasCeiling);
+        writer.WriteBool("has_ender_dragon_fight", this.HasEnderDragonFight);
         writer.WriteDouble("coordinate_scale", this.CoordinateScale);
         writer.WriteInt("min_y", this.MinY);
         writer.WriteInt("height", this.Height);
@@ -151,6 +155,11 @@ public sealed record class DimensionElement : INbtSerializable
         }
 
         writer.WriteInt("monster_spawn_block_light_limit", this.MonsterSpawnBlockLightLimit);
+
+        if (this.DefaultClock is not null)
+        {
+            writer.WriteString("default_clock", this.DefaultClock);
+        }
     }
 }
 

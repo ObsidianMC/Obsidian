@@ -19,6 +19,50 @@ namespace Obsidian.Tests;
 /// </summary>
 public sealed class NeoForgePorting
 {
+    [Theory]
+    [InlineData("minecraft:plains", "creature")]
+    [InlineData("minecraft:soul_sand_valley", "monster")]
+    public void PortsFormat121SpawnProviders(string biome, string category)
+    {
+        using var data = Format121Data.Read("biome");
+        var spawns = data.RootElement.GetProperty(biome)
+            .GetProperty("attributes")
+            .GetProperty("minecraft:gameplay/natural_mob_spawns")
+            .GetProperty("argument")
+            .GetProperty("spawns_by_category")
+            .GetProperty(category);
+        var source = new JsonObject
+        {
+            ["type"] = "neoforge:add_spawns",
+            ["biomes"] = biome,
+            ["spawners"] = JsonNode.Parse(spawns.GetRawText())
+        };
+        var input = new Dictionary<string, byte[]>
+        {
+            [ModifierPath] = Encoding.UTF8.GetBytes(source.ToJsonString())
+        };
+        var output = new Dictionary<string, byte[]>();
+        var report = new PortingReport();
+
+        BiomeModifiers.Port(input, output, report);
+
+        using var converted = JsonDocument.Parse(output[OutputPath]);
+        var parsed = BiomeModifierData.Read(converted.RootElement);
+        var expected = spawns.EnumerateArray().ToArray();
+        Assert.Equal(expected.Length, parsed.Add.Spawners.Length);
+
+        for (var index = 0; index < expected.Length; index++)
+        {
+            var mob = parsed.Add.Spawners[index];
+            Assert.Equal(expected[index].GetProperty("type").GetString(), mob.Type);
+            Assert.Equal(expected[index].GetProperty("weight").GetInt32(), mob.Weight);
+            Assert.NotNull(mob.Count);
+
+            var count = Format121Data.ToJson(IntProviderCodec.ToNbt(mob.Count!, "count"));
+            Assert.True(JsonNode.DeepEquals(JsonNode.Parse(expected[index].GetProperty("count").GetRawText()), count));
+        }
+    }
+
     private const string ModifierPath = "data/test/neoforge/biome_modifier/modifier.json";
 
     private const string OutputPath = "data/test/biome_modifier/modifier.json";

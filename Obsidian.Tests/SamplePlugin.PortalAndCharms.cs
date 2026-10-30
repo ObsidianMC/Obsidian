@@ -38,6 +38,14 @@ public sealed partial class SamplePlugin
         // which test servers don't: the level of its stem, a flat one of the sample's type, here with empty chunks.
         var stem = Assert.IsType<FlatStem>(PluginDimensions.Find("sample:dusk"));
         Assert.Equal(0, stem.DimensionType.Element.MinY);
+        Assert.Equal("minecraft:the_end", stem.DimensionType.Element.DefaultClock);
+        Assert.Equal("#minecraft:in_end", stem.DimensionType.Element.Timelines);
+        Assert.Equal("sample:dusk", Assert.Single(stem.SourceBiomes).Name);
+
+        var spawn = Assert.Single(Assert.Single(stem.SourceBiomes).Element.Spawners["creature"]);
+        Assert.Equal("sample:moth", spawn.Type);
+        Assert.NotNull(spawn.Count);
+
         await using var dusk = new Dimension(
             NullLogger<Dimension>.Instance,
             context.Broadcaster,

@@ -5,8 +5,8 @@ namespace Obsidian.Net.Payloads;
 /// <summary>
 /// The ids and encodings of the payloads that set up payload channels: vanilla-era <c>minecraft:register</c> and
 /// <c>minecraft:unregister</c>, NeoForge's handshake, the common channels NeoForge and Fabric share, and Fabric's
-/// registry sync. The encodings match what NeoForge 21.11 and Fabric API for 1.21.11 read and write, field for field,
-/// since their clients decode them.
+/// registry sync. NeoForge's encodings were checked against 26.3.0.99; the Fabric registry-sync format remains the
+/// one checked against Fabric API for 1.21.11. Clients decode these payloads field for field.
 /// </summary>
 internal static class ChannelPayloads
 {

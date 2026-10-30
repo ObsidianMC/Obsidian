@@ -8,8 +8,8 @@ namespace Obsidian.Plugins;
 
 /// <summary>
 /// What Obsidian applies of a data pack's <c>pack.mcmeta</c>: its <c>filter</c>, which blocks files of the packs
-/// before it, and the <c>overlays</c> applied over its root for vanilla 1.21.11's data pack format, read like vanilla's
-/// codecs read them.
+/// before it, and the <c>overlays</c> applied over its root for vanilla 26.3's data pack format 121,
+/// read like vanilla's codecs read them.
 /// </summary>
 /// <param name="Filter">The <c>filter.block</c> patterns; empty without a filter.</param>
 /// <param name="Overlays">The overlay directories applied, in the order they're listed: each one's

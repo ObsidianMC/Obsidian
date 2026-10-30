@@ -28,6 +28,7 @@ public sealed class EnvironmentRules
         {
           "has_skylight": true,
           "has_ceiling": false,
+          "has_ender_dragon_fight": false,
           "coordinate_scale": 1,
           "min_y": -64,
           "height": 384,
@@ -40,7 +41,7 @@ public sealed class EnvironmentRules
             "minecraft:gameplay/bed_rule": {
               "can_sleep": "never",
               "can_set_spawn": "never",
-              "explodes": true,
+              "destroy_on_use": true,
               "error_message": { "text": "Too hot to sleep" }
             }
           }

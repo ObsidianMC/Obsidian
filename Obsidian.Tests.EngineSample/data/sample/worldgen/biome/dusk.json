@@ -1,0 +1,24 @@
+{
+  "has_precipitation": false,
+  "temperature": 0.5,
+  "downfall": 0,
+  "effects": {
+    "water_color": "#3f76e4"
+  },
+  "attributes": {
+    "minecraft:visual/sky_color": "#3b2a55",
+    "minecraft:gameplay/natural_mob_spawns": {
+      "modifier": "overlay",
+      "argument": {
+        "spawns_by_category": {
+          "creature": [
+            { "type": "sample:moth", "count": 1, "weight": 10 }
+          ]
+        },
+        "spawn_costs": {}
+      }
+    }
+  },
+  "carvers": [],
+  "features": []
+}

@@ -3,8 +3,9 @@ using System.Text.Json.Serialization;
 namespace Obsidian.API.Registry.Codecs.Biomes;
 
 /// <summary>
-/// The parts of a 1.21.11 biome the server uses. Vanilla's entries are generated with their climate and effects;
-/// plugins' are read whole from their data files. A biome's environment attributes are only sent to clients.
+/// The parts of a 26.3 biome the server uses. Vanilla's entries are generated with their climate and effects;
+/// plugins' are read whole from their data files. Server rules retain the full environment map; clients receive
+/// only its synced attributes.
 /// </summary>
 public sealed record class BiomeElement
 {
@@ -40,7 +41,7 @@ public sealed record class BiomeElement
 
     /// <summary>
     /// The chance of each further group of creatures spawning when a chunk generates, like vanilla's
-    /// <c>creature_spawn_probability</c>.
+    /// <c>gameplay/creature_world_gen_spawn_probability</c> attribute.
     /// </summary>
     public float CreatureSpawnProbability { get; set; } = 0.1f;
 
@@ -60,6 +61,12 @@ public sealed class SpawnCost
 public sealed class SpawnerMob
 {
     public required string Type { get; init; }
+
+    /// <summary>
+    /// The 26.3 pack-size provider. The bounds below also support Obsidian's biome modifier API.
+    /// </summary>
+    [JsonIgnore]
+    public IIntProvider? Count { get; init; }
 
     [JsonPropertyName("maxCount")]
     public required int MaxCount { get; init; }
