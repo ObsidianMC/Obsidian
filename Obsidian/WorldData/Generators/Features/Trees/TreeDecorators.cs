@@ -352,7 +352,9 @@ internal sealed class AttachedToLogsDecorator(FeatureRegistry registry, JsonElem
     }
 }
 
-/// <summary>Podzol and similar: circles of the provider's optional block on the ground around the trunk's base.</summary>
+/// <summary>
+/// Podzol and similar: circles of the provider's optional block on the ground around the trunk's base.
+/// </summary>
 internal sealed class AlterGroundDecorator(FeatureRegistry registry, JsonElement json) : TreeDecorator
 {
     private readonly StateProvider provider = registry.Provider(json.GetProperty("provider"));
