@@ -602,10 +602,12 @@ public sealed partial class EnderDragon : BossMob
 
         if (part != 0)
             amount = amount / 4 + Math.Min(amount, 1);
+
         if (AiTick - lastDamageTick < 10)
         {
             if (amount <= lastDamage)
                 return;
+
             var incoming = amount;
             amount -= lastDamage;
             lastDamage = incoming;
@@ -620,6 +622,7 @@ public sealed partial class EnderDragon : BossMob
         var hurt = new HurtAnimationPacket { EntityId = EntityId, Yaw = 0 };
         PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, hurt);
         PlayMobSound("hurt");
+
         if (Health <= 0)
             await DieOrFallAsync(source);
 
@@ -668,6 +671,7 @@ public sealed partial class EnderDragon : BossMob
             await breath.RemoveAsync();
             breath = null;
         }
+
         SetPhase(DragonPhase.Dying);
     }
 
@@ -676,6 +680,7 @@ public sealed partial class EnderDragon : BossMob
         phaseTicks++;
         if (phaseTicks == 1)
             PacketBroadcaster.QueuePacketToLevel(Level, new LevelEventPacket(1028, (Vector)Position.Floor(), 0));
+
         if (phaseTicks >= 180 && phaseTicks <= 200)
             SendDeathExplosion();
 
@@ -687,8 +692,10 @@ public sealed partial class EnderDragon : BossMob
         {
             if (Level.LevelData.GetBooleanRule("mob_drops"))
                 Level.SpawnExperienceOrbs(Position, (short)(PreviouslyKilled ? 100 : 2400));
+
             if (Level is AbstractLevel fightLevel)
                 await fightLevel.EndFightDragonKilledAsync(this);
+
             await RemoveAsync();
         }
     }
@@ -743,6 +750,7 @@ public sealed partial class EnderDragon : BossMob
             crystal = null;
             await DamagePartAsync(destroyed, 10, 0);
         }
+
         if (phase == DragonPhase.Holding && source is IPlayer && IsValidTarget(source))
         {
             AttackTarget = source;
@@ -757,6 +765,7 @@ public sealed partial class EnderDragon : BossMob
             await breath.RemoveAsync();
             breath = null;
         }
+
         await base.RemoveAsync();
     }
 
@@ -790,6 +799,7 @@ public sealed partial class EnderDragon : BossMob
         tag.Set(new NbtTag<int>("ObsidianFlightPoint", flightPoint));
         tag.Set(new NbtTag<float>("ObsidianSittingDamage", sittingDamage));
         tag.Set(EntityNbt.DoubleList("ObsidianDestination", destination));
+
         if (arenaKnown)
             tag.Set(EntityNbt.DoubleList("ObsidianDragonArena", arena));
     }
@@ -811,16 +821,22 @@ public sealed partial class EnderDragon : BossMob
             : 0;
         PreviouslyKilled = !tag.TryGetBool("ObsidianPreviouslyKilled", out var killed) || killed;
         arenaKnown = EntityNbt.TryReadVector(tag, "ObsidianDragonArena", out arena);
+
         if (tag.TryGetTagValue<int>("ObsidianPhaseTicks", out var phaseTime))
             phaseTicks = Math.Clamp(phaseTime, 0, 72000);
+
         if (tag.TryGetTagValue<int>("ObsidianFlameCount", out var flames))
             flameCount = Math.Clamp(flames, 0, 4);
+
         if (tag.TryGetTagValue<int>("ObsidianFlightPoint", out var point))
             flightPoint = Math.Clamp(point, 0, 11);
+
         if (tag.TryGetTagValue<float>("ObsidianSittingDamage", out var sitting) && float.IsFinite(sitting))
             sittingDamage = Math.Max(0, sitting);
+
         if (EntityNbt.TryReadVector(tag, "ObsidianDestination", out var savedDestination))
             destination = savedDestination;
+
         var deathTime = tag.TryGetTagValue<int>("DragonDeathTime", out var savedDeathTime) ? savedDeathTime : 0;
         if (phase == DragonPhase.Dying && deathTime > 0)
             Health = 0;
