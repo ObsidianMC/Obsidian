@@ -70,6 +70,41 @@ public sealed class WorldFolders : IDisposable
         }
     }
 
+    [Theory(DisplayName = "A vanilla 26.3 world with stray legacy folders keeps its level data and world data")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StrayLegacyFoldersKeepVanillaData(bool withFiles)
+    {
+        var folder = Path.Combine(this.root, "world");
+        CopyFolder(Path.Combine(AppContext.BaseDirectory, "Assets", "vanilla-26.3-world"), folder);
+        WriteSavedData(Path.Combine(folder, "data", "sample", "global.dat"), new NbtCompound("data"));
+
+        // An empty legacy folder holds nothing to upgrade; one with files is upgraded, around the 26.3 data.
+        Directory.CreateDirectory(Path.Combine(folder, "region"));
+        if (withFiles)
+            WriteText(Path.Combine(folder, "stats", $"{playerUuid}.json"), "{}");
+        var vanilla = ReadDataFiles(folder);
+
+        Assert.Equal(withFiles, WorldUpgrade.IsNeeded(folder));
+        await WorldUpgrade.UpgradeAsync(folder, "minecraft:overworld", NullLogger.Instance);
+        Assert.False(WorldUpgrade.IsNeeded(folder));
+
+        var upgraded = ReadDataFiles(folder);
+        foreach (var (path, compound) in vanilla)
+        {
+            Assert.True(upgraded.TryGetValue(path, out var upgradedCompound), $"{path} is gone");
+            AssertKept(compound, upgradedCompound, path, []);
+        }
+        if (withFiles)
+            Assert.True(File.Exists(Path.Combine(folder, $"players/stats/{playerUuid}.json")));
+
+        await using var world = CreateWorld(folder, "1234");
+        await LoadDimensionsAsync(world);
+        Assert.Equal(777, world.LevelData.RandomSeed);
+        Assert.Equal(Difficulty.Easy, world.LevelData.Difficulty);
+        Assert.True(world.LevelData.GetBooleanRule("keep_inventory", defaultValue: false));
+    }
+
     [Theory(DisplayName = "A world Obsidian saved in a 1.21.11 layout is upgraded once, after a complete backup")]
     [InlineData("obsidian")]
     [InlineData("vanilla")]

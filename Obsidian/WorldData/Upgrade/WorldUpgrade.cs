@@ -52,13 +52,17 @@ internal static partial class WorldUpgrade
     /// <summary>
     /// Whether the world in <paramref name="folder"/> is in one of 1.21.11's layouts, or an upgrade of it stopped partway.
     /// </summary>
+    /// <remarks>
+    /// An empty legacy folder doesn't count: it holds nothing to upgrade, and one left in a 26.3 world (by a tool, or a
+    /// player tidying up) would have the world upgraded for nothing.
+    /// </remarks>
     public static bool IsNeeded(string folder)
     {
         if (!Directory.Exists(folder))
             return false;
 
         if (File.Exists(Path.Combine(folder, MarkerFile))
-            || legacyFolders.Any(name => Directory.Exists(Path.Combine(folder, name)))
+            || legacyFolders.Any(name => HasFiles(Path.Combine(folder, name)))
             || LegacyLevelFolders(Path.Combine(folder, "dimensions")).Any())
             return true;
 
@@ -67,14 +71,20 @@ internal static partial class WorldUpgrade
             || (Directory.Exists(data) && Directory.EnumerateFiles(data, "*.dat").Any(file => LegacyWorldDataFile(Path.GetFileName(file)) is not null)))
             return true;
 
-        // Obsidian's level.dat had no Data; 1.21.11's Data kept the game rules and world generation settings.
-        var root = World.ReadLevelDataOrBackup(Path.Combine(folder, WorldLayout.LevelDataFile), NullLogger.Instance);
-        return root is not null
-            && (!root.TryGetTag<NbtCompound>("Data", out var levelData)
-                || !levelData.HasTag("version_history")
-                || levelData.HasTag("game_rules")
-                || levelData.HasTag("WorldGenSettings"));
+        return World.ReadLevelDataOrBackup(Path.Combine(folder, WorldLayout.LevelDataFile), NullLogger.Instance) is NbtCompound root
+            && !IsCurrentLevelData(root);
     }
+
+    // Whether a level.dat is 26.3's. Obsidian's had no Data; 1.21.11's Data kept the game rules and world generation
+    // settings.
+    private static bool IsCurrentLevelData(NbtCompound root) =>
+        root.TryGetTag<NbtCompound>("Data", out var data)
+        && data.HasTag("version_history")
+        && !data.HasTag("game_rules")
+        && !data.HasTag("WorldGenSettings");
+
+    private static bool HasFiles(string folder) =>
+        Directory.Exists(folder) && Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories).Any();
 
     /// <summary>
     /// Upgrades the world in <paramref name="folder"/>, which the caller holds the session lock of, if it needs it (see
@@ -128,6 +138,11 @@ internal static partial class WorldUpgrade
         var dimensions = Path.Combine(folder, "dimensions");
         var rootLevel = Path.Combine(folder, WorldLayout.LevelFolder(rootDimension));
 
+        // A world whose level.dat is 26.3's has only stray legacy folders: its level data and world data are already
+        // where 26.3 keeps them, and must stay as they are.
+        var levelDataIsCurrent = World.ReadLevelDataOrBackup(Path.Combine(folder, WorldLayout.LevelDataFile), logger)
+            is NbtCompound levelRoot && IsCurrentLevelData(levelRoot);
+
         // Obsidian's dimensions, found before the world's own level moves into dimensions/. In Obsidian's layout,
         // vanilla's dimensions had no namespace folder.
         foreach (var legacy in LegacyLevelFolders(dimensions).ToArray())
@@ -150,13 +165,14 @@ internal static partial class WorldUpgrade
         foreach (var name in levelFolders.Where(name => name != "data"))
             MoveFolder(Path.Combine(folder, name), Path.Combine(rootLevel, name));
         UpgradeLevel(rootLevel, rootLevel);
-        UpgradeWorldData(folder, rootLevel);
+        UpgradeWorldData(folder, rootLevel, levelDataIsCurrent);
 
         MoveFolder(Path.Combine(folder, "playerdata"), Path.Combine(folder, WorldLayout.PlayerDataFolder));
         MoveFolder(Path.Combine(folder, "stats"), Path.Combine(folder, "players", "stats"));
         MoveFolder(Path.Combine(folder, "advancements"), Path.Combine(folder, "players", "advancements"));
 
-        await SplitLevelDataAsync(folder, rootLevel, logger);
+        if (!levelDataIsCurrent)
+            await SplitLevelDataAsync(folder, rootLevel, logger);
 
         // Vanilla 26.3 renamed the folder of structures saved in the world.
         var generated = Path.Combine(folder, "generated");
@@ -182,7 +198,7 @@ internal static partial class WorldUpgrade
     }
 
     /// <summary>
-    /// The folders of Obsidian's levels in <paramref name="folder"/> and below: ones with a level.dat or a
+    /// The folders of Obsidian's levels in <paramref name="folder"/> and below: ones with a level.dat or a non-empty
     /// <c>regions</c> folder of their own. A level's data folders aren't searched, as only levels nest in a level.
     /// </summary>
     private static IEnumerable<string> LegacyLevelFolders(string folder)
@@ -198,7 +214,7 @@ internal static partial class WorldUpgrade
             if (isLevel && levelFolders.Contains(Path.GetFileName(child)))
                 continue;
 
-            if (File.Exists(Path.Combine(child, WorldLayout.LevelDataFile)) || Directory.Exists(Path.Combine(child, "regions")))
+            if (File.Exists(Path.Combine(child, WorldLayout.LevelDataFile)) || HasFiles(Path.Combine(child, "regions")))
                 yield return child;
 
             foreach (var nested in LegacyLevelFolders(child))
@@ -287,7 +303,10 @@ internal static partial class WorldUpgrade
     /// and vanilla's files moved where 26.3 keeps them, plugins' world data out of <c>data/obsidian/world/</c>), and the
     /// level's goes to <paramref name="rootLevel"/>.
     /// </summary>
-    private static void UpgradeWorldData(string folder, string rootLevel)
+    /// <param name="levelDataIsCurrent">
+    /// Whether the world's level.dat is 26.3's, so its namespace folders already hold world data.
+    /// </param>
+    private static void UpgradeWorldData(string folder, string rootLevel, bool levelDataIsCurrent)
     {
         var data = Path.Combine(folder, "data");
         if (!Directory.Exists(data))
@@ -303,10 +322,13 @@ internal static partial class WorldUpgrade
         }
 
         // Plugins' level data first, as their world data takes the same folders.
-        foreach (var space in Directory.GetDirectories(data))
+        if (!levelDataIsCurrent)
         {
-            if (Path.GetFileName(space) is not ("minecraft" or "obsidian"))
-                MoveFolder(space, Path.Combine(rootLevel, "data", Path.GetFileName(space)));
+            foreach (var space in Directory.GetDirectories(data))
+            {
+                if (Path.GetFileName(space) is not ("minecraft" or "obsidian"))
+                    MoveFolder(space, Path.Combine(rootLevel, "data", Path.GetFileName(space)));
+            }
         }
 
         var worldData = Path.Combine(data, "obsidian", "world");
@@ -389,10 +411,11 @@ internal static partial class WorldUpgrade
     }
 
     // Vanilla 1.21.11's Data, as Obsidian's integrated server kept it: what 26.3 moved out of level.dat goes to its
-    // saved data files, renamed as vanilla's file fixes rename it.
+    // saved data files, renamed as vanilla's file fixes rename it. The files start as the world has them, so only the
+    // fields Data still holds replace theirs.
     private static async Task<LevelFiles> SplitVanillaAsync(string folder, NbtCompound data)
     {
-        var files = new LevelFiles { Data = data };
+        var files = LevelFiles.Load(folder, data);
 
         if (Take(data, "game_rules") is NbtCompound rules)
             MoveEntries(rules, files.GameRules);
@@ -413,16 +436,19 @@ internal static partial class WorldUpgrade
         if (Take(data, "DayTime") is NbtTag<long> dayTime)
             files.WorldClocks.Set(new NbtCompound(Overworld) { new NbtTag<long>("total_ticks", dayTime.Value) });
 
-        var difficulty = new NbtCompound("difficulty_settings")
+        if (data.HasTag("Difficulty") || data.HasTag("hardcore") || data.HasTag("DifficultyLocked"))
         {
-            new NbtTag<string>("difficulty", ((Difficulty)Get<byte>(data, "Difficulty", (byte)Difficulty.Normal)).ToString().ToLowerInvariant()),
-            new NbtTag<byte>("hardcore", (byte)(data.GetBool("hardcore") ? 1 : 0)),
-            new NbtTag<byte>("locked", (byte)(data.GetBool("DifficultyLocked") ? 1 : 0))
-        };
-        Take(data, "Difficulty");
-        Take(data, "hardcore");
-        Take(data, "DifficultyLocked");
-        data.Set(difficulty);
+            var difficulty = new NbtCompound("difficulty_settings")
+            {
+                new NbtTag<string>("difficulty", ((Difficulty)Get<byte>(data, "Difficulty", (byte)Difficulty.Normal)).ToString().ToLowerInvariant()),
+                new NbtTag<byte>("hardcore", (byte)(data.GetBool("hardcore") ? 1 : 0)),
+                new NbtTag<byte>("locked", (byte)(data.GetBool("DifficultyLocked") ? 1 : 0))
+            };
+            Take(data, "Difficulty");
+            Take(data, "hardcore");
+            Take(data, "DifficultyLocked");
+            data.Set(difficulty);
+        }
 
         if (Take(data, "WanderingTraderSpawnDelay") is INbtTag delay)
             files.WanderingTrader.Set(Named(delay, "spawn_delay"));

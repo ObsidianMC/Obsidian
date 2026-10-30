@@ -53,6 +53,16 @@ internal sealed class LevelFiles
         if (!root.TryGetTag<NbtCompound>("Data", out var data))
             throw new InvalidDataException($"The level.dat in {worldFolder} has no Data.");
 
+        return Load(worldFolder, data);
+    }
+
+    /// <summary>
+    /// The level data of the world in <paramref name="worldFolder"/> with <paramref name="data"/> as level.dat's
+    /// <c>Data</c>, and its saved data files as they are. A saved data file that's missing reads as empty.
+    /// </summary>
+    /// <exception cref="InvalidDataException">A saved data file can't be read.</exception>
+    public static LevelFiles Load(string worldFolder, NbtCompound data)
+    {
         return new LevelFiles
         {
             Data = data,
