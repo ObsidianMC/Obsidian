@@ -17,10 +17,12 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeManager;
+import net.minecraft.world.level.biome.BiomeResolver;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.*;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
@@ -56,6 +58,7 @@ class WorldgenCaptures {
         SECTIONS.put("terrain", false);
         SECTIONS.put("materials", false);
         SECTIONS.put("aquifers", false);
+        SECTIONS.put("carvers", false);
     }
 
     static MinecraftServer server;
@@ -227,6 +230,7 @@ class WorldgenCaptures {
                     case "terrain" -> terrain(entry);
                     case "materials" -> materialRule(entry);
                     case "aquifers" -> aquifer(entry);
+                    case "carvers" -> carvers(entry);
                     default -> throw new IllegalArgumentException(section);
                 }
                 return null;
@@ -394,14 +398,7 @@ class WorldgenCaptures {
     }
 
     static void terrainChecked(JsonObject entry) throws Exception {
-        var dimension = entry.get("dimension").getAsString();
-        var levelKey = switch (dimension) {
-            case "minecraft:overworld" -> Level.OVERWORLD;
-            case "minecraft:the_nether" -> Level.NETHER;
-            case "minecraft:the_end" -> Level.END;
-            default -> throw new IllegalArgumentException(dimension);
-        };
-        var level = server.getLevel(levelKey);
+        var level = level(entry.get("dimension").getAsString());
         var generator = (NoiseBasedChunkGenerator) level.getChunkSource().getGenerator();
         var settings = generator.generatorSettings().value();
         var random = level.getChunkSource().randomState();
@@ -452,37 +449,8 @@ class WorldgenCaptures {
             invokeStage(generator, "buildSurface", chunk, noiseChunk, random, manager,
                 biomeSource.possibleBiomes(), settings.materialRule().value());
             entry.add("materials", blocks(chunk, buildMinY, buildHeight));
-            var generation = new WorldGenerationContext(generator, chunk.getHeightAccessorForGeneration());
-            var mask = new CarvingMask(generation.getMinGenY() + 1,
-                generation.getMinGenY() + generation.getGenDepth() - 8);
-            var carvingRandom = new WorldgenRandom(new LegacyRandomSource(0L));
-            for (int dx = -8; dx <= 8; dx++) {
-                for (int dz = -8; dz <= 8; dz++) {
-                    var source = new ChunkPos(chunkX + dx, chunkZ + dz);
-                    var biome = resolver.getNoiseBiome(source.getMinBlockX() >> 2, 0, source.getMinBlockZ() >> 2);
-                    int index = 0;
-                    for (var carver : biome.value().getGenerationSettings().getCarvers()) {
-                        carvingRandom.setLargeFeatureSeed(entry.get("seed").getAsLong() + index,
-                            source.x(), source.z());
-                        if (carver.value().isStartChunk(carvingRandom)) {
-                            carver.value().carve(generation, carvingRandom, position, source, mask);
-                        }
-                        index++;
-                    }
-                }
-            }
-            var maskValues = new int[volume.size()];
-            mask.visit((x, z, bottom, top) -> {
-                for (int y = bottom; y <= top; y++) {
-                    maskValues[volume.indexUnchecked(x, y - minY, z)] = 1;
-                }
-            });
-            var maskBytes = new ByteArrayOutputStream();
-            var maskOutput = new DataOutputStream(maskBytes);
-            for (int value : maskValues) {
-                maskOutput.writeInt(value);
-            }
-            entry.addProperty("carvingMask", compressed(maskBytes.toByteArray()));
+            var seed = entry.get("seed").getAsLong();
+            entry.addProperty("carvingMask", carvingMask(seed, chunk, generator, resolver, volume));
 
             if (settings.aquifers().isPresent()) {
                 var fluids = new JsonArray();
@@ -555,6 +523,66 @@ class WorldgenCaptures {
         biomes.addProperty("data", compressed(biomeBytes.toByteArray()));
         entry.add("materialBiomes", biomes);
 
+        entry.add("carverSources", carverSources(resolver, chunkX, chunkZ));
+    }
+
+    static ServerLevel level(String dimension) {
+        var key = switch (dimension) {
+            case "minecraft:overworld" -> Level.OVERWORLD;
+            case "minecraft:the_nether" -> Level.NETHER;
+            case "minecraft:the_end" -> Level.END;
+            default -> throw new IllegalArgumentException(dimension);
+        };
+        return server.getLevel(key);
+    }
+
+    // The union of the 17-by-17 source chunks' carvers, run by vanilla's carvers before changing any blocks. It uses
+    // the density buffers' encoding, with 0 or 1 per position of the noise settings' volume.
+    static String carvingMask(
+        long seed,
+        ProtoChunk chunk,
+        NoiseBasedChunkGenerator generator,
+        BiomeResolver resolver,
+        DensityVolume volume) throws Exception {
+        var position = chunk.getPos();
+        var generation = new WorldGenerationContext(generator, chunk.getHeightAccessorForGeneration());
+        int maskMinY = generation.getMinGenY() + 1;
+        int maskMaxY = generation.getMinGenY() + generation.getGenDepth() - 8;
+        var mask = new CarvingMask(maskMinY, maskMaxY);
+        var carvingRandom = new WorldgenRandom(new LegacyRandomSource(0L));
+
+        for (int dx = -8; dx <= 8; dx++) {
+            for (int dz = -8; dz <= 8; dz++) {
+                var source = new ChunkPos(position.x() + dx, position.z() + dz);
+                var biome = resolver.getNoiseBiome(source.getMinBlockX() >> 2, 0, source.getMinBlockZ() >> 2);
+                int index = 0;
+                for (var carver : biome.value().getGenerationSettings().getCarvers()) {
+                    carvingRandom.setLargeFeatureSeed(seed + index, source.x(), source.z());
+                    if (carver.value().isStartChunk(carvingRandom)) {
+                        carver.value().carve(generation, carvingRandom, position, source, mask);
+                    }
+                    index++;
+                }
+            }
+        }
+
+        var maskValues = new int[volume.size()];
+        mask.visit((x, z, bottom, top) -> {
+            for (int y = bottom; y <= top; y++) {
+                maskValues[volume.indexUnchecked(x, y - volume.minBlockY(), z)] = 1;
+            }
+        });
+
+        var maskBytes = new ByteArrayOutputStream();
+        var maskOutput = new DataOutputStream(maskBytes);
+        for (int value : maskValues) {
+            maskOutput.writeInt(value);
+        }
+        return compressed(maskBytes.toByteArray());
+    }
+
+    // The ordered carver identifiers of the 17-by-17 source chunks' biomes, x-major.
+    static JsonArray carverSources(BiomeResolver resolver, int chunkX, int chunkZ) {
         var carvers = new JsonArray();
         for (int dx = -8; dx <= 8; dx++) {
             for (int dz = -8; dz <= 8; dz++) {
@@ -566,7 +594,44 @@ class WorldgenCaptures {
                 carvers.add(names);
             }
         }
-        entry.add("carverSources", carvers);
+        return carvers;
+    }
+
+    // Carving masks alone, for carver boundaries that need no whole terrain chunk: a mask reaching its top Y, carvers
+    // crossing chunk edges and region-file borders, and distant chunks.
+    static void carvers(JsonObject entry) {
+        try {
+            carversChecked(entry);
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    static void carversChecked(JsonObject entry) throws Exception {
+        var level = level(entry.get("dimension").getAsString());
+        var generator = (NoiseBasedChunkGenerator) level.getChunkSource().getGenerator();
+        var settings = generator.generatorSettings().value();
+        var random = level.getChunkSource().randomState();
+        int chunkX = entry.get("chunkX").getAsInt();
+        int chunkZ = entry.get("chunkZ").getAsInt();
+        var chunk = new ProtoChunk(
+            new ChunkPos(chunkX, chunkZ),
+            UpgradeData.EMPTY,
+            level,
+            PalettedContainerFactory.create(server.registryAccess()),
+            null);
+        var resolver = generator.getBiomeSource().createUncachedResolver(random);
+        int minY = settings.noiseSettings().minY();
+        int height = settings.noiseSettings().height();
+        var volume = new DensityVolume(16, height, 16, chunkX * 16, minY, chunkZ * 16);
+        var settingsId = generator.generatorSettings().unwrapKey().orElseThrow().identifier();
+        var seed = entry.get("seed").getAsLong();
+
+        entry.addProperty("minY", chunk.getMinY());
+        entry.addProperty("height", chunk.getHeight());
+        entry.addProperty("settings", settingsId.toString());
+        entry.addProperty("carvingMask", carvingMask(seed, chunk, generator, resolver, volume));
+        entry.add("carverSources", carverSources(resolver, chunkX, chunkZ));
     }
 
     // Single overworld aquifer positions: the block vanilla's aquifer picks there for the entry's density, whether it

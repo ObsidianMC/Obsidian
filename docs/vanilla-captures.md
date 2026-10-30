@@ -10,8 +10,8 @@ Phase 5 of `docs/porting-26.3-plan.md` builds the 26.3 generator beside the lega
   reaches. 26.3 evaluates noise and density in single precision, so the values are floats and must match bit for bit;
   `functions` records them as `Float.floatToIntBits` in hex too (`bits`), since JSON numbers hold neither NaN nor
   infinities. `terrain` holds chunks at the merged terrain status, `materials` holds small, single-rule boundary
-  cases, and `aquifers` holds single aquifer positions. `VanillaTerrainGeneration` and `VanillaMaterialRules` replay
-  those sections; see below.
+  cases, `aquifers` holds single aquifer positions and `carvers` holds carving masks alone.
+  `VanillaTerrainGeneration` and `VanillaMaterialRules` replay those sections; see below.
 - `Obsidian.Tests/Assets/vanilla_worldgen.json` holds the 1.21.11 references of the legacy generator, which
   `VanillaWorldGeneration` and `VanillaStructureGeneration` replay: noise router values, biomes, chunks after the
   surface, carver and decoration steps, full chunks, the spawn, light, structure piece lists, structure blocks and a
@@ -63,20 +63,25 @@ Nothing is reimplemented:
 - **Materials:** `MaterialRule.CODEC` parses a rule or reference. Vanilla's material context supplies the captured
   biome, column depths, water height and surface gradients, and the rule evaluates one block. These cases exercise
   depth and height boundaries, gradients, biome conditions, 2D/3D noise thresholds, sequence fallthrough, block
-  properties, terracotta bands and the ore rule's acceptance/filler/raw-ore paths.
+  properties, terracotta bands and the ore rule's acceptance/filler/raw-ore paths. Others, at other positions and
+  on a second seed, take both outcomes of `hole` (surface depth 0 and 3) and `above_preliminary_surface` (one block
+  below and at the minimum surface), and of `temperature` one block either side of the altitude where taiga and
+  windswept hills turn cold, and on and off a warm patch of the frozen-ocean modifier.
 - **Aquifers:** a `NoiseChunk` for the chunk containing an overworld position runs its aquifer's `computeSubstance`
   with the case's density, which records the block (or `null` for a barrier) and `shouldScheduleFluidUpdate`. Then
   `computeFluid` records the fluid status of the position as an aquifer center.
+- **Carvers:** the terrain capture's carving mask and carver sources alone, for a chunk that needs no blocks.
 
 ## Terrain references
 
-All terrain cases use seed `12345`. The eleven overworld locations cover ocean and flooded caves `(0, 0)`, iron
-veins and underground fluids `(-10, 0)`, meadow/deep dark `(30, 40)`, frozen ocean `(100, -100)`, stony peaks
-`(-44, -16)`, snowy slopes `(-24, 48)`, eroded badlands `(-304, -280)`, desert/river `(-140, 28)`, sulfur caves
-`(56, 68)`, swamp `(-352, 248)`, whose material rules place water that vanilla marks for post-processing, and
-mangrove swamp `(-101, -92)`.
-Nether cases cover wastes `(0, 0)`, warped forest `(20, -30)`, basalt deltas `(-16, 16)` and soul-sand valley
-`(-24, 4)`. End cases cover the central island `(0, 0)` and outer islands `(80, -60)`.
+On seed `12345`, the twelve overworld locations cover ocean and flooded caves `(0, 0)`, iron veins and underground
+fluids `(-10, 0)`, meadow/deep dark `(30, 40)`, frozen ocean `(100, -100)`, stony peaks `(-44, -16)`, snowy slopes
+`(-24, 48)`, eroded badlands `(-304, -280)`, desert/river `(-140, 28)`, sulfur caves `(56, 68)`, swamp
+`(-352, 248)`, whose material rules place water that vanilla marks for post-processing, mangrove swamp `(-101, -92)`
+and dappled forest `(40, -45)`. Nether cases cover wastes `(0, 0)`, warped forest `(20, -30)`, basalt deltas
+`(-16, 16)`, soul-sand valley `(-24, 4)` and crimson forest `(-3, 3)`. End cases cover the central island `(0, 0)` and
+outer islands `(80, -60)`. On a second seed, `-3141592653589793238`, they cover the overworld's `(0, 0)` and a swamp
+`(-84, 33)`, and a Nether crimson forest `(2, -2)`.
 
 Each case records these independent boundaries:
 
@@ -105,9 +110,18 @@ lookups explicitly: Phase 5's biome step will supply them, while these replays s
 `DensityCompiler` accepts a beardifier function; terrain defaults it to its neutral contextual value until structures
 are implemented. None of this switches the live generator or changes its 1.21.11 data.
 
-Chunk replays have `Category=Worldgen` and stay out of CI. The 64 small material-rule replays run in CI alongside the
+Chunk replays have `Category=Worldgen` and stay out of CI. The 79 small material-rule replays run in CI alongside the
 density tests. Biome selection, features, structures, the remaining Nether/End pipeline and performance work remain
 for the later Phase 5 steps. The noise-input point-sampling allocations noted in #597 are unchanged.
+
+## Carver references
+
+`carvers` cases record only `carvingMask`, `carverSources`, `minY`, `height` and `settings`, which
+`CarvingMaskMatchesVanilla` replays together with the terrain cases. On seed `12345` they cover an overworld chunk
+whose caves cross its edges and the region-file border at chunk x -1/0 `(-1, 3)`, one with a carver from the next
+region file `(29, 28)`, a distant chunk near the world border `(1874988, -1874991)` and a Nether chunk carved up to
+the mask's top Y (120) that also has a source in the next region `(-3, -2)`. On the second seed they cover an overworld
+chunk with sources in two other regions `(31, 33)` and another Nether chunk reaching the mask's top `(-36, 30)`.
 
 ## Aquifer references
 

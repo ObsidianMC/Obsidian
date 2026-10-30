@@ -27,7 +27,7 @@ public class VanillaTerrainGeneration
     public sealed record TerrainCase(JsonElement Entry)
     {
         public override string ToString() =>
-            $"{this.Entry.GetProperty("dimension").GetString()} "
+            $"{this.Entry.GetProperty("seed")} {this.Entry.GetProperty("dimension").GetString()} "
             + $"({this.Entry.GetProperty("chunkX")}, {this.Entry.GetProperty("chunkZ")})";
     }
 
@@ -89,8 +89,21 @@ public class VanillaTerrainGeneration
         AssertBlocks(testCase.Entry.GetProperty("materials"), replay.Chunk);
     }
 
+    public static TheoryData<TerrainCase> CarverCases()
+    {
+        var cases = TerrainCases();
+
+        // Mask-only cases, for carver boundaries that need no whole terrain chunk.
+        foreach (var entry in VanillaWorldgenCaptures.CurrentCases("carvers"))
+        {
+            cases.Add(new TerrainCase(entry));
+        }
+
+        return cases;
+    }
+
     [Theory]
-    [MemberData(nameof(TerrainCases))]
+    [MemberData(nameof(CarverCases))]
     public void CarvingMaskMatchesVanilla(TerrainCase testCase)
     {
         var replay = new Replay(testCase.Entry);
@@ -250,8 +263,9 @@ public class VanillaTerrainGeneration
 
     private sealed class Replay
     {
-        private readonly string[] biomes;
-        private readonly int[] biomeIndices;
+        // Mask-only carver cases capture no block biomes.
+        private readonly string[]? biomes;
+        private readonly int[]? biomeIndices;
         private readonly string[][] carvers;
 
         public Replay(JsonElement entry)
@@ -264,9 +278,14 @@ public class VanillaTerrainGeneration
             var settings = entry.GetProperty("settings").GetString()!;
             this.Generator = new TerrainGenerator(WorldgenData.Vanilla, seed, settings);
             this.Chunk = new Chunk(x, z, minY, height);
-            var biomes = entry.GetProperty("materialBiomes");
-            this.biomes = biomes.GetProperty("palette").EnumerateArray().Select(value => value.GetString()!).ToArray();
-            this.biomeIndices = Decode(biomes.GetProperty("data").GetString()!);
+
+            if (entry.TryGetProperty("materialBiomes", out var biomes))
+            {
+                var palette = biomes.GetProperty("palette").EnumerateArray();
+                this.biomes = palette.Select(value => value.GetString()!).ToArray();
+                this.biomeIndices = Decode(biomes.GetProperty("data").GetString()!);
+            }
+
             this.carvers = entry.GetProperty("carverSources").EnumerateArray()
                 .Select(names => names.EnumerateArray().Select(name => name.GetString()!).ToArray())
                 .ToArray();
@@ -280,6 +299,11 @@ public class VanillaTerrainGeneration
 
         public string BiomeAt(int x, int y, int z)
         {
+            if (this.biomes is null || this.biomeIndices is null)
+            {
+                throw new InvalidOperationException("This case captured no block biomes.");
+            }
+
             var index = ((z & 15) * 16 + (x & 15)) * (this.Chunk.Height + 1) + y - this.Chunk.MinY;
             return this.biomes[this.biomeIndices[index]];
         }
