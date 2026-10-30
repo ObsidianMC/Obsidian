@@ -1,20 +1,26 @@
-using Obsidian.API.Crafting;
-
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
 /// <summary>
-/// Shows <paramref name="recipe"/>'s ingredients as ghosts in the crafting grid of the window
-/// <paramref name="containerId"/>, for a recipe the player picked in their book but lacks the items for.
+/// Shows the ingredients of a recipe display as ghosts in a window's crafting grid, for a recipe the player picked in
+/// their book but lacks the items for.
 /// </summary>
-public partial class PlaceGhostRecipePacket(int containerId, IRecipeWithResult recipe)
+public partial class PlaceGhostRecipePacket
 {
-    public int ContainerId { get; } = containerId;
+    /// <param name="containerId">The window.</param>
+    /// <param name="entry">The recipe book entry the player picked, whose display shows.</param>
+    internal PlaceGhostRecipePacket(int containerId, RecipeBookEntry entry)
+    {
+        this.ContainerId = containerId;
+        this.Entry = entry;
+    }
 
-    public IRecipeWithResult Recipe { get; } = recipe;
+    public int ContainerId { get; }
+
+    internal RecipeBookEntry Entry { get; }
 
     public override void Serialize(INetStreamWriter writer)
     {
         writer.WriteVarInt(this.ContainerId);
-        RecipeBookAddPacket.WriteRecipeDisplay(writer, this.Recipe);
+        RecipeBookAddPacket.WriteRecipeDisplay(writer, this.Entry);
     }
 }

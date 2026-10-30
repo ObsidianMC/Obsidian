@@ -185,7 +185,7 @@ public partial class MainEventHandler
             var packets = WindowPackets(viewer, viewerId, stateId: 0, withEnchanting: false);
 
             if (viewer == player && amount == 0)
-                packets.Add(new PlaceGhostRecipePacket(containerId, recipe));
+                packets.Add(new PlaceGhostRecipePacket(containerId, entry));
 
             sync.Add(viewer, ClickWindowState.Of(viewer), packets);
         }

@@ -17,6 +17,18 @@ internal static class SlotDisplayTypes
     /// <summary>A stack, as an <c>ItemStackTemplate</c>.</summary>
     public static readonly int ItemStack = IdOf("minecraft:item_stack");
 
+    /// <summary>The items of an item holder set: a tag's name, or a list of items.</summary>
+    public static readonly int Tag = IdOf("minecraft:tag");
+
+    /// <summary>Another display's items that have a component, by its type.</summary>
+    public static readonly int OnlyWithComponent = IdOf("minecraft:only_with_component");
+
+    /// <summary>Another display's items, holding potions the client cycles through.</summary>
+    public static readonly int WithAnyPotion = IdOf("minecraft:with_any_potion");
+
+    /// <summary>A dye display's items dyeing a target display's: what a dye recipe crafts.</summary>
+    public static readonly int Dyed = IdOf("minecraft:dyed");
+
     /// <summary>A list of displays the client cycles through.</summary>
     public static readonly int Composite = IdOf("minecraft:composite");
 

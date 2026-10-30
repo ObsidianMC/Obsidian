@@ -27,6 +27,9 @@ internal static class FixtureDumper
             Path.Combine(output, $"remaining-play-{server.Version}.json"));
         await VanillaServer.RunJavaAsync(server.Directory, "-cp", classpath, Source("BrewingFixtures.java"),
             Path.Combine(server.GeneratedDirectory, "data"), Path.Combine(output, $"brewing-{server.Version}.json"));
+        await VanillaServer.RunJavaAsync(server.Directory, "-cp", classpath, Source("SpecialRecipeFixtures.java"),
+            Path.Combine(server.GeneratedDirectory, "data"),
+            Path.Combine(output, $"special-recipes-{server.Version}.json"));
         // Also writes synced_registries.json, which the server reads at runtime.
         await VanillaServer.RunJavaAsync(server.Directory, "-cp", classpath, Source("JoinFixtures.java"),
             Path.Combine(output, $"join-payloads-{server.Version}.json"), Path.Combine(output, "synced_registries.json"));

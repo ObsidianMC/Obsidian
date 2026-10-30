@@ -20,9 +20,10 @@ public static partial class RecipesRegistry
     // Every recipe, by identifier.
     private static readonly Dictionary<string, IRecipe> registered = [];
 
-    // The recipe book's display ids by recipe identifier. An identifier keeps its id for the life of the process,
-    // like a plugin's items keep theirs, so that a reloaded plugin's recipes are the ones players' books had.
-    private static readonly Dictionary<string, int> displayIds = [];
+    // The recipe book's display ids by recipe identifier and display (see RecipeBookEntry.Display). An identifier
+    // keeps its ids for the life of the process, like a plugin's items keep theirs, so that a reloaded plugin's
+    // recipes are the ones players' books had.
+    private static readonly Dictionary<(string Identifier, int Display), int> displayIds = [];
 
     // The recipe book's group ids by group name, assigned the same way.
     private static readonly Dictionary<string, int> groupIds = [];
@@ -59,9 +60,22 @@ public static partial class RecipesRegistry
         return Task.CompletedTask;
     }
 
-    public static IRecipeWithResult? FindRecipe(CraftingTable grid) => FindRecipe(grid, 3);
+    /// <summary>
+    /// The crafting recipe a crafting table's grid matches, or <c>null</c>. A dye, imbue or transmute recipe's
+    /// result depends on the grid's items; <see cref="IServer.EvaluateCrafting"/> gives what a grid crafts.
+    /// </summary>
+    public static ICraftingRecipe? FindCraftingRecipe(CraftingTable grid) => FindCraftingRecipe(grid, 3);
 
-    internal static IRecipeWithResult? FindRecipe(BaseContainer grid, int width) => Current.FindRecipe(grid, width);
+    /// <summary>
+    /// The shaped or shapeless recipe a crafting table's grid matches, or <c>null</c>, also when it matches a recipe
+    /// without a fixed result. Kept with its original signature for compiled plugins.
+    /// </summary>
+    [Obsolete("Finds only recipes with a fixed result. Use FindCraftingRecipe, or IServer.EvaluateCrafting for what "
+        + "a grid crafts.")]
+    public static IRecipeWithResult? FindRecipe(CraftingTable grid) => FindCraftingRecipe(grid) as IRecipeWithResult;
+
+    internal static ICraftingRecipe? FindCraftingRecipe(BaseContainer grid, int width) =>
+        Current.FindRecipe(grid, width);
 
     /// <summary>
     /// Whether a recipe of <paramref name="type"/> cooks <paramref name="item"/>, which a furnace of that type
@@ -97,27 +111,13 @@ public static partial class RecipesRegistry
     private static void Add(string key, IRecipe recipe)
     {
         registered.Add(key, recipe);
-
-        if (recipe is ShapedRecipe or ShapelessRecipe)
-            displayIds.TryAdd(key, displayIds.Count);
+        AddDisplayIds(key, recipe);
     }
 
     // Under the gate: builds the set from the registered recipes and makes it the current one.
     private static void Publish()
     {
-        var book = new RecipeBookEntry?[displayIds.Count];
-
-        foreach (var (key, displayId) in displayIds)
-        {
-            if (!registered.TryGetValue(key, out var recipe) || recipe is not IRecipeWithResult crafting)
-                continue;
-
-            // Only shaped and shapeless recipes have book displays.
-            if (crafting is not (ShapedRecipe or ShapelessRecipe))
-                continue;
-
-            book[displayId] = new RecipeBookEntry(displayId, crafting, GroupId(crafting.Group));
-        }
+        var book = Book(registered, new Dictionary<string, long>());
 
         current = new RecipeSet(registered.ToFrozenDictionary(), book);
     }
@@ -132,23 +132,9 @@ public static partial class RecipesRegistry
         lock (gate)
         {
             foreach (var (key, recipe) in recipes)
-            {
-                if (recipe is ShapedRecipe or ShapelessRecipe)
-                    displayIds.TryAdd(key, displayIds.Count);
-            }
+                AddDisplayIds(key, recipe);
 
-            var book = new RecipeBookEntry?[displayIds.Count];
-
-            foreach (var (key, id) in displayIds)
-            {
-                if (recipes.TryGetValue(key, out var recipe) && recipe is ShapedRecipe or ShapelessRecipe)
-                {
-                    book[id] = new RecipeBookEntry(id, (IRecipeWithResult)recipe, GroupId(recipe.Group))
-                    {
-                        Revision = revisions.GetValueOrDefault(key)
-                    };
-                }
-            }
+            var book = Book(recipes, revisions);
 
             return new RecipeSet(recipes.ToFrozenDictionary(), book, pluginRecipes) { RequiredContent = content };
         }
@@ -157,7 +143,51 @@ public static partial class RecipesRegistry
     internal static string BookIdentifier(int displayId)
     {
         lock (gate)
-            return displayIds.FirstOrDefault(pair => pair.Value == displayId).Key ?? string.Empty;
+            return displayIds.FirstOrDefault(pair => pair.Value == displayId).Key.Identifier ?? string.Empty;
+    }
+
+    /// <summary>
+    /// How many displays the recipe book has of <paramref name="recipe"/>: one for each number of materials a
+    /// transmute recipe takes, like vanilla's map cloning shows one to eight blank maps, and one otherwise.
+    /// </summary>
+    internal static int DisplayCount(ICraftingRecipe recipe) => recipe is TransmuteRecipe transmute
+        ? transmute.MaxMaterialCount - transmute.MinMaterialCount + 1
+        : 1;
+
+    // Under the gate. Crafting recipes have book displays.
+    private static void AddDisplayIds(string key, IRecipe recipe)
+    {
+        if (recipe is not ICraftingRecipe crafting)
+            return;
+
+        for (int display = 0; display < DisplayCount(crafting); display++)
+            displayIds.TryAdd((key, display), displayIds.Count);
+    }
+
+    // Under the gate: the book's entries by display id, null where an id's recipe or display is gone.
+    private static RecipeBookEntry?[] Book(
+        IReadOnlyDictionary<string, IRecipe> recipes,
+        IReadOnlyDictionary<string, long> revisions)
+    {
+        var book = new RecipeBookEntry?[displayIds.Count];
+
+        foreach (var ((key, display), id) in displayIds)
+        {
+            if (!recipes.TryGetValue(key, out var recipe) || recipe is not ICraftingRecipe crafting)
+                continue;
+
+            // A plugin's recipe registered again may take fewer materials than it did.
+            if (display >= DisplayCount(crafting))
+                continue;
+
+            book[id] = new RecipeBookEntry(id, crafting, GroupId(crafting.Group))
+            {
+                Display = display,
+                Revision = revisions.GetValueOrDefault(key)
+            };
+        }
+
+        return book;
     }
 
     // Under the gate.
