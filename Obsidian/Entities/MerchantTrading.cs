@@ -69,8 +69,15 @@ internal sealed class MerchantContainer : BaseContainer
         finally { clicks.Release(); }
     }
 
-    private static int Cost(TradeEntry offer) => Math.Clamp(offer.FirstInput.Count +
-        Math.Max(0, (int)Math.Floor(offer.FirstInput.Count * offer.Multiplier * offer.Demand)) + offer.Discount, 1, 64);
+    // Matches vanilla's MerchantOffer.getModifiedCostCount: the base count, plus its demand times the price
+    // multiplier (in single precision, floored, never negative), plus the special price, within the item's stack size.
+    private static int Cost(TradeEntry offer)
+    {
+        var baseCount = offer.FirstInput.Count;
+        var demandBonus = Math.Max(0, (int)MathF.Floor(baseCount * offer.Demand * offer.Multiplier));
+        var maximum = Math.Max(1, ItemsRegistry.Get(offer.FirstInput.ID).MaxStackSize);
+        return Math.Clamp(baseCount + demandBonus + offer.Discount, 1, maximum);
+    }
 
     private static bool Matches(ItemStack? stack, TradeItem required) => required.Count <= 0 || stack != null &&
         stack.Holder.Id == required.ID && required.Components.All(component => stack.TryGetComponent(component.Type, out var actual) && Equals(actual, component));

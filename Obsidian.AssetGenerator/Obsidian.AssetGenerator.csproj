@@ -51,6 +51,8 @@
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)client-movement-$(MinecraftVersion).json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)join-payloads-$(MinecraftVersion).json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)data-systems-$(MinecraftVersion).json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)villager-trades-$(MinecraftVersion).json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)villager_trades.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)synced_registries.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)item_stacked_on_classes.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)item_other_stacked_on_classes.json" />

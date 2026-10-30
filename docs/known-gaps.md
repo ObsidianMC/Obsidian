@@ -479,6 +479,18 @@ Trim materials retain 26.3's `palette_id` and text description. Pottery patterns
 from the generated registries, including stack overrides. Their values, clocks and timeline sampling are compared
 with the real vanilla capture in `DataSystemsFixtures.java`.
 
+## Villager trades
+
+**Status:** Phase 4 trades implemented.
+
+Offers come from the 26.3 trade sets in vanilla's draw order (see `TradeFixtures.java`). What remains:
+
+- Random sequences are kept per level in memory, shared with loot, and not saved. Vanilla keeps one set per server,
+  across dimensions, in its saved data, so offers drawn after a restart differ from vanilla's.
+- Trade data can only give or want the `minecraft:potion_contents` component, the only one vanilla's trades use.
+- Plugins can't add trades or trade sets yet.
+- Gossip and Hero of the Village discounts (an offer's special price) aren't applied.
+
 ## Entity behavior beyond 26.3 metadata
 
 **Status:** metadata layouts match the 26.3 fixture; the following behavior remains open.

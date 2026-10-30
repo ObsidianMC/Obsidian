@@ -2,6 +2,7 @@ using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Maps;
 
 namespace Obsidian.Entities;
 
@@ -233,15 +234,25 @@ public sealed partial class Villager : AgeableMob
         }
     }
 
+    // Draws the offers of each level reached since the last draw, from the profession's trade set for that level.
     private void EnsureTrades()
     {
         if (VillagerProfession is <= 0 or 11 or > 14)
             return;
+
+        var profession = Professions[VillagerProfession];
+        var sequences = BlockLoot.SequencesFor(Level);
+        var explorationMaps = ExplorationMaps.For(Level);
+
+        var drawn = new List<TradeEntry>();
         while (tradingLevel < VillagerLevel)
         {
             tradingLevel++;
-            offers = offers.AddRange(VillagerTrades.ForLevel(VillagerProfession, tradingLevel));
+            var tradeSet = VillagerTrades.LevelTradeSet(profession, tradingLevel);
+            VillagerTrades.AddOffers(tradeSet, this, sequences, explorationMaps, drawn);
         }
+
+        offers = offers.AddRange(drawn);
     }
 
     public override void Write(INetStreamWriter writer)
