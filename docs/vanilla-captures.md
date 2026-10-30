@@ -4,7 +4,7 @@ The worldgen parity tests replay references recorded from vanilla. Each entry ho
 noise...) and the values vanilla produced for them, and each entry is one test case. There are two fixtures while
 Phase 5 of `docs/porting-26.3-plan.md` builds the 26.3 generator beside the legacy one:
 
-- `Obsidian.Tests/Assets/vanilla_worldgen_26.3.json` holds 26.3 references, which `VanillaDensityFunctions` replays:
+- `Obsidian.Tests/Assets/vanilla_worldgen_26.3/` holds 26.3 references, which `VanillaDensityFunctions` replays:
   noise samples (`noises`), the value of every noise router and aquifer function of each dimension's noise settings
   at block positions (`router`), and inline density functions at block positions (`functions`), for what no router
   reaches. 26.3 evaluates noise and density in single precision, so the values are floats and must match bit for bit;
@@ -18,24 +18,67 @@ Phase 5 of `docs/porting-26.3-plan.md` builds the 26.3 generator beside the lega
   surface, carver and decoration steps, full chunks, the spawn, light, structure piece lists, structure blocks and a
   treasure map. They can't be re-recorded on 26.3; Phase 5 replaces them section by section with 26.3 captures.
 
+## Fixture files
+
+The 26.3 fixture is a folder with one file per section (`noises.json`, `terrain.json`...), except `features`, which
+is a folder of files, one per group of cases: `01-vegetation`, `02-ores` and `03-misc-placements` (registered placed
+features), `04-review` (components and review regressions), `05-non-tree`, `06-review-additions`, `07-coverage`,
+`08-nether-and-end`, `09-trees`, `10-fallen-trees`, `11-huge-mushrooms`, `12-fungi`, `13-ice-spikes` and
+`14-tree-rejections`. Each file holds `{ "version": ..., "cases": [...] }`, with the Minecraft version it was last
+recorded with. A section's cases are its files' cases in ordinal order of their names, which is the order the tests
+see. Put new cases in the group they belong to, or start a group with a new file numbered after the last one, so that
+changes in different groups touch different files.
+
 ## Re-recording
 
 ```sh
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen
 ```
 
-This rewrites every captured value in `vanilla_worldgen_26.3.json` in place, using the server of the Minecraft version
+This rewrites every captured value of the fixture in place, using the server of the Minecraft version
 `Obsidian.csproj` targets (`MinecraftVersion`). Like the asset generator, it needs Java 25, and it needs internet
-access the first time a version is downloaded. A run takes about a minute. It prints one line per case, either
+access the first time a version is downloaded. A full run takes a few minutes. It prints one line per case, either
 `unchanged` or `CHANGED` with the old and new values, so `git diff` of the fixture shows everything that moved.
 
-The underlying command is
-`Obsidian.AssetGenerator capture-worldgen <minecraft version> <work directory> <fixture>`. The build target runs it with
-`Obsidian.AssetGenerator/obj/vanilla` as the work directory.
+To record only some cases, select them with `CaptureSections` (sections or files, e.g. `terrain` or
+`features/09-trees`) and `CaptureCases` (case names), both `*`/`?` patterns. MSBuild splits `-p` values at commas
+and semicolons, so separate several patterns with `+`:
 
-To add a case, add an entry with its inputs to the fixture section and re-record. Any placeholder value works for the
-captured fields, since the capture fills them in. The test picks the new case up without any code change. A new kind of
-reference needs a section, a capture in the harness and a test.
+```sh
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen -p:CaptureSections=features/02-ores
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen -p:CaptureSections=features+terrain
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen -p:CaptureCases=tree_oak_*+tree_birch_*
+```
+
+A case is selected when its file matches a section pattern and its `name` matches a case pattern (cases without a
+`name` are only selected without `CaptureCases`); a pattern that selects nothing is an error. Only the selected cases'
+seeds are run, and only the files holding them are rewritten: the other cases of those files and every other file stay
+byte for byte as they were. The files are written deterministically (keys in their order, numbers as the probe
+spelled them, two-space indentation, LF and a trailing newline), so a full re-record reproduces the committed files
+byte for byte when vanilla's values haven't changed. The folder's `.gitattributes` keeps them LF in checkouts too.
+
+The underlying command is
+`Obsidian.AssetGenerator capture-worldgen <minecraft version> <cache directory> <scratch directory> <fixture directory>
+[--sections <patterns>] [--cases <patterns>]`. It gathers the selected cases into one fixture json by section, which
+the probe records (in `<scratch directory>/<version>/captures`), and puts them back in their files once every world
+succeeded, so a failed capture leaves the files alone.
+
+To add a case, add an entry with its inputs to its group's file and record it, e.g. with
+`-p:CaptureCases=<its name>`. Any placeholder value works for the captured fields, since the capture fills them in.
+The test picks the new case up without any code change. A new kind of reference needs a section, a capture in the
+harness and a test.
+
+## The vanilla cache
+
+The asset generator and the captures download the vanilla server jars and run their data generators once per
+version, into a per-user cache that every checkout and worktree shares: `%LOCALAPPDATA%\Obsidian\vanilla` on
+Windows, and `$XDG_CACHE_HOME/obsidian/vanilla` (or `~/.cache/obsidian/vanilla`) elsewhere. Set `VanillaWorkDirectory`
+(`-p:VanillaWorkDirectory=<path>` or an environment variable of that name) to use another directory. A version's
+directory is written only while it's prepared, under a lock (`datagen.lock`) that other builds wait on, and is complete
+once `datagen.complete` exists; delete the version's directory to download it again. Each checkout's runs work in its
+own `Obsidian.AssetGenerator/obj/vanilla-scratch` (the dumpers' intermediate files and the capture worlds), so builds
+of several worktrees can run at once. Checkouts from before the cache kept their download in
+`Obsidian.AssetGenerator/obj/vanilla`, which can be deleted.
 
 ## How it captures
 
@@ -204,17 +247,17 @@ features replayed so far read no further. Cases whose feature types aren't imple
 listed as pending in the test. Biome decoration (each biome's ordered steps) waits for 26.3 biome
 selection. The replays have `Category=Worldgen`.
 
-Trees and large features have their own block of named cases at the end of the section: each tree family (oak,
-birch, fancy oak, spruce and pine, giant spruce and pine, jungle and mega jungle, dark oak, acacia, cherry, azalea,
-swamp oak, pale oak without moss, poplars, mangroves on mud) with bees and leaf litter variants, fallen trees, huge
-mushrooms, crimson and warped fungi (wild and planted) and spikes. Rejections cover blocked trunks, a blocked cap,
-wrong substrates, and the checked trees' sapling-survival filters on sand. Pale oaks with moss wait for
-`vegetation_patch`, which their moss decorator places.
+Trees and large features have their own files of named cases (`features/09-trees` to `14-tree-rejections`): each
+tree family (oak, birch, fancy oak, spruce and pine, giant spruce and pine, jungle and mega jungle, dark oak,
+acacia, cherry, azalea, swamp oak, pale oak without moss, poplars, mangroves on mud) with bees and leaf litter
+variants, fallen trees, huge mushrooms, crimson and warped fungi (wild and planted) and spikes. Rejections cover
+blocked trunks, a blocked cap, wrong substrates, and the checked trees' sapling-survival filters on sand. Pale oaks
+with moss wait for `vegetation_patch`, which their moss decorator places.
 
-Feature review regressions extend the same `features` section. A named case may provide an inline placed
-feature, an explicit `origin`, a legacy `randomSeed`, and localized `edits` (`[x, y, z, block state]`). Edits
-are part of the initial terrain and are excluded from `changes`. Registered-feature cases retain their
-biome-filter identity. Every placement records `nextRandom`, including rejected placements.
+Feature review regressions are in `features/04-review` and `06-review-additions`. A named case may provide an inline
+placed feature, an explicit `origin`, a legacy `randomSeed`, and localized `edits` (`[x, y, z, block state]`). Edits
+are part of the initial terrain and are excluded from `changes`. Registered-feature cases retain their biome-filter
+identity. Every placement records `nextRandom`, including rejected placements.
 
 Component cases use `probe: provider`, `modifier`, `predicate` or `rule`, with the corresponding inline
 codec input. They record the optional state, ordered positions, or boolean result and the next random int.
@@ -241,33 +284,34 @@ The explicit simple-provider capture uses 26.3's `minecraft:simple`. Its `compat
 replays Obsidian's existing `minecraft:simple_state_provider` alias against the same captured state and random
 tail. Vanilla rejects that older type name. Random-chance captures use the current `chance` field.
 
-The `non_tree_` cases form a separate block of 26.3 references. They cover scattered ore, lakes, dripstone and
-sulfur speleothems and clusters, vegetation patches (including waterlogged interiors), neighbor spreading,
-overlays, multiface growth, templates, replacement blobs, deltas, pillars, stepped columns, End islands,
-gateways and chorus plants. Additional references cover block piles, freezing, coral branches, root systems
-and the unchanged algorithms shared with the legacy generator. Actual vanilla entries exercise basalt
-columns and pillars, glowstone, twisting and weeping vines, sulfur springs, desert wells and warm-ocean coral.
-These references verify blocks, placement results and the next placement-random value; multiface and sulfur
-template cases also verify the ordered post-processing marks. Multiface cases with `postProcess` additionally
-verify the resulting neighbor shapes. Sulfur templates use `captureMarks` to record marks independently of fluid
-ticks and shape processing; `expectMarks` requires a nonempty mark list.
-Direct magma, soul sand and mushroom captures distinguish the position above bubble-column sources from a
-mushroom's own position. Templates rely on the region's write-time marks rather than enqueueing duplicates.
+The `non_tree_` cases (`features/05-non-tree`) form a separate group of 26.3 references. They cover scattered ore,
+lakes, dripstone and sulfur speleothems and clusters, vegetation patches (including waterlogged interiors), neighbor
+spreading, overlays, multiface growth, templates, replacement blobs, deltas, pillars, stepped columns, End islands,
+gateways and chorus plants. Additional references cover block piles, freezing, coral branches, root systems and the
+unchanged algorithms shared with the legacy generator. Actual vanilla entries exercise basalt columns and pillars,
+glowstone, twisting and weeping vines, sulfur springs, desert wells and warm-ocean coral. These references verify
+blocks, placement results and the next placement-random value; multiface and sulfur template cases also verify the
+ordered post-processing marks. Multiface cases with `postProcess` additionally verify the resulting neighbor shapes.
+Sulfur templates use `captureMarks` to record marks independently of fluid ticks and shape processing; `expectMarks`
+requires a nonempty mark list. Direct magma, soul sand and mushroom captures distinguish the position above
+bubble-column sources from a mushroom's own position. Templates rely on the region's write-time marks rather than
+enqueueing duplicates.
 
 The review captures cover exact template processor states (compact and property-bearing states, including
 random exact-state rules), and End platforms whose origins lie just outside the writable region. A platform at
 `(32, 0, 0)` overlaps the region in x=30..31; one at x=34 has no writable overlap but still returns true.
 
-The `coverage_` cases add a second placement random seed (19) across twelve representative algorithms, water
-lakes with observable freezing, air lake barriers, actual bamboo podzol, ceiling-only dripstone and sulfur
-clusters, and root systems with water inside and just beyond their allowance. Lake shell predicates, unsupported
-multiface growth and occupied cluster origins reject inside the algorithms, without an always-false placement
-filter. `expectBlocks` pins the advertised branch outputs in both the capture and replay.
+The `coverage_` cases (`features/07-coverage`) add a second placement random seed (19) across twelve representative
+algorithms, water lakes with observable freezing, air lake barriers, actual bamboo podzol, ceiling-only dripstone
+and sulfur clusters, and root systems with water inside and just beyond their allowance. Lake shell predicates,
+unsupported multiface growth and occupied cluster origins reject inside the algorithms, without an always-false
+placement filter. `expectBlocks` pins the advertised branch outputs in both the capture and replay.
 
-Eleven Nether and End cases select a vanilla `dimension` and record its `minY`, `height` and generator `seaLevel`.
-The replay uses these values for its chunks and region: both dimensions build from 0 through 255, with sea levels
-32 and 0 respectively. Existing cases without dimension parameters retain their Overworld defaults.
-The decoration context separately uses the dimension's noise generator range, including the Nether's height of 128.
+Eleven Nether and End cases (`features/08-nether-and-end`) select a vanilla `dimension` and record its `minY`,
+`height` and generator `seaLevel`. The replay uses these values for its chunks and region: both dimensions build
+from 0 through 255, with sea levels 32 and 0 respectively. Existing cases without dimension parameters retain their
+Overworld defaults. The decoration context separately uses the dimension's noise generator range, including the
+Nether's height of 128.
 
 Provider references cover `noise`, its Obsidian compatibility alias `noise_provider`, `dual_noise` and
 `random_block`. Large and negative coordinates distinguish float scaling from double scaling. Modifier
