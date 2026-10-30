@@ -135,22 +135,31 @@ public partial class Arrow : Entity
         var bounds = new BoundingBox(VectorD.Min(Position, end) - new VectorD(0.3f), VectorD.Max(Position, end) + new VectorD(0.3f));
         var fraction = 1d;
         foreach (var shape in terrain.GetCollisions(bounds))
+        {
             if (MobTerrain.RayIntersection(shape, Position, Motion) is double hit)
                 fraction = Math.Min(fraction, hit);
+        }
+
         IEntity? target = null;
         foreach (var candidate in Level.GetEntitiesInRange(Position, (float)Motion.Magnitude + 20))
         {
             if (candidate is not Living and not EndCrystal and not MobProjectile { Type: EntityType.Fireball } and not VehicleEntity { IsRemoved: false } || ReferenceEquals(candidate, Owner) || candidate.Health <= 0 || piercedEntities.Contains(candidate.EntityId) ||
                 candidate is IPlayer player && player.GameMode is GameMode.Creative or GameMode.Spectator)
+            {
                 continue;
+            }
+
             if (candidate is EnderDragon dragon)
             {
                 foreach (var part in dragon.Parts)
+                {
                     if (MobTerrain.RayIntersection(part.BoundingBox, Position, Motion) is double partHit && partHit < fraction)
                     {
                         fraction = partHit;
                         target = part;
                     }
+                }
+
                 continue;
             }
             var targetBounds = candidate.Dimension.CreateBBFromPosition(candidate.Position);
@@ -180,7 +189,9 @@ public partial class Arrow : Entity
             var accepted = (target as Living)?.AcceptedDamageCount;
             var vehicleHit = false;
             if (target is MobProjectile fireball)
+            {
                 fireball.Deflect(Owner ?? this, Motion);
+            }
             else if ((target is not Shulker { Closed: true } || Type != EntityType.Arrow) &&
                 (target is not Wither { Armored: true } || Type is not (EntityType.Arrow or EntityType.Trident or EntityType.SpectralArrow)))
             {
@@ -191,9 +202,13 @@ public partial class Arrow : Entity
                 else if (Crit && Type is EntityType.Arrow or EntityType.SpectralArrow)
                     damage += Globals.Random.Next((int)(damage / 2) + 2);
                 if (target is EnderDragonPart part)
+                {
                     await part.Parent.DamagePartAsync(Owner ?? this, damage, part.Index, projectile: true);
+                }
                 else if (target is Living victim)
+                {
                     await victim.DamageCombatAsync(Owner ?? this, damage, CombatDamageKind.Projectile, Weapon, this);
+                }
                 // Like vanilla's VehicleEntity.hurtServer, a boat or minecart always takes the hit, and a burning
                 // arrow sets off a TNT minecart.
                 else if (target is VehicleEntity vehicle)
@@ -203,7 +218,9 @@ public partial class Arrow : Entity
                     vehicleHit = true;
                 }
                 else
+                {
                     await target.DamageAsync(Owner ?? this, damage);
+                }
             }
             var damaged = vehicleHit || target.Health < health || target is Living hitLiving && hitLiving.AcceptedDamageCount != accepted;
             if (damaged && Effect >= 0 && target is Living living)
@@ -288,6 +305,7 @@ public partial class Arrow : Entity
         if (Pickup == ArrowPickup.Disallowed || PickupItem is not { Count: > 0 })
             return;
         foreach (var player in Level.GetPlayersInRange(Position, 1.5f))
+        {
             if ((Owner is not IPlayer || this is not Trident { LoyaltyLevel: > 0 } || Owner.Uuid == player.Uuid) &&
                 await player.ReceiveProjectileAsync(PickupItem, Pickup == ArrowPickup.CreativeOnly))
             {
@@ -296,6 +314,7 @@ public partial class Arrow : Entity
                 await RemoveAsync();
                 break;
             }
+        }
     }
 
     private async ValueTask ApplyTippedEffectsAsync(Living target)
@@ -312,7 +331,9 @@ public partial class Arrow : Entity
                     target.Health = Math.Min(target.GetAttributeValue("minecraft:max_health"), target.Health + (float)Math.Floor(0.125 * (4 << effect.Amplifier) + 0.5));
             }
             else
+            {
                 target.AddPotionEffect(effect.Id, Math.Max(1, effect.Duration / 8), effect.Amplifier);
+            }
         }
     }
 

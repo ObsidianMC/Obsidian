@@ -99,16 +99,23 @@ internal sealed class HoglinAvoidFungusGoal(Hoglin hoglin) : NavigationGoal(hogl
             return false;
         var origin = (Vector)hoglin.Position.Floor();
         for (var x = -8; x <= 8; x++)
-        for (var y = -4; y <= 4; y++)
-        for (var z = -8; z <= 8; z++)
         {
-            var point = origin + new Vector(x, y, z);
-            if (hoglin.Terrain.GetBlock(point)?.RegistryId != BlockIds.WarpedFungus ||
-                RandomPosition.Find(hoglin, 8, (VectorD)point) is not VectorD away ||
-                        (away - (VectorD)point).MagnitudeSquared() <= (hoglin.Position - (VectorD)point).MagnitudeSquared())
+            for (var y = -4; y <= 4; y++)
+            {
+                for (var z = -8; z <= 8; z++)
+                {
+                    var point = origin + new Vector(x, y, z);
+                    if (hoglin.Terrain.GetBlock(point)?.RegistryId != BlockIds.WarpedFungus ||
+                        RandomPosition.Find(hoglin, 8, (VectorD)point) is not VectorD away ||
+                                (away - (VectorD)point).MagnitudeSquared() <= (hoglin.Position - (VectorD)point).MagnitudeSquared())
+                    {
                         continue;
-            destination = away;
-            return true;
+                    }
+
+                    destination = away;
+                    return true;
+                }
+            }
         }
         return false;
     }
@@ -173,6 +180,7 @@ internal static class HoglinAttack
         var strength = mob.AttackDamage;
         var damage = baby ? 0.5f : strength / 2 + mob.Random.Next(Math.Max(1, (int)strength));
         if (target is IPlayer)
+        {
             damage = mob.Level.LevelData.Difficulty switch
             {
                 Difficulty.Peaceful => 0,
@@ -180,6 +188,8 @@ internal static class HoglinAttack
                 Difficulty.Hard => damage * 1.5f,
                 _ => damage
             };
+        }
+
         var health = target.Health;
         await target.DamageAsync(mob, damage);
         if (baby || target.Health >= health || target is not Entity entity)

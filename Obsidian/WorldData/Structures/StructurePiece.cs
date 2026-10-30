@@ -269,7 +269,9 @@ public abstract class StructurePiece
                     if (random.NextFloat() > probability
                         || existingOnly && this.GetBlock(level, x, y, z, box).IsAir
                         || interiorOnly && !this.IsInterior(level, x, y, z, box))
+                    {
                         continue;
+                    }
 
                     var isEdge = y == minY || y == maxY || x == minX || x == maxX || z == minZ || z == maxZ;
                     this.PlaceBlock(level, isEdge ? edge : inside, x, y, z, box);

@@ -22,9 +22,13 @@ internal sealed class MobTerrain(ILevel level) : IPathTerrain
     public bool ContainsFluid(BoundingBox bounds, bool water)
     {
         for (var x = (int)Math.Floor(bounds.Min.X + 0.001); x < (int)Math.Ceiling(bounds.Max.X - 0.001); x++)
-        for (var y = (int)Math.Floor(bounds.Min.Y + 0.001); y < (int)Math.Ceiling(bounds.Max.Y - 0.001); y++)
-        for (var z = (int)Math.Floor(bounds.Min.Z + 0.001); z < (int)Math.Ceiling(bounds.Max.Z - 0.001); z++)
-            if (IsInFluid(new VectorD(x + 0.5, Math.Max(y, bounds.Min.Y + 0.001), z + 0.5), water)) return true;
+        {
+            for (var y = (int)Math.Floor(bounds.Min.Y + 0.001); y < (int)Math.Ceiling(bounds.Max.Y - 0.001); y++)
+            {
+                for (var z = (int)Math.Floor(bounds.Min.Z + 0.001); z < (int)Math.Ceiling(bounds.Max.Z - 0.001); z++)
+                    if (IsInFluid(new VectorD(x + 0.5, Math.Max(y, bounds.Min.Y + 0.001), z + 0.5), water)) return true;
+            }
+        }
         return false;
     }
 
@@ -35,22 +39,26 @@ internal sealed class MobTerrain(ILevel level) : IPathTerrain
         var count = 0;
         var depth = 0d;
         for (var x = (int)Math.Floor(bounds.Min.X + 0.001); x < (int)Math.Ceiling(bounds.Max.X - 0.001); x++)
-        for (var y = (int)Math.Floor(bounds.Min.Y + 0.001); y < (int)Math.Ceiling(bounds.Max.Y - 0.001); y++)
-        for (var z = (int)Math.Floor(bounds.Min.Z + 0.001); z < (int)Math.Ceiling(bounds.Max.Z - 0.001); z++)
         {
-            var point = new Vector(x, y, z);
-            if (GetBlock(point) is not { } block) continue;
-            var fluid = FluidState.Of(block);
-            if (!(water ? fluid.IsWater : fluid.IsLava)) continue;
-            var above = GetBlock(point + Vector.Up);
-            var full = above != null && (water ? FluidState.Of(above).IsWater : FluidState.Of(above).IsLava);
-            var surface = y + (full ? 1 : fluid.OwnHeight);
-            if (surface < bounds.Min.Y + 0.001) continue;
-            depth = Math.Max(depth, surface - bounds.Min.Y - 0.001);
-            var current = concrete.Fluids.GetFlow(point);
-            if (depth < 0.4) current *= depth;
-            flow += current;
-            count++;
+            for (var y = (int)Math.Floor(bounds.Min.Y + 0.001); y < (int)Math.Ceiling(bounds.Max.Y - 0.001); y++)
+            {
+                for (var z = (int)Math.Floor(bounds.Min.Z + 0.001); z < (int)Math.Ceiling(bounds.Max.Z - 0.001); z++)
+                {
+                    var point = new Vector(x, y, z);
+                    if (GetBlock(point) is not { } block) continue;
+                    var fluid = FluidState.Of(block);
+                    if (!(water ? fluid.IsWater : fluid.IsLava)) continue;
+                    var above = GetBlock(point + Vector.Up);
+                    var full = above != null && (water ? FluidState.Of(above).IsWater : FluidState.Of(above).IsLava);
+                    var surface = y + (full ? 1 : fluid.OwnHeight);
+                    if (surface < bounds.Min.Y + 0.001) continue;
+                    depth = Math.Max(depth, surface - bounds.Min.Y - 0.001);
+                    var current = concrete.Fluids.GetFlow(point);
+                    if (depth < 0.4) current *= depth;
+                    flow += current;
+                    count++;
+                }
+            }
         }
         if (count == 0 || flow.Magnitude == 0) return VectorD.Zero;
         flow /= count;
@@ -125,21 +133,25 @@ internal sealed class MobTerrain(ILevel level) : IPathTerrain
     {
         // Shapes such as fences can extend above their block's unit cube.
         for (var x = (int)Math.Floor(bounds.Min.X); x <= (int)Math.Floor(bounds.Max.X); x++)
-        for (var y = (int)Math.Floor(bounds.Min.Y) - 1; y <= (int)Math.Floor(bounds.Max.Y); y++)
-        for (var z = (int)Math.Floor(bounds.Min.Z); z <= (int)Math.Floor(bounds.Max.Z); z++)
         {
-            var position = new Vector(x, y, z);
-            var block = GetBlock(position);
-            if (block == null)
+            for (var y = (int)Math.Floor(bounds.Min.Y) - 1; y <= (int)Math.Floor(bounds.Max.Y); y++)
             {
-                yield return (new BoundingBox(new VectorD(x, y, z), new VectorD(x + 1, y + 1, z + 1)), position);
-                continue;
-            }
-            if (ignoreWoodenDoors && TagsRegistry.Block.WoodenDoors.Entries.Contains(block.RegistryId))
-                continue;
+                for (var z = (int)Math.Floor(bounds.Min.Z); z <= (int)Math.Floor(bounds.Max.Z); z++)
+                {
+                    var position = new Vector(x, y, z);
+                    var block = GetBlock(position);
+                    if (block == null)
+                    {
+                        yield return (new BoundingBox(new VectorD(x, y, z), new VectorD(x + 1, y + 1, z + 1)), position);
+                        continue;
+                    }
+                    if (ignoreWoodenDoors && TagsRegistry.Block.WoodenDoors.Entries.Contains(block.RegistryId))
+                        continue;
 
-            foreach (var shape in BlockCollisionShapes.Get(level, position, block))
-                yield return (shape.OffsetBy(new VectorD(x, y, z)), position);
+                    foreach (var shape in BlockCollisionShapes.Get(level, position, block))
+                        yield return (shape.OffsetBy(new VectorD(x, y, z)), position);
+                }
+            }
         }
     }
 
@@ -150,18 +162,22 @@ internal sealed class MobTerrain(ILevel level) : IPathTerrain
     public void CollectCollisions(BoundingBox bounds, List<BoundingBox> shapes)
     {
         for (var x = (int)Math.Floor(bounds.Min.X); x <= (int)Math.Floor(bounds.Max.X); x++)
-        for (var y = (int)Math.Floor(bounds.Min.Y) - 1; y <= (int)Math.Floor(bounds.Max.Y); y++)
-        for (var z = (int)Math.Floor(bounds.Min.Z); z <= (int)Math.Floor(bounds.Max.Z); z++)
         {
-            var position = new Vector(x, y, z);
-            if (GetBlock(position) is not { } block)
+            for (var y = (int)Math.Floor(bounds.Min.Y) - 1; y <= (int)Math.Floor(bounds.Max.Y); y++)
             {
-                shapes.Add(new BoundingBox(new VectorD(x, y, z), new VectorD(x + 1, y + 1, z + 1)));
-                continue;
-            }
+                for (var z = (int)Math.Floor(bounds.Min.Z); z <= (int)Math.Floor(bounds.Max.Z); z++)
+                {
+                    var position = new Vector(x, y, z);
+                    if (GetBlock(position) is not { } block)
+                    {
+                        shapes.Add(new BoundingBox(new VectorD(x, y, z), new VectorD(x + 1, y + 1, z + 1)));
+                        continue;
+                    }
 
-            foreach (var shape in BlockCollisionShapes.Get(level, position, block))
-                shapes.Add(shape.OffsetBy(new VectorD(x, y, z)));
+                    foreach (var shape in BlockCollisionShapes.Get(level, position, block))
+                        shapes.Add(shape.OffsetBy(new VectorD(x, y, z)));
+                }
+            }
         }
     }
 
@@ -169,23 +185,27 @@ internal sealed class MobTerrain(ILevel level) : IPathTerrain
     public bool IsFree(BoundingBox bounds, bool ignoreWoodenDoors = false)
     {
         for (var x = (int)Math.Floor(bounds.Min.X); x <= (int)Math.Floor(bounds.Max.X); x++)
-        for (var y = (int)Math.Floor(bounds.Min.Y) - 1; y <= (int)Math.Floor(bounds.Max.Y); y++)
-        for (var z = (int)Math.Floor(bounds.Min.Z); z <= (int)Math.Floor(bounds.Max.Z); z++)
         {
-            var position = new Vector(x, y, z);
-            if (GetBlock(position) is not { } block)
+            for (var y = (int)Math.Floor(bounds.Min.Y) - 1; y <= (int)Math.Floor(bounds.Max.Y); y++)
             {
-                if (Overlaps(bounds, new BoundingBox(new VectorD(x, y, z), new VectorD(x + 1, y + 1, z + 1))))
-                    return false;
-                continue;
-            }
-            if (ignoreWoodenDoors && TagsRegistry.Block.WoodenDoors.Entries.Contains(block.RegistryId))
-                continue;
+                for (var z = (int)Math.Floor(bounds.Min.Z); z <= (int)Math.Floor(bounds.Max.Z); z++)
+                {
+                    var position = new Vector(x, y, z);
+                    if (GetBlock(position) is not { } block)
+                    {
+                        if (Overlaps(bounds, new BoundingBox(new VectorD(x, y, z), new VectorD(x + 1, y + 1, z + 1))))
+                            return false;
+                        continue;
+                    }
+                    if (ignoreWoodenDoors && TagsRegistry.Block.WoodenDoors.Entries.Contains(block.RegistryId))
+                        continue;
 
-            foreach (var shape in BlockCollisionShapes.Get(level, position, block))
-            {
-                if (Overlaps(bounds, shape.OffsetBy(new VectorD(x, y, z))))
-                    return false;
+                    foreach (var shape in BlockCollisionShapes.Get(level, position, block))
+                    {
+                        if (Overlaps(bounds, shape.OffsetBy(new VectorD(x, y, z))))
+                            return false;
+                    }
+                }
             }
         }
         return true;
@@ -194,14 +214,20 @@ internal sealed class MobTerrain(ILevel level) : IPathTerrain
     public bool ContainsSuffocatingBlock(BoundingBox bounds)
     {
         for (var x = (int)Math.Floor(bounds.Min.X); x <= (int)Math.Floor(bounds.Max.X); x++)
-        for (var y = (int)Math.Floor(bounds.Min.Y); y <= (int)Math.Floor(bounds.Max.Y); y++)
-        for (var z = (int)Math.Floor(bounds.Min.Z); z <= (int)Math.Floor(bounds.Max.Z); z++)
         {
-            var block = GetBlock(new Vector(x, y, z));
-            if (block != null && BlockPhysics.Suffocates(block.GetHashCode()) &&
-                BlockCollisionShapes.Get(level, new Vector(x, y, z), block)
-                    .Any(shape => Overlaps(bounds, shape.OffsetBy(new VectorD(x, y, z)))))
-                return true;
+            for (var y = (int)Math.Floor(bounds.Min.Y); y <= (int)Math.Floor(bounds.Max.Y); y++)
+            {
+                for (var z = (int)Math.Floor(bounds.Min.Z); z <= (int)Math.Floor(bounds.Max.Z); z++)
+                {
+                    var block = GetBlock(new Vector(x, y, z));
+                    if (block != null && BlockPhysics.Suffocates(block.GetHashCode()) &&
+                        BlockCollisionShapes.Get(level, new Vector(x, y, z), block)
+                            .Any(shape => Overlaps(bounds, shape.OffsetBy(new VectorD(x, y, z)))))
+                    {
+                        return true;
+                    }
+                }
+            }
         }
         return false;
     }
@@ -209,11 +235,15 @@ internal sealed class MobTerrain(ILevel level) : IPathTerrain
     public bool IsFreeOfFluid(BoundingBox bounds)
     {
         for (var x = (int)Math.Floor(bounds.Min.X); x < (int)Math.Ceiling(bounds.Max.X); x++)
-        for (var y = (int)Math.Floor(bounds.Min.Y); y < (int)Math.Ceiling(bounds.Max.Y); y++)
-        for (var z = (int)Math.Floor(bounds.Min.Z); z < (int)Math.Ceiling(bounds.Max.Z); z++)
         {
-            if (GetBlock(new Vector(x, y, z)) is not { } block || block.GetFluid() != FluidKind.Empty)
-                return false;
+            for (var y = (int)Math.Floor(bounds.Min.Y); y < (int)Math.Ceiling(bounds.Max.Y); y++)
+            {
+                for (var z = (int)Math.Floor(bounds.Min.Z); z < (int)Math.Ceiling(bounds.Max.Z); z++)
+                {
+                    if (GetBlock(new Vector(x, y, z)) is not { } block || block.GetFluid() != FluidKind.Empty)
+                        return false;
+                }
+            }
         }
         return true;
     }

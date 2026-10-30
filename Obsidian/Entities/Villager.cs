@@ -70,25 +70,30 @@ public sealed partial class Villager : AgeableMob
             await TickVillageAsync(village);
         if (MobBitMask.HasFlag(MobBitmask.NoAi) || AiTick % 10 != 0 ||
             !MovementFlags.HasFlag(MovementFlags.HorizontalCollision) || Navigator is not Navigator { IsNavigating: true })
+        {
             return;
+        }
+
         var origin = (Vector)Position.Floor();
         for (var x = origin.X - 1; x <= origin.X + 1; x++)
-        for (var z = origin.Z - 1; z <= origin.Z + 1; z++)
         {
-            var point = new Vector(x, origin.Y, z);
-            var block = Terrain.GetBlock(point);
-            if (block == null || !TagsRegistry.Block.WoodenDoors.Entries.Contains(block.RegistryId) || block.GetProperty("open") != "false")
-                continue;
-            if (block.GetProperty("half") == "upper")
+            for (var z = origin.Z - 1; z <= origin.Z + 1; z++)
             {
-                point -= new Vector(0, 1, 0);
-                block = Terrain.GetBlock(point);
+                var point = new Vector(x, origin.Y, z);
+                var block = Terrain.GetBlock(point);
+                if (block == null || !TagsRegistry.Block.WoodenDoors.Entries.Contains(block.RegistryId) || block.GetProperty("open") != "false")
+                    continue;
+                if (block.GetProperty("half") == "upper")
+                {
+                    point -= new Vector(0, 1, 0);
+                    block = Terrain.GetBlock(point);
+                }
+                var upper = Terrain.GetBlock(point + new Vector(0, 1, 0));
+                if (block == null || upper == null || upper.RegistryId != block.RegistryId)
+                    continue;
+                await Level.SetBlockAsync(point, block.WithProperty("open", true), true);
+                await Level.SetBlockAsync(point + new Vector(0, 1, 0), upper.WithProperty("open", true), true);
             }
-            var upper = Terrain.GetBlock(point + new Vector(0, 1, 0));
-            if (block == null || upper == null || upper.RegistryId != block.RegistryId)
-                continue;
-            await Level.SetBlockAsync(point, block.WithProperty("open", true), true);
-            await Level.SetBlockAsync(point + new Vector(0, 1, 0), upper.WithProperty("open", true), true);
         }
     }
 
@@ -214,19 +219,25 @@ public sealed partial class Villager : AgeableMob
         var origin = (Vector)Position.Floor();
         var points = new List<(Vector Position, int Profession, bool Bed)>();
         for (var x = -16; x <= 16; x++)
-        for (var z = -16; z <= 16; z++)
-        for (var y = -4; y <= 4; y++)
         {
-            var point = origin + new Vector(x, y, z);
-            if (Terrain.GetBlock(point) is not { } block)
-                continue;
-            if (Home == null && TagsRegistry.Block.Beds.Entries.Contains(block.RegistryId) && block.GetProperty("part") == "head")
-                points.Add((point, 0, true));
-            else if (wantsJobSite
-                && Workstations.TryGetValue(block.RegistryId, out var candidateProfession)
-                && (VillagerProfession == 0 || VillagerProfession == candidateProfession))
+            for (var z = -16; z <= 16; z++)
             {
-                points.Add((point, candidateProfession, false));
+                for (var y = -4; y <= 4; y++)
+                {
+                    var point = origin + new Vector(x, y, z);
+                    if (Terrain.GetBlock(point) is not { } block)
+                        continue;
+                    if (Home == null && TagsRegistry.Block.Beds.Entries.Contains(block.RegistryId) && block.GetProperty("part") == "head")
+                    {
+                        points.Add((point, 0, true));
+                    }
+                    else if (wantsJobSite
+                        && Workstations.TryGetValue(block.RegistryId, out var candidateProfession)
+                        && (VillagerProfession == 0 || VillagerProfession == candidateProfession))
+                    {
+                        points.Add((point, candidateProfession, false));
+                    }
+                }
             }
         }
         foreach (var point in points.OrderBy(point => ((VectorD)point.Position - Position).MagnitudeSquared()))
@@ -236,7 +247,9 @@ public sealed partial class Villager : AgeableMob
             if (!level.TryClaimVillagePoi(point.Position, Uuid))
                 continue;
             if (point.Bed)
+            {
                 Home = point.Position;
+            }
             else
             {
                 JobSite = point.Position;
@@ -358,8 +371,11 @@ public sealed partial class Villager : AgeableMob
                 village.ReleaseVillagePoi(j, Uuid);
         }
         foreach (var player in Level.GetPlayersInRange(Position, 16))
+        {
             if (player.OpenedContainer is MerchantContainer merchant && ReferenceEquals(merchant.Merchant, this))
                 await merchant.CloseAsync(player);
+        }
+
         await base.RemoveAsync();
     }
 }
@@ -380,7 +396,10 @@ internal sealed class VillagerAvoidThreatGoal(Villager villager) : NavigationGoa
             .MinBy(entity => (entity.Position - villager.Position).MagnitudeSquared());
         if (threat == null || RandomPosition.Find(villager, 16, threat.Position) is not VectorD point ||
             (point - threat.Position).MagnitudeSquared() <= (villager.Position - threat.Position).MagnitudeSquared())
+        {
             return false;
+        }
+
         destination = point;
         return true;
     }
@@ -406,7 +425,10 @@ internal sealed class VillagerShelterGoal(Villager villager) : NavigationGoal(vi
         if (!villager.Level.HasDayCycle() ||
             !villager.Level.LevelData.Raining && villager.Level.DayTime is >= 0 and < 12000 ||
             villager.Terrain.GetSkyLight((Vector)villager.Position.Floor()) < 15 || villager.Random.Next(20) != 0)
+        {
             return false;
+        }
+
         var evaluator = new WalkNodeEvaluator(villager.PathBody);
         for (var attempt = 0; attempt < 10; attempt++)
         {

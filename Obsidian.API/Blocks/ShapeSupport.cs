@@ -142,15 +142,17 @@ internal static class ShapeSupport
         var us = Edges(boxes, 0, minU, maxU);
         var vs = Edges(boxes, 1, minV, maxV);
         for (var i = 0; i < us.Length - 1; i++)
-        for (var j = 0; j < vs.Length - 1; j++)
         {
-            if (us[i + 1] - us[i] < Epsilon || vs[j + 1] - vs[j] < Epsilon)
-                continue;
+            for (var j = 0; j < vs.Length - 1; j++)
+            {
+                if (us[i + 1] - us[i] < Epsilon || vs[j + 1] - vs[j] < Epsilon)
+                    continue;
 
-            var u = (us[i] + us[i + 1]) / 2;
-            var v = (vs[j] + vs[j + 1]) / 2;
-            if (!boxes.Any(box => box[0] <= u && box[2] >= u && box[1] <= v && box[3] >= v))
-                return false;
+                var u = (us[i] + us[i + 1]) / 2;
+                var v = (vs[j] + vs[j + 1]) / 2;
+                if (!boxes.Any(box => box[0] <= u && box[2] >= u && box[1] <= v && box[3] >= v))
+                    return false;
+            }
         }
 
         return true;

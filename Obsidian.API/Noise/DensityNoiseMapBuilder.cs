@@ -21,7 +21,9 @@ public class DensityNoiseMapBuilder : NoiseMapBuilder
             destHeight <= 0 ||
             SourceNoiseCube == null ||
             DestNoiseMap == null)
+        {
             throw new InvalidOperationException("Builder isn't properly set up.");
+        }
 
         DestNoiseMap.SetSize(destHeight, destWidth);
     }

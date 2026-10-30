@@ -91,7 +91,9 @@ public sealed class LootRegistryGenerator : IIncrementalGenerator
             {
                 if (attribute.AttributeClass?.Name != "LootTypeAttribute" || attribute.ConstructorArguments.Length == 0 ||
                     attribute.ConstructorArguments[0].Value is not string resourceLocation)
+                {
                     continue;
+                }
 
                 if (!types.TryGetValue(resourceLocation, out var list))
                     types[resourceLocation] = list = [];
@@ -391,9 +393,11 @@ public sealed class LootRegistryGenerator : IIncrementalGenerator
 
             var elementType = ElementType(target);
             if (elementType is not null)
+            {
                 return json.ValueKind == JsonValueKind.Array
                     ? $"[{string.Join(", ", json.EnumerateArray().Select(value => this.EmitValue(elementType, value)))}]"
                     : json.ValueKind == JsonValueKind.String ? this.EmitString(target, json.GetString()!) : $"[{this.EmitValue(elementType, json)}]";
+            }
 
             if (target is INamedTypeSymbol { Name: "Dictionary", TypeArguments.Length: 2 } dictionary)
                 return this.EmitDictionary(dictionary, json);

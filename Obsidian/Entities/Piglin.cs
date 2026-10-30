@@ -45,8 +45,10 @@ public sealed partial class Piglin : PathfinderMob, IAgeable
             (EquipmentSlot.Boots, ItemsRegistry.GoldenBoots)
         ];
         foreach (var (slot, piece) in armor)
+        {
             if (!IsBaby && Random.NextSingle() < 0.1f)
                 SetEquipment(slot, ItemsRegistry.GetSingleItem(piece));
+        }
     }
 
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
@@ -84,7 +86,9 @@ public sealed partial class Piglin : PathfinderMob, IAgeable
             || !IsInRange(player, 4)
             || !CanSee(player)
             || held is not { Count: > 0, Holder.Id: ItemIds.GoldIngot })
+        {
             return false;
+        }
 
         await ConsumeInteractionItemAsync(player, hand);
         BeginAdmiring();
@@ -108,8 +112,11 @@ public sealed partial class Piglin : PathfinderMob, IAgeable
             SetEquipment(EquipmentSlot.OffHand, ItemStack.Air);
         }
         foreach (var ally in GetEntitiesNear(16).OfType<Mob>().Where(ally => ally is Piglin { IsBaby: false } or PiglinBrute))
+        {
             if (ally.IsValidTarget(source))
                 ally.AlertedTarget = source;
+        }
+
         return default;
     }
 
@@ -119,7 +126,9 @@ public sealed partial class Piglin : PathfinderMob, IAgeable
             return;
         var safe = Level.PiglinsSafe((Vector)Position.Floor());
         if (safe || IsImmuneToZombification)
+        {
             TimeInOverworld = 0;
+        }
         else if (++TimeInOverworld > 300)
         {
             PlayMobSound("converted_to_zombified");
@@ -191,6 +200,7 @@ public sealed partial class Piglin : PathfinderMob, IAgeable
         var direction = delta / delta.Magnitude + new VectorD(Random.NextSingle() - Random.NextSingle(), Random.NextSingle() - Random.NextSingle(), Random.NextSingle() - Random.NextSingle()) * deviation;
         Level.SpawnEntity(new Arrow { Level = Level, EntityId = Server.GetNextEntityId(), Position = origin, Type = EntityType.Arrow, Motion = direction * 1.6, Owner = this });
         if (!Silent)
+        {
             PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SoundEntityPacket
             {
                 EntityId = EntityId,
@@ -200,13 +210,17 @@ public sealed partial class Piglin : PathfinderMob, IAgeable
                 Pitch = 1,
                 Seed = Random.NextInt64()
             });
+        }
     }
 
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         foreach (var slot in Enum.GetValues<EquipmentSlot>())
+        {
             if (!GetEquipment(slot).IsAir && Random.NextSingle() < GetEquipmentDropChance(slot))
                 DropItem(GetEquipment(slot));
+        }
+
         return default;
     }
 

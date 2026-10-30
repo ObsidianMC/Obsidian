@@ -57,14 +57,18 @@ public sealed partial class Frog : FarmAnimal
         SynchronizeMetadata();
         await prey.RemoveAsync();
         if (prey is MagmaCube)
+        {
             DropItem(Variant switch
             {
                 0 => ItemsRegistry.VerdantFroglight,
                 2 => ItemsRegistry.PearlescentFroglight,
                 _ => ItemsRegistry.OchreFroglight
             });
+        }
         else
+        {
             DropItem(ItemsRegistry.SlimeBall);
+        }
     }
 
     protected override VectorD Travel() => VolumeMovement.Travel(this, InWater);
@@ -89,17 +93,19 @@ public sealed partial class Frog : FarmAnimal
         {
             var origin = (Vector)Position.Floor();
             for (var x = -1; x <= 1; x++)
-            for (var z = -1; z <= 1; z++)
             {
-                var water = new Vector(origin.X + x, origin.Y - 1, origin.Z + z);
-                var above = new Vector(water.X, water.Y + 1, water.Z);
-                if (Terrain.GetBlock(water)?.RegistryId != BlockIds.Water || Terrain.GetBlock(above)?.IsAir != true)
-                    continue;
-                await level.SetBlockAsync(above, BlocksRegistry.Frogspawn, true);
-                level.ScheduleFrogspawn(above, Random.Next(3600, 12001));
-                Pregnant = false;
-                PlayMobSound("lay_spawn");
-                return;
+                for (var z = -1; z <= 1; z++)
+                {
+                    var water = new Vector(origin.X + x, origin.Y - 1, origin.Z + z);
+                    var above = new Vector(water.X, water.Y + 1, water.Z);
+                    if (Terrain.GetBlock(water)?.RegistryId != BlockIds.Water || Terrain.GetBlock(above)?.IsAir != true)
+                        continue;
+                    await level.SetBlockAsync(above, BlocksRegistry.Frogspawn, true);
+                    level.ScheduleFrogspawn(above, Random.Next(3600, 12001));
+                    Pregnant = false;
+                    PlayMobSound("lay_spawn");
+                    return;
+                }
             }
         }
     }

@@ -470,7 +470,9 @@ public sealed partial class Client : IClient
         {
             if (this.disconnectRequested
                 || (entry.Packet is IClientboundPacket packet ? !this.CanReceive(packet) : this.IsClosing))
+            {
                 return false;
+            }
 
             if (Volatile.Read(ref this.unsent) < MaximumOutgoingEntries)
                 return this.WriteOutgoing(entry);

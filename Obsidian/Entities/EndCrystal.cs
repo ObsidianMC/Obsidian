@@ -42,7 +42,11 @@ public sealed partial class EndCrystal : Entity
     public override async ValueTask TickAsync()
     {
         if (destroyed || Level.DimensionName != "minecraft:the_end" ||
-            Level is not AbstractLevel level || !level.IsMobTicking(Position)) return;
+            Level is not AbstractLevel level || !level.IsMobTicking(Position))
+        {
+            return;
+        }
+
         var position = (Vector)Position.Floor();
         if (new MobTerrain(Level).GetBlock(position)?.IsAir == true)
             await level.SetBlockAsync(position, BlocksRegistry.Fire, true);
@@ -87,7 +91,10 @@ public sealed partial class EndCrystal : Entity
         ShowBottom = !tag.TryGetBool("ShowBottom", out var bottom) || bottom;
         if (tag.TryGetTag<NbtCompound>("BeamTarget", out var beam) &&
             beam.TryGetTagValue<int>("X", out var x) && beam.TryGetTagValue<int>("Y", out var y) &&
-            beam.TryGetTagValue<int>("Z", out var z)) beamTarget = new Vector(x, y, z);
+            beam.TryGetTagValue<int>("Z", out var z))
+        {
+            beamTarget = new Vector(x, y, z);
+        }
         else if (tag.TryGetTag<NbtArray<int>>("beam_target", out var generatedBeam) && generatedBeam.Count == 3)
         {
             var values = generatedBeam.GetArray();

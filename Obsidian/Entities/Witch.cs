@@ -52,13 +52,22 @@ public sealed partial class Witch : PathfinderMob
         if (Random.NextSingle() < 0.15f
             && Terrain.GetBlock((Vector)EyePosition.Floor())?.RegistryId == BlockIds.Water
             && !HasPotionEffect((int)PotionEffect.WaterBreathing - 1))
+        {
             effect = (int)PotionEffect.WaterBreathing - 1;
+        }
         else if (Random.NextSingle() < 0.15f && (Burning || InLava) && !HasPotionEffect((int)PotionEffect.FireResistance - 1))
+        {
             effect = (int)PotionEffect.FireResistance - 1;
+        }
         else if (Random.NextSingle() < 0.05f && Health < GetAttributeValue("minecraft:generic.max_health"))
+        {
             effect = (int)PotionEffect.InstantHealth - 1;
+        }
         else if (Random.NextSingle() < 0.5f && AttackTarget is { } target && !IsInRange(target, 11) && !HasPotionEffect((int)PotionEffect.Speed - 1))
+        {
             effect = (int)PotionEffect.Speed - 1;
+        }
+
         if (effect >= 0)
         {
             drinkEffect = effect;

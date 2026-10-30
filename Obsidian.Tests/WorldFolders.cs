@@ -128,7 +128,9 @@ public sealed class WorldFolders : IDisposable
         foreach (var file in new[] { "dimensions/minecraft/overworld/region/r.0.0.mca", "dimensions/minecraft/the_nether/region/r.0.0.mca",
             $"players/data/{playerUuid}.dat", "data/minecraft/game_rules.dat", "data/minecraft/weather.dat",
             "data/minecraft/world_clocks.dat", "data/minecraft/world_gen_settings.dat" })
+        {
             Assert.True(File.Exists(Path.Combine(folder, file)), $"{file} is missing");
+        }
 
         foreach (var legacy in new[] { "region", "regions", "DIM-1", "DIM1", "playerdata", "dimensions/the_nether", "dimensions/the_end" })
             Assert.False(Directory.Exists(Path.Combine(folder, legacy)), $"{legacy} is left");

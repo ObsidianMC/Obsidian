@@ -53,14 +53,18 @@ public partial class MainEventHandler
             width = 3;
         }
         else
+        {
             return null;
+        }
 
         var recipe = entry.Recipe;
         var ingredients = RecipeBookAddPacket.GetIngredients(recipe);
         if (ingredients.Count == 0
             || ingredients.Count > width * width
             || (recipe is ShapedRecipe shaped && (shaped.Pattern.Count > width || shaped.Pattern[0].Length > width)))
+        {
             return null;
+        }
 
         var inventory = new Container(45);
         var gridItems = new ItemStack?[width * width];

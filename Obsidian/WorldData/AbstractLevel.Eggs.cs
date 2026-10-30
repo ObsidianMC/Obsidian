@@ -30,24 +30,30 @@ public abstract partial class AbstractLevel
             var palette = section.BlockStateContainer.Palette;
             var hasEggs = false;
             for (var index = 0; index < palette.Count; index++)
+            {
                 if (palette.GetValueFromIndex(index)?.RegistryId is BlockIds.SnifferEgg or BlockIds.TurtleEgg)
                 {
                     hasEggs = true;
                     break;
                 }
+            }
 
             if (!hasEggs)
                 continue;
             for (var y = 0; y < 16; y++)
-            for (var z = 0; z < 16; z++)
-            for (var x = 0; x < 16; x++)
             {
-                var block = section.GetBlock(x, y, z);
-                        if (block.RegistryId is not BlockIds.SnifferEgg and not BlockIds.TurtleEgg)
-                            continue;
-                var point = new Vector(chunk.X * 16 + x, chunk.MinY + sectionIndex * 16 + y, chunk.Z * 16 + z);
-                if (chunk.MobEggTicks.TryAdd(point, block.Is(BlockIds.SnifferEgg) ? SnifferEggDelay(point) : 0))
-                    chunk.MarkUnsaved();
+                for (var z = 0; z < 16; z++)
+                {
+                    for (var x = 0; x < 16; x++)
+                    {
+                        var block = section.GetBlock(x, y, z);
+                                if (block.RegistryId is not BlockIds.SnifferEgg and not BlockIds.TurtleEgg)
+                                    continue;
+                        var point = new Vector(chunk.X * 16 + x, chunk.MinY + sectionIndex * 16 + y, chunk.Z * 16 + z);
+                        if (chunk.MobEggTicks.TryAdd(point, block.Is(BlockIds.SnifferEgg) ? SnifferEggDelay(point) : 0))
+                            chunk.MarkUnsaved();
+                    }
+                }
             }
         }
     }
@@ -90,7 +96,9 @@ public abstract partial class AbstractLevel
                             continue;
                         if (GameEventBlock(point - new Vector(0, 1, 0))?.RegistryId
                             is not (BlockIds.Sand or BlockIds.RedSand))
+                        {
                             continue;
+                        }
                     }
                     var hatch = int.TryParse(block.GetProperty("hatch"), out var value) ? value : 0;
                     if (hatch < 2)
@@ -134,7 +142,10 @@ public abstract partial class AbstractLevel
     {
         if (entity.Type is EntityType.Turtle or EntityType.Bat || entity is not ILiving ||
             entity is IPlayer { GameMode: GameMode.Spectator } || entity is not IPlayer && !LevelData.GetBooleanRule("mob_griefing"))
+        {
             return;
+        }
+
         if (Random.Shared.Next(landed ? 3 : 100) != 0)
             return;
         var origin = (Vector)entity.Position.Floor();

@@ -217,7 +217,9 @@ public partial class MainEventHandler
     {
         if (player.GameMode is GameMode.Creative or GameMode.Spectator
             || !world.LevelData.GetBooleanRule("block_drops", true))
+        {
             return;
+        }
 
         foreach (var stack in drops)
             world.SpawnItem((VectorD)position + 0.5, stack);

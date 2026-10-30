@@ -41,7 +41,9 @@ public class Animal : AgeableMob
     {
         if (!Alive || IsRemoved || player.Health <= 0 || player.GameMode == GameMode.Spectator || player.Level != Level ||
             !IsInRange(player, 4) || !CanSee(player))
+        {
             return false;
+        }
 
         var slot = hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
         var item = player.Inventory.GetItem(slot);
@@ -49,7 +51,9 @@ public class Animal : AgeableMob
             return false;
 
         if (IsBaby)
+        {
             Age += (-Age / 20 / 10) * 20;
+        }
         else
         {
             LoveTicks = 600;

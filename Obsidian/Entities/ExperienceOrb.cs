@@ -32,7 +32,10 @@ public sealed partial class ExperienceOrb : Entity
     {
         if (Level is not AbstractLevel level || level.GetLoadedChunk((int)Math.Floor(Position.X) >> 4,
             (int)Math.Floor(Position.Z) >> 4) == null)
+        {
             return;
+        }
+
         if (++age >= 6000)
         {
             await RemoveAsync();

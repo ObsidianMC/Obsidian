@@ -44,11 +44,16 @@ internal sealed record MobTestExhibit(EntityType Type, string Label, bool Frozen
 
             if (type is EntityType.Horse or EntityType.Donkey or EntityType.Mule or EntityType.Camel or
                 EntityType.SkeletonHorse or EntityType.ZombieHorse or EntityType.Pig or EntityType.Strider or EntityType.Nautilus)
+            {
                 yield return Equipped(type, "saddled", EquipmentSlot.Saddle, ItemsRegistry.Saddle);
+            }
+
             if (type is EntityType.Zombie or EntityType.Husk or EntityType.Drowned or EntityType.Skeleton or EntityType.Stray or
                 EntityType.Bogged or EntityType.Parched or EntityType.WitherSkeleton or EntityType.Piglin or EntityType.ZombifiedPiglin)
+            {
                 yield return Equipped(type, "armored", EquipmentSlot.Helmet, ItemsRegistry.DiamondHelmet,
                     EquipmentSlot.Chestplate, ItemsRegistry.DiamondChestplate);
+            }
 
             switch (type)
             {

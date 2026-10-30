@@ -117,7 +117,9 @@ internal static class FishingData
                     var value = definition.GetProperty("value");
                     if (definition.GetProperty("type").GetString() != "minecraft:add"
                         || value.GetProperty("type").GetString() != "minecraft:linear")
+                    {
                         throw new InvalidDataException($"Unsupported {effect} effect on {enchantment.Name}.");
+                    }
 
                     total.Base += value.GetProperty("base").GetDouble();
                     if (value.TryGetProperty("per_level_above_first", out var perLevel))

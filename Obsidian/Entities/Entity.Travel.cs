@@ -58,6 +58,7 @@ public partial class Entity
                 this.SpawnEntity();
             }
             else
+            {
                 this.PacketBroadcaster.QueuePacketToLevel(level, new TeleportEntityPacket
                 {
                     EntityId = this.EntityId,
@@ -67,6 +68,7 @@ public partial class Entity
                     Pitch = this.Pitch,
                     OnGround = this.MovementFlags.HasFlag(MovementFlags.OnGround)
                 });
+            }
         }
 
         await this.CarryPassengersAsync(riders, from, fromYaw, fromPitch);
@@ -114,6 +116,7 @@ public partial class Entity
     private protected bool IsTravelResident(ILevel source)
     {
         lock (ItemEntity.TransferLock)
+        {
             return this.Level == source
                 && this is not ItemEntity { Removed: true }
                 && this is not Mob { IsRemoved: true }
@@ -121,6 +124,7 @@ public partial class Entity
                 && origin.GetRegionForLocation(this.Position) is IRegion region
                 && region.Entities.TryGetValue(this.EntityId, out var entity)
                 && ReferenceEquals(entity, this);
+        }
     }
 
     private void ValidateTravelResident(ILevel source)
@@ -196,7 +200,9 @@ public partial class Entity
             || position.Y <= int.MinValue || position.Y >= int.MaxValue
             || yaw is Angle y && !float.IsFinite(y.Degrees)
             || pitch is Angle p && !float.IsFinite(p.Degrees))
+        {
             throw new ArgumentOutOfRangeException(
                 nameof(position), "Travel requires finite coordinates inside the global coordinate limits.");
+        }
     }
 }

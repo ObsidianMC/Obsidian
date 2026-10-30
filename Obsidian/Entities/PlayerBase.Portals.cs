@@ -54,7 +54,10 @@ public partial class PlayerBase
             if (!this.returningFromEnd
                 && (contact is null || contact.Value.BlockId != this.lastPortal
                     || contact.Value.Type != this.lastPortalType))
+            {
                 this.portalGeneration++;
+            }
+
             if (!pending.IsCompleted)
                 return;
             this.portalDestination = null;
@@ -90,7 +93,9 @@ public partial class PlayerBase
         }
         if (portal.BlockId != this.lastPortal || portal.Type != this.lastPortalType
             || this.lastPortalBinding != (portal.Type?.Generation ?? 0))
+        {
             this.portalTime = 0;
+        }
 
         this.lastPortal = portal.BlockId;
         this.lastPortalType = portal.Type;
@@ -185,8 +190,11 @@ public partial class PlayerBase
                         await EndTravel.BuildArrivalPlatformAsync(destination);
 
                     if (CanContinue())
+                    {
                         return new(destination, position, enteringEnd ? 90f : this.Yaw,
                             enteringEnd ? 0f : this.Pitch, VectorD.Zero, area);
+                    }
+
                     area.Dispose();
                     return null;
                 }

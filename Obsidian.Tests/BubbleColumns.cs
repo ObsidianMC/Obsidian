@@ -41,8 +41,10 @@ public sealed class BubbleColumns
         var client = (TestClient)viewer.Client;
         Assert.True(world.TryAddPlayer(viewer));
         for (var chunkX = -1; chunkX <= 1; chunkX++)
+        {
             for (var chunkZ = -1; chunkZ <= 1; chunkZ++)
                 viewer.LoadedChunks.Add(NumericsHelper.IntsToLong(chunkX, chunkZ));
+        }
 
         var source = new Vector(8, Ground, 8);
         var water = source + Vector.Up;
@@ -72,8 +74,11 @@ public sealed class BubbleColumns
         var client = (TestClient)viewer.Client;
         Assert.True(world.TryAddPlayer(viewer));
         for (var chunkX = -1; chunkX <= 1; chunkX++)
+        {
             for (var chunkZ = -1; chunkZ <= 1; chunkZ++)
                 viewer.LoadedChunks.Add(NumericsHelper.IntsToLong(chunkX, chunkZ));
+        }
+
         viewer.GameMode = GameMode.Survival;
         viewer.Inventory.SetItem(viewer.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.WaterBucket, 1));
 

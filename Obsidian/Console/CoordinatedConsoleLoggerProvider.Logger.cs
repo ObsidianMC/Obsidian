@@ -32,8 +32,10 @@ public sealed partial class CoordinatedConsoleLoggerProvider
             string message = writer.ToString();
 
             if (message.Length != 0)
+            {
                 provider.terminal.WriteLog(message,
                     logLevel >= provider.options.CurrentValue.LogToStandardErrorThreshold);
+            }
         }
     }
 }

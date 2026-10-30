@@ -73,7 +73,10 @@ public partial class PlayerBase
     {
         if (!float.IsFinite(amount) || amount <= 0 || !Alive || Respawning || source.Level != Level ||
             GameMode is GameMode.Creative or GameMode.Spectator || Abilities.HasFlag(PlayerAbility.Invulnerable))
+        {
             return;
+        }
+
         if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact && HasPotionEffect((int)PotionEffect.FireResistance - 1))
             return;
 
@@ -204,8 +207,10 @@ public partial class PlayerBase
             this.Statistics.Increment(brokenIdentifier, type: "minecraft:broken");
 
         if (broke)
+        {
             PacketBroadcaster.QueuePacketToLevel(Level, new EntityEventPacket
             { EntityId = EntityId, Event = (byte)(slot switch { 5 => 49, 6 => 50, 7 => 51, 8 => 52, 45 => 48, _ => 47 }) });
+        }
     }
 
     internal ValueTask SyncInventorySlotAsync(int slot) => this.QueuePacketAsync(new ContainerSetSlotPacket
@@ -304,7 +309,10 @@ public partial class PlayerBase
         var slot = attack.WeaponSlot >= 0 ? attack.WeaponSlot : CurrentHeldItemSlot;
         if (!CanAttack(target, item) || !ReferenceEquals(Inventory.GetItem(slot), item) ||
             !attack.ChargeAttack && (damage <= 0 || !attack.PiercingAttack && item?.Holder.UnlocalizedName.EndsWith("_spear", StringComparison.Ordinal) == true && AttackCharge < 1))
+        {
             return;
+        }
+
         if (attack.ChargeAttack && target is Living chargedTarget)
         {
             if (attack.ChargeKnockback)
@@ -342,9 +350,14 @@ public partial class PlayerBase
             {
                 FallDistance = 0;
                 foreach (var neighbor in Level.GetEntitiesInRange(target.Position, 3.5f).OfType<Living>())
+                {
                     if (!ReferenceEquals(neighbor, this) && !ReferenceEquals(neighbor, target))
+                    {
                         CombatEffects.Knockback(neighbor, neighbor.Position - target.Position,
                             (float)(3.5 - (neighbor.Position - target.Position).Magnitude) * (smashDistance > 5 ? 5 : 1));
+                    }
+                }
+
                 var wind = CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.WindBurst);
                 if (wind > 0)
                     ApplyImpulse(new VectorD(0, wind switch { 1 => 1.2, 2 => 1.75, _ => 2.2 }, 0));
@@ -355,11 +368,13 @@ public partial class PlayerBase
                 var sweeping = CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.SweepingEdge);
                 var sweepDamage = 1 + damage * (sweeping / (sweeping + 1f));
                 foreach (var neighbor in Level.GetEntitiesInRange(target.Position, 1.5f).OfType<Living>())
+                {
                     if (!ReferenceEquals(neighbor, target) && !ReferenceEquals(neighbor, this) && CanAttack(neighbor))
                     {
                         await neighbor.DamageCombatAsync(this, sweepDamage, CombatDamageKind.Melee, item);
                         CombatEffects.Knockback(neighbor, neighbor.Position - Position, 0.4f);
                     }
+                }
             }
         }
         var lightWear = attack.ChargeAttack

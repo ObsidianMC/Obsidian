@@ -15,6 +15,8 @@ public sealed partial class ZombieHorse : AbstractHorse
             !Level.LevelData.Raining && !Level.LevelData.Thundering && !InWater &&
             Random.NextSingle() * 30 < 1.2f && Terrain.GetSkyLight((Vector)EyePosition.Floor()) == 15 &&
             GetEquipment(Obsidian.API.Inventory.EquipmentSlot.Body).IsAir)
+        {
             Ignite(8);
+        }
     }
 }

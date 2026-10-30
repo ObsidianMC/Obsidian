@@ -308,17 +308,21 @@ public partial class Boat : VehicleEntity
         var underwater = false;
 
         for (var x = (int)Math.Floor(bounds.Min.X); x < (int)Math.Ceiling(bounds.Max.X); x++)
-        for (var y = (int)Math.Floor(bounds.Max.Y); y < (int)Math.Ceiling(top); y++)
-        for (var z = (int)Math.Floor(bounds.Min.Z); z < (int)Math.Ceiling(bounds.Max.Z); z++)
         {
-            var position = new Vector(x, y, z);
-            if (this.WaterAt(position) is not (FluidState fluid, float height) || top >= y + height)
-                continue;
+            for (var y = (int)Math.Floor(bounds.Max.Y); y < (int)Math.Ceiling(top); y++)
+            {
+                for (var z = (int)Math.Floor(bounds.Min.Z); z < (int)Math.Ceiling(bounds.Max.Z); z++)
+                {
+                    var position = new Vector(x, y, z);
+                    if (this.WaterAt(position) is not (FluidState fluid, float height) || top >= y + height)
+                        continue;
 
-            if (!fluid.IsSource)
-                return BoatStatus.UnderFlowingWater;
+                    if (!fluid.IsSource)
+                        return BoatStatus.UnderFlowingWater;
 
-            underwater = true;
+                    underwater = true;
+                }
+            }
         }
 
         return underwater ? BoatStatus.UnderWater : null;
@@ -332,15 +336,19 @@ public partial class Boat : VehicleEntity
         this.waterLevel = double.MinValue;
 
         for (var x = (int)Math.Floor(bounds.Min.X); x < (int)Math.Ceiling(bounds.Max.X); x++)
-        for (var y = (int)Math.Floor(bounds.Min.Y); y < (int)Math.Ceiling(bounds.Min.Y + 0.001); y++)
-        for (var z = (int)Math.Floor(bounds.Min.Z); z < (int)Math.Ceiling(bounds.Max.Z); z++)
         {
-            if (this.WaterAt(new Vector(x, y, z)) is not (_, float height))
-                continue;
+            for (var y = (int)Math.Floor(bounds.Min.Y); y < (int)Math.Ceiling(bounds.Min.Y + 0.001); y++)
+            {
+                for (var z = (int)Math.Floor(bounds.Min.Z); z < (int)Math.Ceiling(bounds.Max.Z); z++)
+                {
+                    if (this.WaterAt(new Vector(x, y, z)) is not (_, float height))
+                        continue;
 
-            var surface = y + height;
-            this.waterLevel = Math.Max(surface, this.waterLevel);
-            inWater |= bounds.Min.Y < surface;
+                    var surface = y + height;
+                    this.waterLevel = Math.Max(surface, this.waterLevel);
+                    inWater |= bounds.Min.Y < surface;
+                }
+            }
         }
 
         return inWater;

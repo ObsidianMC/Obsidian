@@ -31,7 +31,9 @@ public partial class PlayerBase
 
         if (use.Item is { Count: > 0 } stack && Plugins.ItemBehaviors.CanUseItems(this) &&
             await Plugins.ItemBehaviors.UseAsync(new ItemUseContext { Player = this, Stack = stack, Hand = hand }))
+        {
             return;
+        }
 
         // Vanilla's Item.use for items whose owner class has a counterpart (throwables, eyes of ender), by owner class.
         if (use.Item is { Count: > 0 } thrown && ItemUseBehaviors.For(thrown) is { } useBehavior)
@@ -60,7 +62,9 @@ public partial class PlayerBase
             var component = CombatItems.Component(item, "equippable");
             if (component.ValueKind == JsonValueKind.Object && component.TryGetProperty("equip_sound", out var name)
                 && name.ValueKind == JsonValueKind.String)
+            {
                 sound = name.GetString();
+            }
         }
 
         if (sound is null || Silent)
@@ -127,12 +131,18 @@ public partial class PlayerBase
         if (item.Holder.Id is ItemIds.Bow or ItemIds.Crossbow
             && FindAmmunition(item.Is(ItemsRegistry.Crossbow)) < 0
             && GameMode != GameMode.Creative)
+        {
             return;
+        }
+
         if (item.Is(ItemsRegistry.Shield) && shieldCooldown > 0)
             return;
         if (item.Is(ItemsRegistry.Trident) && (item.Damage >= CombatItems.MaxDamage(item) - 1 ||
             CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Riptide) > 0 && !IsWet()))
+        {
             return;
+        }
+
         usingWeapon = item;
         weaponSlot = slot;
         weaponTicks = 0;
@@ -166,12 +176,17 @@ public partial class PlayerBase
     private int FindAmmunition(bool crossbow)
     {
         foreach (var slot in new[] { 45, (int)CurrentHeldItemSlot }.Concat(Enumerable.Range(9, 36)).Distinct())
+        {
             if (Inventory.GetItem(slot) is { Count: > 0 } item &&
                 (item.Holder.Id is ItemIds.Arrow or ItemIds.TippedArrow or ItemIds.SpectralArrow
                     || crossbow
                         && (slot == 45 || slot == CurrentHeldItemSlot)
                         && item.Is(ItemsRegistry.FireworkRocket)))
+            {
                 return slot;
+            }
+        }
+
         return -1;
     }
 
@@ -339,8 +354,10 @@ public partial class PlayerBase
             }
             }
             else
+            {
                 fired |= ShootArrow(weapon, round, 3.15f, true,
                 GameMode == GameMode.Creative || index > 0 ? ArrowPickup.CreativeOnly : ArrowPickup.Allowed, angle, true);
+            }
         }
         return ValueTask.FromResult(fired);
     }
@@ -362,8 +379,10 @@ public partial class PlayerBase
                 SyncFoodMetadata();
             }
             else
+            {
                 foreach (var target in Level.GetEntitiesInRange(Position, 1.5f).OfType<Living>())
-                if (!ReferenceEquals(target, this))
+                {
+                    if (!ReferenceEquals(target, this))
                 {
                     await target.DamageCombatAsync(this, riptideDamage, CombatDamageKind.Melee, GetHeldItem());
                     riptideTicks = 0;
@@ -371,6 +390,8 @@ public partial class PlayerBase
                     SyncFoodMetadata();
                     break;
                 }
+                }
+            }
         }
         if (usingWeapon is not { } item)
             return;
@@ -411,7 +432,9 @@ public partial class PlayerBase
             CancelWeaponUse();
         }
         else if (CombatItems.Component(item, "kinetic_weapon") is { ValueKind: JsonValueKind.Object } kinetic)
+        {
             await TickSpearAsync(item, kinetic);
+        }
     }
 
     /// <summary>
@@ -546,7 +569,10 @@ public partial class PlayerBase
         if (usingWeapon?.Is(ItemsRegistry.Shield) != true || weaponTicks < 5 || shieldCooldown > 0 ||
             kind is not (CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion
                 or CombatDamageKind.Thorns))
+        {
             return false;
+        }
+
         if (kind == CombatDamageKind.Projectile && CombatItems.EnchantmentLevel(weapon, EnchantmentsRegistry.Piercing) > 0)
             return false;
         var incoming = incomingFrom - Position;
@@ -562,7 +588,9 @@ public partial class PlayerBase
             await this.QueuePacketAsync(new EntityEventPacket { EntityId = EntityId, Event = 30 });
         }
         else
+        {
             await this.QueuePacketAsync(new EntityEventPacket { EntityId = EntityId, Event = 29 });
+        }
         // Vanilla LivingEntity.hurtServer -> BlocksAttacks.onBlocked: the shield's block_sound (item.shield.block)
         // plays at the blocker's position for nearby players, with pitch 0.8 + random * 0.4.
         PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SoundPacket

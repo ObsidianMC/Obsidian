@@ -120,8 +120,11 @@ public abstract partial class AbstractLevel
             var health = living.Sum(mob => mob.Health);
             raid.Bar.UpdateHealth(raid.TotalHealth > 0 ? Math.Clamp(health / raid.TotalHealth, 0, 1) : 1 - raid.Cooldown / 300f);
             foreach (var mob in living.OfType<PathfinderMob>())
+            {
                 if (mob.AttackTarget == null && mob.Navigator is { } navigation && !navigation.IsNavigating)
                     navigation.NavigateTo((VectorD)raid.Center);
+            }
+
             if (living.Length != 0)
                 continue;
             var waves = LevelData.Difficulty == Difficulty.Easy ? 3 : LevelData.Difficulty == Difficulty.Normal ? 5 : 7;
@@ -129,8 +132,11 @@ public abstract partial class AbstractLevel
             {
                 raid.Bar.UpdateTitle(ChatMessage.Simple("Raid - Victory"));
                 if (++raid.VictoryTicks == 40)
+                {
                     foreach (var hero in Players.Values.Where(player => raid.Heroes.Contains(player.Uuid)))
                         hero.AddPotionEffect((int)PotionEffect.HeroOfTheVillage - 1, 48000, raid.Omen - 1);
+                }
+
                 if (raid.VictoryTicks > 600)
                 {
                     ClearRaidBar(raid);
@@ -258,12 +264,16 @@ public abstract partial class AbstractLevel
             var x = center.X + (int)(Math.Cos(angle) * radius);
             var z = center.Z + (int)(Math.Sin(angle) * radius);
             for (var y = Math.Min(MinY + Height - 2, center.Y + 32); y >= Math.Max(MinY, center.Y - 32); y--)
+            {
                 if (terrain.GetBlock(new Vector(x, y, z)) is { IsAir: false } ground
                     && !ground.Is(BlockIds.Water)
                     && !ground.Is(BlockIds.Lava)
                     && terrain.GetBlock(new Vector(x, y + 1, z))?.IsAir == true
                     && terrain.GetBlock(new Vector(x, y + 2, z))?.IsAir == true)
+                {
                     return new VectorD(x + 0.5, y + 1, z + 0.5);
+                }
+            }
         }
         return null;
     }
@@ -284,6 +294,7 @@ public abstract partial class AbstractLevel
             return;
         }
         if (LevelData.GetBooleanRule("mob_drops") && source is IPlayer && raider.UnmodeledData.TryGetBool("PatrolLeader", out var captain) && captain)
+        {
             SpawnEntity(new ItemEntity
             {
                 Level = this,
@@ -291,6 +302,7 @@ public abstract partial class AbstractLevel
                 Position = raider.Position,
                 Item = ItemsRegistry.GetSingleItem(ItemsRegistry.OminousBottle)
             });
+        }
     }
 
     private static void ClearRaidBar(VillageRaid raid)
@@ -369,10 +381,17 @@ public abstract partial class AbstractLevel
             if (data.TryGetTagValue<string>("Id", out var id) && Guid.TryParse(id, out var uuid))
                 raid.Id = uuid;
             foreach (var (name, set) in new[] { ("Raiders", raid.Raiders), ("Heroes", raid.Heroes) })
+            {
                 if (data.TryGetTagValue<string>(name, out var ids))
+                {
                     foreach (var value in ids.Split(','))
+                    {
                         if (Guid.TryParse(value, out var parsed))
                             set.Add(parsed);
+                    }
+                }
+            }
+
             raids.Add(raid);
         }
     }

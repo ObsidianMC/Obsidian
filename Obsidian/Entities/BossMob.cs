@@ -40,13 +40,19 @@ public abstract class BossMob : PathfinderMob
             nearbyPlayers.Add(player.EntityId);
         removedPlayers.Clear();
         foreach (var id in bar.Players)
+        {
             if (!nearbyPlayers.Contains(id))
                 removedPlayers.Add(id);
+        }
+
         foreach (var id in removedPlayers)
             bar.RemovePlayer(id);
         foreach (var id in nearbyPlayers)
+        {
             if (!bar.HasPlayer(id))
                 bar.AddPlayer(id);
+        }
+
         var progress = Math.Clamp(BarProgress, 0, 1);
         if (bar.Health != progress)
             bar.UpdateHealth(progress);

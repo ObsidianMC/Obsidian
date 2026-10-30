@@ -14,7 +14,10 @@ public class ChestedHorse : AbstractHorse
             || player.Level != Level
             || player.GameMode == GameMode.Spectator
             || !IsInRange(player, 4))
+        {
             return false;
+        }
+
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (HorseMask.HasFlag(HorseMask.Tamed)
             && !IsBaby
@@ -93,7 +96,10 @@ public partial class Llama : ChestedHorse
             || player.Level != Level
             || player.GameMode == GameMode.Spectator
             || !IsInRange(player, 4))
+        {
             return false;
+        }
+
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (HorseMask.HasFlag(HorseMask.Tamed) && item is { Count: > 0 } && item.Holder.UnlocalizedName.EndsWith("_carpet", StringComparison.Ordinal))
         {
@@ -186,7 +192,10 @@ internal sealed class LlamaSpitGoal(Llama llama) : AI.NavigationGoal(llama, 1.2f
     {
         if (llama.AttackTarget is not IEntity target) return default;
         llama.LookControl.LookAt(target);
-        if (!llama.IsInRange(target, 10) || !llama.CanSee(target)) MoveTo(target);
+        if (!llama.IsInRange(target, 10) || !llama.CanSee(target))
+        {
+            MoveTo(target);
+        }
         else
         {
             Navigation.Stop();

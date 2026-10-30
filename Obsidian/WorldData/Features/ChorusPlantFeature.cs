@@ -23,7 +23,9 @@ public sealed class ChorusPlantFeature : ConfiguredFeatureBase
         if (!level.EnsureCanWrite(origin)
             || !level.GetBlock(origin).IsAir
             || !level.GetBlock(origin + Vector.Down).Is(BlockIds.EndStone))
+        {
             return false;
+        }
 
         level.SetBlock(origin, WithConnections(level.GetBlock, origin));
         GrowTreeRecursive(level, origin, context.Random, origin, 0);

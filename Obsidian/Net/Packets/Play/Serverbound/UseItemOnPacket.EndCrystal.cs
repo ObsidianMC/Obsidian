@@ -13,14 +13,22 @@ public partial class UseItemOnPacket
         if (item is not { Count: > 0, Holder.Id: ItemIds.EndCrystal }) return false;
         player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = Sequence });
         if (player.GameMode == GameMode.Spectator || player.Health <= 0 || player.Level is not AbstractLevel level ||
-            (player.Position - (VectorD)Position).MagnitudeSquared() > 36) return true;
+            (player.Position - (VectorD)Position).MagnitudeSquared() > 36)
+        {
+            return true;
+        }
+
         var terrain = new MobTerrain(level);
         if (terrain.GetBlock(Position)?.RegistryId is not BlockIds.Obsidian and not BlockIds.Bedrock) return true;
         var above = Position + Vector.Up;
         if (level.IsOutsideBuildHeight(above.Y) || terrain.GetBlock(above)?.IsAir != true) return true;
         var bounds = new BoundingBox((VectorD)above, (VectorD)above + new VectorD(1, 2, 1));
         if (level.GetEntitiesInRange((VectorD)above, 4).Any(entity =>
-            entity.Dimension.CreateBBFromPosition(entity.Position).Intersects(bounds))) return true;
+            entity.Dimension.CreateBBFromPosition(entity.Position).Intersects(bounds)))
+        {
+            return true;
+        }
+
         var crystal = new EndCrystal { Level = level, EntityId = Server.GetNextEntityId(),
             Position = (VectorD)above + new VectorD(0.5, 0, 0.5), ShowBottom = false };
         level.SpawnEntity(crystal);

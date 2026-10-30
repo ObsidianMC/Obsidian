@@ -22,7 +22,10 @@ public sealed partial class ZombieVillager : Zombie
         if (!Alive || IsRemoved || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator ||
             !IsInRange(player, 4) || !CanSee(player) || ConversionTime >= 0 ||
             !HasPotionEffect((int)PotionEffect.Weakness - 1))
+        {
             return false;
+        }
+
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (item is not { Count: > 0, Holder.Id: ItemIds.GoldenApple })
             return false;
@@ -47,18 +50,24 @@ public sealed partial class ZombieVillager : Zombie
             var position = (Vector)Position.Floor();
             var specialBlocks = 0;
             for (var x = -4; x < 4 && specialBlocks < 14; x++)
-            for (var y = -4; y < 4 && specialBlocks < 14; y++)
-            for (var z = -4; z < 4 && specialBlocks < 14; z++)
             {
-                var block = Terrain.GetBlock(position + new Vector(x, y, z));
-                if (block == null
-                    || block.RegistryId != BlockIds.IronBars
-                        && !TagsRegistry.Block.Beds.Entries.Contains(block.RegistryId))
-                    continue;
+                for (var y = -4; y < 4 && specialBlocks < 14; y++)
+                {
+                    for (var z = -4; z < 4 && specialBlocks < 14; z++)
+                    {
+                        var block = Terrain.GetBlock(position + new Vector(x, y, z));
+                        if (block == null
+                            || block.RegistryId != BlockIds.IronBars
+                                && !TagsRegistry.Block.Beds.Entries.Contains(block.RegistryId))
+                        {
+                            continue;
+                        }
 
-                specialBlocks++;
-                        if (Random.NextSingle() < 0.3f)
-                            progress++;
+                        specialBlocks++;
+                                if (Random.NextSingle() < 0.3f)
+                                    progress++;
+                    }
+                }
             }
         }
         ConversionTime -= progress;

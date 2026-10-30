@@ -34,7 +34,9 @@ public abstract class FarmAnimal : Animal
         if (held is not { Count: > 0 })
             return;
         if (player.GameMode != GameMode.Creative && held.Count == 1)
+        {
             player.Inventory.SetItem(slot, item);
+        }
         else
         {
             if (player.GameMode != GameMode.Creative)

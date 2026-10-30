@@ -19,7 +19,9 @@ internal static class EntityNbt
         if (entity.Type is EntityType type && !IsSaved(type)
             || entity is Mob { HasAi: true } mob && (!mob.Alive && mob is not EnderDragon || mob.IsRemoved)
             || entity is TextDisplay { Transient: true })
+        {
             return null;
+        }
 
         var tag = new NbtCompound { new NbtTag<string>("id", TypeId(entity)) };
         foreach (var (name, child) in entity.UnmodeledData)

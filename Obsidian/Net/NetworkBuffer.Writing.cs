@@ -460,7 +460,9 @@ public partial class NetworkBuffer : INetStreamWriter
                     continue;
             }
             else
+            {
                 encoded.WriteDataComponent(component);
+            }
 
             components.Add((component.Type, encoded.data.AsSpan(0, encoded.Offset).ToArray()));
         }
@@ -478,7 +480,9 @@ public partial class NetworkBuffer : INetStreamWriter
                 this.Write(component.Bytes);
             }
             else
+            {
                 this.Write(component.Bytes);
+            }
         }
 
         foreach (var componentType in value.RemoveComponents)

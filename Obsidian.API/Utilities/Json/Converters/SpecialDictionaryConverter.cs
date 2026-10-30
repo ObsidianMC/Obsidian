@@ -39,7 +39,9 @@ internal sealed class SpecialDictionaryConverter : JsonConverter<Dictionary<stri
             writer.WritePropertyName(key);
 
             if (values.Length == 1)
+            {
                 writer.WriteStringValue(values[0]);
+            }
             else
             {
                 writer.WriteStartArray();

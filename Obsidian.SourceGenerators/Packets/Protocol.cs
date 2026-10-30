@@ -97,8 +97,10 @@ internal sealed class Protocol
     public static string PascalCase(string name)
     {
         if (name.Contains('_') || name.ToUpperInvariant() == name)
+        {
             return string.Concat(name.Split(['_'], StringSplitOptions.RemoveEmptyEntries)
                 .Select(word => char.ToUpperInvariant(word[0]) + word.Substring(1).ToLowerInvariant()));
+        }
 
         return char.ToUpperInvariant(name[0]) + name.Substring(1);
     }

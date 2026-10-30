@@ -140,7 +140,9 @@ internal static class Signs
             if (level.Level.IsFaceSturdy(position.Offset(side), side.Opposite(), SupportType.Center)
                 || neighbor.BlockClass() == WallHanging && Face(neighbor.GetProperty("facing")) is BlockFace other
                     && (other == facing || other == facing.Opposite()))
+            {
                 return true;
+            }
         }
 
         return false;
@@ -241,7 +243,9 @@ internal static class Signs
         if ((player.Position - ((VectorD)position + new VectorD(0.5, 0.5, 0.5))).Magnitude > EditRange
             || level.GetLoadedBlock(position) is not IBlock state || !IsSign(state)
             || level.GetLoadedBlockEntity(position) is not DataBlockEntity sign)
+        {
             return;
+        }
 
         var data = sign.SnapshotData();
         if (data.TryGetBool("is_waxed", out var waxed) && waxed)

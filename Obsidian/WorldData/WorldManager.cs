@@ -150,7 +150,9 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
 
         if (!CodecRegistry.TryGetDimension(serverWorld.DefaultDimension, out var defaultCodec)
             && !CodecRegistry.TryGetDimension("minecraft:overworld", out defaultCodec))
+        {
             throw new UnreachableException("Failed to get default dimension codec.");
+        }
 
         var loaded = await world.LoadAsync(defaultCodec);
         if (!loaded)

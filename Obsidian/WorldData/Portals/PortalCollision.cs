@@ -17,7 +17,9 @@ internal static class PortalCollision
         var radius = halfWidth + 1;
         var obstacles = new List<BoundingBox>();
         for (var x = (int)Math.Floor(position.X - radius - halfWidth); x <= Math.Floor(position.X + radius + halfWidth); x++)
+        {
             for (var y = (int)Math.Floor(position.Y - 1); y <= Math.Floor(position.Y + height + 1); y++)
+            {
                 for (var z = (int)Math.Floor(position.Z - radius - halfWidth); z <= Math.Floor(position.Z + radius + halfWidth); z++)
                 {
                     var block = read(new Vector(x, y, z));
@@ -30,6 +32,9 @@ internal static class PortalCollision
                             new VectorD(x + box.Max.X + halfWidth, y + box.Max.Y, z + box.Max.Z + halfWidth)));
                     }
                 }
+            }
+        }
+
         bool IsFree(VectorD point) => obstacles.All(box => point.X <= box.Min.X || point.X >= box.Max.X ||
             point.Y <= box.Min.Y || point.Y >= box.Max.Y || point.Z <= box.Min.Z || point.Z >= box.Max.Z);
         if (IsFree(position))
@@ -41,7 +46,9 @@ internal static class PortalCollision
         var best = position;
         var bestDistance = double.MaxValue;
         foreach (var x in xs)
+        {
             foreach (var y in ys)
+            {
                 foreach (var z in zs)
                 {
                     var distance = Math.Pow(x - position.X, 2) + Math.Pow(y - position.Y, 2) + Math.Pow(z - position.Z, 2);
@@ -52,6 +59,9 @@ internal static class PortalCollision
                         bestDistance = distance;
                     }
                 }
+            }
+        }
+
         return best;
     }
 

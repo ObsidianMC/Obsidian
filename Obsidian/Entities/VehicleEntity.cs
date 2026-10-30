@@ -387,7 +387,9 @@ public abstract class VehicleEntity : Entity, IPlayerInteractable
             this.FallDistance = 0;
         }
         else if (displacement.Y < 0)
+        {
             this.FallDistance -= displacement.Y;
+        }
 
         var next = this.Position + displacement;
         this.SetPosition(next);

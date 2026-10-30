@@ -73,7 +73,9 @@ public sealed class PluginSounds
 
                     Assert.Equal((int)SoundCategory.Blocks, reader.ReadVarInt());
                     if (index == 1)
+                    {
                         Assert.Equal(player.EntityId, reader.ReadVarInt());
+                    }
                     else
                     {
                         Assert.Equal(12, reader.ReadInt());

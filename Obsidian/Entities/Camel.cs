@@ -66,7 +66,10 @@ public partial class Camel : AbstractHorse, IRideableJumping
     {
         if (!Alive || IsRemoved || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator ||
             !IsInRange(player, 4) || !CanSee(player))
+        {
             return false;
+        }
+
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (CanEat(item))
         {
@@ -74,7 +77,9 @@ public partial class Camel : AbstractHorse, IRideableJumping
                 return false;
             Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + 2);
             if (IsBaby)
+            {
                 Age = Math.Min(0, Age + 200);
+            }
             else if (Age == 0 && LoveTicks == 0)
             {
                 LoveTicks = 600;
@@ -119,7 +124,10 @@ public partial class Camel : AbstractHorse, IRideableJumping
     {
         if (!ReferenceEquals(Rider, player) || !HasSaddle || IsSitting || DashCooldown > 0 ||
             !MovementFlags.HasFlag(MovementFlags.OnGround) || InWater || InLava || MobBitMask.HasFlag(MobBitmask.NoAi))
+        {
             return false;
+        }
+
         return Interlocked.CompareExchange(ref pendingDashCharge, Math.Clamp(charge, 0, 100), -1) == -1;
     }
 

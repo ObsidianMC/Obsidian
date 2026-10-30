@@ -219,7 +219,9 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         {
             if ((this.writtenAreas >> index & 1) != 0 && this.area[index] is IChunk chunk && chunk.ChunkStatus >= ChunkGenStage.initialize_light
                 && this.areaHeightmaps[index] is FinalHeightmaps heightmaps)
+            {
                 WorldgenHeightmaps.StoreFinal(chunk, heightmaps);
+            }
         }
     }
 

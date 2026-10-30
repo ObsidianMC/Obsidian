@@ -45,9 +45,13 @@ public sealed partial class Evoker : PathfinderMob
             if (warmup > 0 && --warmup == 0)
             {
                 if (spell == 1 && AttackTarget is { } target && IsValidTarget(target))
+                {
                     CastFangs(target);
+                }
                 else if (spell == 2)
+                {
                     SummonVexes();
+                }
                 else if (spell == 3 && sheep is { Alive: true, IsRemoved: false, Color: 11 } && sheep.Level == Level)
                 {
                     sheep.Color = 14;
@@ -124,8 +128,10 @@ public sealed partial class Evoker : PathfinderMob
                 SpawnFang(Position.X + Math.Cos(angle + i * Math.PI * 0.25 + 1.256637) * 2.5, Position.Z + Math.Sin(angle + i * Math.PI * 0.25 + 1.256637) * 2.5, minY, maxY, angle + i * Math.PI * 0.25 + 1.256637, 3);
         }
         else
+        {
             for (var i = 0; i < 16; i++)
                 SpawnFang(Position.X + Math.Cos(angle) * 1.25 * (i + 1), Position.Z + Math.Sin(angle) * 1.25 * (i + 1), minY, maxY, angle, i);
+        }
     }
 
     private void SpawnFang(double x, double z, double minY, double maxY, double angle, int delay)

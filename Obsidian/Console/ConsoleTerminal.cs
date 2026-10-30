@@ -68,11 +68,14 @@ public sealed partial class ConsoleTerminal(IConsoleDevice device, IOptions<Cons
 
                         if (this.text.Length == 0 && key.Modifiers.HasFlag(ConsoleModifiers.Control)
                             && key.Key is ConsoleKey.D or ConsoleKey.Z)
+                        {
                             return null;
-
+                        }
 
                         if (key.Key == ConsoleKey.Tab && complete is not null)
+                        {
                             completionInput = (this.text, this.cursor);
+                        }
                         else
                         {
                             this.Edit(key);

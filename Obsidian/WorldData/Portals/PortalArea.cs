@@ -18,11 +18,14 @@ internal sealed class PortalArea(AbstractLevel level) : IDisposable
         try
         {
             for (var x = (center.X - radius) >> 4; x <= (center.X + radius) >> 4; x++)
+            {
                 for (var z = (center.Z - radius) >> 4; z <= (center.Z + radius) >> 4; z++)
                 {
                     level.PinPortalChunk(x, z, 1);
                     area.tickets.Add((x, z));
                 }
+            }
+
             var pending = new HashSet<(int X, int Z)>(area.tickets);
             while (pending.Count > 0)
             {
@@ -39,7 +42,9 @@ internal sealed class PortalArea(AbstractLevel level) : IDisposable
                         pending.Remove((x, z));
                     }
                     else if (!generateMissing)
+                    {
                         pending.Remove((x, z));
+                    }
                 }
                 if (pending.Count > 0)
                     await Task.Delay(25);

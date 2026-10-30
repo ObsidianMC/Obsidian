@@ -87,7 +87,9 @@ public abstract partial class AbstractLevel
                 EmitGameEvent(MobGameEvent.SculkSensorClick, (VectorD)point + new VectorD(0.5, 0.5, 0.5), pending.Event.Source, pending.Event.Owner);
             }
             else if (block?.RegistryId == BlockIds.SculkShrieker)
+            {
                 await ShriekAsync(point, pending.Event.Owner ?? pending.Event.Source);
+            }
         }
         foreach (var (point, ticks) in activeSculk.ToArray())
         {
@@ -175,7 +177,10 @@ public abstract partial class AbstractLevel
     {
         if (pending.TryGetValue(key, out var previous) && (previous.SelectedAt != gameEventTick ||
             previous.Distance < distance || previous.Distance == distance && GameEventFrequency(previous.Event.Kind) >= GameEventFrequency(vibration.Kind)))
+        {
             return;
+        }
+
         pending[key] = new(vibration, gameEventTick, gameEventTick + Math.Max(1, (int)Math.Floor(distance)), distance);
     }
 
@@ -184,17 +189,23 @@ public abstract partial class AbstractLevel
     private IEnumerable<Vector> NearbySculk(Vector origin, int radius, string? id = null)
     {
         for (var cx = (origin.X - radius) >> 4; cx <= (origin.X + radius) >> 4; cx++)
-        for (var cz = (origin.Z - radius) >> 4; cz <= (origin.Z + radius) >> 4; cz++)
         {
+            for (var cz = (origin.Z - radius) >> 4; cz <= (origin.Z + radius) >> 4; cz++)
+            {
                 // Most chunks never hold a block entity, which HasBlockEntities tells without walking the dictionary.
                 if (GetLoadedChunk(cx, cz) is not Chunk chunk || !chunk.HasBlockEntities)
                     continue;
-            // Read in place: each step any mob takes asks for the sculk near it.
-            foreach (var (_, blockEntity) in chunk.BlockEntities)
-                if (blockEntity is DataBlockEntity entity &&
-                    (id == null ? entity.Id is "minecraft:sculk_sensor" or "minecraft:calibrated_sculk_sensor" or "minecraft:sculk_shrieker" : entity.Id == id) &&
-                    (entity.BlockPosition - origin).MagnitudeSquared() <= radius * radius && IsMobTicking((VectorD)entity.BlockPosition))
-                    yield return entity.BlockPosition;
+                // Read in place: each step any mob takes asks for the sculk near it.
+                foreach (var (_, blockEntity) in chunk.BlockEntities)
+                {
+                    if (blockEntity is DataBlockEntity entity &&
+                        (id == null ? entity.Id is "minecraft:sculk_sensor" or "minecraft:calibrated_sculk_sensor" or "minecraft:sculk_shrieker" : entity.Id == id) &&
+                        (entity.BlockPosition - origin).MagnitudeSquared() <= radius * radius && IsMobTicking((VectorD)entity.BlockPosition))
+                    {
+                        yield return entity.BlockPosition;
+                    }
+                }
+            }
         }
     }
 
@@ -207,7 +218,10 @@ public abstract partial class AbstractLevel
         var point = (Vector)vibration.Position.Floor();
         if (vibration.Kind is MobGameEvent.Step or MobGameEvent.Land &&
             (DampensVibrations(GameEventBlock(point)) || DampensVibrations(GameEventBlock(point - new Vector(0, 1, 0)))))
+        {
             return false;
+        }
+
         return vibration.Kind is not (MobGameEvent.BlockPlace or MobGameEvent.BlockDestroy or MobGameEvent.BlockChange) || !DampensVibrations(vibration.AffectedBlock ?? GameEventBlock(point));
     }
 
@@ -293,7 +307,10 @@ public abstract partial class AbstractLevel
             nearby.AddPotionEffect((int)PotionEffect.Darkness - 1, 260);
         if (block.GetProperty("can_summon") != "true" || LevelData.Difficulty == Difficulty.Peaceful || !LevelData.GetBooleanRule("spawn_wardens") ||
             GetNonPlayerEntitiesInRange((VectorD)point, 48).Any(entity => entity is Warden))
+        {
             return;
+        }
+
         var players = GetPlayersInRange((VectorD)point, 16).Where(nearby => nearby.GameMode != GameMode.Spectator).Append(player).DistinctBy(nearby => nearby.Uuid).ToArray();
         var warning = players.Select(nearby => wardenWarnings.GetValueOrDefault(nearby.Uuid, new(0, -200))).MaxBy(warning => warning.Level)!;
         if (players.Any(nearby => wardenWarnings.TryGetValue(nearby.Uuid, out var previous) && gameEventTick - previous.LastWarning < 200))
@@ -317,7 +334,10 @@ public abstract partial class AbstractLevel
             var position = (VectorD)spawn + new VectorD(0.5, 0, 0.5);
             if (terrain.GetBlock(spawn - new Vector(0, 1, 0)) is not { IsAir: false, IsLiquid: false } ||
                 !terrain.IsFree(new EntityDimension { Width = 0.9f, Height = 2.9f }.CreateBBFromPosition(position)))
+            {
                 continue;
+            }
+
             var warden = new Warden { Level = this, EntityId = Server.GetNextEntityId(), Position = position };
             warden.BeginEmerging();
             SpawnEntity(warden);

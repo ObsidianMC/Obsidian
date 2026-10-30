@@ -66,12 +66,16 @@ public sealed partial class Ravager : PathfinderMob
         if (Terrain.IsFree(bounds))
             return;
         for (var x = (int)Math.Floor(bounds.Min.X); x <= (int)Math.Floor(bounds.Max.X); x++)
-        for (var y = (int)Math.Floor(bounds.Min.Y); y <= (int)Math.Floor(bounds.Max.Y); y++)
-        for (var z = (int)Math.Floor(bounds.Min.Z); z <= (int)Math.Floor(bounds.Max.Z); z++)
         {
-            var point = new Vector(x, y, z);
-            if (Terrain.GetBlock(point) is { } block && TagsRegistry.Block.Leaves.Entries.Contains(block.RegistryId))
-                Level.DestroyBlock(point, dropItems: true, this);
+            for (var y = (int)Math.Floor(bounds.Min.Y); y <= (int)Math.Floor(bounds.Max.Y); y++)
+            {
+                for (var z = (int)Math.Floor(bounds.Min.Z); z <= (int)Math.Floor(bounds.Max.Z); z++)
+                {
+                    var point = new Vector(x, y, z);
+                    if (Terrain.GetBlock(point) is { } block && TagsRegistry.Block.Leaves.Entries.Contains(block.RegistryId))
+                        Level.DestroyBlock(point, dropItems: true, this);
+                }
+            }
         }
     }
 

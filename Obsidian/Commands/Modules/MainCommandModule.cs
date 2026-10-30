@@ -469,7 +469,10 @@ public sealed class MainCommandModule : CommandModuleBase
             await player.SendMessageAsync("Respawn before setting health.");
             return;
         }
-        if (health == 0) await player.KillAsync(player, ChatMessage.Simple("You died."));
+        if (health == 0)
+        {
+            await player.KillAsync(player, ChatMessage.Simple("You died."));
+        }
         else
         {
             player.Health = health;

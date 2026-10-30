@@ -45,10 +45,14 @@ internal static partial class AdvancementsRegistry
                 yield break;
             var descendants = children[definition.Identifier].SelectMany(Build).ToArray();
             if (definition.Display is not null)
+            {
                 yield return new DisplayBranch(definition.Identifier, descendants);
+            }
             else
+            {
                 foreach (var child in descendants)
                     yield return child;
+            }
         }
     }
 
@@ -135,7 +139,9 @@ internal static partial class AdvancementsRegistry
     {
         yield return (branch.Identifier, depth, branch.Row + offset);
         foreach (var child in branch.Children)
+        {
             foreach (var position in Positions(child, depth + 1, offset + branch.Offset))
                 yield return position;
+        }
     }
 }

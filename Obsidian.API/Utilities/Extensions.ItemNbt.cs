@@ -258,8 +258,11 @@ public partial class Extensions
     {
         var result = new NbtCompound(name);
         for (var i = 0; i < 4; i++)
+        {
             if (decorations[i] is ItemStack stack)
                 result.Add(stack.ToNbt(PotFaces[i]));
+        }
+
         return result;
     }
 
@@ -373,7 +376,9 @@ public partial class Extensions
     {
         var explosions = ImmutableArray.CreateBuilder<FireworkExplosion>();
         if (tag.TryGetTag<NbtList>("explosions", out var list))
+        {
             foreach (var explosion in list.OfType<NbtCompound>())
+            {
                 explosions.Add(new()
                 {
                     Shape = explosion.TryGetTagValue<string>("shape", out var shape) && Enum.TryParse<FireworkExplosionShape>(shape.Replace("_", ""), true, out var parsed) ? (int)parsed : 0,
@@ -382,6 +387,9 @@ public partial class Extensions
                     HasTrail = explosion.TryGetBool("has_trail", out var trail) && trail,
                     HasTwinkle = explosion.TryGetBool("has_twinkle", out var twinkle) && twinkle
                 });
+            }
+        }
+
         return new() { FlightDuration = tag.TryGetTagValue<int>("flight_duration", out var duration) ? Math.Clamp(duration, 0, 255) : 0, Explosions = explosions.ToImmutable() };
     }
 

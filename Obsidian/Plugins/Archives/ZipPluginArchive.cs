@@ -74,7 +74,9 @@ internal sealed class ZipPluginArchive : PluginArchive
             if (entry.FullName.Contains('\\')
                 || entry.FullName.StartsWith('/')
                 || entry.FullName.Split('/').Contains(".."))
+            {
                 throw new InvalidDataException($"The archive has an invalid path '{entry.FullName}'.");
+            }
 
             if (!entries.TryAdd(entry.FullName, entry))
                 throw new InvalidDataException($"The archive has '{entry.FullName}' more than once.");

@@ -58,6 +58,7 @@ public sealed class PlayPayloads
                 var modes = new[] { TeamModeOption.CreateTeam, TeamModeOption.UpdateTeam, TeamModeOption.RemoveTeam,
                     TeamModeOption.AddEntities, TeamModeOption.RemoveEntities, TeamModeOption.UpdateTeam };
                 for (var i = 0; i < modes.Length; i++)
+                {
                     Equal(references[i], new SetPlayerTeamPacket
                     {
                         TeamName = "fixture", Mode = modes[i], TeamDisplayName = "Team", TeamPrefix = "[", TeamSuffix = "]",
@@ -67,16 +68,22 @@ public sealed class PlayPayloads
                         TeamColor = i == 5 ? TeamColor.Reset : TeamColor.Red,
                         Entities = [i == 3 ? "Steve" : "Alex"]
                     });
+                }
+
                 break;
             case "level_particles":
                 foreach (var reference in references.EnumerateArray())
+                {
                     for (var i = 0; i < 3; i++)
+                    {
                         Equal(reference.GetProperty("wire")[i], new LevelParticlesPacket
                         {
                             Data = new SimpleParticle((ParticleType)reference.GetProperty("id").GetInt32()),
                             OverrideLimiter = true, Position = new(-12.25, 64.5, 31.875), Offset = new(.25f, .5f, .75f),
                             Speed = new(1, 2, 3), ParticleCount = 301, Randomization = (ParticleRandomization)i
                         });
+                    }
+                }
 
                 // The captures always set per-axis speeds and leave AlwaysShow off. Without Speed, MaxSpeed fills every
                 // axis, and AlwaysShow is the flag after OverrideLimiter.
@@ -98,6 +105,7 @@ public sealed class PlayPayloads
                 break;
             case "explode":
                 for (var i = 0; i < 2; i++)
+                {
                     Equal(references[i], new ExplodePacket
                     {
                         Center = new(-12.25, 64.5, 31.875), Radius = 4, BlockCount = i == 0 ? 301 : 0,
@@ -114,6 +122,8 @@ public sealed class PlayPayloads
                         }] : [],
                         PlaySound = i == 0
                     });
+                }
+
                 break;
             case "update_advancements":
                 foreach (var reference in references.EnumerateArray())
@@ -189,6 +199,7 @@ public sealed class PlayPayloads
                 break;
             case "player_chat":
                 for (var i = 0; i < 3; i++)
+                {
                     Equal(references[i], new PlayerChatPacket
                     {
                         GlobalIndex = 7, Sender = Guid.Parse("01234567-89ab-cdef-0123-456789abcdef"), Index = 301,
@@ -201,6 +212,8 @@ public sealed class PlayPayloads
                         FilterType = (ChatFilterType)i, FilterMask = [unchecked((long)0x8000000000000002), 64],
                         ChatFormatting = new() { ChatType = 0, SenderName = "Alex", TargetName = i == 0 ? null : ChatMessage.Simple("Steve") }
                     });
+                }
+
                 break;
             case "chat":
                 var chat = new ChatPacket();
@@ -242,21 +255,27 @@ public sealed class PlayPayloads
                 break;
             case "disguised_chat":
                 for (var i = 0; i < 2; i++)
+                {
                     Equal(references[i], new DisguisedChatPacket
                     {
                         Message = "Hello", ChatType = 0, SenderName = "Alex",
                         TargetName = i == 0 ? null : ChatMessage.Simple("Steve")
                     });
+                }
+
                 break;
             case "update_recipes":
                 var recipes = new Dictionary<string, IRecipe>();
                 foreach (var type in new[] { CraftingType.Smelting, CraftingType.Blasting })
+                {
                     recipes.Add(type.ToString(), new SmeltingRecipe
                     {
                         Identifier = type.ToString(), Type = type, Experience = 0.7f, CookingTime = 200,
                         Category = CookingBookCategory.Misc, Ingredient = [new ItemStack(ItemsRegistry.RawIron)],
                         Result = [new ItemStack(ItemsRegistry.IronIngot)]
                     });
+                }
+
                 recipes.Add("cut", new CuttingRecipe
                 {
                     Identifier = "cut", Type = CraftingType.Stonecutting, Ingredient = [new ItemStack(ItemsRegistry.Stone)],

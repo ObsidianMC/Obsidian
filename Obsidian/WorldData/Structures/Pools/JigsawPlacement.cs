@@ -118,7 +118,9 @@ internal static class JigsawPlacement
         {
             if (box.MinX < bounds.MinX || box.MinY < bounds.MinY || box.MinZ < bounds.MinZ
                 || box.MaxX > bounds.MaxX || box.MaxY > bounds.MaxY || box.MaxZ > bounds.MaxZ)
+            {
                 return false;
+            }
 
             foreach (var other in this.taken)
             {

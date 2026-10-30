@@ -90,13 +90,19 @@ public sealed partial class Server
         if (!Uri.TryCreate(value, UriKind.Absolute, out var candidate) || candidate.Scheme != "https" ||
             candidate.Port != 443 || candidate.UserInfo.Length != 0 ||
             candidate.Host is not ("discord.com" or "discordapp.com" or "canary.discord.com" or "ptb.discord.com"))
+        {
             return false;
+        }
+
         var parts = candidate.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
         var webhookIndex = parts.Length == 4 ? 1 : 2;
         if (parts.Length is not (4 or 5) || parts[0] != "api" || parts[webhookIndex] != "webhooks" ||
             (parts.Length == 5 && (parts[1].Length < 2 || parts[1][0] != 'v' || !parts[1][1..].All(char.IsAsciiDigit))) ||
             !parts[webhookIndex + 1].All(char.IsAsciiDigit) || parts[webhookIndex + 2].Length == 0)
+        {
             return false;
+        }
+
         uri = candidate;
         return true;
     }
@@ -140,7 +146,10 @@ public sealed partial class Server
             };
             request.Options.Set(FeedbackRequestOption, true);
             using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
-            if (response.IsSuccessStatusCode) await Respond("Thank you! Your feedback was sent.");
+            if (response.IsSuccessStatusCode)
+            {
+                await Respond("Thank you! Your feedback was sent.");
+            }
             else
             {
                 logger.LogWarning("Feedback webhook returned HTTP {StatusCode}", (int)response.StatusCode);

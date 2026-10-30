@@ -40,7 +40,9 @@ public sealed partial class ZombieNautilus : Nautilus
         }
         if (!InWater && Level.MonstersBurn((Vector)Position.Floor()) &&
             !Level.LevelData.Raining && Terrain.GetSkyLight((Vector)EyePosition.Floor()) == 15 && GetEquipment(EquipmentSlot.Body).IsAir)
+        {
             Ignite(8);
+        }
     }
 
     public override void Write(INetStreamWriter writer)
