@@ -18,11 +18,13 @@ using Obsidian.Plugins.Archives;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.Tests.Utilities;
+using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -141,6 +143,39 @@ public sealed class PluginRecipes
         Assert.Equal(writer.Size, reader.Offset);
     }
 
+
+    [Fact(DisplayName = "A plugin's brewing recipe file brews and fills the brewing property sets until it unloads",
+        Timeout = TestServerFactory.TestTimeout)]
+    public async Task BrewingRecipeFileBrewsUntilItsPluginUnloads()
+    {
+        await using var context = TestServerFactory.CreateServer($"brewing-file-{Guid.NewGuid():N}");
+        var plugin = Plugin();
+        var barrier = new ItemStack(ItemsRegistry.Barrier, 1);
+        var bedrock = new ItemStack(ItemsRegistry.Bedrock, 1);
+
+        // Bedrock brews a barrier into a potion of luck; no vanilla recipe takes either.
+        context.Server.LoadRecipeFiles([(plugin, [BrewingFile("probe:luck")])]);
+
+        var loaded = context.Server.RecipeRegistry.Current;
+        var brewed = Brewing.Mix(barrier, bedrock, loaded);
+        var potion = brewed?.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents);
+        var loadedSets = PropertySets(loaded);
+
+        Assert.True(brewed?.Is(ItemsRegistry.Potion));
+        Assert.Equal(API.Potion.Luck, potion?.Potion);
+        Assert.Contains(ItemsRegistry.Barrier.Id, loadedSets["minecraft:brewing_input"]);
+        Assert.Contains(ItemsRegistry.Bedrock.Id, loadedSets["minecraft:brewing_reagent"]);
+
+        // Unloading the plugin reloads the recipe files without its own.
+        context.Server.LoadRecipeFiles([]);
+
+        var unloaded = context.Server.RecipeRegistry.Current;
+        var unloadedSets = PropertySets(unloaded);
+
+        Assert.Null(Brewing.Mix(barrier, bedrock, unloaded));
+        Assert.DoesNotContain(ItemsRegistry.Barrier.Id, unloadedSets["minecraft:brewing_input"]);
+        Assert.DoesNotContain(ItemsRegistry.Bedrock.Id, unloadedSets["minecraft:brewing_reagent"]);
+    }
 
     [Fact(DisplayName = "A plugin's recipe crafts in the player's grid and leaves it and their book on unload",
         Timeout = TestServerFactory.TestTimeout)]
@@ -474,6 +509,43 @@ public sealed class PluginRecipes
         .Build();
 
     private static Ingredient IngredientOf(Item item) => [new ItemStack(item, 1)];
+
+    // A brewing recipe file in which bedrock brews a barrier into a potion of luck.
+    private static RecipeFile BrewingFile(string identifier)
+    {
+        using var json = JsonDocument.Parse("""
+            {
+                "type": "minecraft:brewing",
+                "input": { "item": "minecraft:barrier" },
+                "reagent": { "item": "minecraft:bedrock" },
+                "output": {
+                    "id": "minecraft:potion",
+                    "components": { "minecraft:potion_contents": { "potion": "minecraft:luck" } }
+                }
+            }
+            """);
+
+        return new RecipeFile(identifier, json.RootElement.Clone());
+    }
+
+    // The property sets an update recipes packet sends, by name.
+    private static Dictionary<string, int[]> PropertySets(RecipeSet recipes)
+    {
+        using var writer = new NetworkBuffer();
+        recipes.UpdatePacket.Serialize(writer);
+        using var reader = new NetworkBuffer(writer.AsSpan(0, writer.Size).ToArray());
+
+        var sets = new Dictionary<string, int[]>();
+        var count = reader.ReadVarInt();
+        for (var set = 0; set < count; set++)
+        {
+            var name = reader.ReadString();
+            var ids = Enumerable.Range(0, reader.ReadVarInt()).Select(_ => reader.ReadVarInt()).ToArray();
+            sets.Add(name, ids);
+        }
+
+        return sets;
+    }
 
     private static ContainerClickPacket Click(short slot, sbyte button, ClickType type)
     {
