@@ -779,7 +779,7 @@ public sealed class VanillaCommands26
     }
 
     // The captured slot 0 item whose contents an expression reaches into.
-    private static ItemStack? Holder(string holder)
+    private static ItemStack Holder(string holder)
     {
         switch (holder)
         {
