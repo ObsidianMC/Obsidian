@@ -3,8 +3,20 @@
   "pools": [
     {
       "rolls": 1,
-      "conditions": [{ "condition": "minecraft:killed_by_player" }],
-      "entries": [{ "type": "minecraft:item", "name": "sample:charm" }]
+      "condition": {
+        "type": "minecraft:all_of",
+        "terms": [
+          {
+            "type": "minecraft:killed_by_player"
+          }
+        ]
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "sample:charm"
+        }
+      ]
     }
   ],
   "random_sequence": "sample:entities/moth"

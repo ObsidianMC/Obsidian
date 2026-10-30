@@ -255,9 +255,9 @@ public sealed class PluginMobs
         PluginLootTables.Apply([LootTableJson.Parse("""
             { "type": "minecraft:entity", "pools": [{
               "rolls": 1,
-              "conditions": [{ "condition": "minecraft:killed_by_player" }],
-              "entries": [{ "type": "minecraft:item", "name": "minecraft:diamond", "functions": [
-                { "function": "minecraft:enchanted_count_increase", "enchantment": "minecraft:looting", "count": 1 }
+              "condition": { "type": "minecraft:all_of", "terms": [{ "type": "minecraft:killed_by_player" }] },
+              "entries": [{ "type": "minecraft:item", "name": "minecraft:diamond", "modifier": [
+                { "type": "minecraft:enchanted_count_increase", "enchantment": "minecraft:looting", "count": 1 }
               ] }]
             }] }
             """, "pluginmobs:entities/drake")]);

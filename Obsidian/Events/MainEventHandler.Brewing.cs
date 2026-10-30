@@ -32,6 +32,7 @@ public partial class MainEventHandler
             return MoveStack(player, stand, slot, inventory, 9, 45, reverse: true);
 
         const int fuel = BrewingStand.FuelSlot;
+        var recipes = PlayerRecipes(player);
         const int ingredient = BrewingStand.IngredientSlot;
 
         if (Brewing.IsFuel(item))
@@ -39,14 +40,14 @@ public partial class MainEventHandler
             if (MoveStack(player, inventory, slot, stand, fuel, fuel + 1, reverse: false))
                 return false;
 
-            return BrewingRegistry.IsIngredient(item)
+            return Brewing.IsIngredient(item, recipes)
                 && MoveStack(player, inventory, slot, stand, ingredient, ingredient + 1, reverse: false);
         }
 
-        if (BrewingRegistry.IsIngredient(item))
+        if (Brewing.IsIngredient(item, recipes))
             return MoveStack(player, inventory, slot, stand, ingredient, ingredient + 1, reverse: false);
 
-        if (Brewing.IsBottle(item))
+        if (Brewing.IsBottle(item, recipes))
             return MoveStack(player, inventory, slot, stand, BrewingStand.FirstBottleSlot, 3, reverse: false);
 
         return slot < 36

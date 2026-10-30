@@ -1,76 +1,142 @@
-﻿using Obsidian.API.Commands;
-using Obsidian.Entities;
-using Obsidian.Net.Packets.Play.Clientbound;
-using System.Collections.Frozen;
+using Obsidian.API.Commands;
+using Obsidian.WorldData;
+using System.Globalization;
 
 namespace Obsidian.Commands.Modules;
 
 [CommandGroup("time")]
-[CommandInfo("Sets declared time", "/time <set|add> (value)")]
+[CommandInfo("Changes world clocks", "/time <set|add|pause|resume|rate|query|of>")]
 [RequirePermission(permissions: "time")]
 public sealed class TimeCommandModule : CommandModuleBase
 {
-    private const int Mod = 24_000;
-    private static readonly FrozenDictionary<string, int> TimeDictionary = new Dictionary<string, int>()
-        {
-            { "day", 1000 },
-            { "night", 13_000 },
-            { "noon", 6000  },
-            { "midnight", 18_000 }
-        }.ToFrozenDictionary();
+    private ILevel Level => this.Player?.Level ?? this.Server.DefaultWorld;
 
     [Command("query")]
-    [CommandInfo("Queries the time", "/time query <day|daytime|gametime>")]
-    public async Task Query([Suggestions("daytime", "gametime", "day")] string value)
+    public async Task Query(string value = "time")
     {
-        switch (value)
+        if (value == "gametime")
         {
-            case "daytime":
-                await this.Sender.SendMessageAsync($"The time is {this.Server.DefaultWorld.DayTime}");
-                break;
-            case "day":
-                await this.Sender.SendMessageAsync($"The time is {(int)(this.Server.DefaultWorld.Time / Mod)}");
-                break;
-            case "gametime":
-                await this.Sender.SendMessageAsync($"The time is {this.Server.DefaultWorld.Time}");
-                break;
-            default:
-                await this.Sender.SendMessageAsync("Invalid value.");
-                break;
-        }
-    }
-
-    [Command("set")]
-    [CommandInfo("Sets declared time", "/time set <(d|t|s)>")]
-    public async Task SetTime(MinecraftTime time)
-    {
-        if (time.ConvertServerTime(this.Server))
-            await this.Sender.SendMessageAsync($"Set the time to {this.Server.DefaultWorld.Time}");
-        else
-            await this.Sender.SendMessageAsync("Failed to set the time.");
-    }
-
-    [CommandOverload]
-    [CommandInfo("Sets declared time", "/time set <day|night|noon|midnight>")]
-    public async Task SetTime([Suggestions("day", "night", "noon", "midnight")] string value)
-    {
-        if (TimeDictionary.TryGetValue(value, out int time))
-        {
-            this.Server.DefaultWorld.DayTime = time;
-
-            await this.Sender.SendMessageAsync($"Set the time to {value}");
-
+            await this.Sender.SendMessageAsync($"The time is {this.Level.LevelData.WorldClocks.GameTime}");
             return;
         }
 
-        await this.Sender.SendMessageAsync($"{value} is an invalid argument value.");
+        await this.ExecuteAsync(null, "query", value);
     }
 
-    [Command("add")]
-    public async Task AddTime(int timeToAdd)
-    {
-        this.Server.DefaultWorld.DayTime += timeToAdd;
+    [Command("set")]
+    public Task SetTime(MinecraftTime time) => this.ExecuteAsync(null, "set", time.Tick?.ToString());
 
-        await this.Sender.SendMessageAsync($"Set the time to {this.Server.DefaultWorld.Time}");
+    [CommandOverload]
+    public Task SetTime(string value) => this.ExecuteAsync(null, "set", value);
+
+    [Command("add")]
+    public Task AddTime(int ticks) => this.ExecuteAsync(null, "add", ticks.ToString(CultureInfo.InvariantCulture));
+
+    [Command("pause")]
+    public Task Pause() => this.ExecuteAsync(null, "pause", null);
+
+    [Command("resume")]
+    public Task Resume() => this.ExecuteAsync(null, "resume", null);
+
+    [Command("rate")]
+    public Task Rate(float rate) => this.ExecuteAsync(null, "rate", rate.ToString(CultureInfo.InvariantCulture));
+
+    [Command("of")]
+    public Task Of(string clock, string action, string? value = null) => this.ExecuteAsync(clock, action, value);
+
+    private async Task ExecuteAsync(string? identifier, string action, string? value)
+    {
+        identifier ??= WorldTimelines.DefaultClock(this.Level);
+        if (identifier is null)
+        {
+            await this.Sender.SendMessageAsync("This dimension has no default clock; use /time of <clock>.");
+            return;
+        }
+
+        if (!identifier.Contains(':'))
+            identifier = "minecraft:" + identifier;
+
+        if (!this.Level.LevelData.WorldClocks.States.TryGetValue(identifier, out var clock))
+        {
+            await this.Sender.SendMessageAsync($"Unknown clock {identifier}.");
+            return;
+        }
+
+        if (action == "query")
+        {
+            var result = value switch
+            {
+                "daytime" => clock.TotalTicks % 24000,
+                "day" => clock.TotalTicks / 24000,
+                _ => clock.TotalTicks
+            };
+            await this.Sender.SendMessageAsync($"The time is {result}");
+            return;
+        }
+
+        if (!Change(clock, identifier, action, value))
+        {
+            await this.Sender.SendMessageAsync("Invalid clock operation or value.");
+            return;
+        }
+
+        if (this.Level is AbstractLevel level)
+            level.SynchronizeClocks();
+
+        await this.Sender.SendMessageAsync($"Updated {identifier}: time {clock.TotalTicks}, rate {clock.Rate}.");
+    }
+
+    private static bool Change(WorldClockState clock, string identifier, string action, string? value)
+    {
+        switch (action)
+        {
+            case "pause":
+                clock.Paused = true;
+                return true;
+
+            case "resume":
+                clock.Paused = false;
+                return true;
+
+            case "rate":
+                if (!float.TryParse(value, CultureInfo.InvariantCulture, out var rate)
+                    || !float.IsFinite(rate)
+                    || rate <= 0
+                    || rate > 1000)
+                    return false;
+
+                clock.Rate = rate;
+                return true;
+
+            case "add":
+                if (!int.TryParse(value, CultureInfo.InvariantCulture, out var delta))
+                    return false;
+
+                // 26.3 ServerClockManager.addTicks preserves the fractional tick and clamps at zero.
+                clock.TotalTicks = Math.Max(0, clock.TotalTicks + delta);
+                return true;
+
+            case "set":
+                if (int.TryParse(value, CultureInfo.InvariantCulture, out var ticks) && ticks >= 0)
+                {
+                    clock.SetTime(ticks);
+                    return true;
+                }
+
+                var markerName = value;
+                if (markerName is not null && !markerName.Contains(':'))
+                    markerName = "minecraft:" + markerName;
+
+                if (markerName is null
+                    || !WorldTimelines.Markers.TryGetValue(markerName, out var marker)
+                    || marker.Clock != identifier)
+                    return false;
+
+                clock.SetTime(marker.Next(clock.TotalTicks));
+                return true;
+
+            default:
+                return false;
+        }
     }
 }

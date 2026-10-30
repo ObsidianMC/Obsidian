@@ -719,7 +719,7 @@ public sealed class WorldBlockEntities : IDisposable
         await context.World.SetBlockEntity(position, keeping);
         PluginLootTables.Apply([LootTableJson.Parse("""
             {"pools":[{"rolls":1,"entries":[{"type":"minecraft:item","name":"minecraft:barrel",
-              "functions":[{"function":"minecraft:copy_components","source":"block_entity",
+              "modifier":[{"type":"minecraft:copy_components","source":"block_entity",
                 "include":["minecraft:container"]}]}]}]}
             """, "probe:blocks/crate")]);
         await using (var capture = await BlockEntityComponents.CaptureAsync(context.World, position, human))

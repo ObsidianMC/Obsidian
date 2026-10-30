@@ -398,8 +398,8 @@ internal static partial class WorldUpgrade
         var settings = new NewWorldConfiguration { GenerateStructures = level.MapFeatures };
         var files = VanillaLevelData.Create(settings, levelName, Get(root, "RandomSeed", 0L), generator);
 
-        // The game time; Obsidian's one clock was both.
-        files.Data.Add(new NbtTag<long>("Time", level.Time));
+        // Obsidian's single legacy clock tracked both sun time and elapsed game time.
+        level.WorldClocks.GameTime = level.Time;
 
         var rules = root.TryGetTag<NbtCompound>("game_rules", out var gameRules) || root.TryGetTag("GameRules", out gameRules)
             ? gameRules

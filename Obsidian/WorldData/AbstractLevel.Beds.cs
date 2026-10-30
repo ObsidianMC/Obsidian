@@ -12,8 +12,6 @@ public abstract partial class AbstractLevel
 
     private const int MaxAnchorCharges = 4;
 
-    private const int DayLength = 24000;
-
     // How many players were asleep at the last tick, to tell players when it changes (vanilla's SleepStatus).
     private int previousSleepers;
 
@@ -55,10 +53,16 @@ public abstract partial class AbstractLevel
         if (sleeping < needed || players.Count(player => player.SleptLongEnough) < needed)
             return;
 
-        if (LevelData.GetBooleanRule("advance_time"))
+        // ServerLevel uses the dimension's optional default clock, and only that clock's wake-up marker.
+        if (LevelData.GetBooleanRule("advance_time")
+            && WorldTimelines.DefaultClock(this) is string clockId
+            && WorldTimelines.Markers.TryGetValue("minecraft:wake_up_from_sleep", out var marker)
+            && marker.Clock == clockId
+            && LevelData.WorldClocks.States.TryGetValue(clockId, out var clock)
+            && !marker.OccursAt(clock.TotalTicks))
         {
-            var morning = LevelData.Time + DayLength;
-            this.Time = morning - morning % DayLength;
+            clock.SetTime(marker.Next(clock.TotalTicks));
+            this.BroadcastTime();
         }
 
         foreach (var player in players.Where(player => player.Sleeping))

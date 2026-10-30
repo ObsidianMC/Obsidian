@@ -70,6 +70,15 @@ public static partial class RecipesRegistry
             Template = Snapshot(value.Template),
             Pattern = value.Pattern,
         },
+        BrewingRecipe value => new BrewingRecipe
+        {
+            Identifier = value.Identifier,
+            Type = value.Type,
+            Group = value.Group,
+            Input = Snapshot(value.Input),
+            Reagent = Snapshot(value.Reagent),
+            Output = CopySavedComponents(NetworkBuffer.SnapshotItemStack(value.Output)),
+        },
         IRecipeWithResult value => new StoredRecipeWithResult
         {
             Identifier = value.Identifier,
@@ -93,6 +102,15 @@ public static partial class RecipesRegistry
             copy.Add(CopySavedComponents(NetworkBuffer.SnapshotItemStack(item)));
 
         return copy;
+    }
+
+    private static PotionIngredient Snapshot(PotionIngredient ingredient)
+    {
+        var potions = ingredient.Potions is null
+            ? null
+            : Array.AsReadOnly(ingredient.Potions.ToArray());
+
+        return new PotionIngredient(Snapshot(ingredient.Items), potions);
     }
 
     // Network snapshots preserve saved-only data by reference. Registration must also own that data, including

@@ -8,6 +8,13 @@ internal static class FixtureDumper
     public static async Task DumpServerAsync(VanillaServer server, string output)
     {
         var classpath = string.Join(Path.PathSeparator, server.ClassPath);
+        await VanillaServer.RunJavaAsync(
+            server.Directory,
+            "-cp",
+            classpath,
+            Source("ContextNumberFixtures.java"),
+            Source("context-number-cases.json"),
+            Path.Combine(output, $"context-numbers-{server.Version}.json"));
         await VanillaServer.RunJavaAsync(server.Directory, "-cp", classpath, Source("ComponentFixtures.java"),
             Source("component-fixtures-input.json"), Path.Combine(output, $"item-components-{server.Version}.json"));
         await VanillaServer.RunJavaAsync(server.Directory, "-cp", classpath, Source("EntityMetadataFixtures.java"),
@@ -18,9 +25,13 @@ internal static class FixtureDumper
             Path.Combine(output, $"client-movement-{server.Version}.json"));
         await VanillaServer.RunJavaAsync(server.Directory, "-cp", classpath, Source("RemainingPlayFixtures.java"),
             Path.Combine(output, $"remaining-play-{server.Version}.json"));
+        await VanillaServer.RunJavaAsync(server.Directory, "-cp", classpath, Source("BrewingFixtures.java"),
+            Path.Combine(server.GeneratedDirectory, "data"), Path.Combine(output, $"brewing-{server.Version}.json"));
         // Also writes synced_registries.json, which the server reads at runtime.
         await VanillaServer.RunJavaAsync(server.Directory, "-cp", classpath, Source("JoinFixtures.java"),
             Path.Combine(output, $"join-payloads-{server.Version}.json"), Path.Combine(output, "synced_registries.json"));
+        await VanillaServer.RunJavaAsync(server.Directory, "-cp", classpath, Source("DataSystemsFixtures.java"),
+            Path.Combine(output, $"data-systems-{server.Version}.json"));
     }
 
     public static async Task DumpClientAsync(VanillaServer server, IReadOnlyList<string> classpath, string output)

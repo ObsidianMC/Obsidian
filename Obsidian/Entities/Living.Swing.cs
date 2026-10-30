@@ -29,7 +29,7 @@ public partial class Living
 
         // Vanilla's SwingState.startIfAble: a new swing replaces one that has run past half its length, or one that
         // started this tick.
-        var now = this.Level.LevelData.Time;
+        var now = this.Level.LevelData.GameTime;
         var elapsed = now - this.swingStart;
         if (this.swingStart >= 0 && elapsed > 0 && elapsed <= this.swingDuration / 2)
             return false;

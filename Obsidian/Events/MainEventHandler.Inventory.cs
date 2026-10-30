@@ -646,7 +646,7 @@ public partial class MainEventHandler
         {
             CraftingTable { Type: InventoryType.Crafting } => slot != 0,
             EnchantmentTable => slot != 1 || item.Is(ItemsRegistry.LapisLazuli),
-            BrewingStand => Brewing.SlotAccepts(slot, item),
+            BrewingStand => Brewing.SlotAccepts(slot, item, PlayerRecipes(player)),
             BaseContainer station when IsWorkstation(station) => WorkstationAccepts(player, station, slot, item),
             BeaconContainer => TagsRegistry.Item.BeaconPaymentItems.Entries.Contains(item.Holder.Id),
             CrafterContainer crafter => !crafter.IsSlotDisabled(slot),

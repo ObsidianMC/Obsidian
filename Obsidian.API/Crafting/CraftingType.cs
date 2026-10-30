@@ -30,5 +30,7 @@ public enum CraftingType
     SmithingTransform,
     SmithingTrim,
 
-    CraftingTransmute
+    CraftingTransmute,
+
+    Brewing
 }

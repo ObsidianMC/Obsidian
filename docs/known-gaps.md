@@ -3,6 +3,18 @@
 Gaps found during the mod-system work that don't limit what mods can do: vanilla parity, test plumbing and a
 contract left weaker on purpose. Each entry says what's missing, why it was left and where to start.
 
+## Context number provider commands and world sources
+
+**Status:** the shared 26.3 int/float provider evaluator and built-in definitions are available in
+`Obsidian.API.Data`. Loot uses it, including arithmetic and conditional providers; captured replays check results
+and subsequent random draws. `/compute` and `/data modify … compute` are not wired yet. Environment attributes,
+command storage and score reads have typed `NumberContext` callbacks for their owning systems to supply.
+Provider holder-set tags and non-constant/non-linear enchantment-level values are not implemented.
+
+**Where to start:** use `ContextNumberProviders.ReadInt`/`ReadFloat` (or the string `ParseInt`/`ParseFloat` overloads)
+with a per-evaluation `NumberContext`. Command support needs resource-or-inline argument parsing, the command's
+context parameters and the existing data-command mutation path; do not create a separate arithmetic evaluator.
+
 ## Low disk space notifications
 
 **Status:** the 26.3 `low_disk_space_warning` packet is available, but the server does not monitor free disk space.
@@ -174,7 +186,11 @@ matcher. Special recipes such as repairing tools and decorating shields are not 
 outputs and remainders still need implementation. Public evaluations are detached plans, not inventory reservations
 or result-slot commit callbacks for custom menus.
 
-**Where to start:** capture each supported special recipe's output and remainder behavior in vanilla 1.21.11 and
+26.1's configurable special recipes aren't read either: `crafting_dye` (dyeing armour) and `crafting_imbue` (tipped
+arrows) are skipped when recipes load (`RecipeConverter`), and `crafting_transmute` recipes, map cloning among them,
+load as nothing.
+
+**Where to start:** capture each supported special recipe's output and remainder behavior in vanilla 26.3 and
 extend the shared matcher and consumption path together. Add a custom-menu commit API when a concrete menu needs it.
 
 ## Workstation details
@@ -276,8 +292,8 @@ hoppers, droppers and dispensers; the rest of vanilla's item movers aren't model
   armour, igniting TNT, shearing, ...) aren't modelled, and a dispenser with nothing to fire doesn't emit vanilla's
   `block_activate` game event.
 - **Composters** take items put in by hand and by a hopper above, and give bone meal out by hand and to a hopper
-  below, with vanilla's chance table. Items thrown into one (item entities) aren't taken yet, and the ready tick
-  is checked by scheduling and running it directly, not over a 20-tick world run.
+  below, adding the layers each item's `minecraft:compostable` gives. Items thrown into one (item entities) aren't
+  taken yet, and the ready tick is checked by scheduling and running it directly, not over a 20-tick world run.
 - **Minecarts with chests or hoppers** are neither containers hoppers reach (vanilla's `getEntityContainer`) nor
   hoppers themselves.
 - **Hopper timing.** A hopper takes in item entities on its own tick, not also as they move into it (vanilla's
@@ -362,8 +378,9 @@ mob's equipment.
   pillagers, vindicators, evokers, ravagers, piglins and piglin brutes, striders, wardens and withers.
   Horses and their relatives, happy ghasts, nautiluses, allays and copper golems keep their equipment or special
   drops; the dragon keeps its separate death sequence. `Mob.Loot.cs` holds the explicit migrated type list.
-- Loot `entity_properties` supports flags, type/tag, equipment and player vehicle predicates. Sheep components and
-  type-specific predicates (sheep, slime and raider), and `damage_source_properties`, remain unsupported; the
+- Loot uses 26.3 tables and namespaced entity predicate maps. `entity_properties` supports flags, entity type/tag,
+  equipment, vehicle and fishing-hook open-water predicates. Sheep components and type-specific predicates
+  (sheep, cube mob and raider), and `damage_source_properties`, remain unsupported; the
   generator excludes sheep, slime, magma cube, pillager, ghast and turtle root tables rather than relaxing their
   conditions. Damage sources still name the vanilla damage type closest to Obsidian's damage kinds.
 - `IEntityBehavior` has no hook for a player getting on or off. A behaviour that reacts to mounting takes the
@@ -437,15 +454,30 @@ and plugin unload/reload.
 
 ## Tilling and other block transformers
 
-**Status:** disabled during the 26.3 port; Phase 4 of [the porting plan](porting-26.3-plan.md) re-enables it.
+**Status:** implemented for vanilla 26.3's transformers.
 
-26.1 replaced `HoeItem.TILLABLES` (and the axe's and shovel's tables) with the data-driven `minecraft:block_transformer`
-item component: rule-based block state providers with tag and offset predicates, sounds, item damage and loot
-tables. The old dump can't be made from 26.3, so hoes no longer till; `ItemUseOnBehaviors` has no counterparts. A
-Phase 6 vanilla capture will cover tilling instead of a hand-written test.
+`UseItemOnPacket` runs the stack's `block_transformer` component after block and plugin interactions. Hoes till,
+axes strip, scrape and remove wax, and shovels make paths. The generated registry supplies predicates, states,
+sounds, particles, durability and rooted-dirt loot. Component overrides and removals work on other items too.
+`DataSystemsFixtures.java` captures vanilla's provider results; `DataSystems` replays them and exercises packet use.
 
-**Where to start:** read vanilla's `data/minecraft/block_transformer` files (`hoe`, `axe`, `shovel`) and run them from
-the item's `block_transformer` component in `UseItemOnPacket`.
+Gameplay tag uses were checked against 26.3's tags. Mushroom survival now uses
+`overrides_mushroom_light_requirement`; the removed `mushroom_grow_block` tag is only retained for Phase 5's legacy
+world generation.
+
+## World clocks, timelines and decorative registries
+
+**Status:** Phase 4 data support implemented.
+
+Game time and the overworld and End clocks are independent. Dimensions share the world's clocks; saves and full
+time syncs retain each clock's ticks, fractional tick, rate and paused state. Sky light, monster burning, early-game
+patrol tracks and sleep markers come from the generated timeline data. `/time of <clock>` selects a clock for
+set, add, pause, resume, rate and query operations. Vanilla's command failure semantics and timeline-specific
+queries remain Phase 6 work.
+
+Trim materials retain 26.3's `palette_id` and text description. Pottery patterns and their item components are read
+from the generated registries, including stack overrides. Their values, clocks and timeline sampling are compared
+with the real vanilla capture in `DataSystemsFixtures.java`.
 
 ## Entity behavior beyond 26.3 metadata
 
@@ -513,13 +545,20 @@ cover the rest of the behavior.
 and replace `SoulSandBlock` and `MagmaBlock` in `BlockOwnerBehaviors` with them, then re-enable the skipped tests in
 `BubbleColumns`.
 
-## Cooking speed from fuel
+## Item component numbers
 
-**Status:** open until Phase 4 of [the porting plan](porting-26.3-plan.md).
+**Status:** mostly done. Furnaces, brewing stands and composters read 26.3's `minecraft:cooking_fuel`,
+`minecraft:brewing_fuel` and `minecraft:compostable` components (`WorldData/ItemFuels.cs`), and brewing stands brew
+by the `minecraft:brewing` recipes.
 
-26.1 gives blasting and smoking recipes the same 200 ticks as smelting; a furnace now cooks at the speed multiplier of
-the fuel it lit with, saved as `speed_multiplier`. Obsidian still reads each recipe's cooking time as is, so blast
-furnaces and smokers cook at a furnace's speed for now, and the cooking test is skipped.
+- The components' numbers name context number providers, which `WorldData/ComponentNumbers.cs` works out with only
+  the provider and predicate types vanilla's fuel and compost providers use. It stands in for Phase 4's context
+  number providers and should be replaced by them.
+- A brewing fuel's numbers are worked out for a default brewing stand rather than the stand's own block state, and a
+  fuel's crafting remainder (none of vanilla's brewing fuels has one) isn't given back.
+- Brewing outputs can set only `minecraft:potion_contents`, and potion tags in brewing inputs aren't read.
+- `minecraft:villager_food` and `minecraft:mob_visibility` aren't read: villagers don't pick up or share food, and
+  mobs don't see players wearing heads any less yet.
 
-**Where to start:** replace `FurnaceFuels` with the fuel component's burn time and speed multiplier, as Phase 4 lists,
-then re-enable `Cooking.MachinesCookAcrossSaveAndAutomationAndAwardExperience`.
+**Where to start:** once context number providers land, resolve `ComponentIntValue` and `ComponentFloatValue` with
+them and delete `ComponentNumbers`.

@@ -48,5 +48,33 @@
       "minecraft:blaze_rod*1"
     ],
     "nextInt": 234785527
+  },
+  {
+    "type": "chicken",
+    "seed": 42,
+    "player": false,
+    "drops": [
+      "minecraft:feather*2",
+      "minecraft:chicken*1"
+    ],
+    "nextInt": 234785527
+  },
+  {
+    "type": "iron_golem",
+    "seed": 1,
+    "player": false,
+    "drops": [
+      "minecraft:iron_ingot*4"
+    ],
+    "nextInt": 1761283695
+  },
+  {
+    "type": "snow_golem",
+    "seed": 42,
+    "player": false,
+    "drops": [
+      "minecraft:snowball*11"
+    ],
+    "nextInt": 234785527
   }
 ]

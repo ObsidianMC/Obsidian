@@ -34,7 +34,7 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
 
         this.LevelData = new LevelData
         {
-            Time = codec.Element.FixedTime ?? 0,
+            WorldClocks = ParentWorld.LevelData.WorldClocks,
             DefaultGamemode = GameMode.Survival,
             GeneratorName = Generator.Id,
             GameRules = ParentWorld.LevelData.GameRules,
@@ -153,13 +153,11 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
         return true;
     }
 
-    // Vanilla keeps no spawn or time of a dimension's own, so they're in Obsidian's state.
+    // Vanilla keeps no spawn of a dimension's own, so it is in Obsidian's state. Clocks belong to the parent world.
     protected override void ReadOwnState(NbtCompound state)
     {
         if (state.TryGetTagValue<int>("SpawnX", out var x) && state.TryGetTagValue<int>("SpawnY", out var y) && state.TryGetTagValue<int>("SpawnZ", out var z))
             LevelData.SpawnPosition = new VectorF(x + 0.5f, y, z + 0.5f);
-        if (state.TryGetTagValue<long>("Time", out var time))
-            LevelData.Time = time;
     }
 
     protected override void WriteOwnState(INbtWriter writer)
@@ -168,7 +166,6 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
         writer.WriteInt("SpawnX", spawn.X);
         writer.WriteInt("SpawnY", spawn.Y);
         writer.WriteInt("SpawnZ", spawn.Z);
-        writer.WriteLong("Time", LevelData.Time);
     }
 
     public override async Task SaveAsync()

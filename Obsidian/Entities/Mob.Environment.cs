@@ -14,7 +14,7 @@ public partial class Mob
                 ? chunk.InhabitedTime : 0;
             ReadOnlySpan<float> moon = [1, 0.75f, 0.5f, 0.25f, 0, 0.25f, 0.5f, 0.75f];
             var phase = (int)((Level.LevelData.Time / 24000 % 8 + 8) % 8);
-            return CalculateDifficulty(Level.LevelData.Difficulty, Level.LevelData.Time, inhabited, moon[phase]);
+            return CalculateDifficulty(Level.LevelData.Difficulty, Level.LevelData.GameTime, inhabited, moon[phase]);
         }
     }
     protected float SpecialDifficulty => Math.Clamp((EffectiveDifficulty - 2) / 2, 0, 1);

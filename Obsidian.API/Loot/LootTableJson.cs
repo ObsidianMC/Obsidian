@@ -31,27 +31,51 @@ public static partial class LootTableJson
         }
     }
 
-    private static LootTable ReadTable(JsonElement json, string identifier) => new()
+    private static LootTable ReadTable(JsonElement json, string identifier)
     {
-        Identifier = identifier,
-        Type = Text(json, "type", "minecraft:generic"),
-        RandomSequence = json.TryGetProperty("random_sequence", out var sequence) ? sequence.GetString() : null,
-        Pools = ReadArray(json, "pools", pool => new LootPool
+        ValidateContainerKeys(json);
+        var locationChecks = Walk(json)
+            .Where(value => Qualify(Text(value, "type")) == "minecraft:location_check")
+            .Select(value => value.Clone())
+            .ToImmutableArray();
+        var references = Walk(json)
+            .Where(IsTableReference)
+            .Select(value => Qualify(Text(value, "value")))
+            .ToImmutableArray();
+        var sequence = json.TryGetProperty("random_sequence", out var name) ? name.GetString() : null;
+
+        return new LootTable
         {
-            Rolls = ReadNumber(pool.GetProperty("rolls")),
-            BonusRolls = pool.TryGetProperty("bonus_rolls", out var bonus)
-                ? ReadNumber(bonus) : new ConstantNumber { Value = 0 },
-            Conditions = ReadConditions(pool),
-            Functions = ReadFunctions(pool),
-            Entries = ReadArray(pool, "entries", ReadEntry)
-        }),
-        Functions = ReadFunctions(json),
-        LocationChecks = Walk(json).Where(value => Text(value, "condition") == "minecraft:location_check")
-            .Select(value => value.Clone()).ToImmutableArray(),
-        References = Walk(json).Where(value => Text(value, "type") == "minecraft:loot_table"
-            && value.TryGetProperty("value", out var reference) && reference.ValueKind == JsonValueKind.String)
-            .Select(value => Qualify(Text(value, "value"))).ToImmutableArray()
-    };
+            Identifier = identifier,
+            Type = Text(json, "type", "minecraft:generic"),
+            RandomSequence = sequence,
+            Pools = ReadArray(json, "pools", ReadPool),
+            Functions = ReadFunctions(json),
+            LocationChecks = locationChecks,
+            References = references
+        };
+    }
+
+    private static LootPool ReadPool(JsonElement json)
+    {
+        var bonusRolls = json.TryGetProperty("bonus_rolls", out var bonus)
+            ? ReadFloatNumber(bonus)
+            : new ConstantNumber { Value = 0 };
+
+        return new LootPool
+        {
+            Rolls = ReadIntNumber(json.GetProperty("rolls")),
+            BonusRolls = bonusRolls,
+            Conditions = ReadConditions(json),
+            Functions = ReadFunctions(json),
+            Entries = ReadArray(json, "entries", ReadEntry)
+        };
+    }
+
+    private static bool IsTableReference(JsonElement json) =>
+        Qualify(Text(json, "type")) == "minecraft:loot_table"
+            && json.TryGetProperty("value", out var reference)
+            && reference.ValueKind == JsonValueKind.String;
 
     private static IEnumerable<JsonElement> Walk(JsonElement json)
     {
@@ -84,6 +108,7 @@ public static partial class LootTableJson
 
     private static LootPoolEntry ReadEntry(JsonElement json)
     {
+        ValidateContainerKeys(json);
         var type = Qualify(Text(json, "type"));
         var conditions = ReadConditions(json);
         if (type is "minecraft:alternatives" or "minecraft:group" or "minecraft:sequence")
@@ -100,7 +125,7 @@ public static partial class LootTableJson
         {
             return new TagEntry
             {
-                Name = Qualify(Text(json, "name")),
+                ItemsSet = json.GetProperty("items").Clone(),
                 Expanded = json.TryGetProperty("expand", out var expand) && expand.GetBoolean(),
                 Weight = json.TryGetProperty("weight", out var tagWeight) ? tagWeight.GetInt32() : 1,
                 Quality = json.TryGetProperty("quality", out var tagQuality) ? tagQuality.GetInt32() : 0,
@@ -176,12 +201,20 @@ public static partial class LootTableJson
 
     private sealed class TagEntry : LootPoolSingletonEntry
     {
-        public required string Name { get; init; }
+        public required JsonElement ItemsSet { get; init; }
+
         public bool Expanded { get; init; }
 
-        private IEnumerable<Item> Items() => TagsRegistry.TryGet("item", this.Name, out var tag)
-            ? tag.Entries.Select(ItemsRegistry.Get)
-            : [];
+        private IEnumerable<Item> Items()
+        {
+            foreach (var id in RegistrySetIds(this.ItemsSet, "item"))
+            {
+                if (!ItemsRegistry.TryGet(id, out var item))
+                    throw new InvalidDataException($"Unknown loot item {id}.");
+
+                yield return item;
+            }
+        }
 
         public override bool Expand(LootContext context, Action<LootPoolSingletonEntry> output)
         {
@@ -243,48 +276,17 @@ public static partial class LootTableJson
         }
     }
 
-    private static INumberProvider ReadNumber(JsonElement json)
+    private static void ValidateContainerKeys(JsonElement json)
     {
-        if (json.ValueKind == JsonValueKind.Number)
-            return new ConstantNumber { Value = json.GetSingle() };
-
-        var type = Qualify(Text(json, "type", "minecraft:uniform"));
-        return type switch
+        foreach (var key in new[] { "functions", "conditions", "function" })
         {
-            "minecraft:constant" => new ConstantNumber { Value = json.GetProperty("value").GetSingle() },
-            "minecraft:uniform" => new UniformNumber
-            {
-                Min = ReadNumber(json.GetProperty("min")),
-                Max = ReadNumber(json.GetProperty("max"))
-            },
-            "minecraft:binomial" => new BinomialNumber
-            {
-                Trials = ReadNumber(json.GetProperty("n")),
-                Probability = ReadNumber(json.GetProperty("p"))
-            },
-            _ => throw new InvalidDataException($"Unsupported loot number {type}.")
-        };
-    }
-
-    private sealed class BinomialNumber : INumberProvider
-    {
-        public required INumberProvider Trials { get; init; }
-        public required INumberProvider Probability { get; init; }
-
-        public int GetInt(LootContext context)
-        {
-            var trials = this.Trials.GetInt(context);
-            var probability = this.Probability.GetFloat(context);
-            var successes = 0;
-            for (var i = 0; i < trials; i++)
-            {
-                if (context.Random.NextFloat() < probability)
-                    successes++;
-            }
-
-            return successes;
+            if (json.TryGetProperty(key, out _))
+                throw new InvalidDataException(
+                    $"Loot key '{key}' was replaced in 26.3; use type, condition and modifier.");
         }
-
-        public float GetFloat(LootContext context) => this.GetInt(context);
     }
+
+    private static INumberProvider ReadIntNumber(JsonElement json) => LootNumberProviders.ReadInt(json);
+
+    private static INumberProvider ReadFloatNumber(JsonElement json) => LootNumberProviders.ReadFloat(json);
 }

@@ -17,7 +17,7 @@ public partial class UpdateRecipesPacket
         foreach (var name in new[]
         {
             "smithing_base", "smithing_template", "smithing_addition", "furnace_input",
-            "blast_furnace_input", "smoker_input", "campfire_input"
+            "blast_furnace_input", "smoker_input", "campfire_input", "brewing_input", "brewing_reagent"
         })
         {
             sets.Add("minecraft:" + name, []);
@@ -43,6 +43,11 @@ public partial class UpdateRecipesPacket
                 Add("smithing_base", transform.Base);
                 Add("smithing_template", transform.Template);
                 Add("smithing_addition", transform.Addition);
+            }
+            else if (recipe is BrewingRecipe brewing)
+            {
+                Add("brewing_input", brewing.Input.Items);
+                Add("brewing_reagent", brewing.Reagent.Items);
             }
             else if (recipe is SmithingTrimRecipe trim)
             {

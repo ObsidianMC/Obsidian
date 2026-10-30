@@ -1,6 +1,5 @@
 using Obsidian.API.Containers;
 using Obsidian.API.Inventory;
-using Obsidian.Entities;
 using Obsidian.Events;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.WindowProperties;
@@ -21,23 +20,16 @@ public abstract partial class AbstractLevel
     {
         Brewing.Step step;
         using (await stand.LockAsync())
-            step = Brewing.Tick(stand);
+            step = Brewing.Tick(stand, this.CookingRecipes);
 
         var position = stand.BlockPosition;
 
         if (step.Brewed)
             BroadcastLevelEvent(BrewingStandBrewEvent, position, 0);
 
-        if (step.Remainder is ItemStack remainder)
-        {
-            SpawnEntity(new ItemEntity
-            {
-                Level = this,
-                EntityId = Server.GetNextEntityId(),
-                Position = (VectorD)position + new VectorD(0.5, 0.5, 0.5),
-                Item = remainder
-            });
-        }
+        // Vanilla's stand drops them like a broken container's contents (Containers.dropItemStack).
+        foreach (var remainder in step.Remainders)
+            this.DropItemStack(position, remainder);
 
         if (step.Bottles is bool[] bottles && GameEventBlock(position) is IBlock block)
         {
@@ -63,23 +55,27 @@ public abstract partial class AbstractLevel
     }
 
     /// <summary>
-    /// Sends <paramref name="viewer"/> the brew time and fuel of the stand they have open, which its menu's arrow and
-    /// fuel bar show (vanilla's brewing menu data).
+    /// Sends <paramref name="viewer"/> the brew time and fuel of the stand they have open, with their totals, which its
+    /// menu's arrow and fuel bar show (vanilla's brewing menu data, in its order).
     /// </summary>
     internal static async ValueTask SendBrewingPropertiesAsync(IPlayer viewer, BrewingStand stand)
     {
         var containerId = viewer.CurrentContainerId;
+        (BrewingStandProperty Property, int Value)[] values =
+        [
+            (BrewingStandProperty.BrewTime, stand.BrewTime),
+            (BrewingStandProperty.Fuel, stand.Fuel),
+            (BrewingStandProperty.TotalBrewTime, stand.TotalBrewTime),
+            (BrewingStandProperty.TotalFuel, stand.TotalFuel)
+        ];
 
-        await viewer.QueuePacketAsync(new ContainerSetDataPacket
+        foreach (var (property, value) in values)
         {
-            ContainerId = containerId,
-            WindowProperty = new BrewingStandWindowProperty(BrewingStandProperty.BrewTime, (short)stand.BrewTime)
-        });
-
-        await viewer.QueuePacketAsync(new ContainerSetDataPacket
-        {
-            ContainerId = containerId,
-            WindowProperty = new BrewingStandWindowProperty(BrewingStandProperty.FuelTime, (short)stand.Fuel)
-        });
+            await viewer.QueuePacketAsync(new ContainerSetDataPacket
+            {
+                ContainerId = containerId,
+                WindowProperty = new BrewingStandWindowProperty(property, (short)value)
+            });
+        }
     }
 }

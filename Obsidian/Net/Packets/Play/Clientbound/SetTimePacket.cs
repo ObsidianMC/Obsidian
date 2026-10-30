@@ -18,14 +18,21 @@ public partial class SetTimePacket(long worldAge, IReadOnlyList<SetTimePacket.Cl
     /// The full time sync vanilla sends on joining and changing level: the game time and every clock.
     /// </summary>
     /// <remarks>
-    /// Obsidian keeps one clock per level, its time, which drives both of vanilla's clocks (the overworld's day and the
-    /// End's). Like vanilla, a clock that doesn't advance (<c>advance_time</c> is off) is sent with a rate of 0.
+    /// A paused clock, or any clock while <c>advance_time</c> is off, is sent with a rate of zero.
     /// </remarks>
     public static SetTimePacket Of(LevelData levelData)
     {
-        var rate = levelData.GetBooleanRule("advance_time") ? 1f : 0f;
+        var advanceTime = levelData.GetBooleanRule("advance_time");
         var registry = VanillaSyncedRegistries.All.First(registry => registry.Name == ClockRegistry);
-        return new(levelData.Time, [.. registry.Entries.Select((_, id) => new Clock(id, levelData.Time, 0f, rate))]);
+        var clocks = new List<Clock>();
+        for (var id = 0; id < registry.Entries.Length; id++)
+        {
+            var state = levelData.WorldClocks.States[registry.Entries[id]];
+            var rate = advanceTime && !state.Paused ? state.Rate : 0f;
+            clocks.Add(new Clock(id, state.TotalTicks, state.PartialTick, rate));
+        }
+
+        return new(levelData.WorldClocks.GameTime, clocks);
     }
 
     public override void Serialize(INetStreamWriter writer)
