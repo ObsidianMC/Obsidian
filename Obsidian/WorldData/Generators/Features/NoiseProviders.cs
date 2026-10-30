@@ -29,8 +29,10 @@ internal sealed partial class FeatureRegistry
         var slowNoise = parameters.Create(new WorldgenRandom(new LegacyRandomSource(seed)));
         var states = json.GetProperty("states").EnumerateArray().Select(ReadBlock).ToArray();
         var variety = json.GetProperty("variety");
-        var minimum = variety.GetProperty("min_inclusive").GetInt32();
-        var maximum = variety.GetProperty("max_inclusive").GetInt32();
+        var minimum = variety.ValueKind == JsonValueKind.Array
+            ? variety[0].GetInt32() : variety.GetProperty("min_inclusive").GetInt32();
+        var maximum = variety.ValueKind == JsonValueKind.Array
+            ? variety[1].GetInt32() : variety.GetProperty("max_inclusive").GetInt32();
 
         // Unlike the fast noise's double multiplication, the slow coordinates multiply in float in 26.3.
         float SlowValue(Vector position) => slowNoise.Get(

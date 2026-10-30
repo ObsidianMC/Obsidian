@@ -4,6 +4,7 @@ using Obsidian.API.Registries;
 using Obsidian.Nbt;
 using Obsidian.Registries;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Fluids;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Generators.Features;
 using Obsidian.WorldData.Generators.Mojang;
@@ -123,6 +124,21 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
         if (entry.TryGetProperty("nextRegionRandom", out var nextRegionRandom))
         {
             Assert.Equal(nextRegionRandom.GetInt32(), region.Random.NextInt());
+        }
+
+        if (entry.TryGetProperty("fluidTicks", out var expectedTicks))
+        {
+            var expectedFluids = expectedTicks.EnumerateArray().Select(tick => FluidTick(
+                Position(tick), tick[3].GetString()!, tick[4].GetInt32(), tick[5].GetInt32())).ToList();
+            var actualFluids = FeatureFluidTicks(chunks, chunkX, chunkZ);
+
+            if (entry.TryGetProperty("expectFluidTicks", out var expectTicks) && expectTicks.GetBoolean())
+            {
+                Assert.NotEmpty(expectedFluids);
+                Assert.NotEmpty(actualFluids);
+            }
+
+            Assert.Equal(expectedFluids, actualFluids);
         }
 
         if (entry.TryGetProperty("recordBlockEntities", out _))
@@ -317,6 +333,28 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
 
         return result;
     }
+
+    private static List<string> FeatureFluidTicks(Dictionary<(int X, int Z), IChunk> chunks, int centerX, int centerZ)
+    {
+        var result = new List<string>();
+
+        for (var z = centerZ - 1; z <= centerZ + 1; z++)
+        {
+            for (var x = centerX - 1; x <= centerX + 1; x++)
+            {
+                var chunk = (Chunk)chunks[(x, z)];
+                foreach (var tick in chunk.FluidTicks.Pack())
+                {
+                    result.Add(FluidTick(tick.Position, tick.Type.Name(), tick.Delay, tick.Priority));
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private static string FluidTick(Vector position, string type, int delay, int priority) =>
+        $"{position.X},{position.Y},{position.Z} {type} {delay} {priority}";
 
     // A captured block entity as "x y z type data", with the data as canonical JSON.
     private static string ExpectedBlockEntity(JsonElement record)
@@ -527,6 +565,11 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
             if (position.X >> 4 == chunkX && position.Z >> 4 == chunkZ)
             {
                 chunk.SetBlock(position.X, position.Y, position.Z, block);
+
+                if (entry.TryGetProperty("recordBlockEntities", out _) && block.HasBlockEntity())
+                {
+                    DataBlockEntity.ApplyBlockChange(chunk, position, block);
+                }
             }
         }
 

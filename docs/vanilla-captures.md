@@ -24,10 +24,37 @@ The 26.3 fixture is a folder with one file per section (`noises.json`, `terrain.
 is a folder of files, one per group of cases: `01-vegetation`, `02-ores` and `03-misc-placements` (registered placed
 features), `04-review` (components and review regressions), `05-non-tree`, `06-review-additions`, `07-coverage`,
 `08-nether-and-end`, `09-trees`, `10-fallen-trees`, `11-huge-mushrooms`, `12-fungi`, `13-ice-spikes`,
-`14-tree-rejections` and `15-tree-coverage`. Each file holds `{ "version": ..., "cases": [...] }`, with the
-Minecraft version it was last recorded with. A section's cases are its files' cases in ordinal order of their names,
-which is the order the tests see. Put new cases in the group they belong to, or start a group with a new file
-numbered after the last one, so that changes in different groups touch different files.
+`14-tree-rejections`, `15-tree-coverage`, `16-last-feature-types` and `17-icebergs`. Each file holds
+`{ "version": ..., "cases": [...] }`, with the Minecraft version it was last recorded with. A section's cases are
+its files' cases in ordinal order of their names, which is the order the tests see. Put new cases in the group they
+belong to, or start a group with a new file numbered after the last one, so that changes in different groups touch
+different files.
+
+Groups 16 and 17 cover the last seven feature types: `end_podium`, `fossil`, `geode`, `iceberg`,
+`large_dripstone`, `sculk_patch` and `underwater_magma`. They record placement results, changed states and the
+next random value for successes, rejected substrates, blocked or unsupported placements, and composed filters.
+Podiums always succeed when invoked, and obstructed icebergs return success without writing blocks; their captures
+retain those distinctions. Geodes cover float noise on two world seeds, cracks, waterlogged buds and protected
+blocks. Large dripstone covers wind displacement at radii 15 and 16, and sculk covers spread/growth rounds,
+waterlogging, composed catalysts/shriekers and post-processing marks.
+
+The review cases also cover magma's directional slab/stair occlusion faces and magma, iceberg and dripstone
+origins outside the writable region whose footprints overlap it. Additional cases cover all fossil rotations and
+skulls, partial empty-corner limits, fluid corners and bottom-clamped burial; three-point geodes with crack
+orientations 0 and 3; snow-disabled icebergs and floating snow cleanup; shrinking dripstone radii, lava roots and
+irregular submerged terrain; obstructed podium domes and the build-height edge; and sculk/vein starts and vertical
+obstructions.
+
+Feature cases can opt into `captureFluidTicks` to record `fluidTicks` as `[x, y, z, fluid, delay, priority]`,
+in chunk z/x order and each chunk's scheduling order. `expectFluidTicks` requires a nonempty list in both vanilla
+and the replay. The podium case uses `recordBlockEntities` (described below), which also creates block entities
+for edited entity blocks before placement. The replay checks both lists as well as changed block states,
+placement results and random consumption.
+
+The recursive feature-data inventory contains 56 feature types, all implemented in the 26.3 registry.
+`VanillaFeatureRegistration.EveryVanillaFeatureCanBeCompiled` compiles every shipped feature, including nested
+features and their providers/modifiers, so missing implementations and incompatible data shapes fail in CI.
+These implementations remain beside the legacy live generator until the later Phase 5 pipeline switch.
 
 ## Re-recording
 

@@ -89,7 +89,9 @@ public sealed class SculkPatchFeature : ConfiguredFeatureBase
 /// </summary>
 /// <remarks>
 /// World generation settings: replaceable tag <c>sculk_replaceable_world_gen</c>, growth spawn cost 50, no-growth radius 1,
-/// charge decay rate 5, additional decay rate 10; cursors never merge.
+/// charge decay rate 5, additional decay rate 10; cursors never merge. The 26.3 caller supplies current tags,
+/// confines cursor candidates to 12 horizontal blocks, discharges stranded cursors and marks vein spreads.
+/// The live 1.21.11 caller retains its legacy movement and marking rules.
 /// </remarks>
 internal sealed class SculkSpreader
 {
@@ -102,8 +104,9 @@ internal sealed class SculkSpreader
     // A cursor's facings before it first lands on sculk (vanilla's null facings).
     private const int NoFacings = -1;
 
-    private static readonly BlockSet replaceableWorldGen = LegacyWorldgenTags.Blocks("sculk_replaceable_world_gen");
-    private static readonly BlockSet sculkReplaceable = LegacyWorldgenTags.Blocks("sculk_replaceable");
+    private readonly Func<int, bool> replaceableWorldGen;
+    private readonly Func<int, bool> sculkReplaceable;
+    private readonly bool currentWorldgen;
 
     // Registry ids of the blocks the cursors check by state id.
     private static readonly int sculkId = BlocksRegistry.Sculk.RegistryId;
@@ -130,6 +133,27 @@ internal sealed class SculkSpreader
 
     private readonly ChargeCursor[] cursors = new ChargeCursor[MaxCursors];
     private int cursorCount;
+
+    public SculkSpreader()
+        : this(
+            LegacyWorldgenTags.Blocks("sculk_replaceable_world_gen").ContainsRegistryId,
+            LegacyWorldgenTags.Blocks("sculk_replaceable").ContainsRegistryId, currentWorldgen: false)
+    {
+    }
+
+    public SculkSpreader(
+        HashSet<int> replaceableWorldGen, HashSet<int> sculkReplaceable)
+        : this(replaceableWorldGen.Contains, sculkReplaceable.Contains, currentWorldgen: true)
+    {
+    }
+
+    private SculkSpreader(
+        Func<int, bool> replaceableWorldGen, Func<int, bool> sculkReplaceable, bool currentWorldgen)
+    {
+        this.replaceableWorldGen = replaceableWorldGen;
+        this.sculkReplaceable = sculkReplaceable;
+        this.currentWorldgen = currentWorldgen;
+    }
 
     public static bool IsSculkBehaviour(IBlock block) => block.RegistryId is BlockIds.Sculk or BlockIds.SculkVein;
 
@@ -159,7 +183,7 @@ internal sealed class SculkSpreader
             if (cursor.IsPosUnreasonable(origin))
                 continue;
 
-            cursor.Update(level, origin, random, spreadVeins);
+            cursor.Update(this, level, origin, random, spreadVeins);
             if (cursor.Charge > 0)
                 this.cursors[survivors++] = cursor;
         }
@@ -183,7 +207,8 @@ internal sealed class SculkSpreader
             Math.Max(Math.Max(Math.Abs(this.Position.X - origin.X), Math.Abs(this.Position.Y - origin.Y)),
                 Math.Abs(this.Position.Z - origin.Z)) > 1024;
 
-        public void Update(IWorldGenLevel level, Vector origin, IRandomSource random, bool spreadVeins)
+        public void Update(
+            SculkSpreader spreader, IWorldGenLevel level, Vector origin, IRandomSource random, bool spreadVeins)
         {
             if (this.Charge <= 0)
                 return;
@@ -196,33 +221,44 @@ internal sealed class SculkSpreader
 
             var state = level.GetBlock(this.Position);
             var behaviour = GetBehaviour(state);
-            if (spreadVeins && AttemptSpreadVein(behaviour, level, this.Position, state, this.facings) && behaviour != Behaviour.Sculk)
+            var spread = spreadVeins && AttemptSpreadVein(
+                behaviour, level, this.Position, state, this.facings, spreader.currentWorldgen);
+
+            if (spread && behaviour != Behaviour.Sculk)
             {
                 // Everything but plain sculk may change its block when spreading, so re-read it.
                 state = level.GetBlock(this.Position);
                 behaviour = GetBehaviour(state);
             }
 
-            this.Charge = this.AttemptUseCharge(behaviour, level, origin, random, spreadVeins);
+            this.Charge = this.AttemptUseCharge(spreader, behaviour, level, origin, random, spreadVeins);
             if (this.Charge <= 0)
             {
                 OnDischarged(behaviour, level, state, this.Position);
                 return;
             }
 
-            var next = GetValidMovementPos(level, this.Position, random);
+            var next = GetValidMovementPos(spreader, level, this.Position, origin, random);
             if (next is Vector moved)
             {
                 OnDischarged(behaviour, level, state, this.Position);
                 this.Position = moved;
 
-                if (FeatureHelpers.DistSqr(moved, new Vector(origin.X, moved.Y, origin.Z)) >= 15.0 * 15.0)
+                if (!spreader.currentWorldgen
+                    && FeatureHelpers.DistSqr(moved, new Vector(origin.X, moved.Y, origin.Z)) >= 15.0 * 15.0)
                 {
                     this.Charge = 0;
                     return;
                 }
 
                 state = level.GetBlock(moved);
+            }
+            else if (spreader.currentWorldgen)
+            {
+                // 26.3 discharges a stranded worldgen cursor instead of repeatedly updating it in place.
+                OnDischarged(behaviour, level, state, this.Position);
+                this.Charge = 0;
+                return;
             }
 
             if (IsSculkBehaviour(state))
@@ -233,14 +269,16 @@ internal sealed class SculkSpreader
             this.updateDelay = 1;
         }
 
-        private readonly int AttemptUseCharge(Behaviour behaviour, IWorldGenLevel level, Vector origin, IRandomSource random, bool spreadVeins)
+        private readonly int AttemptUseCharge(
+            SculkSpreader spreader, Behaviour behaviour, IWorldGenLevel level,
+            Vector origin, IRandomSource random, bool spreadVeins)
         {
             switch (behaviour)
             {
                 case Behaviour.Sculk:
                     return this.SculkUseCharge(level, origin, random);
                 case Behaviour.Vein:
-                    if (spreadVeins && AttemptPlaceSculk(level, this.Position, random))
+                    if (spreadVeins && spreader.AttemptPlaceSculk(level, this.Position, random))
                         return this.Charge - 1;
 
                     return random.NextInt(ChargeDecayRate) == 0 ? Mth.Floor(this.Charge * 0.5f) : this.Charge;
@@ -311,7 +349,8 @@ internal sealed class SculkSpreader
             return true;
         }
 
-        private static Vector? GetValidMovementPos(IWorldGenLevel level, Vector position, IRandomSource random)
+        private static Vector? GetValidMovementPos(
+            SculkSpreader spreader, IWorldGenLevel level, Vector position, Vector origin, IRandomSource random)
         {
             Span<Vector> offsets = stackalloc Vector[nonCornerNeighbours.Length];
             nonCornerNeighbours.CopyTo(offsets);
@@ -321,12 +360,21 @@ internal sealed class SculkSpreader
             foreach (var offset in offsets)
             {
                 var candidate = position + offset;
+                var dx = candidate.X - origin.X;
+                var dz = candidate.Z - origin.Z;
+
+                // Vanilla 26.3 tests the 12-block horizontal radius before choosing a movement target.
+                if (spreader.currentWorldgen && dx * dx + dz * dz > 144)
+                {
+                    continue;
+                }
+
                 var block = FeatureHelpers.RegistryIdAt(level, candidate);
                 if (!IsSculkBehaviourRegistryId(block) || !IsMovementUnobstructed(level, position, candidate))
                     continue;
 
                 result = candidate;
-                if (block == sculkVeinId && HasSubstrateAccess(level, candidate))
+                if (block == sculkVeinId && spreader.HasSubstrateAccess(level, candidate))
                     break;
             }
 
@@ -369,16 +417,23 @@ internal sealed class SculkSpreader
         _ => Behaviour.Default
     };
 
-    private static bool AttemptSpreadVein(Behaviour behaviour, IWorldGenLevel level, Vector position, IBlock state, int facings)
+    private static bool AttemptSpreadVein(
+        Behaviour behaviour, IWorldGenLevel level, Vector position, IBlock state, int facings, bool mark)
     {
         if (behaviour != Behaviour.Default)
-            return MultifaceSpreader.SculkVein.SpreadAll(state, level, position) > 0;
+        {
+            return MultifaceSpreader.SculkVein.SpreadAll(state, level, position, mark) > 0;
+        }
 
         if (facings == NoFacings)
-            return MultifaceSpreader.SculkVeinSameSpace.SpreadAll(level.GetBlock(position), level, position) > 0;
+        {
+            return MultifaceSpreader.SculkVeinSameSpace.SpreadAll(level.GetBlock(position), level, position, mark) > 0;
+        }
 
         if (facings == 0)
-            return MultifaceSpreader.SculkVein.SpreadAll(state, level, position) > 0;
+        {
+            return MultifaceSpreader.SculkVein.SpreadAll(state, level, position, mark) > 0;
+        }
 
         if (!state.IsAir && state.GetFluid() != FluidKind.Water)
             return false;
@@ -411,7 +466,7 @@ internal sealed class SculkSpreader
     }
 
     // SculkVeinBlock.attemptPlaceSculk: turn a replaceable block behind one of the vein's faces into sculk.
-    private static bool AttemptPlaceSculk(IWorldGenLevel level, Vector position, IRandomSource random)
+    private bool AttemptPlaceSculk(IWorldGenLevel level, Vector position, IRandomSource random)
     {
         var state = level.GetBlock(position);
         Span<BlockFace> faces = stackalloc BlockFace[FeatureHelpers.Directions.Length];
@@ -424,11 +479,11 @@ internal sealed class SculkSpreader
                 continue;
 
             var target = position.Offset(face);
-            if (!replaceableWorldGen.ContainsRegistryId(FeatureHelpers.RegistryIdAt(level, target)))
+            if (!this.replaceableWorldGen(FeatureHelpers.RegistryIdAt(level, target)))
                 continue;
 
             level.SetBlock(target, Sculk);
-            MultifaceSpreader.SculkVein.SpreadAll(Sculk, level, target);
+            MultifaceSpreader.SculkVein.SpreadAll(Sculk, level, target, this.currentWorldgen);
 
             var back = face.Opposite();
             foreach (var direction in FeatureHelpers.Directions)
@@ -466,13 +521,15 @@ internal sealed class SculkSpreader
     }
 
     // Whether the sculk vein at the position has a face on a block sculk can replace.
-    private static bool HasSubstrateAccess(IWorldGenLevel level, Vector position)
+    private bool HasSubstrateAccess(IWorldGenLevel level, Vector position)
     {
         var stateId = level.GetStateId(position);
         var faces = FeatureHelpers.IsVanillaState(stateId) ? MultifaceSpreader.Faces(stateId) : MultifaceSpreader.Faces(level.GetBlock(position));
         foreach (var face in FeatureHelpers.Directions)
         {
-            if ((faces >> (int)face & 1) != 0 && sculkReplaceable.ContainsRegistryId(FeatureHelpers.RegistryIdAt(level, position.Offset(face))))
+            var substrate = position.Offset(face);
+
+            if ((faces >> (int)face & 1) != 0 && this.sculkReplaceable(FeatureHelpers.RegistryIdAt(level, substrate)))
                 return true;
         }
 

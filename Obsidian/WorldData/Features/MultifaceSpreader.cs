@@ -106,9 +106,10 @@ internal sealed class MultifaceSpreader
     /// <summary>
     /// Vanilla <c>spreadAll</c>: spreads from every face the state can spread from toward every direction; returns the count.
     /// </summary>
-    public long SpreadAll(IBlock state, IWorldGenLevel level, Vector position)
+    public long SpreadAll(
+        IBlock state, IWorldGenLevel level, Vector position, bool markForPostProcessing = false)
     {
-        var blocks = new Neighborhood(level, position);
+        var blocks = new Neighborhood(level, position, markForPostProcessing);
         var stateInfo = Info(state);
         long count = 0;
         foreach (var face in FeatureHelpers.Directions)
