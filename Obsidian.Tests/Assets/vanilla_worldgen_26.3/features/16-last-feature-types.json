@@ -273849,6 +273849,446 @@
       ],
       "expectMarks": true,
       "captureMarks": true
+    },
+    {
+      "name": "review_622_magma_slab_top_below",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:stone",
+          63
+        ],
+        [
+          "minecraft:water",
+          70
+        ]
+      ],
+      "origin": [
+        0,
+        64,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:underwater_magma",
+          "floor_search_range": 5,
+          "placement_radius_around_floor": 0,
+          "placement_probability_per_valid_position": 1.0
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          0,
+          62,
+          0,
+          {
+            "id": "minecraft:stone_slab",
+            "properties": {
+              "type": "top"
+            }
+          }
+        ]
+      ],
+      "expectChanges": true,
+      "nextRandom": 1107643289,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          63,
+          0,
+          "minecraft:magma_block"
+        ]
+      ],
+      "regionRadius": 10
+    },
+    {
+      "name": "review_622_magma_slab_bottom_below",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:stone",
+          63
+        ],
+        [
+          "minecraft:water",
+          70
+        ]
+      ],
+      "origin": [
+        0,
+        64,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:underwater_magma",
+          "floor_search_range": 5,
+          "placement_radius_around_floor": 0,
+          "placement_probability_per_valid_position": 1.0
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          0,
+          62,
+          0,
+          {
+            "id": "minecraft:stone_slab",
+            "properties": {
+              "type": "bottom"
+            }
+          }
+        ]
+      ],
+      "expectChanges": false,
+      "nextRandom": 1107643289,
+      "placed": false,
+      "changes": [],
+      "regionRadius": 10
+    },
+    {
+      "name": "review_622_magma_stairs_top_below",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:stone",
+          63
+        ],
+        [
+          "minecraft:water",
+          70
+        ]
+      ],
+      "origin": [
+        0,
+        64,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:underwater_magma",
+          "floor_search_range": 5,
+          "placement_radius_around_floor": 0,
+          "placement_probability_per_valid_position": 1.0
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          0,
+          62,
+          0,
+          {
+            "id": "minecraft:stone_stairs",
+            "properties": {
+              "half": "top",
+              "facing": "north",
+              "shape": "straight"
+            }
+          }
+        ]
+      ],
+      "expectChanges": true,
+      "nextRandom": 1107643289,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          63,
+          0,
+          "minecraft:magma_block"
+        ]
+      ],
+      "regionRadius": 10
+    },
+    {
+      "name": "review_622_magma_stairs_bottom_below",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:stone",
+          63
+        ],
+        [
+          "minecraft:water",
+          70
+        ]
+      ],
+      "origin": [
+        0,
+        64,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:underwater_magma",
+          "floor_search_range": 5,
+          "placement_radius_around_floor": 0,
+          "placement_probability_per_valid_position": 1.0
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          0,
+          62,
+          0,
+          {
+            "id": "minecraft:stone_stairs",
+            "properties": {
+              "half": "bottom",
+              "facing": "north",
+              "shape": "straight"
+            }
+          }
+        ]
+      ],
+      "expectChanges": false,
+      "nextRandom": 1107643289,
+      "placed": false,
+      "changes": [],
+      "regionRadius": 10
+    },
+    {
+      "name": "review_622_magma_stairs_full_west_face",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:stone",
+          63
+        ],
+        [
+          "minecraft:water",
+          70
+        ]
+      ],
+      "origin": [
+        0,
+        64,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:underwater_magma",
+          "floor_search_range": 5,
+          "placement_radius_around_floor": 0,
+          "placement_probability_per_valid_position": 1.0
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          1,
+          63,
+          0,
+          {
+            "id": "minecraft:stone_stairs",
+            "properties": {
+              "half": "bottom",
+              "facing": "west",
+              "shape": "straight"
+            }
+          }
+        ]
+      ],
+      "expectChanges": true,
+      "nextRandom": 1107643289,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          63,
+          0,
+          "minecraft:magma_block"
+        ]
+      ],
+      "regionRadius": 10
+    },
+    {
+      "name": "review_622_magma_stairs_open_west_face",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:stone",
+          63
+        ],
+        [
+          "minecraft:water",
+          70
+        ]
+      ],
+      "origin": [
+        0,
+        64,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:underwater_magma",
+          "floor_search_range": 5,
+          "placement_radius_around_floor": 0,
+          "placement_probability_per_valid_position": 1.0
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          1,
+          63,
+          0,
+          {
+            "id": "minecraft:stone_stairs",
+            "properties": {
+              "half": "bottom",
+              "facing": "east",
+              "shape": "straight"
+            }
+          }
+        ]
+      ],
+      "expectChanges": false,
+      "nextRandom": 1107643289,
+      "placed": false,
+      "changes": [],
+      "regionRadius": 10
+    },
+    {
+      "name": "review_622_magma_slab_partial_side",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:stone",
+          63
+        ],
+        [
+          "minecraft:water",
+          70
+        ]
+      ],
+      "origin": [
+        0,
+        64,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:underwater_magma",
+          "floor_search_range": 5,
+          "placement_radius_around_floor": 0,
+          "placement_probability_per_valid_position": 1.0
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          1,
+          63,
+          0,
+          {
+            "id": "minecraft:stone_slab",
+            "properties": {
+              "type": "top"
+            }
+          }
+        ]
+      ],
+      "expectChanges": false,
+      "nextRandom": 1107643289,
+      "placed": false,
+      "changes": [],
+      "regionRadius": 10
+    },
+    {
+      "name": "review_622_magma_glass_side",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:stone",
+          63
+        ],
+        [
+          "minecraft:water",
+          70
+        ]
+      ],
+      "origin": [
+        0,
+        64,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:underwater_magma",
+          "floor_search_range": 5,
+          "placement_radius_around_floor": 0,
+          "placement_probability_per_valid_position": 1.0
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          1,
+          63,
+          0,
+          "minecraft:glass"
+        ]
+      ],
+      "expectChanges": false,
+      "nextRandom": 1107643289,
+      "placed": false,
+      "changes": [],
+      "regionRadius": 10
     }
   ]
 }

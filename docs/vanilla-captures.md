@@ -24,13 +24,13 @@ The 26.3 fixture is a folder with one file per section (`noises.json`, `terrain.
 is a folder of files, one per group of cases: `01-vegetation`, `02-ores` and `03-misc-placements` (registered placed
 features), `04-review` (components and review regressions), `05-non-tree`, `06-review-additions`, `07-coverage`,
 `08-nether-and-end`, `09-trees`, `10-fallen-trees`, `11-huge-mushrooms`, `12-fungi`, `13-ice-spikes`,
-`14-tree-rejections`, `15-last-feature-types` and `16-icebergs`. Each file holds
+`14-tree-rejections`, `16-last-feature-types` and `17-icebergs`. Each file holds
 `{ "version": ..., "cases": [...] }`, with the Minecraft version it was last
 recorded with. A section's cases are its files' cases in ordinal order of their names, which is the order the tests
 see. Put new cases in the group they belong to, or start a group with a new file numbered after the last one, so that
 changes in different groups touch different files.
 
-Groups 15 and 16 cover the last seven feature types: `end_podium`, `fossil`, `geode`, `iceberg`,
+Groups 16 and 17 cover the last seven feature types: `end_podium`, `fossil`, `geode`, `iceberg`,
 `large_dripstone`, `sculk_patch` and `underwater_magma`. They record placement results, changed states and the
 next random value for successes, rejected substrates, blocked or unsupported placements, and composed filters.
 Podiums always succeed when invoked, and obstructed icebergs return success without writing blocks; their captures
