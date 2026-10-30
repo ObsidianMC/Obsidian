@@ -226,7 +226,14 @@ public sealed partial class SamplePlugin
             }
 
             if (ready)
+            {
+                // Publication precedes the worker's finally block, which releases its generation pins. Wait for
+                // the workers too, so a caller can test eviction without a still-pinned chunk being kept alive.
+                var slots = GenerationSlots(level);
+                await HoldGenerationSlotsAsync(slots);
+                slots.Release(Environment.ProcessorCount);
                 return;
+            }
 
             Assert.True(DateTime.UtcNow < deadline, "Ticketed chunks did not finish loading.");
             await Task.Delay(10);
