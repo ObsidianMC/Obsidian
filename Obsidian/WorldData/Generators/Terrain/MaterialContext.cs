@@ -66,7 +66,15 @@ internal sealed partial class MaterialRules
 
         public string Biome => this.biome ??= this.Terrain.BiomeAt(this.X, this.Y, this.Z);
 
-        public double Secondary => this.Noise(this.owner.generator.Compiler.Noise("minecraft:surface_secondary"), false);
+        public double Secondary
+        {
+            get
+            {
+                var noise = this.owner.generator.Compiler.Noise("minecraft:surface_secondary");
+
+                return this.Noise(noise, false);
+            }
+        }
 
         public int MinSurface
         {
@@ -82,8 +90,9 @@ internal sealed partial class MaterialRules
 
                 if (this.surfaceLevels is null)
                 {
+                    var surfaceLevel = this.owner.generator.Router.Functions["chunk_surface_level"];
                     this.surfaceLevels = new float[plane.Size];
-                    this.owner.generator.Router.Functions["chunk_surface_level"].SampleVolume(this.surfaceLevels, plane);
+                    surfaceLevel.SampleVolume(this.surfaceLevels, plane);
                 }
 
                 var index = plane.Index(this.X - plane.MinBlockX, 0, this.Z - plane.MinBlockZ);

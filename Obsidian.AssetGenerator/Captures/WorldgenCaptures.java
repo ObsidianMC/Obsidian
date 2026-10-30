@@ -9,6 +9,7 @@ import java.util.*;
 import java.util.function.*;
 import java.util.zip.GZIPOutputStream;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -18,6 +19,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.*;
@@ -426,8 +428,15 @@ class WorldgenCaptures {
         entry.addProperty("height", buildHeight);
         entry.addProperty("settings", generator.generatorSettings().unwrapKey().orElseThrow().identifier().toString());
         JsonObject stagedBlocks;
-        try (var noiseChunk = new NoiseChunk(random, Beardifier.EMPTY, settings, fluidPicker, Blender.empty(), volume)) {
-            try (var density = noiseChunk.cachingSamplers().get(settings.noiseRouter().finalDensity()).sampleVolume(volume)) {
+        try (var noiseChunk = new NoiseChunk(
+            random,
+            Beardifier.EMPTY,
+            settings,
+            fluidPicker,
+            Blender.empty(),
+            volume)) {
+            var finalDensity = noiseChunk.cachingSamplers().get(settings.noiseRouter().finalDensity());
+            try (var density = finalDensity.sampleVolume(volume)) {
                 var bytes = new ByteArrayOutputStream();
                 var output = new DataOutputStream(bytes);
                 for (int index = 0; index < volume.size(); index++) {
@@ -718,7 +727,7 @@ class WorldgenCaptures {
             try (var noiseChunk = new NoiseChunk(random, Beardifier.EMPTY, settings, picker, Blender.empty(), volume)) {
                 var constructor = MaterialRuleContext.class.getDeclaredConstructors()[0];
                 constructor.setAccessible(true);
-                Function<BlockPos, net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome>> getBiome = pos -> biome;
+                Function<BlockPos, Holder<Biome>> getBiome = pos -> biome;
                 var context = (MaterialRuleContext) constructor.newInstance(random.surfaceSystem(), random, volume,
                     noiseChunk.cachingSamplers(), getBiome,
                     new WorldGenerationContext(generator, chunk.getHeightAccessorForGeneration()), Set.of(biome));

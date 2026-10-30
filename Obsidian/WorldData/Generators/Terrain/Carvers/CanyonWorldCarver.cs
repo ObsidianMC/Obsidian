@@ -118,7 +118,8 @@ internal sealed class CanyonWorldCarver : WorldCarver<CanyonCarverConfiguration>
         float index)
     {
         var centerFactor = 1.0f - Math.Abs(0.5f - index / branchCount) * 2.0f;
-        var factor = configuration.VerticalRadiusDefaultFactor + configuration.VerticalRadiusCenterFactor * centerFactor;
+        var centerWeight = configuration.VerticalRadiusCenterFactor * centerFactor;
+        var factor = configuration.VerticalRadiusDefaultFactor + centerWeight;
         return factor * verticalRadius * (random.NextFloat() * (1.0f - 0.75f) + 0.75f);
     }
 

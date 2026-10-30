@@ -76,7 +76,8 @@ internal static class WorldgenAssets
 
     /// <summary>
     /// Copies the current version's density and terrain registries to <c>Assets/worldgen_26_3</c>, per file in the
-    /// data pack layout (<c>noise/temperature.json</c>). Biomes supply material inputs; biome selection is a later step.
+    /// data pack layout (<c>noise/temperature.json</c>). Biomes supply material inputs; biome selection is a later
+    /// step.
     /// </summary>
     /// <remarks>
     /// Temporary, while Phase 5 of <c>docs/porting-26.3-plan.md</c> builds the 26.3 generator beside the legacy one:

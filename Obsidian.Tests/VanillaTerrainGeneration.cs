@@ -261,7 +261,8 @@ public class VanillaTerrainGeneration
             var z = entry.GetProperty("chunkZ").GetInt32();
             var minY = entry.GetProperty("minY").GetInt32();
             var height = entry.GetProperty("height").GetInt32();
-            this.Generator = new TerrainGenerator(WorldgenData.Vanilla, seed, entry.GetProperty("settings").GetString()!);
+            var settings = entry.GetProperty("settings").GetString()!;
+            this.Generator = new TerrainGenerator(WorldgenData.Vanilla, seed, settings);
             this.Chunk = new Chunk(x, z, minY, height);
             var biomes = entry.GetProperty("materialBiomes");
             this.biomes = biomes.GetProperty("palette").EnumerateArray().Select(value => value.GetString()!).ToArray();

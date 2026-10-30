@@ -23,7 +23,8 @@ internal sealed class TerrainAquifer
     // Chunk offsets, in chunks, of the preliminary surface samples around an aquifer center.
     private static readonly (int X, int Z)[] surfaceSamplingOffsets =
     [
-        (0, 0), (-2, -1), (-1, -1), (0, -1), (1, -1), (-3, 0), (-2, 0), (-1, 0), (1, 0), (-2, 1), (-1, 1), (0, 1), (1, 1)
+        (0, 0), (-2, -1), (-1, -1), (0, -1), (1, -1), (-3, 0), (-2, 0),
+        (-1, 0), (1, 0), (-2, 1), (-1, 1), (0, 1), (1, 1)
     ];
 
     private readonly ImmutableDictionary<string, DensityFunction>? functions;
@@ -505,7 +506,8 @@ internal sealed class TerrainAquifer
     private static int GridY(int y) => FloorDiv(y, 12);
 
     // Equal to vanilla's floor(y / 12.0) for any Y a world can have.
-    private static int FloorDiv(int value, int divisor) => value >= 0 ? value / divisor : (value - divisor + 1) / divisor;
+    private static int FloorDiv(int value, int divisor) =>
+        value >= 0 ? value / divisor : (value - divisor + 1) / divisor;
 
     private static int FromGridY(int gridY, int offset) => gridY * 12 + offset;
 
