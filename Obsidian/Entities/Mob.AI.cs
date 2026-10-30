@@ -11,7 +11,7 @@ public partial class Mob
 {
     protected virtual bool UsesAi => false;
     internal bool HasAi => UsesAi;
-    internal Random Random { get; } = new();
+    internal Random Random { get; init; } = new();
     internal MobTerrain Terrain { get; private set; } = null!;
     internal long AiTick { get; private set; }
     internal bool InWater => this.TouchesFluid(water: true, ref this.waterContact);

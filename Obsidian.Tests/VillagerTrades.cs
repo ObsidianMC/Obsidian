@@ -81,6 +81,88 @@ public sealed class VillagerTrades
         Assert.Equal(offers.Select(Progress), restored.Select(Progress));
     }
 
+    [Theory(Timeout = TestServerFactory.TestTimeout)]
+    [InlineData(0, false)]
+    [InlineData(0, true)]
+    [InlineData(1, false)]
+    [InlineData(1, true)]
+    [InlineData(2, false)]
+    [InlineData(2, true)]
+    [InlineData(3, false)]
+    [InlineData(3, true)]
+    [InlineData(4, false)]
+    [InlineData(4, true)]
+    [InlineData(5, false)]
+    [InlineData(5, true)]
+    public async Task PlayerTradeExperienceMatchesVanillaRegardlessOfMobDrops(int index, bool mobDrops)
+    {
+        await using var context = TestServerFactory.CreateServer($"trade-xp-{Guid.NewGuid():N}");
+        WorldBlockEntities.AddEmptyChunk(context.World);
+        context.World.LevelData.GameRules["mob_drops"] = mobDrops ? "true" : "false";
+        using var stream = typeof(Server).Assembly.GetManifestResourceStream("Obsidian.Assets.merchant-xp-26.3.json")!;
+        using var captured = JsonDocument.Parse(stream);
+        var row = captured.RootElement[index];
+        var random = new CapturedMerchantRandom(row.GetProperty("seed").GetInt64());
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Customer");
+        var merchant = await OpenCapturedXpMerchantAsync(context, player, row, random);
+        var menu = Assert.IsType<MerchantContainer>(player.OpenedContainer);
+        SupplyCosts(player, LastOffers(player).Offers[0]);
+        await menu.SelectAsync(0);
+
+        await MenuClicks.ClickAsync(context.Server, player, 2, 0, ClickType.Pickup, StateId(player));
+        var awarded = context.World.GetNonPlayerEntitiesInRange(player.Position, 4)
+            .OfType<ExperienceOrb>().Sum(orb => orb.Value);
+
+        Assert.Equal(row.GetProperty("reward").GetInt32(), awarded);
+        Assert.Equal(row.GetProperty("nextInt").GetInt32(), random.Source.NextInt());
+        Assert.Equal(row.GetProperty("levelAfter").GetInt32(), LastOffers(player).VillagerLevel);
+        if (merchant is Villager villager)
+            Assert.Equal(row.GetProperty("xpAfter").GetInt32(), villager.VillagerXp);
+    }
+
+    private static async Task<Mob> OpenCapturedXpMerchantAsync(RealServerContext context,
+        Obsidian.Entities.Player player, JsonElement row, CapturedMerchantRandom random)
+    {
+        var saved = new NbtCompound
+        {
+            new NbtCompound("Offers")
+            {
+                new NbtList(NbtTagType.Compound, "Recipes")
+                {
+                    VanillaLoot.CapturedCompound("", row.GetProperty("offer"))
+                }
+            }
+        };
+        var offers = MerchantOffers.Read(saved);
+        if (row.GetProperty("merchant").GetString() == "villager")
+        {
+            var villager = NewVillager(context.World, player.Position, random);
+            villager.VillagerProfession = 1;
+            villager.VillagerXp = row.GetProperty("xpBefore").GetInt32();
+            villager.RestoreVillagerOffers(saved);
+            await villager.InteractAsync(player, InteractionHand.MainHand);
+            return villager;
+        }
+
+        var trader = new WanderingTrader
+        {
+            Level = context.World,
+            EntityId = Server.GetNextEntityId(),
+            Position = player.Position,
+            Health = 20,
+            Random = random
+        };
+        await MerchantTrading.OpenAsync(trader, player, offers, 1, 0, canRestock: false);
+        return trader;
+    }
+
+    private sealed class CapturedMerchantRandom(long seed) : Random
+    {
+        internal Obsidian.API.World.Generator.RandomSources.LegacyRandomSource Source { get; } = new(seed);
+
+        public override int Next(int maxValue) => Source.NextInt(maxValue);
+    }
+
     [Fact]
     public void EmptyEntityComponentPredicatesMatchVanilla()
     {
@@ -139,9 +221,9 @@ public sealed class VillagerTrades
             LastOffers(player).Offers.Select(Describe));
     }
 
-    private static Obsidian.Net.Packets.Play.Clientbound.MerchantOffersPacket LastOffers(Obsidian.Entities.Player player) =>
+    private static MerchantOffersPacket LastOffers(Obsidian.Entities.Player player) =>
         ((TestClient)player.Client).SentPackets
-            .OfType<Obsidian.Net.Packets.Play.Clientbound.MerchantOffersPacket>().Last();
+            .OfType<MerchantOffersPacket>().Last();
 
     private static void SupplyCosts(Obsidian.Entities.Player player, TradeEntry offer)
     {
@@ -161,7 +243,8 @@ public sealed class VillagerTrades
     {
         await using var context = TestServerFactory.CreateServer($"vanilla-offers-{Guid.NewGuid():N}");
         WorldBlockEntities.AddEmptyChunk(context.World);
-        using var stream = typeof(Server).Assembly.GetManifestResourceStream("Obsidian.Assets.villager-saved-26.3.nbt")!;
+        using var stream = typeof(Server).Assembly.GetManifestResourceStream(
+            "Obsidian.Assets.villager-saved-26.3.nbt")!;
         var saved = Assert.IsType<NbtCompound>(new NbtReader(stream).ReadNextTag());
         var vanillaOffers = Assert.IsType<NbtCompound>(saved["Offers"]);
         if (empty)
@@ -195,7 +278,7 @@ public sealed class VillagerTrades
         else
         {
             var shown = ((TestClient)player.Client).SentPackets
-                .OfType<Obsidian.Net.Packets.Play.Clientbound.MerchantOffersPacket>().Last();
+                .OfType<MerchantOffersPacket>().Last();
             Assert.Equal(loaded.Select(Describe), shown.Offers.Select(Describe));
             Assert.Equal(loaded.Select(Progress), Reload(loaded).Select(Progress));
         }
@@ -214,7 +297,8 @@ public sealed class VillagerTrades
         Assert.Equal(saved.TryGetTagValue<int>("maxUses", out var maximum) ? maximum : 4, actual.MaxCount);
         Assert.Equal(saved.TryGetTagValue<int>("xp", out var xp) ? xp : 1, actual.XP);
         Assert.Equal(saved.TryGetTagValue<int>("demand", out var demand) ? demand : 0, actual.Demand);
-        Assert.Equal(saved.TryGetTagValue<int>("specialPrice", out var specialPrice) ? specialPrice : 0, actual.Discount);
+        var specialPrice = saved.TryGetTagValue<int>("specialPrice", out var price) ? price : 0;
+        Assert.Equal(specialPrice, actual.Discount);
         Assert.Equal(saved.TryGetTagValue<float>("priceMultiplier", out var multiplier) ? multiplier : 0,
             actual.Multiplier);
         Assert.Equal(!saved.TryGetBool("rewardExp", out var reward) || reward, actual.RewardExp);
@@ -423,14 +507,15 @@ public sealed class VillagerTrades
     private static ItemStack Potion(Potion potion) =>
         new(ItemsRegistry.Potion, 1, new PotionContentsDataComponent { Potion = potion });
 
-    private static Villager NewVillager(IWorld world, VectorD position)
+    private static Villager NewVillager(IWorld world, VectorD position, Random? random = null)
     {
         var villager = new Villager
         {
             Level = world,
             EntityId = Server.GetNextEntityId(),
             Position = position,
-            Health = 20
+            Health = 20,
+            Random = random ?? new Random()
         };
         villager.InitializeAi(finalizeSpawn: false);
         return villager;

@@ -96,6 +96,8 @@ public final class TradeFixtures {
             new GsonBuilder().setPrettyPrinting().create().toJson(capturePredicates()) + "\n");
         Files.writeString(Path.of(arguments[0]).resolveSibling("trade-holder-sets-26.3.json"),
             new GsonBuilder().setPrettyPrinting().create().toJson(captureHolderSets()) + "\n");
+        Files.writeString(Path.of(arguments[0]).resolveSibling("merchant-xp-26.3.json"),
+            new GsonBuilder().setPrettyPrinting().create().toJson(captureTradeXp()) + "\n");
     }
 
     // The built-in registries and the vanilla pack's data pack registries, with their tags, as a server loads them.
@@ -157,7 +159,8 @@ public final class TradeFixtures {
     // Gives an allocated villager synced data holding only its villager data, all that the merchant predicates'
     // villager/variant component reads (Villager.get).
     @SuppressWarnings("unchecked")
-    private static void setVillagerData(net.minecraft.world.entity.Entity villager, VillagerData data) throws Exception {
+    private static void setVillagerData(net.minecraft.world.entity.Entity villager, VillagerData data)
+        throws Exception {
         var accessorField = villager.getClass().getDeclaredField("DATA_VILLAGER_DATA");
         accessorField.setAccessible(true);
         var accessor = (EntityDataAccessor<VillagerData>) accessorField.get(null);
@@ -259,6 +262,109 @@ public final class TradeFixtures {
         draw.invoke(null, context, offers, tradeSet.trades(), amount);
     }
 
+    // Capture the real reward methods. Career trade drawing is measured separately by captureTransition.
+    private static class XpVillager extends Villager {
+        VillagerData data;
+        XpVillager() {
+            super(net.minecraft.world.entity.EntityTypes.VILLAGER, null);
+        }
+        @Override public VillagerData getVillagerData() {
+            return data;
+        }
+        @Override public void setVillagerData(VillagerData value) {
+            data = value;
+        }
+        @Override protected void updateTrades(ServerLevel world) {}
+        @Override public boolean addEffect(net.minecraft.world.effect.MobEffectInstance effect,
+            net.minecraft.world.entity.Entity source) {
+            return true;
+        }
+    }
+
+    private static class XpLevel extends ServerLevel {
+        int experience;
+        XpLevel() {
+            super(null, null, null, null, null, null, false, 0, null, false);
+        }
+        @Override public int getNextEntityId() {
+            return 1;
+        }
+        @Override public RegistryAccess registryAccess() {
+            return access;
+        }
+        @Override public net.minecraft.util.RandomSource getRandom() {
+            return net.minecraft.util.RandomSource.create(0);
+        }
+        @Override public net.minecraft.world.flag.FeatureFlagSet enabledFeatures() {
+            return net.minecraft.world.flag.FeatureFlags.DEFAULT_FLAGS;
+        }
+        @Override public boolean noCollision(net.minecraft.world.entity.Entity entity,
+            net.minecraft.world.phys.AABB bounds) {
+            return true;
+        }
+        @Override public boolean addFreshEntity(net.minecraft.world.entity.Entity entity) {
+            experience += ((net.minecraft.world.entity.ExperienceOrb) entity).getValue();
+            return true;
+        }
+    }
+
+    private static JsonArray captureTradeXp() throws Exception {
+        var rows = new JsonArray();
+        var profession = access.lookupOrThrow(Registries.VILLAGER_PROFESSION)
+            .getOrThrow(ResourceKey.create(Registries.VILLAGER_PROFESSION,
+                Identifier.withDefaultNamespace("armorer")));
+        var type = access.lookupOrThrow(Registries.VILLAGER_TYPE)
+            .getOrThrow(ResourceKey.create(Registries.VILLAGER_TYPE, Identifier.withDefaultNamespace("plains")));
+        for (var merchantType : List.of("villager", "wandering_trader")) {
+            for (var xpBefore : merchantType.equals("villager") ? List.of(0, 9) : List.of(0)) {
+                for (var reward : List.of(false, true)) {
+                    var world = (XpLevel) allocate(XpLevel.class);
+                    var random = net.minecraft.util.RandomSource.create(12345);
+                    var merchant = merchantType.equals("villager")
+                        ? (AbstractVillager) allocate(XpVillager.class)
+                        : (AbstractVillager) allocate(WanderingTrader.class);
+                    if (merchant instanceof XpVillager villager) {
+                        villager.data = new VillagerData(type, profession, 1);
+                        var xp = Villager.class.getDeclaredField("villagerXp");
+                        xp.setAccessible(true);
+                        xp.setInt(villager, xpBefore);
+                    }
+                    setEntityField(merchant, "random", random);
+                    setEntityField(merchant, "level", world);
+                    setEntityField(merchant, "position", net.minecraft.world.phys.Vec3.ZERO);
+                    var offerJson = JsonParser.parseString("""
+                        {"buy":{"id":"minecraft:emerald"},"sell":{"id":"minecraft:bread"},"xp":1}
+                        """).getAsJsonObject();
+                    offerJson.addProperty("rewardExp", reward);
+                    var offer = MerchantOffer.CODEC.parse(ops, offerJson).getOrThrow();
+                    var owner = merchantType.equals("villager") ? Villager.class : WanderingTrader.class;
+                    var method = owner.getDeclaredMethod("rewardTradeXp", MerchantOffer.class);
+                    method.setAccessible(true);
+                    method.invoke(merchant, offer);
+
+                    var row = new JsonObject();
+                    row.addProperty("merchant", merchantType);
+                    row.addProperty("xpBefore", xpBefore);
+                    row.add("offer", MerchantOffer.CODEC.encodeStart(ops, offer).getOrThrow());
+                    row.addProperty("reward", world.experience);
+                    row.addProperty("levelAfter", merchant instanceof Villager villager
+                        ? villager.getVillagerData().level() : 1);
+                    row.addProperty("xpAfter", merchant.getVillagerXp());
+                    row.addProperty("seed", 12345);
+                    row.addProperty("nextInt", random.nextInt());
+                    rows.add(row);
+                }
+            }
+        }
+        return rows;
+    }
+
+    private static void setEntityField(Object target, String name, Object value) throws Exception {
+        var field = net.minecraft.world.entity.Entity.class.getDeclaredField(name);
+        field.setAccessible(true);
+        field.set(target, value);
+    }
+
     private static JsonArray captureHolderSets() throws Exception {
         var rows = new JsonArray();
         for (var options : List.of("\"minecraft:water\"", "\"#minecraft:douses_fire\"",
@@ -345,7 +451,8 @@ public final class TradeFixtures {
         return rows;
     }
 
-    private static LootContext merchantContext(net.minecraft.world.entity.Entity merchant, net.minecraft.util.RandomSource random) {
+    private static LootContext merchantContext(net.minecraft.world.entity.Entity merchant,
+        net.minecraft.util.RandomSource random) {
         var parameters = new HashMap<ContextKey<?>, Object>();
         parameters.put(LootContextParams.THIS_ENTITY, merchant);
         parameters.put(LootContextParams.ADDITIONAL_COST_COMPONENT_ALLOWED, Unit.INSTANCE);
