@@ -143,17 +143,18 @@ public sealed class SpecialCraftingRecipes
 
         var crafted = recipes.EvaluateCrafting(grid, width);
 
-        var expected = ReadStack(row.GetProperty("result"));
-        if (expected is null)
+        var expected = row.GetProperty("result");
+        if (ReadStack(expected) is null)
         {
             Assert.Null(crafted);
             return;
         }
 
+        // The whole stack as the client is sent it: its count and its component patch, removals included, which
+        // stack equality doesn't compare.
         Assert.NotNull(crafted);
         Assert.Equal(identifier, crafted.RecipeIdentifier);
-        Assert.Equal(expected.Count, crafted.Output.Count);
-        Assert.True(expected == crafted.Output, $"Obsidian crafted {Hex(crafted.Output)}, vanilla {Hex(expected)}.");
+        Assert.Equal(expected.GetString(), Hex(crafted.Output));
     }
 
     private static JsonElement Capture()

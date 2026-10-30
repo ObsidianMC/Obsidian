@@ -3,11 +3,17 @@ import com.mojang.serialization.*;
 import io.netty.buffer.*;
 import java.nio.file.*;
 import java.util.*;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.protocol.game.ClientboundRecipeBookAddPacket;
+import net.minecraft.resources.RegistryDataLoader;
 import net.minecraft.resources.RegistryOps;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.repository.ServerPacksSource;
+import net.minecraft.server.packs.resources.MultiPackResourceManager;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.item.crafting.display.*;
@@ -73,9 +79,7 @@ public final class SpecialRecipeFixtures {
     public static void main(String[] arguments) throws Exception {
         VanillaDumper.bootstrap();
 
-        // The built-in registries, whose tags bootstrap bound: recipes name item tags, and the grids' stacks only
-        // refer to built-in registries.
-        access = RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY);
+        access = loadRegistries();
         ops = RegistryOps.create(JsonOps.INSTANCE, access);
 
         var recipes = readCraftingRecipes(Path.of(arguments[0], "minecraft", "recipe"));
@@ -98,6 +102,23 @@ public final class SpecialRecipeFixtures {
         output.add("recipes", packs);
         var gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
         Files.writeString(Path.of(arguments[1]), gson.toJson(output));
+    }
+
+    // The built-in registries, whose tags bootstrap bound (recipes name item tags), and the world registries from
+    // vanilla's data pack: the grids' armour holds enchantments and trims.
+    private static RegistryAccess loadRegistries() {
+        var builtIn = new ArrayList<Registry<?>>();
+        BuiltInRegistries.REGISTRY.forEach(builtIn::add);
+
+        var pack = ServerPacksSource.createVanillaPackSource().fullResources();
+        var resources = new MultiPackResourceManager(PackType.SERVER_DATA, List.of(pack));
+        var lookups = new ArrayList<HolderLookup.RegistryLookup<?>>(builtIn);
+        var world = RegistryDataLoader.load(resources, lookups, RegistryDataLoader.WORLD_REGISTRIES, Runnable::run)
+            .join();
+
+        var all = new ArrayList<Registry<?>>(builtIn);
+        world.registries().forEach(entry -> all.add(entry.value()));
+        return new RegistryAccess.ImmutableRegistryAccess(all);
     }
 
     /** A crafting grid of the table: its name, width (2 or 3) and slots, row by row; null slots are empty. */
@@ -185,6 +206,51 @@ public final class SpecialRecipeFixtures {
         grids.add(grid("stacking damageable red shulker box and blue dye", 2,
             item("red_shulker_box", "{\"minecraft:max_stack_size\": 2, \"minecraft:max_damage\": 5}"),
             item("blue_dye"), null, null));
+
+        // Components removed from the input, which the result keeps removed.
+        grids.add(grid("red shulker box without lore and blue dye", 2,
+            item("red_shulker_box", "{\"!minecraft:lore\": {}, \"!minecraft:rarity\": {}}"), item("blue_dye"),
+            null, null));
+        grids.add(grid("map without lore and a blank map", 2,
+            item("filled_map", "{\"minecraft:map_id\": 7, \"!minecraft:lore\": {}}"), blank, null, null));
+        grids.add(grid("helmet without attribute modifiers and red dye", 2,
+            item("leather_helmet", "{\"!minecraft:attribute_modifiers\": {}}"), item("red_dye"), null, null));
+
+        // Dyes whose dye component is overridden or removed: dye recipes take any dye color, transmute recipes
+        // their material item whatever its color.
+        var blueRedDye = item("red_dye", "{\"minecraft:dye\": \"blue\"}");
+        var colorlessRedDye = item("red_dye", "{\"!minecraft:dye\": {}}");
+        grids.add(grid("helmet and red dye that dyes blue", 2, item("leather_helmet"), blueRedDye, null, null));
+        grids.add(grid("helmet and red dye without a color", 2, item("leather_helmet"), colorlessRedDye, null, null));
+        grids.add(grid("helmet, red dye without a color and blue dye", 2,
+            item("leather_helmet"), colorlessRedDye, item("blue_dye"), null));
+        grids.add(grid("shulker box and red dye that dyes blue", 2, item("shulker_box"), blueRedDye, null, null));
+        grids.add(grid("shulker box and red dye without a color", 2,
+            item("shulker_box"), colorlessRedDye, null, null));
+
+        // Armour with trims and enchantments, which dyeing keeps.
+        grids.add(grid("trimmed chestplate and yellow dye", 2,
+            item("leather_chestplate",
+                "{\"minecraft:trim\": {\"material\": \"minecraft:gold\", \"pattern\": \"minecraft:coast\"}}"),
+            item("yellow_dye"), null, null));
+        grids.add(grid("enchanted red boots and blue dye", 2,
+            item("leather_boots", "{\"minecraft:enchantments\": {\"minecraft:protection\": 2}, "
+                + "\"minecraft:dyed_color\": 11546150}"),
+            item("blue_dye"), null, null));
+
+        // Potions with custom effects, colors and names, which tipped arrows take.
+        var brew = item("lingering_potion", "{\"minecraft:potion_contents\": {\"potion\": \"minecraft:swiftness\", "
+            + "\"custom_color\": 1193046, \"custom_name\": \"brew\", \"custom_effects\": "
+            + "[{\"id\": \"minecraft:strength\", \"amplifier\": 1, \"duration\": 200}]}}");
+        var effects = item("lingering_potion", "{\"minecraft:potion_contents\": {\"custom_effects\": "
+            + "[{\"id\": \"minecraft:poison\", \"duration\": 100, \"show_particles\": false}]}}");
+        var emptied = item("lingering_potion", "{\"!minecraft:potion_contents\": {}}");
+        grids.add(grid("arrows around a lingering potion with custom effects", 3,
+            arrow, arrow, arrow, arrow, brew, arrow, arrow, arrow, arrow));
+        grids.add(grid("arrows around a lingering potion of only custom effects", 3,
+            arrow, arrow, arrow, arrow, effects, arrow, arrow, arrow, arrow));
+        grids.add(grid("arrows around a lingering potion without contents", 3,
+            arrow, arrow, arrow, arrow, emptied, arrow, arrow, arrow, arrow));
 
         return grids;
     }
