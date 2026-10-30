@@ -404,7 +404,7 @@ internal static class BlockPhysics
 
     public static bool Suffocates(int state) => data.Value.Suffocating[ShapeState(state)];
 
-    /// <summary>Vanilla's <c>hasPostProcess</c>: worldgen marks the position of such a state for post-processing.</summary>
+    /// <summary>Whether vanilla's <c>getPostProcessPos</c> returns a target for this state.</summary>
     public static bool HasPostProcess(int state) => (uint)state < (uint)data.Value.PostProcess.Length && data.Value.PostProcess[state];
 
     /// <summary>

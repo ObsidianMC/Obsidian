@@ -3,6 +3,7 @@ using Obsidian.API.World.Structures;
 using Obsidian.Nbt;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Features.Tree;
+using Obsidian.WorldData.Generators.Mojang.Features;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -296,9 +297,12 @@ public sealed class StructureTemplate
             max = new Vector(Math.Max(max.X, target.X), Math.Max(max.Y, target.Y), Math.Max(max.Z, target.Z));
             placed.Add((target, info.Nbt));
 
-            // Vanilla's WorldGenRegion marks these unless the placement flags say the shape is known.
-            if (!settings.KnownShape && postProcessBlocks.Contains(state))
+            // WorldGenRegion already marks writes, including 26.3's above-block targets. Other level adapters
+            // still need the legacy template marking path.
+            if (level is not WorldGenRegion && !settings.KnownShape && postProcessBlocks.Contains(state))
+            {
                 level.MarkForPostProcessing(target);
+            }
 
             if (info.Nbt is not null && level.GetBlockEntity(target) is API.BlockEntities.BlockEntity blockEntity)
                 LoadBlockEntity(blockEntity, info.Nbt, random);

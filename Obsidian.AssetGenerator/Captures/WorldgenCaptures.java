@@ -1055,8 +1055,18 @@ class WorldgenCaptures {
     }
 
     static void featureChecked(JsonObject entry) throws Exception {
-        var level = server.overworld();
+        var dimension = entry.has("dimension")
+            ? entry.get("dimension").getAsString()
+            : "minecraft:overworld";
+        var level = level(dimension);
         var generator = level.getChunkSource().getGenerator();
+
+        if (entry.has("dimension")) {
+            entry.addProperty("minY", level.getMinY());
+            entry.addProperty("height", level.getHeight());
+            entry.addProperty("seaLevel", generator.getSeaLevel());
+        }
+
         long seed = entry.get("seed").getAsLong();
         int chunkX = entry.get("chunkX").getAsInt();
         int chunkZ = entry.get("chunkZ").getAsInt();
@@ -1108,11 +1118,15 @@ class WorldgenCaptures {
         if (entry.has("regionRandomSeed")) {
             entry.addProperty("nextRegionRandom", region.getRandom().nextInt());
         }
-        if (entry.has("postProcess")) {
+        if (entry.has("postProcess") || entry.has("captureMarks")) {
             var marks = featureMarks(chunks, chunkX, chunkZ);
             var recorded = new JsonArray();
             marks.forEach(pos -> recorded.add(coordinates(pos)));
             entry.add("marks", recorded);
+
+            if (!entry.has("postProcess")) {
+                return;
+            }
 
             // These cases contain no fluids or block-specific post-processing; this is vanilla's shape pass.
             for (var pos : marks) {
@@ -1163,7 +1177,10 @@ class WorldgenCaptures {
             case "provider" -> {
                 var provider = net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProvider.CODEC
                     .parse(ops, entry.get("provider")).getOrThrow().value();
-                var state = provider.getOptionalState(region, random, origin);
+                boolean required = entry.has("requiredState") && entry.get("requiredState").getAsBoolean();
+                var state = required
+                    ? provider.getState(region, random, origin)
+                    : provider.getOptionalState(region, random, origin);
                 entry.add("state", state == null ? JsonNull.INSTANCE : new JsonPrimitive(stateName(state)));
             }
             case "modifier" -> {
