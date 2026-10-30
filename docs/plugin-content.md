@@ -2237,7 +2237,7 @@ Like a data pack's, each file is an entry named after its namespace and path:
 - `data/<namespace>/dimension_type/<path>.json` is a dimension type;
 - `data/<namespace>/damage_type/<path>.json` is a damage type.
 
-The files are vanilla 1.21.11's format for these registries. A biome:
+The files are vanilla 26.3's data pack format 121 for these registries. A biome:
 
 ```json
 {
@@ -2246,7 +2246,16 @@ The files are vanilla 1.21.11's format for these registries. A biome:
   "downfall": 0.8,
   "attributes": {
     "minecraft:visual/sky_color": "#78a7ff",
-    "minecraft:visual/fog_color": "#c0d8ff"
+    "minecraft:visual/fog_color": "#c0d8ff",
+    "minecraft:gameplay/natural_mob_spawns": {
+      "modifier": "overlay",
+      "argument": {
+        "spawns_by_category": {
+          "creature": [{ "type": "minecraft:sheep", "weight": 12, "count": 4 }]
+        },
+        "spawn_costs": {}
+      }
+    }
   },
   "effects": {
     "water_color": "#3f76e4",
@@ -2254,11 +2263,7 @@ The files are vanilla 1.21.11's format for these registries. A biome:
     "foliage_color": "#59ae30"
   },
   "carvers": ["minecraft:cave", "minecraft:canyon"],
-  "features": [],
-  "spawners": {
-    "creature": [{ "type": "minecraft:sheep", "weight": 12, "minCount": 4, "maxCount": 4 }]
-  },
-  "spawn_costs": {}
+  "features": []
 }
 ```
 
@@ -2300,8 +2305,8 @@ accepts it and left out where vanilla would fail, with a message naming the fiel
   `uniform`, `biased_to_bottom`, `clamped`, `clamped_normal`, `weighted_list`).
 - Ranges and cross-field rules are vanilla's. A dimension type's `min_y` (-2032 to 2016) and `height` (16 to 4064) are
   multiples of 16, `min_y + height` is at most 2032, `logical_height` is at most `height`, `coordinate_scale` is from
-  0.00001 to 30,000,000, and its light levels and providers' values are from 0 to 15. A spawner's `minCount` is at
-  most its `maxCount`, and both are positive.
+  0.00001 to 30,000,000, and its light levels and providers' values are from 0 to 15. A spawner's `count` is an int
+  provider, such as `4` or `{"type": "minecraft:uniform", "min_inclusive": 1, "max_inclusive": 4}`.
 - References must exist. Sound events and particle, entity and activity types are vanilla's (entity types may be a
   loaded plugin's). A sound vanilla doesn't have is given inline as `{"sound_id": ..., "range": ...}`.
 - A biome is read whole, like vanilla reads it. Its `features` are vanilla's or loaded plugins' placed features by
@@ -2322,6 +2327,19 @@ Particles take their options, like `{"type": "minecraft:dust", "color": [1, 0, 0
 vanilla's particle codecs and sent as they write them; their blocks and items are vanilla's, since clients don't know
 plugins' ones, and an item is a name or `{"id": ...}` without components. A bed rule's `error_message` is any text
 component vanilla reads, checked for its content and nested components; clients aren't sent bed rules.
+
+In 26.3, the old biome-root `spawners`, `spawn_costs` and `creature_spawn_probability` fields are ignored. Use
+`gameplay/natural_mob_spawns` (`spawns_by_category` and `spawn_costs`), as a value or an `overlay` modifier, and
+`gameplay/creature_world_gen_spawn_probability`. Spawn entries use `count` providers. The reader retains the full
+provider; composing dimension and biome spawn attributes and sampling new provider kinds in natural spawning is
+part of the terrain/spawning work in Phase 5. Obsidian's biome modifiers still accept older `minCount`/`maxCount`
+bounds as well as `count` for converted mods.
+
+Ambient particle lists also accept `{"modifier": "append", "argument": [...]}`. The visual attributes now include
+`block_light_tint`, `night_vision_color` and `ambient_light_color`. Bed rules use `destroy_on_use` and
+`destroy_on_leave`; `gameplay/straw_bed_rule` is a separate attribute. A dimension type must declare
+`has_ender_dragon_fight`, and may name a known `default_clock`, such as `minecraft:overworld` or `minecraft:the_end`.
+Both fields are preserved in the data sent to clients. Timeline references retain the tag-only restriction above.
 
 The server applies the attributes Obsidian has the mechanics of, like vanilla: a value starts at the attribute's
 default, then the dimension type's map applies, then the biome's where it's asked about, so a plugin's biome can
@@ -3171,7 +3189,7 @@ biome everywhere:
 }
 ```
 
-The file is vanilla 1.21.11's level stem, read with vanilla's rules (see [What's checked](#whats-checked)):
+The file is vanilla 26.3's level stem, read with vanilla's rules (see [What's checked](#whats-checked)):
 
 - `type` names a dimension type, vanilla's or a plugin's, or defines one inline (see below). It decides the level's
   build range, sky light and everything else a dimension type does, and clients are sent it like any dimension type.
@@ -4145,6 +4163,7 @@ default) and `cloud_height` (192.33 by default). For example, a dimension with E
   "skybox": "end",
   "has_skylight": true,
   "has_ceiling": false,
+  "has_ender_dragon_fight": false,
   "coordinate_scale": 1,
   "min_y": 0,
   "height": 256,

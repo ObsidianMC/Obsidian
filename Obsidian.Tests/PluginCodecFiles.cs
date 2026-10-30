@@ -21,7 +21,7 @@ namespace Obsidian.Tests;
 /// <summary>
 /// Plugins' biome, dimension type and damage type files, added to the codec registries like a data pack's entries.
 /// </summary>
-public class PluginCodecFiles
+public partial class PluginCodecFiles
 {
     private const string MinimalBiome = """
         {
@@ -30,9 +30,7 @@ public class PluginCodecFiles
           "downfall": 0.5,
           "effects": { "water_color": "#3f76e4" },
           "carvers": [],
-          "features": [],
-          "spawners": {},
-          "spawn_costs": {}
+          "features": []
         }
         """;
 
@@ -40,6 +38,7 @@ public class PluginCodecFiles
         {
           "has_skylight": true,
           "has_ceiling": false,
+          "has_ender_dragon_fight": false,
           "coordinate_scale": 1,
           "min_y": -64,
           "height": 384,
@@ -59,12 +58,20 @@ public class PluginCodecFiles
               "has_precipitation": true,
               "temperature": 0.5,
               "downfall": 1,
-              "attributes": { "minecraft:visual/sky_color": 7907327, "gameplay/can_start_raid": false },
-              "effects": { "water_color": 4159204 },
-              "spawners": {
-                "monster": [{ "type": "minecraft:zombie", "weight": 100, "minCount": 1, "maxCount": 4 }]
+              "attributes": {
+                "minecraft:visual/sky_color": 7907327,
+                "gameplay/can_start_raid": false,
+                "gameplay/natural_mob_spawns": {
+                  "modifier": "overlay",
+                  "argument": {
+                    "spawns_by_category": {
+                      "monster": [{ "type": "minecraft:zombie", "weight": 100, "count": 4 }]
+                    },
+                    "spawn_costs": {}
+                  }
+                }
               },
-              "spawn_costs": {},
+              "effects": { "water_color": 4159204 },
               "carvers": ["minecraft:cave"],
               "features": [[], "minecraft:ore_coal_upper"]
             }

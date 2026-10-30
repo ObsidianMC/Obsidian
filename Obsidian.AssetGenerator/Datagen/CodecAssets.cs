@@ -44,7 +44,7 @@ internal static class CodecAssets
         [
             "monster_spawn_block_light_limit", "monster_spawn_light_level", "piglin_safe", "natural", "ambient_light", "fixed_time",
             "infiniburn", "respawn_anchor_works", "has_skylight", "bed_works", "effects", "has_raids", "min_y", "height",
-            "logical_height", "coordinate_scale", "ultrawarm", "has_ceiling"
+            "logical_height", "coordinate_scale", "ultrawarm", "has_ceiling", "has_ender_dragon_fight", "default_clock"
         ],
         ["painting_variant"] = ["asset_id", "height", "width"],
     };
@@ -56,6 +56,32 @@ internal static class CodecAssets
 
     public static void Write(string dataDirectory, string outputDirectory)
     {
+        // Keep vanilla's complete format-121 inputs for reader validation. The modeled Codecs assets below
+        // deliberately omit fields that the source generator's public element types don't represent.
+        foreach (var registry in new[] { "worldgen/biome", "dimension_type", "worldgen/world_preset" })
+        {
+            var entries = Combine(Path.Combine(dataDirectory, registry), DatagenAssets.ToId);
+            var file = registry.Split('/')[^1] + ".json";
+
+            WriteJson(Path.Combine(outputDirectory, "data_pack", file), entries);
+        }
+
+        foreach (var registry in new[] { "worldgen/placed_feature", "worldgen/carver" })
+        {
+            var identifiers = new JsonArray();
+
+            foreach (var (path, _) in ReadAll(Path.Combine(dataDirectory, registry)))
+            {
+                identifiers.Add(DatagenAssets.ToId(path));
+            }
+
+            var file = registry.Split('/')[^1] + "_ids.json";
+            WriteJson(Path.Combine(outputDirectory, "data_pack", file), identifiers);
+        }
+
+        var metadata = Read(Path.Combine(dataDirectory, "datapacks", "trade_rebalance", "pack.mcmeta"));
+        WriteJson(Path.Combine(outputDirectory, "data_pack", "pack.json"), metadata);
+
         foreach (var (file, registry) in codecs)
         {
             var entries = new JsonArray();

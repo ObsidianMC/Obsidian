@@ -7,7 +7,7 @@
         { "block": "minecraft:bedrock", "height": 1 },
         { "block": "minecraft:end_stone", "height": 3 }
       ],
-      "biome": "minecraft:the_void",
+      "biome": "sample:dusk",
       "structure_overrides": []
     }
   }

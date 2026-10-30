@@ -23,7 +23,7 @@ namespace Obsidian.Registries;
 /// entries overrides it until no file does any more, and when files define the same entry, the last in order wins
 /// (see <see cref="VanillaOverrides.LastWins"/>).
 /// <para>
-/// A file is read the way vanilla 1.21.11 reads a data pack's entry with the registry's codec, and rejected where
+/// A file is read the way vanilla 26.3 reads a data pack's entry with the registry's codec, and rejected where
 /// vanilla would reject it (see <see cref="BiomeData"/>, <see cref="DimensionTypeData"/> and
 /// <see cref="DamageTypeData"/>). Clients are sent files' entries as vanilla's network codecs write the read values,
 /// so they always decode them, and vanilla's entries no file overrides by name.
