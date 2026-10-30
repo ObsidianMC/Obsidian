@@ -352,10 +352,17 @@ public sealed class CommandHandler : ICommandHandler
     /// overloads the sender may run are considered. Suggestions for a trailing <see cref="RemainingAttribute"/>
     /// parameter cover every word it takes.
     /// </summary>
-    public async Task<CommandCompletion> CompleteAsync(CommandContext ctx)
+    public Task<CommandCompletion> CompleteAsync(CommandContext ctx)
+    {
+        var prefixed = ctx.Message.StartsWith(_commandParser.Prefix, StringComparison.Ordinal);
+        var offset = prefixed ? _commandParser.Prefix.Length : 0;
+        return this.CompleteAtAsync(ctx, offset);
+    }
+
+    // Completes the command that starts at offset in the message, which /execute run reaches again for its command.
+    private async Task<CommandCompletion> CompleteAtAsync(CommandContext ctx, int offset)
     {
         var input = ctx.Message;
-        var offset = input.StartsWith(_commandParser.Prefix, StringComparison.Ordinal) ? _commandParser.Prefix.Length : 0;
         var words = CommandParser.SplitWords(input.AsSpan(offset));
         var typedCount = words.Count - 1;
         var (partialStart, partial) = words[^1];
@@ -368,7 +375,11 @@ public sealed class CommandHandler : ICommandHandler
             if (!await CanUseAsync(root, ctx))
                 return empty;
 
-            return VanillaCommandTree.Complete(ctx, root.Name, offset);
+            var completion = VanillaCommandTree.Complete(ctx, root.Name, offset, out var rootRedirect);
+            if (rootRedirect is { } commandStart)
+                return await this.CompleteAtAsync(ctx, commandStart);
+
+            return completion;
         }
 
         Command? command = null;

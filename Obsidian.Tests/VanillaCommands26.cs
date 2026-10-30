@@ -50,6 +50,7 @@ public sealed class VanillaCommands26
     public static IEnumerable<object[]> ItemCountCases => Rows("item_counts");
     public static IEnumerable<object[]> NumericTagCases => Rows("numeric_tags");
     public static IEnumerable<object[]> DataGetCases => Rows("data_get");
+    public static IEnumerable<object[]> ExecuteCompletionCases => Rows("execute_completions");
 
     private static IEnumerable<object[]> Rows(string section) => fixture.GetProperty(section).EnumerateArray()
         .Select((row, index) => new object[] { $"{section}-{index}", row.GetRawText() });
@@ -225,6 +226,30 @@ public sealed class VanillaCommands26
             Assert.Equal(row.GetProperty("suggestions").EnumerateArray().Select(value => value.GetString()),
                 completion.Suggestions.Select(value => value.Text));
         }
+    }
+
+    [Theory]
+    [MemberData(nameof(ExecuteCompletionCases))]
+    public async Task CompletionsFollowExecuteRunToTheRoot(string name, string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        var row = document.RootElement;
+        await using var server = TestServerFactory.CreateServer($"{name}-{Guid.NewGuid():N}");
+        var handler = (CommandHandler)server.Server.CommandHandler;
+        handler.RegisterCommandClass<ExecuteCommandModule>(null);
+        handler.RegisterCommandClass<ComputeCommandModule>(null);
+        handler.RegisterCommandClass<ItemCommandModule>(null);
+        var command = row.GetProperty("command").GetString()!;
+        var context = Context(server.Server, command);
+
+        var completion = await handler.CompleteAsync(context);
+
+        // The context's message starts with the slash the fixture's input leaves out.
+        var start = row.GetProperty("start").GetInt32() + 1;
+        Assert.Equal(start, completion.Start);
+        Assert.Equal(context.Message.Length - start, completion.Length);
+        Assert.Equal(row.GetProperty("suggestions").EnumerateArray().Select(value => value.GetString()),
+            completion.Suggestions.Select(value => value.Text));
     }
 
     [Fact]

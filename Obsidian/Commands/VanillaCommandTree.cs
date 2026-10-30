@@ -59,8 +59,14 @@ internal static class VanillaCommandTree
         return result;
     }
 
-    internal static CommandCompletion Complete(CommandContext context, string name, int offset)
+    /// <summary>Completes a command from the captured vanilla grammar, starting at <paramref name="offset"/>.</summary>
+    /// <param name="rootRedirect">
+    /// Where the command after a redirect to the root (<c>/execute run</c>) starts, for the caller to complete as a
+    /// command of its own; null otherwise.
+    /// </param>
+    internal static CommandCompletion Complete(CommandContext context, string name, int offset, out int? rootRedirect)
     {
+        rootRedirect = null;
         var text = context.Message[offset..];
         List<(int Start, string Value)> words;
         try
@@ -79,7 +85,14 @@ internal static class VanillaCommandTree
         var partial = words[^1];
         var found = new HashSet<string>(StringComparer.Ordinal);
         var definition = Reference.GetProperty("tree").GetProperty(name);
+        int? redirectWord = null;
         Search(definition, 1, new Dictionary<string, string>());
+        if (redirectWord is { } word)
+        {
+            rootRedirect = offset + words[word].Start;
+            return new CommandCompletion(context.Message.Length, 0, []);
+        }
+
         var choices = found.Where(value => value != partial.Value
                 && (value.StartsWith(partial.Value, StringComparison.OrdinalIgnoreCase)
                     || value.StartsWith("minecraft:" + partial.Value, StringComparison.OrdinalIgnoreCase)))
@@ -93,6 +106,9 @@ internal static class VanillaCommandTree
             if (node.TryGetProperty("redirect", out var redirect))
             {
                 var path = redirect.EnumerateArray().Select(part => part.GetString()!).ToArray();
+                if (path.Length == 0 && index <= completed)
+                    redirectWord ??= index;
+
                 if (path.Length > 0)
                 {
                     var target = Reference.GetProperty("tree").GetProperty(path[0]);

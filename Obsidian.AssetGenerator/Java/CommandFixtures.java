@@ -527,6 +527,24 @@ public final class CommandFixtures {
         return rows;
     }
 
+    /** Completions through {@code /execute run}, which redirects to the root, next to the command alone. */
+    private static JsonArray executeCompletions(Commands commands) {
+        var source = Commands.createCompilationContext(net.minecraft.server.permissions.PermissionSet.ALL_PERMISSIONS);
+        var rows = new JsonArray();
+        for (var input : List.of("compute ", "execute run compute ", "execute as @s run item ", "execute run comp")) {
+            var parsed = commands.getDispatcher().parse(input, source);
+            var suggestions = commands.getDispatcher().getCompletionSuggestions(parsed).join();
+            var row = new JsonObject();
+            row.addProperty("command", input);
+            row.addProperty("start", suggestions.getRange().getStart());
+            var values = new JsonArray();
+            suggestions.getList().forEach(value -> values.add(value.getText()));
+            row.add("suggestions", values);
+            rows.add(row);
+        }
+        return rows;
+    }
+
     /** How vanilla's NumericTag converts each number type, which entity loading relies on. */
     private static JsonArray numericTags() {
         var rows = new JsonArray();
@@ -553,6 +571,10 @@ public final class CommandFixtures {
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static JsonObject node(CommandNode<CommandSourceStack> node, Commands commands) {
         var output = ArgumentUtils.serializeNodeToJson(commands.getDispatcher(), node);
+        // The serializer leaves out a redirect to the root (execute run), whose path is empty; keep it as [].
+        if (node.getRedirect() == commands.getDispatcher().getRoot() && !output.has("redirect")) {
+            output.add("redirect", new JsonArray());
+        }
         var source = Commands.createCompilationContext(net.minecraft.server.permissions.PermissionSet.NO_PERMISSIONS);
         output.addProperty("restricted", !node.getRequirement().test(source));
         if (node instanceof ArgumentCommandNode argument) {
@@ -615,6 +637,7 @@ public final class CommandFixtures {
         output.add("item_counts", itemCounts(context));
         output.add("numeric_tags", numericTags());
         output.add("data_get", dataGet());
+        output.add("execute_completions", executeCompletions(commands));
         output.add("time", time(commands, access));
         output.add("marker_completions", markerCompletions);
         output.add("posteffect", postEffects());
