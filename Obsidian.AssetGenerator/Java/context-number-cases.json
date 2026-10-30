@@ -1315,5 +1315,602 @@
   {
     "kind": "int",
     "provider": 2147483648
+  },
+  {
+    "case": "pow_1_positive_infinity",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 1,
+      "exponent": {
+        "type": "minecraft:div",
+        "left": 1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "pow_1_negative_infinity",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 1,
+      "exponent": {
+        "type": "minecraft:div",
+        "left": -1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "pow_1_nan",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 1,
+      "exponent": {
+        "type": "minecraft:sqrt",
+        "input": -1
+      }
+    }
+  },
+  {
+    "case": "pow_-1_positive_infinity",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": -1,
+      "exponent": {
+        "type": "minecraft:div",
+        "left": 1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "pow_-1_negative_infinity",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": -1,
+      "exponent": {
+        "type": "minecraft:div",
+        "left": -1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "pow_-1_nan",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": -1,
+      "exponent": {
+        "type": "minecraft:sqrt",
+        "input": -1
+      }
+    }
+  },
+  {
+    "case": "pow_nan_zero",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": {
+        "type": "minecraft:sqrt",
+        "input": -1
+      },
+      "exponent": 0
+    }
+  },
+  {
+    "case": "pow_nan_one",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": {
+        "type": "minecraft:sqrt",
+        "input": -1
+      },
+      "exponent": 1
+    }
+  },
+  {
+    "case": "pow_zero_nan",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 0,
+      "exponent": {
+        "type": "minecraft:sqrt",
+        "input": -1
+      }
+    }
+  },
+  {
+    "case": "pow_zero_zero",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 0,
+      "exponent": 0
+    }
+  },
+  {
+    "case": "pow_negative_fractional",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": -2,
+      "exponent": 0.5
+    }
+  },
+  {
+    "case": "pow_large_positive_infinity",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 2,
+      "exponent": {
+        "type": "minecraft:div",
+        "left": 1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "pow_small_positive_infinity",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 0.5,
+      "exponent": {
+        "type": "minecraft:div",
+        "left": 1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "pow_large_negative_infinity",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 2,
+      "exponent": {
+        "type": "minecraft:div",
+        "left": -1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "pow_small_negative_infinity",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": 0.5,
+      "exponent": {
+        "type": "minecraft:div",
+        "left": -1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "pow_negative_zero_odd",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": -0.0,
+      "exponent": 3
+    }
+  },
+  {
+    "case": "pow_negative_zero_even",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": -0.0,
+      "exponent": 2
+    }
+  },
+  {
+    "case": "pow_negative_zero_negative_odd",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": -0.0,
+      "exponent": -3
+    }
+  },
+  {
+    "case": "pow_negative_zero_fractional",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": -0.0,
+      "exponent": 0.5
+    }
+  },
+  {
+    "case": "pow_negative_infinity_odd",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": {
+        "type": "minecraft:div",
+        "left": -1,
+        "right": 0
+      },
+      "exponent": 3
+    }
+  },
+  {
+    "case": "pow_negative_infinity_even",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": {
+        "type": "minecraft:div",
+        "left": -1,
+        "right": 0
+      },
+      "exponent": 2
+    }
+  },
+  {
+    "case": "pow_negative_infinity_negative_odd",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": {
+        "type": "minecraft:div",
+        "left": -1,
+        "right": 0
+      },
+      "exponent": -3
+    }
+  },
+  {
+    "case": "pow_negative_infinity_negative_even",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": {
+        "type": "minecraft:div",
+        "left": -1,
+        "right": 0
+      },
+      "exponent": -2
+    }
+  },
+  {
+    "case": "pow_negative_infinity_fractional",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": {
+        "type": "minecraft:div",
+        "left": -1,
+        "right": 0
+      },
+      "exponent": 0.5
+    }
+  },
+  {
+    "case": "pow_negative_odd",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": -2,
+      "exponent": 3
+    }
+  },
+  {
+    "case": "pow_negative_even",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:pow",
+      "base": -2,
+      "exponent": 4
+    }
+  },
+  {
+    "case": "ceil_nan",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:ceil",
+      "input": {
+        "type": "minecraft:sqrt",
+        "input": -1
+      }
+    }
+  },
+  {
+    "case": "floor_nan",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:floor",
+      "input": {
+        "type": "minecraft:sqrt",
+        "input": -1
+      }
+    }
+  },
+  {
+    "case": "round_nan",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:round",
+      "input": {
+        "type": "minecraft:sqrt",
+        "input": -1
+      }
+    }
+  },
+  {
+    "case": "truncate_nan",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:truncate",
+      "input": {
+        "type": "minecraft:sqrt",
+        "input": -1
+      }
+    }
+  },
+  {
+    "case": "sqrt_nan",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sqrt",
+      "input": {
+        "type": "minecraft:sqrt",
+        "input": -1
+      }
+    }
+  },
+  {
+    "case": "sin_nan",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sin",
+      "input": {
+        "type": "minecraft:sqrt",
+        "input": -1
+      }
+    }
+  },
+  {
+    "case": "cos_nan",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:cos",
+      "input": {
+        "type": "minecraft:sqrt",
+        "input": -1
+      }
+    }
+  },
+  {
+    "case": "from_float_nan",
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:from_float",
+      "input": {
+        "type": "minecraft:sqrt",
+        "input": -1
+      }
+    }
+  },
+  {
+    "case": "ceil_positive_infinity",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:ceil",
+      "input": {
+        "type": "minecraft:div",
+        "left": 1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "floor_positive_infinity",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:floor",
+      "input": {
+        "type": "minecraft:div",
+        "left": 1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "round_positive_infinity",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:round",
+      "input": {
+        "type": "minecraft:div",
+        "left": 1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "truncate_positive_infinity",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:truncate",
+      "input": {
+        "type": "minecraft:div",
+        "left": 1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "sqrt_positive_infinity",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sqrt",
+      "input": {
+        "type": "minecraft:div",
+        "left": 1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "sin_positive_infinity",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sin",
+      "input": {
+        "type": "minecraft:div",
+        "left": 1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "cos_positive_infinity",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:cos",
+      "input": {
+        "type": "minecraft:div",
+        "left": 1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "from_float_positive_infinity",
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:from_float",
+      "input": {
+        "type": "minecraft:div",
+        "left": 1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "ceil_negative_infinity",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:ceil",
+      "input": {
+        "type": "minecraft:div",
+        "left": -1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "floor_negative_infinity",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:floor",
+      "input": {
+        "type": "minecraft:div",
+        "left": -1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "round_negative_infinity",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:round",
+      "input": {
+        "type": "minecraft:div",
+        "left": -1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "truncate_negative_infinity",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:truncate",
+      "input": {
+        "type": "minecraft:div",
+        "left": -1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "sqrt_negative_infinity",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sqrt",
+      "input": {
+        "type": "minecraft:div",
+        "left": -1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "sin_negative_infinity",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:sin",
+      "input": {
+        "type": "minecraft:div",
+        "left": -1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "cos_negative_infinity",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:cos",
+      "input": {
+        "type": "minecraft:div",
+        "left": -1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "from_float_negative_infinity",
+    "kind": "int",
+    "provider": {
+      "type": "minecraft:from_float",
+      "input": {
+        "type": "minecraft:div",
+        "left": -1,
+        "right": 0
+      }
+    }
+  },
+  {
+    "case": "ceil_out_of_range_2147483648",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:ceil",
+      "input": 2147483648
+    }
+  },
+  {
+    "case": "ceil_out_of_range_-2147483904",
+    "kind": "float",
+    "provider": {
+      "type": "minecraft:ceil",
+      "input": -2147483904
+    }
   }
 ]

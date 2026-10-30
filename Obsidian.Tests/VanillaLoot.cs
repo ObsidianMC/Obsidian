@@ -144,8 +144,44 @@ public class VanillaLoot
 
         foreach (var row in capture.RootElement.EnumerateArray())
         {
+            if (!row.TryGetProperty("case", out _))
+            {
+                ReplayContextNumber(row);
+            }
+        }
+    }
+
+    public static IEnumerable<object[]> ContextNumberEdgeCases()
+    {
+        using var stream = typeof(VanillaLoot).Assembly.GetManifestResourceStream(
+            "Obsidian.Tests.Assets.context_numbers.json")!;
+        using var capture = JsonDocument.Parse(stream);
+
+        return capture.RootElement.EnumerateArray()
+            .Where(row => row.TryGetProperty("case", out _))
+            .Select(row => row.GetProperty("case").GetString()!)
+            .Distinct()
+            .Select(name => new object[] { name })
+            .ToArray();
+    }
+
+    [Theory]
+    [MemberData(nameof(ContextNumberEdgeCases))]
+    public void ContextNumberEdgeCasesMatchVanilla(string caseName)
+    {
+        using var stream = typeof(VanillaLoot).Assembly.GetManifestResourceStream(
+            "Obsidian.Tests.Assets.context_numbers.json")!;
+        using var capture = JsonDocument.Parse(stream);
+        var rows = capture.RootElement.EnumerateArray()
+            .Where(row => row.TryGetProperty("case", out var name) && name.GetString() == caseName)
+            .ToArray();
+
+        foreach (var row in rows)
+        {
             ReplayContextNumber(row);
         }
+
+        Assert.Equal(2, rows.Length);
     }
 
     private static void ReplayContextNumber(JsonElement row)

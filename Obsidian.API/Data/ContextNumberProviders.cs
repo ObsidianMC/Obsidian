@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.API.Utilities;
 using System.Globalization;
 using System.IO;
 using System.Numerics;
@@ -479,7 +480,7 @@ public static partial class ContextNumberProviders
         if (value == 0 && exponent == 0)
             return float.NaN;
 
-        return (float)Math.Pow(value, exponent);
+        return (float)JavaMath.Pow(value, exponent);
     }
 
     // Match Java Math.round(float), including saturation and NaN.
