@@ -80,6 +80,8 @@ internal static class ShapeUpdater
 
         switch (state.BlockClass())
         {
+            case "MossyCarpetBlock":
+                return Generators.Features.FeatureRegistry.UpdateMossCarpetShape(state, level, position);
             case "PointedDripstoneBlock" or "SulfurSpikeBlock":
                 return Generators.Features.SpeleothemShapes.Update(level, state, position, direction);
             case "FenceBlock":

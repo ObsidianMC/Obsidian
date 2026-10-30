@@ -317,7 +317,7 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
             ? Position(origin)
             : new Vector(chunkX * 16, CaseMinY(entry), chunkZ * 16);
 
-    private static List<Vector> FeatureMarks(
+    internal static List<Vector> FeatureMarks(
         Dictionary<(int X, int Z), IChunk> chunks, int centerX, int centerZ, int minY)
     {
         var result = new List<Vector>();
@@ -357,7 +357,7 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
         $"{position.X},{position.Y},{position.Z} {type} {delay} {priority}";
 
     // A captured block entity as "x y z type data", with the data as canonical JSON.
-    private static string ExpectedBlockEntity(JsonElement record)
+    internal static string ExpectedBlockEntity(JsonElement record)
     {
         var position = Position(record);
         var type = record[3].GetString();
@@ -367,7 +367,7 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
     }
 
     // The block entities of the writable chunks by Y, Z and X, saved without their id and position, like the capture.
-    private static List<string> BlockEntities(Dictionary<(int X, int Z), IChunk> chunks, int centerX, int centerZ)
+    internal static List<string> BlockEntities(Dictionary<(int X, int Z), IChunk> chunks, int centerX, int centerZ)
     {
         var saved = new List<(Vector Position, string Record)>();
 

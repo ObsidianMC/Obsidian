@@ -2,6 +2,7 @@ using Obsidian.API.World.Features;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Features;
 using System.Text.Json;
+using WorldGenRegion = Obsidian.WorldData.Generators.Mojang.Features.WorldGenRegion;
 
 namespace Obsidian.WorldData.Generators.Features;
 
@@ -22,7 +23,25 @@ internal sealed partial class FeatureRegistry
                 json.GetProperty("discard_chance_on_air_exposure").GetSingle()).Place;
         }
 
-        return ore.Place;
+        return (context, random, origin) =>
+        {
+            if (context.Level is not WorldGenRegion region)
+                return ore.Place(context, random, origin);
+
+            // OreFeature writes through BulkSectionAccess. In particular, magma and soul sand ores do not
+            // enqueue WorldGenRegion's automatic post-processing marks. Scattered ore uses normal writes.
+            var previous = region.MarksPostProcessing;
+            region.MarksPostProcessing = false;
+
+            try
+            {
+                return ore.Place(context, random, origin);
+            }
+            finally
+            {
+                region.MarksPostProcessing = previous;
+            }
+        };
     }
 
     private (RuleTest Target, IBlock State) OreTarget(JsonElement json) =>

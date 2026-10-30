@@ -424,7 +424,7 @@ public class VanillaTerrainGeneration
         ("OCEAN_FLOOR_WG", HeightmapType.OceanFloorWG)
     ];
 
-    private static int[] Decode(string data)
+    internal static int[] Decode(string data)
     {
         using var source = new MemoryStream(Convert.FromBase64String(data));
         using var gzip = new GZipStream(source, CompressionMode.Decompress);

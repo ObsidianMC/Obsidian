@@ -1,5 +1,6 @@
 using Obsidian.API.World.Features;
 using Obsidian.WorldData.Features;
+using Obsidian.Nbt;
 using System.Text.Json;
 
 namespace Obsidian.WorldData.Generators.Features;
@@ -26,7 +27,47 @@ internal sealed partial class FeatureRegistry
 
     private static Feature BonusChest() => SharedAlgorithm(new BonusChestFeature());
 
-    private static Feature MonsterRoom() => SharedAlgorithm(new MonsterRoomFeature());
+    private static readonly (string Name, short Value)[] spawnerDefaults =
+    [
+        ("Delay", 20),
+        ("MinSpawnDelay", 200),
+        ("MaxSpawnDelay", 800),
+        ("SpawnCount", 4),
+        ("MaxNearbyEntities", 6),
+        ("RequiredPlayerRange", 16),
+        ("SpawnRange", 4)
+    ];
+
+    private static Feature MonsterRoom()
+    {
+        var place = SharedAlgorithm(new MonsterRoomFeature());
+
+        return (context, random, origin) =>
+        {
+            var placed = place(context, random, origin);
+
+            if (placed && context.Level.GetBlockEntity(origin) is DataBlockEntity spawner
+                && spawner.Id == "minecraft:mob_spawner")
+            {
+                // BaseSpawner.save writes these defaults even before its first tick. Keep this in the 26.3
+                // adapter: the legacy generator's captures intentionally retain its earlier sparse data.
+                foreach (var (name, value) in spawnerDefaults)
+                {
+                    if (!spawner.Data.HasTag(name))
+                    {
+                        spawner.Set(name, value);
+                    }
+                }
+
+                if (!spawner.Data.HasTag("SpawnPotentials"))
+                {
+                    spawner.Set(new NbtList(NbtTagType.Compound, "SpawnPotentials"));
+                }
+            }
+
+            return placed;
+        };
+    }
 
     private static Feature Vines() => SharedAlgorithm(new VinesFeature());
 
