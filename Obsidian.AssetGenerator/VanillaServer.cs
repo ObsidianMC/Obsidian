@@ -8,9 +8,16 @@ namespace Obsidian.AssetGenerator;
 /// <summary>
 /// A vanilla server of one version, downloaded from Mojang and with its data generators run.
 /// </summary>
-/// <param name="Directory">The version's work directory, which the server's bundler extracts its jars into.</param>
+/// <param name="Directory">
+/// The version's cached download, which the server's bundler extracts its jars into and the data generators write to.
+/// Every checkout shares it, so nothing writes to it once it's prepared.
+/// </param>
+/// <param name="ScratchDirectory">
+/// The version's directory for this checkout's runs: their working directory, intermediate files and worlds.
+/// </param>
 /// <param name="ClassPath">The unbundled server jar and its libraries.</param>
-internal sealed record VanillaServer(string Version, string Directory, IReadOnlyList<string> ClassPath)
+internal sealed record VanillaServer(
+    string Version, string Directory, string ScratchDirectory, IReadOnlyList<string> ClassPath)
 {
     private const string ManifestUrl = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
 
@@ -25,10 +32,14 @@ internal sealed record VanillaServer(string Version, string Directory, IReadOnly
     /// Downloads the server jar of <paramref name="version"/> into <paramref name="directory"/> and runs
     /// the data generators, unless an earlier run already did.
     /// </summary>
-    public static async Task<VanillaServer> PrepareAsync(HttpClient httpClient, string version, string directory)
+    /// <param name="directory">The version's cached download, which checkouts share.</param>
+    /// <param name="scratchDirectory">The version's directory for this checkout's runs.</param>
+    public static async Task<VanillaServer> PrepareAsync(HttpClient httpClient, string version, string directory,
+        string scratchDirectory)
     {
         await CheckJavaVersionAsync();
         System.IO.Directory.CreateDirectory(directory);
+        System.IO.Directory.CreateDirectory(scratchDirectory);
 
         var jarPath = Path.Combine(directory, "server.jar");
 
@@ -36,19 +47,57 @@ internal sealed record VanillaServer(string Version, string Directory, IReadOnly
         var marker = Path.Combine(directory, "datagen.complete");
         if (!File.Exists(marker))
         {
-            var downloads = await GetDownloadsAsync(httpClient, version);
-            await DownloadAsync(httpClient, downloads.GetProperty("server"), jarPath);
-
-            var generated = Path.Combine(directory, "generated");
-            if (System.IO.Directory.Exists(generated))
-                System.IO.Directory.Delete(generated, recursive: true);
-
-            Console.WriteLine($"Running the {version} data generators...");
-            await RunJavaAsync(directory, "-DbundlerMainClass=net.minecraft.data.Main", "-jar", "server.jar", "--all");
-            await File.WriteAllTextAsync(marker, string.Empty);
+            // Checkouts building at once share the directory. The first to take the lock downloads and runs the data
+            // generators; the others wait for it and then find the marker.
+            using var directoryLock = await LockAsync(Path.Combine(directory, "datagen.lock"), version);
+            if (!File.Exists(marker))
+                await DownloadAndGenerateAsync(httpClient, version, directory, jarPath, marker);
         }
 
-        return new VanillaServer(version, directory, GetClassPath(jarPath, directory));
+        return new VanillaServer(version, directory, scratchDirectory, GetClassPath(jarPath, directory));
+    }
+
+    private static async Task DownloadAndGenerateAsync(HttpClient httpClient, string version, string directory,
+        string jarPath, string marker)
+    {
+        var downloads = await GetDownloadsAsync(httpClient, version);
+        await DownloadAsync(httpClient, downloads.GetProperty("server"), jarPath);
+
+        var generated = Path.Combine(directory, "generated");
+        if (System.IO.Directory.Exists(generated))
+            System.IO.Directory.Delete(generated, recursive: true);
+
+        Console.WriteLine($"Running the {version} data generators...");
+        await RunJavaAsync(directory, "-DbundlerMainClass=net.minecraft.data.Main", "-jar", "server.jar", "--all");
+        await File.WriteAllTextAsync(marker, string.Empty);
+    }
+
+    /// <summary>
+    /// Opens <paramref name="path"/> exclusively, which locks it across processes, waiting while another process holds
+    /// it. Dispose the stream to release the lock. The file is left in place: deleting it on release would let a
+    /// waiting process lock a file that a newcomer then recreates and locks too.
+    /// </summary>
+    /// <remarks>The same lock as <c>VanillaServerJar</c>'s, which the server's structure cache uses.</remarks>
+    private static async Task<FileStream> LockAsync(string path, string version)
+    {
+        var directory = Path.GetDirectoryName(path);
+        var waiting = false;
+        while (true)
+        {
+            try
+            {
+                return new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            }
+            catch (IOException)
+            {
+                // Held by another process.
+                if (!waiting)
+                    Console.WriteLine($"Waiting for another build preparing the {version} server in {directory}...");
+
+                waiting = true;
+                await Task.Delay(TimeSpan.FromMilliseconds(100));
+            }
+        }
     }
 
     /// <summary>

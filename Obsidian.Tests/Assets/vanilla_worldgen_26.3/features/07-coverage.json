@@ -1,0 +1,8069 @@
+{
+  "version": "26.3",
+  "cases": [
+    {
+      "name": "coverage_postprocess_magma_block",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:mycelium",
+          -1
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:magma_block"
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "captureMarks": true,
+      "expectMarks": true,
+      "nextRandom": -1148943845,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          0,
+          0,
+          "minecraft:magma_block"
+        ]
+      ],
+      "marks": [
+        [
+          0,
+          1,
+          0
+        ]
+      ]
+    },
+    {
+      "name": "coverage_postprocess_soul_sand",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:mycelium",
+          -1
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:soul_sand"
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "captureMarks": true,
+      "expectMarks": true,
+      "nextRandom": -1148943845,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          0,
+          0,
+          "minecraft:soul_sand"
+        ]
+      ],
+      "marks": [
+        [
+          0,
+          1,
+          0
+        ]
+      ]
+    },
+    {
+      "name": "coverage_postprocess_brown_mushroom",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:mycelium",
+          -1
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:brown_mushroom"
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "captureMarks": true,
+      "expectMarks": true,
+      "nextRandom": -1148943845,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          0,
+          0,
+          "minecraft:brown_mushroom"
+        ]
+      ],
+      "marks": [
+        [
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "name": "coverage_scattered_ore_buried_seed_19",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:stone",
+          16
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:scattered_ore",
+          "size": 24,
+          "discard_chance_on_air_exposure": 0.5,
+          "targets": [
+            {
+              "target": {
+                "predicate_type": "minecraft:block_match",
+                "block": "minecraft:stone"
+              },
+              "state": {
+                "id": "minecraft:gold_ore"
+              }
+            }
+          ]
+        },
+        "placement": []
+      },
+      "expectChanges": false,
+      "nextRandom": 1107643289,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": []
+    },
+    {
+      "name": "coverage_neighbor_spread_seed_19",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:air",
+          -64
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:random_neighbor_spread",
+          "block": {
+            "type": "minecraft:weighted",
+            "entries": [
+              {
+                "data": {
+                  "id": "minecraft:glowstone"
+                },
+                "weight": 1
+              },
+              {
+                "data": {
+                  "id": "minecraft:gold_block"
+                },
+                "weight": 1
+              }
+            ]
+          },
+          "accepted_neighbors": [
+            "minecraft:glowstone",
+            "minecraft:gold_block"
+          ],
+          "can_replace": {
+            "type": "minecraft:matching_blocks",
+            "blocks": "minecraft:air"
+          },
+          "attempts": 150,
+          "xz_offset": {
+            "type": "minecraft:uniform",
+            "min_inclusive": -3,
+            "max_inclusive": 3
+          },
+          "y_offset": {
+            "type": "minecraft:uniform",
+            "min_inclusive": -3,
+            "max_inclusive": 0
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -277555297,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          1,
+          -1,
+          -3,
+          "minecraft:glowstone"
+        ],
+        [
+          1,
+          0,
+          -3,
+          "minecraft:gold_block"
+        ],
+        [
+          -2,
+          -1,
+          -2,
+          "minecraft:glowstone"
+        ],
+        [
+          1,
+          -1,
+          -2,
+          "minecraft:gold_block"
+        ],
+        [
+          2,
+          0,
+          -2,
+          "minecraft:gold_block"
+        ],
+        [
+          -2,
+          -1,
+          -1,
+          "minecraft:glowstone"
+        ],
+        [
+          0,
+          0,
+          -1,
+          "minecraft:gold_block"
+        ],
+        [
+          1,
+          -1,
+          -1,
+          "minecraft:glowstone"
+        ],
+        [
+          1,
+          0,
+          -1,
+          "minecraft:gold_block"
+        ],
+        [
+          2,
+          0,
+          -1,
+          "minecraft:gold_block"
+        ],
+        [
+          3,
+          0,
+          -1,
+          "minecraft:gold_block"
+        ],
+        [
+          -2,
+          -2,
+          0,
+          "minecraft:glowstone"
+        ],
+        [
+          -2,
+          -1,
+          0,
+          "minecraft:glowstone"
+        ],
+        [
+          -2,
+          0,
+          0,
+          "minecraft:glowstone"
+        ],
+        [
+          -1,
+          0,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          0,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          -2,
+          -2,
+          1,
+          "minecraft:glowstone"
+        ],
+        [
+          -1,
+          0,
+          1,
+          "minecraft:gold_block"
+        ],
+        [
+          -1,
+          -1,
+          2,
+          "minecraft:gold_block"
+        ],
+        [
+          -1,
+          0,
+          2,
+          "minecraft:glowstone"
+        ],
+        [
+          -1,
+          0,
+          3,
+          "minecraft:gold_block"
+        ]
+      ]
+    },
+    {
+      "name": "coverage_lava_lake_seed_19",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:stone",
+          -1
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:lake",
+          "barrier": {
+            "id": "minecraft:stone"
+          },
+          "can_place_feature": {
+            "type": "minecraft:true"
+          },
+          "can_replace_with_air_or_fluid": {
+            "type": "minecraft:not",
+            "predicate": {
+              "type": "minecraft:matching_block_tag",
+              "tag": "minecraft:features_cannot_replace"
+            }
+          },
+          "can_replace_with_barrier": {
+            "type": "minecraft:not",
+            "predicate": {
+              "type": "minecraft:matching_block_tag",
+              "tag": "minecraft:lava_pool_stone_cannot_replace"
+            }
+          },
+          "fluid": {
+            "id": "minecraft:lava",
+            "properties": {
+              "level": "0"
+            }
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": 1059331910,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          -3,
+          -1,
+          -4,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -2,
+          -1,
+          -4,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -4,
+          -1,
+          -3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -3,
+          -1,
+          -3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -2,
+          -1,
+          -3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -1,
+          -1,
+          -3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -4,
+          -1,
+          -2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -3,
+          -1,
+          -2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -2,
+          -1,
+          -2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -1,
+          -1,
+          -2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -4,
+          -1,
+          -1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -3,
+          -1,
+          -1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -2,
+          -2,
+          -1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -2,
+          -1,
+          -1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -1,
+          -2,
+          -1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -1,
+          -1,
+          -1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          0,
+          -1,
+          -1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -2,
+          -1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -1,
+          -1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -2,
+          -1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -1,
+          -1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          5,
+          -1,
+          -1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -4,
+          -1,
+          0,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -3,
+          -1,
+          0,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -2,
+          -2,
+          0,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -2,
+          -1,
+          0,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -1,
+          -2,
+          0,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -1,
+          -1,
+          0,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          1,
+          -1,
+          0,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          2,
+          -1,
+          0,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -3,
+          0,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -2,
+          0,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -1,
+          0,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -3,
+          0,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -2,
+          0,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -1,
+          0,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          5,
+          -2,
+          0,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          5,
+          -1,
+          0,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -3,
+          -1,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -2,
+          -2,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -2,
+          -1,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -1,
+          -2,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -1,
+          -1,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          0,
+          -1,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          1,
+          -1,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          2,
+          -2,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          2,
+          -1,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -3,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -2,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -1,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -3,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -2,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -1,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          5,
+          -3,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          5,
+          -2,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          5,
+          -1,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -3,
+          -1,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -2,
+          -2,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -2,
+          -1,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -1,
+          -2,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -1,
+          -1,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          0,
+          -2,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          0,
+          -1,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          1,
+          -2,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          1,
+          -1,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          2,
+          -2,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          2,
+          -1,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -3,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -2,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -1,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -3,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -2,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -1,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          5,
+          -3,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          5,
+          -2,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          5,
+          -1,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          6,
+          -1,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -3,
+          -1,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -2,
+          -2,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -2,
+          -1,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -1,
+          -2,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -1,
+          -1,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          0,
+          -2,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          0,
+          -1,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          1,
+          -2,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          1,
+          -1,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          2,
+          -2,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          2,
+          -1,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -3,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -2,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -1,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -3,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -2,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -1,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          5,
+          -3,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          5,
+          -2,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          5,
+          -1,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          6,
+          -1,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -2,
+          -1,
+          4,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -1,
+          -1,
+          4,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          0,
+          -1,
+          4,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          1,
+          -1,
+          4,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          2,
+          -2,
+          4,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          2,
+          -1,
+          4,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -3,
+          4,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -2,
+          4,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -1,
+          4,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -3,
+          4,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -2,
+          4,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -1,
+          4,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          5,
+          -3,
+          4,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          5,
+          -2,
+          4,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          5,
+          -1,
+          4,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -1,
+          -1,
+          5,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          0,
+          -1,
+          5,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          1,
+          -1,
+          5,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          2,
+          -1,
+          5,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -3,
+          5,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -2,
+          5,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -1,
+          5,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -3,
+          5,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -2,
+          5,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -1,
+          5,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          5,
+          -2,
+          5,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          5,
+          -1,
+          5,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -2,
+          6,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -1,
+          6,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -2,
+          6,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -1,
+          6,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          5,
+          -1,
+          6,
+          "minecraft:lava{level=0}"
+        ]
+      ]
+    },
+    {
+      "name": "coverage_vegetation_floor_seed_19",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:stone",
+          -1
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:vegetation_patch",
+          "replaceable": [
+            "minecraft:stone"
+          ],
+          "ground_state": {
+            "id": "minecraft:moss_block"
+          },
+          "vegetation_feature": {
+            "feature": {
+              "type": "minecraft:simple_block",
+              "to_place": {
+                "id": "minecraft:short_grass"
+              }
+            },
+            "placement": []
+          },
+          "surface": "floor",
+          "depth": {
+            "type": "minecraft:uniform",
+            "min_inclusive": 1,
+            "max_inclusive": 3
+          },
+          "extra_bottom_block_chance": 0.4,
+          "vertical_range": 5,
+          "vegetation_chance": 0.6,
+          "xz_radius": {
+            "type": "minecraft:uniform",
+            "min_inclusive": 1,
+            "max_inclusive": 3
+          },
+          "extra_edge_column_chance": 0.3
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": 487839957,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          -1,
+          -1,
+          -4,
+          "minecraft:moss_block"
+        ],
+        [
+          0,
+          -1,
+          -4,
+          "minecraft:moss_block"
+        ],
+        [
+          0,
+          0,
+          -4,
+          "minecraft:short_grass"
+        ],
+        [
+          -3,
+          -2,
+          -3,
+          "minecraft:moss_block"
+        ],
+        [
+          -3,
+          -1,
+          -3,
+          "minecraft:moss_block"
+        ],
+        [
+          -3,
+          0,
+          -3,
+          "minecraft:short_grass"
+        ],
+        [
+          -2,
+          -3,
+          -3,
+          "minecraft:moss_block"
+        ],
+        [
+          -2,
+          -2,
+          -3,
+          "minecraft:moss_block"
+        ],
+        [
+          -2,
+          -1,
+          -3,
+          "minecraft:moss_block"
+        ],
+        [
+          -2,
+          0,
+          -3,
+          "minecraft:short_grass"
+        ],
+        [
+          -1,
+          -2,
+          -3,
+          "minecraft:moss_block"
+        ],
+        [
+          -1,
+          -1,
+          -3,
+          "minecraft:moss_block"
+        ],
+        [
+          -1,
+          0,
+          -3,
+          "minecraft:short_grass"
+        ],
+        [
+          0,
+          -3,
+          -3,
+          "minecraft:moss_block"
+        ],
+        [
+          0,
+          -2,
+          -3,
+          "minecraft:moss_block"
+        ],
+        [
+          0,
+          -1,
+          -3,
+          "minecraft:moss_block"
+        ],
+        [
+          1,
+          -2,
+          -3,
+          "minecraft:moss_block"
+        ],
+        [
+          1,
+          -1,
+          -3,
+          "minecraft:moss_block"
+        ],
+        [
+          2,
+          -2,
+          -3,
+          "minecraft:moss_block"
+        ],
+        [
+          2,
+          -1,
+          -3,
+          "minecraft:moss_block"
+        ],
+        [
+          2,
+          0,
+          -3,
+          "minecraft:short_grass"
+        ],
+        [
+          3,
+          -4,
+          -3,
+          "minecraft:moss_block"
+        ],
+        [
+          3,
+          -3,
+          -3,
+          "minecraft:moss_block"
+        ],
+        [
+          3,
+          -2,
+          -3,
+          "minecraft:moss_block"
+        ],
+        [
+          3,
+          -1,
+          -3,
+          "minecraft:moss_block"
+        ],
+        [
+          -3,
+          -3,
+          -2,
+          "minecraft:moss_block"
+        ],
+        [
+          -3,
+          -2,
+          -2,
+          "minecraft:moss_block"
+        ],
+        [
+          -3,
+          -1,
+          -2,
+          "minecraft:moss_block"
+        ],
+        [
+          -3,
+          0,
+          -2,
+          "minecraft:short_grass"
+        ],
+        [
+          -2,
+          -4,
+          -2,
+          "minecraft:moss_block"
+        ],
+        [
+          -2,
+          -3,
+          -2,
+          "minecraft:moss_block"
+        ],
+        [
+          -2,
+          -2,
+          -2,
+          "minecraft:moss_block"
+        ],
+        [
+          -2,
+          -1,
+          -2,
+          "minecraft:moss_block"
+        ],
+        [
+          -2,
+          0,
+          -2,
+          "minecraft:short_grass"
+        ],
+        [
+          -1,
+          -3,
+          -2,
+          "minecraft:moss_block"
+        ],
+        [
+          -1,
+          -2,
+          -2,
+          "minecraft:moss_block"
+        ],
+        [
+          -1,
+          -1,
+          -2,
+          "minecraft:moss_block"
+        ],
+        [
+          0,
+          -3,
+          -2,
+          "minecraft:moss_block"
+        ],
+        [
+          0,
+          -2,
+          -2,
+          "minecraft:moss_block"
+        ],
+        [
+          0,
+          -1,
+          -2,
+          "minecraft:moss_block"
+        ],
+        [
+          0,
+          0,
+          -2,
+          "minecraft:short_grass"
+        ],
+        [
+          1,
+          -2,
+          -2,
+          "minecraft:moss_block"
+        ],
+        [
+          1,
+          -1,
+          -2,
+          "minecraft:moss_block"
+        ],
+        [
+          1,
+          0,
+          -2,
+          "minecraft:short_grass"
+        ],
+        [
+          2,
+          -2,
+          -2,
+          "minecraft:moss_block"
+        ],
+        [
+          2,
+          -1,
+          -2,
+          "minecraft:moss_block"
+        ],
+        [
+          2,
+          0,
+          -2,
+          "minecraft:short_grass"
+        ],
+        [
+          3,
+          -2,
+          -2,
+          "minecraft:moss_block"
+        ],
+        [
+          3,
+          -1,
+          -2,
+          "minecraft:moss_block"
+        ],
+        [
+          3,
+          0,
+          -2,
+          "minecraft:short_grass"
+        ],
+        [
+          4,
+          -1,
+          -2,
+          "minecraft:moss_block"
+        ],
+        [
+          -3,
+          -2,
+          -1,
+          "minecraft:moss_block"
+        ],
+        [
+          -3,
+          -1,
+          -1,
+          "minecraft:moss_block"
+        ],
+        [
+          -2,
+          -3,
+          -1,
+          "minecraft:moss_block"
+        ],
+        [
+          -2,
+          -2,
+          -1,
+          "minecraft:moss_block"
+        ],
+        [
+          -2,
+          -1,
+          -1,
+          "minecraft:moss_block"
+        ],
+        [
+          -1,
+          -2,
+          -1,
+          "minecraft:moss_block"
+        ],
+        [
+          -1,
+          -1,
+          -1,
+          "minecraft:moss_block"
+        ],
+        [
+          0,
+          -1,
+          -1,
+          "minecraft:moss_block"
+        ],
+        [
+          0,
+          0,
+          -1,
+          "minecraft:short_grass"
+        ],
+        [
+          1,
+          -2,
+          -1,
+          "minecraft:moss_block"
+        ],
+        [
+          1,
+          -1,
+          -1,
+          "minecraft:moss_block"
+        ],
+        [
+          2,
+          -1,
+          -1,
+          "minecraft:moss_block"
+        ],
+        [
+          3,
+          -3,
+          -1,
+          "minecraft:moss_block"
+        ],
+        [
+          3,
+          -2,
+          -1,
+          "minecraft:moss_block"
+        ],
+        [
+          3,
+          -1,
+          -1,
+          "minecraft:moss_block"
+        ],
+        [
+          3,
+          0,
+          -1,
+          "minecraft:short_grass"
+        ],
+        [
+          -3,
+          -2,
+          0,
+          "minecraft:moss_block"
+        ],
+        [
+          -3,
+          -1,
+          0,
+          "minecraft:moss_block"
+        ],
+        [
+          -3,
+          0,
+          0,
+          "minecraft:short_grass"
+        ],
+        [
+          -2,
+          -3,
+          0,
+          "minecraft:moss_block"
+        ],
+        [
+          -2,
+          -2,
+          0,
+          "minecraft:moss_block"
+        ],
+        [
+          -2,
+          -1,
+          0,
+          "minecraft:moss_block"
+        ],
+        [
+          -1,
+          -4,
+          0,
+          "minecraft:moss_block"
+        ],
+        [
+          -1,
+          -3,
+          0,
+          "minecraft:moss_block"
+        ],
+        [
+          -1,
+          -2,
+          0,
+          "minecraft:moss_block"
+        ],
+        [
+          -1,
+          -1,
+          0,
+          "minecraft:moss_block"
+        ],
+        [
+          0,
+          -3,
+          0,
+          "minecraft:moss_block"
+        ],
+        [
+          0,
+          -2,
+          0,
+          "minecraft:moss_block"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:moss_block"
+        ],
+        [
+          1,
+          -1,
+          0,
+          "minecraft:moss_block"
+        ],
+        [
+          1,
+          0,
+          0,
+          "minecraft:short_grass"
+        ],
+        [
+          2,
+          -3,
+          0,
+          "minecraft:moss_block"
+        ],
+        [
+          2,
+          -2,
+          0,
+          "minecraft:moss_block"
+        ],
+        [
+          2,
+          -1,
+          0,
+          "minecraft:moss_block"
+        ],
+        [
+          3,
+          -1,
+          0,
+          "minecraft:moss_block"
+        ],
+        [
+          3,
+          0,
+          0,
+          "minecraft:short_grass"
+        ],
+        [
+          -4,
+          -2,
+          1,
+          "minecraft:moss_block"
+        ],
+        [
+          -4,
+          -1,
+          1,
+          "minecraft:moss_block"
+        ],
+        [
+          -4,
+          0,
+          1,
+          "minecraft:short_grass"
+        ],
+        [
+          -3,
+          -2,
+          1,
+          "minecraft:moss_block"
+        ],
+        [
+          -3,
+          -1,
+          1,
+          "minecraft:moss_block"
+        ],
+        [
+          -2,
+          -1,
+          1,
+          "minecraft:moss_block"
+        ],
+        [
+          -2,
+          0,
+          1,
+          "minecraft:short_grass"
+        ],
+        [
+          -1,
+          -2,
+          1,
+          "minecraft:moss_block"
+        ],
+        [
+          -1,
+          -1,
+          1,
+          "minecraft:moss_block"
+        ],
+        [
+          0,
+          -4,
+          1,
+          "minecraft:moss_block"
+        ],
+        [
+          0,
+          -3,
+          1,
+          "minecraft:moss_block"
+        ],
+        [
+          0,
+          -2,
+          1,
+          "minecraft:moss_block"
+        ],
+        [
+          0,
+          -1,
+          1,
+          "minecraft:moss_block"
+        ],
+        [
+          1,
+          -1,
+          1,
+          "minecraft:moss_block"
+        ],
+        [
+          1,
+          0,
+          1,
+          "minecraft:short_grass"
+        ],
+        [
+          2,
+          -1,
+          1,
+          "minecraft:moss_block"
+        ],
+        [
+          2,
+          0,
+          1,
+          "minecraft:short_grass"
+        ],
+        [
+          3,
+          -2,
+          1,
+          "minecraft:moss_block"
+        ],
+        [
+          3,
+          -1,
+          1,
+          "minecraft:moss_block"
+        ],
+        [
+          3,
+          0,
+          1,
+          "minecraft:short_grass"
+        ],
+        [
+          -3,
+          -2,
+          2,
+          "minecraft:moss_block"
+        ],
+        [
+          -3,
+          -1,
+          2,
+          "minecraft:moss_block"
+        ],
+        [
+          -3,
+          0,
+          2,
+          "minecraft:short_grass"
+        ],
+        [
+          -2,
+          -2,
+          2,
+          "minecraft:moss_block"
+        ],
+        [
+          -2,
+          -1,
+          2,
+          "minecraft:moss_block"
+        ],
+        [
+          -2,
+          0,
+          2,
+          "minecraft:short_grass"
+        ],
+        [
+          -1,
+          -2,
+          2,
+          "minecraft:moss_block"
+        ],
+        [
+          -1,
+          -1,
+          2,
+          "minecraft:moss_block"
+        ],
+        [
+          0,
+          -2,
+          2,
+          "minecraft:moss_block"
+        ],
+        [
+          0,
+          -1,
+          2,
+          "minecraft:moss_block"
+        ],
+        [
+          0,
+          0,
+          2,
+          "minecraft:short_grass"
+        ],
+        [
+          1,
+          -3,
+          2,
+          "minecraft:moss_block"
+        ],
+        [
+          1,
+          -2,
+          2,
+          "minecraft:moss_block"
+        ],
+        [
+          1,
+          -1,
+          2,
+          "minecraft:moss_block"
+        ],
+        [
+          2,
+          -3,
+          2,
+          "minecraft:moss_block"
+        ],
+        [
+          2,
+          -2,
+          2,
+          "minecraft:moss_block"
+        ],
+        [
+          2,
+          -1,
+          2,
+          "minecraft:moss_block"
+        ],
+        [
+          3,
+          -2,
+          2,
+          "minecraft:moss_block"
+        ],
+        [
+          3,
+          -1,
+          2,
+          "minecraft:moss_block"
+        ],
+        [
+          4,
+          -1,
+          2,
+          "minecraft:moss_block"
+        ],
+        [
+          4,
+          0,
+          2,
+          "minecraft:short_grass"
+        ],
+        [
+          -3,
+          -2,
+          3,
+          "minecraft:moss_block"
+        ],
+        [
+          -3,
+          -1,
+          3,
+          "minecraft:moss_block"
+        ],
+        [
+          -3,
+          0,
+          3,
+          "minecraft:short_grass"
+        ],
+        [
+          -2,
+          -2,
+          3,
+          "minecraft:moss_block"
+        ],
+        [
+          -2,
+          -1,
+          3,
+          "minecraft:moss_block"
+        ],
+        [
+          -2,
+          0,
+          3,
+          "minecraft:short_grass"
+        ],
+        [
+          -1,
+          -4,
+          3,
+          "minecraft:moss_block"
+        ],
+        [
+          -1,
+          -3,
+          3,
+          "minecraft:moss_block"
+        ],
+        [
+          -1,
+          -2,
+          3,
+          "minecraft:moss_block"
+        ],
+        [
+          -1,
+          -1,
+          3,
+          "minecraft:moss_block"
+        ],
+        [
+          -1,
+          0,
+          3,
+          "minecraft:short_grass"
+        ],
+        [
+          0,
+          -1,
+          3,
+          "minecraft:moss_block"
+        ],
+        [
+          0,
+          0,
+          3,
+          "minecraft:short_grass"
+        ],
+        [
+          1,
+          -3,
+          3,
+          "minecraft:moss_block"
+        ],
+        [
+          1,
+          -2,
+          3,
+          "minecraft:moss_block"
+        ],
+        [
+          1,
+          -1,
+          3,
+          "minecraft:moss_block"
+        ],
+        [
+          1,
+          0,
+          3,
+          "minecraft:short_grass"
+        ],
+        [
+          2,
+          -3,
+          3,
+          "minecraft:moss_block"
+        ],
+        [
+          2,
+          -2,
+          3,
+          "minecraft:moss_block"
+        ],
+        [
+          2,
+          -1,
+          3,
+          "minecraft:moss_block"
+        ],
+        [
+          3,
+          -1,
+          3,
+          "minecraft:moss_block"
+        ],
+        [
+          3,
+          0,
+          3,
+          "minecraft:short_grass"
+        ],
+        [
+          -2,
+          -2,
+          4,
+          "minecraft:moss_block"
+        ],
+        [
+          -2,
+          -1,
+          4,
+          "minecraft:moss_block"
+        ],
+        [
+          -2,
+          0,
+          4,
+          "minecraft:short_grass"
+        ],
+        [
+          0,
+          -2,
+          4,
+          "minecraft:moss_block"
+        ],
+        [
+          0,
+          -1,
+          4,
+          "minecraft:moss_block"
+        ]
+      ]
+    },
+    {
+      "name": "coverage_dripstone_cluster_cave_seed_19",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:stone",
+          -1
+        ],
+        [
+          "minecraft:air",
+          6
+        ],
+        [
+          "minecraft:stone",
+          10
+        ]
+      ],
+      "origin": [
+        0,
+        3,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:speleothem_cluster",
+          "base_block": "minecraft:dripstone_block",
+          "chance_of_speleothem_at_max_distance_from_center": 0.1,
+          "density": {
+            "type": "minecraft:uniform",
+            "max_exclusive": 0.7,
+            "min_inclusive": 0.3
+          },
+          "floor_to_ceiling_search_range": 12,
+          "height": {
+            "type": "minecraft:uniform",
+            "max_inclusive": 6,
+            "min_inclusive": 3
+          },
+          "height_deviation": 3,
+          "max_distance_from_center_affecting_height_bias": 8,
+          "max_distance_from_edge_affecting_chance_of_speleothem": 3,
+          "max_stalagmite_stalactite_height_diff": 1,
+          "pointed_block": "minecraft:pointed_dripstone",
+          "radius": {
+            "type": "minecraft:uniform",
+            "min_inclusive": 1,
+            "max_inclusive": 3
+          },
+          "replaceable_blocks": [
+            "minecraft:stone"
+          ],
+          "speleothem_block_layer_thickness": {
+            "type": "minecraft:uniform",
+            "max_inclusive": 4,
+            "min_inclusive": 2
+          },
+          "wetness": {
+            "type": "minecraft:clamped_normal",
+            "deviation": 0.3,
+            "max": 0.9,
+            "mean": 0.1,
+            "min": 0.1
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -1384125774,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          -2,
+          7,
+          -3,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -2,
+          8,
+          -3,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -2,
+          9,
+          -3,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -2,
+          10,
+          -3,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          -2,
+          -3,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          -1,
+          -3,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          0,
+          -3,
+          "minecraft:pointed_dripstone{thickness=tip, vertical_direction=up, waterlogged=false}"
+        ],
+        [
+          -1,
+          -3,
+          -2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -1,
+          -2,
+          -2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -1,
+          -1,
+          -2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          -2,
+          -2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          -1,
+          -2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          2,
+          7,
+          -2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          2,
+          8,
+          -2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -1,
+          -4,
+          -1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -1,
+          -3,
+          -1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -1,
+          -2,
+          -1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -1,
+          -1,
+          -1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          4,
+          -1,
+          "minecraft:pointed_dripstone{thickness=tip, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          0,
+          5,
+          -1,
+          "minecraft:pointed_dripstone{thickness=frustum, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          0,
+          6,
+          -1,
+          "minecraft:pointed_dripstone{thickness=base, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          0,
+          7,
+          -1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          8,
+          -1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          9,
+          -1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          10,
+          -1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          -2,
+          -1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          -1,
+          -1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          0,
+          -1,
+          "minecraft:pointed_dripstone{thickness=tip, vertical_direction=up, waterlogged=false}"
+        ],
+        [
+          2,
+          -3,
+          -1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          2,
+          -2,
+          -1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          2,
+          -1,
+          -1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          2,
+          0,
+          -1,
+          "minecraft:pointed_dripstone{thickness=tip, vertical_direction=up, waterlogged=false}"
+        ],
+        [
+          -2,
+          -1,
+          0,
+          "minecraft:water{level=0}"
+        ],
+        [
+          0,
+          -5,
+          0,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          -4,
+          0,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          -3,
+          0,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          -2,
+          0,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:pointed_dripstone{thickness=base, vertical_direction=up, waterlogged=true}"
+        ],
+        [
+          0,
+          0,
+          0,
+          "minecraft:pointed_dripstone{thickness=frustum, vertical_direction=up, waterlogged=false}"
+        ],
+        [
+          0,
+          1,
+          0,
+          "minecraft:pointed_dripstone{thickness=tip_merge, vertical_direction=up, waterlogged=false}"
+        ],
+        [
+          0,
+          2,
+          0,
+          "minecraft:pointed_dripstone{thickness=tip_merge, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          0,
+          3,
+          0,
+          "minecraft:pointed_dripstone{thickness=frustum, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          0,
+          4,
+          0,
+          "minecraft:pointed_dripstone{thickness=middle, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          0,
+          5,
+          0,
+          "minecraft:pointed_dripstone{thickness=middle, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          0,
+          6,
+          0,
+          "minecraft:pointed_dripstone{thickness=base, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          0,
+          7,
+          0,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          8,
+          0,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          9,
+          0,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          7,
+          0,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          8,
+          0,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          9,
+          0,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          10,
+          0,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          -4,
+          1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          -3,
+          1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          -2,
+          1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          -1,
+          1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          7,
+          1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          8,
+          1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          9,
+          1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          -4,
+          2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          -3,
+          2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          -2,
+          2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          -1,
+          2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          7,
+          2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          8,
+          2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          9,
+          2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          2,
+          7,
+          2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          2,
+          8,
+          2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          2,
+          9,
+          2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -2,
+          -1,
+          3,
+          "minecraft:water{level=0}"
+        ],
+        [
+          1,
+          7,
+          3,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          8,
+          3,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          9,
+          3,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          10,
+          3,
+          "minecraft:dripstone_block"
+        ]
+      ]
+    },
+    {
+      "name": "coverage_lichen_floor_spread_seed_19",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:stone",
+          -1
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:multiface_growth",
+          "block": "minecraft:glow_lichen",
+          "can_be_placed_on": [
+            "minecraft:stone"
+          ],
+          "can_place_on_ceiling": true,
+          "can_place_on_floor": true,
+          "can_place_on_wall": true,
+          "search_range": 3,
+          "chance_of_spreading": 1.0
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "postProcess": true,
+      "nextRandom": -199906287,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          0,
+          0,
+          "minecraft:glow_lichen{down=true, east=false, north=false, south=false, up=false, waterlogged=false, west=false}"
+        ],
+        [
+          1,
+          0,
+          0,
+          "minecraft:glow_lichen{down=true, east=false, north=false, south=false, up=false, waterlogged=false, west=false}"
+        ]
+      ],
+      "marks": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0
+        ]
+      ],
+      "postChanges": [
+        [
+          0,
+          0,
+          0,
+          "minecraft:glow_lichen{down=true, east=false, north=false, south=false, up=false, waterlogged=false, west=false}"
+        ],
+        [
+          1,
+          0,
+          0,
+          "minecraft:glow_lichen{down=true, east=false, north=false, south=false, up=false, waterlogged=false, west=false}"
+        ]
+      ]
+    },
+    {
+      "name": "coverage_template_well_seed_19",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:sandstone",
+          -1
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:template",
+          "templates": [
+            {
+              "data": {
+                "id": "minecraft:desert_well/well"
+              },
+              "weight": 1
+            }
+          ]
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -52667728,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          -2,
+          0,
+          -2,
+          "minecraft:sandstone"
+        ],
+        [
+          -2,
+          1,
+          -2,
+          "minecraft:sandstone"
+        ],
+        [
+          -2,
+          2,
+          -2,
+          "minecraft:sandstone"
+        ],
+        [
+          -2,
+          3,
+          -2,
+          "minecraft:sandstone"
+        ],
+        [
+          -1,
+          0,
+          -2,
+          "minecraft:sandstone"
+        ],
+        [
+          -1,
+          1,
+          -2,
+          "minecraft:sandstone"
+        ],
+        [
+          -1,
+          2,
+          -2,
+          "minecraft:sandstone"
+        ],
+        [
+          -1,
+          3,
+          -2,
+          "minecraft:sandstone"
+        ],
+        [
+          0,
+          0,
+          -2,
+          "minecraft:sandstone"
+        ],
+        [
+          0,
+          1,
+          -2,
+          "minecraft:sandstone"
+        ],
+        [
+          0,
+          2,
+          -2,
+          "minecraft:sandstone"
+        ],
+        [
+          0,
+          3,
+          -2,
+          "minecraft:sandstone_slab{type=bottom, waterlogged=false}"
+        ],
+        [
+          1,
+          0,
+          -2,
+          "minecraft:sandstone"
+        ],
+        [
+          1,
+          1,
+          -2,
+          "minecraft:sandstone"
+        ],
+        [
+          1,
+          2,
+          -2,
+          "minecraft:sandstone"
+        ],
+        [
+          1,
+          3,
+          -2,
+          "minecraft:sandstone"
+        ],
+        [
+          2,
+          0,
+          -2,
+          "minecraft:sandstone"
+        ],
+        [
+          2,
+          1,
+          -2,
+          "minecraft:sandstone"
+        ],
+        [
+          2,
+          2,
+          -2,
+          "minecraft:sandstone"
+        ],
+        [
+          2,
+          3,
+          -2,
+          "minecraft:sandstone"
+        ],
+        [
+          -2,
+          0,
+          -1,
+          "minecraft:sandstone"
+        ],
+        [
+          -2,
+          1,
+          -1,
+          "minecraft:sandstone"
+        ],
+        [
+          -2,
+          2,
+          -1,
+          "minecraft:sandstone"
+        ],
+        [
+          -2,
+          3,
+          -1,
+          "minecraft:sandstone"
+        ],
+        [
+          -1,
+          0,
+          -1,
+          "minecraft:sandstone"
+        ],
+        [
+          -1,
+          1,
+          -1,
+          "minecraft:sandstone"
+        ],
+        [
+          -1,
+          2,
+          -1,
+          "minecraft:sandstone"
+        ],
+        [
+          -1,
+          3,
+          -1,
+          "minecraft:sandstone"
+        ],
+        [
+          -1,
+          4,
+          -1,
+          "minecraft:sandstone"
+        ],
+        [
+          -1,
+          5,
+          -1,
+          "minecraft:sandstone"
+        ],
+        [
+          -1,
+          6,
+          -1,
+          "minecraft:sandstone_slab{type=bottom, waterlogged=false}"
+        ],
+        [
+          0,
+          0,
+          -1,
+          "minecraft:sandstone"
+        ],
+        [
+          0,
+          1,
+          -1,
+          "minecraft:sand"
+        ],
+        [
+          0,
+          2,
+          -1,
+          "minecraft:water{level=0}"
+        ],
+        [
+          0,
+          6,
+          -1,
+          "minecraft:sandstone_slab{type=bottom, waterlogged=false}"
+        ],
+        [
+          1,
+          0,
+          -1,
+          "minecraft:sandstone"
+        ],
+        [
+          1,
+          1,
+          -1,
+          "minecraft:sandstone"
+        ],
+        [
+          1,
+          2,
+          -1,
+          "minecraft:sandstone"
+        ],
+        [
+          1,
+          3,
+          -1,
+          "minecraft:sandstone"
+        ],
+        [
+          1,
+          4,
+          -1,
+          "minecraft:sandstone"
+        ],
+        [
+          1,
+          5,
+          -1,
+          "minecraft:sandstone"
+        ],
+        [
+          1,
+          6,
+          -1,
+          "minecraft:sandstone_slab{type=bottom, waterlogged=false}"
+        ],
+        [
+          2,
+          0,
+          -1,
+          "minecraft:sandstone"
+        ],
+        [
+          2,
+          1,
+          -1,
+          "minecraft:sandstone"
+        ],
+        [
+          2,
+          2,
+          -1,
+          "minecraft:sandstone"
+        ],
+        [
+          2,
+          3,
+          -1,
+          "minecraft:sandstone"
+        ],
+        [
+          -2,
+          0,
+          0,
+          "minecraft:sandstone"
+        ],
+        [
+          -2,
+          1,
+          0,
+          "minecraft:sandstone"
+        ],
+        [
+          -2,
+          2,
+          0,
+          "minecraft:sandstone"
+        ],
+        [
+          -2,
+          3,
+          0,
+          "minecraft:sandstone_slab{type=bottom, waterlogged=false}"
+        ],
+        [
+          -1,
+          0,
+          0,
+          "minecraft:sandstone"
+        ],
+        [
+          -1,
+          1,
+          0,
+          "minecraft:sand"
+        ],
+        [
+          -1,
+          2,
+          0,
+          "minecraft:water{level=0}"
+        ],
+        [
+          -1,
+          6,
+          0,
+          "minecraft:sandstone_slab{type=bottom, waterlogged=false}"
+        ],
+        [
+          0,
+          0,
+          0,
+          "minecraft:sandstone"
+        ],
+        [
+          0,
+          1,
+          0,
+          "minecraft:sand"
+        ],
+        [
+          0,
+          2,
+          0,
+          "minecraft:water{level=0}"
+        ],
+        [
+          0,
+          6,
+          0,
+          "minecraft:sandstone"
+        ],
+        [
+          1,
+          0,
+          0,
+          "minecraft:sandstone"
+        ],
+        [
+          1,
+          1,
+          0,
+          "minecraft:sand"
+        ],
+        [
+          1,
+          2,
+          0,
+          "minecraft:water{level=0}"
+        ],
+        [
+          1,
+          6,
+          0,
+          "minecraft:sandstone_slab{type=bottom, waterlogged=false}"
+        ],
+        [
+          2,
+          0,
+          0,
+          "minecraft:sandstone"
+        ],
+        [
+          2,
+          1,
+          0,
+          "minecraft:sandstone"
+        ],
+        [
+          2,
+          2,
+          0,
+          "minecraft:sandstone"
+        ],
+        [
+          2,
+          3,
+          0,
+          "minecraft:sandstone_slab{type=bottom, waterlogged=false}"
+        ],
+        [
+          -2,
+          0,
+          1,
+          "minecraft:sandstone"
+        ],
+        [
+          -2,
+          1,
+          1,
+          "minecraft:sandstone"
+        ],
+        [
+          -2,
+          2,
+          1,
+          "minecraft:sandstone"
+        ],
+        [
+          -2,
+          3,
+          1,
+          "minecraft:sandstone"
+        ],
+        [
+          -1,
+          0,
+          1,
+          "minecraft:sandstone"
+        ],
+        [
+          -1,
+          1,
+          1,
+          "minecraft:sandstone"
+        ],
+        [
+          -1,
+          2,
+          1,
+          "minecraft:sandstone"
+        ],
+        [
+          -1,
+          3,
+          1,
+          "minecraft:sandstone"
+        ],
+        [
+          -1,
+          4,
+          1,
+          "minecraft:sandstone"
+        ],
+        [
+          -1,
+          5,
+          1,
+          "minecraft:sandstone"
+        ],
+        [
+          -1,
+          6,
+          1,
+          "minecraft:sandstone_slab{type=bottom, waterlogged=false}"
+        ],
+        [
+          0,
+          0,
+          1,
+          "minecraft:sandstone"
+        ],
+        [
+          0,
+          1,
+          1,
+          "minecraft:sand"
+        ],
+        [
+          0,
+          2,
+          1,
+          "minecraft:water{level=0}"
+        ],
+        [
+          0,
+          6,
+          1,
+          "minecraft:sandstone_slab{type=bottom, waterlogged=false}"
+        ],
+        [
+          1,
+          0,
+          1,
+          "minecraft:sandstone"
+        ],
+        [
+          1,
+          1,
+          1,
+          "minecraft:sandstone"
+        ],
+        [
+          1,
+          2,
+          1,
+          "minecraft:sandstone"
+        ],
+        [
+          1,
+          3,
+          1,
+          "minecraft:sandstone"
+        ],
+        [
+          1,
+          4,
+          1,
+          "minecraft:sandstone"
+        ],
+        [
+          1,
+          5,
+          1,
+          "minecraft:sandstone"
+        ],
+        [
+          1,
+          6,
+          1,
+          "minecraft:sandstone_slab{type=bottom, waterlogged=false}"
+        ],
+        [
+          2,
+          0,
+          1,
+          "minecraft:sandstone"
+        ],
+        [
+          2,
+          1,
+          1,
+          "minecraft:sandstone"
+        ],
+        [
+          2,
+          2,
+          1,
+          "minecraft:sandstone"
+        ],
+        [
+          2,
+          3,
+          1,
+          "minecraft:sandstone"
+        ],
+        [
+          -2,
+          0,
+          2,
+          "minecraft:sandstone"
+        ],
+        [
+          -2,
+          1,
+          2,
+          "minecraft:sandstone"
+        ],
+        [
+          -2,
+          2,
+          2,
+          "minecraft:sandstone"
+        ],
+        [
+          -2,
+          3,
+          2,
+          "minecraft:sandstone"
+        ],
+        [
+          -1,
+          0,
+          2,
+          "minecraft:sandstone"
+        ],
+        [
+          -1,
+          1,
+          2,
+          "minecraft:sandstone"
+        ],
+        [
+          -1,
+          2,
+          2,
+          "minecraft:sandstone"
+        ],
+        [
+          -1,
+          3,
+          2,
+          "minecraft:sandstone"
+        ],
+        [
+          0,
+          0,
+          2,
+          "minecraft:sandstone"
+        ],
+        [
+          0,
+          1,
+          2,
+          "minecraft:sandstone"
+        ],
+        [
+          0,
+          2,
+          2,
+          "minecraft:sandstone"
+        ],
+        [
+          0,
+          3,
+          2,
+          "minecraft:sandstone_slab{type=bottom, waterlogged=false}"
+        ],
+        [
+          1,
+          0,
+          2,
+          "minecraft:sandstone"
+        ],
+        [
+          1,
+          1,
+          2,
+          "minecraft:sandstone"
+        ],
+        [
+          1,
+          2,
+          2,
+          "minecraft:sandstone"
+        ],
+        [
+          1,
+          3,
+          2,
+          "minecraft:sandstone"
+        ],
+        [
+          2,
+          0,
+          2,
+          "minecraft:sandstone"
+        ],
+        [
+          2,
+          1,
+          2,
+          "minecraft:sandstone"
+        ],
+        [
+          2,
+          2,
+          2,
+          "minecraft:sandstone"
+        ],
+        [
+          2,
+          3,
+          2,
+          "minecraft:sandstone"
+        ]
+      ]
+    },
+    {
+      "name": "coverage_bamboo_some_podzol_seed_19",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:dirt",
+          -1
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:bamboo",
+          "probability": 0.2
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": 1538808113,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          0,
+          0,
+          "minecraft:bamboo{age=1, leaves=none, stage=0}"
+        ],
+        [
+          0,
+          1,
+          0,
+          "minecraft:bamboo{age=1, leaves=none, stage=0}"
+        ],
+        [
+          0,
+          2,
+          0,
+          "minecraft:bamboo{age=1, leaves=none, stage=0}"
+        ],
+        [
+          0,
+          3,
+          0,
+          "minecraft:bamboo{age=1, leaves=none, stage=0}"
+        ],
+        [
+          0,
+          4,
+          0,
+          "minecraft:bamboo{age=1, leaves=none, stage=0}"
+        ],
+        [
+          0,
+          5,
+          0,
+          "minecraft:bamboo{age=1, leaves=none, stage=0}"
+        ],
+        [
+          0,
+          6,
+          0,
+          "minecraft:bamboo{age=1, leaves=none, stage=0}"
+        ],
+        [
+          0,
+          7,
+          0,
+          "minecraft:bamboo{age=1, leaves=none, stage=0}"
+        ],
+        [
+          0,
+          8,
+          0,
+          "minecraft:bamboo{age=1, leaves=small, stage=0}"
+        ],
+        [
+          0,
+          9,
+          0,
+          "minecraft:bamboo{age=1, leaves=large, stage=0}"
+        ],
+        [
+          0,
+          10,
+          0,
+          "minecraft:bamboo{age=1, leaves=large, stage=1}"
+        ]
+      ]
+    },
+    {
+      "name": "coverage_coral_claw_seed_19",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:stone",
+          -1
+        ],
+        [
+          "minecraft:water",
+          20
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:coral_claw",
+          "feature": {
+            "feature": "minecraft:coral/tube_block",
+            "placement": [
+              {
+                "type": "minecraft:block_predicate_filter",
+                "predicate": {
+                  "type": "minecraft:all_of",
+                  "predicates": [
+                    {
+                      "type": "minecraft:any_of",
+                      "predicates": [
+                        {
+                          "type": "minecraft:matching_blocks",
+                          "blocks": "minecraft:water"
+                        },
+                        {
+                          "type": "minecraft:matching_block_tag",
+                          "tag": "minecraft:corals"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "minecraft:matching_blocks",
+                      "blocks": "minecraft:water",
+                      "offset": [
+                        0,
+                        1,
+                        0
+                      ]
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -552198126,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          -4,
+          4,
+          -1,
+          "minecraft:tube_coral_wall_fan{facing=west, waterlogged=true}"
+        ],
+        [
+          -3,
+          4,
+          -1,
+          "minecraft:tube_coral_block"
+        ],
+        [
+          -2,
+          3,
+          -1,
+          "minecraft:tube_coral_block"
+        ],
+        [
+          -1,
+          3,
+          -1,
+          "minecraft:tube_coral_block"
+        ],
+        [
+          0,
+          1,
+          -1,
+          "minecraft:tube_coral_block"
+        ],
+        [
+          0,
+          2,
+          -1,
+          "minecraft:tube_coral_block"
+        ],
+        [
+          1,
+          2,
+          -1,
+          "minecraft:brain_coral_wall_fan{facing=east, waterlogged=true}"
+        ],
+        [
+          0,
+          0,
+          0,
+          "minecraft:tube_coral_block"
+        ],
+        [
+          -3,
+          3,
+          1,
+          "minecraft:tube_coral_wall_fan{facing=north, waterlogged=true}"
+        ],
+        [
+          0,
+          1,
+          1,
+          "minecraft:tube_coral_block"
+        ],
+        [
+          1,
+          1,
+          1,
+          "minecraft:horn_coral_wall_fan{facing=east, waterlogged=true}"
+        ],
+        [
+          -3,
+          3,
+          2,
+          "minecraft:tube_coral_block"
+        ],
+        [
+          -3,
+          4,
+          2,
+          "minecraft:fire_coral_fan{waterlogged=true}"
+        ],
+        [
+          -2,
+          3,
+          2,
+          "minecraft:tube_coral_block"
+        ],
+        [
+          -1,
+          2,
+          2,
+          "minecraft:tube_coral_block"
+        ],
+        [
+          0,
+          1,
+          2,
+          "minecraft:tube_coral_block"
+        ],
+        [
+          0,
+          2,
+          2,
+          "minecraft:fire_coral_fan{waterlogged=true}"
+        ],
+        [
+          -2,
+          3,
+          3,
+          "minecraft:fire_coral_wall_fan{facing=south, waterlogged=true}"
+        ]
+      ]
+    },
+    {
+      "name": "coverage_root_system_seed_19",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:stone",
+          -1
+        ],
+        [
+          "minecraft:air",
+          2
+        ],
+        [
+          "minecraft:stone",
+          5
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:root_system",
+          "feature": {
+            "feature": {
+              "type": "minecraft:simple_block",
+              "to_place": {
+                "id": "minecraft:gold_block"
+              }
+            },
+            "placement": []
+          },
+          "allowed_tree_position": {
+            "type": "minecraft:matching_blocks",
+            "blocks": "minecraft:air"
+          },
+          "required_vertical_space_for_tree": 3,
+          "allowed_vertical_water_for_tree": 2,
+          "level_test_distance": 0,
+          "max_level_deviation": 0,
+          "root_radius": 3,
+          "root_replaceable": [
+            "minecraft:stone"
+          ],
+          "root_state_provider": {
+            "id": "minecraft:rooted_dirt"
+          },
+          "root_placement_attempts": 15,
+          "root_column_max_height": 12,
+          "hanging_root_radius": 3,
+          "hanging_roots_vertical_span": 3,
+          "hanging_root_state_provider": {
+            "id": "minecraft:hanging_roots"
+          },
+          "hanging_root_placement_attempts": 30
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -837771429,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          -2,
+          3,
+          -2,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          -2,
+          4,
+          -2,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          2,
+          3,
+          -2,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          2,
+          4,
+          -2,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          -2,
+          3,
+          -1,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          -1,
+          3,
+          -1,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          0,
+          2,
+          -1,
+          "minecraft:hanging_roots{waterlogged=false}"
+        ],
+        [
+          0,
+          3,
+          -1,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          0,
+          4,
+          -1,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          1,
+          3,
+          -1,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          1,
+          4,
+          -1,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          2,
+          2,
+          -1,
+          "minecraft:hanging_roots{waterlogged=false}"
+        ],
+        [
+          -2,
+          4,
+          0,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          -1,
+          3,
+          0,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          -1,
+          4,
+          0,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          0,
+          3,
+          0,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          0,
+          4,
+          0,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          0,
+          6,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          1,
+          3,
+          0,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          1,
+          4,
+          0,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          -1,
+          3,
+          1,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          0,
+          2,
+          1,
+          "minecraft:hanging_roots{waterlogged=false}"
+        ],
+        [
+          0,
+          4,
+          1,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          1,
+          2,
+          1,
+          "minecraft:hanging_roots{waterlogged=false}"
+        ],
+        [
+          1,
+          4,
+          1,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          2,
+          3,
+          1,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          1,
+          3,
+          2,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          1,
+          4,
+          2,
+          "minecraft:rooted_dirt"
+        ]
+      ]
+    },
+    {
+      "name": "coverage_projected_square_seed_19",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:stone",
+          -1
+        ]
+      ],
+      "origin": [
+        0,
+        5,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:projected_random_patchy_square",
+          "block": {
+            "id": "minecraft:basalt"
+          },
+          "project_through": {
+            "type": "minecraft:matching_blocks",
+            "blocks": "minecraft:air"
+          },
+          "size": {
+            "type": "minecraft:uniform",
+            "min_inclusive": 1,
+            "max_inclusive": 3
+          },
+          "max_projection_height": 3
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -1350164706,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          -2,
+          2,
+          -3,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          -1,
+          2,
+          -3,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          0,
+          2,
+          -3,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          -2,
+          2,
+          -2,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          -1,
+          2,
+          -2,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          0,
+          2,
+          -2,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          2,
+          2,
+          -2,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          -3,
+          2,
+          -1,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          -2,
+          2,
+          -1,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          -1,
+          2,
+          -1,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          0,
+          2,
+          -1,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          1,
+          2,
+          -1,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          2,
+          2,
+          -1,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          3,
+          2,
+          -1,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          -3,
+          2,
+          0,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          -2,
+          2,
+          0,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          -1,
+          2,
+          0,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          0,
+          2,
+          0,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          1,
+          2,
+          0,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          2,
+          2,
+          0,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          3,
+          2,
+          0,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          -3,
+          2,
+          1,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          -2,
+          2,
+          1,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          -1,
+          2,
+          1,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          0,
+          2,
+          1,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          1,
+          2,
+          1,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          2,
+          2,
+          1,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          3,
+          2,
+          1,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          -3,
+          2,
+          2,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          -2,
+          2,
+          2,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          -1,
+          2,
+          2,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          0,
+          2,
+          2,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          1,
+          2,
+          2,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          2,
+          2,
+          2,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          -1,
+          2,
+          3,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          0,
+          2,
+          3,
+          "minecraft:basalt{axis=y}"
+        ]
+      ]
+    },
+    {
+      "name": "coverage_pillar_random_stop_seed_19",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 19,
+      "layers": [
+        [
+          "minecraft:stone",
+          -1
+        ]
+      ],
+      "origin": [
+        0,
+        20,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:single_block_pillar",
+          "block": {
+            "id": "minecraft:basalt"
+          },
+          "direction": "down",
+          "can_replace": {
+            "type": "minecraft:matching_blocks",
+            "blocks": "minecraft:air"
+          },
+          "chance_to_continue": 0.9
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -247556468,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          18,
+          0,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          0,
+          19,
+          0,
+          "minecraft:basalt{axis=y}"
+        ],
+        [
+          0,
+          20,
+          0,
+          "minecraft:basalt{axis=y}"
+        ]
+      ]
+    },
+    {
+      "name": "coverage_lake_water_freezing",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:snowy_plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 2,
+      "layers": [
+        [
+          "minecraft:stone",
+          -1
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:lake",
+          "barrier": {
+            "id": "minecraft:stone"
+          },
+          "can_place_feature": {
+            "type": "minecraft:true"
+          },
+          "can_replace_with_air_or_fluid": {
+            "type": "minecraft:not",
+            "predicate": {
+              "type": "minecraft:matching_block_tag",
+              "tag": "minecraft:features_cannot_replace"
+            }
+          },
+          "can_replace_with_barrier": {
+            "type": "minecraft:not",
+            "predicate": {
+              "type": "minecraft:matching_block_tag",
+              "tag": "minecraft:lava_pool_stone_cannot_replace"
+            }
+          },
+          "fluid": {
+            "id": "minecraft:water"
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "edits": [
+        [
+          -8,
+          0,
+          -8,
+          {
+            "id": "minecraft:water"
+          }
+        ],
+        [
+          -8,
+          0,
+          7,
+          {
+            "id": "minecraft:water"
+          }
+        ],
+        [
+          7,
+          0,
+          -8,
+          {
+            "id": "minecraft:water"
+          }
+        ],
+        [
+          7,
+          0,
+          7,
+          {
+            "id": "minecraft:water"
+          }
+        ]
+      ],
+      "nextRandom": -1973137741,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          -8,
+          0,
+          -8,
+          "minecraft:ice"
+        ],
+        [
+          7,
+          0,
+          -8,
+          "minecraft:ice"
+        ],
+        [
+          -1,
+          -1,
+          -6,
+          "minecraft:water{level=0}"
+        ],
+        [
+          -1,
+          0,
+          -6,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          -1,
+          -6,
+          "minecraft:water{level=0}"
+        ],
+        [
+          0,
+          0,
+          -6,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          1,
+          -6,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          -2,
+          -6,
+          "minecraft:water{level=0}"
+        ],
+        [
+          1,
+          -1,
+          -6,
+          "minecraft:water{level=0}"
+        ],
+        [
+          1,
+          0,
+          -6,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          1,
+          -6,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          -2,
+          -6,
+          "minecraft:water{level=0}"
+        ],
+        [
+          2,
+          -1,
+          -6,
+          "minecraft:water{level=0}"
+        ],
+        [
+          2,
+          0,
+          -6,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          1,
+          -6,
+          "minecraft:cave_air"
+        ],
+        [
+          3,
+          -2,
+          -6,
+          "minecraft:water{level=0}"
+        ],
+        [
+          3,
+          -1,
+          -6,
+          "minecraft:water{level=0}"
+        ],
+        [
+          3,
+          0,
+          -6,
+          "minecraft:cave_air"
+        ],
+        [
+          3,
+          1,
+          -6,
+          "minecraft:cave_air"
+        ],
+        [
+          4,
+          -1,
+          -6,
+          "minecraft:water{level=0}"
+        ],
+        [
+          4,
+          0,
+          -6,
+          "minecraft:cave_air"
+        ],
+        [
+          4,
+          1,
+          -6,
+          "minecraft:cave_air"
+        ],
+        [
+          -1,
+          -1,
+          -5,
+          "minecraft:water{level=0}"
+        ],
+        [
+          -1,
+          0,
+          -5,
+          "minecraft:cave_air"
+        ],
+        [
+          -1,
+          1,
+          -5,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          -2,
+          -5,
+          "minecraft:water{level=0}"
+        ],
+        [
+          0,
+          -1,
+          -5,
+          "minecraft:water{level=0}"
+        ],
+        [
+          0,
+          0,
+          -5,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          1,
+          -5,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          -2,
+          -5,
+          "minecraft:water{level=0}"
+        ],
+        [
+          1,
+          -1,
+          -5,
+          "minecraft:water{level=0}"
+        ],
+        [
+          1,
+          0,
+          -5,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          1,
+          -5,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          2,
+          -5,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          -2,
+          -5,
+          "minecraft:water{level=0}"
+        ],
+        [
+          2,
+          -1,
+          -5,
+          "minecraft:water{level=0}"
+        ],
+        [
+          2,
+          0,
+          -5,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          1,
+          -5,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          2,
+          -5,
+          "minecraft:cave_air"
+        ],
+        [
+          3,
+          -2,
+          -5,
+          "minecraft:water{level=0}"
+        ],
+        [
+          3,
+          -1,
+          -5,
+          "minecraft:water{level=0}"
+        ],
+        [
+          3,
+          0,
+          -5,
+          "minecraft:cave_air"
+        ],
+        [
+          3,
+          1,
+          -5,
+          "minecraft:cave_air"
+        ],
+        [
+          4,
+          -1,
+          -5,
+          "minecraft:water{level=0}"
+        ],
+        [
+          4,
+          0,
+          -5,
+          "minecraft:cave_air"
+        ],
+        [
+          4,
+          1,
+          -5,
+          "minecraft:cave_air"
+        ],
+        [
+          -5,
+          1,
+          -4,
+          "minecraft:cave_air"
+        ],
+        [
+          -4,
+          1,
+          -4,
+          "minecraft:cave_air"
+        ],
+        [
+          -1,
+          0,
+          -4,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          0,
+          -4,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          1,
+          -4,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          -1,
+          -4,
+          "minecraft:water{level=0}"
+        ],
+        [
+          1,
+          0,
+          -4,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          1,
+          -4,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          -1,
+          -4,
+          "minecraft:water{level=0}"
+        ],
+        [
+          2,
+          0,
+          -4,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          1,
+          -4,
+          "minecraft:cave_air"
+        ],
+        [
+          3,
+          -1,
+          -4,
+          "minecraft:water{level=0}"
+        ],
+        [
+          3,
+          0,
+          -4,
+          "minecraft:cave_air"
+        ],
+        [
+          -6,
+          1,
+          -3,
+          "minecraft:cave_air"
+        ],
+        [
+          -5,
+          1,
+          -3,
+          "minecraft:cave_air"
+        ],
+        [
+          -4,
+          1,
+          -3,
+          "minecraft:cave_air"
+        ],
+        [
+          -3,
+          1,
+          -3,
+          "minecraft:cave_air"
+        ],
+        [
+          -2,
+          0,
+          -3,
+          "minecraft:cave_air"
+        ],
+        [
+          -1,
+          -1,
+          -3,
+          "minecraft:water{level=0}"
+        ],
+        [
+          -1,
+          0,
+          -3,
+          "minecraft:cave_air"
+        ],
+        [
+          -1,
+          1,
+          -3,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          -1,
+          -3,
+          "minecraft:water{level=0}"
+        ],
+        [
+          0,
+          0,
+          -3,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          1,
+          -3,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          -1,
+          -3,
+          "minecraft:water{level=0}"
+        ],
+        [
+          1,
+          0,
+          -3,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          1,
+          -3,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          0,
+          -3,
+          "minecraft:cave_air"
+        ],
+        [
+          -6,
+          1,
+          -2,
+          "minecraft:cave_air"
+        ],
+        [
+          -5,
+          0,
+          -2,
+          "minecraft:cave_air"
+        ],
+        [
+          -5,
+          1,
+          -2,
+          "minecraft:cave_air"
+        ],
+        [
+          -4,
+          0,
+          -2,
+          "minecraft:cave_air"
+        ],
+        [
+          -4,
+          1,
+          -2,
+          "minecraft:cave_air"
+        ],
+        [
+          -3,
+          1,
+          -2,
+          "minecraft:cave_air"
+        ],
+        [
+          -2,
+          0,
+          -2,
+          "minecraft:cave_air"
+        ],
+        [
+          -2,
+          1,
+          -2,
+          "minecraft:cave_air"
+        ],
+        [
+          -1,
+          -1,
+          -2,
+          "minecraft:water{level=0}"
+        ],
+        [
+          -1,
+          0,
+          -2,
+          "minecraft:cave_air"
+        ],
+        [
+          -1,
+          1,
+          -2,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          -1,
+          -2,
+          "minecraft:water{level=0}"
+        ],
+        [
+          0,
+          0,
+          -2,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          1,
+          -2,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          -1,
+          -2,
+          "minecraft:water{level=0}"
+        ],
+        [
+          1,
+          0,
+          -2,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          1,
+          -2,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          0,
+          -2,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          1,
+          -2,
+          "minecraft:cave_air"
+        ],
+        [
+          -6,
+          1,
+          -1,
+          "minecraft:cave_air"
+        ],
+        [
+          -5,
+          0,
+          -1,
+          "minecraft:cave_air"
+        ],
+        [
+          -5,
+          1,
+          -1,
+          "minecraft:cave_air"
+        ],
+        [
+          -4,
+          0,
+          -1,
+          "minecraft:cave_air"
+        ],
+        [
+          -4,
+          1,
+          -1,
+          "minecraft:cave_air"
+        ],
+        [
+          -3,
+          0,
+          -1,
+          "minecraft:cave_air"
+        ],
+        [
+          -3,
+          1,
+          -1,
+          "minecraft:cave_air"
+        ],
+        [
+          -2,
+          0,
+          -1,
+          "minecraft:cave_air"
+        ],
+        [
+          -2,
+          1,
+          -1,
+          "minecraft:cave_air"
+        ],
+        [
+          -1,
+          -1,
+          -1,
+          "minecraft:water{level=0}"
+        ],
+        [
+          -1,
+          0,
+          -1,
+          "minecraft:cave_air"
+        ],
+        [
+          -1,
+          1,
+          -1,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          -1,
+          -1,
+          "minecraft:water{level=0}"
+        ],
+        [
+          0,
+          0,
+          -1,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          1,
+          -1,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          -1,
+          -1,
+          "minecraft:water{level=0}"
+        ],
+        [
+          1,
+          0,
+          -1,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          1,
+          -1,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          0,
+          -1,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          1,
+          -1,
+          "minecraft:cave_air"
+        ],
+        [
+          -6,
+          1,
+          0,
+          "minecraft:cave_air"
+        ],
+        [
+          -5,
+          0,
+          0,
+          "minecraft:cave_air"
+        ],
+        [
+          -5,
+          1,
+          0,
+          "minecraft:cave_air"
+        ],
+        [
+          -4,
+          0,
+          0,
+          "minecraft:cave_air"
+        ],
+        [
+          -4,
+          1,
+          0,
+          "minecraft:cave_air"
+        ],
+        [
+          -3,
+          0,
+          0,
+          "minecraft:cave_air"
+        ],
+        [
+          -3,
+          1,
+          0,
+          "minecraft:cave_air"
+        ],
+        [
+          -2,
+          0,
+          0,
+          "minecraft:cave_air"
+        ],
+        [
+          -2,
+          1,
+          0,
+          "minecraft:cave_air"
+        ],
+        [
+          -1,
+          -1,
+          0,
+          "minecraft:water{level=0}"
+        ],
+        [
+          -1,
+          0,
+          0,
+          "minecraft:cave_air"
+        ],
+        [
+          -1,
+          1,
+          0,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:water{level=0}"
+        ],
+        [
+          0,
+          0,
+          0,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          1,
+          0,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          -1,
+          0,
+          "minecraft:water{level=0}"
+        ],
+        [
+          1,
+          0,
+          0,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          1,
+          0,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          0,
+          0,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          1,
+          0,
+          "minecraft:cave_air"
+        ],
+        [
+          -6,
+          1,
+          1,
+          "minecraft:cave_air"
+        ],
+        [
+          -5,
+          0,
+          1,
+          "minecraft:cave_air"
+        ],
+        [
+          -5,
+          1,
+          1,
+          "minecraft:cave_air"
+        ],
+        [
+          -4,
+          0,
+          1,
+          "minecraft:cave_air"
+        ],
+        [
+          -4,
+          1,
+          1,
+          "minecraft:cave_air"
+        ],
+        [
+          -3,
+          0,
+          1,
+          "minecraft:cave_air"
+        ],
+        [
+          -3,
+          1,
+          1,
+          "minecraft:cave_air"
+        ],
+        [
+          -2,
+          -1,
+          1,
+          "minecraft:water{level=0}"
+        ],
+        [
+          -2,
+          0,
+          1,
+          "minecraft:cave_air"
+        ],
+        [
+          -2,
+          1,
+          1,
+          "minecraft:cave_air"
+        ],
+        [
+          -1,
+          -1,
+          1,
+          "minecraft:water{level=0}"
+        ],
+        [
+          -1,
+          0,
+          1,
+          "minecraft:cave_air"
+        ],
+        [
+          -1,
+          1,
+          1,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          -1,
+          1,
+          "minecraft:water{level=0}"
+        ],
+        [
+          0,
+          0,
+          1,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          1,
+          1,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          2,
+          1,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          -1,
+          1,
+          "minecraft:water{level=0}"
+        ],
+        [
+          1,
+          0,
+          1,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          1,
+          1,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          2,
+          1,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          -1,
+          1,
+          "minecraft:water{level=0}"
+        ],
+        [
+          2,
+          0,
+          1,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          1,
+          1,
+          "minecraft:cave_air"
+        ],
+        [
+          3,
+          -1,
+          1,
+          "minecraft:water{level=0}"
+        ],
+        [
+          3,
+          0,
+          1,
+          "minecraft:cave_air"
+        ],
+        [
+          4,
+          0,
+          1,
+          "minecraft:cave_air"
+        ],
+        [
+          -6,
+          1,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          -5,
+          0,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          -5,
+          1,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          -4,
+          0,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          -4,
+          1,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          -3,
+          0,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          -3,
+          1,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          -2,
+          -1,
+          2,
+          "minecraft:water{level=0}"
+        ],
+        [
+          -2,
+          0,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          -2,
+          1,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          -1,
+          -1,
+          2,
+          "minecraft:water{level=0}"
+        ],
+        [
+          -1,
+          0,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          -1,
+          1,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          -1,
+          2,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          -1,
+          2,
+          "minecraft:water{level=0}"
+        ],
+        [
+          0,
+          0,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          1,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          2,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          -1,
+          2,
+          "minecraft:water{level=0}"
+        ],
+        [
+          1,
+          0,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          1,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          2,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          -1,
+          2,
+          "minecraft:water{level=0}"
+        ],
+        [
+          2,
+          0,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          1,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          2,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          3,
+          -1,
+          2,
+          "minecraft:water{level=0}"
+        ],
+        [
+          3,
+          0,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          3,
+          1,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          4,
+          0,
+          2,
+          "minecraft:cave_air"
+        ],
+        [
+          -5,
+          0,
+          3,
+          "minecraft:cave_air"
+        ],
+        [
+          -5,
+          1,
+          3,
+          "minecraft:cave_air"
+        ],
+        [
+          -4,
+          0,
+          3,
+          "minecraft:cave_air"
+        ],
+        [
+          -4,
+          1,
+          3,
+          "minecraft:cave_air"
+        ],
+        [
+          -3,
+          0,
+          3,
+          "minecraft:cave_air"
+        ],
+        [
+          -3,
+          1,
+          3,
+          "minecraft:cave_air"
+        ],
+        [
+          -2,
+          -1,
+          3,
+          "minecraft:water{level=0}"
+        ],
+        [
+          -2,
+          0,
+          3,
+          "minecraft:cave_air"
+        ],
+        [
+          -2,
+          1,
+          3,
+          "minecraft:cave_air"
+        ],
+        [
+          -2,
+          2,
+          3,
+          "minecraft:cave_air"
+        ],
+        [
+          -1,
+          -1,
+          3,
+          "minecraft:water{level=0}"
+        ],
+        [
+          -1,
+          0,
+          3,
+          "minecraft:cave_air"
+        ],
+        [
+          -1,
+          1,
+          3,
+          "minecraft:cave_air"
+        ],
+        [
+          -1,
+          2,
+          3,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          -2,
+          3,
+          "minecraft:water{level=0}"
+        ],
+        [
+          0,
+          -1,
+          3,
+          "minecraft:water{level=0}"
+        ],
+        [
+          0,
+          0,
+          3,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          1,
+          3,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          2,
+          3,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          -2,
+          3,
+          "minecraft:water{level=0}"
+        ],
+        [
+          1,
+          -1,
+          3,
+          "minecraft:water{level=0}"
+        ],
+        [
+          1,
+          0,
+          3,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          1,
+          3,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          2,
+          3,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          -1,
+          3,
+          "minecraft:water{level=0}"
+        ],
+        [
+          2,
+          0,
+          3,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          1,
+          3,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          2,
+          3,
+          "minecraft:cave_air"
+        ],
+        [
+          3,
+          0,
+          3,
+          "minecraft:cave_air"
+        ],
+        [
+          3,
+          1,
+          3,
+          "minecraft:cave_air"
+        ],
+        [
+          -5,
+          1,
+          4,
+          "minecraft:cave_air"
+        ],
+        [
+          -4,
+          0,
+          4,
+          "minecraft:cave_air"
+        ],
+        [
+          -4,
+          1,
+          4,
+          "minecraft:cave_air"
+        ],
+        [
+          -3,
+          0,
+          4,
+          "minecraft:cave_air"
+        ],
+        [
+          -3,
+          1,
+          4,
+          "minecraft:cave_air"
+        ],
+        [
+          -2,
+          0,
+          4,
+          "minecraft:cave_air"
+        ],
+        [
+          -2,
+          1,
+          4,
+          "minecraft:cave_air"
+        ],
+        [
+          -1,
+          -1,
+          4,
+          "minecraft:water{level=0}"
+        ],
+        [
+          -1,
+          0,
+          4,
+          "minecraft:cave_air"
+        ],
+        [
+          -1,
+          1,
+          4,
+          "minecraft:cave_air"
+        ],
+        [
+          -1,
+          2,
+          4,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          -1,
+          4,
+          "minecraft:water{level=0}"
+        ],
+        [
+          0,
+          0,
+          4,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          1,
+          4,
+          "minecraft:cave_air"
+        ],
+        [
+          0,
+          2,
+          4,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          -1,
+          4,
+          "minecraft:water{level=0}"
+        ],
+        [
+          1,
+          0,
+          4,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          1,
+          4,
+          "minecraft:cave_air"
+        ],
+        [
+          1,
+          2,
+          4,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          -1,
+          4,
+          "minecraft:water{level=0}"
+        ],
+        [
+          2,
+          0,
+          4,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          1,
+          4,
+          "minecraft:cave_air"
+        ],
+        [
+          2,
+          2,
+          4,
+          "minecraft:cave_air"
+        ],
+        [
+          -4,
+          1,
+          5,
+          "minecraft:cave_air"
+        ],
+        [
+          -3,
+          1,
+          5,
+          "minecraft:cave_air"
+        ],
+        [
+          -2,
+          1,
+          5,
+          "minecraft:cave_air"
+        ],
+        [
+          -8,
+          0,
+          7,
+          "minecraft:ice"
+        ],
+        [
+          7,
+          0,
+          7,
+          "minecraft:ice"
+        ]
+      ],
+      "expectBlocks": [
+        "minecraft:water",
+        "minecraft:ice"
+      ]
+    },
+    {
+      "name": "coverage_lake_air_barrier",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 2,
+      "layers": [
+        [
+          "minecraft:stone",
+          -1
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:lake",
+          "barrier": {
+            "id": "minecraft:air"
+          },
+          "can_place_feature": {
+            "type": "minecraft:true"
+          },
+          "can_replace_with_air_or_fluid": {
+            "type": "minecraft:not",
+            "predicate": {
+              "type": "minecraft:matching_block_tag",
+              "tag": "minecraft:features_cannot_replace"
+            }
+          },
+          "can_replace_with_barrier": {
+            "type": "minecraft:not",
+            "predicate": {
+              "type": "minecraft:matching_block_tag",
+              "tag": "minecraft:lava_pool_stone_cannot_replace"
+            }
+          },
+          "fluid": {
+            "id": "minecraft:lava",
+            "properties": {
+              "level": "0"
+            }
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -824227519,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          -1,
+          -1,
+          -6,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          0,
+          -1,
+          -6,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          1,
+          -2,
+          -6,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          1,
+          -1,
+          -6,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          2,
+          -2,
+          -6,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          2,
+          -1,
+          -6,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -2,
+          -6,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -1,
+          -6,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -1,
+          -6,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -1,
+          -1,
+          -5,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          0,
+          -2,
+          -5,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          0,
+          -1,
+          -5,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          1,
+          -2,
+          -5,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          1,
+          -1,
+          -5,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          2,
+          -2,
+          -5,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          2,
+          -1,
+          -5,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -2,
+          -5,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -1,
+          -5,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          4,
+          -1,
+          -5,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          1,
+          -1,
+          -4,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          2,
+          -1,
+          -4,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -1,
+          -4,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -1,
+          -1,
+          -3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          0,
+          -1,
+          -3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          1,
+          -1,
+          -3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -1,
+          -1,
+          -2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          0,
+          -1,
+          -2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          1,
+          -1,
+          -2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -1,
+          -1,
+          -1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          0,
+          -1,
+          -1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          1,
+          -1,
+          -1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -1,
+          -1,
+          0,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          1,
+          -1,
+          0,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -2,
+          -1,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -1,
+          -1,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          0,
+          -1,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          1,
+          -1,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          2,
+          -1,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -1,
+          1,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -2,
+          -1,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -1,
+          -1,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          0,
+          -1,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          1,
+          -1,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          2,
+          -1,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          3,
+          -1,
+          2,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -2,
+          -1,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -1,
+          -1,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          0,
+          -2,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          0,
+          -1,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          1,
+          -2,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          1,
+          -1,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          2,
+          -1,
+          3,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          -1,
+          -1,
+          4,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          0,
+          -1,
+          4,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          1,
+          -1,
+          4,
+          "minecraft:lava{level=0}"
+        ],
+        [
+          2,
+          -1,
+          4,
+          "minecraft:lava{level=0}"
+        ]
+      ]
+    },
+    {
+      "name": "coverage_bamboo_podzol",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 2,
+      "layers": [
+        [
+          "minecraft:dirt",
+          -1
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:bamboo",
+          "probability": 1.0
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": 17850135,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          -1,
+          -4,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          -2,
+          -1,
+          -3,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          -1,
+          -1,
+          -3,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          0,
+          -1,
+          -3,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          1,
+          -1,
+          -3,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          2,
+          -1,
+          -3,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          -3,
+          -1,
+          -2,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          -2,
+          -1,
+          -2,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          -1,
+          -1,
+          -2,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          0,
+          -1,
+          -2,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          1,
+          -1,
+          -2,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          2,
+          -1,
+          -2,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          3,
+          -1,
+          -2,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          -3,
+          -1,
+          -1,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          -2,
+          -1,
+          -1,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          -1,
+          -1,
+          -1,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          0,
+          -1,
+          -1,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          1,
+          -1,
+          -1,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          2,
+          -1,
+          -1,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          3,
+          -1,
+          -1,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          -4,
+          -1,
+          0,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          -3,
+          -1,
+          0,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          -2,
+          -1,
+          0,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          -1,
+          -1,
+          0,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          0,
+          0,
+          0,
+          "minecraft:bamboo{age=1, leaves=none, stage=0}"
+        ],
+        [
+          0,
+          1,
+          0,
+          "minecraft:bamboo{age=1, leaves=none, stage=0}"
+        ],
+        [
+          0,
+          2,
+          0,
+          "minecraft:bamboo{age=1, leaves=none, stage=0}"
+        ],
+        [
+          0,
+          3,
+          0,
+          "minecraft:bamboo{age=1, leaves=none, stage=0}"
+        ],
+        [
+          0,
+          4,
+          0,
+          "minecraft:bamboo{age=1, leaves=none, stage=0}"
+        ],
+        [
+          0,
+          5,
+          0,
+          "minecraft:bamboo{age=1, leaves=none, stage=0}"
+        ],
+        [
+          0,
+          6,
+          0,
+          "minecraft:bamboo{age=1, leaves=none, stage=0}"
+        ],
+        [
+          0,
+          7,
+          0,
+          "minecraft:bamboo{age=1, leaves=small, stage=0}"
+        ],
+        [
+          0,
+          8,
+          0,
+          "minecraft:bamboo{age=1, leaves=large, stage=0}"
+        ],
+        [
+          0,
+          9,
+          0,
+          "minecraft:bamboo{age=1, leaves=large, stage=1}"
+        ],
+        [
+          1,
+          -1,
+          0,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          2,
+          -1,
+          0,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          3,
+          -1,
+          0,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          4,
+          -1,
+          0,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          -3,
+          -1,
+          1,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          -2,
+          -1,
+          1,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          -1,
+          -1,
+          1,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          0,
+          -1,
+          1,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          1,
+          -1,
+          1,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          2,
+          -1,
+          1,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          3,
+          -1,
+          1,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          -3,
+          -1,
+          2,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          -2,
+          -1,
+          2,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          -1,
+          -1,
+          2,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          0,
+          -1,
+          2,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          1,
+          -1,
+          2,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          2,
+          -1,
+          2,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          3,
+          -1,
+          2,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          -2,
+          -1,
+          3,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          -1,
+          -1,
+          3,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          0,
+          -1,
+          3,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          1,
+          -1,
+          3,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          2,
+          -1,
+          3,
+          "minecraft:podzol{snowy=false}"
+        ],
+        [
+          0,
+          -1,
+          4,
+          "minecraft:podzol{snowy=false}"
+        ]
+      ],
+      "expectBlocks": [
+        "minecraft:bamboo",
+        "minecraft:podzol"
+      ]
+    },
+    {
+      "name": "coverage_dripstone_cluster_ceiling_only",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 2,
+      "layers": [
+        [
+          "minecraft:air",
+          2
+        ],
+        [
+          "minecraft:stone",
+          6
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:speleothem_cluster",
+          "base_block": "minecraft:dripstone_block",
+          "chance_of_speleothem_at_max_distance_from_center": 0.1,
+          "density": {
+            "type": "minecraft:uniform",
+            "max_exclusive": 0.7,
+            "min_inclusive": 0.3
+          },
+          "floor_to_ceiling_search_range": 12,
+          "height": {
+            "type": "minecraft:uniform",
+            "max_inclusive": 6,
+            "min_inclusive": 3
+          },
+          "height_deviation": 3,
+          "max_distance_from_center_affecting_height_bias": 8,
+          "max_distance_from_edge_affecting_chance_of_speleothem": 3,
+          "max_stalagmite_stalactite_height_diff": 1,
+          "pointed_block": "minecraft:pointed_dripstone",
+          "radius": {
+            "type": "minecraft:uniform",
+            "min_inclusive": 1,
+            "max_inclusive": 3
+          },
+          "replaceable_blocks": [
+            "minecraft:stone"
+          ],
+          "speleothem_block_layer_thickness": {
+            "type": "minecraft:uniform",
+            "max_inclusive": 4,
+            "min_inclusive": 2
+          },
+          "wetness": {
+            "type": "minecraft:clamped_normal",
+            "deviation": 0.3,
+            "max": 0.9,
+            "mean": 0.1,
+            "min": 0.1
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": 2142275704,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          1,
+          3,
+          -3,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          4,
+          -3,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -2,
+          3,
+          -2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -2,
+          4,
+          -2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -2,
+          5,
+          -2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -2,
+          6,
+          -2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -1,
+          3,
+          -2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -1,
+          4,
+          -2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -1,
+          5,
+          -2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          3,
+          -2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          4,
+          -2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          2,
+          3,
+          -2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          2,
+          4,
+          -2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -2,
+          -1,
+          -1,
+          "minecraft:pointed_dripstone{thickness=tip, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          -2,
+          0,
+          -1,
+          "minecraft:pointed_dripstone{thickness=frustum, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          -2,
+          1,
+          -1,
+          "minecraft:pointed_dripstone{thickness=middle, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          -2,
+          2,
+          -1,
+          "minecraft:pointed_dripstone{thickness=base, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          -2,
+          3,
+          -1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -2,
+          4,
+          -1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -1,
+          3,
+          -1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -1,
+          4,
+          -1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -1,
+          5,
+          -1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          3,
+          -1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          4,
+          -1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          5,
+          -1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -1,
+          3,
+          0,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -1,
+          4,
+          0,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -1,
+          5,
+          0,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          -2,
+          0,
+          "minecraft:pointed_dripstone{thickness=tip, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:pointed_dripstone{thickness=frustum, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          0,
+          0,
+          0,
+          "minecraft:pointed_dripstone{thickness=middle, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          0,
+          1,
+          0,
+          "minecraft:pointed_dripstone{thickness=middle, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          0,
+          2,
+          0,
+          "minecraft:pointed_dripstone{thickness=base, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          0,
+          3,
+          0,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          4,
+          0,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          5,
+          0,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          6,
+          0,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          3,
+          0,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          4,
+          0,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -1,
+          -2,
+          1,
+          "minecraft:pointed_dripstone{thickness=tip, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          -1,
+          -1,
+          1,
+          "minecraft:pointed_dripstone{thickness=frustum, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          -1,
+          0,
+          1,
+          "minecraft:pointed_dripstone{thickness=middle, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          -1,
+          1,
+          1,
+          "minecraft:pointed_dripstone{thickness=middle, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          -1,
+          2,
+          1,
+          "minecraft:pointed_dripstone{thickness=base, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          -1,
+          3,
+          1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -1,
+          4,
+          1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          3,
+          1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          4,
+          1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          5,
+          1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          6,
+          1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          -2,
+          1,
+          "minecraft:pointed_dripstone{thickness=tip, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          1,
+          -1,
+          1,
+          "minecraft:pointed_dripstone{thickness=frustum, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          1,
+          0,
+          1,
+          "minecraft:pointed_dripstone{thickness=middle, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          1,
+          1,
+          1,
+          "minecraft:pointed_dripstone{thickness=middle, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          1,
+          2,
+          1,
+          "minecraft:pointed_dripstone{thickness=base, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          1,
+          3,
+          1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          1,
+          4,
+          1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          2,
+          0,
+          1,
+          "minecraft:pointed_dripstone{thickness=tip, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          2,
+          1,
+          1,
+          "minecraft:pointed_dripstone{thickness=frustum, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          2,
+          2,
+          1,
+          "minecraft:pointed_dripstone{thickness=base, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          2,
+          3,
+          1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          2,
+          4,
+          1,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -1,
+          3,
+          2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -1,
+          4,
+          2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -1,
+          5,
+          2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          3,
+          2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          4,
+          2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          0,
+          5,
+          2,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -3,
+          3,
+          3,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -3,
+          4,
+          3,
+          "minecraft:dripstone_block"
+        ],
+        [
+          -3,
+          5,
+          3,
+          "minecraft:dripstone_block"
+        ],
+        [
+          3,
+          1,
+          3,
+          "minecraft:pointed_dripstone{thickness=tip, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          3,
+          2,
+          3,
+          "minecraft:pointed_dripstone{thickness=frustum, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          3,
+          3,
+          3,
+          "minecraft:dripstone_block"
+        ],
+        [
+          3,
+          4,
+          3,
+          "minecraft:dripstone_block"
+        ],
+        [
+          3,
+          5,
+          3,
+          "minecraft:dripstone_block"
+        ]
+      ],
+      "expectBlocks": [
+        "minecraft:pointed_dripstone"
+      ]
+    },
+    {
+      "name": "coverage_sulfur_spike_cluster_ceiling_only",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 2,
+      "layers": [
+        [
+          "minecraft:air",
+          2
+        ],
+        [
+          "minecraft:stone",
+          6
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:speleothem_cluster",
+          "base_block": "minecraft:sulfur",
+          "chance_of_speleothem_at_max_distance_from_center": 0.1,
+          "density": {
+            "type": "minecraft:uniform",
+            "max_exclusive": 0.7,
+            "min_inclusive": 0.3
+          },
+          "floor_to_ceiling_search_range": 12,
+          "height": {
+            "type": "minecraft:uniform",
+            "max_inclusive": 4,
+            "min_inclusive": 1
+          },
+          "height_deviation": 3,
+          "max_distance_from_center_affecting_height_bias": 8,
+          "max_distance_from_edge_affecting_chance_of_speleothem": 3,
+          "max_stalagmite_stalactite_height_diff": 1,
+          "pointed_block": "minecraft:sulfur_spike",
+          "radius": {
+            "type": "minecraft:uniform",
+            "min_inclusive": 1,
+            "max_inclusive": 3
+          },
+          "replaceable_blocks": [
+            "minecraft:stone"
+          ],
+          "speleothem_block_layer_thickness": {
+            "type": "minecraft:uniform",
+            "max_inclusive": 4,
+            "min_inclusive": 2
+          },
+          "wetness": 0.0
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": 686660216,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          3,
+          3,
+          -2,
+          "minecraft:sulfur"
+        ],
+        [
+          3,
+          4,
+          -2,
+          "minecraft:sulfur"
+        ],
+        [
+          3,
+          5,
+          -2,
+          "minecraft:sulfur"
+        ],
+        [
+          -2,
+          3,
+          -1,
+          "minecraft:sulfur"
+        ],
+        [
+          -2,
+          4,
+          -1,
+          "minecraft:sulfur"
+        ],
+        [
+          -2,
+          5,
+          -1,
+          "minecraft:sulfur"
+        ],
+        [
+          2,
+          3,
+          -1,
+          "minecraft:sulfur"
+        ],
+        [
+          2,
+          4,
+          -1,
+          "minecraft:sulfur"
+        ],
+        [
+          2,
+          5,
+          -1,
+          "minecraft:sulfur"
+        ],
+        [
+          -2,
+          0,
+          0,
+          "minecraft:sulfur_spike{thickness=tip, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          -2,
+          1,
+          0,
+          "minecraft:sulfur_spike{thickness=frustum, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          -2,
+          2,
+          0,
+          "minecraft:sulfur_spike{thickness=base, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          -2,
+          3,
+          0,
+          "minecraft:sulfur"
+        ],
+        [
+          -2,
+          4,
+          0,
+          "minecraft:sulfur"
+        ],
+        [
+          -2,
+          5,
+          0,
+          "minecraft:sulfur"
+        ],
+        [
+          -1,
+          3,
+          0,
+          "minecraft:sulfur"
+        ],
+        [
+          -1,
+          4,
+          0,
+          "minecraft:sulfur"
+        ],
+        [
+          0,
+          3,
+          0,
+          "minecraft:sulfur"
+        ],
+        [
+          0,
+          4,
+          0,
+          "minecraft:sulfur"
+        ],
+        [
+          0,
+          5,
+          0,
+          "minecraft:sulfur"
+        ],
+        [
+          0,
+          6,
+          0,
+          "minecraft:sulfur"
+        ],
+        [
+          2,
+          3,
+          0,
+          "minecraft:sulfur"
+        ],
+        [
+          2,
+          4,
+          0,
+          "minecraft:sulfur"
+        ],
+        [
+          2,
+          5,
+          0,
+          "minecraft:sulfur"
+        ],
+        [
+          3,
+          3,
+          0,
+          "minecraft:sulfur"
+        ],
+        [
+          3,
+          4,
+          0,
+          "minecraft:sulfur"
+        ],
+        [
+          -1,
+          0,
+          1,
+          "minecraft:sulfur_spike{thickness=tip, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          -1,
+          1,
+          1,
+          "minecraft:sulfur_spike{thickness=frustum, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          -1,
+          2,
+          1,
+          "minecraft:sulfur_spike{thickness=base, vertical_direction=down, waterlogged=false}"
+        ],
+        [
+          -1,
+          3,
+          1,
+          "minecraft:sulfur"
+        ],
+        [
+          -1,
+          4,
+          1,
+          "minecraft:sulfur"
+        ],
+        [
+          -1,
+          5,
+          1,
+          "minecraft:sulfur"
+        ]
+      ],
+      "expectBlocks": [
+        "minecraft:sulfur_spike"
+      ]
+    },
+    {
+      "name": "coverage_root_system_allowed_water",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 2,
+      "layers": [
+        [
+          "minecraft:stone",
+          -1
+        ],
+        [
+          "minecraft:air",
+          2
+        ],
+        [
+          "minecraft:stone",
+          5
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:root_system",
+          "feature": {
+            "feature": {
+              "type": "minecraft:simple_block",
+              "to_place": {
+                "id": "minecraft:gold_block"
+              }
+            },
+            "placement": []
+          },
+          "allowed_tree_position": {
+            "type": "minecraft:matching_blocks",
+            "blocks": "minecraft:air"
+          },
+          "required_vertical_space_for_tree": 3,
+          "allowed_vertical_water_for_tree": 2,
+          "level_test_distance": 0,
+          "max_level_deviation": 0,
+          "root_radius": 3,
+          "root_replaceable": [
+            "minecraft:stone"
+          ],
+          "root_state_provider": {
+            "id": "minecraft:rooted_dirt"
+          },
+          "root_placement_attempts": 15,
+          "root_column_max_height": 12,
+          "hanging_root_radius": 3,
+          "hanging_roots_vertical_span": 3,
+          "hanging_root_state_provider": {
+            "id": "minecraft:hanging_roots"
+          },
+          "hanging_root_placement_attempts": 30
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "edits": [
+        [
+          0,
+          7,
+          0,
+          {
+            "id": "minecraft:water"
+          }
+        ]
+      ],
+      "nextRandom": 767340518,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          3,
+          -2,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          1,
+          3,
+          -2,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          -1,
+          3,
+          -1,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          0,
+          3,
+          -1,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          0,
+          4,
+          -1,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          -2,
+          4,
+          0,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          -1,
+          4,
+          0,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          0,
+          2,
+          0,
+          "minecraft:hanging_roots{waterlogged=false}"
+        ],
+        [
+          0,
+          3,
+          0,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          0,
+          4,
+          0,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          0,
+          6,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          1,
+          2,
+          0,
+          "minecraft:hanging_roots{waterlogged=false}"
+        ],
+        [
+          1,
+          3,
+          0,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          1,
+          4,
+          0,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          2,
+          4,
+          0,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          -2,
+          4,
+          1,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          -1,
+          4,
+          1,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          0,
+          2,
+          1,
+          "minecraft:hanging_roots{waterlogged=false}"
+        ],
+        [
+          0,
+          3,
+          1,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          0,
+          4,
+          1,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          1,
+          3,
+          1,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          1,
+          4,
+          1,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          2,
+          4,
+          1,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          -1,
+          3,
+          2,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          1,
+          3,
+          2,
+          "minecraft:rooted_dirt"
+        ],
+        [
+          2,
+          4,
+          2,
+          "minecraft:rooted_dirt"
+        ]
+      ],
+      "expectBlocks": [
+        "minecraft:gold_block",
+        "minecraft:rooted_dirt"
+      ]
+    },
+    {
+      "name": "coverage_root_system_water_beyond_allowance",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 2,
+      "layers": [
+        [
+          "minecraft:stone",
+          -1
+        ],
+        [
+          "minecraft:air",
+          2
+        ],
+        [
+          "minecraft:stone",
+          5
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:root_system",
+          "feature": {
+            "feature": {
+              "type": "minecraft:simple_block",
+              "to_place": {
+                "id": "minecraft:gold_block"
+              }
+            },
+            "placement": []
+          },
+          "allowed_tree_position": {
+            "type": "minecraft:matching_blocks",
+            "blocks": "minecraft:air"
+          },
+          "required_vertical_space_for_tree": 3,
+          "allowed_vertical_water_for_tree": 1,
+          "level_test_distance": 0,
+          "max_level_deviation": 0,
+          "root_radius": 3,
+          "root_replaceable": [
+            "minecraft:stone"
+          ],
+          "root_state_provider": {
+            "id": "minecraft:rooted_dirt"
+          },
+          "root_placement_attempts": 15,
+          "root_column_max_height": 12,
+          "hanging_root_radius": 3,
+          "hanging_roots_vertical_span": 3,
+          "hanging_root_state_provider": {
+            "id": "minecraft:hanging_roots"
+          },
+          "hanging_root_placement_attempts": 30
+        },
+        "placement": []
+      },
+      "expectChanges": false,
+      "edits": [
+        [
+          0,
+          7,
+          0,
+          {
+            "id": "minecraft:water"
+          }
+        ]
+      ],
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": []
+    },
+    {
+      "name": "coverage_lake_shell_predicate_reject",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 2,
+      "layers": [
+        [
+          "minecraft:stone",
+          -1
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:lake",
+          "barrier": {
+            "id": "minecraft:stone"
+          },
+          "can_place_feature": {
+            "type": "minecraft:not",
+            "predicate": {
+              "type": "minecraft:true"
+            }
+          },
+          "can_replace_with_air_or_fluid": {
+            "type": "minecraft:not",
+            "predicate": {
+              "type": "minecraft:matching_block_tag",
+              "tag": "minecraft:features_cannot_replace"
+            }
+          },
+          "can_replace_with_barrier": {
+            "type": "minecraft:not",
+            "predicate": {
+              "type": "minecraft:matching_block_tag",
+              "tag": "minecraft:lava_pool_stone_cannot_replace"
+            }
+          },
+          "fluid": {
+            "id": "minecraft:lava",
+            "properties": {
+              "level": "0"
+            }
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": false,
+      "nextRandom": -824227519,
+      "regionRadius": 10,
+      "placed": false,
+      "changes": []
+    },
+    {
+      "name": "coverage_multiface_no_support_reject",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 2,
+      "layers": [
+        [
+          "minecraft:air",
+          -64
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:multiface_growth",
+          "block": "minecraft:glow_lichen",
+          "can_be_placed_on": [
+            "minecraft:stone"
+          ],
+          "can_place_on_ceiling": true,
+          "can_place_on_floor": true,
+          "can_place_on_wall": true,
+          "search_range": 3,
+          "chance_of_spreading": 1.0
+        },
+        "placement": []
+      },
+      "expectChanges": false,
+      "postProcess": true,
+      "nextRandom": -218376571,
+      "regionRadius": 10,
+      "placed": false,
+      "changes": [],
+      "marks": [],
+      "postChanges": []
+    },
+    {
+      "name": "coverage_cluster_occupied_reject",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 2,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "feature": {
+        "feature": {
+          "type": "minecraft:speleothem_cluster",
+          "base_block": "minecraft:dripstone_block",
+          "chance_of_speleothem_at_max_distance_from_center": 0.1,
+          "density": {
+            "type": "minecraft:uniform",
+            "max_exclusive": 0.7,
+            "min_inclusive": 0.3
+          },
+          "floor_to_ceiling_search_range": 12,
+          "height": {
+            "type": "minecraft:uniform",
+            "max_inclusive": 6,
+            "min_inclusive": 3
+          },
+          "height_deviation": 3,
+          "max_distance_from_center_affecting_height_bias": 8,
+          "max_distance_from_edge_affecting_chance_of_speleothem": 3,
+          "max_stalagmite_stalactite_height_diff": 1,
+          "pointed_block": "minecraft:pointed_dripstone",
+          "radius": {
+            "type": "minecraft:uniform",
+            "min_inclusive": 1,
+            "max_inclusive": 3
+          },
+          "replaceable_blocks": [
+            "minecraft:stone"
+          ],
+          "speleothem_block_layer_thickness": {
+            "type": "minecraft:uniform",
+            "max_inclusive": 4,
+            "min_inclusive": 2
+          },
+          "wetness": {
+            "type": "minecraft:clamped_normal",
+            "deviation": 0.3,
+            "max": 0.9,
+            "mean": 0.1,
+            "min": 0.1
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": false,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": false,
+      "changes": []
+    }
+  ]
+}

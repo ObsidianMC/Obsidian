@@ -1,0 +1,678 @@
+{
+  "version": "26.3",
+  "cases": [
+    {
+      "seed": 12345,
+      "dimension": "minecraft:overworld",
+      "biome": "minecraft:plains",
+      "spawns": {
+        "spawns_by_category": {
+          "ambient": [
+            {
+              "type": "minecraft:bat",
+              "count": 8,
+              "weight": 10
+            }
+          ],
+          "creature": [
+            {
+              "type": "minecraft:sheep",
+              "count": 4,
+              "weight": 12
+            },
+            {
+              "type": "minecraft:pig",
+              "count": 4,
+              "weight": 10
+            },
+            {
+              "type": "minecraft:chicken",
+              "count": 4,
+              "weight": 10
+            },
+            {
+              "type": "minecraft:cow",
+              "count": 4,
+              "weight": 8
+            },
+            {
+              "type": "minecraft:horse",
+              "count": {
+                "min_inclusive": 2,
+                "max_inclusive": 6,
+                "type": "minecraft:uniform"
+              },
+              "weight": 5
+            },
+            {
+              "type": "minecraft:donkey",
+              "count": {
+                "min_inclusive": 1,
+                "max_inclusive": 3,
+                "type": "minecraft:uniform"
+              },
+              "weight": 1
+            }
+          ],
+          "monster": [
+            {
+              "type": "minecraft:spider",
+              "count": 4,
+              "weight": 100
+            },
+            {
+              "type": "minecraft:zombie",
+              "count": 4,
+              "weight": 90
+            },
+            {
+              "type": "minecraft:zombie_villager",
+              "count": 1,
+              "weight": 5
+            },
+            {
+              "type": "minecraft:zombie_horse",
+              "count": 1,
+              "weight": 5
+            },
+            {
+              "type": "minecraft:skeleton",
+              "count": 4,
+              "weight": 100
+            },
+            {
+              "type": "minecraft:creeper",
+              "count": 4,
+              "weight": 100
+            },
+            {
+              "type": "minecraft:slime",
+              "count": 4,
+              "weight": 100
+            },
+            {
+              "type": "minecraft:enderman",
+              "count": {
+                "min_inclusive": 1,
+                "max_inclusive": 4,
+                "type": "minecraft:uniform"
+              },
+              "weight": 10
+            },
+            {
+              "type": "minecraft:witch",
+              "count": 1,
+              "weight": 5
+            }
+          ],
+          "underground_water_creature": [
+            {
+              "type": "minecraft:glow_squid",
+              "count": {
+                "min_inclusive": 4,
+                "max_inclusive": 6,
+                "type": "minecraft:uniform"
+              },
+              "weight": 10
+            }
+          ]
+        },
+        "spawn_costs": {}
+      },
+      "probability": 0.1
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:overworld",
+      "biome": "minecraft:dappled_forest",
+      "spawns": {
+        "spawns_by_category": {
+          "ambient": [
+            {
+              "type": "minecraft:bat",
+              "count": 8,
+              "weight": 10
+            }
+          ],
+          "creature": [
+            {
+              "type": "minecraft:sheep",
+              "count": 4,
+              "weight": 12
+            },
+            {
+              "type": "minecraft:pig",
+              "count": 4,
+              "weight": 10
+            },
+            {
+              "type": "minecraft:chicken",
+              "count": 4,
+              "weight": 10
+            },
+            {
+              "type": "minecraft:cow",
+              "count": 4,
+              "weight": 8
+            },
+            {
+              "type": "minecraft:rabbit",
+              "count": {
+                "min_inclusive": 2,
+                "max_inclusive": 4,
+                "type": "minecraft:uniform"
+              },
+              "weight": 4
+            },
+            {
+              "type": "minecraft:fox",
+              "count": {
+                "min_inclusive": 2,
+                "max_inclusive": 4,
+                "type": "minecraft:uniform"
+              },
+              "weight": 4
+            }
+          ],
+          "monster": [
+            {
+              "type": "minecraft:spider",
+              "count": 4,
+              "weight": 100
+            },
+            {
+              "type": "minecraft:zombie",
+              "count": 4,
+              "weight": 95
+            },
+            {
+              "type": "minecraft:zombie_villager",
+              "count": 1,
+              "weight": 5
+            },
+            {
+              "type": "minecraft:skeleton",
+              "count": 4,
+              "weight": 100
+            },
+            {
+              "type": "minecraft:creeper",
+              "count": 4,
+              "weight": 100
+            },
+            {
+              "type": "minecraft:slime",
+              "count": 4,
+              "weight": 100
+            },
+            {
+              "type": "minecraft:enderman",
+              "count": {
+                "min_inclusive": 1,
+                "max_inclusive": 4,
+                "type": "minecraft:uniform"
+              },
+              "weight": 10
+            },
+            {
+              "type": "minecraft:witch",
+              "count": 1,
+              "weight": 5
+            }
+          ],
+          "underground_water_creature": [
+            {
+              "type": "minecraft:glow_squid",
+              "count": {
+                "min_inclusive": 4,
+                "max_inclusive": 6,
+                "type": "minecraft:uniform"
+              },
+              "weight": 10
+            }
+          ]
+        },
+        "spawn_costs": {}
+      },
+      "probability": 0.1
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:overworld",
+      "biome": "minecraft:sulfur_caves",
+      "spawns": {
+        "spawns_by_category": {
+          "ambient": [
+            {
+              "type": "minecraft:bat",
+              "count": 8,
+              "weight": 10
+            }
+          ],
+          "monster": [
+            {
+              "type": "minecraft:sulfur_cube",
+              "count": {
+                "min_inclusive": 2,
+                "max_inclusive": 4,
+                "type": "minecraft:uniform"
+              },
+              "weight": 100
+            },
+            {
+              "type": "minecraft:creeper",
+              "count": 2,
+              "weight": 50
+            },
+            {
+              "type": "minecraft:skeleton",
+              "count": 2,
+              "weight": 50
+            },
+            {
+              "type": "minecraft:slime",
+              "count": 1,
+              "weight": 25
+            },
+            {
+              "type": "minecraft:cave_spider",
+              "count": 1,
+              "weight": 20
+            },
+            {
+              "type": "minecraft:zombie",
+              "count": 2,
+              "weight": 50
+            },
+            {
+              "type": "minecraft:enderman",
+              "count": 1,
+              "weight": 10
+            },
+            {
+              "type": "minecraft:witch",
+              "count": 1,
+              "weight": 1
+            },
+            {
+              "type": "minecraft:zombie_villager",
+              "count": 1,
+              "weight": 5
+            }
+          ]
+        },
+        "spawn_costs": {}
+      },
+      "probability": 0.1
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:overworld",
+      "biome": "minecraft:deep_dark",
+      "spawns": {
+        "spawns_by_category": {
+          "ambient": [],
+          "axolotls": [],
+          "creature": [],
+          "misc": [],
+          "monster": [],
+          "underground_water_creature": [],
+          "water_ambient": [],
+          "water_creature": []
+        },
+        "spawn_costs": {}
+      },
+      "probability": 0.1
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_nether",
+      "biome": "minecraft:soul_sand_valley",
+      "spawns": {
+        "spawns_by_category": {
+          "creature": [
+            {
+              "type": "minecraft:strider",
+              "count": {
+                "min_inclusive": 1,
+                "max_inclusive": 2,
+                "type": "minecraft:uniform"
+              },
+              "weight": 60
+            }
+          ],
+          "monster": [
+            {
+              "type": "minecraft:skeleton",
+              "count": 5,
+              "weight": 20
+            },
+            {
+              "type": "minecraft:ghast",
+              "count": 4,
+              "weight": 50
+            },
+            {
+              "type": "minecraft:enderman",
+              "count": 4,
+              "weight": 1
+            }
+          ]
+        },
+        "spawn_costs": {
+          "minecraft:enderman": {
+            "energy_budget": 0.15,
+            "charge": 0.7
+          },
+          "minecraft:ghast": {
+            "energy_budget": 0.15,
+            "charge": 0.7
+          },
+          "minecraft:skeleton": {
+            "energy_budget": 0.15,
+            "charge": 0.7
+          },
+          "minecraft:strider": {
+            "energy_budget": 0.15,
+            "charge": 0.7
+          }
+        }
+      },
+      "probability": 0.1
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_nether",
+      "biome": "minecraft:warped_forest",
+      "spawns": {
+        "spawns_by_category": {
+          "creature": [
+            {
+              "type": "minecraft:strider",
+              "count": {
+                "min_inclusive": 1,
+                "max_inclusive": 2,
+                "type": "minecraft:uniform"
+              },
+              "weight": 60
+            }
+          ],
+          "monster": [
+            {
+              "type": "minecraft:enderman",
+              "count": 4,
+              "weight": 1
+            }
+          ]
+        },
+        "spawn_costs": {
+          "minecraft:enderman": {
+            "energy_budget": 0.12,
+            "charge": 1.0
+          }
+        }
+      },
+      "probability": 0.1
+    },
+    {
+      "seed": 12345,
+      "dimension": "minecraft:the_end",
+      "biome": "minecraft:the_end",
+      "spawns": {
+        "spawns_by_category": {
+          "monster": [
+            {
+              "type": "minecraft:enderman",
+              "count": 4,
+              "weight": 10
+            }
+          ]
+        },
+        "spawn_costs": {}
+      },
+      "probability": 0.1
+    },
+    {
+      "seed": 12345,
+      "name": "inherit",
+      "dimension": "minecraft:overworld",
+      "biome": "minecraft:plains",
+      "dimensionAttributes": {
+        "minecraft:gameplay/natural_mob_spawns": {
+          "spawns_by_category": {
+            "monster": [
+              {
+                "type": "minecraft:zombie",
+                "count": 2,
+                "weight": 3
+              }
+            ],
+            "creature": [
+              {
+                "type": "minecraft:pig",
+                "count": 4,
+                "weight": 1
+              }
+            ]
+          },
+          "spawn_costs": {
+            "minecraft:zombie": {
+              "charge": 1,
+              "energy_budget": 2
+            }
+          }
+        },
+        "minecraft:gameplay/creature_world_gen_spawn_probability": 0.25
+      },
+      "biomeAttributes": {},
+      "spawns": {
+        "spawns_by_category": {
+          "monster": [
+            {
+              "type": "minecraft:zombie",
+              "count": 2,
+              "weight": 3
+            }
+          ],
+          "creature": [
+            {
+              "type": "minecraft:pig",
+              "count": 4,
+              "weight": 1
+            }
+          ]
+        },
+        "spawn_costs": {
+          "minecraft:zombie": {
+            "energy_budget": 2.0,
+            "charge": 1.0
+          }
+        }
+      },
+      "probability": 0.25
+    },
+    {
+      "seed": 12345,
+      "name": "clear-category",
+      "dimension": "minecraft:overworld",
+      "biome": "minecraft:plains",
+      "dimensionAttributes": {
+        "minecraft:gameplay/natural_mob_spawns": {
+          "spawns_by_category": {
+            "monster": [
+              {
+                "type": "minecraft:zombie",
+                "count": 2,
+                "weight": 3
+              }
+            ],
+            "creature": [
+              {
+                "type": "minecraft:pig",
+                "count": 4,
+                "weight": 1
+              }
+            ]
+          },
+          "spawn_costs": {
+            "minecraft:zombie": {
+              "charge": 1,
+              "energy_budget": 2
+            }
+          }
+        },
+        "minecraft:gameplay/creature_world_gen_spawn_probability": 0.25
+      },
+      "biomeAttributes": {
+        "minecraft:gameplay/natural_mob_spawns": {
+          "modifier": "overlay",
+          "argument": {
+            "spawns_by_category": {
+              "monster": []
+            },
+            "spawn_costs": {}
+          }
+        }
+      },
+      "spawns": {
+        "spawns_by_category": {
+          "monster": [],
+          "creature": [
+            {
+              "type": "minecraft:pig",
+              "count": 4,
+              "weight": 1
+            }
+          ]
+        },
+        "spawn_costs": {
+          "minecraft:zombie": {
+            "energy_budget": 2.0,
+            "charge": 1.0
+          }
+        }
+      },
+      "probability": 0.25
+    },
+    {
+      "seed": 12345,
+      "name": "replace-cost",
+      "dimension": "minecraft:overworld",
+      "biome": "minecraft:plains",
+      "dimensionAttributes": {
+        "minecraft:gameplay/natural_mob_spawns": {
+          "spawns_by_category": {
+            "monster": [
+              {
+                "type": "minecraft:zombie",
+                "count": 2,
+                "weight": 3
+              }
+            ],
+            "creature": [
+              {
+                "type": "minecraft:pig",
+                "count": 4,
+                "weight": 1
+              }
+            ]
+          },
+          "spawn_costs": {
+            "minecraft:zombie": {
+              "charge": 1,
+              "energy_budget": 2
+            }
+          }
+        },
+        "minecraft:gameplay/creature_world_gen_spawn_probability": 0.25
+      },
+      "biomeAttributes": {
+        "minecraft:gameplay/natural_mob_spawns": {
+          "modifier": "overlay",
+          "argument": {
+            "spawns_by_category": {},
+            "spawn_costs": {
+              "minecraft:zombie": {
+                "charge": 5,
+                "energy_budget": 6
+              }
+            }
+          }
+        }
+      },
+      "spawns": {
+        "spawns_by_category": {
+          "monster": [
+            {
+              "type": "minecraft:zombie",
+              "count": 2,
+              "weight": 3
+            }
+          ],
+          "creature": [
+            {
+              "type": "minecraft:pig",
+              "count": 4,
+              "weight": 1
+            }
+          ]
+        },
+        "spawn_costs": {
+          "minecraft:zombie": {
+            "energy_budget": 6.0,
+            "charge": 5.0
+          }
+        }
+      },
+      "probability": 0.25
+    },
+    {
+      "seed": 12345,
+      "name": "override-empty",
+      "dimension": "minecraft:overworld",
+      "biome": "minecraft:plains",
+      "dimensionAttributes": {
+        "minecraft:gameplay/natural_mob_spawns": {
+          "spawns_by_category": {
+            "monster": [
+              {
+                "type": "minecraft:zombie",
+                "count": 2,
+                "weight": 3
+              }
+            ],
+            "creature": [
+              {
+                "type": "minecraft:pig",
+                "count": 4,
+                "weight": 1
+              }
+            ]
+          },
+          "spawn_costs": {
+            "minecraft:zombie": {
+              "charge": 1,
+              "energy_budget": 2
+            }
+          }
+        },
+        "minecraft:gameplay/creature_world_gen_spawn_probability": 0.25
+      },
+      "biomeAttributes": {
+        "minecraft:gameplay/natural_mob_spawns": {
+          "spawns_by_category": {},
+          "spawn_costs": {}
+        },
+        "minecraft:gameplay/creature_world_gen_spawn_probability": {
+          "modifier": "multiply",
+          "argument": 2
+        }
+      },
+      "spawns": {
+        "spawns_by_category": {},
+        "spawn_costs": {}
+      },
+      "probability": 0.5
+    }
+  ]
+}

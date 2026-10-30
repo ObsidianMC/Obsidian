@@ -1,0 +1,8471 @@
+{
+  "version": "26.3",
+  "cases": [
+    {
+      "seed": 12345,
+      "feature": "minecraft:patch_cactus_desert",
+      "biome": "minecraft:desert",
+      "chunkX": 0,
+      "chunkZ": 0,
+      "step": 9,
+      "index": 9,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:deepslate",
+          -1
+        ],
+        [
+          "minecraft:stone",
+          55
+        ],
+        [
+          "minecraft:sandstone",
+          59
+        ],
+        [
+          "minecraft:sand",
+          63
+        ]
+      ],
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          11,
+          64,
+          14,
+          "minecraft:cactus{age=0}"
+        ]
+      ],
+      "expectChanges": true,
+      "nextRandom": -1041442527
+    },
+    {
+      "seed": 12345,
+      "feature": "minecraft:patch_cactus_desert",
+      "biome": "minecraft:desert",
+      "chunkX": 3,
+      "chunkZ": -2,
+      "step": 9,
+      "index": 9,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:deepslate",
+          -1
+        ],
+        [
+          "minecraft:stone",
+          55
+        ],
+        [
+          "minecraft:sandstone",
+          59
+        ],
+        [
+          "minecraft:sand",
+          63
+        ]
+      ],
+      "regionRadius": 10,
+      "placed": false,
+      "changes": [],
+      "nextRandom": 1648920113
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "provider",
+      "name": "rotated_east_log",
+      "provider": {
+        "type": "minecraft:rotated",
+        "state": {
+          "id": "minecraft:oak_log"
+        },
+        "direction": "east"
+      },
+      "state": "minecraft:oak_log{axis=x}",
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "provider",
+      "name": "rotated_nested_weighted",
+      "provider": {
+        "type": "minecraft:rotated",
+        "state": {
+          "type": "minecraft:weighted",
+          "entries": [
+            {
+              "data": {
+                "id": "minecraft:oak_log"
+              },
+              "weight": 1
+            },
+            {
+              "data": {
+                "id": "minecraft:birch_log"
+              },
+              "weight": 2
+            }
+          ]
+        }
+      },
+      "state": "minecraft:oak_log{axis=x}",
+      "nextRandom": -423279216
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "provider",
+      "name": "rotated_facing_up",
+      "provider": {
+        "type": "minecraft:rotated",
+        "state": {
+          "id": "minecraft:observer"
+        },
+        "direction": "up"
+      },
+      "state": "minecraft:observer{facing=up, powered=false}",
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "provider",
+      "name": "rotated_horizontal_east",
+      "provider": {
+        "type": "minecraft:rotated",
+        "state": {
+          "type": "minecraft:simple",
+          "state": {
+            "id": "minecraft:oak_stairs"
+          }
+        },
+        "direction": "east"
+      },
+      "state": "minecraft:oak_stairs{facing=east, half=bottom, shape=straight, waterlogged=false}",
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "provider",
+      "name": "rotated_horizontal_up",
+      "provider": {
+        "type": "minecraft:rotated",
+        "state": {
+          "id": "minecraft:oak_stairs"
+        },
+        "direction": "up"
+      },
+      "state": "minecraft:oak_stairs{facing=north, half=bottom, shape=straight, waterlogged=false}",
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "provider",
+      "name": "rotated_required_fallback",
+      "provider": {
+        "type": "minecraft:rotated",
+        "state": {
+          "type": "minecraft:rule_based",
+          "rules": []
+        },
+        "direction": "north"
+      },
+      "state": "minecraft:air",
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "provider",
+      "name": "rotated_horizontal_axis_unchanged",
+      "provider": {
+        "type": "minecraft:rotated",
+        "state": {
+          "id": "minecraft:nether_portal"
+        },
+        "direction": "north"
+      },
+      "state": "minecraft:nether_portal{axis=x}",
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "provider",
+      "name": "rotated_hopper_facing_unchanged",
+      "provider": {
+        "type": "minecraft:rotated",
+        "state": {
+          "id": "minecraft:hopper"
+        },
+        "direction": "east"
+      },
+      "state": "minecraft:hopper{enabled=true, facing=down}",
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 1178364,
+      "chunkZ": -757628,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        18853824,
+        0,
+        -12122048
+      ],
+      "name": "noise_count_float_boundary",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:noise_based_count",
+        "noise_factor": 80.0,
+        "noise_to_count_ratio": 120
+      },
+      "positions": [
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ],
+        [
+          18853824,
+          0,
+          -12122048
+        ]
+      ],
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 2945910,
+      "chunkZ": -1894070,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        47134560,
+        0,
+        -30305120
+      ],
+      "name": "noise_threshold_float_boundary",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:noise_threshold_count",
+        "noise_level": 0.5666666666666667,
+        "below_noise": 2,
+        "above_noise": 5
+      },
+      "positions": [
+        [
+          47134560,
+          0,
+          -30305120
+        ],
+        [
+          47134560,
+          0,
+          -30305120
+        ]
+      ],
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "randomized_missing",
+      "probe": "provider",
+      "provider": {
+        "type": "minecraft:randomized_int",
+        "source": {
+          "id": "minecraft:stone"
+        },
+        "property": "age",
+        "values": {
+          "type": "minecraft:uniform",
+          "min_inclusive": 0,
+          "max_inclusive": 15
+        }
+      },
+      "state": "minecraft:stone",
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "randomized_non_integer",
+      "probe": "provider",
+      "provider": {
+        "type": "minecraft:randomized_int",
+        "source": {
+          "id": "minecraft:oak_log"
+        },
+        "property": "axis",
+        "values": {
+          "type": "minecraft:uniform",
+          "min_inclusive": 0,
+          "max_inclusive": 15
+        }
+      },
+      "state": "minecraft:oak_log{axis=y}",
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "randomized_age",
+      "probe": "provider",
+      "provider": {
+        "type": "minecraft:randomized_int",
+        "source": {
+          "id": "minecraft:cactus"
+        },
+        "property": "age",
+        "values": {
+          "type": "minecraft:uniform",
+          "min_inclusive": 0,
+          "max_inclusive": 15
+        }
+      },
+      "state": "minecraft:cactus{age=11}",
+      "nextRandom": 1260042744
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "randomized_required_air",
+      "probe": "provider",
+      "provider": {
+        "type": "minecraft:randomized_int",
+        "source": {
+          "type": "minecraft:rule_based",
+          "rules": []
+        },
+        "property": "age",
+        "values": {
+          "type": "minecraft:uniform",
+          "min_inclusive": 0,
+          "max_inclusive": 15
+        }
+      },
+      "state": "minecraft:air",
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "randomized_required_existing",
+      "probe": "provider",
+      "provider": {
+        "type": "minecraft:randomized_int",
+        "source": {
+          "type": "minecraft:rule_based",
+          "rules": []
+        },
+        "property": "age",
+        "values": {
+          "type": "minecraft:uniform",
+          "min_inclusive": 0,
+          "max_inclusive": 15
+        }
+      },
+      "edits": [
+        [
+          0,
+          0,
+          0,
+          {
+            "id": "minecraft:cactus",
+            "properties": {
+              "age": "3"
+            }
+          }
+        ]
+      ],
+      "state": "minecraft:cactus{age=11}",
+      "nextRandom": 1260042744
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "sulfur_spike_support_air_up",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:sulfur_spike",
+          "properties": {
+            "vertical_direction": "up"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          -1,
+          0,
+          {
+            "id": "minecraft:air"
+          }
+        ]
+      ],
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "sulfur_spike_support_stone_up",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:sulfur_spike",
+          "properties": {
+            "vertical_direction": "up"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          -1,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ]
+      ],
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "sulfur_spike_support_sulfur_spike_up",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:sulfur_spike",
+          "properties": {
+            "vertical_direction": "up"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          -1,
+          0,
+          {
+            "id": "minecraft:sulfur_spike",
+            "properties": {
+              "vertical_direction": "up"
+            }
+          }
+        ]
+      ],
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "sulfur_spike_support_sulfur_spike_down",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:sulfur_spike",
+          "properties": {
+            "vertical_direction": "up"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          -1,
+          0,
+          {
+            "id": "minecraft:sulfur_spike",
+            "properties": {
+              "vertical_direction": "down"
+            }
+          }
+        ]
+      ],
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "sulfur_spike_support_pointed_dripstone_up",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:sulfur_spike",
+          "properties": {
+            "vertical_direction": "up"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          -1,
+          0,
+          {
+            "id": "minecraft:pointed_dripstone",
+            "properties": {
+              "vertical_direction": "up"
+            }
+          }
+        ]
+      ],
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "sulfur_spike_hanging_unsupported",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:sulfur_spike",
+          "properties": {
+            "vertical_direction": "down"
+          }
+        }
+      },
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "sulfur_spike_hanging_stone",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:sulfur_spike",
+          "properties": {
+            "vertical_direction": "down"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          1,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ]
+      ],
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "pointed_dripstone_support_air_up",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:pointed_dripstone",
+          "properties": {
+            "vertical_direction": "up"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          -1,
+          0,
+          {
+            "id": "minecraft:air"
+          }
+        ]
+      ],
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "pointed_dripstone_support_stone_up",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:pointed_dripstone",
+          "properties": {
+            "vertical_direction": "up"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          -1,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ]
+      ],
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "pointed_dripstone_support_pointed_dripstone_up",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:pointed_dripstone",
+          "properties": {
+            "vertical_direction": "up"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          -1,
+          0,
+          {
+            "id": "minecraft:pointed_dripstone",
+            "properties": {
+              "vertical_direction": "up"
+            }
+          }
+        ]
+      ],
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "pointed_dripstone_support_pointed_dripstone_down",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:pointed_dripstone",
+          "properties": {
+            "vertical_direction": "up"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          -1,
+          0,
+          {
+            "id": "minecraft:pointed_dripstone",
+            "properties": {
+              "vertical_direction": "down"
+            }
+          }
+        ]
+      ],
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "pointed_dripstone_support_sulfur_spike_up",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:pointed_dripstone",
+          "properties": {
+            "vertical_direction": "up"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          -1,
+          0,
+          {
+            "id": "minecraft:sulfur_spike",
+            "properties": {
+              "vertical_direction": "up"
+            }
+          }
+        ]
+      ],
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "pointed_dripstone_hanging_unsupported",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:pointed_dripstone",
+          "properties": {
+            "vertical_direction": "down"
+          }
+        }
+      },
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "pointed_dripstone_hanging_stone",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:pointed_dripstone",
+          "properties": {
+            "vertical_direction": "down"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          1,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ]
+      ],
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "shelf_mushroom_air",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:shelf_mushroom",
+          "properties": {
+            "facing": "north"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          0,
+          1,
+          {
+            "id": "minecraft:air"
+          }
+        ]
+      ],
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "shelf_mushroom_stone",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:shelf_mushroom",
+          "properties": {
+            "facing": "north"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          0,
+          1,
+          {
+            "id": "minecraft:stone"
+          }
+        ]
+      ],
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "shelf_mushroom_oak_leaves",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:would_survive",
+        "state": {
+          "id": "minecraft:shelf_mushroom",
+          "properties": {
+            "facing": "north"
+          }
+        }
+      },
+      "edits": [
+        [
+          0,
+          0,
+          1,
+          {
+            "id": "minecraft:oak_leaves"
+          }
+        ]
+      ],
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        1,
+        0
+      ],
+      "name": "moss_walls_topper_0",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:pale_moss_carpet"
+          }
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          0,
+          1,
+          -1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          0,
+          2,
+          -1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          1,
+          1,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          1,
+          2,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          0,
+          1,
+          1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          0,
+          2,
+          1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          -1,
+          1,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          -1,
+          2,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ]
+      ],
+      "regionRandomSeed": 0,
+      "expectChanges": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          1,
+          0,
+          "minecraft:pale_moss_carpet{bottom=true, east=low, north=low, south=low, west=tall}"
+        ],
+        [
+          0,
+          2,
+          0,
+          "minecraft:pale_moss_carpet{bottom=false, east=none, north=none, south=none, west=low}"
+        ]
+      ],
+      "nextRegionRandom": -505875771
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        1,
+        0
+      ],
+      "name": "moss_walls_topper_1",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:pale_moss_carpet"
+          }
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          0,
+          1,
+          -1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          0,
+          2,
+          -1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          1,
+          1,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          1,
+          2,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          0,
+          1,
+          1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          0,
+          2,
+          1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          -1,
+          1,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          -1,
+          2,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ]
+      ],
+      "regionRandomSeed": 1,
+      "expectChanges": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          1,
+          0,
+          "minecraft:pale_moss_carpet{bottom=true, east=low, north=low, south=low, west=tall}"
+        ],
+        [
+          0,
+          2,
+          0,
+          "minecraft:pale_moss_carpet{bottom=false, east=none, north=none, south=none, west=low}"
+        ]
+      ],
+      "nextRegionRandom": 767430484
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        1,
+        0
+      ],
+      "name": "moss_walls_topper_2",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:pale_moss_carpet"
+          }
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          0,
+          1,
+          -1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          0,
+          2,
+          -1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          1,
+          1,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          1,
+          2,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          0,
+          1,
+          1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          0,
+          2,
+          1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          -1,
+          1,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          -1,
+          2,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ]
+      ],
+      "regionRandomSeed": 2,
+      "expectChanges": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          1,
+          0,
+          "minecraft:pale_moss_carpet{bottom=true, east=low, north=tall, south=low, west=tall}"
+        ],
+        [
+          0,
+          2,
+          0,
+          "minecraft:pale_moss_carpet{bottom=false, east=none, north=low, south=none, west=low}"
+        ]
+      ],
+      "nextRegionRandom": 702810824
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        1,
+        0
+      ],
+      "name": "moss_unsupported_upper_sides",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:pale_moss_carpet"
+          }
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          1,
+          2,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ]
+      ],
+      "regionRandomSeed": 0,
+      "expectChanges": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          1,
+          0,
+          "minecraft:pale_moss_carpet{bottom=true, east=none, north=none, south=none, west=none}"
+        ]
+      ],
+      "nextRegionRandom": -160476802
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        1,
+        0
+      ],
+      "name": "moss_blocked_topper",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:pale_moss_carpet"
+          }
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          1,
+          1,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          0,
+          2,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ]
+      ],
+      "regionRandomSeed": 0,
+      "expectChanges": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          1,
+          0,
+          "minecraft:pale_moss_carpet{bottom=true, east=low, north=none, south=none, west=none}"
+        ]
+      ],
+      "nextRegionRandom": -160476802
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "disk_removes_plant_support",
+      "feature": {
+        "feature": {
+          "type": "minecraft:disk",
+          "state_provider": {
+            "id": "minecraft:air"
+          },
+          "target": {
+            "type": "minecraft:matching_blocks",
+            "blocks": "minecraft:stone"
+          },
+          "radius": 0,
+          "half_height": 2
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          0,
+          1,
+          0,
+          {
+            "id": "minecraft:dandelion"
+          }
+        ],
+        [
+          0,
+          2,
+          0,
+          {
+            "id": "minecraft:dandelion"
+          }
+        ]
+      ],
+      "postProcess": true,
+      "expectChanges": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          -2,
+          0,
+          "minecraft:air"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:air"
+        ],
+        [
+          0,
+          0,
+          0,
+          "minecraft:air"
+        ]
+      ],
+      "marks": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ]
+      ],
+      "postChanges": [
+        [
+          0,
+          -2,
+          0,
+          "minecraft:air"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:air"
+        ],
+        [
+          0,
+          0,
+          0,
+          "minecraft:air"
+        ],
+        [
+          0,
+          1,
+          0,
+          "minecraft:air"
+        ],
+        [
+          0,
+          2,
+          0,
+          "minecraft:air"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          2
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "disk_segment_marks",
+      "feature": {
+        "feature": {
+          "type": "minecraft:disk",
+          "state_provider": {
+            "id": "minecraft:gold_block"
+          },
+          "target": {
+            "type": "minecraft:matching_blocks",
+            "blocks": "minecraft:stone"
+          },
+          "radius": 0,
+          "half_height": 2
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          0,
+          1,
+          0,
+          {
+            "id": "minecraft:dirt"
+          }
+        ],
+        [
+          0,
+          3,
+          0,
+          {
+            "id": "minecraft:oak_fence"
+          }
+        ],
+        [
+          0,
+          4,
+          0,
+          {
+            "id": "minecraft:dandelion"
+          }
+        ]
+      ],
+      "postProcess": true,
+      "expectChanges": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          -2,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          0,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          2,
+          0,
+          "minecraft:gold_block"
+        ]
+      ],
+      "marks": [
+        [
+          0,
+          3,
+          0
+        ],
+        [
+          0,
+          4,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ]
+      ],
+      "postChanges": [
+        [
+          0,
+          -2,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          0,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          2,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          4,
+          0,
+          "minecraft:air"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "disk_air_stops_marks",
+      "feature": {
+        "feature": {
+          "type": "minecraft:disk",
+          "state_provider": {
+            "id": "minecraft:gold_block"
+          },
+          "target": {
+            "type": "minecraft:matching_blocks",
+            "blocks": "minecraft:stone"
+          },
+          "radius": 0,
+          "half_height": 2
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          0,
+          2,
+          0,
+          {
+            "id": "minecraft:dandelion"
+          }
+        ]
+      ],
+      "postProcess": true,
+      "expectChanges": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          -2,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          0,
+          0,
+          "minecraft:gold_block"
+        ]
+      ],
+      "marks": [],
+      "postChanges": [
+        [
+          0,
+          -2,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          0,
+          0,
+          "minecraft:gold_block"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "disk_null_keeps_segment",
+      "feature": {
+        "feature": {
+          "type": "minecraft:disk",
+          "state_provider": {
+            "type": "minecraft:rule_based",
+            "rules": []
+          },
+          "target": {
+            "type": "minecraft:matching_blocks",
+            "blocks": "minecraft:stone"
+          },
+          "radius": 0,
+          "half_height": 2
+        },
+        "placement": []
+      },
+      "edits": [],
+      "postProcess": true,
+      "expectChanges": false,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": false,
+      "changes": [],
+      "marks": [],
+      "postChanges": []
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 5152,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "flower_plains_success",
+      "feature": "minecraft:flower_plains",
+      "expectChanges": true,
+      "nextRandom": 520337620,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          18,
+          64,
+          7,
+          "minecraft:dandelion"
+        ],
+        [
+          9,
+          64,
+          11,
+          "minecraft:azure_bluet"
+        ],
+        [
+          18,
+          64,
+          11,
+          "minecraft:dandelion"
+        ],
+        [
+          15,
+          64,
+          12,
+          "minecraft:poppy"
+        ],
+        [
+          18,
+          64,
+          12,
+          "minecraft:dandelion"
+        ],
+        [
+          10,
+          64,
+          13,
+          "minecraft:dandelion"
+        ],
+        [
+          14,
+          64,
+          13,
+          "minecraft:dandelion"
+        ],
+        [
+          18,
+          64,
+          13,
+          "minecraft:cornflower"
+        ],
+        [
+          13,
+          64,
+          14,
+          "minecraft:azure_bluet"
+        ],
+        [
+          15,
+          64,
+          14,
+          "minecraft:dandelion"
+        ],
+        [
+          17,
+          64,
+          14,
+          "minecraft:cornflower"
+        ],
+        [
+          12,
+          64,
+          15,
+          "minecraft:azure_bluet"
+        ],
+        [
+          19,
+          64,
+          15,
+          "minecraft:dandelion"
+        ],
+        [
+          19,
+          64,
+          17,
+          "minecraft:cornflower"
+        ],
+        [
+          17,
+          64,
+          18,
+          "minecraft:oxeye_daisy"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 5152,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "patch_pumpkin_success",
+      "feature": "minecraft:patch_pumpkin",
+      "expectChanges": true,
+      "nextRandom": -19152922,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          14,
+          64,
+          8,
+          "minecraft:pumpkin"
+        ],
+        [
+          8,
+          64,
+          9,
+          "minecraft:pumpkin"
+        ],
+        [
+          15,
+          64,
+          9,
+          "minecraft:pumpkin"
+        ],
+        [
+          11,
+          64,
+          10,
+          "minecraft:pumpkin"
+        ],
+        [
+          14,
+          64,
+          11,
+          "minecraft:pumpkin"
+        ],
+        [
+          14,
+          64,
+          12,
+          "minecraft:pumpkin"
+        ],
+        [
+          16,
+          64,
+          12,
+          "minecraft:pumpkin"
+        ],
+        [
+          13,
+          64,
+          13,
+          "minecraft:pumpkin"
+        ],
+        [
+          16,
+          64,
+          13,
+          "minecraft:pumpkin"
+        ],
+        [
+          13,
+          64,
+          14,
+          "minecraft:pumpkin"
+        ],
+        [
+          13,
+          64,
+          15,
+          "minecraft:pumpkin"
+        ],
+        [
+          15,
+          64,
+          17,
+          "minecraft:pumpkin"
+        ],
+        [
+          17,
+          64,
+          17,
+          "minecraft:pumpkin"
+        ],
+        [
+          15,
+          64,
+          19,
+          "minecraft:pumpkin"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:mycelium",
+          63
+        ]
+      ],
+      "randomSeed": 5152,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "brown_mushroom_normal_success",
+      "feature": "minecraft:brown_mushroom_normal",
+      "expectChanges": true,
+      "nextRandom": -19152922,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          14,
+          64,
+          8,
+          "minecraft:brown_mushroom"
+        ],
+        [
+          8,
+          64,
+          9,
+          "minecraft:brown_mushroom"
+        ],
+        [
+          15,
+          64,
+          9,
+          "minecraft:brown_mushroom"
+        ],
+        [
+          11,
+          64,
+          10,
+          "minecraft:brown_mushroom"
+        ],
+        [
+          14,
+          64,
+          11,
+          "minecraft:brown_mushroom"
+        ],
+        [
+          14,
+          64,
+          12,
+          "minecraft:brown_mushroom"
+        ],
+        [
+          16,
+          64,
+          12,
+          "minecraft:brown_mushroom"
+        ],
+        [
+          13,
+          64,
+          13,
+          "minecraft:brown_mushroom"
+        ],
+        [
+          16,
+          64,
+          13,
+          "minecraft:brown_mushroom"
+        ],
+        [
+          13,
+          64,
+          14,
+          "minecraft:brown_mushroom"
+        ],
+        [
+          13,
+          64,
+          15,
+          "minecraft:brown_mushroom"
+        ],
+        [
+          15,
+          64,
+          17,
+          "minecraft:brown_mushroom"
+        ],
+        [
+          17,
+          64,
+          17,
+          "minecraft:brown_mushroom"
+        ],
+        [
+          15,
+          64,
+          19,
+          "minecraft:brown_mushroom"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:taiga",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 5152,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "patch_berry_common_success",
+      "feature": "minecraft:patch_berry_common",
+      "expectChanges": true,
+      "nextRandom": -19152922,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          14,
+          64,
+          8,
+          "minecraft:sweet_berry_bush{age=3}"
+        ],
+        [
+          8,
+          64,
+          9,
+          "minecraft:sweet_berry_bush{age=3}"
+        ],
+        [
+          15,
+          64,
+          9,
+          "minecraft:sweet_berry_bush{age=3}"
+        ],
+        [
+          11,
+          64,
+          10,
+          "minecraft:sweet_berry_bush{age=3}"
+        ],
+        [
+          14,
+          64,
+          11,
+          "minecraft:sweet_berry_bush{age=3}"
+        ],
+        [
+          14,
+          64,
+          12,
+          "minecraft:sweet_berry_bush{age=3}"
+        ],
+        [
+          16,
+          64,
+          12,
+          "minecraft:sweet_berry_bush{age=3}"
+        ],
+        [
+          13,
+          64,
+          13,
+          "minecraft:sweet_berry_bush{age=3}"
+        ],
+        [
+          16,
+          64,
+          13,
+          "minecraft:sweet_berry_bush{age=3}"
+        ],
+        [
+          13,
+          64,
+          14,
+          "minecraft:sweet_berry_bush{age=3}"
+        ],
+        [
+          13,
+          64,
+          15,
+          "minecraft:sweet_berry_bush{age=3}"
+        ],
+        [
+          15,
+          64,
+          17,
+          "minecraft:sweet_berry_bush{age=3}"
+        ],
+        [
+          17,
+          64,
+          17,
+          "minecraft:sweet_berry_bush{age=3}"
+        ],
+        [
+          15,
+          64,
+          19,
+          "minecraft:sweet_berry_bush{age=3}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          20
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        10,
+        0
+      ],
+      "name": "spring_water_success",
+      "feature": {
+        "feature": "minecraft:spring_water",
+        "placement": []
+      },
+      "edits": [
+        [
+          1,
+          10,
+          0,
+          {
+            "id": "minecraft:air"
+          }
+        ]
+      ],
+      "expectChanges": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          10,
+          0,
+          "minecraft:water{level=0}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          20
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        10,
+        0
+      ],
+      "name": "spring_lava_success",
+      "feature": {
+        "feature": "minecraft:spring_lava_overworld",
+        "placement": []
+      },
+      "edits": [
+        [
+          1,
+          10,
+          0,
+          {
+            "id": "minecraft:air"
+          }
+        ]
+      ],
+      "expectChanges": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          10,
+          0,
+          "minecraft:lava{level=0}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 1178364,
+      "chunkZ": -757628,
+      "biome": "minecraft:cold_ocean",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ],
+        [
+          "minecraft:water",
+          16
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        18853824,
+        -64,
+        -12122048
+      ],
+      "name": "kelp_success",
+      "feature": "minecraft:kelp_cold",
+      "expectChanges": true,
+      "nextRandom": 1831166633,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          18853829,
+          1,
+          -12122048,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853829,
+          2,
+          -12122048,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853829,
+          3,
+          -12122048,
+          "minecraft:kelp{age=20}"
+        ],
+        [
+          18853830,
+          1,
+          -12122048,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          2,
+          -12122048,
+          "minecraft:kelp{age=23}"
+        ],
+        [
+          18853832,
+          1,
+          -12122048,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853832,
+          2,
+          -12122048,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853832,
+          3,
+          -12122048,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853832,
+          4,
+          -12122048,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853832,
+          5,
+          -12122048,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853832,
+          6,
+          -12122048,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853832,
+          7,
+          -12122048,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853832,
+          8,
+          -12122048,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853832,
+          9,
+          -12122048,
+          "minecraft:kelp{age=20}"
+        ],
+        [
+          18853836,
+          1,
+          -12122048,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853836,
+          2,
+          -12122048,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853836,
+          3,
+          -12122048,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853836,
+          4,
+          -12122048,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853836,
+          5,
+          -12122048,
+          "minecraft:kelp{age=23}"
+        ],
+        [
+          18853837,
+          1,
+          -12122048,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853837,
+          2,
+          -12122048,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853837,
+          3,
+          -12122048,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853837,
+          4,
+          -12122048,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853837,
+          5,
+          -12122048,
+          "minecraft:kelp{age=22}"
+        ],
+        [
+          18853839,
+          1,
+          -12122048,
+          "minecraft:kelp{age=20}"
+        ],
+        [
+          18853824,
+          1,
+          -12122047,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853824,
+          2,
+          -12122047,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853824,
+          3,
+          -12122047,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853824,
+          4,
+          -12122047,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853824,
+          5,
+          -12122047,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853824,
+          6,
+          -12122047,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853824,
+          7,
+          -12122047,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853824,
+          8,
+          -12122047,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853824,
+          9,
+          -12122047,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853824,
+          10,
+          -12122047,
+          "minecraft:kelp{age=23}"
+        ],
+        [
+          18853825,
+          1,
+          -12122047,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853825,
+          2,
+          -12122047,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853825,
+          3,
+          -12122047,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853825,
+          4,
+          -12122047,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853825,
+          5,
+          -12122047,
+          "minecraft:kelp{age=23}"
+        ],
+        [
+          18853828,
+          1,
+          -12122047,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853828,
+          2,
+          -12122047,
+          "minecraft:kelp{age=22}"
+        ],
+        [
+          18853837,
+          1,
+          -12122047,
+          "minecraft:kelp{age=21}"
+        ],
+        [
+          18853833,
+          1,
+          -12122046,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          2,
+          -12122046,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          3,
+          -12122046,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          4,
+          -12122046,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          5,
+          -12122046,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          6,
+          -12122046,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          7,
+          -12122046,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          8,
+          -12122046,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          9,
+          -12122046,
+          "minecraft:kelp{age=22}"
+        ],
+        [
+          18853834,
+          1,
+          -12122046,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853834,
+          2,
+          -12122046,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853834,
+          3,
+          -12122046,
+          "minecraft:kelp{age=23}"
+        ],
+        [
+          18853827,
+          1,
+          -12122045,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853827,
+          2,
+          -12122045,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853827,
+          3,
+          -12122045,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853827,
+          4,
+          -12122045,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853827,
+          5,
+          -12122045,
+          "minecraft:kelp{age=22}"
+        ],
+        [
+          18853832,
+          1,
+          -12122045,
+          "minecraft:kelp{age=21}"
+        ],
+        [
+          18853835,
+          1,
+          -12122045,
+          "minecraft:kelp{age=22}"
+        ],
+        [
+          18853826,
+          1,
+          -12122044,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853826,
+          2,
+          -12122044,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853826,
+          3,
+          -12122044,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853826,
+          4,
+          -12122044,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853826,
+          5,
+          -12122044,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853826,
+          6,
+          -12122044,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853826,
+          7,
+          -12122044,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853826,
+          8,
+          -12122044,
+          "minecraft:kelp{age=23}"
+        ],
+        [
+          18853832,
+          1,
+          -12122044,
+          "minecraft:kelp{age=23}"
+        ],
+        [
+          18853835,
+          1,
+          -12122044,
+          "minecraft:kelp{age=20}"
+        ],
+        [
+          18853831,
+          1,
+          -12122043,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          2,
+          -12122043,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          3,
+          -12122043,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          4,
+          -12122043,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          5,
+          -12122043,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          6,
+          -12122043,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          7,
+          -12122043,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          8,
+          -12122043,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          9,
+          -12122043,
+          "minecraft:kelp{age=23}"
+        ],
+        [
+          18853828,
+          1,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853828,
+          2,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853828,
+          3,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853828,
+          4,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853828,
+          5,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853828,
+          6,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853828,
+          7,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853828,
+          8,
+          -12122042,
+          "minecraft:kelp{age=22}"
+        ],
+        [
+          18853830,
+          1,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          2,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          3,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          4,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          5,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          6,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          7,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          8,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          9,
+          -12122042,
+          "minecraft:kelp{age=22}"
+        ],
+        [
+          18853831,
+          1,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          2,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          3,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          4,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          5,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          6,
+          -12122042,
+          "minecraft:kelp{age=21}"
+        ],
+        [
+          18853832,
+          1,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853832,
+          2,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853832,
+          3,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853832,
+          4,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853832,
+          5,
+          -12122042,
+          "minecraft:kelp{age=23}"
+        ],
+        [
+          18853837,
+          1,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853837,
+          2,
+          -12122042,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853837,
+          3,
+          -12122042,
+          "minecraft:kelp{age=21}"
+        ],
+        [
+          18853824,
+          1,
+          -12122041,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853824,
+          2,
+          -12122041,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853824,
+          3,
+          -12122041,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853824,
+          4,
+          -12122041,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853824,
+          5,
+          -12122041,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853824,
+          6,
+          -12122041,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853824,
+          7,
+          -12122041,
+          "minecraft:kelp{age=21}"
+        ],
+        [
+          18853835,
+          1,
+          -12122041,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853835,
+          2,
+          -12122041,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853835,
+          3,
+          -12122041,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853835,
+          4,
+          -12122041,
+          "minecraft:kelp{age=22}"
+        ],
+        [
+          18853826,
+          1,
+          -12122040,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853826,
+          2,
+          -12122040,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853826,
+          3,
+          -12122040,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853826,
+          4,
+          -12122040,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853826,
+          5,
+          -12122040,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853826,
+          6,
+          -12122040,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853826,
+          7,
+          -12122040,
+          "minecraft:kelp{age=21}"
+        ],
+        [
+          18853827,
+          1,
+          -12122040,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853827,
+          2,
+          -12122040,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853827,
+          3,
+          -12122040,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853827,
+          4,
+          -12122040,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853827,
+          5,
+          -12122040,
+          "minecraft:kelp{age=23}"
+        ],
+        [
+          18853833,
+          1,
+          -12122040,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          2,
+          -12122040,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          3,
+          -12122040,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          4,
+          -12122040,
+          "minecraft:kelp{age=23}"
+        ],
+        [
+          18853835,
+          1,
+          -12122040,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853835,
+          2,
+          -12122040,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853835,
+          3,
+          -12122040,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853835,
+          4,
+          -12122040,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853835,
+          5,
+          -12122040,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853835,
+          6,
+          -12122040,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853835,
+          7,
+          -12122040,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853835,
+          8,
+          -12122040,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853835,
+          9,
+          -12122040,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853835,
+          10,
+          -12122040,
+          "minecraft:kelp{age=21}"
+        ],
+        [
+          18853828,
+          1,
+          -12122039,
+          "minecraft:kelp{age=23}"
+        ],
+        [
+          18853832,
+          1,
+          -12122039,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853832,
+          2,
+          -12122039,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853832,
+          3,
+          -12122039,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853832,
+          4,
+          -12122039,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853832,
+          5,
+          -12122039,
+          "minecraft:kelp{age=23}"
+        ],
+        [
+          18853836,
+          1,
+          -12122039,
+          "minecraft:kelp{age=23}"
+        ],
+        [
+          18853839,
+          1,
+          -12122039,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853839,
+          2,
+          -12122039,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853839,
+          3,
+          -12122039,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853839,
+          4,
+          -12122039,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853839,
+          5,
+          -12122039,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853839,
+          6,
+          -12122039,
+          "minecraft:kelp{age=22}"
+        ],
+        [
+          18853827,
+          1,
+          -12122038,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853827,
+          2,
+          -12122038,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853827,
+          3,
+          -12122038,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853827,
+          4,
+          -12122038,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853827,
+          5,
+          -12122038,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853827,
+          6,
+          -12122038,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853827,
+          7,
+          -12122038,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853827,
+          8,
+          -12122038,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853827,
+          9,
+          -12122038,
+          "minecraft:kelp{age=20}"
+        ],
+        [
+          18853829,
+          1,
+          -12122038,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853829,
+          2,
+          -12122038,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853829,
+          3,
+          -12122038,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853829,
+          4,
+          -12122038,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853829,
+          5,
+          -12122038,
+          "minecraft:kelp{age=21}"
+        ],
+        [
+          18853839,
+          1,
+          -12122038,
+          "minecraft:kelp{age=21}"
+        ],
+        [
+          18853833,
+          1,
+          -12122037,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          2,
+          -12122037,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          3,
+          -12122037,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          4,
+          -12122037,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          5,
+          -12122037,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          6,
+          -12122037,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          7,
+          -12122037,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          8,
+          -12122037,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          9,
+          -12122037,
+          "minecraft:kelp{age=22}"
+        ],
+        [
+          18853838,
+          1,
+          -12122037,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853838,
+          2,
+          -12122037,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853838,
+          3,
+          -12122037,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853838,
+          4,
+          -12122037,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853838,
+          5,
+          -12122037,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853838,
+          6,
+          -12122037,
+          "minecraft:kelp{age=23}"
+        ],
+        [
+          18853824,
+          1,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853824,
+          2,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853824,
+          3,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853824,
+          4,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853824,
+          5,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853824,
+          6,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853824,
+          7,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853824,
+          8,
+          -12122036,
+          "minecraft:kelp{age=23}"
+        ],
+        [
+          18853826,
+          1,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853826,
+          2,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853826,
+          3,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853826,
+          4,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853826,
+          5,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853826,
+          6,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853826,
+          7,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853826,
+          8,
+          -12122036,
+          "minecraft:kelp{age=21}"
+        ],
+        [
+          18853828,
+          1,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853828,
+          2,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853828,
+          3,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853828,
+          4,
+          -12122036,
+          "minecraft:kelp{age=21}"
+        ],
+        [
+          18853831,
+          1,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          2,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          3,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          4,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          5,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          6,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          7,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          8,
+          -12122036,
+          "minecraft:kelp{age=20}"
+        ],
+        [
+          18853833,
+          1,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          2,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          3,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          4,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          5,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          6,
+          -12122036,
+          "minecraft:kelp{age=20}"
+        ],
+        [
+          18853838,
+          1,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853838,
+          2,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853838,
+          3,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853838,
+          4,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853838,
+          5,
+          -12122036,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853838,
+          6,
+          -12122036,
+          "minecraft:kelp{age=21}"
+        ],
+        [
+          18853826,
+          1,
+          -12122035,
+          "minecraft:kelp{age=22}"
+        ],
+        [
+          18853831,
+          1,
+          -12122035,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          2,
+          -12122035,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          3,
+          -12122035,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          4,
+          -12122035,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          5,
+          -12122035,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          6,
+          -12122035,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          7,
+          -12122035,
+          "minecraft:kelp{age=20}"
+        ],
+        [
+          18853825,
+          1,
+          -12122034,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853825,
+          2,
+          -12122034,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853825,
+          3,
+          -12122034,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853825,
+          4,
+          -12122034,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853825,
+          5,
+          -12122034,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853825,
+          6,
+          -12122034,
+          "minecraft:kelp{age=22}"
+        ],
+        [
+          18853830,
+          1,
+          -12122034,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          2,
+          -12122034,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          3,
+          -12122034,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          4,
+          -12122034,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          5,
+          -12122034,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          6,
+          -12122034,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          7,
+          -12122034,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          8,
+          -12122034,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          9,
+          -12122034,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          10,
+          -12122034,
+          "minecraft:kelp{age=22}"
+        ],
+        [
+          18853837,
+          1,
+          -12122034,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853837,
+          2,
+          -12122034,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853837,
+          3,
+          -12122034,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853837,
+          4,
+          -12122034,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853837,
+          5,
+          -12122034,
+          "minecraft:kelp{age=21}"
+        ],
+        [
+          18853826,
+          1,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853826,
+          2,
+          -12122033,
+          "minecraft:kelp{age=21}"
+        ],
+        [
+          18853828,
+          1,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853828,
+          2,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853828,
+          3,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853828,
+          4,
+          -12122033,
+          "minecraft:kelp{age=23}"
+        ],
+        [
+          18853830,
+          1,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          2,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          3,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          4,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          5,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          6,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          7,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          8,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          9,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853830,
+          10,
+          -12122033,
+          "minecraft:kelp{age=22}"
+        ],
+        [
+          18853831,
+          1,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          2,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          3,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          4,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          5,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          6,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          7,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853831,
+          8,
+          -12122033,
+          "minecraft:kelp{age=20}"
+        ],
+        [
+          18853832,
+          1,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853832,
+          2,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853832,
+          3,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853832,
+          4,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853832,
+          5,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853832,
+          6,
+          -12122033,
+          "minecraft:kelp{age=22}"
+        ],
+        [
+          18853833,
+          1,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          2,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          3,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          4,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853833,
+          5,
+          -12122033,
+          "minecraft:kelp{age=20}"
+        ],
+        [
+          18853834,
+          1,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853834,
+          2,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853834,
+          3,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853834,
+          4,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853834,
+          5,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853834,
+          6,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853834,
+          7,
+          -12122033,
+          "minecraft:kelp{age=20}"
+        ],
+        [
+          18853837,
+          1,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853837,
+          2,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853837,
+          3,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853837,
+          4,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853837,
+          5,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853837,
+          6,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853837,
+          7,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853837,
+          8,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853837,
+          9,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853837,
+          10,
+          -12122033,
+          "minecraft:kelp{age=21}"
+        ],
+        [
+          18853839,
+          1,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853839,
+          2,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853839,
+          3,
+          -12122033,
+          "minecraft:kelp_plant"
+        ],
+        [
+          18853839,
+          4,
+          -12122033,
+          "minecraft:kelp{age=22}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "scan_initial_hit",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:environment_scan",
+        "direction_of_search": "down",
+        "max_steps": 2,
+        "target_condition": {
+          "type": "minecraft:solid"
+        }
+      },
+      "positions": [
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        2,
+        0
+      ],
+      "name": "scan_last_step",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:environment_scan",
+        "direction_of_search": "down",
+        "max_steps": 2,
+        "target_condition": {
+          "type": "minecraft:solid"
+        }
+      },
+      "positions": [
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        2,
+        0
+      ],
+      "name": "scan_step_exhausted",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:environment_scan",
+        "direction_of_search": "down",
+        "max_steps": 1,
+        "target_condition": {
+          "type": "minecraft:solid"
+        }
+      },
+      "positions": [],
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        2,
+        0
+      ],
+      "name": "scan_forbidden_start",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:environment_scan",
+        "direction_of_search": "down",
+        "max_steps": 2,
+        "target_condition": {
+          "type": "minecraft:solid"
+        },
+        "allowed_search_condition": {
+          "type": "minecraft:matching_blocks",
+          "blocks": "minecraft:bedrock"
+        }
+      },
+      "positions": [],
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        2,
+        0
+      ],
+      "name": "scan_forbidden_target",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:environment_scan",
+        "direction_of_search": "down",
+        "max_steps": 2,
+        "target_condition": {
+          "type": "minecraft:solid"
+        },
+        "allowed_search_condition": {
+          "type": "minecraft:matching_blocks",
+          "blocks": "minecraft:air"
+        }
+      },
+      "positions": [
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:air",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        -64,
+        0
+      ],
+      "name": "scan_lower_height",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:environment_scan",
+        "direction_of_search": "down",
+        "max_steps": 2,
+        "target_condition": {
+          "type": "minecraft:solid"
+        }
+      },
+      "positions": [],
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:air",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        319,
+        0
+      ],
+      "name": "scan_upper_height",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:environment_scan",
+        "direction_of_search": "up",
+        "max_steps": 2,
+        "target_condition": {
+          "type": "minecraft:solid"
+        }
+      },
+      "positions": [],
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "random_chance_0",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:random_chance",
+        "chance": 0
+      },
+      "positions": [],
+      "nextRandom": 1260042744
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "random_chance_0.5",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:random_chance",
+        "chance": 0.5
+      },
+      "positions": [],
+      "nextRandom": 1260042744
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "random_chance_1",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:random_chance",
+        "chance": 1
+      },
+      "positions": [
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "nextRandom": 1260042744
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ],
+        [
+          "minecraft:water",
+          3
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "water_depth_2",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 2
+      },
+      "positions": [],
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ],
+        [
+          "minecraft:water",
+          3
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "water_depth_3",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 3
+      },
+      "positions": [
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ],
+        [
+          "minecraft:water",
+          3
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "water_depth_4",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:surface_water_depth_filter",
+        "max_water_depth": 4
+      },
+      "positions": [
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        -1,
+        0
+      ],
+      "name": "surface_relative_-1",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:surface_relative_threshold_filter",
+        "heightmap": "WORLD_SURFACE",
+        "min_inclusive": -1,
+        "max_inclusive": 1
+      },
+      "positions": [],
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "surface_relative_0",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:surface_relative_threshold_filter",
+        "heightmap": "WORLD_SURFACE",
+        "min_inclusive": -1,
+        "max_inclusive": 1
+      },
+      "positions": [
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        2,
+        0
+      ],
+      "name": "surface_relative_2",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:surface_relative_threshold_filter",
+        "heightmap": "WORLD_SURFACE",
+        "min_inclusive": -1,
+        "max_inclusive": 1
+      },
+      "positions": [
+        [
+          0,
+          2,
+          0
+        ]
+      ],
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        3,
+        0
+      ],
+      "name": "surface_relative_3",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:surface_relative_threshold_filter",
+        "heightmap": "WORLD_SURFACE",
+        "min_inclusive": -1,
+        "max_inclusive": 1
+      },
+      "positions": [],
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        -65,
+        0
+      ],
+      "name": "world_bounds_-65",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:inside_world_bounds"
+      },
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        -64,
+        0
+      ],
+      "name": "world_bounds_-64",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:inside_world_bounds"
+      },
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        319,
+        0
+      ],
+      "name": "world_bounds_319",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:inside_world_bounds"
+      },
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        320,
+        0
+      ],
+      "name": "world_bounds_320",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:inside_world_bounds"
+      },
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:air",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "true",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:true"
+      },
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "solid_stone",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:solid"
+      },
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:air",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "solid_air",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:solid"
+      },
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:air",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "replaceable_air",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:replaceable"
+      },
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "replaceable_stone",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:replaceable"
+      },
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "any_of_True",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:any_of",
+        "predicates": [
+          {
+            "type": "minecraft:replaceable"
+          },
+          {
+            "type": "minecraft:solid"
+          }
+        ]
+      },
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "any_of_False",
+      "probe": "predicate",
+      "predicate": {
+        "type": "minecraft:any_of",
+        "predicates": [
+          {
+            "type": "minecraft:solid"
+          },
+          {
+            "type": "minecraft:replaceable"
+          }
+        ]
+      },
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "noise_provider_low",
+      "probe": "provider",
+      "provider": {
+        "type": "minecraft:noise_threshold",
+        "seed": 42,
+        "noise": {
+          "base_octave": 0
+        },
+        "scale": 0.1,
+        "threshold": 1,
+        "high_chance": 1,
+        "default_state": {
+          "id": "minecraft:stone"
+        },
+        "low_states": [
+          {
+            "id": "minecraft:gold_block"
+          }
+        ],
+        "high_states": [
+          {
+            "id": "minecraft:diamond_block"
+          }
+        ]
+      },
+      "state": "minecraft:gold_block",
+      "nextRandom": 1260042744
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "noise_provider_high",
+      "probe": "provider",
+      "provider": {
+        "type": "minecraft:noise_threshold",
+        "seed": 42,
+        "noise": {
+          "base_octave": 0
+        },
+        "scale": 0.1,
+        "threshold": -1,
+        "high_chance": 1,
+        "default_state": {
+          "id": "minecraft:stone"
+        },
+        "low_states": [
+          {
+            "id": "minecraft:gold_block"
+          }
+        ],
+        "high_states": [
+          {
+            "id": "minecraft:diamond_block"
+          }
+        ]
+      },
+      "state": "minecraft:diamond_block",
+      "nextRandom": -423279216
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "noise_provider_default",
+      "probe": "provider",
+      "provider": {
+        "type": "minecraft:noise_threshold",
+        "seed": 42,
+        "noise": {
+          "base_octave": 0
+        },
+        "scale": 0.1,
+        "threshold": -1,
+        "high_chance": 0,
+        "default_state": {
+          "id": "minecraft:stone"
+        },
+        "low_states": [
+          {
+            "id": "minecraft:gold_block"
+          }
+        ],
+        "high_states": [
+          {
+            "id": "minecraft:diamond_block"
+          }
+        ]
+      },
+      "state": "minecraft:stone",
+      "nextRandom": 1260042744
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "random_selector",
+      "feature": {
+        "feature": {
+          "type": "minecraft:random_selector",
+          "features": [
+            {
+              "chance": 0.5,
+              "feature": {
+                "feature": {
+                  "type": "minecraft:simple_block",
+                  "to_place": {
+                    "id": "minecraft:gold_block"
+                  }
+                },
+                "placement": []
+              }
+            }
+          ],
+          "default": {
+            "feature": {
+              "type": "minecraft:simple_block",
+              "to_place": {
+                "id": "minecraft:diamond_block"
+              }
+            },
+            "placement": [
+              {
+                "type": "minecraft:offset",
+                "x": 1,
+                "y": 0,
+                "z": 0
+              }
+            ]
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": 1260042744,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          1,
+          0,
+          0,
+          "minecraft:diamond_block"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "simple_random_selector",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_random_selector",
+          "features": [
+            {
+              "feature": {
+                "type": "minecraft:simple_block",
+                "to_place": {
+                  "id": "minecraft:gold_block"
+                }
+              },
+              "placement": []
+            },
+            {
+              "feature": {
+                "type": "minecraft:simple_block",
+                "to_place": {
+                  "id": "minecraft:diamond_block"
+                }
+              },
+              "placement": [
+                {
+                  "type": "minecraft:offset",
+                  "x": 1,
+                  "y": 0,
+                  "z": 0
+                }
+              ]
+            }
+          ]
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": 1260042744,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          1,
+          0,
+          0,
+          "minecraft:diamond_block"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "random_boolean_selector",
+      "feature": {
+        "feature": {
+          "type": "minecraft:random_boolean_selector",
+          "feature_true": {
+            "feature": {
+              "type": "minecraft:simple_block",
+              "to_place": {
+                "id": "minecraft:gold_block"
+              }
+            },
+            "placement": []
+          },
+          "feature_false": {
+            "feature": {
+              "type": "minecraft:simple_block",
+              "to_place": {
+                "id": "minecraft:diamond_block"
+              }
+            },
+            "placement": [
+              {
+                "type": "minecraft:offset",
+                "x": 1,
+                "y": 0,
+                "z": 0
+              }
+            ]
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": 1260042744,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          0,
+          0,
+          "minecraft:gold_block"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "sequence_success",
+      "feature": {
+        "feature": {
+          "type": "minecraft:sequence",
+          "features": [
+            {
+              "feature": {
+                "type": "minecraft:simple_block",
+                "to_place": {
+                  "id": "minecraft:gold_block"
+                }
+              },
+              "placement": []
+            },
+            {
+              "feature": {
+                "type": "minecraft:simple_block",
+                "to_place": {
+                  "id": "minecraft:diamond_block"
+                }
+              },
+              "placement": [
+                {
+                  "type": "minecraft:offset",
+                  "x": 1,
+                  "y": 0,
+                  "z": 0
+                }
+              ]
+            }
+          ]
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          0,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          1,
+          0,
+          0,
+          "minecraft:diamond_block"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "sequence_stops",
+      "feature": {
+        "feature": {
+          "type": "minecraft:sequence",
+          "features": [
+            {
+              "feature": {
+                "type": "minecraft:simple_block",
+                "to_place": {
+                  "id": "minecraft:gold_block"
+                }
+              },
+              "placement": []
+            },
+            {
+              "feature": {
+                "type": "minecraft:simple_block",
+                "to_place": {
+                  "id": "minecraft:stone"
+                }
+              },
+              "placement": [
+                {
+                  "type": "minecraft:random_chance",
+                  "chance": 0
+                }
+              ]
+            },
+            {
+              "feature": {
+                "type": "minecraft:simple_block",
+                "to_place": {
+                  "id": "minecraft:diamond_block"
+                }
+              },
+              "placement": [
+                {
+                  "type": "minecraft:offset",
+                  "x": 1,
+                  "y": 0,
+                  "z": 0
+                }
+              ]
+            }
+          ]
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": 1260042744,
+      "regionRadius": 10,
+      "placed": false,
+      "changes": [
+        [
+          0,
+          0,
+          0,
+          "minecraft:gold_block"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "rule_always",
+      "probe": "rule",
+      "rule": {
+        "predicate_type": "minecraft:always_true"
+      },
+      "inputState": {
+        "id": "minecraft:air"
+      },
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "rule_block_matches",
+      "probe": "rule",
+      "rule": {
+        "predicate_type": "minecraft:block_match",
+        "block": "minecraft:stone"
+      },
+      "inputState": {
+        "id": "minecraft:stone"
+      },
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "rule_block_rejects",
+      "probe": "rule",
+      "rule": {
+        "predicate_type": "minecraft:block_match",
+        "block": "minecraft:stone"
+      },
+      "inputState": {
+        "id": "minecraft:dirt"
+      },
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "rule_state_matches",
+      "probe": "rule",
+      "rule": {
+        "predicate_type": "minecraft:blockstate_match",
+        "block_state": {
+          "id": "minecraft:oak_log",
+          "properties": {
+            "axis": "x"
+          }
+        }
+      },
+      "inputState": {
+        "id": "minecraft:oak_log",
+        "properties": {
+          "axis": "x"
+        }
+      },
+      "result": true,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "rule_state_rejects",
+      "probe": "rule",
+      "rule": {
+        "predicate_type": "minecraft:blockstate_match",
+        "block_state": {
+          "id": "minecraft:oak_log",
+          "properties": {
+            "axis": "x"
+          }
+        }
+      },
+      "inputState": {
+        "id": "minecraft:oak_log",
+        "properties": {
+          "axis": "y"
+        }
+      },
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "rule_random_stone_0",
+      "probe": "rule",
+      "rule": {
+        "predicate_type": "minecraft:random_block_match",
+        "block": "minecraft:stone",
+        "probability": 0
+      },
+      "inputState": {
+        "id": "minecraft:stone"
+      },
+      "result": false,
+      "nextRandom": 1260042744
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "rule_random_dirt_0",
+      "probe": "rule",
+      "rule": {
+        "predicate_type": "minecraft:random_block_match",
+        "block": "minecraft:stone",
+        "probability": 0
+      },
+      "inputState": {
+        "id": "minecraft:dirt"
+      },
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "rule_random_stone_0.5",
+      "probe": "rule",
+      "rule": {
+        "predicate_type": "minecraft:random_block_match",
+        "block": "minecraft:stone",
+        "probability": 0.5
+      },
+      "inputState": {
+        "id": "minecraft:stone"
+      },
+      "result": false,
+      "nextRandom": 1260042744
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "rule_random_dirt_0.5",
+      "probe": "rule",
+      "rule": {
+        "predicate_type": "minecraft:random_block_match",
+        "block": "minecraft:stone",
+        "probability": 0.5
+      },
+      "inputState": {
+        "id": "minecraft:dirt"
+      },
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "rule_random_stone_1",
+      "probe": "rule",
+      "rule": {
+        "predicate_type": "minecraft:random_block_match",
+        "block": "minecraft:stone",
+        "probability": 1
+      },
+      "inputState": {
+        "id": "minecraft:stone"
+      },
+      "result": true,
+      "nextRandom": 1260042744
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "rule_random_dirt_1",
+      "probe": "rule",
+      "rule": {
+        "predicate_type": "minecraft:random_block_match",
+        "block": "minecraft:stone",
+        "probability": 1
+      },
+      "inputState": {
+        "id": "minecraft:dirt"
+      },
+      "result": false,
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 1,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "biased_to_bottom_1",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:biased_to_bottom",
+          "min_inclusive": {
+            "above_bottom": 2
+          },
+          "max_inclusive": {
+            "below_top": 2
+          },
+          "inner": 3
+        }
+      },
+      "positions": [
+        [
+          0,
+          146,
+          0
+        ]
+      ],
+      "nextRandom": 1761283695
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "biased_to_bottom_2",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:biased_to_bottom",
+          "min_inclusive": {
+            "above_bottom": 2
+          },
+          "max_inclusive": {
+            "below_top": 2
+          },
+          "inner": 3
+        }
+      },
+      "positions": [
+        [
+          0,
+          202,
+          0
+        ]
+      ],
+      "nextRandom": -423279216
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 3,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "biased_to_bottom_3",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:biased_to_bottom",
+          "min_inclusive": {
+            "above_bottom": 2
+          },
+          "max_inclusive": {
+            "below_top": 2
+          },
+          "inner": 3
+        }
+      },
+      "positions": [
+        [
+          0,
+          27,
+          0
+        ]
+      ],
+      "nextRandom": 304908421
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 1,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "very_biased_to_bottom_1",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:very_biased_to_bottom",
+          "min_inclusive": {
+            "above_bottom": 2
+          },
+          "max_inclusive": {
+            "below_top": 2
+          },
+          "inner": 3
+        }
+      },
+      "positions": [
+        [
+          0,
+          -53,
+          0
+        ]
+      ],
+      "nextRandom": 1749940626
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "very_biased_to_bottom_2",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:very_biased_to_bottom",
+          "min_inclusive": {
+            "above_bottom": 2
+          },
+          "max_inclusive": {
+            "below_top": 2
+          },
+          "inner": 3
+        }
+      },
+      "positions": [
+        [
+          0,
+          -6,
+          0
+        ]
+      ],
+      "nextRandom": 17850135
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 3,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "very_biased_to_bottom_3",
+      "probe": "modifier",
+      "modifier": {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:very_biased_to_bottom",
+          "min_inclusive": {
+            "above_bottom": 2
+          },
+          "max_inclusive": {
+            "below_top": 2
+          },
+          "inner": 3
+        }
+      },
+      "positions": [
+        [
+          0,
+          28,
+          0
+        ]
+      ],
+      "nextRandom": -836442134
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "write_boundary_15",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:gold_block"
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:offset",
+            "x": 15,
+            "y": 0,
+            "z": 0
+          }
+        ]
+      },
+      "expectChanges": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          15,
+          0,
+          0,
+          "minecraft:gold_block"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "write_boundary_31",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:gold_block"
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:offset",
+            "x": 15,
+            "y": 0,
+            "z": 0
+          },
+          {
+            "type": "minecraft:offset",
+            "x": 16,
+            "y": 0,
+            "z": 0
+          }
+        ]
+      },
+      "expectChanges": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          31,
+          0,
+          0,
+          "minecraft:gold_block"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "write_boundary_32",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:gold_block"
+          }
+        },
+        "placement": [
+          {
+            "type": "minecraft:offset",
+            "x": 16,
+            "y": 0,
+            "z": 0
+          },
+          {
+            "type": "minecraft:offset",
+            "x": 16,
+            "y": 0,
+            "z": 0
+          }
+        ]
+      },
+      "expectChanges": false,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": []
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:desert",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "biome_rejects",
+      "feature": "minecraft:patch_grass_plain",
+      "expectChanges": false,
+      "nextRandom": 131053356,
+      "regionRadius": 10,
+      "placed": false,
+      "changes": []
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -2
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "ore_air_discard_0",
+      "feature": {
+        "feature": {
+          "type": "minecraft:ore",
+          "size": 16,
+          "discard_chance_on_air_exposure": 0,
+          "targets": [
+            {
+              "target": {
+                "predicate_type": "minecraft:always_true"
+              },
+              "state": {
+                "id": "minecraft:gold_ore"
+              }
+            }
+          ]
+        },
+        "placement": []
+      },
+      "nextRandom": 1436086648,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          -3,
+          -2,
+          "minecraft:gold_ore"
+        ],
+        [
+          0,
+          -2,
+          -2,
+          "minecraft:gold_ore"
+        ],
+        [
+          1,
+          -3,
+          -2,
+          "minecraft:gold_ore"
+        ],
+        [
+          1,
+          -2,
+          -2,
+          "minecraft:gold_ore"
+        ],
+        [
+          -1,
+          -2,
+          -1,
+          "minecraft:gold_ore"
+        ],
+        [
+          -1,
+          -1,
+          -1,
+          "minecraft:gold_ore"
+        ],
+        [
+          0,
+          -3,
+          -1,
+          "minecraft:gold_ore"
+        ],
+        [
+          0,
+          -2,
+          -1,
+          "minecraft:gold_ore"
+        ],
+        [
+          0,
+          -1,
+          -1,
+          "minecraft:gold_ore"
+        ],
+        [
+          1,
+          -3,
+          -1,
+          "minecraft:gold_ore"
+        ],
+        [
+          1,
+          -2,
+          -1,
+          "minecraft:gold_ore"
+        ],
+        [
+          -2,
+          -1,
+          0,
+          "minecraft:gold_ore"
+        ],
+        [
+          -2,
+          0,
+          0,
+          "minecraft:gold_ore"
+        ],
+        [
+          -1,
+          -2,
+          0,
+          "minecraft:gold_ore"
+        ],
+        [
+          -1,
+          -1,
+          0,
+          "minecraft:gold_ore"
+        ],
+        [
+          -1,
+          0,
+          0,
+          "minecraft:gold_ore"
+        ],
+        [
+          0,
+          -2,
+          0,
+          "minecraft:gold_ore"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:gold_ore"
+        ],
+        [
+          -2,
+          -1,
+          1,
+          "minecraft:gold_ore"
+        ],
+        [
+          -2,
+          0,
+          1,
+          "minecraft:gold_ore"
+        ],
+        [
+          -1,
+          -1,
+          1,
+          "minecraft:gold_ore"
+        ],
+        [
+          -1,
+          0,
+          1,
+          "minecraft:gold_ore"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -2
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "ore_air_discard_0.5",
+      "feature": {
+        "feature": {
+          "type": "minecraft:ore",
+          "size": 16,
+          "discard_chance_on_air_exposure": 0.5,
+          "targets": [
+            {
+              "target": {
+                "predicate_type": "minecraft:always_true"
+              },
+              "state": {
+                "id": "minecraft:gold_ore"
+              }
+            }
+          ]
+        },
+        "placement": []
+      },
+      "nextRandom": -1165994492,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          -3,
+          -2,
+          "minecraft:gold_ore"
+        ],
+        [
+          1,
+          -3,
+          -2,
+          "minecraft:gold_ore"
+        ],
+        [
+          -1,
+          -2,
+          -1,
+          "minecraft:gold_ore"
+        ],
+        [
+          0,
+          -3,
+          -1,
+          "minecraft:gold_ore"
+        ],
+        [
+          0,
+          -2,
+          -1,
+          "minecraft:gold_ore"
+        ],
+        [
+          0,
+          -1,
+          -1,
+          "minecraft:gold_ore"
+        ],
+        [
+          1,
+          -3,
+          -1,
+          "minecraft:gold_ore"
+        ],
+        [
+          -1,
+          -1,
+          0,
+          "minecraft:gold_ore"
+        ],
+        [
+          -1,
+          0,
+          0,
+          "minecraft:gold_ore"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:gold_ore"
+        ],
+        [
+          -2,
+          -1,
+          1,
+          "minecraft:gold_ore"
+        ],
+        [
+          -1,
+          -1,
+          1,
+          "minecraft:gold_ore"
+        ],
+        [
+          -1,
+          0,
+          1,
+          "minecraft:gold_ore"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -2
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "ore_air_discard_1",
+      "feature": {
+        "feature": {
+          "type": "minecraft:ore",
+          "size": 16,
+          "discard_chance_on_air_exposure": 1,
+          "targets": [
+            {
+              "target": {
+                "predicate_type": "minecraft:always_true"
+              },
+              "state": {
+                "id": "minecraft:gold_ore"
+              }
+            }
+          ]
+        },
+        "placement": []
+      },
+      "nextRandom": 1436086648,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          -3,
+          -2,
+          "minecraft:gold_ore"
+        ],
+        [
+          1,
+          -3,
+          -2,
+          "minecraft:gold_ore"
+        ],
+        [
+          0,
+          -3,
+          -1,
+          "minecraft:gold_ore"
+        ],
+        [
+          1,
+          -3,
+          -1,
+          "minecraft:gold_ore"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        319,
+        0
+      ],
+      "name": "double_plant_at_ceiling",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:tall_grass"
+          }
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          0,
+          318,
+          0,
+          {
+            "id": "minecraft:grass_block"
+          }
+        ]
+      ],
+      "expectChanges": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          319,
+          0,
+          "minecraft:tall_grass{half=lower}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        -65,
+        0
+      ],
+      "name": "place_height_-65",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:gold_block"
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": false,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": []
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        -64,
+        0
+      ],
+      "name": "place_height_-64",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:gold_block"
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          -64,
+          0,
+          "minecraft:gold_block"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        319,
+        0
+      ],
+      "name": "place_height_319",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:gold_block"
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          319,
+          0,
+          "minecraft:gold_block"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        320,
+        0
+      ],
+      "name": "place_height_320",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:gold_block"
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": false,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": []
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "explicit_simple_provider",
+      "probe": "provider",
+      "provider": {
+        "type": "minecraft:simple",
+        "state": {
+          "id": "minecraft:gold_block"
+        }
+      },
+      "compatibilityProvider": {
+        "type": "minecraft:simple_state_provider",
+        "state": {
+          "id": "minecraft:gold_block"
+        }
+      },
+      "state": "minecraft:gold_block",
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 5152,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "random_selector_other_branch",
+      "feature": {
+        "feature": {
+          "type": "minecraft:random_selector",
+          "features": [
+            {
+              "chance": 0.5,
+              "feature": {
+                "feature": {
+                  "type": "minecraft:simple_block",
+                  "to_place": {
+                    "id": "minecraft:gold_block"
+                  }
+                },
+                "placement": []
+              }
+            }
+          ],
+          "default": {
+            "feature": {
+              "type": "minecraft:simple_block",
+              "to_place": {
+                "id": "minecraft:diamond_block"
+              }
+            },
+            "placement": [
+              {
+                "type": "minecraft:offset",
+                "x": 1,
+                "y": 0,
+                "z": 0
+              }
+            ]
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -113818188,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          0,
+          0,
+          "minecraft:gold_block"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 5152,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "simple_random_selector_other_branch",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_random_selector",
+          "features": [
+            {
+              "feature": {
+                "type": "minecraft:simple_block",
+                "to_place": {
+                  "id": "minecraft:gold_block"
+                }
+              },
+              "placement": []
+            },
+            {
+              "feature": {
+                "type": "minecraft:simple_block",
+                "to_place": {
+                  "id": "minecraft:diamond_block"
+                }
+              },
+              "placement": [
+                {
+                  "type": "minecraft:offset",
+                  "x": 1,
+                  "y": 0,
+                  "z": 0
+                }
+              ]
+            }
+          ]
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -113818188,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          0,
+          0,
+          "minecraft:gold_block"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 5152,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "random_boolean_selector_other_branch",
+      "feature": {
+        "feature": {
+          "type": "minecraft:random_boolean_selector",
+          "feature_true": {
+            "feature": {
+              "type": "minecraft:simple_block",
+              "to_place": {
+                "id": "minecraft:gold_block"
+              }
+            },
+            "placement": []
+          },
+          "feature_false": {
+            "feature": {
+              "type": "minecraft:simple_block",
+              "to_place": {
+                "id": "minecraft:diamond_block"
+              }
+            },
+            "placement": [
+              {
+                "type": "minecraft:offset",
+                "x": 1,
+                "y": 0,
+                "z": 0
+              }
+            ]
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -113818188,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          1,
+          0,
+          0,
+          "minecraft:diamond_block"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:air",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "sulfur_simple_unsupported",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:sulfur_spike"
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": false,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": false,
+      "changes": []
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -1
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "sulfur_simple_supported",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:sulfur_spike"
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          0,
+          0,
+          "minecraft:sulfur_spike{thickness=tip, vertical_direction=up, waterlogged=false}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:air",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "shelf_simple_unsupported",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:shelf_mushroom"
+          }
+        },
+        "placement": []
+      },
+      "expectChanges": false,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": false,
+      "changes": []
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          2
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "disk_null_inside_segment",
+      "feature": {
+        "feature": {
+          "type": "minecraft:disk",
+          "state_provider": {
+            "type": "minecraft:rule_based",
+            "rules": [
+              {
+                "if_true": {
+                  "type": "minecraft:not",
+                  "predicate": {
+                    "type": "minecraft:matching_blocks",
+                    "blocks": "minecraft:dirt",
+                    "offset": [
+                      1,
+                      0,
+                      0
+                    ]
+                  }
+                },
+                "then": {
+                  "id": "minecraft:gold_block"
+                }
+              }
+            ]
+          },
+          "target": {
+            "type": "minecraft:matching_blocks",
+            "blocks": "minecraft:stone"
+          },
+          "radius": 0,
+          "half_height": 2
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          1,
+          1,
+          0,
+          {
+            "id": "minecraft:dirt"
+          }
+        ],
+        [
+          0,
+          3,
+          0,
+          {
+            "id": "minecraft:dandelion"
+          }
+        ]
+      ],
+      "postProcess": true,
+      "expectChanges": true,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          -2,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          0,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          2,
+          0,
+          "minecraft:gold_block"
+        ]
+      ],
+      "marks": [
+        [
+          0,
+          3,
+          0
+        ]
+      ],
+      "postChanges": [
+        [
+          0,
+          -2,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          -1,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          0,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          2,
+          0,
+          "minecraft:gold_block"
+        ],
+        [
+          0,
+          3,
+          0,
+          "minecraft:air"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "modifier",
+      "name": "biased_to_bottom_inner_boundary_7",
+      "modifier": {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:biased_to_bottom",
+          "min_inclusive": {
+            "absolute": 5
+          },
+          "max_inclusive": {
+            "absolute": 7
+          },
+          "inner": 3
+        }
+      },
+      "positions": [
+        [
+          0,
+          5,
+          0
+        ]
+      ],
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "modifier",
+      "name": "biased_to_bottom_inner_boundary_8",
+      "modifier": {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:biased_to_bottom",
+          "min_inclusive": {
+            "absolute": 5
+          },
+          "max_inclusive": {
+            "absolute": 8
+          },
+          "inner": 3
+        }
+      },
+      "positions": [
+        [
+          0,
+          5,
+          0
+        ]
+      ],
+      "nextRandom": -423279216
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "modifier",
+      "name": "very_biased_to_bottom_inner_boundary_7",
+      "modifier": {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:very_biased_to_bottom",
+          "min_inclusive": {
+            "absolute": 5
+          },
+          "max_inclusive": {
+            "absolute": 7
+          },
+          "inner": 3
+        }
+      },
+      "positions": [
+        [
+          0,
+          5,
+          0
+        ]
+      ],
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "modifier",
+      "name": "very_biased_to_bottom_inner_boundary_8",
+      "modifier": {
+        "type": "minecraft:height_range",
+        "height": {
+          "type": "minecraft:very_biased_to_bottom",
+          "min_inclusive": {
+            "absolute": 5
+          },
+          "max_inclusive": {
+            "absolute": 8
+          },
+          "inner": 3
+        }
+      },
+      "positions": [
+        [
+          0,
+          6,
+          0
+        ]
+      ],
+      "nextRandom": -423279216
+    }
+  ]
+}

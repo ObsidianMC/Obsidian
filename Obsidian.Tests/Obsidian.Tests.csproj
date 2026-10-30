@@ -17,7 +17,7 @@
 		<None Remove="Assets\fluid_scenarios.json" />
 		<None Remove="Assets\redstone_scenarios.json" />
 		<None Remove="Assets\vanilla_worldgen.json" />
-		<None Remove="Assets\vanilla_worldgen_26.3.json" />
+		<None Remove="Assets\vanilla_worldgen_26.3\**" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -25,7 +25,10 @@
 		<EmbeddedResource Include="Assets\fluid_scenarios.json" />
 		<EmbeddedResource Include="Assets\redstone_scenarios.json" />
 		<EmbeddedResource Include="Assets\vanilla_worldgen.json" />
-		<EmbeddedResource Include="Assets\vanilla_worldgen_26.3.json" />
+		<!-- A folder of files, embedded by their paths in it (VanillaWorldgenCaptures). -->
+		<EmbeddedResource Include="Assets\vanilla_worldgen_26.3\**\*.json">
+			<LogicalName>Obsidian.Tests.Assets.vanilla_worldgen_26.3/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+		</EmbeddedResource>
 		<EmbeddedResource Include="Assets\block_loot.json" />
 		<EmbeddedResource Include="Assets\entity_loot.json" />
 		<EmbeddedResource Include="Assets\context_numbers.json" />

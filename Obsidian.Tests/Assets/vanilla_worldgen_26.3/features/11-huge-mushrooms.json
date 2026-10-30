@@ -1,0 +1,2546 @@
+{
+  "version": "26.3",
+  "cases": [
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:mycelium",
+          63
+        ]
+      ],
+      "randomSeed": 1,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "huge_red_mushroom_1",
+      "feature": {
+        "feature": "minecraft:huge_red_mushroom",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": 1761283695,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          7,
+          65,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=true}"
+        ],
+        [
+          7,
+          66,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=true}"
+        ],
+        [
+          7,
+          67,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=true}"
+        ],
+        [
+          8,
+          65,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          8,
+          66,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          8,
+          67,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          65,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          9,
+          66,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          9,
+          67,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          6,
+          65,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=true}"
+        ],
+        [
+          6,
+          66,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=true}"
+        ],
+        [
+          6,
+          67,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=true}"
+        ],
+        [
+          7,
+          68,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=true}"
+        ],
+        [
+          8,
+          68,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          68,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          65,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          10,
+          66,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          10,
+          67,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          6,
+          65,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          6,
+          66,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          6,
+          67,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=true}"
+        ],
+        [
+          7,
+          68,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=true}"
+        ],
+        [
+          8,
+          64,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          65,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          66,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          67,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          68,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          68,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          65,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          10,
+          66,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          10,
+          67,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          6,
+          65,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=true}"
+        ],
+        [
+          6,
+          66,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=true}"
+        ],
+        [
+          6,
+          67,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=true}"
+        ],
+        [
+          7,
+          68,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=true}"
+        ],
+        [
+          8,
+          68,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          9,
+          68,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          10,
+          65,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          10,
+          66,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          10,
+          67,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          7,
+          65,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=true}"
+        ],
+        [
+          7,
+          66,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=true}"
+        ],
+        [
+          7,
+          67,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=true}"
+        ],
+        [
+          8,
+          65,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          8,
+          66,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          8,
+          67,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          9,
+          65,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          9,
+          66,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          9,
+          67,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=true, west=false}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:mycelium",
+          63
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "huge_red_mushroom_2",
+      "feature": {
+        "feature": "minecraft:huge_red_mushroom",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -423279216,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          7,
+          71,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=true}"
+        ],
+        [
+          7,
+          72,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=true}"
+        ],
+        [
+          7,
+          73,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=true}"
+        ],
+        [
+          8,
+          71,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          8,
+          72,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          8,
+          73,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          71,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          9,
+          72,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          9,
+          73,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          6,
+          71,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=true}"
+        ],
+        [
+          6,
+          72,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=true}"
+        ],
+        [
+          6,
+          73,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=true}"
+        ],
+        [
+          7,
+          74,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=true}"
+        ],
+        [
+          8,
+          74,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          74,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          71,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          10,
+          72,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          10,
+          73,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          6,
+          71,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          6,
+          72,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          6,
+          73,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=true}"
+        ],
+        [
+          7,
+          74,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=true}"
+        ],
+        [
+          8,
+          64,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          65,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          66,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          67,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          68,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          69,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          70,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          71,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          72,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          73,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          74,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          74,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          71,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          10,
+          72,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          10,
+          73,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          6,
+          71,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=true}"
+        ],
+        [
+          6,
+          72,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=true}"
+        ],
+        [
+          6,
+          73,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=true}"
+        ],
+        [
+          7,
+          74,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=true}"
+        ],
+        [
+          8,
+          74,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          9,
+          74,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          10,
+          71,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          10,
+          72,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          10,
+          73,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          7,
+          71,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=true}"
+        ],
+        [
+          7,
+          72,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=true}"
+        ],
+        [
+          7,
+          73,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=true}"
+        ],
+        [
+          8,
+          71,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          8,
+          72,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          8,
+          73,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          9,
+          71,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          9,
+          72,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          9,
+          73,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=true, west=false}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:mycelium",
+          63
+        ]
+      ],
+      "randomSeed": 3,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "huge_red_mushroom_3",
+      "feature": {
+        "feature": "minecraft:huge_red_mushroom",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": 304908421,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          7,
+          67,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=true}"
+        ],
+        [
+          7,
+          68,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=true}"
+        ],
+        [
+          7,
+          69,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=true}"
+        ],
+        [
+          8,
+          67,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          8,
+          68,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          8,
+          69,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          67,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          9,
+          68,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          9,
+          69,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          6,
+          67,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=true}"
+        ],
+        [
+          6,
+          68,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=true}"
+        ],
+        [
+          6,
+          69,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=true}"
+        ],
+        [
+          7,
+          70,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=true}"
+        ],
+        [
+          8,
+          70,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          70,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          67,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          10,
+          68,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          10,
+          69,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          6,
+          67,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          6,
+          68,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          6,
+          69,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=true}"
+        ],
+        [
+          7,
+          70,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=true}"
+        ],
+        [
+          8,
+          64,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          65,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          66,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          67,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          68,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          69,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          70,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          70,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          67,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          10,
+          68,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          10,
+          69,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          6,
+          67,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=true}"
+        ],
+        [
+          6,
+          68,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=true}"
+        ],
+        [
+          6,
+          69,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=true}"
+        ],
+        [
+          7,
+          70,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=true}"
+        ],
+        [
+          8,
+          70,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          9,
+          70,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          10,
+          67,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          10,
+          68,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          10,
+          69,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          7,
+          67,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=true}"
+        ],
+        [
+          7,
+          68,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=true}"
+        ],
+        [
+          7,
+          69,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=true}"
+        ],
+        [
+          8,
+          67,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          8,
+          68,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          8,
+          69,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          9,
+          67,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          9,
+          68,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          9,
+          69,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=true, west=false}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:mycelium",
+          63
+        ]
+      ],
+      "randomSeed": 1,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "huge_brown_mushroom_1",
+      "feature": {
+        "feature": "minecraft:huge_brown_mushroom",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": 1761283695,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          6,
+          68,
+          5,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=true}"
+        ],
+        [
+          7,
+          68,
+          5,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          8,
+          68,
+          5,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          68,
+          5,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          68,
+          5,
+          "minecraft:brown_mushroom_block{down=false, east=true, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          5,
+          68,
+          6,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=true}"
+        ],
+        [
+          6,
+          68,
+          6,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          7,
+          68,
+          6,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          8,
+          68,
+          6,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          68,
+          6,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          68,
+          6,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          11,
+          68,
+          6,
+          "minecraft:brown_mushroom_block{down=false, east=true, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          5,
+          68,
+          7,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=true}"
+        ],
+        [
+          6,
+          68,
+          7,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          7,
+          68,
+          7,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          8,
+          68,
+          7,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          68,
+          7,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          68,
+          7,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          11,
+          68,
+          7,
+          "minecraft:brown_mushroom_block{down=false, east=true, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          5,
+          68,
+          8,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=true}"
+        ],
+        [
+          6,
+          68,
+          8,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          7,
+          68,
+          8,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          8,
+          64,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          65,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          66,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          67,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          68,
+          8,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          68,
+          8,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          68,
+          8,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          11,
+          68,
+          8,
+          "minecraft:brown_mushroom_block{down=false, east=true, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          5,
+          68,
+          9,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=true}"
+        ],
+        [
+          6,
+          68,
+          9,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          7,
+          68,
+          9,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          8,
+          68,
+          9,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          68,
+          9,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          68,
+          9,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          11,
+          68,
+          9,
+          "minecraft:brown_mushroom_block{down=false, east=true, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          5,
+          68,
+          10,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=true}"
+        ],
+        [
+          6,
+          68,
+          10,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          7,
+          68,
+          10,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          8,
+          68,
+          10,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          68,
+          10,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          68,
+          10,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          11,
+          68,
+          10,
+          "minecraft:brown_mushroom_block{down=false, east=true, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          6,
+          68,
+          11,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=true}"
+        ],
+        [
+          7,
+          68,
+          11,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          8,
+          68,
+          11,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          9,
+          68,
+          11,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          10,
+          68,
+          11,
+          "minecraft:brown_mushroom_block{down=false, east=true, north=false, south=true, up=true, west=false}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:mycelium",
+          63
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "huge_brown_mushroom_2",
+      "feature": {
+        "feature": "minecraft:huge_brown_mushroom",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -423279216,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          6,
+          74,
+          5,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=true}"
+        ],
+        [
+          7,
+          74,
+          5,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          8,
+          74,
+          5,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          74,
+          5,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          74,
+          5,
+          "minecraft:brown_mushroom_block{down=false, east=true, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          5,
+          74,
+          6,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=true}"
+        ],
+        [
+          6,
+          74,
+          6,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          7,
+          74,
+          6,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          8,
+          74,
+          6,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          74,
+          6,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          74,
+          6,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          11,
+          74,
+          6,
+          "minecraft:brown_mushroom_block{down=false, east=true, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          5,
+          74,
+          7,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=true}"
+        ],
+        [
+          6,
+          74,
+          7,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          7,
+          74,
+          7,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          8,
+          74,
+          7,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          74,
+          7,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          74,
+          7,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          11,
+          74,
+          7,
+          "minecraft:brown_mushroom_block{down=false, east=true, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          5,
+          74,
+          8,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=true}"
+        ],
+        [
+          6,
+          74,
+          8,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          7,
+          74,
+          8,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          8,
+          64,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          65,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          66,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          67,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          68,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          69,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          70,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          71,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          72,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          73,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          74,
+          8,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          74,
+          8,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          74,
+          8,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          11,
+          74,
+          8,
+          "minecraft:brown_mushroom_block{down=false, east=true, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          5,
+          74,
+          9,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=true}"
+        ],
+        [
+          6,
+          74,
+          9,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          7,
+          74,
+          9,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          8,
+          74,
+          9,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          74,
+          9,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          74,
+          9,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          11,
+          74,
+          9,
+          "minecraft:brown_mushroom_block{down=false, east=true, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          5,
+          74,
+          10,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=true}"
+        ],
+        [
+          6,
+          74,
+          10,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          7,
+          74,
+          10,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          8,
+          74,
+          10,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          74,
+          10,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          74,
+          10,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          11,
+          74,
+          10,
+          "minecraft:brown_mushroom_block{down=false, east=true, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          6,
+          74,
+          11,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=true}"
+        ],
+        [
+          7,
+          74,
+          11,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          8,
+          74,
+          11,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          9,
+          74,
+          11,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          10,
+          74,
+          11,
+          "minecraft:brown_mushroom_block{down=false, east=true, north=false, south=true, up=true, west=false}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:mycelium",
+          63
+        ]
+      ],
+      "randomSeed": 3,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "huge_brown_mushroom_3",
+      "feature": {
+        "feature": "minecraft:huge_brown_mushroom",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": 304908421,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          6,
+          70,
+          5,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=true}"
+        ],
+        [
+          7,
+          70,
+          5,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          8,
+          70,
+          5,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          70,
+          5,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          70,
+          5,
+          "minecraft:brown_mushroom_block{down=false, east=true, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          5,
+          70,
+          6,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=true}"
+        ],
+        [
+          6,
+          70,
+          6,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          7,
+          70,
+          6,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          8,
+          70,
+          6,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          70,
+          6,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          70,
+          6,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          11,
+          70,
+          6,
+          "minecraft:brown_mushroom_block{down=false, east=true, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          5,
+          70,
+          7,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=true}"
+        ],
+        [
+          6,
+          70,
+          7,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          7,
+          70,
+          7,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          8,
+          70,
+          7,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          70,
+          7,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          70,
+          7,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          11,
+          70,
+          7,
+          "minecraft:brown_mushroom_block{down=false, east=true, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          5,
+          70,
+          8,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=true}"
+        ],
+        [
+          6,
+          70,
+          8,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          7,
+          70,
+          8,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          8,
+          64,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          65,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          66,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          67,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          68,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          69,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          70,
+          8,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          70,
+          8,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          70,
+          8,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          11,
+          70,
+          8,
+          "minecraft:brown_mushroom_block{down=false, east=true, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          5,
+          70,
+          9,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=true}"
+        ],
+        [
+          6,
+          70,
+          9,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          7,
+          70,
+          9,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          8,
+          70,
+          9,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          70,
+          9,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          70,
+          9,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          11,
+          70,
+          9,
+          "minecraft:brown_mushroom_block{down=false, east=true, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          5,
+          70,
+          10,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=true}"
+        ],
+        [
+          6,
+          70,
+          10,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          7,
+          70,
+          10,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          8,
+          70,
+          10,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          70,
+          10,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          70,
+          10,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          11,
+          70,
+          10,
+          "minecraft:brown_mushroom_block{down=false, east=true, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          6,
+          70,
+          11,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=true}"
+        ],
+        [
+          7,
+          70,
+          11,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          8,
+          70,
+          11,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          9,
+          70,
+          11,
+          "minecraft:brown_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          10,
+          70,
+          11,
+          "minecraft:brown_mushroom_block{down=false, east=true, north=false, south=true, up=true, west=false}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          63
+        ]
+      ],
+      "randomSeed": 1,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "huge_red_mushroom_wrong_substrate_1",
+      "feature": {
+        "feature": "minecraft:huge_red_mushroom",
+        "placement": []
+      },
+      "expectChanges": false,
+      "nextRandom": 1761283695,
+      "regionRadius": 10,
+      "placed": false,
+      "changes": []
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:mycelium",
+          63
+        ]
+      ],
+      "randomSeed": 1,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "huge_brown_mushroom_no_room_1",
+      "feature": {
+        "feature": "minecraft:huge_brown_mushroom",
+        "placement": []
+      },
+      "expectChanges": false,
+      "edits": [
+        [
+          9,
+          68,
+          8,
+          "minecraft:stone"
+        ]
+      ],
+      "nextRandom": 1761283695,
+      "regionRadius": 10,
+      "placed": false,
+      "changes": []
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:mycelium",
+          63
+        ]
+      ],
+      "randomSeed": 1,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "huge_red_mushroom_obstructed_cap_1",
+      "feature": {
+        "feature": "minecraft:huge_red_mushroom",
+        "placement": []
+      },
+      "expectChanges": true,
+      "edits": [
+        [
+          10,
+          67,
+          8,
+          "minecraft:stone"
+        ]
+      ],
+      "nextRandom": 1761283695,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          7,
+          65,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=true}"
+        ],
+        [
+          7,
+          66,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=true}"
+        ],
+        [
+          7,
+          67,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=true}"
+        ],
+        [
+          8,
+          65,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          8,
+          66,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          8,
+          67,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          65,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          9,
+          66,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          9,
+          67,
+          6,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          6,
+          65,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=true}"
+        ],
+        [
+          6,
+          66,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=false, west=true}"
+        ],
+        [
+          6,
+          67,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=true}"
+        ],
+        [
+          7,
+          68,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=true}"
+        ],
+        [
+          8,
+          68,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=false, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          68,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          65,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          10,
+          66,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=false, west=false}"
+        ],
+        [
+          10,
+          67,
+          7,
+          "minecraft:red_mushroom_block{down=false, east=true, north=true, south=false, up=true, west=false}"
+        ],
+        [
+          6,
+          65,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          6,
+          66,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          6,
+          67,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=true}"
+        ],
+        [
+          7,
+          68,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=true}"
+        ],
+        [
+          8,
+          64,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          65,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          66,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          67,
+          8,
+          "minecraft:mushroom_stem{down=false, east=true, north=true, south=true, up=false, west=true}"
+        ],
+        [
+          8,
+          68,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          9,
+          68,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=false, up=true, west=false}"
+        ],
+        [
+          10,
+          65,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          10,
+          66,
+          8,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          6,
+          65,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=true}"
+        ],
+        [
+          6,
+          66,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=true}"
+        ],
+        [
+          6,
+          67,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=true}"
+        ],
+        [
+          7,
+          68,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=true}"
+        ],
+        [
+          8,
+          68,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          9,
+          68,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          10,
+          65,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          10,
+          66,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          10,
+          67,
+          9,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          7,
+          65,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=true}"
+        ],
+        [
+          7,
+          66,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=true}"
+        ],
+        [
+          7,
+          67,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=true}"
+        ],
+        [
+          8,
+          65,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          8,
+          66,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          8,
+          67,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=false, north=false, south=true, up=true, west=false}"
+        ],
+        [
+          9,
+          65,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          9,
+          66,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          9,
+          67,
+          10,
+          "minecraft:red_mushroom_block{down=false, east=true, north=false, south=true, up=true, west=false}"
+        ]
+      ]
+    }
+  ]
+}

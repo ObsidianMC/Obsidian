@@ -11,15 +11,24 @@
 	<PropertyGroup>
 		<!-- The generated assets Obsidian.API and Obsidian read. Obsidian.csproj sets their Minecraft version. -->
 		<VanillaAssetsDirectory>$(MSBuildThisFileDirectory)..\Obsidian\Assets\</VanillaAssetsDirectory>
-		<!-- The downloaded server jars and data generator output, per version. -->
-		<VanillaWorkDirectory>$([MSBuild]::NormalizeDirectory(
-			'$(MSBuildProjectDirectory)', '$(BaseIntermediateOutputPath)', 'vanilla'))</VanillaWorkDirectory>
+		<!-- The downloaded server jars and data generator output, per version: a per-user cache that every checkout shares,
+		     so a new worktree doesn't download and run the data generators again. Set VanillaWorkDirectory (with -p or
+		     as an environment variable) to use another. -->
+		<VanillaCache Condition="'$(OS)' == 'Windows_NT'">$(LOCALAPPDATA)\Obsidian</VanillaCache>
+		<VanillaCache Condition="'$(OS)' != 'Windows_NT' and '$(XDG_CACHE_HOME)' != ''">$(XDG_CACHE_HOME)/obsidian</VanillaCache>
+		<VanillaCache Condition="'$(VanillaCache)' == ''">$(HOME)/.cache/obsidian</VanillaCache>
+		<VanillaWorkDirectory Condition="'$(VanillaWorkDirectory)' == ''">$(VanillaCache)/vanilla</VanillaWorkDirectory>
+		<VanillaWorkDirectory>$([MSBuild]::NormalizeDirectory('$(VanillaWorkDirectory)'))</VanillaWorkDirectory>
+		<!-- This checkout's runs against the cached servers: intermediate files and capture worlds. -->
+		<VanillaScratchDirectory>$([MSBuild]::NormalizeDirectory(
+			'$(MSBuildProjectDirectory)', '$(BaseIntermediateOutputPath)', 'vanilla-scratch'))</VanillaScratchDirectory>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<!-- Capture source inputs before the build adds generated assembly attributes under obj. -->
-		<!-- The capture driver only runs on request (CaptureVanillaWorldgen), so editing it doesn't regenerate the assets. -->
-		<VanillaGeneratorInput Include="@(Compile)" Exclude="WorldgenCaptures.cs" />
+		<!-- The capture driver only runs on request (CaptureVanillaWorldgen), so editing it doesn't regenerate the
+		     assets. -->
+		<VanillaGeneratorInput Include="@(Compile)" Exclude="WorldgenCaptures.cs;WorldgenFixtureFiles.cs" />
 		<VanillaDumperInput Include="Java\**\*.java;Java\**\*.json" />
 		<None Update="@(VanillaDumperInput)" CopyToOutputDirectory="PreserveNewest" />
 		<!-- On-request captures (CaptureVanillaWorldgen); not asset inputs, so editing them doesn't regenerate the assets. -->
@@ -81,26 +90,36 @@
 		<PropertyGroup>
 			<VanillaAssetsCommand>dotnet &quot;$(TargetPath)&quot; $(MinecraftVersion) $(LegacyMinecraftVersion)</VanillaAssetsCommand>
 			<VanillaAssetsCommand>$(VanillaAssetsCommand) &quot;$(VanillaWorkDirectory).&quot;</VanillaAssetsCommand>
+			<VanillaAssetsCommand>$(VanillaAssetsCommand) &quot;$(VanillaScratchDirectory).&quot;</VanillaAssetsCommand>
 			<VanillaAssetsCommand>$(VanillaAssetsCommand) &quot;$(VanillaAssetsDirectory).&quot;</VanillaAssetsCommand>
 		</PropertyGroup>
 
 		<!-- Java logs warnings to stderr (e.g. deprecated Unsafe use); failures still fail by exit code. -->
 		<Exec IgnoreStandardErrorWarningFormat="true" Command="$(VanillaAssetsCommand)" />
+		<!-- Some outputs keep older times: version.json the jar entry's, and copied data generator output the cached
+		     run's. Touch them all, so that sources checked out after those times don't regenerate on every build. -->
 		<Touch Files="$(VanillaAssetsStamp)" AlwaysCreate="true" />
+		<Touch Files="@(VanillaAssetsOutput)" />
 	</Target>
 
 	<!-- Re-records the 26.3 vanilla worldgen references the parity tests replay, in place, with the Minecraft version's
 	     server (docs/vanilla-captures.md). Slow, so only on request:
-	     dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen -->
+	     dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen
+	     CaptureSections and CaptureCases record only some sections or files and cases, by '+'-separated patterns, e.g.
+	     -p:CaptureSections=features/09-trees+terrain -p:CaptureCases=tree_oak_* -->
 	<PropertyGroup>
-		<VanillaWorldgenFixture>$(MSBuildThisFileDirectory)..\Obsidian.Tests\Assets\vanilla_worldgen_26.3.json</VanillaWorldgenFixture>
+		<VanillaWorldgenFixture>$(MSBuildThisFileDirectory)..\Obsidian.Tests\Assets\vanilla_worldgen_26.3</VanillaWorldgenFixture>
 	</PropertyGroup>
 
 	<Target Name="CaptureVanillaWorldgen" DependsOnTargets="Build;ReadMinecraftVersion">
 		<PropertyGroup>
 			<VanillaCaptureCommand>dotnet &quot;$(TargetPath)&quot; capture-worldgen $(MinecraftVersion)</VanillaCaptureCommand>
 			<VanillaCaptureCommand>$(VanillaCaptureCommand) &quot;$(VanillaWorkDirectory).&quot;</VanillaCaptureCommand>
+			<VanillaCaptureCommand>$(VanillaCaptureCommand) &quot;$(VanillaScratchDirectory).&quot;</VanillaCaptureCommand>
 			<VanillaCaptureCommand>$(VanillaCaptureCommand) &quot;$(VanillaWorldgenFixture)&quot;</VanillaCaptureCommand>
+			<CaptureSectionsOption Condition="'$(CaptureSections)' != ''">--sections &quot;$(CaptureSections)&quot;</CaptureSectionsOption>
+			<CaptureCasesOption Condition="'$(CaptureCases)' != ''">--cases &quot;$(CaptureCases)&quot;</CaptureCasesOption>
+			<VanillaCaptureCommand>$(VanillaCaptureCommand) $(CaptureSectionsOption) $(CaptureCasesOption)</VanillaCaptureCommand>
 		</PropertyGroup>
 
 		<Exec IgnoreStandardErrorWarningFormat="true" Command="$(VanillaCaptureCommand)" />

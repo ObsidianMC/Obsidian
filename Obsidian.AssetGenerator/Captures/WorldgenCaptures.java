@@ -43,14 +43,16 @@ import net.minecraft.world.level.levelgen.synth.NormalNoise;
 
 /**
  * Re-records the vanilla worldgen references of Obsidian's 26.3 parity tests
- * (Obsidian.Tests/Assets/vanilla_worldgen_26.3.json); WorldgenCaptures.cs runs it (docs/vanilla-captures.md). Run it in
+ * (Obsidian.Tests/Assets/vanilla_worldgen_26.3); WorldgenCaptures.cs runs it (docs/vanilla-captures.md). The fixture
+ * json it reads and rewrites holds the cases to record by section ({@code {"features": [...], ...}}), which the C#
+ * driver gathers from the fixture's files and puts back in them, so it records only those. Run it in
  * an empty directory with the server's class path and {@code --add-opens java.base/java.lang=ALL-UNNAMED}, twice per
  * world. First {@code <fixture json> <seed> <generate structures> <version> create} creates and saves the world, then
  * the caller deletes its chunks ({@code region}, {@code entities} and {@code poi} folders), then
  * {@code <fixture json> <seed> <generate structures> <version>} captures. Worlds without cases exit right away.
  *
  * <p>It runs a headless vanilla dedicated server in this JVM for its registries and runs every case on the server
- * thread. Only the fixture's cases for this world are recaptured, and the fixture is rewritten in place.
+ * thread. Only the fixture's cases for this world are recaptured, and the fixture json is rewritten in place.
  *
  * <p>Phase 5 of docs/porting-26.3-plan.md adds sections step by step. Terrain, materials, single features,
  * biome sources and spawn attributes are captured here. Decoration, structures and lighting follow later.

@@ -1,0 +1,1698 @@
+{
+  "version": "26.3",
+  "cases": [
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 1,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "fallen_oak_tree_1",
+      "feature": {
+        "feature": "minecraft:fallen_oak_tree",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -155886662,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          8,
+          64,
+          5,
+          "minecraft:oak_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          6,
+          "minecraft:oak_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          7,
+          "minecraft:vine{east=false, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          8,
+          64,
+          8,
+          "minecraft:oak_log{axis=y}"
+        ],
+        [
+          9,
+          64,
+          8,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "fallen_oak_tree_2",
+      "feature": {
+        "feature": "minecraft:fallen_oak_tree",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -1324330098,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          8,
+          64,
+          7,
+          "minecraft:vine{east=false, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          7,
+          64,
+          8,
+          "minecraft:vine{east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          8,
+          64,
+          8,
+          "minecraft:oak_log{axis=y}"
+        ],
+        [
+          11,
+          64,
+          8,
+          "minecraft:oak_log{axis=x}"
+        ],
+        [
+          12,
+          64,
+          8,
+          "minecraft:oak_log{axis=x}"
+        ],
+        [
+          12,
+          65,
+          8,
+          "minecraft:brown_mushroom"
+        ],
+        [
+          13,
+          64,
+          8,
+          "minecraft:oak_log{axis=x}"
+        ],
+        [
+          14,
+          64,
+          8,
+          "minecraft:oak_log{axis=x}"
+        ],
+        [
+          15,
+          64,
+          8,
+          "minecraft:oak_log{axis=x}"
+        ],
+        [
+          8,
+          64,
+          9,
+          "minecraft:vine{east=false, north=true, south=false, up=false, west=false}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 3,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "fallen_oak_tree_3",
+      "feature": {
+        "feature": "minecraft:fallen_oak_tree",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -580395097,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          8,
+          64,
+          2,
+          "minecraft:oak_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          3,
+          "minecraft:oak_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          4,
+          "minecraft:oak_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          5,
+          "minecraft:oak_log{axis=z}"
+        ],
+        [
+          8,
+          65,
+          5,
+          "minecraft:red_mushroom"
+        ],
+        [
+          7,
+          64,
+          8,
+          "minecraft:vine{east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          8,
+          64,
+          8,
+          "minecraft:oak_log{axis=y}"
+        ],
+        [
+          9,
+          64,
+          8,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          8,
+          64,
+          9,
+          "minecraft:vine{east=false, north=true, south=false, up=false, west=false}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 1,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "fallen_birch_tree_1",
+      "feature": {
+        "feature": "minecraft:fallen_birch_tree",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -155886662,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          8,
+          64,
+          8,
+          "minecraft:birch_log{axis=y}"
+        ],
+        [
+          8,
+          64,
+          10,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          65,
+          10,
+          "minecraft:red_mushroom"
+        ],
+        [
+          8,
+          64,
+          11,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          12,
+          "minecraft:birch_log{axis=z}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "fallen_birch_tree_2",
+      "feature": {
+        "feature": "minecraft:fallen_birch_tree",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -1103129161,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          8,
+          64,
+          8,
+          "minecraft:birch_log{axis=y}"
+        ],
+        [
+          8,
+          64,
+          11,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          65,
+          11,
+          "minecraft:brown_mushroom"
+        ],
+        [
+          8,
+          64,
+          12,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          13,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          65,
+          13,
+          "minecraft:red_mushroom"
+        ],
+        [
+          8,
+          64,
+          14,
+          "minecraft:birch_log{axis=z}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 3,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "fallen_birch_tree_3",
+      "feature": {
+        "feature": "minecraft:fallen_birch_tree",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -234435524,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          8,
+          64,
+          8,
+          "minecraft:birch_log{axis=y}"
+        ],
+        [
+          8,
+          64,
+          10,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          65,
+          10,
+          "minecraft:red_mushroom"
+        ],
+        [
+          8,
+          64,
+          11,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          12,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          13,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          14,
+          "minecraft:birch_log{axis=z}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 1,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "fallen_spruce_tree_1",
+      "feature": {
+        "feature": "minecraft:fallen_spruce_tree",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": 1262965348,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          8,
+          64,
+          8,
+          "minecraft:spruce_log{axis=y}"
+        ],
+        [
+          8,
+          64,
+          10,
+          "minecraft:spruce_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          11,
+          "minecraft:spruce_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          12,
+          "minecraft:spruce_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          13,
+          "minecraft:spruce_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          14,
+          "minecraft:spruce_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          15,
+          "minecraft:spruce_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          16,
+          "minecraft:spruce_log{axis=z}"
+        ],
+        [
+          8,
+          65,
+          16,
+          "minecraft:red_mushroom"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "fallen_spruce_tree_2",
+      "feature": {
+        "feature": "minecraft:fallen_spruce_tree",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": 131053356,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          8,
+          64,
+          8,
+          "minecraft:spruce_log{axis=y}"
+        ],
+        [
+          8,
+          64,
+          11,
+          "minecraft:spruce_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          12,
+          "minecraft:spruce_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          13,
+          "minecraft:spruce_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          14,
+          "minecraft:spruce_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          15,
+          "minecraft:spruce_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          16,
+          "minecraft:spruce_log{axis=z}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 3,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "fallen_spruce_tree_3",
+      "feature": {
+        "feature": "minecraft:fallen_spruce_tree",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": 1767665612,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          8,
+          64,
+          8,
+          "minecraft:spruce_log{axis=y}"
+        ],
+        [
+          8,
+          64,
+          10,
+          "minecraft:spruce_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          11,
+          "minecraft:spruce_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          12,
+          "minecraft:spruce_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          13,
+          "minecraft:spruce_log{axis=z}"
+        ],
+        [
+          8,
+          65,
+          13,
+          "minecraft:red_mushroom"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 1,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "fallen_jungle_tree_1",
+      "feature": {
+        "feature": "minecraft:fallen_jungle_tree",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -155886662,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          8,
+          64,
+          5,
+          "minecraft:jungle_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          6,
+          "minecraft:jungle_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          7,
+          "minecraft:vine{east=false, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          8,
+          64,
+          8,
+          "minecraft:jungle_log{axis=y}"
+        ],
+        [
+          9,
+          64,
+          8,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "fallen_jungle_tree_2",
+      "feature": {
+        "feature": "minecraft:fallen_jungle_tree",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": 1513498359,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          8,
+          64,
+          7,
+          "minecraft:vine{east=false, north=false, south=true, up=false, west=false}"
+        ],
+        [
+          7,
+          64,
+          8,
+          "minecraft:vine{east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          8,
+          64,
+          8,
+          "minecraft:jungle_log{axis=y}"
+        ],
+        [
+          11,
+          64,
+          8,
+          "minecraft:jungle_log{axis=x}"
+        ],
+        [
+          12,
+          64,
+          8,
+          "minecraft:jungle_log{axis=x}"
+        ],
+        [
+          13,
+          64,
+          8,
+          "minecraft:jungle_log{axis=x}"
+        ],
+        [
+          14,
+          64,
+          8,
+          "minecraft:jungle_log{axis=x}"
+        ],
+        [
+          15,
+          64,
+          8,
+          "minecraft:jungle_log{axis=x}"
+        ],
+        [
+          16,
+          64,
+          8,
+          "minecraft:jungle_log{axis=x}"
+        ],
+        [
+          17,
+          64,
+          8,
+          "minecraft:jungle_log{axis=x}"
+        ],
+        [
+          18,
+          64,
+          8,
+          "minecraft:jungle_log{axis=x}"
+        ],
+        [
+          8,
+          64,
+          9,
+          "minecraft:vine{east=false, north=true, south=false, up=false, west=false}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 3,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "fallen_jungle_tree_3",
+      "feature": {
+        "feature": "minecraft:fallen_jungle_tree",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": 177583826,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          8,
+          64,
+          0,
+          "minecraft:jungle_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          1,
+          "minecraft:jungle_log{axis=z}"
+        ],
+        [
+          8,
+          65,
+          1,
+          "minecraft:red_mushroom"
+        ],
+        [
+          8,
+          64,
+          2,
+          "minecraft:jungle_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          3,
+          "minecraft:jungle_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          4,
+          "minecraft:jungle_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          5,
+          "minecraft:jungle_log{axis=z}"
+        ],
+        [
+          7,
+          64,
+          8,
+          "minecraft:vine{east=true, north=false, south=false, up=false, west=false}"
+        ],
+        [
+          8,
+          64,
+          8,
+          "minecraft:jungle_log{axis=y}"
+        ],
+        [
+          9,
+          64,
+          8,
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}"
+        ],
+        [
+          8,
+          64,
+          9,
+          "minecraft:vine{east=false, north=true, south=false, up=false, west=false}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 1,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "fallen_poplar_tree_1",
+      "feature": {
+        "feature": "minecraft:fallen_poplar_tree",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -1242363800,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          8,
+          64,
+          8,
+          "minecraft:poplar_log{axis=y}"
+        ],
+        [
+          8,
+          64,
+          10,
+          "minecraft:poplar_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          11,
+          "minecraft:poplar_log{axis=z}"
+        ],
+        [
+          8,
+          65,
+          11,
+          "minecraft:brown_mushroom"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "fallen_poplar_tree_2",
+      "feature": {
+        "feature": "minecraft:fallen_poplar_tree",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": 131053356,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          8,
+          64,
+          8,
+          "minecraft:poplar_log{axis=y}"
+        ],
+        [
+          8,
+          64,
+          11,
+          "minecraft:poplar_log{axis=z}"
+        ],
+        [
+          9,
+          64,
+          11,
+          "minecraft:shelf_mushroom{age=1, facing=east}"
+        ],
+        [
+          8,
+          64,
+          12,
+          "minecraft:poplar_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          13,
+          "minecraft:poplar_log{axis=z}"
+        ],
+        [
+          9,
+          64,
+          13,
+          "minecraft:shelf_mushroom{age=1, facing=east}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 3,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "fallen_poplar_tree_3",
+      "feature": {
+        "feature": "minecraft:fallen_poplar_tree",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -3666739,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          8,
+          64,
+          8,
+          "minecraft:poplar_log{axis=y}"
+        ],
+        [
+          8,
+          64,
+          10,
+          "minecraft:poplar_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          11,
+          "minecraft:poplar_log{axis=z}"
+        ],
+        [
+          9,
+          64,
+          11,
+          "minecraft:shelf_mushroom{age=1, facing=east}"
+        ],
+        [
+          8,
+          64,
+          12,
+          "minecraft:poplar_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          13,
+          "minecraft:poplar_log{axis=z}"
+        ],
+        [
+          8,
+          65,
+          13,
+          "minecraft:brown_mushroom"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 1,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "fallen_super_birch_tree_1",
+      "feature": {
+        "feature": "minecraft:fallen_super_birch_tree",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -1978864692,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          8,
+          64,
+          8,
+          "minecraft:birch_log{axis=y}"
+        ],
+        [
+          8,
+          64,
+          10,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          11,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          12,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          13,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          14,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          15,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          16,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          17,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          18,
+          "minecraft:birch_log{axis=z}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "fallen_super_birch_tree_2",
+      "feature": {
+        "feature": "minecraft:fallen_super_birch_tree",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -216538235,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          8,
+          64,
+          8,
+          "minecraft:birch_log{axis=y}"
+        ],
+        [
+          8,
+          64,
+          11,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          12,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          65,
+          12,
+          "minecraft:brown_mushroom"
+        ],
+        [
+          8,
+          64,
+          13,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          14,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          15,
+          "minecraft:birch_log{axis=z}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          59
+        ],
+        [
+          "minecraft:dirt",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "randomSeed": 3,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "fallen_super_birch_tree_3",
+      "feature": {
+        "feature": "minecraft:fallen_super_birch_tree",
+        "placement": []
+      },
+      "expectChanges": true,
+      "nextRandom": -3666739,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          8,
+          64,
+          8,
+          "minecraft:birch_log{axis=y}"
+        ],
+        [
+          8,
+          64,
+          10,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          11,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          65,
+          11,
+          "minecraft:red_mushroom"
+        ],
+        [
+          8,
+          64,
+          12,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          13,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          14,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          15,
+          "minecraft:birch_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          16,
+          "minecraft:birch_log{axis=z}"
+        ]
+      ]
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:bedrock",
+          -64
+        ],
+        [
+          "minecraft:stone",
+          60
+        ],
+        [
+          "minecraft:dirt",
+          63
+        ],
+        [
+          "minecraft:grass_block",
+          64
+        ]
+      ],
+      "randomSeed": 1,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "name": "fallen_oak_tree_stump_under_grass_1",
+      "feature": {
+        "feature": "minecraft:fallen_oak_tree",
+        "placement": []
+      },
+      "expectChanges": true,
+      "edits": [
+        [
+          8,
+          65,
+          8,
+          "minecraft:short_grass"
+        ]
+      ],
+      "postProcess": true,
+      "nextRandom": -155886662,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          8,
+          65,
+          5,
+          "minecraft:oak_log{axis=z}"
+        ],
+        [
+          8,
+          65,
+          6,
+          "minecraft:oak_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          8,
+          "minecraft:oak_log{axis=y}"
+        ]
+      ],
+      "marks": [
+        [
+          8,
+          65,
+          8
+        ]
+      ],
+      "postChanges": [
+        [
+          8,
+          65,
+          5,
+          "minecraft:oak_log{axis=z}"
+        ],
+        [
+          8,
+          65,
+          6,
+          "minecraft:oak_log{axis=z}"
+        ],
+        [
+          8,
+          64,
+          8,
+          "minecraft:oak_log{axis=y}"
+        ],
+        [
+          8,
+          65,
+          8,
+          "minecraft:air"
+        ]
+      ]
+    }
+  ]
+}
