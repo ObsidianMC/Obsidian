@@ -365,14 +365,18 @@ Re-capture with the Phase 0 harness first, then work in this order. Each step ha
    - Replace the consolidated types with the general machinery.
    - Add the new feature and placement types and the block-state providers.
    - Speleothems, poplar trees, shelf mushrooms and red shrubs.
-6. **Structures.** Abandoned camps (jigsaw, so mostly data) and the changed templates.
+6. **Structures.** Abandoned camps (jigsaw, so mostly data) and the changed templates. Save structure starts with
+   vanilla's piece ids and fields: Obsidian writes only each piece's own state, so vanilla drops every piece (see
+   `known-gaps.md`, "Structure pieces in saved chunks").
 7. **The Nether and the End,** including the new End island composition.
 8. **Performance.** Re-record `WorldgenBench` and compare with the 1.21.x numbers in `worldgen-benchmarks.md`. Single
    precision may make generation faster.
 
 **Exit:** all re-captured `VanillaWorldGeneration` and `VanillaStructureGeneration` fixtures pass, the 1.21.11 data is
 gone (`LegacyMinecraftVersion`, `Assets/legacy-1.21.11`, the `obsidian_legacy` tags and the legacy state table), and
-throughput is no worse than on 1.21.x.
+throughput is no worse than on 1.21.x. The world upgrade (Phase 3) also reads the legacy state table, to convert
+moving pistons that 1.21.11 saved by numeric state; keep that one table for it, or have the upgrade drop those
+pistons.
 
 ### Phase 6: content and gameplay
 
