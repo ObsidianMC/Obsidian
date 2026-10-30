@@ -127,11 +127,14 @@ internal sealed partial class FeatureRegistry
 
         return (level, random, position) =>
         {
-            var state = source(level, random, position);
+            // getState keeps the existing block when a rule-based source has no applicable state.
+            var state = State(source, level, random, position);
+            var currentValue = state.GetProperty(property);
 
-            if (state is null)
+            // Only an integer property can be randomized. An absent or differently typed property consumes no draw.
+            if (!int.TryParse(currentValue, out _))
             {
-                return null;
+                return state;
             }
 
             var value = values(random);

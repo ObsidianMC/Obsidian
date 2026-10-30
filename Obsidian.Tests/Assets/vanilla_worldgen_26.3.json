@@ -105161,6 +105161,201 @@
         ]
       ],
       "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "randomized_missing",
+      "probe": "provider",
+      "provider": {
+        "type": "minecraft:randomized_int",
+        "source": {
+          "id": "minecraft:stone"
+        },
+        "property": "age",
+        "values": {
+          "type": "minecraft:uniform",
+          "min_inclusive": 0,
+          "max_inclusive": 15
+        }
+      },
+      "state": "minecraft:stone",
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "randomized_non_integer",
+      "probe": "provider",
+      "provider": {
+        "type": "minecraft:randomized_int",
+        "source": {
+          "id": "minecraft:oak_log"
+        },
+        "property": "axis",
+        "values": {
+          "type": "minecraft:uniform",
+          "min_inclusive": 0,
+          "max_inclusive": 15
+        }
+      },
+      "state": "minecraft:oak_log{axis=y}",
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "randomized_age",
+      "probe": "provider",
+      "provider": {
+        "type": "minecraft:randomized_int",
+        "source": {
+          "id": "minecraft:cactus"
+        },
+        "property": "age",
+        "values": {
+          "type": "minecraft:uniform",
+          "min_inclusive": 0,
+          "max_inclusive": 15
+        }
+      },
+      "state": "minecraft:cactus{age=11}",
+      "nextRandom": 1260042744
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "randomized_required_air",
+      "probe": "provider",
+      "provider": {
+        "type": "minecraft:randomized_int",
+        "source": {
+          "type": "minecraft:rule_based",
+          "rules": []
+        },
+        "property": "age",
+        "values": {
+          "type": "minecraft:uniform",
+          "min_inclusive": 0,
+          "max_inclusive": 15
+        }
+      },
+      "state": "minecraft:air",
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "name": "randomized_required_existing",
+      "probe": "provider",
+      "provider": {
+        "type": "minecraft:randomized_int",
+        "source": {
+          "type": "minecraft:rule_based",
+          "rules": []
+        },
+        "property": "age",
+        "values": {
+          "type": "minecraft:uniform",
+          "min_inclusive": 0,
+          "max_inclusive": 15
+        }
+      },
+      "edits": [
+        [
+          0,
+          0,
+          0,
+          {
+            "id": "minecraft:cactus",
+            "properties": {
+              "age": "3"
+            }
+          }
+        ]
+      ],
+      "state": "minecraft:cactus{age=11}",
+      "nextRandom": 1260042744
     }
   ],
   "biomes": [
