@@ -137,12 +137,7 @@ public sealed class PlayPayloads
                         AssertSameFloat(expected.GetProperty("x").GetSingle(), display?.XCoord ?? 0);
                         AssertSameFloat(expected.GetProperty("y").GetSingle(), display?.YCoord ?? 0);
                     }
-
-                    // Only vanilla's own child order records the wire; the seeded orders check positions alone.
-                    if (!reference.TryGetProperty("wire", out var wire))
-                        continue;
-
-                    Equal(wire, new UpdateAdvancementsPacket
+                    Equal(reference.GetProperty("wire"), new UpdateAdvancementsPacket
                     {
                         Reset = true, Added = definitions.Select(definition => placed[definition.Identifier]).ToList(),
                         Removed = ["fixture:removed"]

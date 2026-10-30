@@ -2,7 +2,6 @@ import com.google.gson.*;
 import com.mojang.serialization.JsonOps;
 import java.nio.file.*;
 import java.util.*;
-import java.util.function.Consumer;
 import net.minecraft.SharedConstants;
 import net.minecraft.advancements.*;
 import net.minecraft.core.RegistryAccess;
@@ -244,7 +243,6 @@ class RemainingPlayFixtures extends ScreenFixtures {
     static JsonArray advancements() {
         var captures = new JsonArray();
         var random = new Random(777);
-        var shuffles = new Random(778);
         var ops = RegistryOps.create(JsonOps.INSTANCE, (RegistryAccess)access);
         for (int sample = 0; sample < 40; sample++) {
             int count = sample == 0 ? 1 : sample == 1 ? 9 : 15 + sample;
@@ -263,21 +261,24 @@ class RemainingPlayFixtures extends ScreenFixtures {
             }
 
             // Vanilla keeps children in an identity hash set, so the order it lays this tree out in changes between
-            // JVM runs. The seeded orders after it are the same every run.
-            captures.add(layout(holders, parents, null));
-            for (int order = 0; order < 2 && count > 2; order++) {
-                captures.add(layout(holders, parents, children -> Collections.shuffle(children, shuffles)));
-            }
+            // JVM runs.
+            captures.add(layout(holders, parents, false));
         }
 
         // Summing a tree's offsets in another order than vanilla rounds a position differently in only a few child
-        // orders, which the seeded orders above rarely reach. This tree, with its children in index order, is one.
-        int[] roundingTree = {-1, 0, 1, 2, 0, 4, 4, 6, 6, 8, 6, 4, 4, 4, 13, 13, 13, 16, 13, 4, 19};
-        var holders = new ArrayList<AdvancementHolder>();
-        for (int i = 0; i < roundingTree.length; i++) {
-            holders.add(holder(ops, i, roundingTree[i], true));
+        // orders, which vanilla's own orders above rarely reach. Each of these trees, with its children in index
+        // order, is one.
+        int[][] roundingTrees = {
+            {-1, 0, 1, 2, 0, 4, 4, 6, 6, 8, 6, 4, 4, 4, 13, 13, 13, 16, 13, 4, 19},
+            {-1, 0, 1, 1, 3, 0, 5, 5, 7, 7, 5, 5, 5, 12, 12, 12, 12, 16, 12, 18, 12, 5, 21}
+        };
+        for (var parents : roundingTrees) {
+            var holders = new ArrayList<AdvancementHolder>();
+            for (int i = 0; i < parents.length; i++) {
+                holders.add(holder(ops, i, parents[i], true));
+            }
+            captures.add(layout(holders, parents, true));
         }
-        captures.add(layout(holders, roundingTree, children -> { }));
         return captures;
     }
 
@@ -309,41 +310,28 @@ class RemainingPlayFixtures extends ScreenFixtures {
 
     /**
      * Lays out one tree with vanilla's server layout and records its definitions in the order the layout visited
-     * them. Without {@code arrange} the nodes are vanilla's own; with it, each node's children are iterated in the
-     * order {@code arrange} leaves them in. Only vanilla's own order records the packet wire, to keep the fixture
-     * small.
+     * them. Unless {@code ordered}, the nodes are vanilla's own; otherwise each node's children are iterated in index
+     * order.
      */
-    static JsonObject layout(List<AdvancementHolder> holders, int[] parents,
-        Consumer<List<AdvancementNode>> arrange) {
+    static JsonObject layout(List<AdvancementHolder> holders, int[] parents, boolean ordered) {
         var nodes = new ArrayList<AdvancementNode>();
-        var children = new ArrayList<List<AdvancementNode>>();
         for (int i = 0; i < holders.size(); i++) {
             var parent = parents[i] < 0 ? null : nodes.get(parents[i]);
-            if (arrange == null) {
-                nodes.add(new AdvancementNode(holders.get(i), parent));
-            } else {
+            if (ordered) {
                 nodes.add(new OrderedNode(holders.get(i), parent));
+            } else {
+                nodes.add(new AdvancementNode(holders.get(i), parent));
             }
-            children.add(new ArrayList<>());
             if (parent != null) {
-                children.get(parents[i]).add(nodes.get(i));
-            }
-        }
-
-        for (int i = 0; i < nodes.size(); i++) {
-            if (arrange != null) {
-                arrange.accept(children.get(i));
-            }
-            for (var child : children.get(i)) {
-                nodes.get(i).addChild(child);
+                parent.addChild(nodes.get(i));
             }
         }
 
         TreeNodePosition.run(nodes.getFirst());
-        var ordered = new ArrayList<AdvancementNode>();
-        visit(nodes.getFirst(), ordered);
+        var visited = new ArrayList<AdvancementNode>();
+        visit(nodes.getFirst(), visited);
         var definitions = new JsonArray();
-        for (var node : ordered) {
+        for (var node : visited) {
             var definition = new JsonObject();
             definition.addProperty("id", node.holder().id().toString());
             var parent = node.parent() == null ? "" : node.parent().holder().id().toString();
@@ -356,13 +344,11 @@ class RemainingPlayFixtures extends ScreenFixtures {
 
         var row = new JsonObject();
         row.add("definitions", definitions);
-        if (arrange == null) {
-            var positioned = ordered.stream().map(ClientboundUpdateAdvancementsPacket.PositionedAdvancement::fromNode);
-            var packet = new ClientboundUpdateAdvancementsPacket(true, positioned.toList(),
-                Set.of(Identifier.parse("fixture:removed")), Map.of(), true);
-            var codec = ClientboundUpdateAdvancementsPacket.class.getName();
-            row.addProperty("wire", encode(codec, "STREAM_CODEC", packet));
-        }
+        var positioned = visited.stream().map(ClientboundUpdateAdvancementsPacket.PositionedAdvancement::fromNode);
+        var packet = new ClientboundUpdateAdvancementsPacket(true, positioned.toList(),
+            Set.of(Identifier.parse("fixture:removed")), Map.of(), true);
+        var codec = ClientboundUpdateAdvancementsPacket.class.getName();
+        row.addProperty("wire", encode(codec, "STREAM_CODEC", packet));
         return row;
     }
 
