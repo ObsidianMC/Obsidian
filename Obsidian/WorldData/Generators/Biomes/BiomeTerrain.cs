@@ -11,14 +11,18 @@ internal sealed class BiomeTerrain
 {
     private readonly TerrainGenerator terrain;
     private readonly BiomeManager manager;
-    private readonly FeatureRegistry features;
+    private readonly FeatureRegistry? features;
     private readonly int unlitBrightness;
     private BiomeDecoration? decoration;
 
+    /// <param name="features">
+    /// The features to decorate with. Decorating needs one whose template lookup loads 26.3 templates, which Obsidian
+    /// doesn't ship yet; biomes and terrain don't need it.
+    /// </param>
     public BiomeTerrain(TerrainGenerator terrain, string preset, FeatureRegistry? features = null)
     {
         this.terrain = terrain;
-        this.features = features ?? new FeatureRegistry(terrain.Data);
+        this.features = features;
         var dimension = preset == "minecraft:nether" ? "minecraft:the_nether" : preset;
         var hasSkylight = terrain.Data.Read("dimension_type", dimension).GetProperty("has_skylight").GetBoolean();
         this.unlitBrightness = hasSkylight ? 15 : 0;
@@ -30,7 +34,17 @@ internal sealed class BiomeTerrain
 
     public ClimateSource Source { get; }
 
-    public BiomeDecoration Decoration => this.decoration ??= new(this.features, this.Source.PossibleBiomes);
+    /// <summary>The decoration status. Throws before writing any block unless a feature registry was given.</summary>
+    public BiomeDecoration Decoration => this.decoration ??= this.CreateDecoration();
+
+    private BiomeDecoration CreateDecoration()
+    {
+        // The default registry's template lookup throws, which would stop decoration halfway through a chunk.
+        if (this.features is null)
+            throw new InvalidOperationException("Decorating needs a feature registry with a 26.3 template lookup.");
+
+        return new BiomeDecoration(this.features, this.Source.PossibleBiomes);
+    }
 
     /// <summary>
     /// Decorates one terrain-status chunk. Its eight terrain-status neighbors must already exist, and all writes
