@@ -325,7 +325,9 @@ public abstract partial class AbstractLevel
         }
     }
 
-    /// <summary>Whether the block entity has <paramref name="id"/>, or without an id, is a sensor or shrieker.</summary>
+    /// <summary>
+    /// Whether the block entity has <paramref name="id"/>, or without an id, is a sensor or shrieker.
+    /// </summary>
     private static bool IsSculkOfId(DataBlockEntity entity, string? id)
     {
         if (id != null)

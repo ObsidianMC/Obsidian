@@ -166,7 +166,9 @@ public sealed partial class CopperGolem : PathfinderMob
         }
     }
 
-    /// <summary>An empty-handed golem takes up to 16 of the first stack; otherwise it puts what it holds away.</summary>
+    /// <summary>
+    /// An empty-handed golem takes up to 16 of the first stack; otherwise it puts what it holds away.
+    /// </summary>
     private void SortWith(BaseContainer container)
     {
         var held = GetEquipment(EquipmentSlot.MainHand);

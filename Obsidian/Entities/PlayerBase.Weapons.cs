@@ -447,7 +447,9 @@ public partial class PlayerBase
         return ValueTask.FromResult(fired);
     }
 
-    /// <summary>A multishot crossbow fires its first round straight ahead, the others 10 degrees to each side.</summary>
+    /// <summary>
+    /// A multishot crossbow fires its first round straight ahead, the others 10 degrees to each side.
+    /// </summary>
     private static int CrossbowShotAngle(int index)
     {
         if (index == 0)
@@ -593,8 +595,8 @@ public partial class PlayerBase
     /// </summary>
     private async ValueTask DropBundleContentsAsync(ItemStack bundle)
     {
-        // The stack leaves the bundle only once the drop is in the world, so a refused drop loses nothing. The inventory
-        // lock covers selection, drop and removal, so a click can't change the bundle between them.
+        // The stack leaves the bundle only once the drop is in the world, so a refused drop loses nothing. The
+        // inventory lock covers selection, drop and removal, so a click can't change the bundle between them.
         using (await Inventory.LockAsync())
         {
             if (Bundles.Selected(bundle) is not { } selected)

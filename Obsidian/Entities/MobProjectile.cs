@@ -13,7 +13,9 @@ internal sealed class MobProjectile : Entity
     internal int SplashDuration { get; set; }
     internal int SplashAmplifier { get; set; }
 
-    /// <summary>The effects a splash shatters into, when a player threw it; the mob's single effect otherwise.</summary>
+    /// <summary>
+    /// The effects a splash shatters into, when a player threw it; the mob's single effect otherwise.
+    /// </summary>
     internal IReadOnlyList<PotionEffectData>? SplashEffects { get; set; }
 
     /// <summary>The potion item a player threw, shown to clients; a mob's splash shows its own potion.</summary>

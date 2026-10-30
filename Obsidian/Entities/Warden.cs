@@ -265,7 +265,10 @@ public sealed partial class Warden : PathfinderMob
         }
     }
 
-    /// <summary>A sniff angers the warden at, and sends it toward, the nearest entity within six blocks.</summary>
+    /// <summary>
+    /// A sniff angers the warden at, and sends it toward, the nearest entity within six blocks horizontally and
+    /// twenty vertically.
+    /// </summary>
     private void FollowScent(IEntity[] nearby)
     {
         var smelled = nearby
