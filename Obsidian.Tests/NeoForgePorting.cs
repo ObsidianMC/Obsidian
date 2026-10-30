@@ -31,6 +31,7 @@ public sealed class NeoForgePorting
             .GetProperty("argument")
             .GetProperty("spawns_by_category")
             .GetProperty(category);
+
         var source = new JsonObject
         {
             ["type"] = "neoforge:add_spawns",
@@ -59,7 +60,8 @@ public sealed class NeoForgePorting
             Assert.NotNull(mob.Count);
 
             var count = Format121Data.ToJson(IntProviderCodec.ToNbt(mob.Count!, "count"));
-            Assert.True(JsonNode.DeepEquals(JsonNode.Parse(expected[index].GetProperty("count").GetRawText()), count));
+            var expectedCount = JsonNode.Parse(expected[index].GetProperty("count").GetRawText());
+            Assert.True(JsonNode.DeepEquals(expectedCount, count));
         }
     }
 
