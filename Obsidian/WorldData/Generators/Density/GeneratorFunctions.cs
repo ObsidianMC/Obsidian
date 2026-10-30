@@ -19,7 +19,7 @@ internal sealed class ConstantFunction(float value) : DensityFunction
 /// </summary>
 /// <remarks>
 /// Not a <see cref="ConstantFunction"/>: vanilla's operators don't specialise on these, which matters for the zero
-/// check of a multiplication. Blending and the beardifier are bound to chunks in later steps of Phase 5.
+/// check of a multiplication. Blending stays neutral; terrain can bind the beardifier through DensityCompiler.
 /// </remarks>
 internal sealed class ContextFunction(string name, float defaultValue) : DensityFunction
 {
