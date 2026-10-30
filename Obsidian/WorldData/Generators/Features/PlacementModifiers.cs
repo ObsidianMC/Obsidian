@@ -1,6 +1,7 @@
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Generators.Density;
 using System.IO;
 using System.Text.Json;
 
@@ -21,6 +22,9 @@ internal sealed record PlacementContext(DecorationContext Decoration, PlacedFeat
 
 internal sealed partial class FeatureRegistry
 {
+    // Biome.BIOME_INFO_NOISE in 26.3: zero-offset simplex, rounded to float before count arithmetic.
+    private static readonly SimplexNoise placementNoise = new(new WorldgenRandom(new LegacyRandomSource(2345L)));
+
     public PlacementModifier Modifier(JsonElement json)
     {
         var type = json.GetProperty("type").GetString();
@@ -179,7 +183,7 @@ internal sealed partial class FeatureRegistry
 
         return (_, _, position, output) =>
         {
-            var noise = BiomeTemperature.BiomeInfoNoise.GetValue(position.X / 200.0, position.Z / 200.0, false);
+            var noise = placementNoise.Get(position.X / 200.0, position.Z / 200.0);
             var count = noise < level ? below : above;
             AddRepeated(output, position, count);
         };
@@ -193,7 +197,7 @@ internal sealed partial class FeatureRegistry
 
         return (_, _, position, output) =>
         {
-            var noise = BiomeTemperature.BiomeInfoNoise.GetValue(position.X / factor, position.Z / factor, false);
+            var noise = placementNoise.Get(position.X / factor, position.Z / factor);
             var count = (int)Math.Ceiling((noise + offset) * ratio);
             AddRepeated(output, position, count);
         };
