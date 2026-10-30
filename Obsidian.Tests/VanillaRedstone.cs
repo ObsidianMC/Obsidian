@@ -10,9 +10,10 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Redstone parity fixtures (see docs/redstone/01-foundation.md). Each scenario in <c>Assets/redstone_scenarios.json</c>
-/// was recorded from a headless vanilla 1.21.11 server by <c>tools/redstone/generate.py</c>: the server's game time is
-/// frozen and advanced one tick at a time, and every checkpoint holds the block states of the scenario's box.
+/// Redstone parity fixtures. Each scenario in <c>Assets/redstone_scenarios.json</c> was recorded from a headless vanilla
+/// server by the asset generator's scenario captures (<c>Obsidian.AssetGenerator/ScenarioCaptures.cs</c>,
+/// <c>dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios</c>): the server's game time is frozen and
+/// advanced one tick at a time, and every checkpoint holds the block states of the scenario's box.
 /// </summary>
 /// <remarks>
 /// Each scenario is validated for completeness and known block states, then replayed on the live directional power
@@ -22,7 +23,7 @@ public class VanillaRedstone
 {
     private const string Symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-    /// <summary>The categories the fixture must cover (docs/redstone/01-foundation.md, "Initial fixture coverage").</summary>
+    /// <summary>The categories the fixture must cover.</summary>
     private static readonly string[] RequiredCoverage =
     [
         "source_timing", "dust_attenuation", "repeater_delay", "repeater_lock", "comparator_modes", "observer_pulses",
@@ -31,12 +32,10 @@ public class VanillaRedstone
 
     public static IEnumerable<object[]> ScenarioNames() => Fixture.Shared.Scenarios.Keys.Select(name => new object[] { name });
 
-    // The fixture stays a 1.21.11 capture until Phase 6 of docs/porting-26.3-plan.md re-records it, which then checks
-    // it against ServerConstants.ProtocolDescription again.
     [Fact]
     public void FixtureMeetsItsContract()
     {
-        Assert.Equal("1.21.11", Fixture.Shared.Document.GetProperty("version").GetString());
+        Assert.Equal(ServerConstants.ProtocolDescription, Fixture.Shared.Document.GetProperty("version").GetString());
         var covered = Fixture.Shared.Scenarios.Values
             .SelectMany(scenario => scenario.GetProperty("coverage").EnumerateArray().Select(tag => tag.GetString()!))
             .ToHashSet();
