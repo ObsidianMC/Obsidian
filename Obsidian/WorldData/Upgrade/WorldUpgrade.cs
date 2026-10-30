@@ -36,6 +36,9 @@ internal static partial class WorldUpgrade
 {
     private const string MarkerFile = "obsidian_upgrade_backup.txt";
 
+    // In a backup being copied: the world it's a copy of, so only a copy of that world is taken for one that stopped.
+    private const string StagingFile = "obsidian_upgrade_staging.txt";
+
     private const string SessionLockFile = "session.lock";
 
     private const string Overworld = "minecraft:overworld";
@@ -601,17 +604,30 @@ internal static partial class WorldUpgrade
     {
         var full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder));
         var backup = $"{full}-1.21.11-backup";
-        for (var number = 2; Directory.Exists(backup) || File.Exists(backup); number++)
+        for (var number = 2; Taken(backup) || (Taken($"{backup}.partial") && !IsStaging($"{backup}.partial")); number++)
             backup = $"{full}-1.21.11-backup-{number}";
 
-        // A temporary folder left by a copy that stopped is incomplete.
+        // A temporary folder left by a copy of this world that stopped is incomplete. Anything else of that name was
+        // skipped above, as it isn't the upgrade's to delete.
         var temporary = $"{backup}.partial";
         if (Directory.Exists(temporary))
             Directory.Delete(temporary, recursive: true);
 
+        var staging = Path.Combine(temporary, StagingFile);
+        Directory.CreateDirectory(temporary);
+        File.WriteAllText(staging, full);
         Copy(full, temporary);
+        File.Delete(staging);
         Directory.Move(temporary, backup);
         return backup;
+
+        static bool Taken(string path) => Directory.Exists(path) || File.Exists(path);
+
+        bool IsStaging(string path)
+        {
+            var named = Path.Combine(path, StagingFile);
+            return File.Exists(named) && File.ReadAllText(named).Trim() == full;
+        }
     }
 
     // Puts the world back as the backup has it, but its session lock and the marker.

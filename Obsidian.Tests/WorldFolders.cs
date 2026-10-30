@@ -195,6 +195,36 @@ public sealed class WorldFolders : IDisposable
         Assert.Single(Directory.GetDirectories(this.root, "world-*"));
     }
 
+    [Theory(DisplayName = "A backup's staging folder is reused only when it's a stopped copy of the same world")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task BackupStagingKeepsOtherFolders(bool stoppedCopy)
+    {
+        var folder = Path.Combine(this.root, "world");
+        await WriteObsidianWorldAsync(folder);
+        var original = ReadFiles(folder);
+
+        // A folder at the staging path: a copy of this world that stopped partway, or someone else's world.
+        var staging = $"{folder}-1.21.11-backup.partial";
+        WriteRoot(Path.Combine(staging, "level.dat"), new NbtCompound { new NbtTag<string>("LevelName", "other") });
+        if (stoppedCopy)
+            WriteText(Path.Combine(staging, "obsidian_upgrade_staging.txt"), Path.GetFullPath(folder));
+        var other = ReadFiles(staging);
+
+        await WorldUpgrade.UpgradeAsync(folder, "minecraft:overworld", NullLogger.Instance);
+
+        if (stoppedCopy)
+        {
+            Assert.False(Directory.Exists(staging));
+            Assert.Equal(original, ReadFiles($"{folder}-1.21.11-backup"));
+        }
+        else
+        {
+            Assert.Equal(other, ReadFiles(staging));
+            Assert.Equal(original, ReadFiles($"{folder}-1.21.11-backup-2"));
+        }
+    }
+
     // Obsidian's own layout, as Obsidian for 1.21.11 saved a server's world.
     private static async Task WriteObsidianWorldAsync(string folder)
     {
