@@ -1,0 +1,848 @@
+{
+ "_notes": "Vanilla daylight detector readings, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a headless vanilla server: a detector and an inverted one on a stone floor under open sky in a void world. For each sample the overworld clock is set to it (the n-th sample at a game time of n modulo 20) and the game steps to the next game time that is a multiple of 20, when detectors update. dayTime is the clock's time in that tick, and power and inverted the detectors' power.",
+ "version": "26.3",
+ "samples": [
+  0,
+  200,
+  400,
+  600,
+  800,
+  1000,
+  1200,
+  1400,
+  1600,
+  1800,
+  2000,
+  2200,
+  2400,
+  2600,
+  2800,
+  3000,
+  3200,
+  3400,
+  3600,
+  3800,
+  4000,
+  4200,
+  4400,
+  4600,
+  4800,
+  5000,
+  5200,
+  5400,
+  5600,
+  5800,
+  6000,
+  6200,
+  6400,
+  6600,
+  6800,
+  7000,
+  7200,
+  7400,
+  7600,
+  7800,
+  8000,
+  8200,
+  8400,
+  8600,
+  8800,
+  9000,
+  9200,
+  9400,
+  9600,
+  9800,
+  10000,
+  10200,
+  10400,
+  10600,
+  10800,
+  11000,
+  11200,
+  11400,
+  11600,
+  11800,
+  12000,
+  12200,
+  12400,
+  12600,
+  12800,
+  13000,
+  13200,
+  13400,
+  13600,
+  13800,
+  14000,
+  14200,
+  14400,
+  14600,
+  14800,
+  15000,
+  15200,
+  15400,
+  15600,
+  15800,
+  16000,
+  16200,
+  16400,
+  16600,
+  16800,
+  17000,
+  17200,
+  17400,
+  17600,
+  17800,
+  18000,
+  18200,
+  18400,
+  18600,
+  18800,
+  19000,
+  19200,
+  19400,
+  19600,
+  19800,
+  20000,
+  20200,
+  20400,
+  20600,
+  20800,
+  21000,
+  21200,
+  21400,
+  21600,
+  21800,
+  22000,
+  22200,
+  22400,
+  22600,
+  22800,
+  23000,
+  23200,
+  23400,
+  23600,
+  23800
+ ],
+ "readings": [
+  {
+   "sample": 0,
+   "dayTime": 20,
+   "power": 7,
+   "inverted": 0
+  },
+  {
+   "sample": 200,
+   "dayTime": 219,
+   "power": 8,
+   "inverted": 0
+  },
+  {
+   "sample": 400,
+   "dayTime": 418,
+   "power": 8,
+   "inverted": 0
+  },
+  {
+   "sample": 600,
+   "dayTime": 617,
+   "power": 9,
+   "inverted": 0
+  },
+  {
+   "sample": 800,
+   "dayTime": 816,
+   "power": 9,
+   "inverted": 0
+  },
+  {
+   "sample": 1000,
+   "dayTime": 1015,
+   "power": 10,
+   "inverted": 0
+  },
+  {
+   "sample": 1200,
+   "dayTime": 1214,
+   "power": 10,
+   "inverted": 0
+  },
+  {
+   "sample": 1400,
+   "dayTime": 1413,
+   "power": 11,
+   "inverted": 0
+  },
+  {
+   "sample": 1600,
+   "dayTime": 1612,
+   "power": 11,
+   "inverted": 0
+  },
+  {
+   "sample": 1800,
+   "dayTime": 1811,
+   "power": 11,
+   "inverted": 0
+  },
+  {
+   "sample": 2000,
+   "dayTime": 2010,
+   "power": 12,
+   "inverted": 0
+  },
+  {
+   "sample": 2200,
+   "dayTime": 2209,
+   "power": 12,
+   "inverted": 0
+  },
+  {
+   "sample": 2400,
+   "dayTime": 2408,
+   "power": 12,
+   "inverted": 0
+  },
+  {
+   "sample": 2600,
+   "dayTime": 2607,
+   "power": 13,
+   "inverted": 0
+  },
+  {
+   "sample": 2800,
+   "dayTime": 2806,
+   "power": 13,
+   "inverted": 0
+  },
+  {
+   "sample": 3000,
+   "dayTime": 3005,
+   "power": 13,
+   "inverted": 0
+  },
+  {
+   "sample": 3200,
+   "dayTime": 3204,
+   "power": 14,
+   "inverted": 0
+  },
+  {
+   "sample": 3400,
+   "dayTime": 3403,
+   "power": 14,
+   "inverted": 0
+  },
+  {
+   "sample": 3600,
+   "dayTime": 3602,
+   "power": 14,
+   "inverted": 0
+  },
+  {
+   "sample": 3800,
+   "dayTime": 3801,
+   "power": 14,
+   "inverted": 0
+  },
+  {
+   "sample": 4000,
+   "dayTime": 4020,
+   "power": 14,
+   "inverted": 0
+  },
+  {
+   "sample": 4200,
+   "dayTime": 4219,
+   "power": 14,
+   "inverted": 0
+  },
+  {
+   "sample": 4400,
+   "dayTime": 4418,
+   "power": 15,
+   "inverted": 0
+  },
+  {
+   "sample": 4600,
+   "dayTime": 4617,
+   "power": 15,
+   "inverted": 0
+  },
+  {
+   "sample": 4800,
+   "dayTime": 4816,
+   "power": 15,
+   "inverted": 0
+  },
+  {
+   "sample": 5000,
+   "dayTime": 5015,
+   "power": 15,
+   "inverted": 0
+  },
+  {
+   "sample": 5200,
+   "dayTime": 5214,
+   "power": 15,
+   "inverted": 0
+  },
+  {
+   "sample": 5400,
+   "dayTime": 5413,
+   "power": 15,
+   "inverted": 0
+  },
+  {
+   "sample": 5600,
+   "dayTime": 5612,
+   "power": 15,
+   "inverted": 0
+  },
+  {
+   "sample": 5800,
+   "dayTime": 5811,
+   "power": 15,
+   "inverted": 0
+  },
+  {
+   "sample": 6000,
+   "dayTime": 6010,
+   "power": 15,
+   "inverted": 0
+  },
+  {
+   "sample": 6200,
+   "dayTime": 6209,
+   "power": 15,
+   "inverted": 0
+  },
+  {
+   "sample": 6400,
+   "dayTime": 6408,
+   "power": 15,
+   "inverted": 0
+  },
+  {
+   "sample": 6600,
+   "dayTime": 6607,
+   "power": 15,
+   "inverted": 0
+  },
+  {
+   "sample": 6800,
+   "dayTime": 6806,
+   "power": 15,
+   "inverted": 0
+  },
+  {
+   "sample": 7000,
+   "dayTime": 7005,
+   "power": 15,
+   "inverted": 0
+  },
+  {
+   "sample": 7200,
+   "dayTime": 7204,
+   "power": 15,
+   "inverted": 0
+  },
+  {
+   "sample": 7400,
+   "dayTime": 7403,
+   "power": 15,
+   "inverted": 0
+  },
+  {
+   "sample": 7600,
+   "dayTime": 7602,
+   "power": 15,
+   "inverted": 0
+  },
+  {
+   "sample": 7800,
+   "dayTime": 7801,
+   "power": 14,
+   "inverted": 0
+  },
+  {
+   "sample": 8000,
+   "dayTime": 8020,
+   "power": 14,
+   "inverted": 0
+  },
+  {
+   "sample": 8200,
+   "dayTime": 8219,
+   "power": 14,
+   "inverted": 0
+  },
+  {
+   "sample": 8400,
+   "dayTime": 8418,
+   "power": 14,
+   "inverted": 0
+  },
+  {
+   "sample": 8600,
+   "dayTime": 8617,
+   "power": 14,
+   "inverted": 0
+  },
+  {
+   "sample": 8800,
+   "dayTime": 8816,
+   "power": 14,
+   "inverted": 0
+  },
+  {
+   "sample": 9000,
+   "dayTime": 9015,
+   "power": 13,
+   "inverted": 0
+  },
+  {
+   "sample": 9200,
+   "dayTime": 9214,
+   "power": 13,
+   "inverted": 0
+  },
+  {
+   "sample": 9400,
+   "dayTime": 9413,
+   "power": 13,
+   "inverted": 0
+  },
+  {
+   "sample": 9600,
+   "dayTime": 9612,
+   "power": 12,
+   "inverted": 0
+  },
+  {
+   "sample": 9800,
+   "dayTime": 9811,
+   "power": 12,
+   "inverted": 0
+  },
+  {
+   "sample": 10000,
+   "dayTime": 10010,
+   "power": 12,
+   "inverted": 0
+  },
+  {
+   "sample": 10200,
+   "dayTime": 10209,
+   "power": 11,
+   "inverted": 0
+  },
+  {
+   "sample": 10400,
+   "dayTime": 10408,
+   "power": 11,
+   "inverted": 0
+  },
+  {
+   "sample": 10600,
+   "dayTime": 10607,
+   "power": 11,
+   "inverted": 0
+  },
+  {
+   "sample": 10800,
+   "dayTime": 10806,
+   "power": 10,
+   "inverted": 0
+  },
+  {
+   "sample": 11000,
+   "dayTime": 11005,
+   "power": 10,
+   "inverted": 0
+  },
+  {
+   "sample": 11200,
+   "dayTime": 11204,
+   "power": 9,
+   "inverted": 0
+  },
+  {
+   "sample": 11400,
+   "dayTime": 11403,
+   "power": 9,
+   "inverted": 0
+  },
+  {
+   "sample": 11600,
+   "dayTime": 11602,
+   "power": 8,
+   "inverted": 0
+  },
+  {
+   "sample": 11800,
+   "dayTime": 11801,
+   "power": 8,
+   "inverted": 0
+  },
+  {
+   "sample": 12000,
+   "dayTime": 12020,
+   "power": 7,
+   "inverted": 0
+  },
+  {
+   "sample": 12200,
+   "dayTime": 12219,
+   "power": 6,
+   "inverted": 2
+  },
+  {
+   "sample": 12400,
+   "dayTime": 12418,
+   "power": 5,
+   "inverted": 3
+  },
+  {
+   "sample": 12600,
+   "dayTime": 12617,
+   "power": 4,
+   "inverted": 4
+  },
+  {
+   "sample": 12800,
+   "dayTime": 12816,
+   "power": 3,
+   "inverted": 5
+  },
+  {
+   "sample": 13000,
+   "dayTime": 13015,
+   "power": 2,
+   "inverted": 7
+  },
+  {
+   "sample": 13200,
+   "dayTime": 13214,
+   "power": 2,
+   "inverted": 8
+  },
+  {
+   "sample": 13400,
+   "dayTime": 13413,
+   "power": 1,
+   "inverted": 9
+  },
+  {
+   "sample": 13600,
+   "dayTime": 13612,
+   "power": 1,
+   "inverted": 10
+  },
+  {
+   "sample": 13800,
+   "dayTime": 13811,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 14000,
+   "dayTime": 14010,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 14200,
+   "dayTime": 14209,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 14400,
+   "dayTime": 14408,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 14600,
+   "dayTime": 14607,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 14800,
+   "dayTime": 14806,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 15000,
+   "dayTime": 15005,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 15200,
+   "dayTime": 15204,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 15400,
+   "dayTime": 15403,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 15600,
+   "dayTime": 15602,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 15800,
+   "dayTime": 15801,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 16000,
+   "dayTime": 16020,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 16200,
+   "dayTime": 16219,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 16400,
+   "dayTime": 16418,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 16600,
+   "dayTime": 16617,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 16800,
+   "dayTime": 16816,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 17000,
+   "dayTime": 17015,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 17200,
+   "dayTime": 17214,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 17400,
+   "dayTime": 17413,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 17600,
+   "dayTime": 17612,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 17800,
+   "dayTime": 17811,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 18000,
+   "dayTime": 18010,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 18200,
+   "dayTime": 18209,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 18400,
+   "dayTime": 18408,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 18600,
+   "dayTime": 18607,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 18800,
+   "dayTime": 18806,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 19000,
+   "dayTime": 19005,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 19200,
+   "dayTime": 19204,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 19400,
+   "dayTime": 19403,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 19600,
+   "dayTime": 19602,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 19800,
+   "dayTime": 19801,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 20000,
+   "dayTime": 20020,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 20200,
+   "dayTime": 20219,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 20400,
+   "dayTime": 20418,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 20600,
+   "dayTime": 20617,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 20800,
+   "dayTime": 20816,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 21000,
+   "dayTime": 21015,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 21200,
+   "dayTime": 21214,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 21400,
+   "dayTime": 21413,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 21600,
+   "dayTime": 21612,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 21800,
+   "dayTime": 21811,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 22000,
+   "dayTime": 22010,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 22200,
+   "dayTime": 22209,
+   "power": 0,
+   "inverted": 11
+  },
+  {
+   "sample": 22400,
+   "dayTime": 22408,
+   "power": 1,
+   "inverted": 10
+  },
+  {
+   "sample": 22600,
+   "dayTime": 22607,
+   "power": 1,
+   "inverted": 9
+  },
+  {
+   "sample": 22800,
+   "dayTime": 22806,
+   "power": 2,
+   "inverted": 8
+  },
+  {
+   "sample": 23000,
+   "dayTime": 23005,
+   "power": 2,
+   "inverted": 6
+  },
+  {
+   "sample": 23200,
+   "dayTime": 23204,
+   "power": 3,
+   "inverted": 5
+  },
+  {
+   "sample": 23400,
+   "dayTime": 23403,
+   "power": 4,
+   "inverted": 4
+  },
+  {
+   "sample": 23600,
+   "dayTime": 23602,
+   "power": 5,
+   "inverted": 3
+  },
+  {
+   "sample": 23800,
+   "dayTime": 23801,
+   "power": 6,
+   "inverted": 2
+  }
+ ]
+}

@@ -14,14 +14,20 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Fluid parity: small worlds run through Obsidian's fluid ticks are compared with vanilla 1.21.11 running the same
-/// scenarios with its own fluid code (<c>Assets/fluid_scenarios.json</c>, written by mcdecomp's harness
-/// <c>FluidDump.java</c>). The checkpoints catch differences in spreading, slope finding, decay, source conversion,
-/// lava and water interactions, waterlogged blocks and tick timing.
+/// Fluid parity: small worlds run through Obsidian's fluid ticks are compared with a headless vanilla server running
+/// the same scenarios in a void world (<c>Assets/fluid_scenarios.json</c>, recorded by the asset generator's scenario
+/// captures, see docs/scenario-captures.md). The checkpoints catch differences in spreading, slope finding, decay,
+/// source conversion, lava and water interactions, waterlogged blocks and tick timing.
 /// </summary>
 public class VanillaFluids(VanillaFluids.ScenarioFixture fixture) : IClassFixture<VanillaFluids.ScenarioFixture>
 {
     private const string Symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    [Fact]
+    public void FixtureIsFromTheImplementedVersion()
+    {
+        Assert.Equal(ServerConstants.ProtocolDescription, fixture.Version);
+    }
 
     [Theory]
     [InlineData("water_flat")]
@@ -132,15 +138,19 @@ public class VanillaFluids(VanillaFluids.ScenarioFixture fixture) : IClassFixtur
         {
             using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Obsidian.Tests.Assets.fluid_scenarios.json")!;
             using var document = JsonDocument.Parse(stream);
+            this.Version = document.RootElement.GetProperty("version").GetString()!;
             this.Scenarios = document.RootElement.GetProperty("scenarios").EnumerateArray()
                 .ToDictionary(scenario => scenario.GetProperty("name").GetString()!, scenario => scenario.Clone());
         }
+
+        public string Version { get; }
 
         public IReadOnlyDictionary<string, JsonElement> Scenarios { get; }
     }
 
     /// <summary>
-    /// An empty world like the harness's: chunks from Y 0 to 31 created on first use, every chunk ticking.
+    /// An empty world: chunks from Y 0 to 31 created on first use, every chunk ticking. The scenarios keep within those
+    /// heights, and vanilla's void world holds nothing but their blocks either.
     /// </summary>
     private sealed class ScenarioWorld : IFluidLevelAccess
     {

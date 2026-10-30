@@ -33,18 +33,18 @@ public sealed class Progress
     [Fact]
     public async Task StatisticsReplayVanillaSaveAndAwardPacket()
     {
-        var reference = JsonNode.Parse(Read("progress-stats.json"))!.AsObject();
+        using var captures = PlayPayloads.ReadFixture();
+        var reference = JsonNode.Parse(captures.RootElement.GetProperty("progress_stats").GetRawText())!.AsObject();
         var statistics = new PlayerStatistics();
         statistics.Load(reference);
         Assert.Equal(1200, statistics.Get("minecraft:play_time"));
         Assert.Equal(2, statistics.Get("minecraft:jump"));
-        // The capture is a 1.21.11 save; a save stamps the current data version.
-        var expected = reference.DeepClone().AsObject();
-        expected["DataVersion"] = ServerConstants.DataVersion;
-        Assert.True(JsonNode.DeepEquals(expected, statistics.Save()));
+        Assert.True(JsonNode.DeepEquals(reference, statistics.Save()));
+
         var bytes = new NetworkBuffer();
         statistics.CreatePacket().Serialize(bytes);
-        Assert.Equal(Read("progress-stats.bin"), bytes.AsSpan(0, bytes.Size).ToArray());
+        var awardStats = Convert.FromHexString(captures.RootElement.GetProperty("progress_award_stats").GetString()!);
+        Assert.Equal(awardStats, bytes.AsSpan(0, bytes.Size).ToArray());
 
         reference["stats"]!["missing:type"] = new JsonObject { ["missing:stat"] = 37 };
         statistics.Load(reference);
@@ -193,10 +193,12 @@ public sealed class Progress
         try
         {
             AdvancementsRegistry.Apply([definition, inventory, unsupported]);
+            using var protocol = PlayPayloads.ReadFixture();
+            var progress = protocol.RootElement.GetProperty("progress_advancement");
             var saved = new JsonObject
             {
-                ["probe:progress"] = JsonNode.Parse(Read("progress-advancement.json")),
-                ["DataVersion"] = 4671
+                ["probe:progress"] = JsonNode.Parse(progress.GetRawText()),
+                ["DataVersion"] = ServerConstants.DataVersion
             };
             player.ProgressAdvancements.Load(saved);
             Assert.True(player.Advancements.HasCriterion("probe:progress", "first"));
@@ -210,7 +212,6 @@ public sealed class Progress
             };
             var bytes = new NetworkBuffer();
             packet.Serialize(bytes);
-            using var protocol = PlayPayloads.ReadFixture();
             Assert.Equal(Convert.FromHexString(protocol.RootElement.GetProperty("progress_advancements").GetString()!),
                 bytes.AsSpan(0, bytes.Size).ToArray());
             Assert.True(await player.Advancements.GrantAsync("probe:progress", "second"));
@@ -338,13 +339,5 @@ public sealed class Progress
         player.Statistics.Increment("probe:steps");
         Assert.Equal(5, player.Statistics.Get("probe:steps"));
         await manager.UnloadPluginAsync(container);
-    }
-
-    private static byte[] Read(string name)
-    {
-        using var stream = typeof(Progress).Assembly.GetManifestResourceStream($"Obsidian.Tests.Assets.{name}")!;
-        using var buffer = new MemoryStream();
-        stream.CopyTo(buffer);
-        return buffer.ToArray();
     }
 }

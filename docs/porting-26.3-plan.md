@@ -408,7 +408,9 @@ pistons.
    [known gaps](known-gaps.md#263-commands) for remaining provider contexts, NBT paths, inventory sources and older
    command branches.
 5. **Server defaults — implemented:** whitelist on by default, and separate chat and command spam thresholds.
-6. **Fixtures.** Re-capture the fluid, redstone, progress and daylight-detector fixtures, and fix what drifted.
+6. **Fixtures — complete.** The redstone, fluid and daylight detector scenarios are recorded on a headless 26.3
+   server by the asset generator's scenario captures ([scenario captures](scenario-captures.md)), and the progress
+   saves and award packet by `RemainingPlayFixtures.java`. Nothing drifted from 1.21.11.
 7. **Hand-written tables.** Re-check those that mirror vanilla data: `BlockSoundPlayback`, `FluidRules`,
    `ShapeSupport`, `StructureBlockShapes`, placement rules, `EnvironmentAttributes`, `JukeboxSongsRegistry` and
    `BannerPatternsRegistry`. Where we can, generate them.

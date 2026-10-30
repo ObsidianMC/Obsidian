@@ -6,6 +6,8 @@ using System.Diagnostics;
 //            <assets directory>
 //        Obsidian.AssetGenerator capture-worldgen <minecraft version> <cache directory> <scratch directory>
 //            <fixture directory> [--sections <patterns>] [--cases <patterns>]
+//        Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory> <scratch directory>
+//            <test assets directory> [redstone+fluids+daylight]
 //
 // Downloads the vanilla server jar of the version, runs its data generators and the Java dumper against it, and writes
 // the assets the source generators and the server read into the assets directory (replacing what's there). The worldgen
@@ -15,6 +17,9 @@ using System.Diagnostics;
 //
 // capture-worldgen instead re-records the vanilla worldgen references in the fixture directory (in place) with the
 // version's server, or only the sections and cases the patterns select; see docs/vanilla-captures.md.
+//
+// capture-scenarios re-records the redstone, fluid and daylight detector scenarios in the test assets directory (in
+// place) on a headless server of the version, or only the '+'-separated fixtures given; see ScenarioCaptures.
 var timer = Stopwatch.StartNew();
 using var httpClient = new HttpClient();
 
@@ -31,6 +36,20 @@ if (args is ["capture-worldgen", var captureVersion, var captureCache, var captu
     return 0;
 }
 
+if (args is ["capture-scenarios", var scenarioVersion, var scenarioCache, var scenarioScratch, var testAssets,
+    .. var fixtureNames])
+{
+    var fixtures = fixtureNames is [var names] ? names.Split('+') : ScenarioCaptures.All;
+    var vanilla = await VanillaServer.PrepareAsync(httpClient, scenarioVersion,
+        Path.Combine(Path.GetFullPath(scenarioCache), scenarioVersion),
+        Path.Combine(Path.GetFullPath(scenarioScratch), scenarioVersion));
+    await ScenarioCaptures.RunAsync(vanilla, Path.GetFullPath(testAssets), fixtures);
+
+    var seconds = timer.Elapsed.TotalSeconds;
+    Console.WriteLine($"Captured the {scenarioVersion} scenarios ({string.Join(", ", fixtures)}) in {seconds:0.0}s.");
+    return 0;
+}
+
 if (args.Length != 5)
 {
     Console.Error.WriteLine("Usage: Obsidian.AssetGenerator <minecraft version> <legacy version> <cache directory>");
@@ -38,6 +57,8 @@ if (args.Length != 5)
     Console.Error.WriteLine("       Obsidian.AssetGenerator capture-worldgen <minecraft version> <cache directory>");
     Console.Error.WriteLine("           <scratch directory> <fixture directory>");
     Console.Error.WriteLine("           [--sections <patterns>] [--cases <patterns>]");
+    Console.Error.WriteLine("       Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory>");
+    Console.Error.WriteLine("           <scratch directory> <test assets directory> [redstone+fluids+daylight]");
     return 1;
 }
 

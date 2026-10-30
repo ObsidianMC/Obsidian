@@ -106,12 +106,27 @@ internal sealed record VanillaServer(
     /// </summary>
     public void CopyVersionInfo(string path)
     {
-        // The bundler lists the server jar first, before its libraries.
-        using var serverJar = ZipFile.OpenRead(ClassPath[0]);
-        var entry = serverJar.GetEntry("version.json")
-            ?? throw new InvalidDataException($"{ClassPath[0]} has no version.json.");
-        entry.ExtractToFile(path);
+        using var serverJar = this.OpenServerJar();
+        VersionInfo(serverJar).ExtractToFile(path);
     }
+
+    /// <summary>The version's data pack format: <c>pack_version.data_major</c> in its <c>version.json</c>.</summary>
+    public int DataPackFormat
+    {
+        get
+        {
+            using var serverJar = this.OpenServerJar();
+            using var stream = VersionInfo(serverJar).Open();
+            using var info = JsonDocument.Parse(stream);
+            return info.RootElement.GetProperty("pack_version").GetProperty("data_major").GetInt32();
+        }
+    }
+
+    // The bundler lists the server jar first, before its libraries.
+    private ZipArchive OpenServerJar() => ZipFile.OpenRead(ClassPath[0]);
+
+    private ZipArchiveEntry VersionInfo(ZipArchive serverJar) =>
+        serverJar.GetEntry("version.json") ?? throw new InvalidDataException($"{ClassPath[0]} has no version.json.");
 
     /// <summary>Runs <c>java</c> (from <c>JAVA_HOME</c> when set) in <paramref name="workingDirectory"/>.</summary>
     public static Task RunJavaAsync(string workingDirectory, params string[] arguments) =>
@@ -139,7 +154,7 @@ internal sealed record VanillaServer(
             throw new InvalidOperationException($"java {string.Join(' ', arguments)} exited with code {process.ExitCode}.");
     }
 
-    private static string JavaPath
+    public static string JavaPath
     {
         get
         {
