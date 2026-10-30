@@ -155,8 +155,8 @@ public final class TradeFixtures {
     // Gives an allocated villager synced data holding only its villager data, all that the merchant predicates'
     // villager/variant component reads (Villager.get).
     @SuppressWarnings("unchecked")
-    private static void setVillagerData(Villager villager, VillagerData data) throws Exception {
-        var accessorField = Villager.class.getDeclaredField("DATA_VILLAGER_DATA");
+    private static void setVillagerData(net.minecraft.world.entity.Entity villager, VillagerData data) throws Exception {
+        var accessorField = villager.getClass().getDeclaredField("DATA_VILLAGER_DATA");
         accessorField.setAccessible(true);
         var accessor = (EntityDataAccessor<VillagerData>) accessorField.get(null);
 
@@ -269,10 +269,36 @@ public final class TradeFixtures {
         row.add("predicate", predicate);
         row.addProperty("result", condition.test(merchantContext(merchant, net.minecraft.util.RandomSource.create(0))));
         rows.add(row);
+        var profession = access.lookupOrThrow(Registries.VILLAGER_PROFESSION)
+            .getOrThrow(ResourceKey.create(Registries.VILLAGER_PROFESSION,
+                Identifier.withDefaultNamespace("armorer")));
+        var type = access.lookupOrThrow(Registries.VILLAGER_TYPE)
+            .getOrThrow(ResourceKey.create(Registries.VILLAGER_TYPE, Identifier.withDefaultNamespace("plains")));
+        for (var entityType : List.of("villager", "zombie_villager")) {
+            var entityClass = entityType.equals("villager") ? Villager.class
+                : net.minecraft.world.entity.monster.zombie.ZombieVillager.class;
+            var entity = (net.minecraft.world.entity.Entity) allocate(entityClass);
+            setVillagerData(entity, new VillagerData(type, profession, 1));
+            for (var variants : List.of("\"minecraft:plains\"", "\"minecraft:desert\"",
+                "[\"minecraft:desert\",\"minecraft:plains\"]")) {
+                var value = JsonParser.parseString("""
+                    {"type":"minecraft:entity_properties","entity":"this","predicate":{
+                      "minecraft:predicates":{"minecraft:villager/variant":%s}}}
+                    """.formatted(variants));
+                var check = net.minecraft.world.level.storage.loot.predicates.LootItemCondition.DIRECT_CODEC
+                    .parse(ops, value).getOrThrow();
+                var sample = new JsonObject();
+                sample.addProperty("entityType", entityType);
+                sample.add("predicate", value);
+                sample.addProperty("result", check.test(merchantContext(entity,
+                    net.minecraft.util.RandomSource.create(0))));
+                rows.add(sample);
+            }
+        }
         return rows;
     }
 
-    private static LootContext merchantContext(AbstractVillager merchant, net.minecraft.util.RandomSource random) {
+    private static LootContext merchantContext(net.minecraft.world.entity.Entity merchant, net.minecraft.util.RandomSource random) {
         var parameters = new HashMap<ContextKey<?>, Object>();
         parameters.put(LootContextParams.THIS_ENTITY, merchant);
         parameters.put(LootContextParams.ADDITIONAL_COST_COMPONENT_ALLOWED, Unit.INSTANCE);

@@ -56,20 +56,11 @@ internal static class VillagerTrades
                 Origin = merchant.Position,
                 ThisEntity = merchant,
                 AdditionalCostComponentAllowed = true,
-                EntityVillagerVariant = VillagerVariant,
+                EntityVillagerVariant = LootEntityComponents.VillagerVariant,
                 ExplorationMaps = explorationMaps
             };
             tradeSet.AddOffers(context, offers);
         }
-    }
-
-    private static string? VillagerVariant(IEntity entity)
-    {
-        if (entity is not Villager villager)
-            return null;
-
-        var type = Villager.BiomeTypes[Math.Clamp(villager.VillagerType, 0, Villager.BiomeTypes.Length - 1)];
-        return "minecraft:" + type;
     }
 
     private static FrozenDictionary<string, TradeSet> Load()

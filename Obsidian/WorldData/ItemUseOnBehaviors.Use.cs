@@ -127,6 +127,7 @@ internal static partial class ItemUseOnBehaviors
         var random = BlockLoot.SequencesFor(level).Get(table.RandomSequence ?? identifier);
         var context = new LootContext
         {
+            EntityVillagerVariant = LootEntityComponents.VillagerVariant,
             Random = random,
             Tool = stack,
             ThisEntity = player,

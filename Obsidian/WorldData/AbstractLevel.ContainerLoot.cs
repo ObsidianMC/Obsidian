@@ -57,6 +57,7 @@ public abstract partial class AbstractLevel
                 {
                     table.Fill(staged, new LootContext
                     {
+                        EntityVillagerVariant = LootEntityComponents.VillagerVariant,
                         Random = random,
                         Origin = new VectorD(position.X + 0.5, position.Y + 0.5, position.Z + 0.5),
                         ThisEntity = opener,
@@ -123,6 +124,7 @@ public abstract partial class AbstractLevel
         {
             table.Fill(staged, new LootContext
             {
+                EntityVillagerVariant = LootEntityComponents.VillagerVariant,
                 Random = random,
                 Origin = origin,
                 ThisEntity = opener,

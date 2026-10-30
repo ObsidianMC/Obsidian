@@ -462,6 +462,7 @@ public sealed partial class FishingHook : Entity
 
         var context = new LootContext
         {
+            EntityVillagerVariant = LootEntityComponents.VillagerVariant,
             Random = table.CreateRandom(0, BlockLoot.SequencesFor(level)),
             Luck = this.luck + (float)player.GetAttributeValue("minecraft:luck"),
             Origin = this.Position,
