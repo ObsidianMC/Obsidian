@@ -198,6 +198,13 @@ internal sealed partial class FeatureRegistry(WorldgenData data)
             "minecraft:huge_red_mushroom" => this.HugeMushroom(json, red: true),
             "minecraft:huge_brown_mushroom" => this.HugeMushroom(json, red: false),
             "minecraft:huge_fungus" => this.HugeFungus(json),
+            "minecraft:end_podium" => EndPodium(json),
+            "minecraft:fossil" => this.Fossil(json),
+            "minecraft:geode" => this.Geode(json),
+            "minecraft:iceberg" => Iceberg(json),
+            "minecraft:large_dripstone" => this.LargeDripstone(json),
+            "minecraft:sculk_patch" => this.SculkPatch(json),
+            "minecraft:underwater_magma" => UnderwaterMagma(json),
             _ => throw new NotSupportedException($"The 26.3 feature {type} isn't implemented yet.")
         };
     }
