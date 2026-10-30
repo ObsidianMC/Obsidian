@@ -271,10 +271,13 @@ public static partial class LootTableJson
 
                     break;
                 case "minecraft:predicates":
-                    var variant = context.EntityVillagerVariant?.Invoke(entity);
-                    var variants = property.Value.GetProperty("minecraft:villager/variant");
-                    if (variant is null || !MatchesIdentifiers(variants, variant))
-                        return false;
+                    // Vanilla requires every supplied component predicate; an empty map has no requirements.
+                    foreach (var component in property.Value.EnumerateObject())
+                    {
+                        var variant = context.EntityVillagerVariant?.Invoke(entity);
+                        if (variant is null || !MatchesIdentifiers(component.Value, variant))
+                            return false;
+                    }
 
                     break;
                 case "minecraft:equipment":

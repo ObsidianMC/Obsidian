@@ -92,6 +92,8 @@ public final class TradeFixtures {
         captureSavedVillager(Path.of(arguments[0]).resolveSibling("villager-saved-26.3.nbt"));
         Files.writeString(Path.of(arguments[0]).resolveSibling("merchant-transition-26.3.json"),
             new GsonBuilder().setPrettyPrinting().create().toJson(captureTransition()) + "\n");
+        Files.writeString(Path.of(arguments[0]).resolveSibling("merchant-predicates-26.3.json"),
+            new GsonBuilder().setPrettyPrinting().create().toJson(capturePredicates()) + "\n");
     }
 
     // The built-in registries and the vanilla pack's data pack registries, with their tags, as a server loads them.
@@ -253,6 +255,34 @@ public final class TradeFixtures {
             HolderSet.class, int.class);
         draw.setAccessible(true);
         draw.invoke(null, context, offers, tradeSet.trades(), amount);
+    }
+
+    private static JsonArray capturePredicates() throws Exception {
+        var rows = new JsonArray();
+        var predicate = JsonParser.parseString("""
+            {"type":"minecraft:entity_properties","entity":"this","predicate":{"minecraft:predicates":{}}}
+            """);
+        var condition = net.minecraft.world.level.storage.loot.predicates.LootItemCondition.DIRECT_CODEC
+            .parse(ops, predicate).getOrThrow();
+        var merchant = (Villager) allocate(Villager.class);
+        var row = new JsonObject();
+        row.add("predicate", predicate);
+        row.addProperty("result", condition.test(merchantContext(merchant, net.minecraft.util.RandomSource.create(0))));
+        rows.add(row);
+        return rows;
+    }
+
+    private static LootContext merchantContext(AbstractVillager merchant, net.minecraft.util.RandomSource random) {
+        var parameters = new HashMap<ContextKey<?>, Object>();
+        parameters.put(LootContextParams.THIS_ENTITY, merchant);
+        parameters.put(LootContextParams.ADDITIONAL_COST_COMPONENT_ALLOWED, Unit.INSTANCE);
+        var map = Vanilla.create(Vanilla.constructor("net.minecraft.util.context.ContextMap", "java.util.Map"),
+            parameters);
+        var params = new LootParams(level, (ContextMap) map, Map.of(), 0);
+        var constructor = Vanilla.constructor("net.minecraft.world.level.storage.loot.LootContext",
+            "net.minecraft.world.level.storage.loot.LootParams", "net.minecraft.util.RandomSource",
+            "net.minecraft.core.HolderGetter$Provider");
+        return (LootContext) Vanilla.create(constructor, params, random, access);
     }
 
     private static JsonObject captureTransition() throws Exception {

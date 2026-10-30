@@ -81,6 +81,25 @@ public sealed class VillagerTrades
         Assert.Equal(offers.Select(Progress), restored.Select(Progress));
     }
 
+    [Fact]
+    public void EmptyEntityComponentPredicatesMatchVanilla()
+    {
+        using var stream = typeof(Server).Assembly.GetManifestResourceStream(
+            "Obsidian.Assets.merchant-predicates-26.3.json")!;
+        using var captured = JsonDocument.Parse(stream);
+        var row = captured.RootElement[0];
+        var condition = LootTableJson.ReadCondition(row.GetProperty("predicate"));
+        var context = new LootContext
+        {
+            Random = new Obsidian.API.World.Generator.RandomSources.LegacyRandomSource(0),
+            ThisEntity = new Villager { Level = null! }
+        };
+
+        var matches = condition.Test(context);
+
+        Assert.Equal(row.GetProperty("result").GetBoolean(), matches);
+    }
+
     [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task LevelUpDrawsAndSendsOffersBeforeAnotherMerchantUsesTheSequence()
     {
