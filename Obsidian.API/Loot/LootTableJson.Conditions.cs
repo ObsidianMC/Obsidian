@@ -1,4 +1,4 @@
-using Obsidian.API.Inventory;
+﻿using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Data;
 using Obsidian.API.Loot.Conditions;
@@ -185,7 +185,7 @@ public static partial class LootTableJson
     private static ILootCondition EntityPredicate(JsonElement json)
     {
         var target = Text(json, "entity");
-        if (target is not ("this" or "attacker" or "direct_attacker" or "attacking_player"))
+        if (target is not ("this" or "attacker" or "direct_attacker" or "attacking_player" or "target_entity"))
             throw new InvalidDataException($"Unsupported entity target {target}.");
 
         var predicate = json.GetProperty("predicate");
@@ -195,6 +195,7 @@ public static partial class LootTableJson
             "this" => context.ThisEntity,
             "attacker" => context.AttackingEntity,
             "direct_attacker" => context.DirectAttackingEntity,
+            "target_entity" => context.TargetEntity,
             _ => context.LastDamagePlayer
         }, predicate, context));
     }

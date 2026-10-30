@@ -69,6 +69,31 @@ public sealed class VanillaCommands26
     }
 
     [Theory]
+    [InlineData("this", "player", 1)]
+    [InlineData("this", "zombie", 0)]
+    [InlineData("target_entity", "zombie", 1)]
+    [InlineData("target_entity", "player", 0)]
+    public async Task ComputeEntityContextsKeepTheExecutorAndTheTargetApart(string target, string type, int expected)
+    {
+        await using var server = TestServerFactory.CreateServer($"compute-entity-{Guid.NewGuid():N}");
+        var handler = (CommandHandler)server.Server.CommandHandler;
+        handler.RegisterCommandClass<ComputeCommandModule>(null);
+        WorldBlockEntities.AddEmptyChunk(server.World);
+        var player = AddFixturePlayer(server);
+        var zombie = server.World.SpawnEntity(new VectorD(0.5, 64, 0.5), EntityType.Zombie);
+        var condition = $"{{type:'entity_properties',entity:'{target}',predicate:{{entity_type:'{type}'}}}}";
+        var provider = $"{{type:'conditional',condition:{condition},on_true:1,on_false:0}}";
+        var command = $"/compute entity {zombie.Uuid} integer {provider}";
+        var context = new CommandContext(command, new CommandSender(CommandIssuers.Console, null), player,
+            server.Server);
+
+        await handler.ProcessCommand(context);
+
+        Assert.True(context.Succeeded);
+        Assert.Equal(expected, context.Result);
+    }
+
+    [Theory]
     [MemberData(nameof(TimeCases))]
     public async Task ClockResultsAndFailuresMatchVanilla(string name, string json)
     {

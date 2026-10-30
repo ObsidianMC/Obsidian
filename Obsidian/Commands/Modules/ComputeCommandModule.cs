@@ -1,4 +1,4 @@
-using Obsidian.Commands.Framework;
+﻿using Obsidian.Commands.Framework;
 using Obsidian.API.Commands;
 using Obsidian.API.Data;
 using Obsidian.API.Loot;
@@ -79,7 +79,9 @@ public sealed class ComputeCommandModule : CommandModuleBase
         var source = input.Read();
         var level = CommandFeedback.LevelOf(context);
         IBlock? block = null;
-        IEntity? entity = context.Executor;
+
+        // Vanilla keeps the executor as this_entity and passes the selected entity separately as target_entity.
+        IEntity? target = null;
         var origin = CommandFeedback.OriginOf(context);
         switch (source)
         {
@@ -97,7 +99,7 @@ public sealed class ComputeCommandModule : CommandModuleBase
                 if (!EntitySelector.TryParse(input.Read(), out var selector) || !selector.Single)
                     throw new FormatException("Expected a single entity");
 
-                entity = selector.Select(context).SingleOrDefault()
+                target = selector.Select(context).SingleOrDefault()
                     ?? throw new FormatException("No entity was found");
                 break;
 
@@ -112,7 +114,8 @@ public sealed class ComputeCommandModule : CommandModuleBase
         {
             Random = new SystemRandomSource(Globals.Random),
             Origin = origin,
-            ThisEntity = entity,
+            ThisEntity = context.Executor,
+            TargetEntity = target,
             BlockState = block,
             BlockProperties = block?.GetProperties() ?? ImmutableDictionary<string, string>.Empty
         };
@@ -125,7 +128,7 @@ public sealed class ComputeCommandModule : CommandModuleBase
             FloatEnvironmentAttribute = _ => throw new FormatException("Numeric environment sampling is not implemented"),
             IntStorage = (id, path) => StorageInt(context.Server, id, path),
             FloatStorage = (id, path) => StorageFloat(context.Server, id, path),
-            Score = (target, objective) => Score(context, entity, target, objective)
+            Score = (holder, objective) => Score(context, loot, holder, objective)
         };
     }
 
@@ -165,18 +168,42 @@ public sealed class ComputeCommandModule : CommandModuleBase
         return value < truncated ? unchecked(truncated - 1) : truncated;
     }
 
-    private static int? Score(CommandContext context, IEntity? entity, JsonElement target, string objectiveName)
+    private static int? Score(CommandContext context, LootContext loot, JsonElement target, string objectiveName)
     {
         if (context.Server is not Server server)
             return null;
 
-        string? holder = null;
-        if (target.ValueKind == JsonValueKind.String && target.GetString() == "this" && entity is not null)
-            holder = ScoreHolderArgument.NameOf(entity);
-        else if (target.ValueKind == JsonValueKind.Object && target.TryGetProperty("name", out var name))
-            holder = name.GetString();
-
+        var holder = ScoreHolder(loot, target);
         var objective = server.CommandScoreboard.Find(objectiveName);
-        return holder is null || objective is null ? null : server.CommandScoreboard.GetScore(holder, objective);
+        if (holder is null || objective is null)
+            return null;
+
+        return server.CommandScoreboard.GetScore(holder, objective);
+    }
+
+    // Vanilla's score name providers: a context entity target, inline or as {type:context}, or a fixed name.
+    private static string? ScoreHolder(LootContext loot, JsonElement target)
+    {
+        string? entityTarget = null;
+        if (target.ValueKind == JsonValueKind.String)
+        {
+            entityTarget = target.GetString();
+        }
+        else if (target.ValueKind == JsonValueKind.Object)
+        {
+            if (target.TryGetProperty("name", out var name))
+                return name.GetString();
+
+            if (target.TryGetProperty("target", out var contextTarget))
+                entityTarget = contextTarget.GetString();
+        }
+
+        var entity = entityTarget switch
+        {
+            "this" => loot.ThisEntity,
+            "target_entity" => loot.TargetEntity,
+            _ => null
+        };
+        return entity is null ? null : ScoreHolderArgument.NameOf(entity);
     }
 }

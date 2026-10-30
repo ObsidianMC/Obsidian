@@ -1,4 +1,4 @@
-using Obsidian.API.Registries;
+﻿using Obsidian.API.Registries;
 using Obsidian.API.Data;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.API.Inventory;
@@ -50,6 +50,9 @@ public sealed class LootContext
     /// The entity the loot is generated for (vanilla's <c>this_entity</c> parameter), e.g. the player opening a container.
     /// </summary>
     public IEntity? ThisEntity { get; init; }
+
+    /// <summary>The entity an action targets (vanilla's <c>target_entity</c>), like the one <c>/compute entity</c> selects.</summary>
+    public IEntity? TargetEntity { get; init; }
 
     /// <summary>The stack used to break a block, or null for an empty hand or explosion.</summary>
     public ItemStack? Tool { get; init; }
