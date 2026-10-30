@@ -1,4 +1,5 @@
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.InvocationTargetException;
@@ -10,7 +11,6 @@ import java.lang.reflect.WildcardType;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -44,54 +44,94 @@ import java.util.stream.Collectors;
 public final class VanillaDumper {
     // Names of the classes used below (also how parameter types are given).
     private static final String BLOCK = "net.minecraft.world.level.block.Block";
+
     private static final String BLOCK_STATE = "net.minecraft.world.level.block.state.BlockState";
+
     private static final String STATE_BASE = "net.minecraft.world.level.block.state.BlockBehaviour$BlockStateBase";
+
     private static final String BLOCK_GETTER = "net.minecraft.world.level.BlockGetter";
+
     private static final String BLOCK_POS = "net.minecraft.core.BlockPos";
+
     private static final String DIRECTION = "net.minecraft.core.Direction";
+
     private static final String AXIS = "net.minecraft.core.Direction$Axis";
+
     private static final String SUPPORT_TYPE = "net.minecraft.world.level.block.SupportType";
+
     private static final String VOXEL_SHAPE = "net.minecraft.world.phys.shapes.VoxelShape";
+
     private static final String SHAPES = "net.minecraft.world.phys.shapes.Shapes";
+
     private static final String FLUID = "net.minecraft.world.level.material.Fluid";
+
     private static final String FLUID_STATE = "net.minecraft.world.level.material.FluidState";
+
     private static final String FLUIDS = "net.minecraft.world.level.material.Fluids";
+
     private static final String FLOWING_FLUID = "net.minecraft.world.level.material.FlowingFluid";
+
     private static final String REGISTRY = "net.minecraft.core.Registry";
+
     private static final String REGISTRIES = "net.minecraft.core.registries.BuiltInRegistries";
+
     private static final String HOLDER = "net.minecraft.core.Holder";
+
     private static final String ENTITY = "net.minecraft.world.entity.Entity";
+
     private static final String ENTITY_TYPE = "net.minecraft.world.entity.EntityType";
+
     private static final String TAG_KEY = "net.minecraft.tags.TagKey";
+
     private static final String PACKET_TYPE = "net.minecraft.network.protocol.PacketType";
+
     private static final String PATH_TYPE = "net.minecraft.world.level.pathfinder.PathType";
+
     private static final String WALK_NODE = "net.minecraft.world.level.pathfinder.WalkNodeEvaluator";
 
     private final Path output;
+
     private final String version;
 
-    // Shared arguments: vanilla's empty world (air everywhere) at the origin, for methods that take a level and position.
+    // Shared arguments: vanilla's empty world (air everywhere) at the origin, for methods that take a level and
+    // position.
     private final Object emptyLevel;
+
     private final Object origin;
+
     private final Object[] directions;
+
     private final List<Object> states = new ArrayList<>();
 
     private final Method getBlock;
+
     private final Method getCollisionShape;
+
     private final Method getFluidState;
+
     private final Method registryKey;
+
     private final Object blockRegistry;
+
     private final Object emptyShape;
+
     private final Object blockShape;
 
     // Shape helpers' handles, used for every state.
     private final Method getAxis;
+
     private final Method shapeMin;
+
     private final Method shapeMax;
+
     private final Method toAabbs;
+
     private final Field[] boxBounds;
+
     private final Field discreteShape;
+
     private final Method discreteSize;
+
     private final Constructor<?> sliceShape;
 
     public static void main(String[] args) throws Exception {
@@ -150,13 +190,24 @@ public final class VanillaDumper {
         Vanilla.call(Vanilla.method("net.minecraft.server.Bootstrap", "bootStrap"), null);
 
         var packType = "net.minecraft.server.packs.PackType";
-        var vanillaPack = Vanilla.call(Vanilla.method("net.minecraft.server.packs.VanillaPackResources", "fullResources"),
-            Vanilla.call(Vanilla.method("net.minecraft.server.packs.repository.ServerPacksSource", "createVanillaPackSource"), null));
-        var resources = Vanilla.create(Vanilla.constructor("net.minecraft.server.packs.resources.MultiPackResourceManager", packType, "java.util.List"),
-            Vanilla.get(packType, "SERVER_DATA"), List.of(vanillaPack));
+        var vanillaPack = Vanilla.call(
+            Vanilla.method("net.minecraft.server.packs.VanillaPackResources", "fullResources"),
+            Vanilla.call(
+                Vanilla.method("net.minecraft.server.packs.repository.ServerPacksSource", "createVanillaPackSource"),
+                null));
+        var resources = Vanilla.create(
+            Vanilla.constructor(
+                "net.minecraft.server.packs.resources.MultiPackResourceManager",
+                packType,
+                "java.util.List"),
+            Vanilla.get(packType, "SERVER_DATA"),
+            List.of(vanillaPack));
 
-        var loadPendingTags = Vanilla.method("net.minecraft.tags.TagLoader", "loadPendingTags",
-            "net.minecraft.server.packs.resources.ResourceManager", REGISTRY);
+        var loadPendingTags = Vanilla.method(
+            "net.minecraft.tags.TagLoader",
+            "loadPendingTags",
+            "net.minecraft.server.packs.resources.ResourceManager",
+            REGISTRY);
         var pendingTags = "net.minecraft.core.Registry$PendingTags";
         var size = Vanilla.method(pendingTags, "size");
         var apply = Vanilla.method(pendingTags, "apply");
@@ -168,8 +219,9 @@ public final class VanillaDumper {
                 Vanilla.call(apply, pending.get());
             }
         }
-        if (bound == 0)
+        if (bound == 0) {
             throw new IllegalStateException("Vanilla's data pack has no tags");
+        }
         bindComponents(vanillaRegistries());
 
         var currentVersion = Vanilla.call(Vanilla.method(sharedConstants, "getCurrentVersion"), null);
@@ -183,7 +235,10 @@ public final class VanillaDumper {
     static Object vanillaRegistries() {
         var registries = "net.minecraft.data.registries.VanillaRegistries";
         var world = Vanilla.call(Vanilla.method(registries, "createWorldLookup"), null);
-        return Vanilla.call(Vanilla.method(registries, "createReloadableLookup", "net.minecraft.core.HolderLookup$Provider"), null, world);
+        return Vanilla.call(
+            Vanilla.method(registries, "createReloadableLookup", "net.minecraft.core.HolderLookup$Provider"),
+            null,
+            world);
     }
 
     /**
@@ -192,10 +247,14 @@ public final class VanillaDumper {
      */
     static void bindComponents(Object registries) {
         var initializers = Vanilla.get(REGISTRIES, "DATA_COMPONENT_INITIALIZERS");
-        var build = Vanilla.method("net.minecraft.core.component.DataComponentInitializers", "build", "net.minecraft.core.HolderLookup$Provider");
+        var build = Vanilla.method(
+            "net.minecraft.core.component.DataComponentInitializers",
+            "build",
+            "net.minecraft.core.HolderLookup$Provider");
         var apply = Vanilla.method("net.minecraft.core.component.DataComponentInitializers$PendingComponents", "apply");
-        for (var pending : (List<?>) Vanilla.call(build, initializers, registries))
+        for (var pending : (List<?>) Vanilla.call(build, initializers, registries)) {
             Vanilla.call(apply, pending);
+        }
     }
 
     /** Records aliases such as wall torches, and blocks that deliberately have no drop table. */
@@ -231,8 +290,13 @@ public final class VanillaDumper {
         shapeMax = Vanilla.method(VOXEL_SHAPE, "max", AXIS);
         toAabbs = Vanilla.method(VOXEL_SHAPE, "toAabbs");
         var aabb = "net.minecraft.world.phys.AABB";
-        boxBounds = new Field[] { Vanilla.field(aabb, "minX"), Vanilla.field(aabb, "minY"), Vanilla.field(aabb, "minZ"),
-            Vanilla.field(aabb, "maxX"), Vanilla.field(aabb, "maxY"), Vanilla.field(aabb, "maxZ") };
+        boxBounds = new Field[] {
+            Vanilla.field(aabb, "minX"),
+            Vanilla.field(aabb, "minY"),
+            Vanilla.field(aabb, "minZ"),
+            Vanilla.field(aabb, "maxX"),
+            Vanilla.field(aabb, "maxY"),
+            Vanilla.field(aabb, "maxZ")};
         discreteShape = Vanilla.field(VOXEL_SHAPE, "shape");
         discreteSize = Vanilla.method("net.minecraft.world.phys.shapes.DiscreteVoxelShape", "getSize", AXIS);
         sliceShape = Vanilla.constructor("net.minecraft.world.phys.shapes.SliceShape", VOXEL_SHAPE, AXIS, "int");
@@ -241,8 +305,9 @@ public final class VanillaDumper {
         var stateIds = Vanilla.get(BLOCK, "BLOCK_STATE_REGISTRY");
         var byId = Vanilla.method("net.minecraft.core.IdMapper", "byId", "int");
         var size = (int) Vanilla.call(Vanilla.method("net.minecraft.core.IdMapper", "size"), stateIds);
-        for (var id = 0; id < size; id++)
+        for (var id = 0; id < size; id++) {
             states.add(Vanilla.call(byId, stateIds, id));
+        }
     }
 
     /** State-indexed audio behavior, kept as generated data rather than hand-maintained material guesses. */
@@ -269,7 +334,8 @@ public final class VanillaDumper {
     }
 
     /**
-     * {@code block_light.json}, read by {@code Obsidian/Registries/BlockLight.cs}: per state, {@code getLightDampening()}
+     * {@code block_light.json}, read by {@code Obsidian/Registries/BlockLight.cs}: per state, {@code
+     * getLightDampening()}
      * plus a 1-based index into {@code shapes} for the states whose shape occludes light, each shape listing its six
      * face masks ({@code LightEngine.getOcclusionShape} per direction) as indexes into {@code faces}.
      */
@@ -287,23 +353,30 @@ public final class VanillaDumper {
         for (var id = 0; id < states.size(); id++) {
             var state = states.get(id);
             light[id] = (int) Vanilla.call(getLightDampening, state);
-            if ((boolean) Vanilla.call(isEmptyShape, null, state))
+            if ((boolean) Vanilla.call(isEmptyShape, null, state)) {
                 continue;
+            }
 
             var shapeFaces = new ArrayList<Integer>();
-            for (var direction : directions)
-                shapeFaces.add(faces.indexOf(faceMask(Vanilla.call(getOcclusionShape, null, state, direction), direction)));
+            for (var direction : directions) {
+                shapeFaces.add(
+                    faces.indexOf(faceMask(Vanilla.call(getOcclusionShape, null, state, direction), direction)));
+            }
 
             var shape = shapes.indexOf(shapeFaces);
-            if (shape == shapeStates.size())
+            if (shape == shapeStates.size()) {
                 shapeStates.add(state);
+            }
             light[id] |= (shape + 1) << 4;
         }
 
         checkLightMasks(shapeStates, shapes.values(), faces.values());
 
         var json = new LinkedHashMap<String, Object>();
-        json.put("_notes", "Vanilla " + version + " block state light properties, indexed by state id. See BlockLight for the layout.");
+        json.put(
+            "_notes",
+            "Vanilla " + version
+                + " block state light properties, indexed by state id. See BlockLight for the layout.");
         json.put("light", light);
         json.put("shapes", shapes.values());
         json.put("faces", faces.values());
@@ -311,8 +384,10 @@ public final class VanillaDumper {
     }
 
     /**
-     * A face shape as a 16x16 grid of 1/16 cells, one bit per cell whose center the shape covers, in hex. Rows run along
-     * the first of the face's two axes in x, y, z order and columns along the second; row r is bits 16r to 16r+15 of the
+     * A face shape as a 16x16 grid of 1/16 cells, one bit per cell whose center the shape covers, in hex. Rows run
+     * along
+     * the first of the face's two axes in x, y, z order and columns along the second; row r is bits 16r to 16r+15 of
+     * the
      * 256-bit mask, written as four 64-bit words, lowest first.
      */
     private String faceMask(Object faceShape, Object direction) {
@@ -321,8 +396,9 @@ public final class VanillaDumper {
         for (var box : boxes(faceShape)) {
             for (var row = 0; row < 16; row++) {
                 var u = (row + 0.5) / 16;
-                if (u < box[axes[0]] || u > box[axes[0] + 3])
+                if (u < box[axes[0]] || u > box[axes[0] + 3]) {
                     continue;
+                }
                 for (var column = 0; column < 16; column++) {
                     var v = (column + 0.5) / 16;
                     if (v >= box[axes[1]] && v <= box[axes[1] + 3]) {
@@ -342,8 +418,11 @@ public final class VanillaDumper {
      * ({@code LightEngine.shapeOccludes}) is {@code Shapes.faceShapeOccludes} of the two faces' occlusion shapes.
      */
     private void checkLightMasks(List<Object> shapeStates, List<List<Integer>> shapes, List<String> faces) {
-        var getOcclusionShape = Vanilla.method("net.minecraft.world.level.lighting.LightEngine", "getOcclusionShape",
-            BLOCK_STATE, DIRECTION);
+        var getOcclusionShape = Vanilla.method(
+            "net.minecraft.world.level.lighting.LightEngine",
+            "getOcclusionShape",
+            BLOCK_STATE,
+            DIRECTION);
         var faceShapeOccludes = Vanilla.method(SHAPES, "faceShapeOccludes", VOXEL_SHAPE, VOXEL_SHAPE);
         var masks = faces.stream().map(VanillaDumper::maskWords).toList();
         for (var from = 0; from < shapes.size(); from++) {
@@ -352,14 +431,19 @@ public final class VanillaDumper {
                     var fromMask = masks.get(shapes.get(from).get(direction));
                     var toMask = masks.get(shapes.get(to).get(direction ^ 1)); // opposite directions differ in bit 0
                     var covered = true;
-                    for (var word = 0; word < 4; word++)
+                    for (var word = 0; word < 4; word++) {
                         covered &= (fromMask[word] | toMask[word]) == -1L;
+                    }
 
-                    var vanilla = (boolean) Vanilla.call(faceShapeOccludes, null,
+                    var vanilla = (boolean) Vanilla.call(
+                        faceShapeOccludes,
+                        null,
                         Vanilla.call(getOcclusionShape, null, shapeStates.get(from), directions[direction]),
                         Vanilla.call(getOcclusionShape, null, shapeStates.get(to), directions[direction ^ 1]));
-                    if (covered != vanilla)
-                        throw new IllegalStateException("Light face masks don't match LightEngine.shapeOccludes for shapes " + from + " and " + to);
+                    if (covered != vanilla) {
+                        throw new IllegalStateException(
+                            "Light face masks don't match LightEngine.shapeOccludes for shapes " + from + " and " + to);
+                    }
                 }
             }
         }
@@ -367,8 +451,8 @@ public final class VanillaDumper {
 
     /** Collision boxes by block state, read by Obsidian/Entities/AI/BlockCollisionShapes.cs. */
     private void dumpCollisionShapes() throws IOException {
-        var shapes = new Indexer<List<double[]>>(shape ->
-            shape.stream().map(box -> Arrays.stream(box).boxed().toList()).toList());
+        var shapes = new Indexer<List<double[]>>(
+            shape -> shape.stream().map(box -> Arrays.stream(box).boxed().toList()).toList());
         var stateShapes = new LinkedHashMap<String, Integer>();
         for (var id = 0; id < states.size(); id++) {
             var shape = Vanilla.call(getCollisionShape, states.get(id), emptyLevel, origin);
@@ -376,146 +460,274 @@ public final class VanillaDumper {
         }
 
         var shapeDefinitions = new LinkedHashMap<String, List<double[]>>();
-        for (var id = 0; id < shapes.values().size(); id++)
+        for (var id = 0; id < shapes.values().size(); id++) {
             shapeDefinitions.put(Integer.toString(id), shapes.values().get(id));
+        }
 
-        Json.write(output.resolve("collision_shapes.json"), Map.of("shapes", shapeDefinitions, "states", stateShapes), false);
+        Json.write(
+            output.resolve("collision_shapes.json"),
+            Map.of("shapes", shapeDefinitions, "states", stateShapes),
+            false);
     }
 
     /** Block blast resistance, read by Obsidian/WorldData/AbstractLevel.Explosion.cs. */
     private void dumpBlastResistance() throws IOException {
         var getExplosionResistance = Vanilla.method(BLOCK, "getExplosionResistance");
         var resistance = new LinkedHashMap<String, Float>();
-        for (var block : (Iterable<?>) blockRegistry)
+        for (var block : (Iterable<?>) blockRegistry) {
             resistance.put(key(blockRegistry, block), (float) Vanilla.call(getExplosionResistance, block));
+        }
 
         Json.write(output.resolve("blast_resistance.json"), resistance, false);
     }
 
     private static long[] maskWords(String hex) {
         var words = new long[4];
-        for (var word = 0; word < 4; word++)
+        for (var word = 0; word < 4; word++) {
             words[word] = Long.parseUnsignedLong(hex.substring(word * 16, word * 16 + 16), 16);
+        }
         return words;
     }
 
     /**
-     * {@code block_physics.json}, read by {@code Obsidian/Registries/BlockPhysics.cs}, which documents the bit layouts of
-     * {@code flags} and {@code fluidFlags}. Each bit is the vanilla method named next to it below, called on the state in
+     * {@code block_physics.json}, read by {@code Obsidian/Registries/BlockPhysics.cs}, which documents the bit layouts
+     * of
+     * {@code flags} and {@code fluidFlags}. Each bit is the vanilla method named next to it below, called on the state
+     * in
      * the empty world at the origin.
      */
     private void dumpBlockPhysics() throws IOException {
-        var isAir = Vanilla.method(STATE_BASE, "isAir");
+        new BlockPhysicsDump().dump();
+    }
+
+    /** The reflection handles, shared shape indexes and per-state results of one physics dump. */
+    private final class BlockPhysicsDump {
+        private final Method isAir = Vanilla.method(STATE_BASE, "isAir");
         // BlockStateBase.blocksMotion became the blocks_motion tag in 26.1.
-        var blocksMotion = Vanilla.get("net.minecraft.tags.BlockTags", "BLOCKS_MOTION");
-        var isSolid = Vanilla.method(STATE_BASE, "isSolid");
-        var canBeReplaced = Vanilla.method(STATE_BASE, "canBeReplaced");
-        var liquid = Vanilla.method(STATE_BASE, "liquid");
-        var isCollisionShapeFullBlock = Vanilla.method(STATE_BASE, "isCollisionShapeFullBlock", BLOCK_GETTER, BLOCK_POS);
-        var isFaceSturdy = Vanilla.method(STATE_BASE, "isFaceSturdy", BLOCK_GETTER, BLOCK_POS, DIRECTION, SUPPORT_TYPE);
-        var isRedstoneConductor = Vanilla.method(STATE_BASE, "isRedstoneConductor", BLOCK_GETTER, BLOCK_POS);
-        var hasBlockEntity = Vanilla.method(STATE_BASE, "hasBlockEntity");
-        var getLightEmission = Vanilla.method(STATE_BASE, "getLightEmission");
-        var isSolidRender = Vanilla.method(STATE_BASE, "isSolidRender");
-        var isSource = Vanilla.method(FLUID_STATE, "isSource");
-        var getAmount = Vanilla.method(FLUID_STATE, "getAmount");
-        var getType = Vanilla.method(FLUID_STATE, "getType");
-        var isEmpty = Vanilla.method(VOXEL_SHAPE, "isEmpty");
-        var isFaceFull = Vanilla.method(BLOCK, "isFaceFull", VOXEL_SHAPE, DIRECTION);
-        var is = Vanilla.method("net.minecraft.core.TypedInstance", "is", TAG_KEY);
-        var unstableBottomCenter = Vanilla.get("net.minecraft.tags.BlockTags", "UNSTABLE_BOTTOM_CENTER");
-        var full = Vanilla.get(SUPPORT_TYPE, "FULL");
-        var center = Vanilla.get(SUPPORT_TYPE, "CENTER");
-        var rigid = Vanilla.get(SUPPORT_TYPE, "RIGID");
-        var up = Vanilla.get(DIRECTION, "UP");
-        var down = Vanilla.get(DIRECTION, "DOWN");
+        private final Object blocksMotion = Vanilla.get("net.minecraft.tags.BlockTags", "BLOCKS_MOTION");
 
-        var liquidBlockContainer = Vanilla.type("net.minecraft.world.level.block.LiquidBlockContainer");
-        var canHoldAnyFluid = Vanilla.method(FLOWING_FLUID, "canHoldAnyFluid", BLOCK_STATE);
-        var canHoldSpecificFluid = Vanilla.method(FLOWING_FLUID, "canHoldSpecificFluid", BLOCK_GETTER, BLOCK_POS, BLOCK_STATE, FLUID);
-        // Obsidian's FluidKind: 1-4 are these fluids (0 is empty). Not vanilla's registry ids, which order flowing first.
-        var fluids = new Object[] { null, Vanilla.get(FLUIDS, "WATER"), Vanilla.get(FLUIDS, "FLOWING_WATER"),
-            Vanilla.get(FLUIDS, "LAVA"), Vanilla.get(FLUIDS, "FLOWING_LAVA") };
+        private final Method isSolid = Vanilla.method(STATE_BASE, "isSolid");
 
-        var visualShape = Vanilla.method(STATE_BASE, "getVisualShape", BLOCK_GETTER, BLOCK_POS, "net.minecraft.world.phys.shapes.CollisionContext");
-        var outlineShape = Vanilla.method(STATE_BASE, "getShape", BLOCK_GETTER, BLOCK_POS, "net.minecraft.world.phys.shapes.CollisionContext");
-        var isSuffocating = Vanilla.method(STATE_BASE, "isSuffocating", BLOCK_GETTER, BLOCK_POS);
-        var getPostProcessPos = Vanilla.method(STATE_BASE, "getPostProcessPos", BLOCK_GETTER, BLOCK_POS);
-        var hasOffset = Vanilla.method(STATE_BASE, "hasOffsetFunction");
-        var getOffset = Vanilla.method(STATE_BASE, "getOffset", BLOCK_POS);
-        var maxHorizontalOffset = Vanilla.method("net.minecraft.world.level.block.state.BlockBehaviour", "getMaxHorizontalOffset");
-        var maxVerticalOffset = Vanilla.method("net.minecraft.world.level.block.state.BlockBehaviour", "getMaxVerticalOffset");
-        var offsetX = Vanilla.field("net.minecraft.world.phys.Vec3", "x");
-        var offsetY = Vanilla.field("net.minecraft.world.phys.Vec3", "y");
-        var offsetZ = Vanilla.field("net.minecraft.world.phys.Vec3", "z");
-        var emptyContext = Vanilla.call(Vanilla.method("net.minecraft.world.phys.shapes.CollisionContext", "empty"), null);
-        var destroySpeed = Vanilla.method(STATE_BASE, "getDestroySpeed", BLOCK_GETTER, BLOCK_POS);
-        var correctTool = Vanilla.method(STATE_BASE, "requiresCorrectToolForDrops");
-        var isRandomlyTicking = Vanilla.method(STATE_BASE, "isRandomlyTicking");
+        private final Method canBeReplaced = Vanilla.method(STATE_BASE, "canBeReplaced");
+
+        private final Method liquid = Vanilla.method(STATE_BASE, "liquid");
+
+        private final Method isCollisionShapeFullBlock =
+            Vanilla.method(STATE_BASE, "isCollisionShapeFullBlock", BLOCK_GETTER, BLOCK_POS);
+
+        private final Method isFaceSturdy =
+            Vanilla.method(STATE_BASE, "isFaceSturdy", BLOCK_GETTER, BLOCK_POS, DIRECTION, SUPPORT_TYPE);
+
+        private final Method isRedstoneConductor =
+            Vanilla.method(STATE_BASE, "isRedstoneConductor", BLOCK_GETTER, BLOCK_POS);
+
+        private final Method hasBlockEntity = Vanilla.method(STATE_BASE, "hasBlockEntity");
+
+        private final Method getLightEmission = Vanilla.method(STATE_BASE, "getLightEmission");
+
+        private final Method isSolidRender = Vanilla.method(STATE_BASE, "isSolidRender");
+
+        private final Method isSource = Vanilla.method(FLUID_STATE, "isSource");
+
+        private final Method getAmount = Vanilla.method(FLUID_STATE, "getAmount");
+
+        private final Method getType = Vanilla.method(FLUID_STATE, "getType");
+
+        private final Method isEmpty = Vanilla.method(VOXEL_SHAPE, "isEmpty");
+
+        private final Method isFaceFull = Vanilla.method(BLOCK, "isFaceFull", VOXEL_SHAPE, DIRECTION);
+
+        private final Method is = Vanilla.method("net.minecraft.core.TypedInstance", "is", TAG_KEY);
+
+        private final Object unstableBottomCenter =
+            Vanilla.get("net.minecraft.tags.BlockTags", "UNSTABLE_BOTTOM_CENTER");
+
+        private final Object full = Vanilla.get(SUPPORT_TYPE, "FULL");
+
+        private final Object center = Vanilla.get(SUPPORT_TYPE, "CENTER");
+
+        private final Object rigid = Vanilla.get(SUPPORT_TYPE, "RIGID");
+
+        private final Object up = Vanilla.get(DIRECTION, "UP");
+
+        private final Object down = Vanilla.get(DIRECTION, "DOWN");
+
+        private final Class<?> liquidBlockContainer =
+            Vanilla.type("net.minecraft.world.level.block.LiquidBlockContainer");
+
+        private final Method canHoldAnyFluid = Vanilla.method(FLOWING_FLUID, "canHoldAnyFluid", BLOCK_STATE);
+
+        private final Method canHoldSpecificFluid =
+            Vanilla.method(FLOWING_FLUID, "canHoldSpecificFluid", BLOCK_GETTER, BLOCK_POS, BLOCK_STATE, FLUID);
+        // Obsidian's FluidKind: 1-4 are these fluids (0 is empty). Not vanilla's registry ids, which order flowing
+        // first.
+        private final Object[] fluids = new Object[] {
+            null,
+            Vanilla.get(FLUIDS, "WATER"),
+            Vanilla.get(FLUIDS, "FLOWING_WATER"),
+            Vanilla.get(FLUIDS, "LAVA"),
+            Vanilla.get(FLUIDS, "FLOWING_LAVA")};
+
+        private final Method visualShape = Vanilla.method(
+            STATE_BASE,
+            "getVisualShape",
+            BLOCK_GETTER,
+            BLOCK_POS,
+            "net.minecraft.world.phys.shapes.CollisionContext");
+
+        private final Method outlineShape = Vanilla.method(
+            STATE_BASE,
+            "getShape",
+            BLOCK_GETTER,
+            BLOCK_POS,
+            "net.minecraft.world.phys.shapes.CollisionContext");
+
+        private final Method isSuffocating = Vanilla.method(STATE_BASE, "isSuffocating", BLOCK_GETTER, BLOCK_POS);
+
+        private final Method getPostProcessPos =
+            Vanilla.method(STATE_BASE, "getPostProcessPos", BLOCK_GETTER, BLOCK_POS);
+
+        private final Method hasOffset = Vanilla.method(STATE_BASE, "hasOffsetFunction");
+
+        private final Method getOffset = Vanilla.method(STATE_BASE, "getOffset", BLOCK_POS);
+
+        private final Method maxHorizontalOffset =
+            Vanilla.method("net.minecraft.world.level.block.state.BlockBehaviour", "getMaxHorizontalOffset");
+
+        private final Method maxVerticalOffset =
+            Vanilla.method("net.minecraft.world.level.block.state.BlockBehaviour", "getMaxVerticalOffset");
+
+        private final Field offsetX = Vanilla.field("net.minecraft.world.phys.Vec3", "x");
+
+        private final Field offsetY = Vanilla.field("net.minecraft.world.phys.Vec3", "y");
+
+        private final Field offsetZ = Vanilla.field("net.minecraft.world.phys.Vec3", "z");
+
+        private final Object emptyContext =
+            Vanilla.call(Vanilla.method("net.minecraft.world.phys.shapes.CollisionContext", "empty"), null);
+
+        private final Method destroySpeed = Vanilla.method(STATE_BASE, "getDestroySpeed", BLOCK_GETTER, BLOCK_POS);
+
+        private final Method correctTool = Vanilla.method(STATE_BASE, "requiresCorrectToolForDrops");
+
+        private final Method isRandomlyTicking = Vanilla.method(STATE_BASE, "isRandomlyTicking");
         // BlockStateBase.getPistonPushReaction: the PushReaction enum, dumped by constant name in ordinal order.
-        var pistonPushReaction = Vanilla.method(STATE_BASE, "getPistonPushReaction");
-        var pushReactionNames = new ArrayList<String>();
-        var pushReactions = new int[states.size()];
+        private final Method pistonPushReaction = Vanilla.method(STATE_BASE, "getPistonPushReaction");
+
+        private final List<String> pushReactionNames = new ArrayList<String>();
+
+        private final int[] pushReactions = new int[states.size()];
         // PistonBaseBlock.isSticky is set by its constructor; the sticky piston and normal piston share one class.
-        var stickyPistonStates = new ArrayList<Integer>();
-        var pistonBase = Vanilla.field("net.minecraft.world.level.block.piston.PistonBaseBlock", "isSticky");
-        var pistonBaseType = Vanilla.type("net.minecraft.world.level.block.piston.PistonBaseBlock");
-        var isFluidRandomlyTicking = Vanilla.method(FLUID_STATE, "isRandomlyTicking");
-        var shapeBoxes = new Indexer<List<double[]>>(shape -> shape.stream().map(Arrays::toString).toList());
-        var collisionShapes = new int[states.size()];
-        var visualShapes = new int[states.size()];
-        var outlineShapes = new int[states.size()];
-        var suffocating = new ArrayList<Boolean>();
-        // Whether BlockStateBase.getPostProcessPos isn't null: WorldGenRegion marks such states for post-processing when
+        private final List<Integer> stickyPistonStates = new ArrayList<Integer>();
+
+        private final Field pistonBase =
+            Vanilla.field("net.minecraft.world.level.block.piston.PistonBaseBlock", "isSticky");
+
+        private final Class<?> pistonBaseType = Vanilla.type("net.minecraft.world.level.block.piston.PistonBaseBlock");
+
+        private final Method isFluidRandomlyTicking = Vanilla.method(FLUID_STATE, "isRandomlyTicking");
+
+        private final Indexer<List<double[]>> shapeBoxes =
+            new Indexer<List<double[]>>(shape -> shape.stream().map(Arrays::toString).toList());
+
+        private final int[] collisionShapes = new int[states.size()];
+
+        private final int[] visualShapes = new int[states.size()];
+
+        private final int[] outlineShapes = new int[states.size()];
+
+        private final List<Boolean> suffocating = new ArrayList<Boolean>();
+        // Whether BlockStateBase.getPostProcessPos isn't null: WorldGenRegion marks such states for post-processing
         // they are placed in worldgen.
-        var postProcess = new ArrayList<Boolean>();
-        var shapeOffsets = new double[states.size()][];
-        var hardness = new double[states.size()];
-        var requiresTool = new ArrayList<Boolean>();
-        var randomTicking = new ArrayList<Integer>();
-        var flags = new int[states.size()];
+        private final List<Boolean> postProcess = new ArrayList<Boolean>();
+
+        private final double[][] shapeOffsets = new double[states.size()][];
+
+        private final double[] hardness = new double[states.size()];
+
+        private final List<Boolean> requiresTool = new ArrayList<Boolean>();
+
+        private final List<Integer> randomTicking = new ArrayList<Integer>();
+
+        private final int[] flags = new int[states.size()];
         // Six faces per mode (FULL, CENTER, RIGID), independent of collision and tag-based attachment restrictions.
-        var supportFlags = new int[states.size()];
-        var supportTypes = new Object[]
-        {
-            full,
-            center,
-            rigid
-        };
-        var fluidFlags = new int[states.size()];
-        var faces = new Indexer<List<double[]>>(face -> face.stream().map(Arrays::toString).toList());
-        var faceSets = new Indexer<List<Integer>>();
-        faceSets.indexOf(List.of(0, 0, 0, 0, 0, 0)); // set 0: no faces, also used for full blocks (checked first)
-        for (var id = 0; id < states.size(); id++) {
+        private final int[] supportFlags = new int[states.size()];
+
+        private final Object[] supportTypes = new Object[] {full, center, rigid};
+
+        private final int[] fluidFlags = new int[states.size()];
+
+        private final Indexer<List<double[]>> faces =
+            new Indexer<List<double[]>>(face -> face.stream().map(Arrays::toString).toList());
+
+        private final Indexer<List<Integer>> faceSets = new Indexer<List<Integer>>();
+
+        void dump() throws IOException {
+            faceSets.indexOf(List.of(0, 0, 0, 0, 0, 0)); // set 0: no faces, also used for full blocks (checked first)
+
+            captureStates();
+            write();
+        }
+
+        private void captureStates() {
+            for (var id = 0; id < states.size(); id++) {
+                captureState(id);
+            }
+        }
+
+        private void captureState(int id) {
             var state = states.get(id);
             var fluidState = Vanilla.call(getFluidState, state);
             var collision = Vanilla.call(getCollisionShape, state, emptyLevel, origin);
             collisionShapes[id] = shapeBoxes.indexOf(boxes(collision));
-            visualShapes[id] = shapeBoxes.indexOf(boxes(Vanilla.call(visualShape, state, emptyLevel, origin, emptyContext)));
-            outlineShapes[id] = shapeBoxes.indexOf(boxes(Vanilla.call(outlineShape, state, emptyLevel, origin, emptyContext)));
+            var visual = Vanilla.call(visualShape, state, emptyLevel, origin, emptyContext);
+            visualShapes[id] = shapeBoxes.indexOf(boxes(visual));
+
+            var outline = Vanilla.call(outlineShape, state, emptyLevel, origin, emptyContext);
+            outlineShapes[id] = shapeBoxes.indexOf(boxes(outline));
+
             suffocating.add((boolean) Vanilla.call(isSuffocating, state, emptyLevel, origin));
             postProcess.add(Vanilla.call(getPostProcessPos, state, emptyLevel, origin) != null);
             shapeOffsets[id] = new double[0];
             if ((boolean) Vanilla.call(hasOffset, state)) {
                 var offset = Vanilla.call(getOffset, state, origin);
                 var block = Vanilla.call(getBlock, state);
-                shapeOffsets[id] = new double[] { (double) Vanilla.get(offsetX, offset), (double) Vanilla.get(offsetY, offset),
-                    (double) Vanilla.get(offsetZ, offset), (float) Vanilla.call(maxHorizontalOffset, block), (float) Vanilla.call(maxVerticalOffset, block) };
+                shapeOffsets[id] = new double[] {
+                    (double) Vanilla.get(offsetX, offset),
+                    (double) Vanilla.get(offsetY, offset),
+                    (double) Vanilla.get(offsetZ, offset),
+                    (float) Vanilla.call(maxHorizontalOffset, block),
+                    (float) Vanilla.call(maxVerticalOffset, block)};
             }
+
             hardness[id] = (float) Vanilla.call(destroySpeed, state, emptyLevel, origin);
             var reaction = (Enum<?>) Vanilla.call(pistonPushReaction, state);
-            if (!pushReactionNames.contains(reaction.name()))
+            if (!pushReactionNames.contains(reaction.name())) {
                 pushReactionNames.add(reaction.name());
+            }
             pushReactions[id] = pushReactionNames.indexOf(reaction.name());
+
             var block = Vanilla.call(getBlock, state);
-            if (pistonBaseType.isInstance(block) && (boolean) Vanilla.get(pistonBase, block))
+            if (pistonBaseType.isInstance(block) && (boolean) Vanilla.get(pistonBase, block)) {
                 stickyPistonStates.add(id);
+            }
+
             requiresTool.add((boolean) Vanilla.call(correctTool, state));
+
             // What a chunk section counts to decide whether random ticks sample it: the block or its fluid ticks.
             var blockTicks = (boolean) Vanilla.call(isRandomlyTicking, state);
-            if (blockTicks || (boolean) Vanilla.call(isFluidRandomlyTicking, fluidState))
+            if (blockTicks || (boolean) Vanilla.call(isFluidRandomlyTicking, fluidState)) {
                 randomTicking.add(id);
+            }
 
+            flags[id] = blockFlags(state, fluidState, collision);
+
+            captureSupportFlags(id, state);
+
+            fluidFlags[id] = fluidFlags(state, collision);
+        }
+
+        private int blockFlags(Object state, Object fluidState, Object collision) {
             var bits = 0;
             bits |= bit(0, Vanilla.call(isAir, state));
             bits |= bit(1, Vanilla.call(is, state, blocksMotion));
@@ -528,8 +740,9 @@ public final class VanillaDumper {
             bits |= bit(8, Vanilla.call(isFaceSturdy, state, emptyLevel, origin, up, rigid));
             bits |= bit(9, Vanilla.call(isRedstoneConductor, state, emptyLevel, origin));
             bits |= bit(10, Vanilla.call(hasBlockEntity, state));
-            for (var face = 0; face < 6; face++)
+            for (var face = 0; face < 6; face++) {
                 bits |= bit(11 + face, Vanilla.call(isFaceSturdy, state, emptyLevel, origin, directions[face], full));
+            }
             bits |= (int) Vanilla.call(getLightEmission, state) << 17;
             bits |= (int) Vanilla.call(getAmount, fluidState) << 21;
             bits |= indexOf(fluids, Vanilla.call(getType, fluidState)) << 25;
@@ -539,61 +752,72 @@ public final class VanillaDumper {
             // Block.canSupportCenter(level, pos, DOWN), which needs a LevelReader; its body is this check.
             var unstable = (boolean) Vanilla.call(is, state, unstableBottomCenter);
             bits |= bit(31, !unstable && (boolean) Vanilla.call(isFaceSturdy, state, emptyLevel, origin, down, center));
-            flags[id] = bits;
+            return bits;
+        }
 
-            for (var support = 0; support < supportTypes.length; support++)
-            {
-                for (var face = 0; face < directions.length; face++)
-                {
-                    supportFlags[id] |= bit(support * 6 + face,
+        private void captureSupportFlags(int id, Object state) {
+            for (var support = 0; support < supportTypes.length; support++) {
+                for (var face = 0; face < directions.length; face++) {
+                    supportFlags[id] |= bit(
+                        support * 6 + face,
                         Vanilla.call(isFaceSturdy, state, emptyLevel, origin, directions[face], supportTypes[support]));
                 }
             }
+        }
 
+        private int fluidFlags(Object state, Object collision) {
             var fluidBits = 0;
             fluidBits |= bit(0, collision == blockShape);
             fluidBits |= bit(1, collision == emptyShape);
             fluidBits |= bit(2, liquidBlockContainer.isInstance(Vanilla.call(getBlock, state)));
             fluidBits |= bit(3, Vanilla.call(canHoldAnyFluid, null, state));
-            for (var fluid = 1; fluid < fluids.length; fluid++)
-                fluidBits |= bit(3 + fluid, Vanilla.call(canHoldSpecificFluid, null, emptyLevel, origin, state, fluids[fluid]));
+            for (var fluid = 1; fluid < fluids.length; fluid++) {
+                fluidBits |=
+                    bit(3 + fluid, Vanilla.call(canHoldSpecificFluid, null, emptyLevel, origin, state, fluids[fluid]));
+            }
 
             if (collision != blockShape) {
                 var set = new ArrayList<Integer>();
-                for (var direction : directions)
+                for (var direction : directions) {
                     set.add(faces.indexOf(collisionFace(collision, direction)));
+                }
                 fluidBits |= faceSets.indexOf(set) << 16;
             }
 
-            fluidFlags[id] = fluidBits;
+            return fluidBits;
         }
 
-        var json = new LinkedHashMap<String, Object>();
-        json.put("_notes", "Vanilla " + version + " block state physics, indexed by state id. See BlockPhysics for the bit layouts.");
-        json.put("flags", flags);
-        json.put("supportFlags", supportFlags);
-        json.put("blockClasses", blockClasses());
-        var blockEntityTypes = blockEntityTypes();
-        json.put("blockEntityTypes", blockEntityTypes);
-        json.put("blockEntityTypeIds", blockEntityTypeIds(blockEntityTypes));
-        json.put("signalSources", signalSources());
-        json.put("fluidFlags", fluidFlags);
-        json.put("collisionFaceSets", faceSets.values());
-        json.put("collisionFaces", faces.values());
-        json.put("shapeBoxes", shapeBoxes.values());
-        json.put("collisionShapes", collisionShapes);
-        json.put("visualShapes", visualShapes);
-        json.put("outlineShapes", outlineShapes);
-        json.put("suffocating", suffocating);
-        json.put("postProcess", postProcess);
-        json.put("shapeOffsets", Arrays.asList(shapeOffsets));
-        json.put("hardness", hardness);
-        json.put("requiresTool", requiresTool);
-        json.put("randomTicking", randomTicking);
-        json.put("pushReactionNames", pushReactionNames);
-        json.put("pushReactions", pushReactions);
-        json.put("stickyPistonStates", stickyPistonStates);
-        Json.write(output.resolve("block_physics.json"), json, false);
+        private void write() throws IOException {
+            var json = new LinkedHashMap<String, Object>();
+            json.put(
+                "_notes",
+                "Vanilla " + version
+                    + " block state physics, indexed by state id. See BlockPhysics for the bit layouts.");
+            json.put("flags", flags);
+            json.put("supportFlags", supportFlags);
+            json.put("blockClasses", blockClasses());
+            var blockEntityTypes = blockEntityTypes();
+            json.put("blockEntityTypes", blockEntityTypes);
+            json.put("blockEntityTypeIds", blockEntityTypeIds(blockEntityTypes));
+            json.put("signalSources", signalSources());
+            json.put("fluidFlags", fluidFlags);
+            json.put("collisionFaceSets", faceSets.values());
+            json.put("collisionFaces", faces.values());
+            json.put("shapeBoxes", shapeBoxes.values());
+            json.put("collisionShapes", collisionShapes);
+            json.put("visualShapes", visualShapes);
+            json.put("outlineShapes", outlineShapes);
+            json.put("suffocating", suffocating);
+            json.put("postProcess", postProcess);
+            json.put("shapeOffsets", Arrays.asList(shapeOffsets));
+            json.put("hardness", hardness);
+            json.put("requiresTool", requiresTool);
+            json.put("randomTicking", randomTicking);
+            json.put("pushReactionNames", pushReactionNames);
+            json.put("pushReactions", pushReactions);
+            json.put("stickyPistonStates", stickyPistonStates);
+            Json.write(output.resolve("block_physics.json"), json, false);
+        }
     }
 
     /**
@@ -605,16 +829,18 @@ public final class VanillaDumper {
         var axis = Vanilla.call(getAxis, direction);
         var positive = isPositive(direction);
         var edge = (double) Vanilla.call(positive ? shapeMax : shapeMin, shape, axis);
-        if (Math.abs(edge - (positive ? 1 : 0)) > 1.0E-7)
+        if (Math.abs(edge - (positive ? 1 : 0)) > 1.0E-7) {
             return List.of();
+        }
 
         var size = (int) Vanilla.call(discreteSize, Vanilla.get(discreteShape, shape), axis);
         var slice = Vanilla.create(sliceShape, shape, axis, positive ? size - 1 : 0);
 
         var axes = faceAxes(direction);
         var face = new ArrayList<double[]>();
-        for (var box : boxes(slice))
-            face.add(new double[] { box[axes[0]], box[axes[1]], box[axes[0] + 3], box[axes[1] + 3] });
+        for (var box : boxes(slice)) {
+            face.add(new double[] {box[axes[0]], box[axes[1]], box[axes[0] + 3], box[axes[1] + 3]});
+        }
         return face;
     }
 
@@ -639,8 +865,9 @@ public final class VanillaDumper {
                 }
             }
 
-            if (owner != null && owner != Vanilla.type(BLOCK))
+            if (owner != null && owner != Vanilla.type(BLOCK)) {
                 classes.put(key(blockRegistry, block), owner.getName());
+            }
         }
 
         Json.write(output.resolve("block_placement_classes.json"), classes, false);
@@ -656,14 +883,34 @@ public final class VanillaDumper {
         var random = "net.minecraft.util.RandomSource";
         dumpBlockOverrideClasses("block_random_tick_classes.json", "randomTick", BLOCK_STATE, level, BLOCK_POS, random);
         dumpBlockOverrideClasses("block_tick_classes.json", "tick", BLOCK_STATE, level, BLOCK_POS, random);
-        dumpBlockOverrideClasses("block_update_shape_classes.json", "updateShape", BLOCK_STATE,
-            "net.minecraft.world.level.LevelReader", "net.minecraft.world.level.ScheduledTickAccess", BLOCK_POS,
-            "net.minecraft.core.Direction", BLOCK_POS, BLOCK_STATE, random);
-        dumpBlockOverrideClasses("block_entity_inside_classes.json", "entityInside", BLOCK_STATE,
-            "net.minecraft.world.level.Level", BLOCK_POS, ENTITY, "net.minecraft.world.entity.InsideBlockEffectApplier",
+        dumpBlockOverrideClasses(
+            "block_update_shape_classes.json",
+            "updateShape",
+            BLOCK_STATE,
+            "net.minecraft.world.level.LevelReader",
+            "net.minecraft.world.level.ScheduledTickAccess",
+            BLOCK_POS,
+            "net.minecraft.core.Direction",
+            BLOCK_POS,
+            BLOCK_STATE,
+            random);
+        dumpBlockOverrideClasses(
+            "block_entity_inside_classes.json",
+            "entityInside",
+            BLOCK_STATE,
+            "net.minecraft.world.level.Level",
+            BLOCK_POS,
+            ENTITY,
+            "net.minecraft.world.entity.InsideBlockEffectApplier",
             "boolean");
-        dumpBlockOverrideClasses("block_on_place_classes.json", "onPlace", BLOCK_STATE,
-            "net.minecraft.world.level.Level", BLOCK_POS, BLOCK_STATE, "boolean");
+        dumpBlockOverrideClasses(
+            "block_on_place_classes.json",
+            "onPlace",
+            BLOCK_STATE,
+            "net.minecraft.world.level.Level",
+            BLOCK_POS,
+            BLOCK_STATE,
+            "boolean");
     }
 
     /**
@@ -677,13 +924,12 @@ public final class VanillaDumper {
         var odds = new TreeMap<String, Map<String, Object>>();
 
         for (var block : (Iterable<?>) blockRegistry) {
-            if (!fire.isInstance(block))
+            if (!fire.isInstance(block)) {
                 continue;
+            }
 
-            @SuppressWarnings("unchecked")
-            var ignite = (Map<Object, Object>) Vanilla.get(igniteField, block);
-            @SuppressWarnings("unchecked")
-            var burn = (Map<Object, Object>) Vanilla.get(burnField, block);
+            @SuppressWarnings("unchecked") var ignite = (Map<Object, Object>) Vanilla.get(igniteField, block);
+            @SuppressWarnings("unchecked") var burn = (Map<Object, Object>) Vanilla.get(burnField, block);
             for (var entry : ignite.entrySet()) {
                 var row = new TreeMap<String, Object>();
                 row.put("ignite", entry.getValue());
@@ -705,8 +951,9 @@ public final class VanillaDumper {
         var blocks = new TreeMap<String, Boolean>();
 
         for (var block : (Iterable<?>) blockRegistry) {
-            if ((boolean) Vanilla.call(ignited, Vanilla.call(defaultState, block)))
+            if ((boolean) Vanilla.call(ignited, Vanilla.call(defaultState, block))) {
                 blocks.put(key(blockRegistry, block), true);
+            }
         }
 
         Json.write(output.resolve("ignited_by_lava.json"), blocks, false);
@@ -719,8 +966,9 @@ public final class VanillaDumper {
     private void dumpPathTypeMalus() throws IOException {
         var getMalus = Vanilla.method(PATH_TYPE, "getMalus");
         var malus = new LinkedHashMap<String, Double>();
-        for (var value : (Enum<?>[]) Vanilla.call(Vanilla.method(PATH_TYPE, "values"), null))
+        for (var value : (Enum<?>[]) Vanilla.call(Vanilla.method(PATH_TYPE, "values"), null)) {
             malus.put(value.name(), ((Number) Vanilla.call(getMalus, value)).doubleValue());
+        }
 
         Json.write(output.resolve("path_type_malus.json"), malus, false);
     }
@@ -735,16 +983,20 @@ public final class VanillaDumper {
         var classify = Vanilla.method(WALK_NODE, "getPathTypeFromState", BLOCK_GETTER, BLOCK_POS);
         var getBlockState = Vanilla.method(BLOCK_GETTER, "getBlockState", BLOCK_POS);
         var current = new Object[1];
-        var getter = java.lang.reflect.Proxy.newProxyInstance(getClass().getClassLoader(),
-            new Class<?>[] { Vanilla.type(BLOCK_GETTER) }, (proxy, method, args) -> {
-                if (method.getDeclaringClass() == Object.class)
+        var getter = java.lang.reflect.Proxy.newProxyInstance(
+            getClass().getClassLoader(),
+            new Class<?>[] {Vanilla.type(BLOCK_GETTER)},
+            (proxy, method, args) -> {
+                if (method.getDeclaringClass() == Object.class) {
                     return switch (method.getName()) {
                         case "hashCode" -> System.identityHashCode(proxy);
                         case "equals" -> proxy == args[0];
                         default -> "BlockGetter";
                     };
-                if (method.getName().equals(getBlockState.getName()) && method.getParameterCount() == 1)
+                }
+                if (method.getName().equals(getBlockState.getName()) && method.getParameterCount() == 1) {
                     return current[0];
+                }
                 throw new UnsupportedOperationException("Path type classification read " + method);
             });
         var types = (Object[]) Vanilla.call(Vanilla.method(PATH_TYPE, "values"), null);
@@ -753,8 +1005,9 @@ public final class VanillaDumper {
             current[0] = state;
             var type = Vanilla.call(classify, null, getter, origin);
             var ordinal = Arrays.asList(types).indexOf(type);
-            if (ordinal < 0)
+            if (ordinal < 0) {
                 throw new IllegalStateException("Unknown path type for state " + state);
+            }
             result.add(ordinal);
         }
 
@@ -762,7 +1015,8 @@ public final class VanillaDumper {
     }
 
     /**
-     * {@code tnt_blocks.json}: the blocks that are instances of {@code TntBlock}, whose static {@code explode} FireBlock
+     * {@code tnt_blocks.json}: the blocks that are instances of {@code TntBlock}, whose static {@code explode}
+     * FireBlock
      * calls on the block it replaces. Keyed by block, with the value {@code true}.
      */
     private void dumpTntBlocks() throws IOException {
@@ -770,8 +1024,9 @@ public final class VanillaDumper {
         var blocks = new TreeMap<String, Boolean>();
 
         for (var block : (Iterable<?>) blockRegistry) {
-            if (tnt.isInstance(block))
+            if (tnt.isInstance(block)) {
                 blocks.put(key(blockRegistry, block), true);
+            }
         }
 
         Json.write(output.resolve("tnt_blocks.json"), blocks, false);
@@ -799,16 +1054,22 @@ public final class VanillaDumper {
         var value = Vanilla.method("net.minecraft.util.random.Weighted", "value");
         var weight = Vanilla.method("net.minecraft.util.random.Weighted", "weight");
         // Each weighted list and the fields its first and second entries become.
-        var lists = Map.of("trees", new String[] { "tree", "secondaryTree" }, "megaTrees",
-            new String[] { "megaTree", "secondaryMegaTree" }, "flowerTrees", new String[] { "flowers", "secondaryFlowers" });
+        var lists = Map.of(
+            "trees",
+            new String[] {"tree", "secondaryTree"},
+            "megaTrees",
+            new String[] {"megaTree", "secondaryMegaTree"},
+            "flowerTrees",
+            new String[] {"flowers", "secondaryFlowers"});
 
         var blockRegistry = Vanilla.get(REGISTRIES, "BLOCK");
         var growers = new TreeMap<String, Map<String, Object>>();
         var skipped = new ArrayList<String>();
 
         for (var block : (Iterable<?>) blockRegistry) {
-            if (!sapling.isInstance(block))
+            if (!sapling.isInstance(block)) {
                 continue;
+            }
 
             var holder = Vanilla.get(growerField, block);
             var row = new TreeMap<String, Object>();
@@ -820,8 +1081,11 @@ public final class VanillaDumper {
                     fits = false;
                     break;
                 }
-                for (var index = 0; index < entries.size(); index++)
-                    row.put(list.getValue()[index], Vanilla.call(identifier, Vanilla.call(value, entries.get(index))).toString());
+                for (var index = 0; index < entries.size(); index++) {
+                    row.put(
+                        list.getValue()[index],
+                        Vanilla.call(identifier, Vanilla.call(value, entries.get(index))).toString());
+                }
                 if (entries.size() == 2) {
                     var first = (int) Vanilla.call(weight, entries.get(0));
                     var second = (int) Vanilla.call(weight, entries.get(1));
@@ -839,8 +1103,11 @@ public final class VanillaDumper {
             growers.put(key(blockRegistry, block), row);
         }
 
-        if (!skipped.isEmpty())
-            System.out.println("These saplings' tree growers don't fit Obsidian's TreeGrower, so they don't grow: " + String.join(", ", skipped));
+        if (!skipped.isEmpty()) {
+            System.out.println(
+                "These saplings' tree growers don't fit Obsidian's TreeGrower, so they don't grow: "
+                + String.join(", ", skipped));
+        }
         Json.write(output.resolve("sapling_growers.json"), growers, false);
     }
 
@@ -849,8 +1116,9 @@ public final class VanillaDumper {
         var behaviour = "net.minecraft.world.level.block.state.BlockBehaviour";
         var baseMethod = Vanilla.method(behaviour, name, parameterTypes);
         var parameters = new Class<?>[parameterTypes.length];
-        for (var i = 0; i < parameters.length; i++)
+        for (var i = 0; i < parameters.length; i++) {
             parameters[i] = Vanilla.type(parameterTypes[i]);
+        }
         var classes = new TreeMap<String, String>();
 
         for (var block : (Iterable<?>) blockRegistry) {
@@ -864,8 +1132,9 @@ public final class VanillaDumper {
                 }
             }
 
-            if (owner != null && owner != Vanilla.type(behaviour))
+            if (owner != null && owner != Vanilla.type(behaviour)) {
                 classes.put(key(blockRegistry, block), owner.getName());
+            }
         }
 
         Json.write(output.resolve(file), classes, false);
@@ -894,8 +1163,9 @@ public final class VanillaDumper {
                 }
             }
 
-            if (owner != null && owner != Vanilla.type(item))
+            if (owner != null && owner != Vanilla.type(item)) {
                 classes.put(key(itemRegistry, entry), owner.getName());
+            }
         }
 
         Json.write(output.resolve("item_use_on_classes.json"), classes, false);
@@ -926,8 +1196,9 @@ public final class VanillaDumper {
                 }
             }
 
-            if (owner != null && owner != Vanilla.type(item))
+            if (owner != null && owner != Vanilla.type(item)) {
                 classes.put(key(itemRegistry, entry), owner.getName());
+            }
         }
 
         Json.write(output.resolve("item_use_classes.json"), classes, false);
@@ -948,9 +1219,18 @@ public final class VanillaDumper {
         var access = "net.minecraft.world.entity.SlotAccess";
         var itemRegistry = Vanilla.get(REGISTRIES, "ITEM");
 
-        writeItemOwners("item_stacked_on_classes.json", itemRegistry, Vanilla.method(item, "overrideStackedOnOther", stack, slot, action, player));
-        writeItemOwners("item_other_stacked_on_classes.json", itemRegistry, Vanilla.method(item, "overrideOtherStackedOnMe", stack, stack, slot, action, player, access));
-        writeItemOwners("item_container_fit_classes.json", itemRegistry, Vanilla.method(item, "canFitInsideContainerItems"));
+        writeItemOwners(
+            "item_stacked_on_classes.json",
+            itemRegistry,
+            Vanilla.method(item, "overrideStackedOnOther", stack, slot, action, player));
+        writeItemOwners(
+            "item_other_stacked_on_classes.json",
+            itemRegistry,
+            Vanilla.method(item, "overrideOtherStackedOnMe", stack, stack, slot, action, player, access));
+        writeItemOwners(
+            "item_container_fit_classes.json",
+            itemRegistry,
+            Vanilla.method(item, "canFitInsideContainerItems"));
         writeBlockItemBlocks(itemRegistry);
     }
 
@@ -964,8 +1244,9 @@ public final class VanillaDumper {
         var blocks = new TreeMap<String, String>();
 
         for (var entry : (Iterable<?>) itemRegistry) {
-            if (!blockItem.isInstance(entry))
+            if (!blockItem.isInstance(entry)) {
                 continue;
+            }
 
             var block = Vanilla.call(getBlock, entry);
             blocks.put(key(itemRegistry, entry), block.getClass().getName());
@@ -974,7 +1255,8 @@ public final class VanillaDumper {
         Json.write(output.resolve("item_block_classes.json"), blocks, false);
     }
 
-    private void writeItemOwners(String file, Object itemRegistry, java.lang.reflect.Method baseMethod) throws IOException {
+    private void writeItemOwners(String file, Object itemRegistry, java.lang.reflect.Method baseMethod)
+        throws IOException {
         var parameters = baseMethod.getParameterTypes();
         var classes = new TreeMap<String, String>();
         var base = Vanilla.type("net.minecraft.world.item.Item");
@@ -990,8 +1272,9 @@ public final class VanillaDumper {
                 }
             }
 
-            if (owner != null && owner != base)
+            if (owner != null && owner != base) {
                 classes.put(key(itemRegistry, entry), owner.getName());
+            }
         }
 
         Json.write(output.resolve(file), classes, false);
@@ -1009,13 +1292,15 @@ public final class VanillaDumper {
         var placed = new TreeMap<String, String>();
 
         for (var entry : (Iterable<?>) itemRegistry) {
-            if (!blockItem.isInstance(entry))
+            if (!blockItem.isInstance(entry)) {
                 continue;
+            }
 
             var itemKey = key(itemRegistry, entry);
             var blockKey = key(blockRegistry, Vanilla.call(getBlock, entry));
-            if (!itemKey.equals(blockKey))
+            if (!itemKey.equals(blockKey)) {
                 placed.put(itemKey, blockKey);
+            }
         }
 
         Json.write(output.resolve("item_placed_blocks.json"), placed, false);
@@ -1039,8 +1324,9 @@ public final class VanillaDumper {
         var attachments = new TreeMap<String, Map<String, String>>();
 
         for (var entry : (Iterable<?>) itemRegistry) {
-            if (!Vanilla.type(standingAndWall).isInstance(entry))
+            if (!Vanilla.type(standingAndWall).isInstance(entry)) {
                 continue;
+            }
 
             var owner = entry.getClass();
             while (owner != null) {
@@ -1064,13 +1350,12 @@ public final class VanillaDumper {
         Json.write(output.resolve("item_attachments.json"), attachments, false);
     }
 
-
-
     /** The simple name of each block's class, sorted by block id. */
     private Map<String, String> blockClasses() {
         var classes = new TreeMap<String, String>();
-        for (var block : (Iterable<?>) blockRegistry)
+        for (var block : (Iterable<?>) blockRegistry) {
             classes.put(key(blockRegistry, block), Vanilla.simpleName(block.getClass()));
+        }
         return classes;
     }
 
@@ -1080,27 +1365,29 @@ public final class VanillaDumper {
      */
     private Map<String, String> blockEntityTypes() {
         var entityBlock = Vanilla.type("net.minecraft.world.level.block.EntityBlock");
-        var newBlockEntity = Vanilla.method("net.minecraft.world.level.block.EntityBlock", "newBlockEntity", BLOCK_POS, BLOCK_STATE);
+        var newBlockEntity =
+            Vanilla.method("net.minecraft.world.level.block.EntityBlock", "newBlockEntity", BLOCK_POS, BLOCK_STATE);
         var getType = Vanilla.method("net.minecraft.world.level.block.entity.BlockEntity", "getType");
-        var isValidBlock = Vanilla.method("net.minecraft.world.level.block.entity.BlockEntityType", "isValid", BLOCK_STATE);
+        var isValidBlock =
+            Vanilla.method("net.minecraft.world.level.block.entity.BlockEntityType", "isValid", BLOCK_STATE);
         var defaultState = Vanilla.method(BLOCK, "defaultBlockState");
         var types = Vanilla.get(REGISTRIES, "BLOCK_ENTITY_TYPE");
 
         var result = new LinkedHashMap<String, String>();
         for (var block : (Iterable<?>) blockRegistry) {
-            if (!entityBlock.isInstance(block))
+            if (!entityBlock.isInstance(block)) {
                 continue;
+            }
             var blockEntity = Vanilla.call(newBlockEntity, block, origin, Vanilla.call(defaultState, block));
-            if (blockEntity != null)
+            if (blockEntity != null) {
                 result.put(key(blockRegistry, block), key(types, Vanilla.call(getType, blockEntity)));
-            else
-            {
+            } else {
                 // A block whose newBlockEntity is null (MovingPistonBlock) gets its entity from elsewhere; vanilla's
                 // BlockEntityType.isValid says which type that entity belongs to. Its ticks need the same type id.
-                for (var type : (Iterable<?>) types)
-                {
-                    if ((boolean) Vanilla.call(isValidBlock, type, Vanilla.call(defaultState, block)))
+                for (var type : (Iterable<?>) types) {
+                    if ((boolean) Vanilla.call(isValidBlock, type, Vanilla.call(defaultState, block))) {
                         result.put(key(blockRegistry, block), key(types, type));
+                    }
                 }
             }
         }
@@ -1115,8 +1402,9 @@ public final class VanillaDumper {
         var result = new LinkedHashMap<String, Integer>();
         for (var type : (Iterable<?>) types) {
             var key = key(types, type);
-            if (blockEntityTypes.containsValue(key))
+            if (blockEntityTypes.containsValue(key)) {
                 result.put(key, (int) Vanilla.call(getId, types, type));
+            }
         }
 
         return result;
@@ -1128,8 +1416,9 @@ public final class VanillaDumper {
         var defaultState = Vanilla.method(BLOCK, "defaultBlockState");
         var result = new ArrayList<String>();
         for (var block : (Iterable<?>) blockRegistry) {
-            if ((boolean) Vanilla.call(isSignalSource, Vanilla.call(defaultState, block)))
+            if ((boolean) Vanilla.call(isSignalSource, Vanilla.call(defaultState, block))) {
                 result.add(key(blockRegistry, block));
+            }
         }
 
         result.sort(null);
@@ -1137,7 +1426,8 @@ public final class VanillaDumper {
     }
 
     /**
-     * {@code block_transforms.json}, read by {@code Obsidian/Registries/BlockTransforms.cs}: per transform, each state's
+     * {@code block_transforms.json}, read by {@code Obsidian/Registries/BlockTransforms.cs}: per transform, each
+     * state's
      * {@code BlockState.rotate}/{@code mirror} result as a state id offset.
      */
     private void dumpBlockTransforms() throws IOException {
@@ -1149,10 +1439,14 @@ public final class VanillaDumper {
         var mirrors = "net.minecraft.world.level.block.Mirror";
 
         var json = new LinkedHashMap<String, Object>();
-        json.put("_notes", "Vanilla " + version + " BlockState.rotate/mirror results per state id, stored as (result - state id).");
+        json.put(
+            "_notes",
+            "Vanilla " + version + " BlockState.rotate/mirror results per state id, stored as (result - state id).");
         json.put("rotateClockwise90", transformed(stateIds, getId, rotate, Vanilla.get(rotation, "CLOCKWISE_90")));
         json.put("rotate180", transformed(stateIds, getId, rotate, Vanilla.get(rotation, "CLOCKWISE_180")));
-        json.put("rotateCounterclockwise90", transformed(stateIds, getId, rotate, Vanilla.get(rotation, "COUNTERCLOCKWISE_90")));
+        json.put(
+            "rotateCounterclockwise90",
+            transformed(stateIds, getId, rotate, Vanilla.get(rotation, "COUNTERCLOCKWISE_90")));
         json.put("mirrorLeftRight", transformed(stateIds, getId, mirror, Vanilla.get(mirrors, "LEFT_RIGHT")));
         json.put("mirrorFrontBack", transformed(stateIds, getId, mirror, Vanilla.get(mirrors, "FRONT_BACK")));
         Json.write(output.resolve("block_transforms.json"), json, false);
@@ -1160,8 +1454,9 @@ public final class VanillaDumper {
 
     private int[] transformed(Object stateIds, Method getId, Method transform, Object argument) {
         var deltas = new int[states.size()];
-        for (var id = 0; id < states.size(); id++)
+        for (var id = 0; id < states.size(); id++) {
             deltas[id] = (int) Vanilla.call(getId, stateIds, Vanilla.call(transform, states.get(id), argument)) - id;
+        }
         return deltas;
     }
 
@@ -1173,8 +1468,9 @@ public final class VanillaDumper {
         var getMapColor = Vanilla.method(STATE_BASE, "getMapColor", BLOCK_GETTER, BLOCK_POS);
         var colorId = Vanilla.field("net.minecraft.world.level.material.MapColor", "id");
         var colors = new byte[states.size()];
-        for (var id = 0; id < states.size(); id++)
+        for (var id = 0; id < states.size(); id++) {
             colors[id] = (byte) Vanilla.getInt(colorId, Vanilla.call(getMapColor, states.get(id), emptyLevel, origin));
+        }
         Files.write(output.resolve("map_colors.bin"), colors);
     }
 
@@ -1190,16 +1486,21 @@ public final class VanillaDumper {
         var post = Vanilla.get(wall, "TEST_SHAPE_POST");
         var sides = (Map<?, ?>) Vanilla.get(wall, "TEST_SHAPES_WALL");
         // WallShapeCovers' bits after the post: north, east, south, west.
-        var sideTests = new Object[] { sides.get(Vanilla.get(DIRECTION, "NORTH")), sides.get(Vanilla.get(DIRECTION, "EAST")),
-            sides.get(Vanilla.get(DIRECTION, "SOUTH")), sides.get(Vanilla.get(DIRECTION, "WEST")) };
+        var sideTests = new Object[] {
+            sides.get(Vanilla.get(DIRECTION, "NORTH")),
+            sides.get(Vanilla.get(DIRECTION, "EAST")),
+            sides.get(Vanilla.get(DIRECTION, "SOUTH")),
+            sides.get(Vanilla.get(DIRECTION, "WEST"))};
         var down = Vanilla.get(DIRECTION, "DOWN");
 
         var covers = new byte[states.size()];
         for (var id = 0; id < states.size(); id++) {
-            var bottom = Vanilla.call(getFaceShape, Vanilla.call(getCollisionShape, states.get(id), emptyLevel, origin), down);
+            var bottom =
+                Vanilla.call(getFaceShape, Vanilla.call(getCollisionShape, states.get(id), emptyLevel, origin), down);
             var bits = bit(0, Vanilla.call(isCovered, null, bottom, post));
-            for (var side = 0; side < 4; side++)
+            for (var side = 0; side < 4; side++) {
                 bits |= bit(1 + side, Vanilla.call(isCovered, null, bottom, sideTests[side]));
+            }
             covers[id] = (byte) bits;
         }
 
@@ -1212,24 +1513,56 @@ public final class VanillaDumper {
         // vanilla pack registries as a server, instead of datagen's unbound bootstrap holders.
         var provider = "net.minecraft.core.HolderLookup$Provider";
         var packType = "net.minecraft.server.packs.PackType";
-        var vanillaPack = Vanilla.call(Vanilla.method("net.minecraft.server.packs.VanillaPackResources", "fullResources"),
-            Vanilla.call(Vanilla.method("net.minecraft.server.packs.repository.ServerPacksSource", "createVanillaPackSource"), null));
-        var resources = Vanilla.create(Vanilla.constructor("net.minecraft.server.packs.resources.MultiPackResourceManager", packType, "java.util.List"),
-            Vanilla.get(packType, "SERVER_DATA"), List.of(vanillaPack));
-        var builtins = Vanilla.call(Vanilla.method("net.minecraft.core.RegistryAccess", "fromRegistryOfRegistries", REGISTRY),
-            null, Vanilla.get(REGISTRIES, "REGISTRY"));
+        var vanillaPack = Vanilla.call(
+            Vanilla.method("net.minecraft.server.packs.VanillaPackResources", "fullResources"),
+            Vanilla.call(
+                Vanilla.method("net.minecraft.server.packs.repository.ServerPacksSource", "createVanillaPackSource"),
+                null));
+        var resources = Vanilla.create(
+            Vanilla.constructor(
+                "net.minecraft.server.packs.resources.MultiPackResourceManager",
+                packType,
+                "java.util.List"),
+            Vanilla.get(packType, "SERVER_DATA"),
+            List.of(vanillaPack));
+        var builtins = Vanilla.call(
+            Vanilla.method("net.minecraft.core.RegistryAccess", "fromRegistryOfRegistries", REGISTRY),
+            null,
+            Vanilla.get(REGISTRIES, "REGISTRY"));
         var listRegistries = Vanilla.method(provider, "listRegistries");
         var builtinList = ((java.util.stream.Stream<?>) Vanilla.call(listRegistries, builtins)).toList();
-        var loaded = ((java.util.concurrent.CompletableFuture<?>) Vanilla.call(Vanilla.method("net.minecraft.resources.RegistryDataLoader", "load",
-            "net.minecraft.server.packs.resources.ResourceManager", "java.util.List", "java.util.List", "java.util.concurrent.Executor"),
-            null, resources, builtinList, Vanilla.get("net.minecraft.resources.RegistryDataLoader", "WORLD_REGISTRIES"),
-            (java.util.concurrent.Executor) Runnable::run)).join();
-        var lookup = Vanilla.call(Vanilla.method(provider, "create", "java.util.stream.Stream"), null,
-            java.util.stream.Stream.concat(builtinList.stream(), (java.util.stream.Stream<?>) Vanilla.call(listRegistries, loaded)));
+        var loaded = ((java.util.concurrent.CompletableFuture<?>) Vanilla.call(
+                          Vanilla.method(
+                              "net.minecraft.resources.RegistryDataLoader",
+                              "load",
+                              "net.minecraft.server.packs.resources.ResourceManager",
+                              "java.util.List",
+                              "java.util.List",
+                              "java.util.concurrent.Executor"),
+                          null,
+                          resources,
+                          builtinList,
+                          Vanilla.get("net.minecraft.resources.RegistryDataLoader", "WORLD_REGISTRIES"),
+                          (java.util.concurrent.Executor) Runnable::run))
+                         .join();
+        var lookup = Vanilla.call(
+            Vanilla.method(provider, "create", "java.util.stream.Stream"),
+            null,
+            java.util.stream.Stream.concat(
+                builtinList.stream(),
+                (java.util.stream.Stream<?>) Vanilla.call(listRegistries, loaded)));
         var flags = Vanilla.get("net.minecraft.world.flag.FeatureFlags", "DEFAULT_FLAGS");
-        Vanilla.call(Vanilla.method("net.minecraft.world.item.CreativeModeTabs", "tryRebuildTabContents",
-            "net.minecraft.world.flag.FeatureFlagSet", "boolean", "net.minecraft.core.HolderLookup$Provider"),
-            null, flags, false, lookup);
+        Vanilla.call(
+            Vanilla.method(
+                "net.minecraft.world.item.CreativeModeTabs",
+                "tryRebuildTabContents",
+                "net.minecraft.world.flag.FeatureFlagSet",
+                "boolean",
+                "net.minecraft.core.HolderLookup$Provider"),
+            null,
+            flags,
+            false,
+            lookup);
         var tabType = "net.minecraft.world.item.CreativeModeTab";
         var stackType = "net.minecraft.world.item.ItemStack";
         var itemRegistry = Vanilla.get(REGISTRIES, "ITEM");
@@ -1245,15 +1578,20 @@ public final class VanillaDumper {
             entry.put("alignedRight", Vanilla.call(Vanilla.method(tabType, "isAlignedRight"), tab));
             var title = Vanilla.call(Vanilla.method(tabType, "getDisplayName"), tab);
             var contents = Vanilla.call(Vanilla.method("net.minecraft.network.chat.Component", "getContents"), title);
-            entry.put("title", Vanilla.call(Vanilla.method("net.minecraft.network.chat.contents.TranslatableContents", "getKey"), contents));
+            entry.put(
+                "title",
+                Vanilla.call(
+                    Vanilla.method("net.minecraft.network.chat.contents.TranslatableContents", "getKey"),
+                    contents));
             var icon = Vanilla.call(Vanilla.method(tabType, "getIconItem"), tab);
             entry.put("icon", Vanilla.call(getId, itemRegistry, Vanilla.call(getItem, icon)));
             entry.put("background", Vanilla.call(Vanilla.method(tabType, "getBackgroundTexture"), tab).toString());
             // Preserve vanilla ordering and duplicates: component variants occupy distinct creative entries.
             // The client currently offers plain stacks; retaining every entry lets the component codec be added later.
             var items = new ArrayList<Integer>();
-            for (var stack : (Iterable<?>) Vanilla.call(Vanilla.method(tabType, "getDisplayItems"), tab))
+            for (var stack : (Iterable<?>) Vanilla.call(Vanilla.method(tabType, "getDisplayItems"), tab)) {
                 items.add((int) Vanilla.call(getId, itemRegistry, Vanilla.call(getItem, stack)));
+            }
             entry.put("items", items);
             tabs.add(entry);
         }
@@ -1267,7 +1605,8 @@ public final class VanillaDumper {
         var getStat = Vanilla.method("net.minecraft.stats.StatType", "get", "java.lang.Object");
         var formatterField = Vanilla.field("net.minecraft.stats.Stat", "formatter");
         var formatterNames = List.of("DEFAULT", "DIVIDE_BY_TEN", "DISTANCE", "TIME");
-        var formatters = formatterNames.stream().map(name -> Vanilla.get("net.minecraft.stats.StatFormatter", name)).toList();
+        var formatters =
+            formatterNames.stream().map(name -> Vanilla.get("net.minecraft.stats.StatFormatter", name)).toList();
         var result = new ArrayList<Object>();
         for (var type : (Iterable<?>) types) {
             var registry = Vanilla.call(getRegistry, type);
@@ -1287,8 +1626,9 @@ public final class VanillaDumper {
         var getId = Vanilla.method(REGISTRY, "getId", "java.lang.Object");
         var asItem = Vanilla.method(BLOCK, "asItem");
         var blockItems = new ArrayList<Integer>();
-        for (var block : (Iterable<?>) blockRegistry)
+        for (var block : (Iterable<?>) blockRegistry) {
             blockItems.add((int) Vanilla.call(getId, itemRegistry, Vanilla.call(asItem, block)));
+        }
         Json.write(output.resolve("statistics.json"), Map.of("types", result, "blockItems", blockItems), true);
     }
 
@@ -1303,8 +1643,14 @@ public final class VanillaDumper {
         var types = Vanilla.get(REGISTRIES, "ENTITY_TYPE");
         var attributes = Vanilla.get(REGISTRIES, "ATTRIBUTE");
         var attributeIds = new LinkedHashMap<String, Object>();
-        for (var attribute : (Iterable<?>) attributes)
-            attributeIds.put(key(attributes, attribute), Vanilla.call(Vanilla.method("net.minecraft.core.IdMap", "getId", "java.lang.Object"), attributes, attribute));
+        for (var attribute : (Iterable<?>) attributes) {
+            attributeIds.put(
+                key(attributes, attribute),
+                Vanilla.call(
+                    Vanilla.method("net.minecraft.core.IdMap", "getId", "java.lang.Object"),
+                    attributes,
+                    attribute));
+        }
         Json.write(output.resolve("attribute_ids.json"), attributeIds, false);
         var getId = Vanilla.method("net.minecraft.core.IdMap", "getId", "java.lang.Object");
         var wrapAsHolder = Vanilla.method(REGISTRY, "wrapAsHolder", "java.lang.Object");
@@ -1352,8 +1698,9 @@ public final class VanillaDumper {
                 var defaults = Vanilla.call(getSupplier, null, type);
                 for (var attribute : (Iterable<?>) attributes) {
                     var holder = Vanilla.call(wrapAsHolder, attributes, attribute);
-                    if ((boolean) Vanilla.call(hasAttribute, defaults, holder))
+                    if ((boolean) Vanilla.call(hasAttribute, defaults, holder)) {
                         values.put(key(attributes, attribute), Vanilla.call(getBaseValue, defaults, holder));
+                    }
                 }
                 entity.put("attributes", values);
             }
@@ -1362,9 +1709,11 @@ public final class VanillaDumper {
             putClass(entity, typeClass);
             json.put(key(types, type), entity);
 
-            for (var parent = typeClass.getSuperclass(); entityClass.isAssignableFrom(parent); parent = parent.getSuperclass()) {
-                if (!parents.contains(parent))
+            for (var parent = typeClass.getSuperclass(); entityClass.isAssignableFrom(parent);
+                 parent = parent.getSuperclass()) {
+                if (!parents.contains(parent)) {
                     parents.add(parent);
+                }
             }
         }
 
@@ -1374,8 +1723,9 @@ public final class VanillaDumper {
             var entry = new LinkedHashMap<String, Object>();
             putClass(entry, parent);
             entry.remove("class");
-            if (json.put(Vanilla.simpleName(parent), entry) != null)
+            if (json.put(Vanilla.simpleName(parent), entry) != null) {
                 throw new IllegalStateException("Two entity classes are named " + Vanilla.simpleName(parent));
+            }
         }
 
         Json.write(output.resolve("entities.json"), json, true);
@@ -1400,8 +1750,9 @@ public final class VanillaDumper {
             data.forEach(item -> meta.put(item.getKey(), item.getValue()));
             entry.put("meta", meta);
         }
-        if (type != Vanilla.type(ENTITY))
+        if (type != Vanilla.type(ENTITY)) {
             entry.put("parent", Vanilla.simpleName(type.getSuperclass()));
+        }
     }
 
     /**
@@ -1413,7 +1764,8 @@ public final class VanillaDumper {
         var classes = new HashMap<Object, Class<?>>();
         for (var field : Vanilla.type("net.minecraft.world.entity.EntityTypes").getDeclaredFields()) {
             if (Modifier.isStatic(field.getModifiers()) && field.getType() == entityType
-                && field.getGenericType() instanceof ParameterizedType generic && generic.getActualTypeArguments()[0] instanceof Class<?> type) {
+                && field.getGenericType() instanceof ParameterizedType generic
+                && generic.getActualTypeArguments()[0] instanceof Class<?> type) {
                 field.setAccessible(true);
                 classes.put(Vanilla.getStatic(field), type);
             }
@@ -1447,17 +1799,20 @@ public final class VanillaDumper {
         for (var className : Vanilla.classesIn(packageName)) {
             var declaring = Vanilla.type(className);
             for (var field : declaring.getDeclaredFields()) {
-                if (!Modifier.isStatic(field.getModifiers()) || field.getType() != keyType)
+                if (!Modifier.isStatic(field.getModifiers()) || field.getType() != keyType) {
                     continue;
+                }
                 var key = Vanilla.getStatic(field);
-                if (!(boolean) Vanilla.call(isFor, key, registry))
+                if (!(boolean) Vanilla.call(isFor, key, registry)) {
                     continue;
+                }
 
                 var id = Vanilla.call(identifier, key).toString();
                 var group = Vanilla.simpleName(declaring);
                 var previous = groups.put(id, group);
-                if (previous != null && !previous.equals(group))
+                if (previous != null && !previous.equals(group)) {
                     throw new IllegalStateException(id + " is declared in both " + previous + " and " + group);
+                }
             }
         }
 
@@ -1484,35 +1839,59 @@ public final class VanillaDumper {
         var flowId = Vanilla.method("net.minecraft.network.protocol.PacketFlow", "id");
         var classes = new HashMap<String, Class<?>>();
         var json = new TreeMap<String, Map<String, Object>>();
-        for (var className : Vanilla.classes(name -> name.startsWith("net.minecraft.network.protocol.") && name.endsWith("PacketTypes"))) {
+        collectPacketFields(formats, unread, packetType, flow, id, flowId, classes, json);
+
+        if (classes.isEmpty()) {
+            throw new IllegalStateException("Found no packet types");
+        }
+        if (!unread.isEmpty()) {
+            System.out.println(
+                "Couldn't read how these packets are written, so their fields don't say whether they're sent: "
+                + String.join(", ", unread));
+        }
+
+        Json.write(work.resolve("packet_fields.json"), json, true);
+        dumpPacketTypes(formats);
+    }
+
+    private void collectPacketFields(
+        PacketFormats formats,
+        List<String> unread,
+        Class<?> packetType,
+        Method flow,
+        Method id,
+        Method flowId,
+        Map<String, Class<?>> classes,
+        Map<String, Map<String, Object>> json) {
+        for (var className : Vanilla.classes(
+                 name -> name.startsWith("net.minecraft.network.protocol.") && name.endsWith("PacketTypes"))) {
             for (var field : Vanilla.type(className).getDeclaredFields()) {
                 if (!Modifier.isStatic(field.getModifiers()) || field.getType() != packetType
-                    || !(field.getGenericType() instanceof ParameterizedType generic))
+                    || !(field.getGenericType() instanceof ParameterizedType generic)) {
                     continue;
+                }
 
                 // Generic packets (BundleDelimiterPacket<T>) are listed by their class.
                 var argument = generic.getActualTypeArguments()[0];
-                var type = (Class<?>) (argument instanceof ParameterizedType parameterized ? parameterized.getRawType() : argument);
+                var type = (Class<?>) (argument instanceof ParameterizedType parameterized ? parameterized.getRawType()
+                                                                                           : argument);
                 var packet = Vanilla.getStatic(field);
                 var direction = (String) Vanilla.call(flowId, Vanilla.call(flow, packet));
                 var key = direction + " " + Vanilla.call(id, packet);
                 var previous = classes.put(key, type);
-                if (previous != null && previous != type)
-                    throw new IllegalStateException(key + " is both " + Vanilla.simpleName(previous) + " and " + Vanilla.simpleName(type));
+                if (previous != null && previous != type) {
+                    throw new IllegalStateException(
+                        key + " is both " + Vanilla.simpleName(previous) + " and " + Vanilla.simpleName(type));
+                }
 
                 var writes = formats.writes(type);
-                if (writes == null && !unread.contains(Vanilla.simpleName(type)))
+                if (writes == null && !unread.contains(Vanilla.simpleName(type))) {
                     unread.add(Vanilla.simpleName(type));
-                json.computeIfAbsent(direction, name -> new TreeMap<>()).put(Vanilla.call(id, packet).toString(), packetFields(type, writes));
+                }
+                json.computeIfAbsent(direction, name -> new TreeMap<>())
+                    .put(Vanilla.call(id, packet).toString(), packetFields(type, writes));
             }
         }
-        if (classes.isEmpty())
-            throw new IllegalStateException("Found no packet types");
-        if (!unread.isEmpty())
-            System.out.println("Couldn't read how these packets are written, so their fields don't say whether they're sent: " + String.join(", ", unread));
-
-        Json.write(work.resolve("packet_fields.json"), json, true);
-        dumpPacketTypes(formats);
     }
 
     /**
@@ -1544,20 +1923,24 @@ public final class VanillaDumper {
      */
     private List<Object> packetFields(Class<?> type, Map<String, PacketFormats.Write> writes) {
         var fields = instanceFields(type);
-        if (writes == null)
+        if (writes == null) {
             return new ArrayList<>(fields);
+        }
 
         for (var field : fields) {
             var write = writes.get((String) field.get("name"));
             field.put("sent", write != null);
             if (write != null) {
                 field.put("encoding", write.encoding());
-                if (write.conditional())
+                if (write.conditional()) {
                     field.put("conditional", true);
-                if (write.repeated())
+                }
+                if (write.repeated()) {
                     field.put("repeated", true);
-                if (write.packed())
+                }
+                if (write.packed()) {
                     field.put("packed", true);
+                }
             }
         }
         var order = Comparator.comparingInt((Map<String, Object> field) -> {
@@ -1569,10 +1952,12 @@ public final class VanillaDumper {
 
     /** A class's instance fields, its superclasses' first, by name and type. */
     private List<Map<String, Object>> instanceFields(Class<?> type) {
-        var fields = type.getSuperclass() == null ? new ArrayList<Map<String, Object>>() : instanceFields(type.getSuperclass());
+        var fields =
+            type.getSuperclass() == null ? new ArrayList<Map<String, Object>>() : instanceFields(type.getSuperclass());
         for (var field : type.getDeclaredFields()) {
-            if (Modifier.isStatic(field.getModifiers()) || field.isSynthetic())
+            if (Modifier.isStatic(field.getModifiers()) || field.isSynthetic()) {
                 continue;
+            }
 
             var entry = new LinkedHashMap<String, Object>();
             entry.put("name", field.getName());
@@ -1591,10 +1976,14 @@ public final class VanillaDumper {
         return switch (type) {
             case Class<?> array when array.isArray() -> typeName(array.getComponentType()) + "[]";
             case Class<?> plain -> Vanilla.nestedName(plain);
-            case ParameterizedType generic -> typeName(generic.getRawType())
-                + Arrays.stream(generic.getActualTypeArguments()).map(this::typeName).collect(Collectors.joining(", ", "<", ">"));
+            case ParameterizedType generic ->
+                typeName(generic.getRawType())
+                    + Arrays.stream(generic.getActualTypeArguments())
+                          .map(this::typeName)
+                          .collect(Collectors.joining(", ", "<", ">"));
             case GenericArrayType array -> typeName(array.getGenericComponentType()) + "[]";
-            case WildcardType wildcard when wildcard.getLowerBounds().length > 0 -> "? super " + typeName(wildcard.getLowerBounds()[0]);
+            case WildcardType wildcard when wildcard.getLowerBounds().length > 0 ->
+                "? super " + typeName(wildcard.getLowerBounds()[0]);
             case WildcardType wildcard when wildcard.getUpperBounds()[0] == Object.class -> "?";
             case WildcardType wildcard -> "? extends " + typeName(wildcard.getUpperBounds()[0]);
             default -> type.getTypeName(); // type variables
@@ -1613,8 +2002,9 @@ public final class VanillaDumper {
         var result = new ArrayList<double[]>();
         for (var box : (List<?>) Vanilla.call(toAabbs, shape)) {
             var values = new double[6];
-            for (var i = 0; i < 6; i++)
+            for (var i = 0; i < 6; i++) {
                 values[i] = Vanilla.getDouble(boxBounds[i], box);
+            }
             result.add(values);
         }
 
@@ -1626,9 +2016,9 @@ public final class VanillaDumper {
     /** The two axes (0 x, 1 y, 2 z) that span a direction's face, in x, y, z order. */
     private static int[] faceAxes(Object direction) {
         return switch (((Enum<?>) direction).ordinal() / 2) {
-            case 0 -> new int[] { 0, 2 }; // down, up
-            case 1 -> new int[] { 0, 1 }; // north, south
-            default -> new int[] { 1, 2 }; // west, east
+            case 0 -> new int[] {0, 2}; // down, up
+            case 1 -> new int[] {0, 1}; // north, south
+            default -> new int[] {1, 2}; // west, east
         };
     }
 
@@ -1643,8 +2033,9 @@ public final class VanillaDumper {
 
     private static int indexOf(Object[] values, Object value) {
         for (var i = 0; i < values.length; i++) {
-            if (values[i] == value)
+            if (values[i] == value) {
                 return i;
+            }
         }
         return 0;
     }
@@ -1652,7 +2043,9 @@ public final class VanillaDumper {
     /** Numbers distinct values in the order they're first seen. */
     private static final class Indexer<T> {
         private final Map<Object, Integer> indexes = new HashMap<>();
+
         private final List<T> values = new ArrayList<>();
+
         private final Function<T, Object> key;
 
         Indexer() {
@@ -1681,8 +2074,9 @@ public final class VanillaDumper {
         static void write(Path path, Object value, boolean indented) throws IOException {
             var builder = new StringBuilder();
             append(builder, value, indented ? "\n" : null);
-            if (indented)
+            if (indented) {
                 builder.append('\n');
+            }
             Files.writeString(path, builder, StandardCharsets.UTF_8);
         }
 
@@ -1694,25 +2088,29 @@ public final class VanillaDumper {
                 var first = true;
                 for (var entry : map.entrySet()) {
                     builder.append(first ? "" : ",");
-                    if (inner != null)
+                    if (inner != null) {
                         builder.append(inner);
+                    }
                     string(builder, entry.getKey().toString());
                     builder.append(inner != null ? ": " : ":");
                     append(builder, entry.getValue(), inner);
                     first = false;
                 }
-                if (newline != null && !map.isEmpty())
+                if (newline != null && !map.isEmpty()) {
                     builder.append(newline);
+                }
                 builder.append('}');
             } else if (value instanceof int[] array) {
                 builder.append('[');
-                for (var i = 0; i < array.length; i++)
+                for (var i = 0; i < array.length; i++) {
                     builder.append(i == 0 ? "" : ",").append(array[i]);
+                }
                 builder.append(']');
             } else if (value instanceof double[] array) {
                 builder.append('[');
-                for (var i = 0; i < array.length; i++)
+                for (var i = 0; i < array.length; i++) {
                     builder.append(i == 0 ? "" : ",").append(array[i]);
+                }
                 builder.append(']');
             } else if (value instanceof List<?> list) {
                 builder.append('[');
@@ -1731,12 +2129,13 @@ public final class VanillaDumper {
         private static void string(StringBuilder builder, String text) {
             builder.append('"');
             for (var c : text.toCharArray()) {
-                if (c == '"' || c == '\\')
+                if (c == '"' || c == '\\') {
                     builder.append('\\').append(c);
-                else if (c < 0x20)
+                } else if (c < 0x20) {
                     builder.append(String.format("\\u%04x", (int) c));
-                else
+                } else {
                     builder.append(c);
+                }
             }
             builder.append('"');
         }
