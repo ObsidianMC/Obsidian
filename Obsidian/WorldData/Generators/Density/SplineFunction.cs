@@ -7,8 +7,8 @@ namespace Obsidian.WorldData.Generators.Density;
 /// <remarks>Evaluated in float with vanilla's CubicSpline formulas and operation order.</remarks>
 internal abstract class CubicSpline
 {
-    /// <summary>The spline's value, sampling its coordinate functions through <paramref name="coordinates"/>.</summary>
-    public abstract float Evaluate(Func<DensityFunction, float> coordinates);
+    /// <summary>The spline's value, reading its coordinate functions from <paramref name="coordinates"/>.</summary>
+    public abstract float Evaluate(in SplineInput coordinates);
 
     /// <summary>Adds the coordinate functions of the spline and its points' splines to a set.</summary>
     public abstract void CollectCoordinates(HashSet<DensityFunction> coordinates);
@@ -16,7 +16,7 @@ internal abstract class CubicSpline
 
 internal sealed class ConstantSpline(float value) : CubicSpline
 {
-    public override float Evaluate(Func<DensityFunction, float> coordinates) => value;
+    public override float Evaluate(in SplineInput coordinates) => value;
 
     public override void CollectCoordinates(HashSet<DensityFunction> coordinates)
     {
@@ -29,9 +29,9 @@ internal sealed class MultipointSpline(
     ImmutableArray<CubicSpline> values,
     ImmutableArray<float> derivatives) : CubicSpline
 {
-    public override float Evaluate(Func<DensityFunction, float> coordinates)
+    public override float Evaluate(in SplineInput coordinates)
     {
-        var input = coordinates(coordinate);
+        var input = coordinates.Value(coordinate);
         var start = this.IntervalStart(input);
         var last = locations.Length - 1;
 
@@ -85,11 +85,73 @@ internal sealed class MultipointSpline(
 }
 
 /// <summary>
+/// The values of a <see cref="SplineFunction"/>'s coordinate functions at one position, without allocating: sampled
+/// once each when first needed at a point, like vanilla's PointSplineInput, or copied from the volume buffers.
+/// </summary>
+internal readonly ref struct SplineInput
+{
+    private readonly ReadOnlySpan<DensityFunction> coordinates;
+    private readonly Span<float> values;
+    private readonly Span<bool> sampled;
+    private readonly int x;
+    private readonly int y;
+    private readonly int z;
+
+    /// <summary>
+    /// An input for a position. <paramref name="values"/> and <paramref name="sampled"/> hold one entry per coordinate
+    /// function; a coordinate not yet <paramref name="sampled"/> is sampled at the position when the spline reads it.
+    /// </summary>
+    public SplineInput(
+        ReadOnlySpan<DensityFunction> coordinates,
+        Span<float> values,
+        Span<bool> sampled,
+        int x,
+        int y,
+        int z)
+    {
+        this.coordinates = coordinates;
+        this.values = values;
+        this.sampled = sampled;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+
+    public float Value(DensityFunction coordinate)
+    {
+        var index = this.IndexOf(coordinate);
+
+        if (!this.sampled[index])
+        {
+            this.values[index] = coordinate.Sample(this.x, this.y, this.z);
+            this.sampled[index] = true;
+        }
+
+        return this.values[index];
+    }
+
+    // A spline has a handful of coordinates, so a linear search beats hashing.
+    private int IndexOf(DensityFunction coordinate)
+    {
+        for (var i = 0; i < this.coordinates.Length; i++)
+        {
+            if (ReferenceEquals(this.coordinates[i], coordinate))
+                return i;
+        }
+
+        throw new ArgumentException("The function isn't one of the spline's coordinates.", nameof(coordinate));
+    }
+}
+
+/// <summary>
 /// <c>spline</c>: a <see cref="CubicSpline"/> of other density functions. Over a volume each coordinate function is
 /// sampled as a volume, like vanilla's SplineFunction.
 /// </summary>
 internal sealed class SplineFunction : DensityFunction
 {
+    // Above this many coordinates (vanilla's splines have up to 4) their values go on the heap instead of the stack.
+    private const int MaxStackCoordinates = 32;
+
     private readonly CubicSpline spline;
     private readonly DensityFunction[] coordinates;
 
@@ -102,25 +164,46 @@ internal sealed class SplineFunction : DensityFunction
         this.coordinates = [.. coordinates];
     }
 
-    public override float Sample(int x, int y, int z) => this.spline.Evaluate(function => function.Sample(x, y, z));
+    public override float Sample(int x, int y, int z)
+    {
+        var count = this.coordinates.Length;
+        var onStack = count <= MaxStackCoordinates;
+        Span<float> values = onStack ? stackalloc float[count] : new float[count];
+        Span<bool> sampled = onStack ? stackalloc bool[count] : new bool[count];
+
+        var input = new SplineInput(this.coordinates, values, sampled, x, y, z);
+
+        return this.spline.Evaluate(input);
+    }
 
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
     {
-        var buffers = new Dictionary<DensityFunction, DensityBuffer>(ReferenceEqualityComparer.Instance);
+        var count = this.coordinates.Length;
+        var onStack = count <= MaxStackCoordinates;
+        Span<float> values = onStack ? stackalloc float[count] : new float[count];
+        Span<bool> sampled = onStack ? stackalloc bool[count] : new bool[count];
+
+        // Every value is copied from the buffers, so the input never samples a coordinate and needs no position.
+        sampled.Fill(true);
+        var input = new SplineInput(this.coordinates, values, sampled, 0, 0, 0);
+
+        var buffers = new DensityBuffer[count];
         try
         {
-            foreach (var coordinate in this.coordinates)
-                buffers[coordinate] = DensityBuffer.Sample(coordinate, volume);
+            for (var i = 0; i < count; i++)
+                buffers[i] = DensityBuffer.Sample(this.coordinates[i], volume);
 
-            for (var i = 0; i < output.Length; i++)
+            for (var index = 0; index < output.Length; index++)
             {
-                var index = i;
-                output[i] = this.spline.Evaluate(function => buffers[function].Span[index]);
+                for (var i = 0; i < count; i++)
+                    values[i] = buffers[i].Span[index];
+
+                output[index] = this.spline.Evaluate(input);
             }
         }
         finally
         {
-            foreach (var buffer in buffers.Values)
+            foreach (var buffer in buffers)
                 buffer.Dispose();
         }
     }
