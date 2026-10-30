@@ -10,15 +10,20 @@ using System.Diagnostics;
 // assets come from the legacy version's data generators instead, into legacy-<legacy version> (temporary,
 // until Phase 5 of docs/porting-26.3-plan.md; see DatagenAssets.WriteLegacy).
 //
-// capture-worldgen instead re-records the vanilla worldgen and structure references in the fixture (in place) with the
-// version's server; see docs/vanilla-captures.md.
+// capture-worldgen instead re-records the vanilla worldgen references in the fixture (in place) with the version's
+// server; see docs/vanilla-captures.md.
 var timer = Stopwatch.StartNew();
 using var httpClient = new HttpClient();
 
-if (args is ["capture-worldgen", _, _, _])
+if (args is ["capture-worldgen", var captureVersion, var captureWorkDirectory, var fixture])
 {
-    Console.Error.WriteLine(WorldgenCaptures.UnavailableMessage);
-    return 1;
+    var captureDirectory = Path.Combine(Path.GetFullPath(captureWorkDirectory), captureVersion);
+    var vanilla = await VanillaServer.PrepareAsync(httpClient, captureVersion, captureDirectory);
+    await WorldgenCaptures.RunAsync(vanilla, Path.GetFullPath(fixture));
+
+    var seconds = timer.Elapsed.TotalSeconds;
+    Console.WriteLine($"Captured the {captureVersion} worldgen references into {fixture} in {seconds:0.0}s.");
+    return 0;
 }
 
 if (args.Length != 4)
@@ -46,6 +51,9 @@ Console.WriteLine("Writing data generator assets...");
 DatagenAssets.Write(server.GeneratedDirectory, JavaDumper.PacketFieldsPath(server), staging);
 DatagenAssets.WriteLegacy(legacy.GeneratedDirectory, JavaDumper.WorldgenGroupsPath(server),
     Path.Combine(staging, $"legacy-{legacyVersion}"));
+WorldgenAssets.WriteRouterData(
+    Path.Combine(server.GeneratedDirectory, "data", "minecraft"),
+    Path.Combine(staging, "worldgen_26_3"));
 server.CopyVersionInfo(Path.Combine(staging, "version.json"));
 
 await FixtureDumper.DumpServerAsync(server, staging);

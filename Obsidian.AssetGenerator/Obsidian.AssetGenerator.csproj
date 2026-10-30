@@ -45,6 +45,7 @@
 		<ItemGroup>
 			<VanillaAssetsOutput Include="$(VanillaAssetsStamp)" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)version.json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)worldgen_26_3\noise_settings\overworld.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)item-components-$(MinecraftVersion).json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)client-entity-metadata-$(MinecraftVersion).json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)client-screens-$(MinecraftVersion).json" />
@@ -84,14 +85,20 @@
 		<Touch Files="$(VanillaAssetsStamp)" AlwaysCreate="true" />
 	</Target>
 
-	<!-- Disabled until Phase 5 adapts the probe to 26.3's terrain pipeline (docs/vanilla-captures.md).
-	     Once restored, re-records the vanilla worldgen and structure references in place, only on request:
+	<!-- Re-records the 26.3 vanilla worldgen references the parity tests replay, in place, with the Minecraft version's
+	     server (docs/vanilla-captures.md). Slow, so only on request:
 	     dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen -->
 	<PropertyGroup>
-		<VanillaWorldgenFixture>$(MSBuildThisFileDirectory)..\Obsidian.Tests\Assets\vanilla_worldgen.json</VanillaWorldgenFixture>
+		<VanillaWorldgenFixture>$(MSBuildThisFileDirectory)..\Obsidian.Tests\Assets\vanilla_worldgen_26.3.json</VanillaWorldgenFixture>
 	</PropertyGroup>
 
-	<Target Name="CaptureVanillaWorldgen">
-		<Error Text="The worldgen capture probe hasn't been adapted to 26.3 yet; see Phase 5 of docs/porting-26.3-plan.md." />
+	<Target Name="CaptureVanillaWorldgen" DependsOnTargets="Build;ReadMinecraftVersion">
+		<PropertyGroup>
+			<VanillaCaptureCommand>dotnet &quot;$(TargetPath)&quot; capture-worldgen $(MinecraftVersion)</VanillaCaptureCommand>
+			<VanillaCaptureCommand>$(VanillaCaptureCommand) &quot;$(VanillaWorkDirectory).&quot;</VanillaCaptureCommand>
+			<VanillaCaptureCommand>$(VanillaCaptureCommand) &quot;$(VanillaWorldgenFixture)&quot;</VanillaCaptureCommand>
+		</PropertyGroup>
+
+		<Exec IgnoreStandardErrorWarningFormat="true" Command="$(VanillaCaptureCommand)" />
 	</Target>
 </Project>

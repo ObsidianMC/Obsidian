@@ -1,0 +1,3907 @@
+{
+  "_notes": "Vanilla 26.3 worldgen references for the 26.3 worldgen parity tests (VanillaDensityFunctions). Every value besides the case inputs is recaptured from vanilla by Obsidian.AssetGenerator's capture-worldgen command (docs/vanilla-captures.md), which rewrites this file in place. Phase 5 of docs/porting-26.3-plan.md adds sections step by step; vanilla_worldgen.json keeps the 1.21.11 references of the legacy generator until then.",
+  "version": "26.3",
+  "noises": [
+    {
+      "seed": 12345,
+      "noise": "minecraft:continentalness",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": -0.40261573
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:continentalness",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": -0.061927088
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:continentalness",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": -0.33715537
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:continentalness",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": -0.037729293
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:temperature",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": -0.024734471
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:temperature",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": -0.033629816
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:temperature",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": -0.82040364
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:temperature",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": -0.20409183
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:offset",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": -0.537155
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:offset",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": 0.034794677
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:offset",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": -0.11144609
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:offset",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": -0.4706601
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:aquifer_barrier",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": 0.012174994
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:aquifer_barrier",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": -0.021883488
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:aquifer_barrier",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": -0.40447742
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:aquifer_barrier",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": -0.54901516
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:ridge",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": 0.17544213
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:ridge",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": 0.2527751
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:ridge",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": -0.082491785
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:ridge",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": 0.3434748
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:spaghetti_3d_1",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": 0.003558738
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:spaghetti_3d_1",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": 0.23559014
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:spaghetti_3d_1",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": 0.3995814
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:spaghetti_3d_1",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": 0.64851624
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:cave_cheese",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": 0.6132534
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:cave_cheese",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": 0.30501017
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:cave_cheese",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": -0.16129206
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:cave_cheese",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": 0.46942905
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:noodle",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": 0.6335792
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:noodle",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": 0.47346404
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:noodle",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": 0.29663867
+    },
+    {
+      "seed": 12345,
+      "noise": "minecraft:noodle",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": -0.37442654
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:continentalness",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": -0.30933696
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:continentalness",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": -0.1652207
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:continentalness",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": -0.15599456
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:continentalness",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": -0.084457345
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:temperature",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": 0.42213753
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:temperature",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": 0.3478585
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:temperature",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": -0.1605234
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:temperature",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": 0.45249984
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:offset",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": 0.1389302
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:offset",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": 0.26076856
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:offset",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": 0.13934128
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:offset",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": 0.05350183
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:aquifer_barrier",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": 0.12520927
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:aquifer_barrier",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": 0.1770286
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:aquifer_barrier",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": 0.06449263
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:aquifer_barrier",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": -0.29589432
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:ridge",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": -0.27783152
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:ridge",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": 0.038823035
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:ridge",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": -0.29056877
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:ridge",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": 0.028203543
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:spaghetti_3d_1",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": 0.1298197
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:spaghetti_3d_1",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": 0.4824916
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:spaghetti_3d_1",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": 0.016352028
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:spaghetti_3d_1",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": 0.095225595
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:cave_cheese",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": -0.4418532
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:cave_cheese",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": -0.32742247
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:cave_cheese",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": 0.25019744
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:cave_cheese",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": -0.5222973
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:noodle",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "value": -0.21814331
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:noodle",
+      "x": 12.5,
+      "y": -3.25,
+      "z": -40.75,
+      "value": -0.12741795
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:noodle",
+      "x": -1000.125,
+      "y": 64.5,
+      "z": 2048.0625,
+      "value": 0.44591576
+    },
+    {
+      "seed": -4172144997902289642,
+      "noise": "minecraft:noodle",
+      "x": 30000000.0,
+      "y": 17.0,
+      "z": -25000000.0,
+      "value": 0.4350365
+    }
+  ],
+  "router": [
+    {
+      "seed": 12345,
+      "settings": "minecraft:overworld",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "values": {
+        "temperature": -0.021587372,
+        "vegetation": 0.67213786,
+        "continents": -0.3991237,
+        "erosion": -0.72940195,
+        "depth": 0.37624997,
+        "ridges": 0.15691625,
+        "chunk_surface_level": 32.0,
+        "final_density": -0.02307539,
+        "aquifers.barrier": 0.012174994,
+        "aquifers.fluid_level_floodedness": 0.042349756,
+        "aquifers.fluid_level_spread": -0.010850171,
+        "aquifers.lava": 0.4980192,
+        "aquifers.exclusion": 0.0,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:overworld",
+      "x": -1000,
+      "y": 40,
+      "z": -1000,
+      "values": {
+        "temperature": 0.3003823,
+        "vegetation": 0.033764124,
+        "continents": 0.49728727,
+        "erosion": -0.18318744,
+        "depth": 0.29439622,
+        "ridges": -0.2421577,
+        "chunk_surface_level": 66.0,
+        "final_density": 0.016238084,
+        "aquifers.barrier": -0.39386526,
+        "aquifers.fluid_level_floodedness": -0.16214341,
+        "aquifers.fluid_level_spread": -0.08778922,
+        "aquifers.lava": 0.06448625,
+        "aquifers.exclusion": -0.041812554,
+        "aquifers.surface_level": 64.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:overworld",
+      "x": 16,
+      "y": 100,
+      "z": -37,
+      "values": {
+        "temperature": -0.027729506,
+        "vegetation": 0.68113923,
+        "continents": -0.34568393,
+        "erosion": -0.7125519,
+        "depth": -0.40500003,
+        "ridges": 0.37008375,
+        "chunk_surface_level": 32.0,
+        "final_density": -0.45833334,
+        "aquifers.barrier": -0.10239364,
+        "aquifers.fluid_level_floodedness": 0.75563896,
+        "aquifers.fluid_level_spread": -0.16987821,
+        "aquifers.lava": 1.0515262,
+        "aquifers.exclusion": 0.0,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:overworld",
+      "x": 2048,
+      "y": 40,
+      "z": 2048,
+      "values": {
+        "temperature": -1.015364,
+        "vegetation": -0.28477493,
+        "continents": 0.3887981,
+        "erosion": -0.0030345386,
+        "depth": 0.19428298,
+        "ridges": -0.21968783,
+        "chunk_surface_level": 56.0,
+        "final_density": 0.041388765,
+        "aquifers.barrier": 0.6611203,
+        "aquifers.fluid_level_floodedness": -0.7811967,
+        "aquifers.fluid_level_spread": -0.41936195,
+        "aquifers.lava": 0.14812115,
+        "aquifers.exclusion": -0.22196546,
+        "aquifers.surface_level": 56.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:overworld",
+      "x": 3,
+      "y": -50,
+      "z": 5,
+      "values": {
+        "temperature": -0.024042146,
+        "vegetation": 0.6788059,
+        "continents": -0.40318868,
+        "erosion": -0.73424935,
+        "depth": 0.76687497,
+        "ridges": 0.1643337,
+        "chunk_surface_level": 32.0,
+        "final_density": 0.05208759,
+        "aquifers.barrier": 0.40457982,
+        "aquifers.fluid_level_floodedness": -0.44657388,
+        "aquifers.fluid_level_spread": 0.4136762,
+        "aquifers.lava": -0.02598022,
+        "aquifers.exclusion": 0.0,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:overworld",
+      "x": -7,
+      "y": 63,
+      "z": 9,
+      "values": {
+        "temperature": -0.023000505,
+        "vegetation": 0.6773293,
+        "continents": -0.41187698,
+        "erosion": -0.73902017,
+        "depth": -0.11593753,
+        "ridges": 0.11132963,
+        "chunk_surface_level": 32.0,
+        "final_density": -0.16536091,
+        "aquifers.barrier": -0.11396086,
+        "aquifers.fluid_level_floodedness": 0.58932585,
+        "aquifers.fluid_level_spread": 0.60772574,
+        "aquifers.lava": 0.09409725,
+        "aquifers.exclusion": 0.0,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:overworld",
+      "x": 123,
+      "y": -13,
+      "z": -456,
+      "values": {
+        "temperature": -0.051497787,
+        "vegetation": 0.65295875,
+        "continents": 0.26258442,
+        "erosion": -0.4737547,
+        "depth": 0.85398346,
+        "ridges": 0.25431758,
+        "chunk_surface_level": 80.0,
+        "final_density": 0.0044033993,
+        "aquifers.barrier": -0.21470743,
+        "aquifers.fluid_level_floodedness": -0.22518307,
+        "aquifers.fluid_level_spread": -0.097964555,
+        "aquifers.lava": 0.17150722,
+        "aquifers.exclusion": 0.0,
+        "aquifers.surface_level": 80.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:overworld",
+      "x": 1500,
+      "y": 200,
+      "z": -2500,
+      "values": {
+        "temperature": -0.37602317,
+        "vegetation": -0.29201344,
+        "continents": -0.03430127,
+        "erosion": 0.05212182,
+        "depth": -0.98746544,
+        "ridges": 0.77039695,
+        "chunk_surface_level": 63.5,
+        "final_density": -0.45833334,
+        "aquifers.barrier": 0.622903,
+        "aquifers.fluid_level_floodedness": -0.034191575,
+        "aquifers.fluid_level_spread": -0.23520353,
+        "aquifers.lava": 0.45308828,
+        "aquifers.exclusion": -0.2771218,
+        "aquifers.surface_level": 64.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:overworld",
+      "x": 30000,
+      "y": 70,
+      "z": -30001,
+      "values": {
+        "temperature": -0.20096982,
+        "vegetation": 0.19751135,
+        "continents": -0.28540277,
+        "erosion": -0.06519264,
+        "depth": -0.17062503,
+        "ridges": -0.17444311,
+        "chunk_surface_level": 32.0,
+        "final_density": -0.2392805,
+        "aquifers.barrier": 0.47223616,
+        "aquifers.fluid_level_floodedness": 0.29265955,
+        "aquifers.fluid_level_spread": 0.12673517,
+        "aquifers.lava": 0.22319728,
+        "aquifers.exclusion": -0.15980735,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:overworld",
+      "x": -100000,
+      "y": 10,
+      "z": 100000,
+      "values": {
+        "temperature": -0.57252693,
+        "vegetation": 0.24004076,
+        "continents": -0.13342687,
+        "erosion": -0.39525992,
+        "depth": 0.41325623,
+        "ridges": 0.11413176,
+        "chunk_surface_level": 56.0,
+        "final_density": -0.016975695,
+        "aquifers.barrier": -0.26116014,
+        "aquifers.fluid_level_floodedness": -0.17787382,
+        "aquifers.fluid_level_spread": -0.14996508,
+        "aquifers.lava": 0.5664847,
+        "aquifers.exclusion": 0.0,
+        "aquifers.surface_level": 56.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:large_biomes",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "values": {
+        "temperature": -0.83684474,
+        "vegetation": 0.17619678,
+        "continents": -0.52157253,
+        "erosion": 0.0663787,
+        "depth": 0.27405,
+        "ridges": 0.15691625,
+        "chunk_surface_level": 24.0,
+        "final_density": -0.02307539,
+        "aquifers.barrier": 0.012174994,
+        "aquifers.fluid_level_floodedness": 0.042349756,
+        "aquifers.fluid_level_spread": -0.010850171,
+        "aquifers.lava": 0.4980192,
+        "aquifers.exclusion": -0.29137868,
+        "aquifers.surface_level": 24.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:large_biomes",
+      "x": -1000,
+      "y": 40,
+      "z": -1000,
+      "values": {
+        "temperature": -0.86707413,
+        "vegetation": 0.27725536,
+        "continents": -0.34099883,
+        "erosion": 0.2813589,
+        "depth": 0.06374997,
+        "ridges": -0.2421577,
+        "chunk_surface_level": 32.0,
+        "final_density": 0.0810191,
+        "aquifers.barrier": -0.39386526,
+        "aquifers.fluid_level_floodedness": -0.16214341,
+        "aquifers.fluid_level_spread": -0.08778922,
+        "aquifers.lava": 0.06448625,
+        "aquifers.exclusion": -0.50635886,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:large_biomes",
+      "x": 16,
+      "y": 100,
+      "z": -37,
+      "values": {
+        "temperature": -0.8426799,
+        "vegetation": 0.16987261,
+        "continents": -0.51652443,
+        "erosion": 0.054276332,
+        "depth": -0.5072,
+        "ridges": 0.37008375,
+        "chunk_surface_level": 24.0,
+        "final_density": -0.45833334,
+        "aquifers.barrier": -0.10239364,
+        "aquifers.fluid_level_floodedness": 0.75563896,
+        "aquifers.fluid_level_spread": -0.16987821,
+        "aquifers.lava": 1.0515262,
+        "aquifers.exclusion": -0.2792763,
+        "aquifers.surface_level": 24.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:large_biomes",
+      "x": 2048,
+      "y": 40,
+      "z": 2048,
+      "values": {
+        "temperature": -0.7296835,
+        "vegetation": 0.08741381,
+        "continents": -0.10306841,
+        "erosion": -0.035307348,
+        "depth": 0.18621427,
+        "ridges": -0.21968783,
+        "chunk_surface_level": 56.0,
+        "final_density": 0.041388765,
+        "aquifers.barrier": 0.6611203,
+        "aquifers.fluid_level_floodedness": -0.7811967,
+        "aquifers.fluid_level_spread": -0.41936195,
+        "aquifers.lava": 0.14812115,
+        "aquifers.exclusion": -0.18969265,
+        "aquifers.surface_level": 56.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:large_biomes",
+      "x": 3,
+      "y": -50,
+      "z": 5,
+      "values": {
+        "temperature": -0.83640337,
+        "vegetation": 0.17445311,
+        "continents": -0.5211696,
+        "erosion": 0.06549207,
+        "depth": 0.664675,
+        "ridges": 0.1643337,
+        "chunk_surface_level": 24.0,
+        "final_density": 0.05208759,
+        "aquifers.barrier": 0.40457982,
+        "aquifers.fluid_level_floodedness": -0.44657388,
+        "aquifers.fluid_level_spread": 0.4136762,
+        "aquifers.lava": -0.02598022,
+        "aquifers.exclusion": -0.29049206,
+        "aquifers.surface_level": 24.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:large_biomes",
+      "x": -7,
+      "y": 63,
+      "z": 9,
+      "values": {
+        "temperature": -0.8351084,
+        "vegetation": 0.17564885,
+        "continents": -0.5169362,
+        "erosion": 0.06797972,
+        "depth": -0.2181375,
+        "ridges": 0.11132963,
+        "chunk_surface_level": 24.0,
+        "final_density": -0.28743887,
+        "aquifers.barrier": -0.11396086,
+        "aquifers.fluid_level_floodedness": 0.58932585,
+        "aquifers.fluid_level_spread": 0.60772574,
+        "aquifers.lava": 0.09409725,
+        "aquifers.exclusion": -0.29297972,
+        "aquifers.surface_level": 24.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:large_biomes",
+      "x": 123,
+      "y": -13,
+      "z": -456,
+      "values": {
+        "temperature": -0.9067838,
+        "vegetation": 0.15336975,
+        "continents": -0.2712552,
+        "erosion": 8.3004124E-4,
+        "depth": 0.47781247,
+        "ridges": 0.25431758,
+        "chunk_surface_level": 32.0,
+        "final_density": 0.0044033993,
+        "aquifers.barrier": -0.21470743,
+        "aquifers.fluid_level_floodedness": -0.22518307,
+        "aquifers.fluid_level_spread": -0.097964555,
+        "aquifers.lava": 0.17150722,
+        "aquifers.exclusion": -0.22583003,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:large_biomes",
+      "x": 1500,
+      "y": 200,
+      "z": -2500,
+      "values": {
+        "temperature": -1.1199698,
+        "vegetation": -0.057531998,
+        "continents": -0.45669448,
+        "erosion": -0.101338014,
+        "depth": -1.2009163,
+        "ridges": 0.77039695,
+        "chunk_surface_level": 32.0,
+        "final_density": -0.45833334,
+        "aquifers.barrier": 0.622903,
+        "aquifers.fluid_level_floodedness": -0.034191575,
+        "aquifers.fluid_level_spread": -0.23520353,
+        "aquifers.lava": 0.45308828,
+        "aquifers.exclusion": -0.12366198,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:large_biomes",
+      "x": 30000,
+      "y": 70,
+      "z": -30001,
+      "values": {
+        "temperature": 0.03716193,
+        "vegetation": 0.14608087,
+        "continents": 0.09441655,
+        "erosion": -0.1405507,
+        "depth": -0.034632444,
+        "ridges": -0.17444311,
+        "chunk_surface_level": 48.0,
+        "final_density": -0.054154817,
+        "aquifers.barrier": 0.47223616,
+        "aquifers.fluid_level_floodedness": 0.29265955,
+        "aquifers.fluid_level_spread": 0.12673517,
+        "aquifers.lava": 0.22319728,
+        "aquifers.exclusion": -0.08444929,
+        "aquifers.surface_level": 48.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:large_biomes",
+      "x": -100000,
+      "y": 10,
+      "z": 100000,
+      "values": {
+        "temperature": 0.56416863,
+        "vegetation": -0.3461742,
+        "continents": -0.5324889,
+        "erosion": -0.3413547,
+        "depth": 0.195925,
+        "ridges": 0.11413176,
+        "chunk_surface_level": 24.0,
+        "final_density": -0.016975695,
+        "aquifers.barrier": -0.26116014,
+        "aquifers.fluid_level_floodedness": -0.17787382,
+        "aquifers.fluid_level_spread": -0.14996508,
+        "aquifers.lava": 0.5664847,
+        "aquifers.exclusion": 0.0,
+        "aquifers.surface_level": 24.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:amplified",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "values": {
+        "temperature": -0.021587372,
+        "vegetation": 0.67213786,
+        "continents": -0.3991237,
+        "erosion": -0.72940195,
+        "depth": 0.37624997,
+        "ridges": 0.15691625,
+        "chunk_surface_level": 32.0,
+        "final_density": -0.02307539,
+        "aquifers.barrier": 0.012174994,
+        "aquifers.fluid_level_floodedness": 0.042349756,
+        "aquifers.fluid_level_spread": -0.010850171,
+        "aquifers.lava": 0.4980192,
+        "aquifers.exclusion": 0.0,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:amplified",
+      "x": -1000,
+      "y": 40,
+      "z": -1000,
+      "values": {
+        "temperature": 0.3003823,
+        "vegetation": 0.033764124,
+        "continents": 0.49728727,
+        "erosion": -0.18318744,
+        "depth": 0.4032122,
+        "ridges": -0.2421577,
+        "chunk_surface_level": 26.0,
+        "final_density": 0.0810191,
+        "aquifers.barrier": -0.39386526,
+        "aquifers.fluid_level_floodedness": -0.16214341,
+        "aquifers.fluid_level_spread": -0.08778922,
+        "aquifers.lava": 0.06448625,
+        "aquifers.exclusion": -0.041812554,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:amplified",
+      "x": 16,
+      "y": 100,
+      "z": -37,
+      "values": {
+        "temperature": -0.027729506,
+        "vegetation": 0.68113923,
+        "continents": -0.34568393,
+        "erosion": -0.7125519,
+        "depth": -0.40500003,
+        "ridges": 0.37008375,
+        "chunk_surface_level": 32.0,
+        "final_density": -0.45833334,
+        "aquifers.barrier": -0.10239364,
+        "aquifers.fluid_level_floodedness": 0.75563896,
+        "aquifers.fluid_level_spread": -0.16987821,
+        "aquifers.lava": 1.0515262,
+        "aquifers.exclusion": 0.0,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:amplified",
+      "x": 2048,
+      "y": 40,
+      "z": 2048,
+      "values": {
+        "temperature": -1.015364,
+        "vegetation": -0.28477493,
+        "continents": 0.3887981,
+        "erosion": -0.0030345386,
+        "depth": 0.202871,
+        "ridges": -0.21968783,
+        "chunk_surface_level": 8.0,
+        "final_density": 0.124887824,
+        "aquifers.barrier": 0.6611203,
+        "aquifers.fluid_level_floodedness": -0.7811967,
+        "aquifers.fluid_level_spread": -0.41936195,
+        "aquifers.lava": 0.14812115,
+        "aquifers.exclusion": -0.22196546,
+        "aquifers.surface_level": 8.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:amplified",
+      "x": 3,
+      "y": -50,
+      "z": 5,
+      "values": {
+        "temperature": -0.024042146,
+        "vegetation": 0.6788059,
+        "continents": -0.40318868,
+        "erosion": -0.73424935,
+        "depth": 0.76687497,
+        "ridges": 0.1643337,
+        "chunk_surface_level": 32.0,
+        "final_density": 0.08960142,
+        "aquifers.barrier": 0.40457982,
+        "aquifers.fluid_level_floodedness": -0.44657388,
+        "aquifers.fluid_level_spread": 0.4136762,
+        "aquifers.lava": -0.02598022,
+        "aquifers.exclusion": 0.0,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:amplified",
+      "x": -7,
+      "y": 63,
+      "z": 9,
+      "values": {
+        "temperature": -0.023000505,
+        "vegetation": 0.6773293,
+        "continents": -0.41187698,
+        "erosion": -0.73902017,
+        "depth": -0.11593753,
+        "ridges": 0.11132963,
+        "chunk_surface_level": 32.0,
+        "final_density": -0.16536091,
+        "aquifers.barrier": -0.11396086,
+        "aquifers.fluid_level_floodedness": 0.58932585,
+        "aquifers.fluid_level_spread": 0.60772574,
+        "aquifers.lava": 0.09409725,
+        "aquifers.exclusion": 0.0,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:amplified",
+      "x": 123,
+      "y": -13,
+      "z": -456,
+      "values": {
+        "temperature": -0.051497787,
+        "vegetation": 0.65295875,
+        "continents": 0.26258442,
+        "erosion": -0.4737547,
+        "depth": 1.1650786,
+        "ridges": 0.25431758,
+        "chunk_surface_level": 54.75,
+        "final_density": 0.045325983,
+        "aquifers.barrier": -0.21470743,
+        "aquifers.fluid_level_floodedness": -0.22518307,
+        "aquifers.fluid_level_spread": -0.097964555,
+        "aquifers.lava": 0.17150722,
+        "aquifers.exclusion": 0.24875471,
+        "aquifers.surface_level": 56.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:amplified",
+      "x": 1500,
+      "y": 200,
+      "z": -2500,
+      "values": {
+        "temperature": -0.37602317,
+        "vegetation": -0.29201344,
+        "continents": -0.03430127,
+        "erosion": 0.05212182,
+        "depth": -0.91363657,
+        "ridges": 0.77039695,
+        "chunk_surface_level": 23.5,
+        "final_density": -0.052388176,
+        "aquifers.barrier": 0.622903,
+        "aquifers.fluid_level_floodedness": -0.034191575,
+        "aquifers.fluid_level_spread": -0.23520353,
+        "aquifers.lava": 0.45308828,
+        "aquifers.exclusion": -0.2771218,
+        "aquifers.surface_level": 24.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:amplified",
+      "x": 30000,
+      "y": 70,
+      "z": -30001,
+      "values": {
+        "temperature": -0.20096982,
+        "vegetation": 0.19751135,
+        "continents": -0.28540277,
+        "erosion": -0.06519264,
+        "depth": -0.17062503,
+        "ridges": -0.17444311,
+        "chunk_surface_level": 32.0,
+        "final_density": -0.2392805,
+        "aquifers.barrier": 0.47223616,
+        "aquifers.fluid_level_floodedness": 0.29265955,
+        "aquifers.fluid_level_spread": 0.12673517,
+        "aquifers.lava": 0.22319728,
+        "aquifers.exclusion": -0.15980735,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:amplified",
+      "x": -100000,
+      "y": 10,
+      "z": 100000,
+      "values": {
+        "temperature": -0.57252693,
+        "vegetation": 0.24004076,
+        "continents": -0.13342687,
+        "erosion": -0.39525992,
+        "depth": 0.41402066,
+        "ridges": 0.11413176,
+        "chunk_surface_level": 48.0,
+        "final_density": -0.016975695,
+        "aquifers.barrier": -0.26116014,
+        "aquifers.fluid_level_floodedness": -0.17787382,
+        "aquifers.fluid_level_spread": -0.14996508,
+        "aquifers.lava": 0.5664847,
+        "aquifers.exclusion": 0.0,
+        "aquifers.surface_level": 48.0
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:caves",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.076466575
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:caves",
+      "x": -1000,
+      "y": 40,
+      "z": -1000,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.043755822
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:caves",
+      "x": 16,
+      "y": 100,
+      "z": -37,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.025051469
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:caves",
+      "x": 2048,
+      "y": 40,
+      "z": 2048,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.011234688
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:caves",
+      "x": 3,
+      "y": -50,
+      "z": 5,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.19538115
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:caves",
+      "x": -7,
+      "y": 63,
+      "z": 9,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.090554364
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:caves",
+      "x": 123,
+      "y": -13,
+      "z": -456,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.14431553
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:caves",
+      "x": 1500,
+      "y": 200,
+      "z": -2500,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.29099998
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:caves",
+      "x": 30000,
+      "y": 70,
+      "z": -30001,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.022121001
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:caves",
+      "x": -100000,
+      "y": 10,
+      "z": 100000,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.026789026
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:floating_islands",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.07485937
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:floating_islands",
+      "x": -1000,
+      "y": 40,
+      "z": -1000,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.0070380475
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:floating_islands",
+      "x": 16,
+      "y": 100,
+      "z": -37,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.01996861
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:floating_islands",
+      "x": 2048,
+      "y": 40,
+      "z": 2048,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.025794683
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:floating_islands",
+      "x": 3,
+      "y": -50,
+      "z": 5,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.07485937
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:floating_islands",
+      "x": -7,
+      "y": 63,
+      "z": 9,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.062619835
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:floating_islands",
+      "x": 123,
+      "y": -13,
+      "z": -456,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.07485937
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:floating_islands",
+      "x": 1500,
+      "y": 200,
+      "z": -2500,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.24957073
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:floating_islands",
+      "x": 30000,
+      "y": 70,
+      "z": -30001,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.008006131
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:floating_islands",
+      "x": -100000,
+      "y": 10,
+      "z": 100000,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.0494668
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:nether",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "values": {
+        "temperature": 0.062011734,
+        "vegetation": -0.09361492,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.45833334
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:nether",
+      "x": -1000,
+      "y": 40,
+      "z": -1000,
+      "values": {
+        "temperature": 0.2671696,
+        "vegetation": -0.6912179,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.043755822
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:nether",
+      "x": 16,
+      "y": 100,
+      "z": -37,
+      "values": {
+        "temperature": -0.025510095,
+        "vegetation": 0.02427411,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.025051469
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:nether",
+      "x": 2048,
+      "y": 40,
+      "z": 2048,
+      "values": {
+        "temperature": -0.27596328,
+        "vegetation": -0.27826178,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.011234688
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:nether",
+      "x": 3,
+      "y": -50,
+      "z": 5,
+      "values": {
+        "temperature": 0.06682334,
+        "vegetation": -0.095582634,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.45833334
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:nether",
+      "x": -7,
+      "y": 63,
+      "z": 9,
+      "values": {
+        "temperature": 0.09457463,
+        "vegetation": -0.1170287,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.090554364
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:nether",
+      "x": 123,
+      "y": -13,
+      "z": -456,
+      "values": {
+        "temperature": 0.12920251,
+        "vegetation": 0.8930692,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.45833334
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:nether",
+      "x": 1500,
+      "y": 200,
+      "z": -2500,
+      "values": {
+        "temperature": -0.31475526,
+        "vegetation": -0.54441226,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.29099998
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:nether",
+      "x": 30000,
+      "y": 70,
+      "z": -30001,
+      "values": {
+        "temperature": 0.1646976,
+        "vegetation": -0.36808816,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.022121001
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:nether",
+      "x": -100000,
+      "y": 10,
+      "z": 100000,
+      "values": {
+        "temperature": 0.004300639,
+        "vegetation": 0.7524682,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.347376
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:end",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.5625,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.07485937
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:end",
+      "x": -1000,
+      "y": 40,
+      "z": -1000,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": -0.38610435,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.115987964
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:end",
+      "x": 16,
+      "y": 100,
+      "z": -37,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.40381807,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.45833334
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:end",
+      "x": 2048,
+      "y": 40,
+      "z": 2048,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.5625,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.15297742
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:end",
+      "x": 3,
+      "y": -50,
+      "z": 5,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.5625,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.07485937
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:end",
+      "x": -7,
+      "y": 63,
+      "z": 9,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.5625,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.031001758
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:end",
+      "x": 123,
+      "y": -13,
+      "z": -456,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": -0.84375,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.07485937
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:end",
+      "x": 1500,
+      "y": 200,
+      "z": -2500,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.5625,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.45833334
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:end",
+      "x": 30000,
+      "y": 70,
+      "z": -30001,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": -0.84375,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.45833334
+      }
+    },
+    {
+      "seed": 12345,
+      "settings": "minecraft:end",
+      "x": -100000,
+      "y": 10,
+      "z": 100000,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": -0.55466366,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.087317705
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:overworld",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "values": {
+        "temperature": 0.4232288,
+        "vegetation": 0.2782219,
+        "continents": -0.32008335,
+        "erosion": 0.1316575,
+        "depth": 0.37624997,
+        "ridges": -0.2834836,
+        "chunk_surface_level": 32.0,
+        "final_density": 0.0315683,
+        "aquifers.barrier": 0.12520927,
+        "aquifers.fluid_level_floodedness": -0.5233348,
+        "aquifers.fluid_level_spread": 0.22949526,
+        "aquifers.lava": -0.35039556,
+        "aquifers.exclusion": -0.3566575,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:overworld",
+      "x": -1000,
+      "y": 40,
+      "z": -1000,
+      "values": {
+        "temperature": -0.01298587,
+        "vegetation": -0.3749591,
+        "continents": 0.17632495,
+        "erosion": 0.2407598,
+        "depth": 0.1936638,
+        "ridges": 0.22354892,
+        "chunk_surface_level": 56.0,
+        "final_density": 0.012387424,
+        "aquifers.barrier": 0.5391829,
+        "aquifers.fluid_level_floodedness": 0.54587436,
+        "aquifers.fluid_level_spread": -0.15756866,
+        "aquifers.lava": -0.31478915,
+        "aquifers.exclusion": -0.4657598,
+        "aquifers.surface_level": 56.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:overworld",
+      "x": 16,
+      "y": 100,
+      "z": -37,
+      "values": {
+        "temperature": 0.40486184,
+        "vegetation": 0.31837896,
+        "continents": -0.23691553,
+        "erosion": 0.11654853,
+        "depth": -0.40500003,
+        "ridges": -0.2217319,
+        "chunk_surface_level": 32.0,
+        "final_density": -0.45833334,
+        "aquifers.barrier": 0.17700544,
+        "aquifers.fluid_level_floodedness": -0.08630176,
+        "aquifers.fluid_level_spread": 0.04504378,
+        "aquifers.lava": -0.1452724,
+        "aquifers.exclusion": -0.34154853,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:overworld",
+      "x": 2048,
+      "y": 40,
+      "z": 2048,
+      "values": {
+        "temperature": 0.4830404,
+        "vegetation": -0.21465531,
+        "continents": -0.6970872,
+        "erosion": 0.1451357,
+        "depth": -0.038450003,
+        "ridges": 0.31921285,
+        "chunk_surface_level": 24.0,
+        "final_density": -0.1720794,
+        "aquifers.barrier": 0.14991921,
+        "aquifers.fluid_level_floodedness": -0.29193062,
+        "aquifers.fluid_level_spread": 0.203381,
+        "aquifers.lava": 0.18325824,
+        "aquifers.exclusion": -0.3701357,
+        "aquifers.surface_level": 24.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:overworld",
+      "x": 3,
+      "y": -50,
+      "z": 5,
+      "values": {
+        "temperature": 0.42557722,
+        "vegetation": 0.2742209,
+        "continents": -0.33572155,
+        "erosion": 0.13306496,
+        "depth": 0.76687497,
+        "ridges": -0.2940131,
+        "chunk_surface_level": 32.0,
+        "final_density": 0.036068812,
+        "aquifers.barrier": 0.111577265,
+        "aquifers.fluid_level_floodedness": -0.37066182,
+        "aquifers.fluid_level_spread": -0.15422034,
+        "aquifers.lava": 0.074790835,
+        "aquifers.exclusion": -0.35806495,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:overworld",
+      "x": -7,
+      "y": 63,
+      "z": 9,
+      "values": {
+        "temperature": 0.4228046,
+        "vegetation": 0.27536345,
+        "continents": -0.29882845,
+        "erosion": 0.13620727,
+        "depth": -0.11593753,
+        "ridges": -0.26634637,
+        "chunk_surface_level": 32.0,
+        "final_density": -0.11455217,
+        "aquifers.barrier": -0.37517816,
+        "aquifers.fluid_level_floodedness": -0.20815548,
+        "aquifers.fluid_level_spread": 0.4147782,
+        "aquifers.lava": 0.15708156,
+        "aquifers.exclusion": -0.36120725,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:overworld",
+      "x": 123,
+      "y": -13,
+      "z": -456,
+      "values": {
+        "temperature": 0.21751946,
+        "vegetation": 0.41187623,
+        "continents": -0.6215459,
+        "erosion": 0.19398035,
+        "depth": 0.3756125,
+        "ridges": 0.48037773,
+        "chunk_surface_level": 24.0,
+        "final_density": -0.012829622,
+        "aquifers.barrier": -0.38191202,
+        "aquifers.fluid_level_floodedness": 0.42956978,
+        "aquifers.fluid_level_spread": -0.28934854,
+        "aquifers.lava": 0.3296627,
+        "aquifers.exclusion": -0.41898036,
+        "aquifers.surface_level": 24.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:overworld",
+      "x": 1500,
+      "y": 200,
+      "z": -2500,
+      "values": {
+        "temperature": 0.15980017,
+        "vegetation": -0.5780781,
+        "continents": -0.33346617,
+        "erosion": -0.20957361,
+        "depth": -1.18625,
+        "ridges": -1.1995611,
+        "chunk_surface_level": 32.0,
+        "final_density": -0.45833334,
+        "aquifers.barrier": 0.0344303,
+        "aquifers.fluid_level_floodedness": -0.38144147,
+        "aquifers.fluid_level_spread": 0.23333272,
+        "aquifers.lava": 0.2051837,
+        "aquifers.exclusion": -0.015426382,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:overworld",
+      "x": 30000,
+      "y": 70,
+      "z": -30001,
+      "values": {
+        "temperature": -0.501836,
+        "vegetation": 0.12955834,
+        "continents": -0.18582664,
+        "erosion": -0.17893806,
+        "depth": -0.17062503,
+        "ridges": 0.32075003,
+        "chunk_surface_level": 33.5,
+        "final_density": -0.16059294,
+        "aquifers.barrier": 0.4253398,
+        "aquifers.fluid_level_floodedness": -0.25475252,
+        "aquifers.fluid_level_spread": -0.22551091,
+        "aquifers.lava": 0.41547698,
+        "aquifers.exclusion": -0.046061933,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:overworld",
+      "x": -100000,
+      "y": 10,
+      "z": 100000,
+      "values": {
+        "temperature": 0.37477228,
+        "vegetation": -0.3579012,
+        "continents": 0.053244058,
+        "erosion": -0.02793582,
+        "depth": 0.544855,
+        "ridges": 0.4432093,
+        "chunk_surface_level": 72.0,
+        "final_density": 0.08287075,
+        "aquifers.barrier": -0.20586522,
+        "aquifers.fluid_level_floodedness": -0.3355886,
+        "aquifers.fluid_level_spread": 0.13782528,
+        "aquifers.lava": 0.59408,
+        "aquifers.exclusion": -0.19706418,
+        "aquifers.surface_level": 72.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:large_biomes",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "values": {
+        "temperature": 0.5854212,
+        "vegetation": 0.26614362,
+        "continents": 0.08621819,
+        "erosion": 0.11108745,
+        "depth": 0.50607055,
+        "ridges": -0.2834836,
+        "chunk_surface_level": 56.0,
+        "final_density": 0.0315683,
+        "aquifers.barrier": 0.12520927,
+        "aquifers.fluid_level_floodedness": -0.5233348,
+        "aquifers.fluid_level_spread": 0.22949526,
+        "aquifers.lava": -0.35039556,
+        "aquifers.exclusion": -0.33608744,
+        "aquifers.surface_level": 56.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:large_biomes",
+      "x": -1000,
+      "y": 40,
+      "z": -1000,
+      "values": {
+        "temperature": 0.59235924,
+        "vegetation": 0.23329365,
+        "continents": 0.43374076,
+        "erosion": 0.42526457,
+        "depth": 0.20045978,
+        "ridges": 0.22354892,
+        "chunk_surface_level": 52.0,
+        "final_density": 0.012387424,
+        "aquifers.barrier": 0.5391829,
+        "aquifers.fluid_level_floodedness": 0.54587436,
+        "aquifers.fluid_level_spread": -0.15756866,
+        "aquifers.lava": -0.31478915,
+        "aquifers.exclusion": -0.65026456,
+        "aquifers.surface_level": 48.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:large_biomes",
+      "x": 16,
+      "y": 100,
+      "z": -37,
+      "values": {
+        "temperature": 0.58308655,
+        "vegetation": 0.26591623,
+        "continents": 0.087340154,
+        "erosion": 0.11539345,
+        "depth": -0.27567467,
+        "ridges": -0.2217319,
+        "chunk_surface_level": 56.0,
+        "final_density": -0.45833334,
+        "aquifers.barrier": 0.17700544,
+        "aquifers.fluid_level_floodedness": -0.08630176,
+        "aquifers.fluid_level_spread": 0.04504378,
+        "aquifers.lava": -0.1452724,
+        "aquifers.exclusion": -0.34039345,
+        "aquifers.surface_level": 56.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:large_biomes",
+      "x": 2048,
+      "y": 40,
+      "z": 2048,
+      "values": {
+        "temperature": 0.6204169,
+        "vegetation": -0.1072858,
+        "continents": 0.4349567,
+        "erosion": -0.24306348,
+        "depth": 0.41803604,
+        "ridges": 0.31921285,
+        "chunk_surface_level": 80.0,
+        "final_density": 0.077243574,
+        "aquifers.barrier": 0.14991921,
+        "aquifers.fluid_level_floodedness": -0.29193062,
+        "aquifers.fluid_level_spread": 0.203381,
+        "aquifers.lava": 0.18325824,
+        "aquifers.exclusion": 0.0,
+        "aquifers.surface_level": 80.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:large_biomes",
+      "x": 3,
+      "y": -50,
+      "z": 5,
+      "values": {
+        "temperature": 0.58528,
+        "vegetation": 0.26658967,
+        "continents": 0.085672244,
+        "erosion": 0.10998438,
+        "depth": 0.8967825,
+        "ridges": -0.2940131,
+        "chunk_surface_level": 56.0,
+        "final_density": 0.036068812,
+        "aquifers.barrier": 0.111577265,
+        "aquifers.fluid_level_floodedness": -0.37066182,
+        "aquifers.fluid_level_spread": -0.15422034,
+        "aquifers.lava": 0.074790835,
+        "aquifers.exclusion": -0.33498436,
+        "aquifers.surface_level": 56.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:large_biomes",
+      "x": -7,
+      "y": 63,
+      "z": 9,
+      "values": {
+        "temperature": 0.586103,
+        "vegetation": 0.26549464,
+        "continents": 0.084183544,
+        "erosion": 0.11187927,
+        "depth": 0.013742268,
+        "ridges": -0.26634637,
+        "chunk_surface_level": 56.0,
+        "final_density": 0.00593883,
+        "aquifers.barrier": -0.37517816,
+        "aquifers.fluid_level_floodedness": -0.20815548,
+        "aquifers.fluid_level_spread": 0.4147782,
+        "aquifers.lava": 0.15708156,
+        "aquifers.exclusion": -0.33687925,
+        "aquifers.surface_level": 56.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:large_biomes",
+      "x": 123,
+      "y": -13,
+      "z": -456,
+      "values": {
+        "temperature": 0.5676222,
+        "vegetation": 0.2727309,
+        "continents": 0.14440554,
+        "erosion": 0.14246169,
+        "depth": 0.6562383,
+        "ridges": 0.48037773,
+        "chunk_surface_level": 57.5,
+        "final_density": -0.012829622,
+        "aquifers.barrier": -0.38191202,
+        "aquifers.fluid_level_floodedness": 0.42956978,
+        "aquifers.fluid_level_spread": -0.28934854,
+        "aquifers.lava": 0.3296627,
+        "aquifers.exclusion": -0.36746168,
+        "aquifers.surface_level": 56.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:large_biomes",
+      "x": 1500,
+      "y": 200,
+      "z": -2500,
+      "values": {
+        "temperature": 0.624273,
+        "vegetation": 0.0408513,
+        "continents": 0.064671464,
+        "erosion": -0.010134606,
+        "depth": -1.0687044,
+        "ridges": -1.1995611,
+        "chunk_surface_level": 56.0,
+        "final_density": -0.45833334,
+        "aquifers.barrier": 0.0344303,
+        "aquifers.fluid_level_floodedness": -0.38144147,
+        "aquifers.fluid_level_spread": 0.23333272,
+        "aquifers.lava": 0.2051837,
+        "aquifers.exclusion": -0.21486539,
+        "aquifers.surface_level": 56.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:large_biomes",
+      "x": 30000,
+      "y": 70,
+      "z": -30001,
+      "values": {
+        "temperature": 0.48494595,
+        "vegetation": 0.15270135,
+        "continents": -0.09435604,
+        "erosion": -0.26032612,
+        "depth": -0.014357269,
+        "ridges": 0.32075003,
+        "chunk_surface_level": 56.0,
+        "final_density": 0.076632835,
+        "aquifers.barrier": 0.4253398,
+        "aquifers.fluid_level_floodedness": -0.25475252,
+        "aquifers.fluid_level_spread": -0.22551091,
+        "aquifers.lava": 0.41547698,
+        "aquifers.exclusion": 0.0,
+        "aquifers.surface_level": 56.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:large_biomes",
+      "x": -100000,
+      "y": 10,
+      "z": 100000,
+      "values": {
+        "temperature": 1.3028759,
+        "vegetation": 0.104882985,
+        "continents": 0.049350172,
+        "erosion": -0.4637302,
+        "depth": 0.6233772,
+        "ridges": 0.4432093,
+        "chunk_surface_level": 72.0,
+        "final_density": 0.08287075,
+        "aquifers.barrier": -0.20586522,
+        "aquifers.fluid_level_floodedness": -0.3355886,
+        "aquifers.fluid_level_spread": 0.13782528,
+        "aquifers.lava": 0.59408,
+        "aquifers.exclusion": 0.0,
+        "aquifers.surface_level": 72.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:amplified",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "values": {
+        "temperature": 0.4232288,
+        "vegetation": 0.2782219,
+        "continents": -0.32008335,
+        "erosion": 0.1316575,
+        "depth": 0.37624997,
+        "ridges": -0.2834836,
+        "chunk_surface_level": 32.0,
+        "final_density": 0.0315683,
+        "aquifers.barrier": 0.12520927,
+        "aquifers.fluid_level_floodedness": -0.5233348,
+        "aquifers.fluid_level_spread": 0.22949526,
+        "aquifers.lava": -0.35039556,
+        "aquifers.exclusion": -0.3566575,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:amplified",
+      "x": -1000,
+      "y": 40,
+      "z": -1000,
+      "values": {
+        "temperature": -0.01298587,
+        "vegetation": -0.3749591,
+        "continents": 0.17632495,
+        "erosion": 0.2407598,
+        "depth": 0.20364225,
+        "ridges": 0.22354892,
+        "chunk_surface_level": 8.0,
+        "final_density": 0.06186107,
+        "aquifers.barrier": 0.5391829,
+        "aquifers.fluid_level_floodedness": 0.54587436,
+        "aquifers.fluid_level_spread": -0.15756866,
+        "aquifers.lava": -0.31478915,
+        "aquifers.exclusion": -0.4657598,
+        "aquifers.surface_level": 8.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:amplified",
+      "x": 16,
+      "y": 100,
+      "z": -37,
+      "values": {
+        "temperature": 0.40486184,
+        "vegetation": 0.31837896,
+        "continents": -0.23691553,
+        "erosion": 0.11654853,
+        "depth": -0.40500003,
+        "ridges": -0.2217319,
+        "chunk_surface_level": 32.0,
+        "final_density": -0.45833334,
+        "aquifers.barrier": 0.17700544,
+        "aquifers.fluid_level_floodedness": -0.08630176,
+        "aquifers.fluid_level_spread": 0.04504378,
+        "aquifers.lava": -0.1452724,
+        "aquifers.exclusion": -0.34154853,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:amplified",
+      "x": 2048,
+      "y": 40,
+      "z": 2048,
+      "values": {
+        "temperature": 0.4830404,
+        "vegetation": -0.21465531,
+        "continents": -0.6970872,
+        "erosion": 0.1451357,
+        "depth": -0.038450003,
+        "ridges": 0.31921285,
+        "chunk_surface_level": 24.0,
+        "final_density": -0.1720794,
+        "aquifers.barrier": 0.14991921,
+        "aquifers.fluid_level_floodedness": -0.29193062,
+        "aquifers.fluid_level_spread": 0.203381,
+        "aquifers.lava": 0.18325824,
+        "aquifers.exclusion": -0.3701357,
+        "aquifers.surface_level": 24.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:amplified",
+      "x": 3,
+      "y": -50,
+      "z": 5,
+      "values": {
+        "temperature": 0.42557722,
+        "vegetation": 0.2742209,
+        "continents": -0.33572155,
+        "erosion": 0.13306496,
+        "depth": 0.76687497,
+        "ridges": -0.2940131,
+        "chunk_surface_level": 32.0,
+        "final_density": 0.07365886,
+        "aquifers.barrier": 0.111577265,
+        "aquifers.fluid_level_floodedness": -0.37066182,
+        "aquifers.fluid_level_spread": -0.15422034,
+        "aquifers.lava": 0.074790835,
+        "aquifers.exclusion": -0.35806495,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:amplified",
+      "x": -7,
+      "y": 63,
+      "z": 9,
+      "values": {
+        "temperature": 0.4228046,
+        "vegetation": 0.27536345,
+        "continents": -0.29882845,
+        "erosion": 0.13620727,
+        "depth": -0.11593753,
+        "ridges": -0.26634637,
+        "chunk_surface_level": 32.0,
+        "final_density": -0.11455217,
+        "aquifers.barrier": -0.37517816,
+        "aquifers.fluid_level_floodedness": -0.20815548,
+        "aquifers.fluid_level_spread": 0.4147782,
+        "aquifers.lava": 0.15708156,
+        "aquifers.exclusion": -0.36120725,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:amplified",
+      "x": 123,
+      "y": -13,
+      "z": -456,
+      "values": {
+        "temperature": 0.21751946,
+        "vegetation": 0.41187623,
+        "continents": -0.6215459,
+        "erosion": 0.19398035,
+        "depth": 0.3756125,
+        "ridges": 0.48037773,
+        "chunk_surface_level": 24.0,
+        "final_density": -0.012829622,
+        "aquifers.barrier": -0.38191202,
+        "aquifers.fluid_level_floodedness": 0.42956978,
+        "aquifers.fluid_level_spread": -0.28934854,
+        "aquifers.lava": 0.3296627,
+        "aquifers.exclusion": -0.41898036,
+        "aquifers.surface_level": 24.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:amplified",
+      "x": 1500,
+      "y": 200,
+      "z": -2500,
+      "values": {
+        "temperature": 0.15980017,
+        "vegetation": -0.5780781,
+        "continents": -0.33346617,
+        "erosion": -0.20957361,
+        "depth": -1.18625,
+        "ridges": -1.1995611,
+        "chunk_surface_level": 32.0,
+        "final_density": -0.45833334,
+        "aquifers.barrier": 0.0344303,
+        "aquifers.fluid_level_floodedness": -0.38144147,
+        "aquifers.fluid_level_spread": 0.23333272,
+        "aquifers.lava": 0.2051837,
+        "aquifers.exclusion": -0.015426382,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:amplified",
+      "x": 30000,
+      "y": 70,
+      "z": -30001,
+      "values": {
+        "temperature": -0.501836,
+        "vegetation": 0.12955834,
+        "continents": -0.18582664,
+        "erosion": -0.17893806,
+        "depth": -0.17062503,
+        "ridges": 0.32075003,
+        "chunk_surface_level": 33.5,
+        "final_density": -0.16058992,
+        "aquifers.barrier": 0.4253398,
+        "aquifers.fluid_level_floodedness": -0.25475252,
+        "aquifers.fluid_level_spread": -0.22551091,
+        "aquifers.lava": 0.41547698,
+        "aquifers.exclusion": -0.046061933,
+        "aquifers.surface_level": 32.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:amplified",
+      "x": -100000,
+      "y": 10,
+      "z": 100000,
+      "values": {
+        "temperature": 0.37477228,
+        "vegetation": -0.3579012,
+        "continents": 0.053244058,
+        "erosion": -0.02793582,
+        "depth": 0.6847824,
+        "ridges": 0.4432093,
+        "chunk_surface_level": 40.0,
+        "final_density": 0.102166,
+        "aquifers.barrier": -0.20586522,
+        "aquifers.fluid_level_floodedness": -0.3355886,
+        "aquifers.fluid_level_spread": 0.13782528,
+        "aquifers.lava": 0.59408,
+        "aquifers.exclusion": -0.19706418,
+        "aquifers.surface_level": 40.0
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:caves",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.056997012
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:caves",
+      "x": -1000,
+      "y": 40,
+      "z": -1000,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.00587001
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:caves",
+      "x": 16,
+      "y": 100,
+      "z": -37,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.02064252
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:caves",
+      "x": 2048,
+      "y": 40,
+      "z": 2048,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.0031565144
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:caves",
+      "x": 3,
+      "y": -50,
+      "z": 5,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.2601852
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:caves",
+      "x": -7,
+      "y": 63,
+      "z": 9,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.028979927
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:caves",
+      "x": 123,
+      "y": -13,
+      "z": -456,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.033064358
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:caves",
+      "x": 1500,
+      "y": 200,
+      "z": -2500,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.29099998
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:caves",
+      "x": 30000,
+      "y": 70,
+      "z": -30001,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.1395078
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:caves",
+      "x": -100000,
+      "y": 10,
+      "z": 100000,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.04484648
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:floating_islands",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.07485937
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:floating_islands",
+      "x": -1000,
+      "y": 40,
+      "z": -1000,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.022695305
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:floating_islands",
+      "x": 16,
+      "y": 100,
+      "z": -37,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.041394863
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:floating_islands",
+      "x": 2048,
+      "y": 40,
+      "z": 2048,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.013933592
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:floating_islands",
+      "x": 3,
+      "y": -50,
+      "z": 5,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.07485937
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:floating_islands",
+      "x": -7,
+      "y": 63,
+      "z": 9,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.0017741045
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:floating_islands",
+      "x": 123,
+      "y": -13,
+      "z": -456,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.07485937
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:floating_islands",
+      "x": 1500,
+      "y": 200,
+      "z": -2500,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.42020193
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:floating_islands",
+      "x": 30000,
+      "y": 70,
+      "z": -30001,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.01986725
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:floating_islands",
+      "x": -100000,
+      "y": 10,
+      "z": 100000,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.054589078
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:nether",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "values": {
+        "temperature": 0.3698521,
+        "vegetation": 0.019527785,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.45833334
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:nether",
+      "x": -1000,
+      "y": 40,
+      "z": -1000,
+      "values": {
+        "temperature": 0.17738727,
+        "vegetation": 0.5418877,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.00587001
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:nether",
+      "x": 16,
+      "y": 100,
+      "z": -37,
+      "values": {
+        "temperature": 0.33068803,
+        "vegetation": 0.045227997,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.02064252
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:nether",
+      "x": 2048,
+      "y": 40,
+      "z": 2048,
+      "values": {
+        "temperature": 0.017441746,
+        "vegetation": 0.24406831,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.0031565144
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:nether",
+      "x": 3,
+      "y": -50,
+      "z": 5,
+      "values": {
+        "temperature": 0.3688528,
+        "vegetation": 0.020599231,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.45833334
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:nether",
+      "x": -7,
+      "y": 63,
+      "z": 9,
+      "values": {
+        "temperature": 0.38443348,
+        "vegetation": 0.0102095455,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.028979927
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:nether",
+      "x": 123,
+      "y": -13,
+      "z": -456,
+      "values": {
+        "temperature": 0.2044902,
+        "vegetation": 0.13774815,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.45833334
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:nether",
+      "x": 1500,
+      "y": 200,
+      "z": -2500,
+      "values": {
+        "temperature": -0.39159757,
+        "vegetation": -0.10966903,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.29099998
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:nether",
+      "x": 30000,
+      "y": 70,
+      "z": -30001,
+      "values": {
+        "temperature": -0.12247002,
+        "vegetation": 0.053523883,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.1395078
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:nether",
+      "x": -100000,
+      "y": 10,
+      "z": 100000,
+      "values": {
+        "temperature": 0.37335807,
+        "vegetation": -0.14826016,
+        "continents": 0.0,
+        "erosion": 0.0,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.3580053
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:end",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.5625,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.07485937
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:end",
+      "x": -1000,
+      "y": 40,
+      "z": -1000,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.2632069,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": 0.10651791
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:end",
+      "x": 16,
+      "y": 100,
+      "z": -37,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.40381807,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.45833334
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:end",
+      "x": 2048,
+      "y": 40,
+      "z": 2048,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": -0.6945137,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.20529681
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:end",
+      "x": 3,
+      "y": -50,
+      "z": 5,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.5625,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.07485937
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:end",
+      "x": -7,
+      "y": 63,
+      "z": 9,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.5625,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.028266622
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:end",
+      "x": 123,
+      "y": -13,
+      "z": -456,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": -0.84375,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.07485937
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:end",
+      "x": 1500,
+      "y": 200,
+      "z": -2500,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": -0.84375,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.45833334
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:end",
+      "x": 30000,
+      "y": 70,
+      "z": -30001,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": 0.22961012,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.3141795
+      }
+    },
+    {
+      "seed": -4172144997902289642,
+      "settings": "minecraft:end",
+      "x": -100000,
+      "y": 10,
+      "z": 100000,
+      "values": {
+        "temperature": 0.0,
+        "vegetation": 0.0,
+        "continents": 0.0,
+        "erosion": -0.453125,
+        "depth": 0.0,
+        "ridges": 0.0,
+        "chunk_surface_level": 0.0,
+        "final_density": -0.08550497
+      }
+    }
+  ],
+  "functions": [
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 3,
+        "cell_size_y": 5,
+        "input": {
+          "type": "minecraft:interpolated",
+          "cell_size_xz": 4,
+          "cell_size_y": 8,
+          "input": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:cave_cheese",
+            "xz_scale": 1.0,
+            "y_scale": 1.0
+          }
+        }
+      },
+      "x": 1,
+      "y": 2,
+      "z": 1,
+      "value": "0.66305125",
+      "bits": "0x3F29BDBA"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 3,
+        "cell_size_y": 5,
+        "input": {
+          "type": "minecraft:interpolated",
+          "cell_size_xz": 4,
+          "cell_size_y": 8,
+          "input": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:cave_cheese",
+            "xz_scale": 1.0,
+            "y_scale": 1.0
+          }
+        }
+      },
+      "x": -7,
+      "y": -13,
+      "z": 22,
+      "value": "0.38900656",
+      "bits": "0x3EC72BDE"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 3,
+        "cell_size_y": 5,
+        "input": {
+          "type": "minecraft:interpolated",
+          "cell_size_xz": 4,
+          "cell_size_y": 8,
+          "input": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:cave_cheese",
+            "xz_scale": 1.0,
+            "y_scale": 1.0
+          }
+        }
+      },
+      "x": 100,
+      "y": 37,
+      "z": -55,
+      "value": "0.29176462",
+      "bits": "0x3E95622C"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 3,
+        "cell_size_y": 5,
+        "input": {
+          "type": "minecraft:interpolated",
+          "cell_size_xz": 4,
+          "cell_size_y": 8,
+          "input": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:cave_cheese",
+            "xz_scale": 1.0,
+            "y_scale": 1.0
+          }
+        }
+      },
+      "x": 3,
+      "y": 5,
+      "z": 3,
+      "value": "0.7369174",
+      "bits": "0x3F3CA69E"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:interpolated",
+          "cell_size_xz": 3,
+          "cell_size_y": 5,
+          "input": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:cave_cheese",
+            "xz_scale": 1.0,
+            "y_scale": 1.0
+          }
+        }
+      },
+      "x": 5,
+      "y": 3,
+      "z": -2,
+      "value": "0.632851",
+      "bits": "0x3F220286"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 5,
+        "cell_size_y": 7,
+        "input": {
+          "type": "minecraft:interpolated",
+          "cell_size_xz": 2,
+          "cell_size_y": 3,
+          "input": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:cave_cheese",
+            "xz_scale": 1.0,
+            "y_scale": 1.0
+          }
+        }
+      },
+      "x": -11,
+      "y": 50,
+      "z": 9,
+      "value": "0.31748128",
+      "bits": "0x3EA28CE8"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 6,
+        "cell_size_y": 9,
+        "input": {
+          "type": "minecraft:interpolated",
+          "cell_size_xz": 4,
+          "cell_size_y": 4,
+          "input": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:cave_cheese",
+            "xz_scale": 1.0,
+            "y_scale": 1.0
+          }
+        }
+      },
+      "x": 13,
+      "y": -20,
+      "z": 7,
+      "value": "0.27505141",
+      "bits": "0x3E8CD38A"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:interpolated",
+          "cell_size_xz": 4,
+          "cell_size_y": 8,
+          "input": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:cave_cheese",
+            "xz_scale": 1.0,
+            "y_scale": 1.0
+          }
+        }
+      },
+      "x": 1,
+      "y": 2,
+      "z": 1,
+      "value": "0.6630512",
+      "bits": "0x3F29BDB9"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 3,
+        "cell_size_y": 3,
+        "input": {
+          "type": "minecraft:interpolated",
+          "cell_size_xz": 2,
+          "cell_size_y": 5,
+          "input": {
+            "type": "minecraft:interpolated",
+            "cell_size_xz": 4,
+            "cell_size_y": 8,
+            "input": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:cave_cheese",
+              "xz_scale": 1.0,
+              "y_scale": 1.0
+            }
+          }
+        }
+      },
+      "x": 2,
+      "y": 4,
+      "z": -1,
+      "value": "0.66636217",
+      "bits": "0x3F2A96B6"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:pow",
+        "base": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:cave_cheese",
+          "xz_scale": 0.1,
+          "y_scale": 0.7
+        },
+        "exponent": 2.0
+      },
+      "x": 29901971,
+      "y": 104,
+      "z": -29899343,
+      "value": "0.0015709635",
+      "bits": "0x3ACDE8CA"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:pow",
+          "base": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:cave_cheese",
+            "xz_scale": 0.1,
+            "y_scale": 0.7
+          },
+          "exponent": 2.0
+        }
+      },
+      "x": 29901973,
+      "y": 105,
+      "z": -29899341,
+      "value": "0.0018858486",
+      "bits": "0x3AF72E94"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:pow",
+        "base": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:cave_cheese",
+          "xz_scale": 0.1,
+          "y_scale": 0.7
+        },
+        "exponent": 2.5
+      },
+      "x": 29901971,
+      "y": 104,
+      "z": -29899343,
+      "value": "3.1275742E-4",
+      "bits": "0x39A3F997"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:pow",
+          "base": {
+            "type": "minecraft:abs",
+            "input": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:cave_cheese",
+              "xz_scale": 0.1,
+              "y_scale": 0.7
+            }
+          },
+          "exponent": 2.5
+        }
+      },
+      "x": 29901973,
+      "y": 105,
+      "z": -29899341,
+      "value": "3.986668E-4",
+      "bits": "0x39D10427"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:pow",
+          "base": {
+            "type": "minecraft:abs",
+            "input": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:cave_cheese",
+              "xz_scale": 0.1,
+              "y_scale": 0.7
+            }
+          },
+          "exponent": -0.5
+        }
+      },
+      "x": 29901973,
+      "y": 105,
+      "z": -29899341,
+      "value": "4.901058",
+      "bits": "0x409CD578"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:pow",
+          "base": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:cave_cheese",
+            "xz_scale": 0.1,
+            "y_scale": 0.7
+          },
+          "exponent": 3.0
+        }
+      },
+      "x": 29901973,
+      "y": 105,
+      "z": -29899341,
+      "value": "8.028517E-5",
+      "bits": "0x38A85EC6"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:pow",
+          "base": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:cave_cheese",
+            "xz_scale": 0.1,
+            "y_scale": 0.7
+          },
+          "exponent": -1.0
+        }
+      },
+      "x": 29901973,
+      "y": 105,
+      "z": -29899341,
+      "value": "14.549761",
+      "bits": "0x4168CBD2"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:pow",
+          "base": 2.0,
+          "exponent": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:cave_cheese",
+            "xz_scale": 0.1,
+            "y_scale": 0.7
+          }
+        }
+      },
+      "x": 29901973,
+      "y": 105,
+      "z": -29899341,
+      "value": "1.0256878",
+      "bits": "0x3F8349BD"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:pow",
+          "base": {
+            "type": "minecraft:abs",
+            "input": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:cave_cheese",
+              "xz_scale": 0.1,
+              "y_scale": 0.7
+            }
+          },
+          "exponent": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:cave_layer",
+            "xz_scale": 1.0,
+            "y_scale": 1.0
+          }
+        }
+      },
+      "x": 29901973,
+      "y": 105,
+      "z": -29899341,
+      "value": "0.36342698",
+      "bits": "0x3EBA131A"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:pow",
+        "base": -1.0,
+        "exponent": {
+          "type": "minecraft:reciprocal",
+          "input": 0.0
+        }
+      },
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "value": "NaN",
+      "bits": "0x7FC00000"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:pow",
+        "base": -1.0,
+        "exponent": {
+          "type": "minecraft:negate",
+          "input": {
+            "type": "minecraft:reciprocal",
+            "input": 0.0
+          }
+        }
+      },
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "value": "NaN",
+      "bits": "0x7FC00000"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:pow",
+        "base": 1.0,
+        "exponent": {
+          "type": "minecraft:reciprocal",
+          "input": 0.0
+        }
+      },
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "value": "NaN",
+      "bits": "0x7FC00000"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:pow",
+        "base": 1.0,
+        "exponent": {
+          "type": "minecraft:log",
+          "input": -1.0
+        }
+      },
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "value": "NaN",
+      "bits": "0x7FC00000"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:pow",
+        "base": 0.5,
+        "exponent": {
+          "type": "minecraft:reciprocal",
+          "input": 0.0
+        }
+      },
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "value": "0.0",
+      "bits": "0x00000000"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:pow",
+        "base": {
+          "type": "minecraft:log",
+          "input": -1.0
+        },
+        "exponent": 0.0
+      },
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "value": "1.0",
+      "bits": "0x3F800000"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:pow",
+        "base": -8.0,
+        "exponent": 0.33333334
+      },
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "value": "NaN",
+      "bits": "0x7FC00000"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:pow",
+          "base": -1.0,
+          "exponent": {
+            "type": "minecraft:reciprocal",
+            "input": 0.0
+          }
+        }
+      },
+      "x": 1,
+      "y": 2,
+      "z": 3,
+      "value": "NaN",
+      "bits": "0x7FC00000"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:pow",
+          "base": {
+            "type": "minecraft:abs",
+            "input": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:cave_cheese",
+              "xz_scale": 0.1,
+              "y_scale": 0.7
+            }
+          },
+          "exponent": 2.5
+        }
+      },
+      "x": 29901712,
+      "y": 106,
+      "z": -29898974,
+      "value": "0.0010899485",
+      "bits": "0x3A8EDC9A"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:pow",
+          "base": {
+            "type": "minecraft:abs",
+            "input": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:cave_cheese",
+              "xz_scale": 0.1,
+              "y_scale": 0.7
+            }
+          },
+          "exponent": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:cave_layer",
+            "xz_scale": 1.0,
+            "y_scale": 1.0
+          }
+        }
+      },
+      "x": 29901668,
+      "y": 107,
+      "z": -29898974,
+      "value": "5.2459035",
+      "bits": "0x40A7DE71"
+    },
+    {
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:pow",
+          "base": 2.0,
+          "exponent": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:cave_cheese",
+            "xz_scale": 0.1,
+            "y_scale": 0.7
+          }
+        }
+      },
+      "x": 29901713,
+      "y": 109,
+      "z": -29898974,
+      "value": "0.9606271",
+      "bits": "0x3F75EBA8"
+    }
+  ]
+}
