@@ -291,10 +291,12 @@ public abstract class AbstractMinecart : VehicleEntity
             motion = this.Motion;
             var horizontal = HorizontalLength(motion);
             if (horizontal > 0)
+            {
                 this.Motion = new VectorD(
                     motion.X * (horizontal + drop) / horizontal,
                     motion.Y,
                     motion.Z * (horizontal + drop) / horizontal);
+            }
 
             this.SetPosition(new VectorD(this.Position.X, end.Y, this.Position.Z));
         }

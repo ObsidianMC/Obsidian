@@ -31,8 +31,10 @@ internal static class PipelineRun
     {
         // The warm pass generates another world far away, so the measured pass runs with the JIT settled.
         if (!options.Cold)
+        {
             Generate(new ChunkBuilder(bench.Dimension, options.Seed + 7), bench.Dimension, bench.CenterX + 400, bench.CenterZ + 400,
                 options.Radius);
+        }
 
         var builder = new ChunkBuilder(bench.Dimension, options.Seed);
         var result = Generate(builder, bench.Dimension, bench.CenterX, bench.CenterZ, options.Radius);

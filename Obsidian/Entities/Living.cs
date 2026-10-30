@@ -115,7 +115,10 @@ public partial class Living : Entity, ILiving
             var effectTime = data.CurrentDuration == -1 ? effectTicks : data.CurrentDuration;
             if (Alive && potion == (int)PotionEffect.Regeneration - 1 &&
                 effectTime % Math.Max(1, 50 >> Math.Min(30, data.EffectData.Amplifier)) == 0)
+            {
                 Health = Math.Min(GetAttributeValue("minecraft:max_health"), Health + 1);
+            }
+
             var poisonInterval = Math.Max(1, 25 >> Math.Min(30, data.EffectData.Amplifier));
             if (potion == (int)PotionEffect.Poison - 1 && effectTime % poisonInterval == 0 && Health > 1)
             {
@@ -146,7 +149,9 @@ public partial class Living : Entity, ILiving
                 while (hidden is { Duration: 0 })
                     hidden = hidden.HiddenEffect;
                 if (hidden == null)
+                {
                     RemovePotionEffect(potion);
+                }
                 else
                 {
                     activePotionEffects[potion] = new() { EffectData = hidden, CurrentDuration = hidden.Duration };
@@ -165,7 +170,10 @@ public partial class Living : Entity, ILiving
             fireTicks = 160;
         if (IsFireImmune || terrain.ContainsFluid(Dimension.CreateBBFromPosition(Position), water: true) ||
             Level.LevelData.Raining && terrain.GetSkyLight(feet) == 15)
+        {
             fireTicks = 0;
+        }
+
         if (fireTicks > 0)
         {
             if (fireTicks % 20 == 0 && !HasPotionEffect((int)PotionEffect.FireResistance - 1))
@@ -186,11 +194,13 @@ public partial class Living : Entity, ILiving
     internal void RestorePotionEffect(int id, int duration, int amplifier)
     {
         if (duration == -1 || duration > 0)
+        {
             activePotionEffects[id] = new()
             {
                 CurrentDuration = duration,
                 EffectData = new() { Id = id, Duration = duration, Amplifier = amplifier }
             };
+        }
     }
 
     public void ClearPotionEffects()
@@ -208,7 +218,10 @@ public partial class Living : Entity, ILiving
         if (effectId == (int)PotionEffect.Poison - 1 && Type is EntityType.Zombie or EntityType.Husk or EntityType.Skeleton or EntityType.Stray or EntityType.Bogged or EntityType.Parched or EntityType.Spider or EntityType.CaveSpider or EntityType.WitherSkeleton or EntityType.Drowned or EntityType.ZombifiedPiglin or EntityType.Zoglin or EntityType.CamelHusk or EntityType.ZombieNautilus or EntityType.ZombieVillager or EntityType.Giant or EntityType.Phantom or EntityType.SkeletonHorse or EntityType.ZombieHorse ||
             effectId == (int)PotionEffect.Wither - 1 && Type == EntityType.WitherSkeleton ||
             effectId == (int)PotionEffect.Weakness - 1 && Type == EntityType.Parched)
+        {
             return;
+        }
+
         var data = new EffectWithCurrentDuration
         {
             CurrentDuration = duration,

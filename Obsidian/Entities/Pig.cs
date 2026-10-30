@@ -67,7 +67,10 @@ public sealed partial class Pig : Animal, IItemSteerable
     {
         if (!Alive || IsRemoved || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator ||
             !IsInRange(player, 4) || !CanSee(player))
+        {
             return false;
+        }
+
         var slot = hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
         var item = player.Inventory.GetItem(slot);
         if (IsFood(item))
@@ -110,7 +113,10 @@ public sealed partial class Pig : Animal, IItemSteerable
         if (Rider == null || !HasSaddle ||
             !(Rider.GetHeldItem() is { Count: > 0, Holder.Id: ItemIds.CarrotOnAStick } ||
               Rider.GetOffHandItem() is { Count: > 0, Holder.Id: ItemIds.CarrotOnAStick }))
+        {
             return;
+        }
+
         Yaw = Rider.Yaw;
         Pitch = Rider.Pitch.Degrees * 0.5f;
         var boost = 1f;

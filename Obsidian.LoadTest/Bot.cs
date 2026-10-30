@@ -246,7 +246,10 @@ internal sealed class Bot(int index, BotOptions options, LoadStats stats)
     {
         var teleportId = data.ReadVarInt();
         var (tx, ty, tz) = (data.ReadDouble(), data.ReadDouble(), data.ReadDouble());
-        data.ReadDouble(); data.ReadDouble(); data.ReadDouble(); // velocity
+        // The velocity, which the bot doesn't use.
+        data.ReadDouble();
+        data.ReadDouble();
+        data.ReadDouble();
         var (yaw, pitch) = (data.ReadFloat(), data.ReadFloat());
         var relative = data.ReadInt();
 

@@ -273,7 +273,9 @@ public sealed class RuinedPortalPiece : TemplateStructurePiece
         if (random.NextFloat() < 0.5f
             && level.GetBlock(position).Is(BlockIds.Netherrack)
             && level.GetBlock(position + Vector.Up).IsAir)
+        {
             level.SetBlock(position + Vector.Up, BlocksRegistry.JungleLeaves.WithProperty("persistent", true));
+        }
     }
 
     private void AddNetherrackDripColumnsBelowPortal(IRandomSource random, IWorldGenLevel level)

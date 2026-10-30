@@ -111,7 +111,10 @@ public sealed partial class Creaking : PathfinderMob
             MoveControl.Stop();
         }
         else if (GoalController is GoalSelector { IsPaused: true } goals)
+        {
             goals.Resume();
+        }
+
         if (oldActive && !Active)
         {
             AttackTarget = null;

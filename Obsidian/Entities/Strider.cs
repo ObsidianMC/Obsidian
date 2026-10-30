@@ -27,7 +27,9 @@ public sealed partial class Strider : FarmAnimal, IItemSteerable
             var above = Terrain.GetBlock((Vector)(Position + new VectorD(0, 0.6, 0)).Floor())?.RegistryId
                 == BlockIds.Lava;
             if (above)
+            {
                 Motion = new VectorD(Motion.X, Math.Max(Motion.Y, 0.1), Motion.Z);
+            }
             else
             {
                 Motion = new VectorD(Motion.X, Math.Max(0, Motion.Y), Motion.Z);
@@ -69,7 +71,10 @@ public sealed partial class Strider : FarmAnimal, IItemSteerable
             || player.GameMode == GameMode.Spectator
             || !IsInRange(player, 4)
             || !CanSee(player))
+        {
             return false;
+        }
+
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (CanEat(item))
             return await base.FeedAsync(player, hand);
@@ -83,9 +88,13 @@ public sealed partial class Strider : FarmAnimal, IItemSteerable
         else if (!player.Sneaking
             && !GetEquipment(EquipmentSlot.Saddle).IsAir
             && Mount(player))
+        {
             GoalController?.Pause();
+        }
         else
+        {
             return false;
+        }
 
         return true;
     }
@@ -116,7 +125,10 @@ public sealed partial class Strider : FarmAnimal, IItemSteerable
         }
         if (Rider.GetHeldItem()?.Is(ItemsRegistry.WarpedFungusOnAStick) != true
             && Rider.GetOffHandItem()?.Is(ItemsRegistry.WarpedFungusOnAStick) != true)
+        {
             return;
+        }
+
         Yaw = Rider.Yaw;
         var boost = boostDuration > 0 ? 1 + 1.15f * MathF.Sin((float)boostTicks / boostDuration * MathF.PI) : 1;
         MoveControl.Ride(MovementSpeed * 0.55f * boost);

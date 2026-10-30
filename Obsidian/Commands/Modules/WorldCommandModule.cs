@@ -137,31 +137,35 @@ public sealed class WorldCommandModule : CommandModuleBase
         var changed = 0;
 
         for (var x = min.X; x <= max.X; x++)
-        for (var y = min.Y; y <= max.Y; y++)
-        for (var z = min.Z; z <= max.Z; z++)
         {
-            var position = new Vector(x, y, z);
-            var edge = x == min.X || x == max.X || y == min.Y || y == max.Y || z == min.Z || z == max.Z;
-
-            // Hollow fills the inside with air; outline leaves it alone.
-            var target = mode switch
+            for (var y = min.Y; y <= max.Y; y++)
             {
-                FillMode.Hollow when !edge => air,
-                FillMode.Outline when !edge => null,
-                _ => state
-            };
+                for (var z = min.Z; z <= max.Z; z++)
+                {
+                    var position = new Vector(x, y, z);
+                    var edge = x == min.X || x == max.X || y == min.Y || y == max.Y || z == min.Z || z == max.Z;
 
-            if (target is null || await level.GetBlockAsync(position) is not IBlock existing)
-                continue;
+                    // Hollow fills the inside with air; outline leaves it alone.
+                    var target = mode switch
+                    {
+                        FillMode.Hollow when !edge => air,
+                        FillMode.Outline when !edge => null,
+                        _ => state
+                    };
 
-            if (mode == FillMode.Keep && !existing.IsAir || filter is not null && !Matches(existing, filter) || SameState(existing, target))
-                continue;
+                    if (target is null || await level.GetBlockAsync(position) is not IBlock existing)
+                        continue;
 
-            if (mode == FillMode.Destroy)
-                level.DestroyBlock(position, dropItems: true);
+                    if (mode == FillMode.Keep && !existing.IsAir || filter is not null && !Matches(existing, filter) || SameState(existing, target))
+                        continue;
 
-            await level.SetBlockAsync(position, target, doBlockUpdate: true);
-            changed++;
+                    if (mode == FillMode.Destroy)
+                        level.DestroyBlock(position, dropItems: true);
+
+                    await level.SetBlockAsync(position, target, doBlockUpdate: true);
+                    changed++;
+                }
+            }
         }
 
         if (changed == 0)
@@ -208,12 +212,16 @@ public sealed class WorldCommandModule : CommandModuleBase
         // Read the whole source first, as vanilla does.
         var blocks = new List<(Vector Offset, IBlock Block)>(volume);
         for (var x = min.X; x <= max.X; x++)
-        for (var y = min.Y; y <= max.Y; y++)
-        for (var z = min.Z; z <= max.Z; z++)
         {
-            var position = new Vector(x, y, z);
-            if (await level.GetBlockAsync(position) is IBlock block && !(mode == CloneMode.Masked && block.IsAir))
-                blocks.Add((position - min, block));
+            for (var y = min.Y; y <= max.Y; y++)
+            {
+                for (var z = min.Z; z <= max.Z; z++)
+                {
+                    var position = new Vector(x, y, z);
+                    if (await level.GetBlockAsync(position) is IBlock block && !(mode == CloneMode.Masked && block.IsAir))
+                        blocks.Add((position - min, block));
+                }
+            }
         }
 
         var changed = 0;
@@ -522,10 +530,12 @@ public sealed class WorldCommandModule : CommandModuleBase
     private static async Task<bool> IsLoadedAsync(ILevel level, Vector min, Vector max)
     {
         for (var x = min.X >> 4; x <= max.X >> 4; x++)
-        for (var z = min.Z >> 4; z <= max.Z >> 4; z++)
         {
-            if (await level.GetChunkAsync(x, z, scheduleGeneration: false) is null)
-                return false;
+            for (var z = min.Z >> 4; z <= max.Z >> 4; z++)
+            {
+                if (await level.GetChunkAsync(x, z, scheduleGeneration: false) is null)
+                    return false;
+            }
         }
 
         return true;

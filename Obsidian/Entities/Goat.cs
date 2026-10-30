@@ -44,7 +44,10 @@ public sealed partial class Goat : FarmAnimal
             || player.Level != Level
             || player.GameMode == GameMode.Spectator
             || !IsInRange(player, 4))
+        {
             return false;
+        }
+
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (!IsBaby && item is { Count: > 0, Holder.Id: ItemIds.Bucket })
         {

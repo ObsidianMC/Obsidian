@@ -2,6 +2,7 @@ using Obsidian.Nbt;
 using Obsidian.Registries;
 using Obsidian.Registries.Codecs;
 using System.IO;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Xunit;
@@ -99,6 +100,25 @@ public partial class PluginCodecFiles
         {
             Assert.Empty(element.SpawnCosts);
         }
+    }
+
+    // Plugin data is read leniently, like vanilla's Gson, so migrating legacy spawns mustn't reject what loaded before.
+    [Fact]
+    public void MigratesLegacyBiomeSpawnsWrittenWithCommentsAndTrailingCommas()
+    {
+        var patch = """
+            { "spawners": { "monster": [{ "type": "minecraft:zombie", "weight": 100, "minCount": 1, "maxCount": 5 }] } }
+            """;
+        var strict = Encoding.UTF8.GetString(Patched(MinimalBiome, patch)).Trim();
+
+        var lenient = "{ // written by hand\n" + strict[1..^1].TrimEnd() + ",\n}";
+
+        var exception = Record.Exception(() => PluginCodecs.Parse(
+            PluginCodecs.Biome,
+            "minecraft:plains",
+            "lenient legacy biome override",
+            Encoding.UTF8.GetBytes(lenient)));
+        Assert.Null(exception);
     }
 
     [Theory]

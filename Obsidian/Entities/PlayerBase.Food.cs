@@ -88,12 +88,19 @@ public partial class PlayerBase
         if (item.GetComponent<ConsumableDataComponent>(DataComponentType.Consumable) is { } custom)
         {
             foreach (var effect in custom.Effects)
+            {
                 if (effect.Effect is Obsidian.API.Effects.EffectWithProbability applied && Globals.Random.NextSingle() < applied.Probability)
                     AddPotionEffect(applied.EffectData.Id, applied.EffectData.Duration, applied.EffectData.Amplifier);
+            }
+
             return;
         }
         if (!foodDefaults.TryGetValue(item.Holder.UnlocalizedName, out var defaults) ||
-            !defaults.GetProperty("minecraft:consumable").TryGetProperty("on_consume_effects", out var effects)) return;
+            !defaults.GetProperty("minecraft:consumable").TryGetProperty("on_consume_effects", out var effects))
+        {
+            return;
+        }
+
         foreach (var effect in effects.EnumerateArray())
         {
             var type = effect.GetProperty("type").GetString();
@@ -144,7 +151,9 @@ public partial class PlayerBase
             }
         }
         else if (Air < 300)
+        {
             Air = (short)Math.Min(300, Air + 4);
+        }
 
         if (Air != previous)
             await this.QueuePacketAsync(new SetEntityDataPacket { EntityId = EntityId, Entity = this });
@@ -194,7 +203,9 @@ public partial class PlayerBase
         if (eatingItem is { } item)
         {
             if (!ReferenceEquals(Inventory.GetItem(eatingSlot), item) || item.Count <= 0 || eatingSlot != 45 && eatingSlot != CurrentHeldItemSlot)
+            {
                 CancelEating();
+            }
             else if (--eatingTicks <= 0)
             {
                 if (GetFood(item) is { } food)
@@ -211,16 +222,23 @@ public partial class PlayerBase
                             or ItemIds.RabbitStew
                             or ItemIds.BeetrootSoup
                             or ItemIds.SuspiciousStew)
+                        {
                             Inventory.SetItem(eatingSlot, new ItemStack(ItemsRegistry.Bowl));
+                        }
                         else if (item.Holder.Id is ItemIds.HoneyBottle or ItemIds.OminousBottle)
                         {
-                            if (item.Count <= 0) Inventory.SetItem(eatingSlot, new ItemStack(ItemsRegistry.GlassBottle));
+                            if (item.Count <= 0)
+                            {
+                                Inventory.SetItem(eatingSlot, new ItemStack(ItemsRegistry.GlassBottle));
+                            }
                             else
                             {
                                 var remainderSlot = Inventory.AddItem(new ItemStack(ItemsRegistry.GlassBottle));
                                 if (remainderSlot >= 0)
+                                {
                                     await this.QueuePacketAsync(new ContainerSetSlotPacket
                                     { ContainerId = 0, Slot = (short)remainderSlot, SlotData = Inventory.GetItem(remainderSlot), StateId = Inventory.StateId++ });
+                                }
                                 else
                                 {
                                     var dropped = new ItemEntity
@@ -276,7 +294,10 @@ public partial class PlayerBase
                     if (Health > minimumHealth) await DamageCombatAsync(this, Math.Min(1, Health - minimumHealth), CombatDamageKind.Starvation);
                 }
             }
-            else FoodTickTimer = 0;
+            else
+            {
+                FoodTickTimer = 0;
+            }
         }
         if (Health != sentHealth || FoodLevel != sentFood || FoodSaturationLevel != sentSaturation)
         {

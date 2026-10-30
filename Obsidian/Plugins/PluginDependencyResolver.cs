@@ -104,7 +104,9 @@ internal static class PluginDependencyResolver
             // Obsidian loads a plugin's required dependencies first, for their types, so it can't come before them.
             if (dependency.Type == PluginDependencyType.Required
                 && dependency.Ordering == PluginDependencyOrdering.Before)
+            {
                 return $"it requires '{dependency.Id}' but orders itself before it";
+            }
 
             var found = present.GetValueOrDefault(dependency.Id);
             var accepted = found is not null && range.Satisfies(new NuGetVersion(found.Version));
@@ -139,7 +141,9 @@ internal static class PluginDependencyResolver
                 if (dependency.Id != candidate.Id
                     || !AppliesTo(dependency, side)
                     || !VersionRange.TryParse(dependency.Version, out var range))
+                {
                     continue;
+                }
 
                 var accepted = range.Satisfies(version);
 

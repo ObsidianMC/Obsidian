@@ -7,7 +7,9 @@ public sealed partial class ConsoleTerminal
         if (completion.Start < 0 || completion.Length < 0 || completion.Start > this.cursor
             || completion.Length < this.cursor - completion.Start
             || completion.Length > this.text.Length - completion.Start || completion.Candidates.Count == 0)
+        {
             return;
+        }
 
         var candidates = completion.Candidates.Select((value, index) => (Value: value, Index: index))
             .Where(candidate => !candidate.Value.Any(char.IsControl)).ToArray();
@@ -23,7 +25,9 @@ public sealed partial class ConsoleTerminal
 
             while (length < common.Length && length < candidates[index].Value.Length
                 && char.ToUpperInvariant(common[length]) == char.ToUpperInvariant(candidates[index].Value[length]))
+            {
                 length++;
+            }
 
             if (length > 0 && char.IsHighSurrogate(common[length - 1]))
                 length--;
@@ -47,6 +51,8 @@ public sealed partial class ConsoleTerminal
             }
         }
         else
+        {
             device.Write(EraseLine + string.Join("  ", candidates.Select(candidate => candidate.Value)) + Environment.NewLine);
+        }
     }
 }

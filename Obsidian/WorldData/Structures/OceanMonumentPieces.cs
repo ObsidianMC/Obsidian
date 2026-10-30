@@ -230,7 +230,9 @@ public static class OceanMonumentPieces
                         var block = this.GetBlock(level, x, y, z, context.Box);
                         if (block.RegistryId is BlockIds.Ice or BlockIds.PackedIce
                             or BlockIds.BlueIce or BlockIds.Water)
+                        {
                             continue;
+                        }
 
                         this.PlaceBlock(level, this.GetWorldY(y) >= level.SeaLevel ? BlocksRegistry.Air : water, x, y, z, context.Box);
                     }

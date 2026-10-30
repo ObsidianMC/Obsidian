@@ -36,7 +36,10 @@ public sealed partial class Ocelot : Animal
     {
         if (!Alive || IsRemoved || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator ||
             !IsInRange(player, 3) || !CanSee(player))
+        {
             return false;
+        }
+
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (!Trusting && CanEat(item))
         {

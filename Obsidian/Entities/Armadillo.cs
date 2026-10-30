@@ -81,18 +81,26 @@ public sealed partial class Armadillo : FarmAnimal
                 SetState(1);
     }
         if (InWater || InLava || Rider != null)
+        {
             SetState(0);
+        }
         else if (state == 1 && stateTicks >= 10)
+        {
             SetState(2);
+        }
         else if (state == 2 && AiTick >= safeAt)
+        {
             SetState(3);
+        }
         else if (state == 3 && stateTicks >= 30)
         {
             SetState(0);
             PlayMobSound("unroll_finish");
         }
         else if (state == 2 && Random.Next(400) == 0)
+        {
             SendEntityEvent(64);
+        }
     }
 
     internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
@@ -103,7 +111,10 @@ public sealed partial class Armadillo : FarmAnimal
             || player.GameMode == GameMode.Spectator
             || !IsInRange(player, 4)
             || !CanSee(player))
+        {
             return false;
+        }
+
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (!IsBaby && item is { Count: > 0, Holder.Id: ItemIds.Brush })
         {

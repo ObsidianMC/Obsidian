@@ -23,9 +23,13 @@ internal static class LegacyChunkUpgrade
     public static NbtCompound UpgradeChunk(NbtCompound chunk)
     {
         if (chunk.TryGetTag<NbtList>("sections", out var sections))
+        {
             foreach (var section in sections.OfType<NbtCompound>())
+            {
                 if (section.TryGetTag<NbtCompound>("block_states", out var states))
                     UpgradePalette(states, "palette");
+            }
+        }
 
         if (chunk.TryGetTagValue<string>("Status", out var status))
         {
@@ -56,13 +60,18 @@ internal static class LegacyChunkUpgrade
     {
         UpgradePalette(template, "palette");
         if (template.TryGetTag<NbtList>("palettes", out var palettes))
+        {
             for (var i = 0; i < palettes.Count; i++)
+            {
                 if (palettes[i] is NbtList palette)
                     palettes[i] = UpgradePalette(palette);
+            }
+        }
 
         if (template.TryGetTag<NbtList>("blocks", out var blocks))
         {
             foreach (var block in blocks.OfType<NbtCompound>())
+            {
                 if (block.TryGetTag<NbtCompound>("nbt", out var data))
                 {
                     if (data.TryGetTagValue<string>("id", out var id) && id == "minecraft:bed")
@@ -70,11 +79,17 @@ internal static class LegacyChunkUpgrade
                     else
                         UpgradeBlockEntity(data);
                 }
+            }
         }
         if (template.TryGetTag<NbtList>("entities", out var entities))
+        {
             foreach (var entity in entities.OfType<NbtCompound>())
+            {
                 if (entity.TryGetTag<NbtCompound>("nbt", out var data))
                     UpgradeEntity(data);
+            }
+        }
+
         SetVersion(template);
         return template;
     }
@@ -119,7 +134,9 @@ internal static class LegacyChunkUpgrade
         // Decide the compact form by the default's properties, without normalizing unknown/plugin state data.
         if (BlockStateProperties.TryGetState(name, null, out var defaultState)
             && (properties is null || properties.All(entry => defaultState.GetProperty(entry.Key) == entry.Value)))
+        {
             return new NbtTag<string>(tag.Name!, name);
+        }
 
         state.Remove("Name");
         state.Remove("Properties");
@@ -141,8 +158,10 @@ internal static class LegacyChunkUpgrade
     private static void UpgradeEntities(NbtCompound parent, string key)
     {
         if (parent.TryGetTag<NbtList>(key, out var entities))
+        {
             foreach (var entity in entities.OfType<NbtCompound>())
                 UpgradeEntity(entity);
+        }
     }
 
     private static void UpgradeEntity(NbtCompound entity)

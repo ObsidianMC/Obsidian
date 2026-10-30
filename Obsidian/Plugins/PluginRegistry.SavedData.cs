@@ -78,6 +78,8 @@ public sealed partial class PluginRegistry
         if (parts[0] == "obsidian"
             || !PluginTags.IsPortableName(parts[0])
             || !parts[1].Split('/').All(PluginTags.IsPortableName))
+        {
             throw new ArgumentException($"{identifier} isn't a portable plugin data identifier.");
+        }
     }
 }

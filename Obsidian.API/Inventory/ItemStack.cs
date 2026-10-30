@@ -270,7 +270,9 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
             if (DataComponentTypesRegistry.TryGet(identifier, out var type)
                 && !this.InternalStorage.ContainsKey(type.Type)
                 && !this.RemoveComponents.Contains(type.Type))
+            {
                 yield return new PluginDataComponent(type.Type, type.Identifier, tag);
+            }
         }
     }
 

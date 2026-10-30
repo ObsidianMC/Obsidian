@@ -36,26 +36,32 @@ public sealed partial class Silverfish : PathfinderMob
         if (wakeTicks > 0 && --wakeTicks == 0)
         {
             for (var y = 0; y <= 5; y++)
-            for (var x = -10; x <= 10; x++)
-            for (var z = -10; z <= 10; z++)
-            for (var sign = -1; sign <= 1; sign += 2)
             {
-                if (y == 0 && sign == 1) continue;
-                var point = new Vector(origin.X + x, origin.Y + y * sign, origin.Z + z);
-                if (Terrain.GetBlock(point) is not { } block || !block.UnlocalizedName.StartsWith("minecraft:infested_", StringComparison.Ordinal))
-                    continue;
-                if (Level.LevelData.GetBooleanRule("mob_griefing"))
+                for (var x = -10; x <= 10; x++)
                 {
-                    // Vanilla destroyBlock(pos, true, this): infested blocks drop only with Silk Touch.
-                    Level.DestroyBlock(point, dropItems: true, this);
-                    SpawnFromBlock(Level, point);
+                    for (var z = -10; z <= 10; z++)
+                    {
+                        for (var sign = -1; sign <= 1; sign += 2)
+                        {
+                            if (y == 0 && sign == 1) continue;
+                            var point = new Vector(origin.X + x, origin.Y + y * sign, origin.Z + z);
+                            if (Terrain.GetBlock(point) is not { } block || !block.UnlocalizedName.StartsWith("minecraft:infested_", StringComparison.Ordinal))
+                                continue;
+                            if (Level.LevelData.GetBooleanRule("mob_griefing"))
+                            {
+                                // Vanilla destroyBlock(pos, true, this): infested blocks drop only with Silk Touch.
+                                Level.DestroyBlock(point, dropItems: true, this);
+                                SpawnFromBlock(Level, point);
+                            }
+                            else if (BlockStateParser.TryParse("minecraft:" + block.UnlocalizedName[19..]) is { } host)
+                            {
+                                foreach (var property in BlockStateProperties.GetProperties(block)) host = host.WithProperty(property.Key, property.Value);
+                                await Level.SetBlockAsync(point, host, true);
+                            }
+                            if (Random.Next(2) == 0) return;
+                        }
+                    }
                 }
-                else if (BlockStateParser.TryParse("minecraft:" + block.UnlocalizedName[19..]) is { } host)
-                {
-                    foreach (var property in BlockStateProperties.GetProperties(block)) host = host.WithProperty(property.Key, property.Value);
-                    await Level.SetBlockAsync(point, host, true);
-                }
-                if (Random.Next(2) == 0) return;
             }
         }
         if (AttackTarget == null && AiTick - LastHurtTick > 100 && Level.LevelData.GetBooleanRule("mob_griefing") && Random.Next(10) == 0)

@@ -122,12 +122,14 @@ internal sealed class PressurePlates
                 continue;
 
             for (var x = minX; x <= maxX; x++)
-            for (var z = minZ; z <= maxZ; z++)
             {
-                var position = new Vector(x, y, z);
-                any[position] = any.GetValueOrDefault(position) + 1;
-                if (isLiving)
-                    living[position] = living.GetValueOrDefault(position) + 1;
+                for (var z = minZ; z <= maxZ; z++)
+                {
+                    var position = new Vector(x, y, z);
+                    any[position] = any.GetValueOrDefault(position) + 1;
+                    if (isLiving)
+                        living[position] = living.GetValueOrDefault(position) + 1;
+                }
             }
         }
 

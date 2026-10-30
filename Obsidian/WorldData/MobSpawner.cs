@@ -141,10 +141,16 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             var (cx, cz) = Region.ChunkOf(player.Position);
             var distance = Math.Min(8, (int)level.Configuration.SimulationDistance);
             for (var x = cx - distance; x <= cx + distance; x++)
-            for (var z = cz - distance; z <= cz + distance; z++)
-                if (level.GetLoadedChunk(x, z) != null &&
-                    (new VectorD(x * 16 + 8, player.Position.Y, z * 16 + 8) - player.Position).MagnitudeSquared() <= 16384)
-                    chunks.Add(NumericsHelper.IntsToLong(x, z));
+            {
+                for (var z = cz - distance; z <= cz + distance; z++)
+                {
+                    if (level.GetLoadedChunk(x, z) != null &&
+                        (new VectorD(x * 16 + 8, player.Position.Y, z * 16 + 8) - player.Position).MagnitudeSquared() <= 16384)
+                    {
+                        chunks.Add(NumericsHelper.IntsToLong(x, z));
+                    }
+                }
+            }
         }
         // Read once a tick rather than for every chunk and category.
         var spawnMobs = level.LevelData.GetBooleanRule("spawn_mobs");
@@ -295,7 +301,9 @@ internal sealed partial class MobSpawner(AbstractLevel level)
 
         if (category == "monster" && level.Generator is MojangGenerator structureGenerator &&
             structureGenerator.IsInsideFortress(new Vector(x, y, z)))
+        {
             choices = fortressSpawns;
+        }
 
         // Vanilla's swamps' bogged and desert's parched come from their biome data, so modifiers can remove them.
         var total = 0;
@@ -358,7 +366,10 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                 continue;
             if (type == EntityType.Blaze && (level.Generator is not MojangGenerator fortressGenerator ||
                 !fortressGenerator.IsInsideFortress(new Vector(x, y, z))))
+            {
                 continue;
+            }
+
             var feet = terrain.GetBlock(new Vector(x, y, z));
             var floor = terrain.GetBlock(new Vector(x, y - 1, z));
 
@@ -368,7 +379,9 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             if (feet == null || floor == null ||
                 placement is null && (aquatic ? !feet.Is(BlockIds.Water) :
                     !FluidState.Of(feet).IsEmpty || type is not EntityType.Ghast and not EntityType.Bat && (floor.IsLiquid || BlockCollisionShapes.Get(floor).Count == 0)))
+            {
                 continue;
+            }
 
             // Like vanilla's getMobForSpawn, a vanilla mob is made only once its position passed the checks, since most
             // don't and building a mob is costly; the obstruction check before uses its type's size. A plugin's mob is
@@ -393,13 +406,17 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                 var above = terrain.GetBlock(new Vector(x, y + 1, z));
                 if (!PluginSpawnRules.Fits(rule, feet, floor, above)
                     || !PluginSpawnRules.CanSpawn(definition!, level, new Vector(x, y, z)))
+                {
                     continue;
+                }
             }
             else if (category == "creature")
             {
                 if (RejectsCreatureFloor(type, floor, candidateChunk.GetBiome(x, y, z)) ||
                     Math.Max(block, Math.Max(0, sky - (!generation && level.DayTime is >= 12000 and < 23000 ? 11 : 0))) <= 8)
+                {
                     continue;
+                }
             }
             else if (aquatic)
             {
@@ -409,11 +426,16 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                     continue;
                 if (type is EntityType.Squid or EntityType.Dolphin && (y <= seaLevel - 24 || y >= seaLevel - 1) ||
                     type == EntityType.GlowSquid && (y >= seaLevel - 33 || Math.Max(block, sky) > 0))
+                {
                     continue;
+                }
+
                 if (type == EntityType.Axolotl
                     && !Enumerable.Range(1, 5).Any(depth =>
                         terrain.GetBlock(new Vector(x, y - depth, z))?.RegistryId == BlockIds.Clay))
+                {
                     continue;
+                }
             }
             else if (type == EntityType.Bat)
             {
@@ -439,7 +461,10 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                     continue;
             }
             else if (!IgnoresDarkness(type) && !this.IsDarkEnoughToSpawn(block, sky))
+            {
                 continue;
+            }
+
             if (type is EntityType.Husk or EntityType.Parched or EntityType.Stray && sky != 15)
                 continue;
 
@@ -468,7 +493,9 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                 animal.IsBaby = true;
             if (!terrain.IsFree(mob.Dimension.CreateBBFromPosition(position)) || level.GetEntitiesInRange(position, 2)
                 .Any(entity => MobTerrain.Overlaps(mob.Dimension.CreateBBFromPosition(position), entity.Dimension.CreateBBFromPosition(entity.Position))))
+            {
                 continue;
+            }
 
             // A plugin's mob doesn't spawn once its plugin started unloading.
             if (!level.TrySpawnEntity(mob, hostOwned: true))

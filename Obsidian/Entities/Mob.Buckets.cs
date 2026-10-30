@@ -20,7 +20,9 @@ public partial class Mob
         var bucket = ItemsRegistry.GetSingleItem(bucketType);
         bucket[DataComponentType.BucketEntityData] = new BucketEntityDataComponent { Value = data };
         if (player.GameMode != GameMode.Creative && item.Count == 1)
+        {
             player.Inventory.SetItem(slot, bucket);
+        }
         else
         {
             if (player.GameMode != GameMode.Creative) player.Inventory.RemoveItem(slot, 1);

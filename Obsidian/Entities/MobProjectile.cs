@@ -85,13 +85,19 @@ internal sealed class MobProjectile : Entity
         var fraction = 1d;
         IEntity? target = null;
         foreach (var shape in terrain.GetCollisions(swept))
+        {
             if (MobTerrain.RayIntersection(shape, Position, Motion) is double hit)
                 fraction = Math.Min(fraction, hit);
+        }
+
         foreach (var candidate in Level.GetEntitiesInRange(Position, (float)Motion.Magnitude + 3))
         {
             if (candidate is not Living || candidate.Health <= 0 || ReferenceEquals(candidate, Owner) && age < 25 ||
                 candidate is IPlayer player && player.GameMode is GameMode.Creative or GameMode.Spectator)
+            {
                 continue;
+            }
+
             var bounds = candidate.Dimension.CreateBBFromPosition(candidate.Position);
             if (MobTerrain.RayIntersection(new BoundingBox(bounds.Min - new VectorD(0.3f), bounds.Max + new VectorD(0.3f)), Position, Motion) is double hit && hit < fraction)
             {
@@ -140,7 +146,9 @@ internal sealed class MobProjectile : Entity
                 var fire = (Vector)(Position - Motion * 0.05f).Floor();
                 if (terrain.GetBlock(fire)?.IsAir == true && terrain.GetBlock(new Vector(fire.X, fire.Y - 1, fire.Z)) is { } floor &&
                     BlockCollisionShapes.Get(floor).Count > 0)
+                {
                     await level.SetBlockAsync(fire, BlocksRegistry.Fire, true);
+                }
             }
             // Vanilla's Snowball.onHit: entity event 3, the client's snowball crack particles.
             if (Type == EntityType.Snowball)
@@ -216,8 +224,11 @@ internal sealed class MobProjectile : Entity
                 else
                 {
                     var duration = (int)(effect.Duration * strength + 0.5);
-                    if (duration > 20) living.AddPotionEffect(effect.Id, duration, effect.Amplifier,
-                        EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon);
+                    if (duration > 20)
+                    {
+                        living.AddPotionEffect(effect.Id, duration, effect.Amplifier,
+                            EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon);
+                    }
                 }
             }
         }

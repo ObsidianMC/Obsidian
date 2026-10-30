@@ -218,7 +218,9 @@ public partial class MainEventHandler
                 continue;
 
             if (grid.GetItem(slot).IsNullOrAir())
+            {
                 grid.SetItem(slot, remainder);
+            }
             else
             {
                 StoreCraftingItem(player.Inventory, remainder, 9, 45);

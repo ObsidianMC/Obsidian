@@ -401,7 +401,9 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
                 if (type is BlockIds.Chest or BlockIds.TrappedChest
                     || TagsRegistry.Block.CopperChests.Entries.Contains(type))
+                {
                     container = await DoubleChestAsync(player, level, block, blockPosition, container);
+                }
             }
 
             if (container is not null)
@@ -581,7 +583,9 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             return;
         if (concrete.RootVehicle is not { Passengers: [var soleRider] } || !ReferenceEquals(soleRider, concrete)
             || ReferenceEquals(concrete.RootVehicle, concrete))
+        {
             return;
+        }
 
         // The vehicle's tick reads its passengers, so the removal runs between level ticks. The leave waits for it a
         // while; a level that isn't ticking leaves it queued, and it still runs with the guards checked again.

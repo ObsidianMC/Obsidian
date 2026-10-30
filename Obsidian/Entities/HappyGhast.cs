@@ -47,7 +47,10 @@ public sealed partial class HappyGhast : FarmAnimal, IRideable
         if (!IsBaby && Level.GetPlayersInRange(Position, 5).Any(player => player.Vehicle is null &&
             player.Position.Y >= Position.Y + Dimension.Height - 0.2 && player.Position.Y <= Position.Y + Dimension.Height + 1 &&
             Math.Abs(player.Position.X - Position.X) <= Dimension.Width / 2 && Math.Abs(player.Position.Z - Position.Z) <= Dimension.Width / 2))
+        {
             stillTimeout = 10;
+        }
+
         if (stillTimeout > 0 && Rider == null)
         {
             GoalController?.Pause();
@@ -55,7 +58,10 @@ public sealed partial class HappyGhast : FarmAnimal, IRideable
             Motion = VectorD.Zero;
         }
         else if (Rider == null && GoalController is GoalSelector { IsPaused: true } goals)
+        {
             goals.Resume();
+        }
+
         var radius = IsBaby || !GetEquipment(EquipmentSlot.Body).IsAir ? 32 : 64;
         if (Rider == null && stillTimeout == 0 && home is { } center && (Position - center).MagnitudeSquared() > radius * radius)
             MoveControl.MoveTo(center, 1);
@@ -72,7 +78,10 @@ public sealed partial class HappyGhast : FarmAnimal, IRideable
             || player.GameMode == GameMode.Spectator
             || !IsInRange(player, 4)
             || !CanSee(player))
+        {
             return false;
+        }
+
         var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (IsBaby && CanEat(held))
             return await base.FeedAsync(player, hand);

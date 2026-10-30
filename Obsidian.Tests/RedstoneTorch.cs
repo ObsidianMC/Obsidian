@@ -19,8 +19,11 @@ public class RedstoneTorchTests
         var world = new RedstoneTestWorld();
         world.Load(-4, 6, 97, 102, -2, 2, ringChunks: 1);
         for (var x = -4; x <= 6; x++)
+        {
             for (var z = -2; z <= 2; z++)
                 await world.Place(new Vector(x, 98, z), BlocksRegistry.Get("minecraft:stone"));
+        }
+
         var source = new Vector(-2, 99, 0);
         await world.Place(source, BlocksRegistry.Get("minecraft:redstone_block"));
         for (var x = -1; x <= 3; x++)

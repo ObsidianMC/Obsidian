@@ -65,7 +65,9 @@ internal sealed record TwoPartBlockBreak(
         var partnerProperties = partner.GetProperties();
         if (partnerProperties.GetValueOrDefault(property) != other
             || property == "part" && partnerProperties.GetValueOrDefault("facing") != properties["facing"])
+        {
             return single;
+        }
 
         // Vanilla suppresses the bottom drop when a creative player breaks the top of a double plant. Choosing
         // one drop-bearing state also prevents duplicate drops in survival and when both parts are hit by a blast.

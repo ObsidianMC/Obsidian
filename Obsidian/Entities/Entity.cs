@@ -524,17 +524,29 @@ public partial class Entity : IEquatable<Entity>, IEntity
             mask |= EntityBitMask.Swimming;
         }
         else if (!Sneaking && Pose == Pose.Sneaking || !Swimming && Pose == Pose.Swimming)
+        {
             Pose = Pose.Standing;
+        }
         else if (Sprinting)
+        {
             mask |= EntityBitMask.Sprinting;
+        }
         else if (Glowing)
+        {
             mask |= EntityBitMask.Glowing;
+        }
         else if (Invisible)
+        {
             mask |= EntityBitMask.Invisible;
+        }
         else if (Burning)
+        {
             mask |= EntityBitMask.OnFire;
+        }
         else if (FlyingWithElytra)
+        {
             mask |= EntityBitMask.FlyingWithElytra;
+        }
 
         return mask;
     }
@@ -581,7 +593,9 @@ public partial class Entity : IEquatable<Entity>, IEntity
     {
         if (!float.IsFinite(amount) || amount <= 0 || Health <= 0 || source.Level != Level ||
             this is IPlayer immune && immune.GameMode is GameMode.Creative or GameMode.Spectator)
+        {
             return;
+        }
 
         Health -= amount;
         if (Level is Obsidian.WorldData.AbstractLevel events)

@@ -136,16 +136,20 @@ public sealed partial class Wither : BossMob
         var position = (Vector)Position.Floor();
         var broken = false;
         for (var x = -1; x <= 1; x++)
-        for (var z = -1; z <= 1; z++)
-        for (var y = 0; y <= 3; y++)
         {
-            var point = position + new Vector(x, y, z);
-            var block = Terrain.GetBlock(point);
-                    if (block == null || block.IsAir || TagsRegistry.Block.WitherImmune.Entries.Contains(block.RegistryId))
-                        continue;
-            // Vanilla destroyBlock(pos, true, this): the block's loot drops.
-            Level.DestroyBlock(point, dropItems: true, this);
-            broken = true;
+            for (var z = -1; z <= 1; z++)
+            {
+                for (var y = 0; y <= 3; y++)
+                {
+                    var point = position + new Vector(x, y, z);
+                    var block = Terrain.GetBlock(point);
+                            if (block == null || block.IsAir || TagsRegistry.Block.WitherImmune.Entries.Contains(block.RegistryId))
+                                continue;
+                    // Vanilla destroyBlock(pos, true, this): the block's loot drops.
+                    Level.DestroyBlock(point, dropItems: true, this);
+                    broken = true;
+                }
+            }
         }
         if (broken)
             PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new LevelEventPacket(1022, position, 0));
@@ -206,11 +210,16 @@ public sealed partial class Wither : BossMob
         invulnerableTicks = Math.Clamp(tag.TryGetTagValue<int>("Invul", out var ticks) ? ticks : 0, 0, SpawnCharge);
         breakBlocksTicks = Math.Clamp(tag.GetInt("ObsidianWitherBreakTicks"), 0, 20);
         if (tag.TryGetTag<NbtArray<int>>("ObsidianWitherHeadTimers", out var timers))
+        {
             for (var index = 0; index < Math.Min(nextShot.Length, timers.Count); index++)
                 nextShot[index] = Math.Max(0, timers[index]);
+        }
+
         if (tag.TryGetTag<NbtArray<int>>("ObsidianWitherIdleShots", out var shots))
+        {
             for (var index = 0; index < Math.Min(idleShots.Length, shots.Count); index++)
                 idleShots[index] = Math.Max(0, shots[index]);
+        }
     }
 
     private sealed class WitherFlightGoal(Wither mob) : Goal

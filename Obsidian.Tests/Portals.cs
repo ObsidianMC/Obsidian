@@ -470,8 +470,11 @@ public partial class Portals
         var world = context.World;
         var end = AddDimension(context, "minecraft:the_end");
         for (var x = -8; x <= 8; x++)
+        {
             for (var z = -8; z <= 8; z++)
                 end.LoadRegionByChunk(x, z).SetChunk(new Chunk(x, z, end.MinY, end.Height, ChunkGenStage.full));
+        }
+
         AddChunks(world);
 
         // Ground at (0, 63, 0) so the End fight initializes exitPortal at (0, 64, 0).
@@ -569,8 +572,10 @@ public partial class Portals
     private static void AddChunks(AbstractLevel world)
     {
         for (var x = -3; x <= 3; x++)
+        {
             for (var z = -3; z <= 3; z++)
                 world.LoadRegionByChunk(x, z).SetChunk(new Chunk(x, z, world.MinY, world.Height, ChunkGenStage.full));
+        }
     }
 
     private static Dictionary<Vector, IBlock> Frame(string axis, int width, int height)

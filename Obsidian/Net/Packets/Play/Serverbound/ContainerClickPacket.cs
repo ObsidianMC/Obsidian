@@ -88,7 +88,9 @@ public partial class ContainerClickPacket
 
         if (this.ClickedSlot != -999 && (this.ClickedSlot < 0 || slot < 0 || slot >= container.Size ||
             (!this.IsPlayerInventory && forPlayer && slot >= 45)))
+        {
             return;
+        }
 
         var click = new ContainerClickEventArgs(player, server, container)
         {

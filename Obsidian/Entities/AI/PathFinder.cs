@@ -272,7 +272,9 @@ internal sealed class PathFinder(IPathBody body)
             // three dimensions, so they must reach the target's vertical cell too rather than one block below it.
             if ((int)Math.Floor(current.Position.X) == targetCellX && (int)Math.Floor(current.Position.Z) == targetCellZ
                 && (volume ? Math.Floor(current.Position.Y) == Math.Floor(target.Y) : Math.Abs(current.Position.Y - target.Y) <= 1))
+            {
                 return BuildPath(current, true);
+            }
 
             foreach (var next in volume ? VolumeMovement.Neighbors(body, current.Position) : evaluator.GetNeighbors(current.Position))
             {

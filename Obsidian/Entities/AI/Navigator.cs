@@ -198,7 +198,10 @@ public class Navigator : INavigator, IPathfinder
             var difference = path.Nodes[nextNode] - mob.Position;
             if (Math.Abs(difference.X) >= tolerance || Math.Abs(difference.Z) >= tolerance ||
                 (usesVolume || !mob.InWater) && Math.Abs(difference.Y) >= 1f)
+            {
                 break;
+            }
+
             nextNode++;
         }
 

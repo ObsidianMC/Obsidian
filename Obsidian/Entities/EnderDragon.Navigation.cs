@@ -152,7 +152,9 @@ public sealed partial class EnderDragon
             SetFlightPath(next);
         }
         else
+        {
             AdvanceFlightPath();
+        }
     }
 
     private void TickLandingApproach()
@@ -172,7 +174,9 @@ public sealed partial class EnderDragon
             SetFlightPath(NearestFlightNode(approach), Podium);
         }
         else if ((destination - Position).MagnitudeSquared() < 100 || (destination - Position).MagnitudeSquared() > 22500 || MovementFlags.HasFlag(MovementFlags.HorizontalCollision))
+        {
             AdvanceFlightPath();
+        }
         // Like vanilla, landing starts once the podium is the last node left, not after reaching it.
         if (phase == DragonPhase.LandingApproach && hasFlightDestination && flightPath.Count == 0)
             SetPhase(DragonPhase.Landing);
@@ -189,7 +193,9 @@ public sealed partial class EnderDragon
             SetFlightPath(node);
         }
         else if ((Position - arena).MagnitudeSquared() > 100)
+        {
             SetPhase(DragonPhase.Holding);
+        }
     }
 
     private void TickStrafingPath(IEntity target)
@@ -207,7 +213,9 @@ public sealed partial class EnderDragon
         if (distance >= 100 && distance <= 22500)
             return;
         if (flightPath.Count > 0)
+        {
             AdvanceFlightPath();
+        }
         else
         {
             var next = NearestFlightNode(Position);

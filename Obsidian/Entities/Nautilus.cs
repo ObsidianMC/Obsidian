@@ -55,7 +55,10 @@ public partial class Nautilus : FarmAnimal, IRideableJumping
             || player.GameMode == GameMode.Spectator
             || !IsInRange(player, 4)
             || !CanSee(player))
+        {
             return false;
+        }
+
         var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (CanEat(held))
         {
@@ -70,7 +73,9 @@ public partial class Nautilus : FarmAnimal, IRideableJumping
                     SynchronizeMetadata();
                 }
                 else
+                {
                     SendEntityEvent(6);
+                }
             }
             else if (Health < GetAttributeValue("minecraft:generic.max_health"))
             {
@@ -78,9 +83,13 @@ public partial class Nautilus : FarmAnimal, IRideableJumping
                 await ConsumeInteractionItemAsync(player, hand);
             }
             else if (Type == EntityType.Nautilus)
+            {
                 return await base.FeedAsync(player, hand);
+            }
             else
+            {
                 return false;
+            }
 
             return true;
         }
@@ -106,9 +115,13 @@ public partial class Nautilus : FarmAnimal, IRideableJumping
         else if (!player.Sneaking
             && !GetEquipment(EquipmentSlot.Saddle).IsAir
             && Mount(player))
+        {
             GoalController?.Pause();
+        }
         else
+        {
             return false;
+        }
 
         return true;
     }
@@ -150,8 +163,11 @@ public partial class Nautilus : FarmAnimal, IRideableJumping
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         foreach (var slot in new[] { EquipmentSlot.Body, EquipmentSlot.Saddle })
+        {
             if (!GetEquipment(slot).IsAir)
                 DropItem(GetEquipment(slot));
+        }
+
         return default;
     }
 

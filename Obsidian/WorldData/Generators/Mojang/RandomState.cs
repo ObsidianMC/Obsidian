@@ -409,7 +409,9 @@ internal sealed class RandomState
                 result = function.MapAll(this);
                 if (sharedFunctions.Contains(function) || function is FlatCacheDensityFunction or Cache2DDensityFunction
                     or CacheOnceDensityFunction)
+                {
                     result = new CacheOnce(result);
+                }
 
                 this.mapped[function] = result;
             }

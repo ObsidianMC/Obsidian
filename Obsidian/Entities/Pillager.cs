@@ -48,9 +48,11 @@ public sealed partial class Pillager : PathfinderMob
         Level.SpawnEntity(new Arrow { Level = Level, Type = EntityType.Arrow, EntityId = Server.GetNextEntityId(),
             Position = origin, Owner = this, Motion = direction * 1.6, Damage = 2 });
         if (!Silent)
+        {
             PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new Obsidian.Net.Packets.Play.Clientbound.SoundEntityPacket
             { EntityId = EntityId, SoundLocation = "minecraft:item.crossbow.shoot", Category = SoundCategory.Hostile,
                 Volume = 1, Pitch = 1 / (Random.NextSingle() * 0.4f + 0.8f), Seed = Random.NextInt64() }, EntityId);
+        }
     }
     protected override ValueTask OnDeathAsync(IEntity source)
     {
@@ -99,7 +101,10 @@ internal sealed class PillagerCrossbowGoal(Pillager pillager) : NavigationGoal(p
         }
         else if (pillager.Charging)
         {
-            if (sightTicks < -60) SetCharging(false);
+            if (sightTicks < -60)
+            {
+                SetCharging(false);
+            }
             else if (++chargeTicks >= 25)
             {
                 SetCharging(false);

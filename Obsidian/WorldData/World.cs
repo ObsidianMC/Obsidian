@@ -88,14 +88,18 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         this.ReadLevelState();
         this.ReadWanderingTrader(files.WanderingTrader);
         for (int rx = -1; rx < 1; rx++)
+        {
             for (int rz = -1; rz < 1; rz++)
                 LoadRegion(rx, rz);
+        }
 
         var (x, z) = LevelData.SpawnPosition.ToChunkCoord();
         var index = 0;
         for (var cx = x - this.Configuration.SpawnChunkRadius; cx < x + this.Configuration.SpawnChunkRadius; cx++)
+        {
             for (var cz = z - this.Configuration.SpawnChunkRadius; cz < z + this.Configuration.SpawnChunkRadius; cz++)
                 this.spawnChunks[index++] = NumericsHelper.IntsToLong(cx, cz);
+        }
 
         await Parallel.ForEachAsync(this.spawnChunks, async (c, _) =>
         {

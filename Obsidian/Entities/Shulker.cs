@@ -76,7 +76,9 @@ public sealed partial class Shulker : PathfinderMob
                 SynchronizeMetadata();
         }
             else
+            {
                 Teleport();
+            }
         }
         if (Level.LevelData.Difficulty == Difficulty.Peaceful)
             AttackTarget = null;
@@ -103,7 +105,9 @@ public sealed partial class Shulker : PathfinderMob
             }
         }
         else if (peek == 100 || peek > 0 && AiTick >= closeAt)
+        {
             SetPeek(0);
+        }
         else if (Closed && Random.Next(40) == 0)
         {
             SetPeek(30);
@@ -121,8 +125,11 @@ public sealed partial class Shulker : PathfinderMob
     private int FindAttachment(Vector point)
     {
         for (var direction = 0; direction < directions.Length; direction++)
+        {
             if (CanAttach(point, direction))
                 return direction;
+        }
+
         return -1;
     }
 

@@ -104,12 +104,17 @@ public partial class UseItemOnPacket
             mob.InitializeAi();
             var saved = Obsidian.Entities.EntityNbt.Save(mob)!;
             if (bucket.GetComponent<Obsidian.API.Inventory.DataComponents.BucketEntityDataComponent>(DataComponentType.BucketEntityData) is { } component)
+            {
                 foreach (var (name, value) in component.Value)
+                {
                     if (name is not ("id" or "UUID" or "Pos" or "Motion" or "Rotation"))
                     {
                         saved.Remove(name);
                         saved.Add(name, value);
                     }
+                }
+            }
+
             saved.Remove("FromBucket");
             saved.Add(new Obsidian.Nbt.NbtTag<bool>("FromBucket", true));
             mob.ReadSave(saved);
@@ -345,7 +350,9 @@ public partial class UseItemOnPacket
             if (player.GameMode != GameMode.Spectator && (uint)this.Face <= (uint)BlockFace.East)
             {
                 if (currentItem.Is(ItemsRegistry.EnderEye))
+                {
                     used = await level.Portals.TryInsertEyeAsync(position);
+                }
                 else if (player.GameMode != GameMode.Adventure)
                 {
                     var firePosition = position + this.Face.ToVector();
@@ -502,10 +509,12 @@ public partial class UseItemOnPacket
                 }
 
                 if (!onWall && placedState is not null)
+                {
                     placedState = placedState.BlockClass() == "StandingSignBlock"
                         ? Signs.GetStandingState(placeLevel.BlockUpdates, placedState, position, player)
                         : VanillaPlacement.GetState(placeLevel.BlockUpdates, placedState, position, player,
                             this.Face, this.Cursor, replacesClicked);
+                }
             }
 
             if (placedState is null || placeLevel.IsOutsideBuildHeight(position.Y + 1) && placedState.BlockClass() == "DoorBlock")
@@ -662,7 +671,9 @@ public partial class UseItemOnPacket
         if (item.Is(ItemsRegistry.EnderEye) || player.GameMode != GameMode.Creative)
         {
             if (!item.Is(ItemsRegistry.FlintAndSteel))
+            {
                 player.Inventory.RemoveItem(slot, 1);
+            }
             else if (!item.Unbreakable && ShouldDamageTool(item))
             {
                 var damage = ComponentBuilder.Damage with { Value = item.Damage + 1 };

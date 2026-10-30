@@ -59,13 +59,14 @@ csharp_space_between_method_declaration_parameter_list_parentheses = false
 
 #leave code block on single line
 csharp_preserve_single_line_blocks = true
-#leave statements and member declarations on the same line
-csharp_preserve_single_line_statements = true
+#put each statement and member declaration on its own line
+csharp_preserve_single_line_statements = false
 
 #Style - Code block preferences
 
-#prefer no curly braces if allowed
-csharp_prefer_braces = false:suggestion
+#require braces when a control statement spans several lines; a one-line guard like `if (x is null) return;` may skip them
+csharp_prefer_braces = when_multiline:warning
+dotnet_diagnostic.IDE0011.severity = warning
 
 #Style - expression bodied member options
 

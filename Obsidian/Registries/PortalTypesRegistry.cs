@@ -46,7 +46,9 @@ internal static class PortalTypesRegistry
             || properties.MaxWidth < properties.MinWidth || properties.MaxWidth > 21
             || properties.MaxHeight < properties.MinHeight || properties.MaxHeight > 21
             || properties.WaitTicks < 0 || properties.CreativeWaitTicks < 0 || properties.EntityWaitTicks < 0)
+        {
             throw new ArgumentException("Portal limits must fit a 2–21 by 3–21 interior and nonnegative waits.");
+        }
 
         ArgumentNullException.ThrowIfNull(properties.IsFrame);
         ArgumentNullException.ThrowIfNull(properties.ResolveTarget);
@@ -54,7 +56,9 @@ internal static class PortalTypesRegistry
         ArgumentNullException.ThrowIfNull(properties.PortalBlock);
         if (properties.PortalBlock.WithProperty("axis", "x").GetProperty("axis") != "x"
             || properties.PortalBlock.WithProperty("axis", "z").GetProperty("axis") != "z")
+        {
             throw new ArgumentException("PortalBlock needs an axis property with x and z values.");
+        }
 
         using var call = owner?.TryEnter();
         if (owner is not null && call is null)
@@ -68,7 +72,9 @@ internal static class PortalTypesRegistry
             owner?.ThrowIfClosing();
             if (bindings.TryGetValue(identifier, out var previous)
                 && previous.Owner?.Info.Id != owner?.Info.Id)
+            {
                 throw new ArgumentException("Another plugin owns this portal.");
+            }
 
             if (!identities.TryGetValue(identifier, out var type))
                 identities[identifier] = type = new PortalType(identifier);
@@ -83,8 +89,10 @@ internal static class PortalTypesRegistry
     internal static PortalType[] ActiveTypes()
     {
         lock (gate)
+        {
             return bindings.Values.Where(binding => binding.Owner is not { IsClosing: true })
                 .Select(binding => binding.Type).ToArray();
+        }
     }
 
     /// <summary>
@@ -97,11 +105,13 @@ internal static class PortalTypesRegistry
         lock (gate)
         {
             if (owner is not null)
+            {
                 return bindings.TryGetValue(owner, out var claimed)
                     && claimed.Properties.PortalBlock.RegistryId == id
                     && claimed.Owner is not { IsClosing: true }
                         ? claimed.Type
                         : null;
+            }
 
             return bindings.Values
                 .Where(binding => binding.Properties.PortalBlock.RegistryId == id
@@ -134,8 +144,10 @@ internal static class PortalTypesRegistry
     internal static bool IsActive(PortalType type, PortalProperties properties)
     {
         lock (gate)
+        {
             return bindings.TryGetValue(type.Identifier, out var binding)
                 && ReferenceEquals(binding.Properties, properties) && binding.Owner is not { IsClosing: true };
+        }
     }
 
     internal static void ReleasePlugin(PluginContainer owner)

@@ -179,13 +179,17 @@ public sealed class Combat
         await using var context = TestServerFactory.CreateServer($"ender-pearl-{Guid.NewGuid():N}");
         var world = context.World;
         for (var x = -2; x <= 2; x++)
+        {
             for (var z = -2; z <= 2; z++)
                 world.LoadRegionByChunk(x, z).SetChunk(new Obsidian.WorldData.Chunk(x, z, world.MinY, world.Height, ChunkGenStage.full));
+        }
 
         // Build a wall at z = 5 so a pearl thrown south (+Z) hits it.
         for (var y = 63; y <= 67; y++)
+        {
             for (var x = -1; x <= 1; x++)
                 await world.SetBlockAsync(new Vector(x, y, 5), BlocksRegistry.Stone);
+        }
 
         var player = TestServerFactory.CreateConnectedPlayer(
             context.Server, world, "PearlThrower", new VectorD(0.5, 64, 0.5));

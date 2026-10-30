@@ -125,7 +125,9 @@ public sealed partial class ThrownExperienceBottle : Throwable
             if (candidate is not Living { Health: > 0 }
                 || ReferenceEquals(candidate, this.Owner) && this.age < 5
                 || candidate is IPlayer { GameMode: GameMode.Spectator })
+            {
                 continue;
+            }
 
             var bounds = candidate.Dimension.CreateBBFromPosition(candidate.Position);
             var grown = new BoundingBox(bounds.Min - new VectorD(0.3f), bounds.Max + new VectorD(0.3f));

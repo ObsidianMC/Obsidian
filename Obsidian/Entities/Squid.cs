@@ -31,8 +31,11 @@ public partial class Squid : AgeableMob
                 swimming = new VectorD(swimming.X, -0.1f, swimming.Z);
             Motion = swimming;
             if (AiTick % 5 == 0)
+            {
                 PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SetEntityMotionPacket
                 { EntityId = EntityId, Velocity = new Velocity(Motion.X, Motion.Y, Motion.Z) });
+            }
+
             Yaw = (float)(Math.Atan2(-Motion.X, Motion.Z) * 180 / Math.PI);
             Pitch = (float)(-Math.Atan2(Motion.Y, Math.Sqrt(Motion.X * Motion.X + Motion.Z * Motion.Z)) * 180 / Math.PI);
         }
@@ -49,7 +52,9 @@ public partial class Squid : AgeableMob
     protected override async ValueTask TickAirSupplyAsync()
     {
         if (InWater)
+        {
             Air = 300;
+        }
         else if (--Air <= -20)
         {
             Air = 0;

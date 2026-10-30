@@ -131,11 +131,13 @@ public partial class Mob
     private void SynchronizeEquipment()
     {
         if (equipment.Count > 0)
+        {
             PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SetEquipmentPacket
             {
                 EntityId = EntityId,
                 Equipment = equipment.Select(pair => new Equipment { Slot = pair.Key, Item = pair.Value }).ToList()
             }, EntityId);
+        }
     }
 
     internal ValueTask SendEquipmentToAsync(Player player) => equipment.Count == 0 ? default : player.Client.QueuePacketAsync(new SetEquipmentPacket

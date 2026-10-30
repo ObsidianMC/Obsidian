@@ -267,7 +267,9 @@ internal sealed class RuntimeLightEngine(Lock tickLock, Func<bool> hasSkyLight)
             // A zero budget reconciles no borders; any other makes progress on at least one.
             if (borderBudget is { } budget && (budget == TimeSpan.Zero || reconciled.Count > 0)
                 && System.Diagnostics.Stopwatch.GetElapsedTime(started) > budget)
+            {
                 break;
+            }
 
             this.AddUnsettledBorder(border.Chunk, border.Direction, LightType.Block, blockSeeds, blockSpreads);
             if (hasSkyLight())
@@ -571,7 +573,9 @@ internal sealed class RuntimeLightEngine(Lock tickLock, Func<bool> hasSkyLight)
 
         if (type != LightType.Sky || own.Length != 2048 || other.Length != 2048
             || own.IndexOfAnyExcept((byte)0xFF) >= 0 || other.IndexOfAnyExcept((byte)0xFF) >= 0)
+        {
             return false;
+        }
 
         var bottom = chunk.MinY + (section << 4);
         var ownSources = this.skySources[(chunk.X, chunk.Z)];

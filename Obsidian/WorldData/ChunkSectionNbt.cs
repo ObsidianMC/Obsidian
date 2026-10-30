@@ -204,15 +204,19 @@ internal static class BlockStateNbt
         string? name = null;
         IReadOnlyDictionary<string, string>? properties = null;
         if (tag is NbtTag<string> bare)
+        {
             name = bare.Value;
+        }
         else if (tag is NbtCompound state)
         {
             name = state.TryGetTagValue<string>("id", out var id) ? id
                 : state.TryGetTagValue<string>("Name", out var legacy) ? legacy : null;
             if (state.TryGetTag<NbtCompound>("properties", out var values)
                 || state.TryGetTag<NbtCompound>("Properties", out values))
+            {
                 properties = values.Where(entry => entry.Value is NbtTag<string>)
                     .ToDictionary(entry => entry.Key, entry => ((NbtTag<string>)entry.Value).Value!);
+            }
         }
 
         return name is not null && BlockStateProperties.TryGetState(name, properties, out var block)
@@ -223,7 +227,9 @@ internal static class BlockStateNbt
     {
         if (BlockStateProperties.TryGetState(block.UnlocalizedName, null, out var defaultState)
             && defaultState.GetHashCode() == block.GetHashCode())
+        {
             return new NbtTag<string>(name, block.UnlocalizedName);
+        }
 
         var state = new NbtCompound(name) { new NbtTag<string>("id", block.UnlocalizedName) };
         var properties = new NbtCompound("properties");

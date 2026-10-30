@@ -131,7 +131,9 @@ public static partial class LootTableJson
             if (property.Name == "predicates"
                 && property.Value.EnumerateObject().Any(value => value.Name is not ("minecraft:enchantments"
                     or "minecraft:stored_enchantments" or "minecraft:map_id" or "minecraft:dyed_color")))
+            {
                 throw new InvalidDataException("Unsupported item component predicate.");
+            }
         }
 
         return new PredicateCondition(context => MatchesTool(context.Tool, predicate));
@@ -161,7 +163,9 @@ public static partial class LootTableJson
 
         if (predicate.TryGetProperty("block", out var block)
             && block.EnumerateObject().Any(value => value.Name is not ("blocks" or "state")))
+        {
             throw new InvalidDataException("Location block predicates support blocks and state.");
+        }
 
         return new PredicateCondition(context => context.TestLocation?.Invoke(json) == true);
     }

@@ -130,7 +130,9 @@ internal static class VanillaLevelData
         if (!files.WorldGenSettings.TryGetTag<NbtCompound>("dimensions", out var dimensions)
             || !dimensions.TryGetTag<NbtCompound>(Overworld, out var savedStem)
             || !savedStem.TryGetTag<NbtCompound>("generator", out var generator))
+        {
             return MojangGeneratorId;
+        }
 
         var type = Get<string?>(generator, "type", null);
         if (type == "minecraft:flat")
@@ -194,7 +196,9 @@ internal static class VanillaLevelData
         if (!generator.TryGetTag<NbtCompound>("settings", out var settings)
             || !settings.TryGetTag<NbtList>("layers", out var layers)
             || Get(settings, "biome", FlatBiome) != FlatBiome)
+        {
             return false;
+        }
 
         var savedLayers = layers
             .OfType<NbtCompound>()

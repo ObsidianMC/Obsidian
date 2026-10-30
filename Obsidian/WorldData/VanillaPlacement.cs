@@ -74,8 +74,10 @@ internal static class VanillaPlacement
         }
 
         if (block.GetProperty("axis") is "x" or "y" or "z")
+        {
             block = block.WithProperty("axis", face is BlockFace.Up or BlockFace.Down ? "y"
                 : face is BlockFace.North or BlockFace.South ? "z" : "x");
+        }
 
         if (block.GetProperty("rotation") is not null)
             block = block.WithProperty("rotation", (int)Math.Floor((player.Yaw.Degrees + 180) * 16 / 360 + 0.5) & 15);
@@ -145,10 +147,13 @@ internal static class VanillaPlacement
             {
                 var lower = state.GetProperty("half") == "lower";
                 if (direction.IsVertical() && lower == (direction == BlockFace.Up))
+                {
                     return neighbor.RegistryId == state.RegistryId && neighbor.GetProperty("half") != state.GetProperty("half")
                         ? neighbor.WithProperty("half", lower ? "lower" : "upper").WithProperty("waterlogged",
                             state.GetProperty("waterlogged") ?? "false")
                         : BlocksRegistry.Air;
+                }
+
                 return lower && direction == BlockFace.Down && !neighbor.HasFullTopCollisionFace() ? BlocksRegistry.Air : state;
             }
             case "ChestBlock" or "TrappedChestBlock" or "CopperChestBlock" or "WeatheringCopperChestBlock":
@@ -162,10 +167,14 @@ internal static class VanillaPlacement
                     if (state.GetProperty("type") == "single" && type != "single"
                         && state.GetProperty("facing") == neighbor.GetProperty("facing")
                         && ConnectedDirection(neighbor) == direction.Opposite())
+                    {
                         return state.WithProperty("type", type == "left" ? "right" : "left");
+                    }
                 }
                 else if (ConnectedDirection(state) == direction)
+                {
                     return state.WithProperty("type", "single");
+                }
 
                 return state;
             }
@@ -184,7 +193,9 @@ internal static class VanillaPlacement
         var kind = state.BlockClass();
         if (kind is not ("DoorBlock" or "TrapDoorBlock" or "FenceGateBlock")
             || state.UnlocalizedName is "minecraft:iron_door" or "minecraft:iron_trapdoor")
+        {
             return null;
+        }
 
         var open = state.GetProperty("open") != "true";
         if (kind == "FenceGateBlock" && open)

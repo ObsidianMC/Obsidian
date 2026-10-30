@@ -47,12 +47,19 @@ public abstract partial class AbstractLevel
         await TickEndPortalsAsync();
         if (!Players.Values.Any(player => player.GameMode != GameMode.Spectator &&
             (player.Position - new VectorD(0, 128, 0)).MagnitudeSquared() < 192 * 192))
+        {
             return;
+        }
+
         var ready = true;
         for (var x = -8; x <= 8; x++)
-        for (var z = -8; z <= 8; z++)
+        {
+            for (var z = -8; z <= 8; z++)
+            {
                 if (GetLoadedChunk(x, z) is not { IsGenerated: true } && await GetChunkAsync(x, z) is not { IsGenerated: true })
-                    ready = false;
+                        ready = false;
+            }
+        }
         if (!ready)
             return;
         var entities = GetEntitiesInRange(new VectorD(0, 128, 0), 256).ToArray();
@@ -60,11 +67,14 @@ public abstract partial class AbstractLevel
         {
             var terrain = new MobTerrain(this);
             for (var y = 127; y >= MinY; y--)
+            {
                 if (terrain.GetBlock(new Vector(0, y, 0)) is { IsAir: false } center)
                 {
                     exitPortal = new Vector(0, center.Is(BlockIds.Bedrock) ? y - 3 : y + 1, 0);
                     break;
                 }
+            }
+
             dragonKilled = terrain.GetBlock(exitPortal + new Vector(1, 0, 0))?.RegistryId == BlockIds.EndPortal;
             dragonPreviouslyKilled = dragonKilled;
             var existing = entities.OfType<EnderDragon>().FirstOrDefault();
@@ -82,7 +92,9 @@ public abstract partial class AbstractLevel
         {
             var dragon = entities.OfType<EnderDragon>().FirstOrDefault(item => item.Uuid == fightDragon);
             if (dragon == null && (fightDragon == Guid.Empty || ++ticksWithoutDragon >= 1200))
+            {
                 CreateFightDragon();
+            }
             else if (dragon != null)
             {
                 ticksWithoutDragon = 0;
@@ -116,14 +128,20 @@ public abstract partial class AbstractLevel
         if (tick is 1 or 50 or 51 or 52 or 95 or 96 or 97 or 98 or 99 or 100 || tick >= 581 && tick <= 600)
             PacketBroadcaster.QueuePacketToLevel(this, new LevelEventPacket(3001, new Vector(0, 128, 0), 0));
         if (tick == 0 || tick == 501)
+        {
             foreach (var crystal in ritual)
                 crystal.SetBeam(new Vector(0, 128, 0));
+        }
+
         if (tick >= 101 && tick < 501)
         {
             var spike = EndSpikeFeature.GetSpikesForLevel(RandomState.ParseSeed(Seed))[(tick - 101) / 40];
             if ((tick - 101) % 40 == 0)
+            {
                 foreach (var crystal in ritual)
                     crystal.SetBeam(new Vector(spike.CenterX, spike.Height + 1, spike.CenterZ));
+            }
+
             if ((tick - 101) % 40 == 39)
                 await RebuildEndSpikeAsync(spike, true);
         }
@@ -150,8 +168,11 @@ public abstract partial class AbstractLevel
     private async ValueTask TickEndPortalsAsync()
     {
         foreach (var id in endPortalCooldowns.Keys.ToArray())
+        {
             if (--endPortalCooldowns[id] <= 0)
                 endPortalCooldowns.Remove(id);
+        }
+
         foreach (var player in Players.Values.ToArray())
         {
             if (player.GameMode == GameMode.Spectator || endPortalCooldowns.ContainsKey(player.Uuid))
@@ -196,15 +217,19 @@ public abstract partial class AbstractLevel
                 return null;
             var terrain = new MobTerrain(this);
             for (var y = MinY + Height - 1; y >= MinY; y--)
+            {
                 if (terrain.GetBlock(new Vector(destination.X, y, destination.Z)) is { IsAir: false })
                 {
                     destination = new Vector(destination.X, y + 3, destination.Z);
                     break;
                 }
+            }
             // Gateways always have a safe arrival platform, including gateways aimed into the void.
             for (var x = -2; x <= 2; x++)
-            for (var z = -2; z <= 2; z++)
-                await SetBlockAsync(destination + new Vector(x, -2, z), BlocksRegistry.EndStone, true);
+            {
+                for (var z = -2; z <= 2; z++)
+                    await SetBlockAsync(destination + new Vector(x, -2, z), BlocksRegistry.EndStone, true);
+            }
             var returnGateway = destination + new Vector(0, 1, 0);
             await CreateEndGatewayAsync(returnGateway);
             await StoreGatewayExitAsync(returnGateway, gateway + new Vector(0, 3, 0));
@@ -261,15 +286,19 @@ public abstract partial class AbstractLevel
     private async ValueTask CreateEndGatewayAsync(Vector gateway)
     {
         for (var x = -1; x <= 1; x++)
-        for (var y = -2; y <= 2; y++)
-        for (var z = -1; z <= 1; z++)
         {
-            var block = x == 0 && y == 0 && z == 0
-                ? BlocksRegistry.EndGateway
-                : y != 0 && (Math.Abs(y) == 2 ? x == 0 && z == 0 : x == 0 || z == 0)
-                    ? BlocksRegistry.Bedrock
-                    : BlocksRegistry.Air;
-            await SetBlockAsync(gateway + new Vector(x, y, z), block, true);
+            for (var y = -2; y <= 2; y++)
+            {
+                for (var z = -1; z <= 1; z++)
+                {
+                    var block = x == 0 && y == 0 && z == 0
+                        ? BlocksRegistry.EndGateway
+                        : y != 0 && (Math.Abs(y) == 2 ? x == 0 && z == 0 : x == 0 || z == 0)
+                            ? BlocksRegistry.Bedrock
+                            : BlocksRegistry.Air;
+                    await SetBlockAsync(gateway + new Vector(x, y, z), block, true);
+                }
+            }
         }
         if (await GetBlockEntityAsync(gateway) == null)
             await SetBlockEntity(gateway, new DataBlockEntity { Id = "minecraft:end_gateway", BlockPosition = gateway });
@@ -295,29 +324,33 @@ public abstract partial class AbstractLevel
     private async ValueTask CreateExitPortalAsync(bool active)
     {
         for (var x = -4; x <= 4; x++)
-        for (var z = -4; z <= 4; z++)
         {
-            var distance = x * x + z * z;
-                if (distance > 12)
-                    continue;
-            for (var y = -1; y <= 3; y++)
+            for (var z = -4; z <= 4; z++)
             {
-                var block = BlocksRegistry.Air;
-                if (y == -1)
-                    block = distance <= 6 ? BlocksRegistry.Bedrock : BlocksRegistry.EndStone;
-                else if (y == 0 && distance > 6)
-                    block = BlocksRegistry.Bedrock;
-                else if (y == 0 && active)
-                    block = BlocksRegistry.EndPortal;
-
-                    if (x == 0 && z == 0 && y >= 0)
+                var distance = x * x + z * z;
+                    if (distance > 12)
+                        continue;
+                for (var y = -1; y <= 3; y++)
+                {
+                    var block = BlocksRegistry.Air;
+                    if (y == -1)
+                        block = distance <= 6 ? BlocksRegistry.Bedrock : BlocksRegistry.EndStone;
+                    else if (y == 0 && distance > 6)
                         block = BlocksRegistry.Bedrock;
-                await SetBlockAsync(exitPortal + new Vector(x, y, z), block, true);
+                    else if (y == 0 && active)
+                        block = BlocksRegistry.EndPortal;
+
+                        if (x == 0 && z == 0 && y >= 0)
+                            block = BlocksRegistry.Bedrock;
+                    await SetBlockAsync(exitPortal + new Vector(x, y, z), block, true);
+                }
             }
         }
         foreach (var (offset, facing) in new[] { (new Vector(1, 2, 0), "east"), (new Vector(-1, 2, 0), "west"),
             (new Vector(0, 2, 1), "south"), (new Vector(0, 2, -1), "north") })
+        {
             await SetBlockAsync(exitPortal + offset, BlocksRegistry.WallTorch.WithProperty("facing", facing), true);
+        }
     }
 
     private async ValueTask RebuildEndSpikeAsync(EndSpike spike, bool resurrecting)
@@ -327,9 +360,13 @@ public abstract partial class AbstractLevel
         if (resurrecting)
         {
             for (var x = -10; x <= 10; x++)
-            for (var y = -10; y <= 10; y++)
-            for (var z = -10; z <= 10; z++)
-                await SetBlockAsync(new Vector(spike.CenterX + x, spike.Height + y, spike.CenterZ + z), BlocksRegistry.Air, true);
+            {
+                for (var y = -10; y <= 10; y++)
+                {
+                    for (var z = -10; z <= 10; z++)
+                        await SetBlockAsync(new Vector(spike.CenterX + x, spike.Height + y, spike.CenterZ + z), BlocksRegistry.Air, true);
+                }
+            }
             var blast = new EndCrystal
             {
                 Level = this,
@@ -340,26 +377,41 @@ public abstract partial class AbstractLevel
         }
         var radius = spike.Radius;
         for (var x = -radius; x <= radius; x++)
-        for (var z = -radius; z <= radius; z++)
-        for (var y = MinY; y <= spike.Height + 10; y++)
         {
-            var block = x * x + z * z <= radius * radius + 1 && y < spike.Height
-                ? BlocksRegistry.ObsidianBlock
-                : BlocksRegistry.Air;
-                    if (block.IsAir && y <= 65)
-                        continue;
-            await SetBlockAsync(new Vector(spike.CenterX + x, y, spike.CenterZ + z), block, true);
+            for (var z = -radius; z <= radius; z++)
+            {
+                for (var y = MinY; y <= spike.Height + 10; y++)
+                {
+                    var block = x * x + z * z <= radius * radius + 1 && y < spike.Height
+                        ? BlocksRegistry.ObsidianBlock
+                        : BlocksRegistry.Air;
+                            if (block.IsAir && y <= 65)
+                                continue;
+                    await SetBlockAsync(new Vector(spike.CenterX + x, y, spike.CenterZ + z), block, true);
+                }
+            }
         }
         if (spike.Guarded)
+        {
             for (var x = -2; x <= 2; x++)
-            for (var z = -2; z <= 2; z++)
-            for (var y = 0; y <= 3; y++)
-                if (Math.Abs(x) == 2 || Math.Abs(z) == 2 || y == 3)
-                    await SetBlockAsync(new Vector(spike.CenterX + x, spike.Height + y, spike.CenterZ + z),
-                        BlocksRegistry.IronBars.WithProperty("north", (Math.Abs(x) == 2 || y == 3) && z != -2)
-                        .WithProperty("south", (Math.Abs(x) == 2 || y == 3) && z != 2)
-                        .WithProperty("west", (Math.Abs(z) == 2 || y == 3) && x != -2)
-                        .WithProperty("east", (Math.Abs(z) == 2 || y == 3) && x != 2), true);
+            {
+                for (var z = -2; z <= 2; z++)
+                {
+                    for (var y = 0; y <= 3; y++)
+                    {
+                        if (Math.Abs(x) == 2 || Math.Abs(z) == 2 || y == 3)
+                        {
+                            await SetBlockAsync(new Vector(spike.CenterX + x, spike.Height + y, spike.CenterZ + z),
+                                BlocksRegistry.IronBars.WithProperty("north", (Math.Abs(x) == 2 || y == 3) && z != -2)
+                                .WithProperty("south", (Math.Abs(x) == 2 || y == 3) && z != 2)
+                                .WithProperty("west", (Math.Abs(z) == 2 || y == 3) && x != -2)
+                                .WithProperty("east", (Math.Abs(z) == 2 || y == 3) && x != 2), true);
+                        }
+                    }
+                }
+            }
+        }
+
         await SetBlockAsync(new Vector(spike.CenterX, spike.Height, spike.CenterZ), BlocksRegistry.Bedrock, true);
         var crystalEntity = new EndCrystal
         {

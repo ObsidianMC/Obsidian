@@ -103,7 +103,9 @@ public sealed class TimeCommandModule : CommandModuleBase
                     || !float.IsFinite(rate)
                     || rate <= 0
                     || rate > 1000)
+                {
                     return false;
+                }
 
                 clock.Rate = rate;
                 return true;
@@ -130,7 +132,9 @@ public sealed class TimeCommandModule : CommandModuleBase
                 if (markerName is null
                     || !WorldTimelines.Markers.TryGetValue(markerName, out var marker)
                     || marker.Clock != identifier)
+                {
                     return false;
+                }
 
                 clock.SetTime(marker.Next(clock.TotalTicks));
                 return true;

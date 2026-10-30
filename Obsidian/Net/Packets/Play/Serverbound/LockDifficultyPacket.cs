@@ -13,7 +13,9 @@ public partial class LockDifficultyPacket
         if (server is not Server obsidian
             || obsidian.DefaultWorld is not World world
             || !obsidian.MayChangeDifficulty(player))
+        {
             return default;
+        }
 
         world.SetDifficulty(world.LevelData.Difficulty, this.Locked);
         obsidian.BroadcastDifficulty();

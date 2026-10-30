@@ -68,7 +68,9 @@ public sealed partial class ZombifiedPiglin : Zombie
             nextAlert = AiTick + Random.Next(80, 121);
             foreach (var ally in GetEntitiesNear(FollowRange).OfType<ZombifiedPiglin>().Where(ally => ally.Alive && !ally.IsRemoved &&
                 ally.AttackTarget == null && Math.Abs(ally.Position.Y - Position.Y) <= 10 && ally.CanSee(target)))
+            {
                 ally.BecomeAngry(target);
+            }
         }
         return default;
     }

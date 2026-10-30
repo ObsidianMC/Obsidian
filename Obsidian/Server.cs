@@ -395,7 +395,9 @@ public sealed partial class Server : IServer, IPluginScopedServer
     {
         if (this.Connections.TryGetValue(entityId, out var client) && client.Player is { } connectedPlayer &&
             OnlinePlayers.TryGetValue(connectedPlayer.Uuid, out var player))
+        {
             return player;
+        }
 
         return this.OnlinePlayers.Values.FirstOrDefault(player => player.EntityId == entityId);
     }
@@ -854,7 +856,9 @@ public sealed partial class Server : IServer, IPluginScopedServer
         // Claiming the registration first means concurrent removals run the leave lifecycle only once.
         if (player is not ServerPlayer serverPlayer
             || !this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
+        {
             return false;
+        }
 
         serverPlayer.CancelJoin();
 

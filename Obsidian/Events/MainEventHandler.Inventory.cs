@@ -517,7 +517,9 @@ public partial class MainEventHandler
                 player.DraggedSlots.Clear();
             }
             else
+            {
                 ResetDrag(player);
+            }
 
             return;
         }
@@ -768,7 +770,9 @@ public partial class MainEventHandler
                 player.CarriedItem = null;
         }
         else
+        {
             container.RemoveItem(clickedSlot, count);
+        }
 
         return dropped;
     }
@@ -841,7 +845,9 @@ public partial class MainEventHandler
         else if (SlotAccepts(player, container, slot, carried))
         {
             if (item == carried)
+            {
                 InsertCarried(player, container, slot, primary ? carried.Count : 1);
+            }
             else if (carried.Count <= SlotLimit(player, container, slot, carried))
             {
                 container.SetItem(slot, carried);

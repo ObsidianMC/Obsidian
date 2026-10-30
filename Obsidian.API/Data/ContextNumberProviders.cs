@@ -301,8 +301,10 @@ public static partial class ContextNumberProviders
             .ToArray();
         var total = rows.Sum(row => (long)row.Weight);
         if (rows.Any(row => row.Weight < 0) || total <= 0 || total > int.MaxValue)
+        {
             throw new InvalidDataException(
                 "A weighted provider needs a positive total weight within the integer range.");
+        }
 
         return context =>
         {

@@ -69,7 +69,9 @@ internal static class ComponentRegistryNames
 
         if (registry == "minecraft:trim_material"
             && CodecRegistry.TrimMaterial.All.TryGetValue(name, out var material))
+        {
             return material.Id;
+        }
 
         if (registry == "minecraft:trim_pattern" && CodecRegistry.TrimPattern.All.TryGetValue(name, out var pattern))
             return pattern.Id;

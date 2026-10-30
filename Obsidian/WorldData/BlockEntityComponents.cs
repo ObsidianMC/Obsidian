@@ -151,7 +151,9 @@ internal sealed partial class BlockEntityComponents : IAsyncDisposable
         {
             if (item.GetComponent<SimpleDataComponent<ChatMessage>>(DataComponentType.CustomName)?.Value
                 is ChatMessage dataName)
+            {
                 data.Set(dataName.ToNbt("CustomName"));
+            }
 
             if (data.Id == "minecraft:decorated_pot")
             {
@@ -193,7 +195,8 @@ internal sealed partial class BlockEntityComponents : IAsyncDisposable
     {
         var inventory = container.Inventory;
         using (inventory.Lock())
-        lock (container.LootLock)
+        {
+            lock (container.LootLock)
         {
             if (container.IsRemoved || inventory.IsRetired)
                 return;
@@ -228,6 +231,7 @@ internal sealed partial class BlockEntityComponents : IAsyncDisposable
                 container.LootTable = table;
                 container.LootTableSeed = loot.TryGetTagValue<long>("seed", out var seed) ? seed : 0;
             }
+        }
         }
 
         container.SetChanged();

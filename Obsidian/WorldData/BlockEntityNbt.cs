@@ -72,11 +72,14 @@ internal static partial class BlockEntityNbt
                 {
                     var decorations = new NbtCompound("sherds");
                     for (var i = 0; i < BlockEntityComponents.PotFaceNames.Length; i++)
+                    {
                         decorations.Add(new NbtCompound(BlockEntityComponents.PotFaceNames[i])
                         {
                             new NbtTag<string>("id", i < sherds.Count && sherds[i] is NbtTag<string> item
                                 ? item.Value! : "minecraft:brick")
                         });
+                    }
+
                     tag.Remove("sherds");
                     tag.Add(decorations);
                 }

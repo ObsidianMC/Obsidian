@@ -77,9 +77,11 @@ internal sealed class RedstoneComparator(IRedstoneLevel level, RedstoneEngine en
     private ValueTask ScheduleIfChanged(Vector position, IBlock state)
     {
         if (this.Calculate(position, state) != this.Output(position))
+        {
             level.ScheduleBlockTick(position, state, DelayTicks, ShouldPrioritize(position, state)
                 ? Obsidian.API.Blocks.TickPriority.High
                 : Obsidian.API.Blocks.TickPriority.Normal);
+        }
 
         return ValueTask.CompletedTask;
     }

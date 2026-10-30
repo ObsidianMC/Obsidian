@@ -409,8 +409,10 @@ internal sealed class WoodlandMansionLayout
                     pieces.Add(new WoodlandMansionPiece("corridor_floor", position, rotation));
 
                     if (plan.Get(x, y - 1) == Corridor || (rooms.Get(x, y - 1) & RoomCorridorFlag) == RoomCorridorFlag)
+                    {
                         pieces.Add(new WoodlandMansionPiece("carpet_north",
                             Relative(position, rotation.Rotate(BlockFace.East), 1) + (0, 1, 0), rotation));
+                    }
 
                     if (plan.Get(x + 1, y) == Corridor || (rooms.Get(x + 1, y) & RoomCorridorFlag) == RoomCorridorFlag)
                     {
@@ -473,8 +475,10 @@ internal sealed class WoodlandMansionLayout
                         pieces.Add(new WoodlandMansionPiece(door == BlockFace.West ? doorName : wall, position, rotation));
 
                     if (plan.Get(x + 1, y) == Corridor && !stairsCorridor)
+                    {
                         pieces.Add(new WoodlandMansionPiece(door == BlockFace.East ? doorName : wall,
                             Relative(position, rotation.Rotate(BlockFace.East), 8), rotation));
+                    }
 
                     if (IsHouse(plan, x, y + 1) && !this.IsRoomId(x, y + 1, floor, roomId))
                     {
@@ -575,16 +579,22 @@ internal sealed class WoodlandMansionLayout
                     pieces.Add(new WoodlandMansionPiece("roof_front", Relative(position, east, 6), rotation));
 
                 if (!IsHouse(plan, x - 1, y))
+                {
                     pieces.Add(new WoodlandMansionPiece("roof_front",
                         Relative(Relative(position, east, 0), south, 7), rotation.GetRotated(StructureRotation.Clockwise180)));
+                }
 
                 if (!IsHouse(plan, x, y - 1))
+                {
                     pieces.Add(new WoodlandMansionPiece("roof_front",
                         Relative(position, west, 1), rotation.GetRotated(StructureRotation.CounterClockwise90)));
+                }
 
                 if (!IsHouse(plan, x, y + 1))
+                {
                     pieces.Add(new WoodlandMansionPiece("roof_front",
                         Relative(Relative(position, east, 6), south, 6), rotation.GetRotated(StructureRotation.Clockwise90)));
+                }
             }
         }
 
@@ -602,16 +612,22 @@ internal sealed class WoodlandMansionLayout
                         pieces.Add(new WoodlandMansionPiece("small_wall", Relative(position, east, 7), rotation));
 
                     if (!IsHouse(plan, x - 1, y))
+                    {
                         pieces.Add(new WoodlandMansionPiece("small_wall",
                             Relative(Relative(position, west, 1), south, 6), rotation.GetRotated(StructureRotation.Clockwise180)));
+                    }
 
                     if (!IsHouse(plan, x, y - 1))
+                    {
                         pieces.Add(new WoodlandMansionPiece("small_wall",
                             Relative(Relative(position, west, 0), north, 1), rotation.GetRotated(StructureRotation.CounterClockwise90)));
+                    }
 
                     if (!IsHouse(plan, x, y + 1))
+                    {
                         pieces.Add(new WoodlandMansionPiece("small_wall",
                             Relative(Relative(position, east, 6), south, 7), rotation.GetRotated(StructureRotation.Clockwise90)));
+                    }
 
                     if (!IsHouse(plan, x + 1, y))
                     {
@@ -619,19 +635,25 @@ internal sealed class WoodlandMansionLayout
                             pieces.Add(new WoodlandMansionPiece("small_wall_corner", Relative(Relative(position, east, 7), north, 2), rotation));
 
                         if (!IsHouse(plan, x, y + 1))
+                        {
                             pieces.Add(new WoodlandMansionPiece("small_wall_corner",
                                 Relative(Relative(position, east, 8), south, 7), rotation.GetRotated(StructureRotation.Clockwise90)));
+                        }
                     }
 
                     if (!IsHouse(plan, x - 1, y))
                     {
                         if (!IsHouse(plan, x, y - 1))
+                        {
                             pieces.Add(new WoodlandMansionPiece("small_wall_corner",
                                 Relative(Relative(position, west, 2), north, 1), rotation.GetRotated(StructureRotation.CounterClockwise90)));
+                        }
 
                         if (!IsHouse(plan, x, y + 1))
+                        {
                             pieces.Add(new WoodlandMansionPiece("small_wall_corner",
                                 Relative(Relative(position, west, 1), south, 8), rotation.GetRotated(StructureRotation.Clockwise180)));
+                        }
                     }
                 }
             }
@@ -655,27 +677,39 @@ internal sealed class WoodlandMansionLayout
                         pieces.Add(new WoodlandMansionPiece("roof_inner_corner", Relative(corner, south, 5), rotation));
 
                     if (!IsHouse(plan, x, y - 1))
+                    {
                         pieces.Add(new WoodlandMansionPiece("roof_corner", corner, rotation.GetRotated(StructureRotation.CounterClockwise90)));
+                    }
                     else if (IsHouse(plan, x + 1, y - 1))
+                    {
                         pieces.Add(new WoodlandMansionPiece("roof_inner_corner",
                             Relative(Relative(position, east, 9), north, 2), rotation.GetRotated(StructureRotation.Clockwise90)));
+                    }
                 }
 
                 if (!IsHouse(plan, x - 1, y))
                 {
                     var corner = Relative(Relative(position, east, 0), south, 0);
                     if (!IsHouse(plan, x, y + 1))
+                    {
                         pieces.Add(new WoodlandMansionPiece("roof_corner",
                             Relative(corner, south, 6), rotation.GetRotated(StructureRotation.Clockwise90)));
+                    }
                     else if (IsHouse(plan, x - 1, y + 1))
+                    {
                         pieces.Add(new WoodlandMansionPiece("roof_inner_corner",
                             Relative(Relative(corner, south, 8), west, 3), rotation.GetRotated(StructureRotation.CounterClockwise90)));
+                    }
 
                     if (!IsHouse(plan, x, y - 1))
+                    {
                         pieces.Add(new WoodlandMansionPiece("roof_corner", corner, rotation.GetRotated(StructureRotation.Clockwise180)));
+                    }
                     else if (IsHouse(plan, x - 1, y - 1))
+                    {
                         pieces.Add(new WoodlandMansionPiece("roof_inner_corner",
                             Relative(corner, south, 1), rotation.GetRotated(StructureRotation.Clockwise180)));
+                    }
                 }
             }
         }

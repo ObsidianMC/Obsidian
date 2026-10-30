@@ -509,7 +509,9 @@ public abstract partial class AbstractLevel : ILevel
     {
         if (!await this.TrySetBlockUntrackedAsync(
             location.X, location.Y, location.Z, block, flags, canReplace, placement))
+        {
             return false;
+        }
 
         TrackMobEgg(location, block);
         CheckWither(location, block);
@@ -698,7 +700,9 @@ public abstract partial class AbstractLevel : ILevel
                 {
                     if (entity.Type != EntityType.Player && (entity.Position - location).MagnitudeSquared() <= distanceSquared
                         && (filter is null || filter(entity)))
+                    {
                         yield return entity;
+                    }
                 }
             }
 
@@ -1063,7 +1067,9 @@ public abstract partial class AbstractLevel : ILevel
                 {
                     var tag = EntityNbt.ToNbt(pending);
                     if (EntityNbt.Load(tag, this) is not Entity entity)
+                    {
                         chunk.UnspawnableEntities.Add(tag);
+                    }
                     else if ((entity is not Mob { HasAi: true, Alive: false } || entity is EnderDragon) &&
                         this.FindEntity(entity.Uuid) is null)
                     {
@@ -1204,9 +1210,11 @@ public abstract partial class AbstractLevel : ILevel
                     NumericsHelper.LongToInts(chunk, out var cx, out var cz);
                     var r = GetRegionForChunk(cx, cz);
                     if (r is not null)
+                    {
                         await r.UnloadChunk(
                             NumericsHelper.Modulo(cx, Region.CubicRegionSize),
                             NumericsHelper.Modulo(cz, Region.CubicRegionSize));
+                    }
                 }
                 finally
                 {
@@ -1317,11 +1325,15 @@ public abstract partial class AbstractLevel : ILevel
     private void QueueGenerationLocked(long packedXZ, GenerationDemand demand)
     {
         if (this.queuedChunks.TryAdd(packedXZ, demand))
+        {
             this.ChunksToGen.Enqueue(packedXZ);
+        }
         else if (demand == GenerationDemand.Retained
             && this.queuedChunks.TryGetValue(packedXZ, out var existing)
             && existing is GenerationDemand.Ticket or GenerationDemand.Player)
+        {
             this.queuedChunks[packedXZ] = GenerationDemand.Retained;
+        }
     }
 
     /// <summary>
@@ -1798,7 +1810,9 @@ public abstract partial class AbstractLevel : ILevel
             ExceptionDispatchInfo.Throw(failure);
 
         if (this.GenerationProgress is not null)
+        {
             this.GenerationProgress(startChunks, startChunks);
+        }
         else
         {
             System.Console.Write("\r{0} chunks/second - 100% complete - 0 seconds remaining   ",
@@ -1828,7 +1842,9 @@ public abstract partial class AbstractLevel : ILevel
 
                     // Without a listener, the progress goes to the terminal.
                     if (this.GenerationProgress is not null)
+                    {
                         this.GenerationProgress(completedChunks, startChunks);
+                    }
                     else
                     {
                         var cps = completedChunks / Math.Max(stopwatch.Elapsed.TotalSeconds, 0.001);
@@ -1851,8 +1867,10 @@ public abstract partial class AbstractLevel : ILevel
             var index = 0;
             var (x, z) = LevelData.SpawnPosition.ToChunkCoord();
             for (var cx = x - this.Configuration.SpawnChunkRadius; cx < x + this.Configuration.SpawnChunkRadius; cx++)
+            {
                 for (var cz = z - this.Configuration.SpawnChunkRadius; cz < z + this.Configuration.SpawnChunkRadius; cz++)
                     this.spawnChunks[index++] = NumericsHelper.IntsToLong(cx, cz);
+            }
         }
 
         this.generated = true;
@@ -1994,16 +2012,21 @@ public abstract partial class AbstractLevel : ILevel
         if (this is IDimension && await GetChunkAsync(0, 0, false) is { } dimensionChunk)
         {
             for (var x = 0; x < 16; x++)
-            for (var z = 0; z < 16; z++)
             {
-                var y = dimensionChunk.Heightmaps[HeightmapType.MotionBlocking].GetHeight(x, z);
-                var ground = dimensionChunk.GetBlock(x, y, z);
-                if (ground.IsAir || ground.IsLiquid || IsOutsideBuildHeight(y + 2) ||
-                        !dimensionChunk.GetBlock(x, y + 1, z).IsAir || !dimensionChunk.GetBlock(x, y + 2, z).IsAir)
+                for (var z = 0; z < 16; z++)
+                {
+                    var y = dimensionChunk.Heightmaps[HeightmapType.MotionBlocking].GetHeight(x, z);
+                    var ground = dimensionChunk.GetBlock(x, y, z);
+                    if (ground.IsAir || ground.IsLiquid || IsOutsideBuildHeight(y + 2) ||
+                            !dimensionChunk.GetBlock(x, y + 1, z).IsAir || !dimensionChunk.GetBlock(x, y + 2, z).IsAir)
+                    {
                         continue;
-                LevelData.SpawnPosition = new VectorD(x + 0.5f, y + 1, z + 0.5f);
-                Log.SpawnSet(this.Logger, this.Name, LevelData.SpawnPosition);
-                return;
+                    }
+
+                    LevelData.SpawnPosition = new VectorD(x + 0.5f, y + 1, z + 0.5f);
+                    Log.SpawnSet(this.Logger, this.Name, LevelData.SpawnPosition);
+                    return;
+                }
             }
         }
         Log.SpawnNotFound(this.Logger, this.Name);

@@ -82,8 +82,11 @@ public sealed partial class Illusioner : Skeleton
     protected override ValueTask OnDeathAsync(IEntity source)
     {
         foreach (var slot in Enum.GetValues<EquipmentSlot>())
+        {
             if (!GetEquipment(slot).IsAir && Random.NextSingle() < GetEquipmentDropChance(slot))
                 DropItem(GetEquipment(slot));
+        }
+
         return default;
     }
 

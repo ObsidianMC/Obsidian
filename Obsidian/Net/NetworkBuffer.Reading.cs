@@ -403,7 +403,9 @@ public partial class NetworkBuffer : INetStreamReader
 
         byte[] body;
         if (dataLength == 0)
+        {
             body = frame[start..];
+        }
         else
         {
             if (dataLength is < 0 or > MaxUncompressedPacketLength)

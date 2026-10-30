@@ -12,8 +12,10 @@ internal readonly record struct PortalFrame(Vector Origin, string Axis, int Widt
     public IEnumerable<Vector> Interior()
     {
         for (var y = 0; y < Height; y++)
+        {
             for (var x = 0; x < Width; x++)
                 yield return Origin + Step * x + Vector.Up * y;
+        }
     }
 
     public static async ValueTask<PortalFrame?> FindAsync(Func<Vector, ValueTask<IBlock?>> read,
@@ -46,7 +48,9 @@ internal readonly record struct PortalFrame(Vector Origin, string Axis, int Widt
 
             if (y == properties.MaxHeight || !IsFrame(await read(row - step), properties)
                 || !IsFrame(await read(row + step * width), properties))
+            {
                 return null;
+            }
 
             for (var x = 0; x < width; x++)
             {

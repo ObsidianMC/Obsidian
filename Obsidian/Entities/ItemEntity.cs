@@ -85,13 +85,17 @@ public partial class ItemEntity : Entity
             : item.Level.TryAddEntity(item);
 
         if (added)
+        {
             item.SpawnEntity(new Velocity(item.Motion.X, item.Motion.Y, item.Motion.Z));
+        }
         else if (item.Level is AbstractLevel pending)
+        {
             pending.EnqueueEntityAction(() =>
             {
                 PublishDrop(item);
                 return ValueTask.CompletedTask;
             });
+        }
     }
 
     // Thrown where the player looks, or with the given motion for a drop around them.

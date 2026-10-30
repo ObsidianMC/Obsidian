@@ -262,19 +262,23 @@ internal sealed class TripWire(IRedstoneLevel level, TripWireHook hook) : INeigh
 
             var box = entity.Dimension.CreateBBFromPosition(entity.Position);
             for (var x = (int)Math.Floor(box.Min.X); x <= (int)Math.Floor(box.Max.X - 1e-7); x++)
-            for (var z = (int)Math.Floor(box.Min.Z); z <= (int)Math.Floor(box.Max.Z - 1e-7); z++)
-            for (var y = (int)Math.Floor(box.Min.Y); y <= (int)Math.Floor(box.Max.Y - 1e-7); y++)
             {
-                var cell = new Vector(x, y, z);
-                var state = level.GetLoadedBlock(cell);
-                if (!TripWireBlocks.IsWire(state))
-                    continue;
+                for (var z = (int)Math.Floor(box.Min.Z); z <= (int)Math.Floor(box.Max.Z - 1e-7); z++)
+                {
+                    for (var y = (int)Math.Floor(box.Min.Y); y <= (int)Math.Floor(box.Max.Y - 1e-7); y++)
+                    {
+                        var cell = new Vector(x, y, z);
+                        var state = level.GetLoadedBlock(cell);
+                        if (!TripWireBlocks.IsWire(state))
+                            continue;
 
-                var attached = TripWireBlocks.Flag(state!, "attached");
-                var minY = attached ? TripWireBlocks.AttachedMinY : 0;
-                var maxY = attached ? TripWireBlocks.AttachedMaxY : TripWireBlocks.DetachedMaxY;
-                if (box.Min.Y < y + maxY && box.Max.Y > y + minY)
-                    found.Add(cell);
+                        var attached = TripWireBlocks.Flag(state!, "attached");
+                        var minY = attached ? TripWireBlocks.AttachedMinY : 0;
+                        var maxY = attached ? TripWireBlocks.AttachedMaxY : TripWireBlocks.DetachedMaxY;
+                        if (box.Min.Y < y + maxY && box.Max.Y > y + minY)
+                            found.Add(cell);
+                    }
+                }
             }
         }
 

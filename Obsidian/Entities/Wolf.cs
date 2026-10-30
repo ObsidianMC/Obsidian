@@ -113,11 +113,13 @@ public sealed partial class Wolf : Animal
     internal static void AlertOwnedWolves(IPlayer player, IEntity target)
     {
         foreach (var wolf in player.Level.GetEntitiesInRange(player.Position, 16).OfType<Wolf>())
+        {
             if (wolf.Owner == player.Uuid && wolf.CanAttack(target))
             {
                 wolf.OrderedToSit = false;
                 wolf.AlertedTarget = target;
             }
+        }
     }
 
     protected override async ValueTask TickMobAsync()
@@ -191,7 +193,10 @@ public sealed partial class Wolf : Animal
     {
         if (!Alive || IsRemoved || player.Health <= 0 || player.Level != Level || player.GameMode == GameMode.Spectator ||
             !IsInRange(player, 3) || !CanSee(player))
+        {
             return false;
+        }
+
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (!Tamed && AngerTicks == 0 && item?.Is(ItemsRegistry.Bone) == true)
         {
@@ -294,7 +299,10 @@ public sealed partial class Wolf : Animal
         if (GetEquipment(EquipmentSlot.Body) is not { Count: > 0, Holder.Id: ItemIds.WolfArmor } ||
             kind is not (CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion or
                 CombatDamageKind.Fire or CombatDamageKind.FireContact or CombatDamageKind.Fall or CombatDamageKind.SonicBoom))
+        {
             return false;
+        }
+
         DamageEquipment(EquipmentSlot.Body, (int)Math.Ceiling(amount));
         PlayMobSound("armor.damage");
         return true;
@@ -375,7 +383,10 @@ internal sealed class WolfFollowOwnerGoal(Wolf wolf) : NavigationGoal(wolf, 1)
                 if ((destination - owner.Position).MagnitudeSquared() < 4 || floor == null || floor.IsLiquid ||
                     BlockCollisionShapes.Get(floor).Count == 0 || !wolf.Terrain.IsFree(wolf.Dimension.CreateBBFromPosition(destination)) ||
                     !level.TryMoveEntity(wolf, wolf.Position, destination))
+                {
                     continue;
+                }
+
                 wolf.CompleteTeleport(destination);
                 return default;
             }
@@ -411,12 +422,14 @@ internal sealed class WolfRetaliateGoal(Wolf wolf) : Goal
         wolf.AlertedTarget = null;
         wolf.OrderedToSit = false;
         if (!wolf.Tamed)
+        {
             foreach (var ally in wolf.GetEntitiesNear(16).OfType<Wolf>().Where(ally => !ally.Tamed && ally.CanAttack(candidate!)))
             {
                 ally.AlertedTarget = candidate;
                 ally.AngerTicks = wolf.AngerTicks;
                 ally.AngryAt = candidate!.Uuid;
     }
+        }
     }
 
     public override bool CanContinue() => wolf.AttackTarget is { } target && wolf.CanAttack(target) &&

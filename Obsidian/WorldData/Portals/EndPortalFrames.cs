@@ -21,7 +21,9 @@ internal static class EndPortalFrames
             var block = await read(position);
             if (block?.RegistryId != BlockIds.EndPortalFrame || block.GetProperty("eye") != "true" ||
                 block.GetProperty("facing") != facing)
+            {
                 return false;
+            }
         }
         return true;
     }

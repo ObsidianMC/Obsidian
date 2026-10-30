@@ -55,7 +55,9 @@ public sealed record class DialogElement : INbtSerializable
                 goto case "minecraft:server_links";
             case "minecraft:dialog_list":
                 if (Dialogs is not null)
+                {
                     writer.WriteString("dialogs", Dialogs);
+                }
                 else
                 {
                     writer.WriteListStart("dialogs", Obsidian.Nbt.NbtTagType.String, DialogIds.Length);

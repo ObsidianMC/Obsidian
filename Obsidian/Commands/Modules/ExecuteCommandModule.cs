@@ -51,8 +51,10 @@ public sealed class ExecuteCommandModule : CommandModuleBase
                 var handler = (CommandHandler)this.Server.CommandHandler;
 
                 foreach (var context in contexts)
+                {
                     await handler.ProcessCommand(context.Derive($"{CommandHelpers.DefaultPrefix}{command}", context.Executor,
                         context.Origin, context.Level, context.Rotation));
+                }
 
                 return;
             }
@@ -209,7 +211,9 @@ public sealed class ExecuteCommandModule : CommandModuleBase
                 var handler = this.Server.CommandHandler;
                 if (!handler.GetArgumentParser(typeof(BlockStateArgument)).TryParseArgument(blockText, this.CommandContext, out var parsed)
                     || parsed is not BlockStateArgument block)
+                {
                     return null;
+                }
 
                 foreach (var context in contexts)
                 {
@@ -231,7 +235,9 @@ public sealed class ExecuteCommandModule : CommandModuleBase
                 var objectiveName = Take(words, ref index);
                 if (holderText is null || objectiveName is null || Take(words, ref index) != "matches"
                     || !EntitySelector.TryParseRange(Take(words, ref index) ?? string.Empty, out var range))
+                {
                     return null;
+                }
 
                 var scoreboard = ((Server)this.Server).CommandScoreboard;
                 if (scoreboard.Find(objectiveName) is not { } objective)

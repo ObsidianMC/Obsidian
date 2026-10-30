@@ -38,14 +38,19 @@ public sealed partial class Creeper : PathfinderMob
     {
         if (!Alive || IsRemoved || player.Level != Level || player.Health <= 0 || player.GameMode == GameMode.Spectator ||
             !IsInRange(player, 4) || !CanSee(player))
+        {
             return false;
+        }
+
         var held = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
         if (held is not { Count: > 0 } || held.Holder.Id is not ItemIds.FlintAndSteel and not ItemIds.FireCharge)
             return false;
         Ignited = true;
         SynchronizeMetadata();
         if (held.Is(ItemsRegistry.FlintAndSteel))
+        {
             await DamageInteractionToolAsync(player, hand);
+        }
         else if (player.GameMode != GameMode.Creative)
         {
             player.Inventory.RemoveItem(hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot, 1);

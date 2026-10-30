@@ -353,7 +353,9 @@ internal sealed class FluidLevel
         var playEffect = state.BlockClass() != "RedstoneWireBlock" && !Rails.IsRail(state);
         if (this.access.TryQueueDestruction(position, fluid, dropItems, playEffect,
             stillUnsupported: current => this.IsUnsupported(position, current)))
+        {
             return true;
+        }
 
         return this.SetBlock(position, fluid, BlockUpdateFlags.All, updateLimit, shapes);
     }

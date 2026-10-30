@@ -34,12 +34,14 @@ public class ItemComponentWire
     {
         using var fixture = Fixture();
         foreach (var row in fixture.RootElement.GetProperty("cases").EnumerateArray())
+        {
             yield return
             [
                 row.GetProperty("name").GetString()!,
                 row.GetProperty("wire").GetString()!,
                 row.GetProperty("untrusted").GetString()!
             ];
+        }
     }
 
     [Fact]
@@ -95,7 +97,10 @@ public class ItemComponentWire
                     or DataComponentType.Dye or DataComponentType.CushionColor or DataComponentType.Waxed
                     or DataComponentType.Instrument or DataComponentType.JukeboxPlayable or DataComponentType.DeathProtection
                     or DataComponentType.Consumable))
+                {
                     continue;
+                }
+
                 using var original = new NetworkBuffer();
                 using var modeled = new NetworkBuffer();
                 original.WriteDataComponent(component);
