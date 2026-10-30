@@ -4,7 +4,7 @@ namespace Obsidian.Net.Payloads;
 
 /// <summary>
 /// The connection protocols payload channels are negotiated for. The values are vanilla's ConnectionProtocol ordinals
-/// (checked against the 1.21.11 server jar), which NeoForge writes as VarInts in its handshake payloads.
+/// (checked against the 26.3 server jar), which NeoForge writes as VarInts in its handshake payloads.
 /// </summary>
 internal enum NetworkProtocol
 {
@@ -13,7 +13,7 @@ internal enum NetworkProtocol
 }
 
 /// <summary>
-/// A payload direction as NeoForge writes it: vanilla's PacketFlow ordinals (checked against the 1.21.11 server jar).
+/// A payload direction as NeoForge writes it: vanilla's PacketFlow ordinals (checked against the 26.3 server jar).
 /// </summary>
 internal enum PacketFlow
 {

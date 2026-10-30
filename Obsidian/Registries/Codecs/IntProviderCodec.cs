@@ -48,6 +48,24 @@ internal static class IntProviderCodec
                 var (min, max) = ReadRange(value, path);
                 return new BiasedToBottomIntProvider { MinInclusive = min, MaxInclusive = max };
             }
+            case IntProviderTypes.VeryBiasedToBottom:
+            {
+                var (min, max) = ReadRange(value, path);
+                return new VeryBiasedToBottomIntProvider { MinInclusive = min, MaxInclusive = max };
+            }
+            case IntProviderTypes.Trapezoid:
+            {
+                var trapezoid = new TrapezoidIntProvider
+                {
+                    Min = ReadInt(value, path, "min"),
+                    Max = ReadInt(value, path, "max"),
+                    Plateau = ReadInt(value, path, "plateau")
+                };
+
+                ValidateTrapezoid(trapezoid, path);
+
+                return trapezoid;
+            }
             case IntProviderTypes.Clamped:
             {
                 var source = Read(Required(value, path, "source"), Field(path, "source"));
@@ -98,6 +116,16 @@ internal static class IntProviderCodec
                 compound.Add(new NbtTag<int>("min_inclusive", biased.MinInclusive));
                 compound.Add(new NbtTag<int>("max_inclusive", biased.MaxInclusive));
                 break;
+            case VeryBiasedToBottomIntProvider veryBiased:
+                compound.Add(new NbtTag<int>("min_inclusive", veryBiased.MinInclusive));
+                compound.Add(new NbtTag<int>("max_inclusive", veryBiased.MaxInclusive));
+                break;
+            case TrapezoidIntProvider trapezoid:
+                ValidateTrapezoid(trapezoid, name);
+                compound.Add(new NbtTag<int>("min", trapezoid.Min));
+                compound.Add(new NbtTag<int>("max", trapezoid.Max));
+                compound.Add(new NbtTag<int>("plateau", trapezoid.Plateau));
+                break;
             case ClampedIntProvider clamped:
                 compound.Add(ToNbt(clamped.Source, "source"));
                 compound.Add(new NbtTag<int>("min_inclusive", clamped.MinInclusive));
@@ -129,6 +157,17 @@ internal static class IntProviderCodec
 
     private static int ReadInt(JsonElement obj, string path, string name) =>
         Int(Required(obj, path, name), Field(path, name));
+
+    private static void ValidateTrapezoid(TrapezoidIntProvider provider, string path)
+    {
+        if (provider.Max < provider.Min)
+            throw Error(path, $"max ({provider.Max}) is less than min ({provider.Min})");
+
+        // Vanilla requires plateau but allows negative values, and computes the width with 32-bit arithmetic.
+        var range = provider.Max - provider.Min;
+        if (provider.Plateau > range)
+            throw Error(path, $"plateau ({provider.Plateau}) is more than max - min ({range})");
+    }
 
     // min_inclusive and max_inclusive, which every ranged provider type checks are in order.
     private static (int Min, int Max) ReadRange(JsonElement obj, string path)

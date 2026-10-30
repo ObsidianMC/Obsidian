@@ -8,7 +8,7 @@ using static Obsidian.Registries.Codecs.CodecJson;
 namespace Obsidian.Registries.Codecs;
 
 /// <summary>
-/// A plugin's dimension type as vanilla 1.21.11's DimensionType.DIRECT_CODEC reads a data pack's, with its ranges
+/// A plugin's dimension type as vanilla 26.3's DimensionType.DIRECT_CODEC reads a data pack's, with its ranges
 /// and the checks its constructor makes.
 /// </summary>
 /// <param name="TimelineTag">The tag of the timelines, or null for none.</param>
@@ -35,6 +35,8 @@ internal sealed record DimensionTypeData(
     private const int MaxHeight = 4064;
 
     public string? DefaultClock { get; init; }
+
+    public bool HasEnderDragonFight { get; init; }
 
     public static DimensionTypeData Read(JsonElement root)
     {
@@ -69,7 +71,10 @@ internal sealed record DimensionTypeData(
                 : EnvironmentAttributeMap.Empty,
             TimelineTag: TryGet(root, "timelines", out var timelines) ? ReadTimelines(timelines) : null)
         {
-            DefaultClock = TryGet(root, "default_clock", out var clock) ? String(clock, "default_clock") : null
+            DefaultClock = TryGet(root, "default_clock", out var clock) ? ReadClock(clock) : null,
+            HasEnderDragonFight = Bool(
+                Required(root, "", "has_ender_dragon_fight"),
+                "has_ender_dragon_fight")
         };
 
         // The checks of vanilla's DimensionType constructor.
@@ -104,6 +109,7 @@ internal sealed record DimensionTypeData(
     {
         HasSkylight = this.HasSkylight,
         HasCeiling = this.HasCeiling,
+        HasEnderDragonFight = this.HasEnderDragonFight,
         CoordinateScale = this.CoordinateScale,
         MinY = this.MinY,
         Height = this.Height,
@@ -148,6 +154,7 @@ internal sealed record DimensionTypeData(
 
         compound.Add(new NbtTag<byte>("has_skylight", this.HasSkylight ? (byte)1 : (byte)0));
         compound.Add(new NbtTag<byte>("has_ceiling", this.HasCeiling ? (byte)1 : (byte)0));
+        compound.Add(new NbtTag<byte>("has_ender_dragon_fight", this.HasEnderDragonFight ? (byte)1 : (byte)0));
         compound.Add(new NbtTag<double>("coordinate_scale", this.CoordinateScale));
         compound.Add(new NbtTag<int>("min_y", this.MinY));
         compound.Add(new NbtTag<int>("height", this.Height));
@@ -169,7 +176,24 @@ internal sealed record DimensionTypeData(
         if (this.TimelineTag is not null)
             compound.Add(new NbtTag<string>("timelines", $"#{this.TimelineTag}"));
 
+        if (this.DefaultClock is not null)
+        {
+            compound.Add(new NbtTag<string>("default_clock", this.DefaultClock));
+        }
+
         return compound;
+    }
+
+    private static string ReadClock(JsonElement value)
+    {
+        var identifier = Identifier(value, "default_clock");
+
+        if (VanillaSyncedRegistries.IdOf("minecraft:world_clock", identifier) < 0)
+        {
+            throw Error("default_clock", $"{identifier} isn't a world clock");
+        }
+
+        return identifier;
     }
 
     // Vanilla takes a holder set of timelines: a tag, an identifier or a list of them. The server doesn't sync the

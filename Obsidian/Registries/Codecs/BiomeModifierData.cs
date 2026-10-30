@@ -181,7 +181,7 @@ internal sealed record BiomeModifierData(
 
     private static SpawnerMob ReadSpawner(JsonElement value, string path)
     {
-        Fields(value, path, "type", "weight", "minCount", "maxCount");
+        Fields(value, path, "type", "weight", "count", "minCount", "maxCount");
 
         return BiomeData.ReadSpawner(value, path);
     }

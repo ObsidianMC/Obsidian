@@ -23,6 +23,58 @@ namespace Obsidian.Tests;
 [Collection(nameof(PluginTagFiles))]
 public sealed class LevelStemGenerators
 {
+    [Theory]
+    [InlineData("minecraft:normal")]
+    [InlineData("minecraft:amplified")]
+    [InlineData("minecraft:large_biomes")]
+    [InlineData("minecraft:single_biome_surface")]
+    [InlineData("minecraft:debug_all_block_states")]
+    [InlineData("minecraft:flat")]
+    [InlineData("minecraft:flat_all_dimensions")]
+    public void ReadsVanillaFormat121LevelStems(string preset)
+    {
+        using var document = Format121Data.Read("world_preset");
+        var dimensions = document.RootElement.GetProperty(preset).GetProperty("dimensions");
+        Assert.Equal(3, dimensions.EnumerateObject().Count());
+
+        foreach (var dimension in dimensions.EnumerateObject())
+        {
+            var generator = dimension.Value.GetProperty("generator");
+            var type = generator.GetProperty("type").GetString();
+
+            // Flat structures remain an explicit engine limitation, independent of the pack-format change.
+            if (type == "minecraft:flat")
+            {
+                var error = Assert.Throws<InvalidDataException>(() => LevelStemData.Read(
+                    "format121:stem",
+                    dimension.Value,
+                    WorldgenNoise.Vanilla));
+
+                Assert.Contains("structure_overrides", error.Message);
+                continue;
+            }
+
+            var json = Encoding.UTF8.GetBytes(dimension.Value.GetRawText());
+            var file = PluginDimensions.Parse("format121:stem", preset, json, WorldgenNoise.Vanilla);
+            var reread = PluginDimensions.Parse("format121:stem", preset, file.Stem, WorldgenNoise.Vanilla);
+
+            Assert.Equal(dimension.Value.GetProperty("type").GetString(), file.Dimension.DimensionType.Name);
+            Assert.Equal(file.Dimension.DimensionType, reread.Dimension.DimensionType);
+            Assert.Equal(file.Dimension.SourceBiomes, reread.Dimension.SourceBiomes);
+
+            if (type == "minecraft:noise")
+            {
+                var noise = file.Dimension.Noise();
+                Assert.Equal(generator.GetProperty("settings").GetString(), noise.NoiseSettings);
+                Assert.NotEmpty(noise.PossibleBiomes);
+            }
+            else
+            {
+                Assert.IsType<DebugStem>(file.Dimension);
+            }
+        }
+    }
+
     private const string FlatStem = """
         {
           "type": "minecraft:overworld",
@@ -52,6 +104,7 @@ public sealed class LevelStemGenerators
               "type": {
                 "has_skylight": false,
                 "has_ceiling": false,
+                "has_ender_dragon_fight": false,
                 "coordinate_scale": 1,
                 "min_y": 0,
                 "height": 256,

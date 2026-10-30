@@ -12,6 +12,11 @@ documentation by example, and a smoke test: `Obsidian.Tests/SamplePlugin.cs` pac
 `.obby`: the assembly, `obsidian.mod.json`, `data/` and `assets/`) and loads it through the plugin manager, and the
 client's tests load it as a client mod.
 
+The dimension and biome data use Minecraft 26.3's data pack format 121: `sample:dusk` selects the End clock and
+timeline tag, declares `has_ender_dragon_fight`, and puts its moth spawner in the biome's
+`gameplay/natural_mob_spawns` attribute with a `count` provider. Features and terrain remain on the engine's current
+generation implementation.
+
 | Phase | Content |
 | --- | --- |
 | 1, blocks that do things | `sample:tick_counter` ([TickCounter](TickCounter)): faces the player who places it, turns on and lights up a scheduled tick after redstone powers it, counts the ticks it's on in its block entity (saved, synced to watching players, read by comparators), has a 12-pixel shape from its block entity, and drops itself through `data/sample/loot_table/blocks/tick_counter.json`, keeping its count on its item in a server-side data component, `sample:ticks` (its block entity's `CollectComponents`, copied by the loot table's `copy_components`), which placing it again reads back (`ApplyComponents`). |
