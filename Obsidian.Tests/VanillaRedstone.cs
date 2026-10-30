@@ -10,8 +10,8 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Redstone parity fixtures. Each scenario in <c>Assets/redstone_scenarios.json</c> was recorded from a headless vanilla
-/// server by the asset generator's scenario captures (<c>Obsidian.AssetGenerator/ScenarioCaptures.cs</c>,
+/// Redstone parity fixtures. Each scenario in <c>Assets/redstone_scenarios.json</c> was recorded from a headless
+/// vanilla server by the asset generator's scenario captures (<c>Obsidian.AssetGenerator/ScenarioCaptures.cs</c>,
 /// <c>dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios</c>): the server's game time is frozen and
 /// advanced one tick at a time, and every checkpoint holds the block states of the scenario's box.
 /// </summary>

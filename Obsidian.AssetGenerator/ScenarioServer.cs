@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
@@ -20,16 +21,17 @@ internal sealed class ScenarioServer : IAsyncDisposable
     public const string Overworld = "minecraft:overworld";
     public const string Nether = "minecraft:the_nether";
 
-    private const string Password = "scenarios";
-
     // The world's generation: void superflat, so every block outside a scenario is air.
     private const string VoidLayers = """{"layers":[],"biome":"minecraft:the_void"}""";
 
     private static readonly TimeSpan StartTimeout = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan CommandTimeout = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan StopTimeout = TimeSpan.FromMinutes(1);
 
     private readonly VanillaServer server;
     private readonly string directory;
     private readonly int rconPort;
+    private readonly string password = Convert.ToHexString(RandomNumberGenerator.GetBytes(16));
     private readonly IReadOnlyDictionary<string, BlockProperties> blocks;
 
     private Process? process;
@@ -56,8 +58,18 @@ internal sealed class ScenarioServer : IAsyncDisposable
 
         var blocks = BlockProperties.Read(Path.Combine(server.GeneratedDirectory, "reports", "blocks.json"));
         var scenarioServer = new ScenarioServer(server, directory, blocks);
-        scenarioServer.WriteWorld();
-        await scenarioServer.LaunchAsync();
+        try
+        {
+            scenarioServer.WriteWorld();
+            await scenarioServer.LaunchAsync();
+        }
+        catch
+        {
+            // The caller never gets the server to dispose, so a half-started one ends here.
+            await scenarioServer.DisposeAsync();
+            throw;
+        }
+
         return scenarioServer;
     }
 
@@ -159,10 +171,22 @@ internal sealed class ScenarioServer : IAsyncDisposable
         return values.Count == 0 ? id : $"{id}[{string.Join(",", values)}]";
     }
 
+    /// <summary>Stops the server, killing it if it doesn't stop cleanly.</summary>
     public async ValueTask DisposeAsync()
     {
-        if (this.process is not null)
+        if (this.process is null)
+            return;
+
+        try
+        {
             await this.StopAsync();
+        }
+        catch (Exception exception) when (exception is IOException or OperationCanceledException
+            or InvalidOperationException or SocketException)
+        {
+            // StopAsync has still ended the process. Captures read every state before they dispose, so the failed save
+            // loses nothing, and throwing here would hide the error that ended the capture.
+        }
     }
 
     private async Task<bool> TestAsync(string dimension, Position position, string state)
@@ -182,13 +206,14 @@ internal sealed class ScenarioServer : IAsyncDisposable
         Directory.CreateDirectory(this.directory);
         File.WriteAllText(Path.Combine(this.directory, "eula.txt"), "eula=true\n");
 
-        // No watchdog (a capture can wait between ticks for as long as it likes), no pausing while nobody is online,
-        // and functions may run /tick.
+        // Only reachable from this machine (RCON listens on the server's address too), no watchdog (a capture can wait
+        // between ticks for as long as it likes), no pausing while nobody is online, and functions may run /tick.
         string[] properties =
         [
+            "server-ip=127.0.0.1",
             "enable-rcon=true",
             $"rcon.port={this.rconPort}",
-            $"rcon.password={Password}",
+            $"rcon.password={this.password}",
             $"server-port={FreePort()}",
             "online-mode=false",
             "white-list=false",
@@ -279,7 +304,7 @@ internal sealed class ScenarioServer : IAsyncDisposable
 
             try
             {
-                return await RconClient.ConnectAsync(this.rconPort, Password);
+                return await RconClient.ConnectAsync(this.rconPort, this.password);
             }
             catch (SocketException) when (deadline.Elapsed < StartTimeout)
             {
@@ -288,19 +313,40 @@ internal sealed class ScenarioServer : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Saves the world and stops the server. Throws if either fails, but the process has ended either way: one that
+    /// doesn't stop in time is killed.
+    /// </summary>
     private async Task StopAsync()
     {
-        await this.RunAsync("save-all flush");
-        await this.RunAsync("stop");
-        this.rcon!.Dispose();
-        this.rcon = null;
+        var process = this.process!;
+        try
+        {
+            await this.RunAsync("save-all flush");
+            await this.RunAsync("stop");
 
-        await this.process!.WaitForExitAsync();
-        this.process.Dispose();
-        this.process = null;
+            using var timeout = new CancellationTokenSource(StopTimeout);
+            await process.WaitForExitAsync(timeout.Token);
+        }
+        finally
+        {
+            this.rcon?.Dispose();
+            this.rcon = null;
 
-        lock (this.log!)
-            this.log.Dispose();
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+
+                // Also waits for the output readers, so nothing writes to the log after it closes.
+                process.WaitForExit();
+            }
+
+            process.Dispose();
+            this.process = null;
+
+            lock (this.log!)
+                this.log.Dispose();
+        }
     }
 
     private static long ReadLastNumber(string text)
@@ -395,12 +441,15 @@ internal sealed class ScenarioServer : IAsyncDisposable
             BinaryPrimitives.WriteInt32LittleEndian(packet.AsSpan(4), ++this.nextId);
             BinaryPrimitives.WriteInt32LittleEndian(packet.AsSpan(8), type);
             payload.CopyTo(packet, 12);
-            await this.stream.WriteAsync(packet);
+
+            // A server that stops answering fails the capture instead of hanging it.
+            using var timeout = new CancellationTokenSource(CommandTimeout);
+            await this.stream.WriteAsync(packet, timeout.Token);
 
             var header = new byte[4];
-            await this.stream.ReadExactlyAsync(header);
+            await this.stream.ReadExactlyAsync(header, timeout.Token);
             var response = new byte[BinaryPrimitives.ReadInt32LittleEndian(header)];
-            await this.stream.ReadExactlyAsync(response);
+            await this.stream.ReadExactlyAsync(response, timeout.Token);
 
             var id = BinaryPrimitives.ReadInt32LittleEndian(response);
             var text = Encoding.UTF8.GetString(response, 8, response.Length - 10);

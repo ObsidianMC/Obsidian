@@ -194,9 +194,10 @@ public sealed class Progress
         {
             AdvancementsRegistry.Apply([definition, inventory, unsupported]);
             using var protocol = PlayPayloads.ReadFixture();
+            var progress = protocol.RootElement.GetProperty("progress_advancement");
             var saved = new JsonObject
             {
-                ["probe:progress"] = JsonNode.Parse(protocol.RootElement.GetProperty("progress_advancement").GetRawText()),
+                ["probe:progress"] = JsonNode.Parse(progress.GetRawText()),
                 ["DataVersion"] = ServerConstants.DataVersion
             };
             player.ProgressAdvancements.Load(saved);
