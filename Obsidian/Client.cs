@@ -581,8 +581,8 @@ public sealed partial class Client : IClient
             this.packetQueue.Writer.TryComplete();
             while (this.packetQueue.Reader.TryRead(out var entry))
             {
-                entry.Flushed?.TrySetResult(0);
                 Interlocked.Decrement(ref this.unsent);
+                entry.Flushed?.TrySetResult(0);
             }
 
             this.outputDrained?.TrySetResult();
@@ -714,8 +714,9 @@ public sealed partial class Client : IClient
                 }
                 finally
                 {
-                    entry.Flushed?.TrySetResult(0);
-                    Interlocked.Decrement(ref this.unsent);
+                    // A flush marker completes only once it no longer counts itself, with the entries queued behind it.
+                    var remaining = Interlocked.Decrement(ref this.unsent);
+                    entry.Flushed?.TrySetResult(remaining);
                 }
             }
         }
@@ -759,11 +760,9 @@ public sealed partial class Client : IClient
             return;
         }
 
-        if (entry.Flushed is TaskCompletionSource<int> flushed)
-        {
-            flushed.TrySetResult(Volatile.Read(ref this.unsent) - 1);
+        // A flush marker is completed by the pipeline once it's counted out (see HandlePacketQueueAsync).
+        if (entry.Flushed is not null)
             return;
-        }
 
         if (entry.Work is not null)
         {
