@@ -72,9 +72,9 @@ public abstract partial class AbstractLevel
         (BrewingStandProperty Property, int Value)[] values =
         [
             (BrewingStandProperty.BrewTime, stand.BrewTime),
+            (BrewingStandProperty.Fuel, stand.Fuel),
             (BrewingStandProperty.TotalBrewTime, stand.TotalBrewTime),
-            (BrewingStandProperty.TotalFuel, stand.TotalFuel),
-            (BrewingStandProperty.Fuel, stand.Fuel)
+            (BrewingStandProperty.TotalFuel, stand.TotalFuel)
         ];
 
         foreach (var (property, value) in values)

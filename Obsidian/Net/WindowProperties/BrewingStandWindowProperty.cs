@@ -13,11 +13,12 @@ public sealed class BrewingStandWindowProperty : IWindowProperty
     }
 }
 
-// Vanilla's BrewingStandBlockEntity data slots (26.3).
+// Vanilla's BrewingStandBlockEntity data slots (26.3), whose ids BrewingStandMenu's getters read. 26.3 added the
+// totals after the two older slots rather than beside them.
 public enum BrewingStandProperty : short
 {
-    BrewTime,
-    TotalBrewTime,
-    TotalFuel,
-    Fuel
+    BrewTime = 0,
+    Fuel = 1,
+    TotalBrewTime = 2,
+    TotalFuel = 3
 }

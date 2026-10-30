@@ -11,6 +11,7 @@ using Obsidian.API.Utilities;
 using Obsidian.Commands.Framework;
 using Obsidian.Events;
 using Obsidian.Nbt;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Plugins;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
@@ -120,6 +121,16 @@ public sealed class BrewingStands : IDisposable
             )
         };
 
+    // The data slot ids vanilla 26.3's BrewingStandMenu reads (the ContainerData.get call in each of its getters),
+    // with the stand value each getter shows.
+    private static readonly (string Getter, short Id, Func<BrewingStand, int> Value)[] menuData =
+    [
+        ("getBrewingTicks", 0, stand => stand.BrewTime),
+        ("getFuel", 1, stand => stand.Fuel),
+        ("getTotalBrewingTicks", 2, stand => stand.TotalBrewTime),
+        ("getTotalFuel", 3, stand => stand.TotalFuel)
+    ];
+
     private readonly string folder = Path.Join(Path.GetTempPath(), $"obsidian-brewing-{Guid.NewGuid():N}");
 
     public BrewingStands() => Directory.CreateDirectory(this.folder);
@@ -227,6 +238,34 @@ public sealed class BrewingStands : IDisposable
 
         Assert.Equal(API.Potion.Awkward, PotionOf(loaded.GetItem(0)));
         Assert.Equal(5, loaded.Fuel);
+    }
+
+    [Fact(DisplayName = "An open brewing stand's menu gets its values under vanilla's data slot ids",
+        Timeout = TestServerFactory.TestTimeout)]
+    public async Task MenuDataUsesVanillaIds()
+    {
+        await using var context = TestServerFactory.CreateServer($"brewing-menu-{Guid.NewGuid():N}");
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Brewer", VectorD.Zero);
+        await TestServerFactory.JoinConnectedPlayerAsync(context.Server, player);
+
+        // Every value differs, so a value under the wrong id shows.
+        var stand = new BrewingStand
+        {
+            BrewTime = 123,
+            Fuel = 7,
+            TotalBrewTime = 400,
+            TotalFuel = 20
+        };
+
+        await player.OpenInventoryAsync(stand);
+
+        var sent = ((TestClient)player.Client).SentPackets
+            .OfType<ContainerSetDataPacket>()
+            .Where(packet => packet.ContainerId == player.CurrentContainerId)
+            .ToDictionary(packet => packet.WindowProperty.Property, packet => (int)packet.WindowProperty.Value);
+        var expected = menuData.ToDictionary(slot => slot.Id, slot => slot.Value(stand));
+
+        Assert.Equal(expected, sent);
     }
 
     [Fact(DisplayName = "A plugin's potion mix brews until the plugin unloads",
