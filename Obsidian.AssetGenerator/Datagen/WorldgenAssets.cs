@@ -75,9 +75,9 @@ internal static class WorldgenAssets
     private const string SharedCategory = "common";
 
     /// <summary>
-    /// Copies the current version's density and terrain registries to <c>Assets/worldgen_26_3</c>, per file in the
-    /// data pack layout (<c>noise/temperature.json</c>). Biomes supply material inputs; biome selection is a later
-    /// step.
+    /// Copies the current version's density, terrain and feature registries to <c>Assets/worldgen_26_3</c>, per file
+    /// in the data pack layout (<c>noise/temperature.json</c>). Biomes supply material inputs and feature lists; biome
+    /// selection is a later step.
     /// </summary>
     /// <remarks>
     /// Temporary, while Phase 5 of <c>docs/porting-26.3-plan.md</c> builds the 26.3 generator beside the legacy one:
@@ -90,7 +90,8 @@ internal static class WorldgenAssets
 
         foreach (var registry in new[]
         {
-            "density_function", "noise", "noise_settings", "material_rule", "material_condition", "carver", "biome"
+            "density_function", "noise", "noise_settings", "material_rule", "material_condition", "carver", "biome",
+            "feature", "placed_feature", "block_state_provider"
         })
         {
             CopyDirectory(Path.Combine(worldgen, registry), Path.Combine(outputDirectory, registry));
