@@ -23,7 +23,9 @@ public sealed class DyeRecipe : ICraftingRecipe
     /// <summary>The dyes; only items with a <c>minecraft:dye</c> component match.</summary>
     public required Ingredient Dye { get; init; }
 
-    /// <summary>The item and count the target becomes.</summary>
+    /// <summary>
+    /// The item and count the target becomes, and the components it sets and removes over the target's.
+    /// </summary>
     public required ItemStack Result { get; init; }
 
     internal DyeRecipe() { }

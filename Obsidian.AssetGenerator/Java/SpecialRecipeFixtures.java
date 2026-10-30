@@ -51,6 +51,19 @@ public final class SpecialRecipeFixtures {
         """
         {"type": "minecraft:crafting_transmute", "input": ["minecraft:shulker_box", "minecraft:red_shulker_box"],
          "material": "minecraft:paper", "material_count": {"min": 2, "max": 3}, "result": {"count": 2}}
+        """,
+        """
+        {"type": "minecraft:crafting_transmute", "input": ["minecraft:shulker_box", "minecraft:red_shulker_box"],
+         "material": "minecraft:paper", "result": {"components": {"minecraft:custom_name": "Copy"}}}
+        """,
+        """
+        {"type": "minecraft:crafting_transmute", "input": "minecraft:shulker_box", "material": "minecraft:blue_dye",
+         "result": {"id": "minecraft:blue_shulker_box",
+                    "components": {"minecraft:custom_name": "Blue box", "!minecraft:lore": {}}}}
+        """,
+        """
+        {"type": "minecraft:crafting_imbue", "source": "minecraft:lingering_potion", "material": "minecraft:arrow",
+         "result": {"id": "minecraft:tipped_arrow", "count": 8, "components": {"minecraft:custom_name": "Sharp"}}}
         """
     };
 
@@ -202,6 +215,55 @@ public final class SpecialRecipeFixtures {
             {"type": "minecraft:crafting_imbue", "source": "minecraft:lingering_potion", "material": "minecraft:arrow",
              "result": {"id": "minecraft:tipped_arrow", "count": 100}}
             """, List.of()));
+
+        // Result component patches, which apply over the input's components.
+        var lootBoxAndDye = grid("named shulker box with loot and blue dye", 2,
+            item("shulker_box", "{\"minecraft:custom_name\": \"Loot\", \"minecraft:container\": "
+                + "[{\"slot\": 0, \"item\": {\"id\": \"minecraft:diamond\", \"count\": 3}}]}"),
+            item("blue_dye"), null, null);
+        recipes.add(new PackRecipe("""
+            {"type": "minecraft:crafting_transmute", "input": "minecraft:shulker_box", "material": "minecraft:blue_dye",
+             "result": {"id": "minecraft:blue_shulker_box", "components": {"minecraft:custom_name": "Blue box"}}}
+            """, List.of(shulkerAndDye, lootBoxAndDye)));
+        recipes.add(new PackRecipe("""
+            {"type": "minecraft:crafting_transmute", "input": "minecraft:shulker_box", "material": "minecraft:blue_dye",
+             "result": {"id": "minecraft:blue_shulker_box", "components": {}}}
+            """, List.of(shulkerAndDye)));
+        recipes.add(new PackRecipe("""
+            {"type": "minecraft:crafting_transmute", "input": "minecraft:filled_map", "material": "minecraft:map",
+             "material_count": {"min": 1, "max": 8}, "add_material_count_to_result": true,
+             "result": {"components": {"minecraft:custom_name": "Copy", "!minecraft:lore": {}}}}
+            """, List.of(
+            grid("map with lore and a blank map", 2,
+                item("filled_map", "{\"minecraft:map_id\": 7, \"minecraft:lore\": [\"Old\"]}"), item("map"),
+                null, null))));
+        recipes.add(new PackRecipe("""
+            {"type": "minecraft:crafting_dye", "target": "minecraft:leather_helmet", "dye": "minecraft:red_dye",
+             "result": {"id": "minecraft:leather_helmet",
+                        "components": {"minecraft:custom_name": "Red hat", "minecraft:dyed_color": 255,
+                                       "!minecraft:lore": {}}}}
+            """, List.of(
+            helmetAndDye,
+            grid("blue helmet with lore and red dye", 2,
+                item("leather_helmet", "{\"minecraft:dyed_color\": 3949738, \"minecraft:lore\": [\"Old\"]}"),
+                item("red_dye"), null, null))));
+        recipes.add(new PackRecipe("""
+            {"type": "minecraft:crafting_dye", "target": "minecraft:leather_helmet", "dye": "minecraft:red_dye",
+             "result": "minecraft:leather_helmet"}
+            """, List.of(helmetAndDye)));
+        var arrow = item("arrow");
+        var swiftness = item("lingering_potion",
+            "{\"minecraft:potion_contents\": {\"potion\": \"minecraft:swiftness\"}}");
+        recipes.add(new PackRecipe("""
+            {"type": "minecraft:crafting_imbue", "source": "minecraft:lingering_potion", "material": "minecraft:arrow",
+             "result": {"id": "minecraft:tipped_arrow", "count": 8,
+                        "components": {"minecraft:custom_name": "Sharp",
+                                       "minecraft:potion_contents": {"potion": "minecraft:healing"}}}}
+            """, List.of(
+            grid("arrows around a lingering potion of swiftness", 3,
+                arrow, arrow, arrow, arrow, swiftness, arrow, arrow, arrow, arrow),
+            grid("arrows around a plain lingering potion", 3,
+                arrow, arrow, arrow, arrow, item("lingering_potion"), arrow, arrow, arrow, arrow))));
 
         return recipes;
     }

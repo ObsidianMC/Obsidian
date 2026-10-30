@@ -23,7 +23,7 @@ public sealed class ImbueRecipe : ICraftingRecipe
     /// <summary>The items around it.</summary>
     public required Ingredient Material { get; init; }
 
-    /// <summary>The item and count crafted.</summary>
+    /// <summary>The item, count and components crafted.</summary>
     public required ItemStack Result { get; init; }
 
     internal ImbueRecipe() { }

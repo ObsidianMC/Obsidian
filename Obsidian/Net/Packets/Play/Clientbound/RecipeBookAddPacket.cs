@@ -174,9 +174,10 @@ public partial class RecipeBookAddPacket
         var materials = transmute.MinMaterialCount + display;
         var count = transmute.AddMaterialCountToResult ? transmute.ResultCount + materials : transmute.ResultCount;
 
+        // Like vanilla's, the result shows the components the recipe sets and removes.
         if (transmute.ResultItem is Item item)
         {
-            WriteStackDisplay(writer, new ItemStack(item, count));
+            WriteStackDisplay(writer, SpecialCrafting.TransmuteTemplate(transmute, item, count));
             return;
         }
 
@@ -185,7 +186,7 @@ public partial class RecipeBookAddPacket
         writer.WriteVarInt(inputs.Count);
 
         foreach (var input in inputs)
-            WriteStackDisplay(writer, new ItemStack(ItemsRegistry.Get(input), count));
+            WriteStackDisplay(writer, SpecialCrafting.TransmuteTemplate(transmute, ItemsRegistry.Get(input), count));
     }
 
     // Vanilla registers shapeless/shaped displays as 0/1.

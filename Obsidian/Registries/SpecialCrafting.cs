@@ -89,7 +89,7 @@ internal static class SpecialCrafting
             return false;
 
         // Like vanilla, the result is checked before it's dyed, which doesn't change whether it's valid.
-        result = WithComponentsOf(target, recipe.Result.Holder, recipe.Result.Count);
+        result = FromTemplate(recipe.Result, target);
         if (result is null)
             return true;
 
@@ -147,12 +147,13 @@ internal static class SpecialCrafting
                 return false;
         }
 
-        // Like vanilla, the result is checked before it takes the potion.
-        result = Validated(new ItemStack(recipe.Result.Holder, recipe.Result.Count));
+        // Like vanilla, the result is checked before it takes the potion, which doesn't change whether it's valid.
+        result = Validated(WithoutPotion(recipe.Result));
         if (result is null)
             return true;
 
-        // The source's potion: its own, or its item's default (no potion), which the result's item has too.
+        // The source's potion, replacing any the template sets: its own, or its item's default (no potion), which
+        // the result's item has too.
         var source = grid[middle]!;
         var contents = source.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents);
         if (contents is not null)
@@ -161,6 +162,19 @@ internal static class SpecialCrafting
             result.Remove(DataComponentType.PotionContents);
 
         return true;
+    }
+
+    // A stack of the template without the potion it sets or removes.
+    private static ItemStack WithoutPotion(ItemStack template)
+    {
+        var components = template.Patch.Where(component => component.Type != DataComponentType.PotionContents);
+        var removed = template.RemoveComponents.Where(type => type != DataComponentType.PotionContents);
+        var stack = new ItemStack(template.Holder, template.Count, components);
+
+        foreach (var type in removed)
+            stack.Remove(type);
+
+        return stack;
     }
 
     // One input and MinMaterialCount to MaxMaterialCount materials, in any slots.
@@ -193,7 +207,8 @@ internal static class SpecialCrafting
             return false;
 
         var count = recipe.AddMaterialCountToResult ? recipe.ResultCount + materials : recipe.ResultCount;
-        result = WithComponentsOf(input, recipe.ResultItem ?? input.Holder, count);
+        var template = TransmuteTemplate(recipe, recipe.ResultItem ?? input.Holder, count);
+        result = FromTemplate(template, input);
 
         // Vanilla's matching assembles a single result to compare it with the input: one that isn't a valid stack,
         // or that is the input again (as dyeing a red shulker box red would be), doesn't match. A larger result
@@ -207,12 +222,33 @@ internal static class SpecialCrafting
         return true;
     }
 
-    // A stack of item with the components set on (or removed from) the source, like vanilla's
-    // TransmuteRecipe.createWithOriginalComponents, or null if that isn't a valid stack.
-    private static ItemStack? WithComponentsOf(ItemStack source, Item item, int count)
+    /// <summary>
+    /// A transmute recipe's result template for <paramref name="count"/> of <paramref name="item"/>: the components
+    /// the recipe sets and removes, which the result applies over the input's (vanilla's <c>TransmuteResult</c>).
+    /// </summary>
+    internal static ItemStack TransmuteTemplate(TransmuteRecipe recipe, Item item, int count)
     {
-        var result = source.TransmuteCopy(item);
-        result.Count = count;
+        var template = new ItemStack(item, count, recipe.ResultComponents);
+
+        foreach (var type in recipe.RemovedResultComponents)
+            template.Remove(type);
+
+        return template;
+    }
+
+    // A stack of the template's item and count with the components set on (or removed from) the source, then the
+    // template's own over them, or null if that isn't a valid stack, like vanilla's
+    // TransmuteRecipe.createWithOriginalComponents.
+    private static ItemStack? FromTemplate(ItemStack template, ItemStack source)
+    {
+        var result = source.TransmuteCopy(template.Holder);
+        result.Count = template.Count;
+
+        foreach (var component in template.Patch)
+            result[component.Type] = component;
+
+        foreach (var type in template.RemoveComponents)
+            result.Remove(type);
 
         return Validated(result);
     }

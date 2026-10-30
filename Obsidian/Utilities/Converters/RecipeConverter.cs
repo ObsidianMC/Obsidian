@@ -2,6 +2,7 @@ using Obsidian.API.Crafting;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Utilities;
+using Obsidian.Nbt;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -195,7 +196,7 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
         JsonSerializerOptions options)
     {
         var (min, max) = ReadMaterialCount(value);
-        var (resultItem, resultCount) = ReadTransmuteResult(value.GetProperty("result"));
+        var (resultItem, resultCount, resultTemplate) = ReadTransmuteResult(value.GetProperty("result"));
         var addMaterialCount = value.TryGetProperty("add_material_count_to_result", out var add) && add.GetBoolean();
 
         return new TransmuteRecipe
@@ -210,7 +211,9 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
             MaxMaterialCount = max,
             ResultItem = resultItem,
             ResultCount = resultCount,
-            AddMaterialCountToResult = addMaterialCount
+            AddMaterialCountToResult = addMaterialCount,
+            ResultComponents = [.. resultTemplate.Patch],
+            RemovedResultComponents = [.. resultTemplate.RemoveComponents]
         };
     }
 
@@ -231,27 +234,58 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
         return bounds;
     }
 
-    // A transmute recipe's result: an item's name, or an object whose item, when it's left out, is the input's.
-    private static (Item? Item, int Count) ReadTransmuteResult(JsonElement result)
+    // A transmute recipe's result: an item's name, or an object whose item, when it's left out, is the input's, and
+    // whose components are set and removed over the input's. The template holds the result's components.
+    private static (Item? Item, int Count, ItemStack Template) ReadTransmuteResult(JsonElement result)
     {
         if (result.ValueKind == JsonValueKind.String)
-            return (ItemsRegistry.Get(result.GetString()!), 1);
-
-        if (result.TryGetProperty("components", out _))
-            throw new JsonException("Transmute results can't set components yet.");
+        {
+            var named = ItemsRegistry.Get(result.GetString()!);
+            return (named, 1, new ItemStack(named));
+        }
 
         var item = result.TryGetProperty("id", out var id) ? ItemsRegistry.Get(id.GetString()!) : null;
-        return (item, ReadResultCount(result));
+        var count = ReadResultCount(result);
+
+        // Reading components doesn't depend on the item, so a result that keeps the input's reads them onto stone.
+        var template = ReadResultTemplate(result, item ?? ItemsRegistry.Stone, count);
+
+        return (item, count, template);
     }
 
-    // A result that's an item and a count. Vanilla's dye and imbue results set no components.
+    // A dye or imbue recipe's result (vanilla's ItemStackTemplate): an item's name, or an object naming an item, a
+    // count and the components it sets and removes.
     private static ItemStack ReadResultStack(JsonElement value)
     {
-        if (value.TryGetProperty("components", out _))
-            throw new JsonException("Dye and imbue results can't set components yet.");
+        if (value.ValueKind == JsonValueKind.String)
+            return new ItemStack(ItemsRegistry.Get(value.GetString()!));
 
         var item = ItemsRegistry.Get(value.GetProperty("id").GetString()!);
-        return new ItemStack(item, ReadResultCount(value));
+        return ReadResultTemplate(value, item, ReadResultCount(value));
+    }
+
+    // A stack of the result's item and count with the components its "components" patch sets and removes, read like
+    // a saved stack's. A component Obsidian doesn't model fails the recipe rather than going missing from what it
+    // crafts.
+    private static ItemStack ReadResultTemplate(JsonElement result, Item item, int count)
+    {
+        var saved = new NbtCompound
+        {
+            new NbtTag<string>("id", item.UnlocalizedName),
+            new NbtTag<int>("count", count)
+        };
+
+        if (result.TryGetProperty("components", out var components))
+            saved.Add(JsonNbt.ToNbt("components", components));
+
+        var template = saved.ItemFromNbt()!;
+        if (template.UnmodeledComponents is NbtCompound unmodeled)
+        {
+            var names = string.Join(", ", unmodeled.Select(entry => entry.Key));
+            throw new JsonException($"Recipe results can't set {names} yet.");
+        }
+
+        return template;
     }
 
     // A result's count, which vanilla's result codecs take from 1 to 99 (whether the item stacks that high is only
