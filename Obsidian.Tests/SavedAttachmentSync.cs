@@ -21,6 +21,15 @@ using Xunit;
 
 namespace Obsidian.Tests;
 
+// Attachment sync caches the process-wide binding revision. Registrations and releases in any other collection
+// invalidate that cache, so assertions about an unchanged sync must run without concurrent plugin changes.
+[CollectionDefinition(Name, DisableParallelization = true)]
+public sealed class AttachmentBindingsCollection
+{
+    public const string Name = "Attachment bindings";
+}
+
+[Collection(AttachmentBindingsCollection.Name)]
 public sealed class SavedAttachmentSync
 {
     [Fact]
