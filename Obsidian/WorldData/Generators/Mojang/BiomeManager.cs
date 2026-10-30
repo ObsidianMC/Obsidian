@@ -16,6 +16,7 @@ internal sealed class BiomeManager
     private readonly IBiomeSource biomeSource;
     private readonly int minQuartY;
     private readonly int maxQuartY;
+    private readonly bool clampToHeight;
     private readonly Dictionary<(int, int, int), BiomeCodec>? cache;
 
     // While a chunk is in focus (see FocusOn), the quart biomes its block lookups reach, kept by position, which is much
@@ -34,12 +35,16 @@ internal sealed class BiomeManager
     /// <param name="height">Level height in blocks.</param>
     /// <param name="cacheNoiseBiomes">Whether to remember the source's biomes; sources that are cheap to ask don't need it.</param>
     /// <param name="capacity">How many quart biomes to make room for in the cache up front.</param>
-    public BiomeManager(IBiomeSource biomeSource, long seed, int minY, int height, bool cacheNoiseBiomes = true, int capacity = 0)
+    /// <param name="clampToHeight">False for an uncached resolver over the router instead of stored sections.</param>
+    public BiomeManager(IBiomeSource biomeSource, long seed, int minY, int height,
+        bool cacheNoiseBiomes = true, int capacity = 0, bool clampToHeight = true)
     {
         this.biomeSource = biomeSource;
         this.zoomSeed = ObfuscateSeed(seed);
+        // Uncached 26.3 material resolvers sample beyond build height; stored chunk lookups clamp to storage.
         this.minQuartY = minY >> 2;
         this.maxQuartY = this.minQuartY + (height >> 2) - 1;
+        this.clampToHeight = clampToHeight;
         this.cache = cacheNoiseBiomes ? new(capacity) : null;
     }
 
@@ -75,6 +80,11 @@ internal sealed class BiomeManager
     public void FocusOn(int chunkX, int chunkZ)
     {
         this.ClearCache();
+        if (!this.clampToHeight)
+        {
+            return;
+        }
+
         this.focus ??= new BiomeCodec?[FocusWidth * FocusWidth * this.QuartHeight];
 
         // A block's lookup starts 2 blocks lower (see GetBiome), so its corners reach one quart before the chunk and one
@@ -93,7 +103,7 @@ internal sealed class BiomeManager
     /// </summary>
     public BiomeCodec GetNoiseBiome(int quartX, int quartY, int quartZ)
     {
-        var clampedY = Math.Clamp(quartY, this.minQuartY, this.maxQuartY);
+        var clampedY = this.clampToHeight ? Math.Clamp(quartY, this.minQuartY, this.maxQuartY) : quartY;
         if (this.focus is not null)
         {
             var focusX = quartX - this.focusMinQuartX;
@@ -130,6 +140,20 @@ internal sealed class BiomeManager
         if (this.TryGetSharedCornerBiome(quartX, quartY, quartZ) is BiomeCodec shared)
             return shared;
 
+        var quart = QuartAtBlock(this.zoomSeed, x, y, z);
+        return this.GetNoiseBiome(quart.X, quart.Y, quart.Z);
+    }
+
+    /// <summary>The quart selected by vanilla's full-resolution biome lookup, using an obfuscated seed.</summary>
+    internal static (int X, int Y, int Z) QuartAtBlock(long zoomSeed, int x, int y, int z)
+    {
+        var offsetX = x - 2;
+        var offsetY = y - 2;
+        var offsetZ = z - 2;
+        var quartX = offsetX >> 2;
+        var quartY = offsetY >> 2;
+        var quartZ = offsetZ >> 2;
+
         var fractionX = (offsetX & 3) / 4.0;
         var fractionY = (offsetY & 3) / 4.0;
         var fractionZ = (offsetZ & 3) / 4.0;
@@ -138,8 +162,10 @@ internal sealed class BiomeManager
         var closestDistance = double.PositiveInfinity;
 
         var jitters = jitterTable ??= new JitterTable();
-        if (jitters.Seed != this.zoomSeed)
-            jitters.Reset(this.zoomSeed);
+        if (jitters.Seed != zoomSeed)
+        {
+            jitters.Reset(zoomSeed);
+        }
 
         for (var corner = 0; corner < 8; corner++)
         {
@@ -158,7 +184,7 @@ internal sealed class BiomeManager
             }
         }
 
-        return this.GetNoiseBiome(
+        return (
             (closest & 4) == 0 ? quartX : quartX + 1,
             (closest & 2) == 0 ? quartY : quartY + 1,
             (closest & 1) == 0 ? quartZ : quartZ + 1);
