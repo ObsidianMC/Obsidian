@@ -37,6 +37,10 @@ internal sealed partial class FeatureRegistry
 
                 SimpleBlockFeature.PlaceDoublePlant(level, state, origin);
             }
+            else if (state.BlockClass() == "MossyCarpetBlock")
+            {
+                PlaceMossCarpet(level, origin);
+            }
             else
             {
                 level.SetBlock(origin, state);

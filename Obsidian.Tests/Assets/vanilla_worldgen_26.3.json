@@ -106095,6 +106095,465 @@
       "step": 0,
       "layers": [
         [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        1,
+        0
+      ],
+      "name": "moss_walls_topper_0",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:pale_moss_carpet"
+          }
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          0,
+          1,
+          -1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          0,
+          2,
+          -1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          1,
+          1,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          1,
+          2,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          0,
+          1,
+          1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          0,
+          2,
+          1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          -1,
+          1,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          -1,
+          2,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ]
+      ],
+      "regionRandomSeed": 0,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          1,
+          0,
+          "minecraft:pale_moss_carpet{bottom=true, east=low, north=low, south=low, west=tall}"
+        ],
+        [
+          0,
+          2,
+          0,
+          "minecraft:pale_moss_carpet{bottom=false, east=none, north=none, south=none, west=low}"
+        ]
+      ],
+      "nextRegionRandom": -505875771
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        1,
+        0
+      ],
+      "name": "moss_walls_topper_1",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:pale_moss_carpet"
+          }
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          0,
+          1,
+          -1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          0,
+          2,
+          -1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          1,
+          1,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          1,
+          2,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          0,
+          1,
+          1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          0,
+          2,
+          1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          -1,
+          1,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          -1,
+          2,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ]
+      ],
+      "regionRandomSeed": 1,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          1,
+          0,
+          "minecraft:pale_moss_carpet{bottom=true, east=low, north=low, south=low, west=tall}"
+        ],
+        [
+          0,
+          2,
+          0,
+          "minecraft:pale_moss_carpet{bottom=false, east=none, north=none, south=none, west=low}"
+        ]
+      ],
+      "nextRegionRandom": 767430484
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        1,
+        0
+      ],
+      "name": "moss_walls_topper_2",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:pale_moss_carpet"
+          }
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          0,
+          1,
+          -1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          0,
+          2,
+          -1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          1,
+          1,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          1,
+          2,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          0,
+          1,
+          1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          0,
+          2,
+          1,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          -1,
+          1,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          -1,
+          2,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ]
+      ],
+      "regionRandomSeed": 2,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          1,
+          0,
+          "minecraft:pale_moss_carpet{bottom=true, east=low, north=tall, south=low, west=tall}"
+        ],
+        [
+          0,
+          2,
+          0,
+          "minecraft:pale_moss_carpet{bottom=false, east=none, north=low, south=none, west=low}"
+        ]
+      ],
+      "nextRegionRandom": 702810824
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        1,
+        0
+      ],
+      "name": "moss_unsupported_upper_sides",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:pale_moss_carpet"
+          }
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          1,
+          2,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ]
+      ],
+      "regionRandomSeed": 0,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          1,
+          0,
+          "minecraft:pale_moss_carpet{bottom=true, east=none, north=none, south=none, west=none}"
+        ]
+      ],
+      "nextRegionRandom": -160476802
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          0
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        1,
+        0
+      ],
+      "name": "moss_blocked_topper",
+      "feature": {
+        "feature": {
+          "type": "minecraft:simple_block",
+          "to_place": {
+            "id": "minecraft:pale_moss_carpet"
+          }
+        },
+        "placement": []
+      },
+      "edits": [
+        [
+          1,
+          1,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ],
+        [
+          0,
+          2,
+          0,
+          {
+            "id": "minecraft:stone"
+          }
+        ]
+      ],
+      "regionRandomSeed": 0,
+      "nextRandom": -1154715079,
+      "regionRadius": 10,
+      "placed": true,
+      "changes": [
+        [
+          0,
+          1,
+          0,
+          "minecraft:pale_moss_carpet{bottom=true, east=low, north=none, south=none, west=none}"
+        ]
+      ],
+      "nextRegionRandom": -160476802
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
           "minecraft:air",
           -64
         ]
