@@ -74,7 +74,7 @@ public sealed class Pregeneration
         finally
         {
             await world.DisposeAsync();
-            Directory.Delete(world.FolderPath, recursive: true);
+            Directory.Delete(world.WorldFolderPath, recursive: true);
 
             // The world's generator took the overworld's stem, which data pack startup tests expect free.
             Obsidian.Registries.PluginDimensions.GiveBack("minecraft:overworld");

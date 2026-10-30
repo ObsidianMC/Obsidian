@@ -9,8 +9,8 @@ using System.Threading;
 namespace Obsidian.WorldData.Maps;
 
 /// <summary>
-/// The maps of a world and its dimensions, saved like vanilla's in the world's <c>data</c> folder: <c>map_&lt;id&gt;.dat</c>
-/// per map and the last id in <c>idcounts.dat</c>.
+/// The maps of a world and its dimensions, saved like vanilla's in the world's <c>data/minecraft/maps</c> folder:
+/// <c>&lt;id&gt;.dat</c> per map and the last id in <c>last_id.dat</c>.
 /// </summary>
 internal sealed class MapStorage(string folderPath)
 {
@@ -18,11 +18,11 @@ internal sealed class MapStorage(string folderPath)
     private readonly Lock idLock = new();
     private int? lastMapId;
 
-    private string DataPath => Path.Combine(folderPath, "data");
+    private string MapsPath => Path.Combine(folderPath, "data", "minecraft", "maps");
 
     /// <summary>
     /// The storage holding the maps of <paramref name="level"/>: its world's, since vanilla keeps every dimension's maps in
-    /// the overworld.
+    /// the world's folder.
     /// </summary>
     public static MapStorage For(ILevel level) => level is Dimension dimension ? ((World)dimension.ParentWorld).Maps : ((World)level).Maps;
 
@@ -93,17 +93,15 @@ internal sealed class MapStorage(string folderPath)
     /// <summary>
     /// Writes the maps that changed and the last map id.
     /// </summary>
-    public async Task SaveAsync()
+    public void Save()
     {
-        Directory.CreateDirectory(this.DataPath);
-
         foreach (var (id, data) in this.maps)
         {
             if (data is null || !data.IsDirty)
                 continue;
 
             data.IsDirty = false;
-            await WriteAsync(Path.Combine(this.DataPath, $"map_{id}.dat"), data.ToNbt());
+            SavedDataFile.Write(Path.Combine(this.MapsPath, $"{id}.dat"), data.ToNbt());
         }
 
         int? lastId;
@@ -111,41 +109,18 @@ internal sealed class MapStorage(string folderPath)
             lastId = this.lastMapId;
 
         if (lastId is not null)
-            await WriteAsync(Path.Combine(this.DataPath, "idcounts.dat"), new NbtCompound("data") { new NbtTag<int>("map", lastId.Value) });
+            SavedDataFile.Write(Path.Combine(this.MapsPath, "last_id.dat"), new NbtCompound("data") { new NbtTag<int>("map", lastId.Value) });
     }
 
     private MapData? Load(int id)
     {
-        var data = Read(Path.Combine(this.DataPath, $"map_{id}.dat"));
+        var data = SavedDataFile.Read(Path.Combine(this.MapsPath, $"{id}.dat"));
         return data is null ? null : MapData.FromNbt(data);
     }
 
     private int LoadLastMapId()
     {
-        var data = Read(Path.Combine(this.DataPath, "idcounts.dat"));
+        var data = SavedDataFile.Read(Path.Combine(this.MapsPath, "last_id.dat"));
         return data is not null && data.TryGetTag<NbtTag<int>>("map", out var map) ? map.Value : -1;
-    }
-
-    /// <summary>
-    /// The <c>data</c> compound of a saved data file, or <c>null</c> when there's none.
-    /// </summary>
-    private static NbtCompound? Read(string path)
-    {
-        if (!File.Exists(path))
-            return null;
-
-        using var stream = File.OpenRead(path);
-        var root = new NbtReader(stream, NbtCompression.GZip).ReadNextTag() as NbtCompound;
-        return root is not null && root.TryGetTag<NbtCompound>("data", out var data) ? data : null;
-    }
-
-    private static async Task WriteAsync(string path, NbtCompound data)
-    {
-        await using var stream = File.Create(path);
-        await using var writer = new NbtWriterStream(stream, NbtCompression.GZip, "");
-        writer.WriteTag(data);
-        writer.WriteInt("DataVersion", ServerConstants.DataVersion);
-        writer.EndCompound();
-        await writer.TryFinishAsync();
     }
 }

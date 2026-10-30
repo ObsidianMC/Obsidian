@@ -213,14 +213,13 @@ public sealed class VanillaSaves : IDisposable
         }
     }
 
-    [Fact(DisplayName = "The singleplayer owner loads from level.dat's Data.Player and saves to it and playerdata")]
+    [Fact(DisplayName = "The singleplayer owner loads from and saves to players/data, and level.dat names them")]
     public async Task OwnerUsesLevelData()
     {
         var world = this.CreateWorld();
         var player = CreatePlayer(world, owner: true);
 
-        await PlayerDataFile.WriteAsync(world.GetPlayerDataPath(player.Uuid), VanillaPlayer(xpLevel: 1));
-        world.SingleplayerPlayerData = VanillaPlayer(xpLevel: 30);
+        await PlayerDataFile.WriteAsync(world.GetPlayerDataPath(player.Uuid), VanillaPlayer(xpLevel: 30));
 
         try
         {
@@ -235,8 +234,8 @@ public sealed class VanillaSaves : IDisposable
             Assert.Equal(31, playerData.GetInt("XpLevel"));
 
             var levelData = World.ReadLevelData(Path.Join(this.folder, "level.dat"), NullLogger.Instance)!;
-            var owner = (NbtCompound)((NbtCompound)levelData["Data"])["Player"];
-            Assert.Equal(31, owner.GetInt("XpLevel"));
+            var owner = (NbtArray<int>)((NbtCompound)levelData["Data"])["singleplayer_uuid"];
+            Assert.Equal(player.Uuid, Obsidian.Entities.EntityNbt.UuidFromInts(owner.GetArray()));
         }
         finally
         {
@@ -269,11 +268,14 @@ public sealed class VanillaSaves : IDisposable
     [Fact(DisplayName = "A new world reads its game rules, and its dimensions share its difficulty")]
     public void NewWorldLevelData()
     {
-        var world = this.CreateWorld(new NbtCompound("Data")
+        var world = this.CreateWorld(new LevelFiles
         {
-            new NbtTag<string>("LevelName", "world"),
-            new NbtTag<byte>("Difficulty", (byte)Difficulty.Peaceful),
-            new NbtCompound("game_rules") { new NbtTag<int>("minecraft:random_tick_speed", 0) }
+            Data =
+            {
+                new NbtTag<string>("LevelName", "world"),
+                new NbtCompound("difficulty_settings") { new NbtTag<string>("difficulty", "peaceful") }
+            },
+            GameRules = { new NbtTag<int>("minecraft:random_tick_speed", 0) }
         });
 
         Assert.Equal(0, world.LevelData.GetIntegerRule("random_tick_speed"));
@@ -304,7 +306,7 @@ public sealed class VanillaSaves : IDisposable
         }
     };
 
-    private World CreateWorld(NbtCompound? data = null)
+    private World CreateWorld(LevelFiles? files = null)
     {
         var world = new World(
             NullLogger<World>.Instance,
@@ -316,10 +318,10 @@ public sealed class VanillaSaves : IDisposable
             "world",
             "0");
 
-        world.UseVanillaLayout(this.folder);
+        world.UseFolder(this.folder);
         CodecRegistry.TryGetDimension("minecraft:overworld", out var overworld);
         world.Initialize(overworld!);
-        world.CreateVanillaLevel(data ?? new NbtCompound("Data") { new NbtTag<string>("LevelName", "world") });
+        world.CreateLevel(files ?? new LevelFiles { Data = { new NbtTag<string>("LevelName", "world") } });
 
         return world;
     }

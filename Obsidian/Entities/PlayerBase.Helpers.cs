@@ -81,11 +81,11 @@ public partial class PlayerBase
             //TODO make sure to save inventory in the right location if has using global data set to true
             await PlayerDataFile.WriteAsync(this.PersistentDataFile, new NbtCompound { new NbtTag<string>("worldName", world.Name) });
 
-            var data = this.SaveData();
-            if (this.IsSingleplayerOwner && world is World { UsesVanillaLayout: true } vanillaWorld)
-                vanillaWorld.SingleplayerPlayerData = data;
+            // Vanilla's singleplayer game opens the world as its owner, recorded in level.dat.
+            if (this.IsSingleplayerOwner && world is World ownedWorld)
+                ownedWorld.SingleplayerOwner = this.Uuid;
 
-            await PlayerDataFile.WriteAsync(world.GetPlayerDataPath(this.Uuid), data);
+            await PlayerDataFile.WriteAsync(world.GetPlayerDataPath(this.Uuid), this.SaveData());
             await this.SaveProgressAsync();
         }
         finally
@@ -141,11 +141,7 @@ public partial class PlayerBase
         await LoadPermsAsync();
 
         var world = this.Level is IDimension currentDimension ? currentDimension.ParentWorld : (IWorld)this.Level;
-        var ownerData = this.IsSingleplayerOwner && world is World { UsesVanillaLayout: true } vanillaWorld
-            ? vanillaWorld.SingleplayerPlayerData
-            : null;
-
-        var data = ownerData ?? PlayerDataFile.Read(world.GetPlayerDataPath(this.Uuid), this.Logger);
+        var data = PlayerDataFile.Read(world.GetPlayerDataPath(this.Uuid), this.Logger);
         if (loadFromPersistentWorld)
             IsFirstJoin = data is null;
 

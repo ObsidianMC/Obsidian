@@ -52,6 +52,7 @@ public partial class PlayerBase
     private string ProgressPath(string folder)
     {
         var world = this.Level is IDimension dimension ? dimension.ParentWorld : (IWorld)this.Level;
+        // Beside players/data: players/stats and players/advancements.
         return Path.Combine(Path.GetDirectoryName(world.PlayerDataPath)!, folder, $"{this.Uuid}.json");
     }
 

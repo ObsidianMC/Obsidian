@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Obsidian.Hosting;
 using Obsidian.Integrated;
 using Obsidian.Nbt;
+using Obsidian.WorldData;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
@@ -57,9 +58,9 @@ public sealed class IntegratedServerHosting : IDisposable
     }
 
     /// <summary>
-    /// Creates a world in a vanilla save folder, stops, and starts again: the save has vanilla's layout and level.dat,
-    /// what Obsidian doesn't model in level.dat survives its saves, and only the local player with the join secret gets
-    /// in until the world is opened to LAN.
+    /// Creates a world in a vanilla save folder, stops, and starts again: the save has vanilla 26.3's layout, level.dat
+    /// and saved data files, what Obsidian doesn't model in level.dat survives its saves, and only the local player with
+    /// the join secret gets in until the world is opened to LAN.
     /// </summary>
     [Fact]
     public async Task VanillaWorldRoundTripsAndOnlyTheOwnerJoins()
@@ -95,19 +96,22 @@ public sealed class IntegratedServerHosting : IDisposable
         Assert.True(data.GetBool("allowCommands"));
         Assert.True(data.TryGetTag<NbtCompound>("Version", out var version) && version.GetString("Name") == ServerConstants.ProtocolDescription);
         Assert.True(data.TryGetTag<NbtCompound>("spawn", out _));
-        Assert.True(data.TryGetTag<NbtCompound>("game_rules", out var gameRules) && gameRules.GetBool("minecraft:keep_inventory"));
-        Assert.True(data.TryGetTag<NbtCompound>("WorldGenSettings", out var worldGen));
+        Assert.Contains(ServerConstants.DataVersion, ((NbtList)data["version_history"]).OfType<NbtTag<int>>().Select(tag => tag.Value));
+
+        var gameRules = SavedDataFile.Read(Path.Combine(world, "data", "minecraft", "game_rules.dat"))!;
+        Assert.True(gameRules.GetBool("minecraft:keep_inventory"));
+        var worldGen = SavedDataFile.Read(Path.Combine(world, "data", "minecraft", "world_gen_settings.dat"))!;
         Assert.Equal(JavaHash("hello"), worldGen.GetLong("seed"));
 
-        Assert.True(Directory.Exists(Path.Combine(world, "region")));
-        Assert.True(Directory.Exists(Path.Combine(world, "DIM-1", "region")));
-        Assert.True(Directory.Exists(Path.Combine(world, "DIM1", "region")));
-        Assert.False(Directory.Exists(Path.Combine(world, "regions")));
+        foreach (var dimension in new[] { "overworld", "the_nether", "the_end" })
+            Assert.True(Directory.Exists(Path.Combine(world, "dimensions", "minecraft", dimension, "region")));
+        Assert.False(Directory.Exists(Path.Combine(world, "region")));
+        Assert.False(Directory.Exists(Path.Combine(world, "DIM-1")));
         Assert.True(File.Exists(Path.Combine(world, "session.lock")));
         Assert.True(Directory.Exists(Path.Combine(this.root, "logs")));
 
-        // A tag Obsidian doesn't model, like vanilla's dragon fight.
-        data.Add(new NbtCompound("DragonFight") { new NbtTag<byte>("DragonKilled", 1) });
+        // A tag Obsidian doesn't model.
+        data.Add(new NbtList(NbtTagType.String, "removed_features") { new NbtTag<string>(string.Empty, "minecraft:bundle") });
         WriteData(levelDat, data);
 
         var secondRun = await this.RunUntilReadyAsync(world, CheckLoginsAsync);
@@ -115,8 +119,8 @@ public sealed class IntegratedServerHosting : IDisposable
         Assert.Contains(secondRun, line => line.StartsWith("@obsidian:{\"event\":\"published\"", StringComparison.Ordinal));
 
         var saved = ReadData(levelDat);
-        Assert.True(saved.TryGetTag<NbtCompound>("DragonFight", out var dragonFight) && dragonFight.GetBool("DragonKilled"));
-        Assert.True(saved.TryGetTag<NbtCompound>("WorldGenSettings", out var savedWorldGen));
+        Assert.True(saved.TryGetTag<NbtList>("removed_features", out var removed) && removed.Count == 1);
+        var savedWorldGen = SavedDataFile.Read(Path.Combine(world, "data", "minecraft", "world_gen_settings.dat"))!;
         Assert.Equal(worldGen.GetLong("seed"), savedWorldGen.GetLong("seed"));
         Assert.True(File.Exists(Path.Combine(world, "level.dat_old")));
     }

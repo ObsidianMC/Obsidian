@@ -28,50 +28,46 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     // Saves and flushes of the world run one at a time: /save, autosaves and shutdown can overlap.
     private readonly System.Threading.SemaphoreSlim saveLock = new(1, 1);
 
-    // The vanilla save folder this world is, or null for Obsidian's worlds/<name> layout.
-    private string? vanillaFolder;
+    // The folder UseFolder chose, or null for worlds/<name>.
+    private string? folder;
 
-    // The level.dat "Data" compound of a vanilla-shaped level, written back with the fields Obsidian owns updated.
-    private NbtCompound? vanillaData;
-
-    /// <summary>
-    /// The singleplayer owner's data in a vanilla-shaped level.dat (<c>Data.Player</c>), which vanilla loads for the owner
-    /// in place of their playerdata file. The owner's saves replace it, and level.dat saves write it.
-    /// </summary>
-    internal NbtCompound? SingleplayerPlayerData { get; set; }
+    // The world's level data as it was read or created, written back with the fields Obsidian owns updated.
+    private LevelFiles levelFiles = new();
 
     /// <summary>
-    /// Whether the world is laid out like a vanilla save (see <see cref="UseVanillaLayout"/>).
+    /// The world's folder, laid out like vanilla 26.3's saves (see <see cref="WorldLayout"/>): level.dat, the world's
+    /// saved data, its players and maps, and its levels in <c>dimensions/</c>. <see cref="AbstractLevel.FolderPath"/>
+    /// is the folder of the world's own level in it, like <c>dimensions/minecraft/overworld</c>.
     /// </summary>
-    public bool UsesVanillaLayout => this.vanillaFolder is not null;
-
-    protected override string RegionFolderName => this.UsesVanillaLayout ? "region" : "regions";
-
-    // Vanilla names its level.dat backup level.dat_old; Obsidian's own layout keeps level.dat.old.
-    private string LevelDataBackupPath => this.UsesVanillaLayout ? $"{this.LevelDataFilePath}_old" : $"{this.LevelDataFilePath}.old";
+    public string WorldFolderPath { get; private set; } = string.Empty;
 
     /// <summary>
-    /// Makes the world a vanilla save in <paramref name="folder"/>: <c>level.dat</c> in vanilla's shape, <c>region/</c>,
-    /// <c>entities/</c>, <c>data/</c> and <c>playerdata/</c>, and its dimensions in <c>DIM-1/</c> and <c>DIM1/</c>.
-    /// Call it before the world is loaded.
+    /// The singleplayer owner, whom vanilla's singleplayer game opens the world as (level.dat's
+    /// <c>singleplayer_uuid</c>); set when the owner saves.
     /// </summary>
-    internal void UseVanillaLayout(string folder) => this.vanillaFolder = folder;
+    internal Guid? SingleplayerOwner { get; set; }
 
     /// <summary>
-    /// Sets up the level data of a new world from <paramref name="data"/>, a vanilla <c>Data</c> compound (see
-    /// <see cref="VanillaLevelData.Create"/>), which its level.dat is then written from.
+    /// Puts the world in <paramref name="folder"/> instead of <c>worlds/&lt;name&gt;</c>. Call it before the world is
+    /// loaded.
     /// </summary>
-    internal void CreateVanillaLevel(NbtCompound data)
+    internal void UseFolder(string folder) => this.folder = folder;
+
+    /// <summary>
+    /// Sets up the level data of a new world from <paramref name="files"/> (see <see cref="VanillaLevelData.Create"/>),
+    /// which its level data files are then written from.
+    /// </summary>
+    internal void CreateLevel(LevelFiles files)
     {
-        this.vanillaData = data;
+        this.levelFiles = files;
 
-        var level = VanillaLevelData.Read(data);
+        var level = VanillaLevelData.Read(files);
         level.GeneratorName = this.Generator.Id;
         level.Time = this.LevelData.Time;
         this.LevelData = level;
 
         // Before the dimensions are set up, which share the rules.
-        ReadGameRules(data);
+        ReadGameRules(files.GameRules);
     }
 
     public async override Task<bool> LoadAsync(DimensionCodec codec)
@@ -79,43 +75,18 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         this.Initialize(codec);
 
         // With no level data, the world is new.
-        var levelCompound = ReadLevelDataOrBackup(this.LevelDataFilePath, this.Logger);
-        if (levelCompound is null)
+        if (LevelFiles.Load(this.WorldFolderPath, this.Logger) is not LevelFiles files)
             return false;
 
-        // A level in vanilla's shape is kept whole and written back in that shape.
-        this.vanillaData = VanillaLevelData.GetData(levelCompound);
-        if (this.vanillaData is not null && this.vanillaData.TryGetTag<NbtCompound>("Player", out var player))
-            this.SingleplayerPlayerData = player;
-
-        LevelData = this.vanillaData is not null ? VanillaLevelData.Read(this.vanillaData) : new LevelData()
-        {
-            Hardcore = levelCompound.GetBool("hardcore"),
-            MapFeatures = levelCompound.GetBool("MapFeatures"),
-            Raining = levelCompound.GetBool("raining"),
-            Thundering = levelCompound.GetBool("thundering"),
-            DefaultGamemode = (GameMode)levelCompound.GetInt("GameType"),
-            Difficulty = levelCompound.TryGetTagValue<byte>("Difficulty", out var difficulty)
-                ? (Difficulty)difficulty : Difficulty.Normal,
-            DifficultyLocked = levelCompound.GetBool("DifficultyLocked"),
-            GeneratorVersion = levelCompound.GetInt("generatorVersion"),
-            RainTime = levelCompound.GetInt("rainTime"),
-            // The spawn is saved as a block; players spawn at its center.
-            SpawnPosition = new VectorD(levelCompound.GetInt("SpawnX") + 0.5f, levelCompound.GetInt("SpawnY"), levelCompound.GetInt("SpawnZ") + 0.5f),
-            ThunderTime = levelCompound.GetInt("thunderTime"),
-            Version = levelCompound.GetInt("version"),
-            LastPlayed = levelCompound.GetLong("LastPlayed"),
-            RandomSeed = levelCompound.GetLong("RandomSeed"),
-            Time = levelCompound.GetLong("Time"),
-            GeneratorName = levelCompound.GetString("generatorName"),
-            LevelName = levelCompound.GetString("LevelName")
-        };
-        LevelData.GeneratorName ??= this.Generator.Id;
+        this.levelFiles = files;
+        this.LevelData = VanillaLevelData.Read(files);
+        this.LevelData.GeneratorName = this.Generator.Id;
+        this.SingleplayerOwner = VanillaLevelData.GetSingleplayerOwner(files);
 
         Log.Loading(this.Logger, this.Name);
-        ReadGameRules(this.vanillaData ?? levelCompound);
-        ReadEndFightNbt(levelCompound);
-        ReadRaidsNbt(levelCompound);
+        ReadGameRules(files.GameRules);
+        this.ReadLevelState();
+        this.ReadWanderingTrader(files.WanderingTrader);
         for (int rx = -1; rx < 1; rx++)
             for (int rz = -1; rz < 1; rz++)
                 LoadRegion(rx, rz);
@@ -180,7 +151,7 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         await this.saveLock.WaitAsync();
         try
         {
-            await this.SaveLevelAsync();
+            this.SaveLevel();
         }
         finally
         {
@@ -189,83 +160,40 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     }
 
     /// <summary>
-    /// Writes level.dat and the maps. The level data is written to a temporary file first and then replaces level.dat,
-    /// keeping the previous one as the backup, so a save that stops partway leaves a complete file.
+    /// Writes the world's level data, its maps, and its and its dimensions' state (see
+    /// <see cref="AbstractLevel.SaveLevelState"/>).
     /// </summary>
-    private async Task SaveLevelAsync()
+    private void SaveLevel()
     {
-        var temporaryPath = $"{LevelDataFilePath}.tmp";
-        await using (var fs = File.Create(temporaryPath))
-        {
-            if (this.vanillaData is not null)
-                await this.WriteVanillaLevelDataAsync(fs, this.vanillaData);
-            else
-                await this.WriteLevelDataAsync(fs);
-        }
+        VanillaLevelData.Update(this.levelFiles, this.LevelData);
+        if (this.SingleplayerOwner is Guid owner)
+            VanillaLevelData.SetSingleplayerOwner(this.levelFiles, owner);
 
-        if (File.Exists(LevelDataFilePath))
-            File.Replace(temporaryPath, LevelDataFilePath, this.LevelDataBackupPath);
-        else
-            File.Move(temporaryPath, LevelDataFilePath);
+        // Vanilla's wandering trader spawns in the overworld, which is the world's own level.
+        this.WriteWanderingTrader(this.levelFiles.WanderingTrader);
+        this.levelFiles.Save(this.WorldFolderPath);
 
-        await this.Maps.SaveAsync();
-        this.SavePluginData();
+        this.Maps.Save();
+
+        this.SaveLevelState();
+        foreach (var dimension in this.dimensions.Values.OfType<Dimension>())
+            dimension.SaveLevelState();
     }
 
-    private async Task WriteVanillaLevelDataAsync(Stream fs, NbtCompound data)
+    /// <summary>
+    /// Runs <paramref name="save"/> between the world's saves, which write the dimensions' files too.
+    /// </summary>
+    internal async Task SaveExclusiveAsync(Action save)
     {
-        VanillaLevelData.Update(data, this.LevelData);
-
-        if (this.SingleplayerPlayerData is NbtCompound player)
+        await this.saveLock.WaitAsync();
+        try
         {
-            var saved = new NbtCompound("Player");
-            foreach (var (name, tag) in player)
-                saved.Add(name, tag);
-
-            data.Set(saved);
+            save();
         }
-
-        await using var writer = new NbtWriterStream(fs, NbtCompression.GZip, "");
-        writer.WriteTag(data);
-
-        // Obsidian's own state, beside Data, which vanilla ignores.
-        WriteEndFightNbt(writer);
-        WriteRaidsNbt(writer);
-        writer.EndCompound();
-
-        await writer.TryFinishAsync();
-    }
-
-    private async Task WriteLevelDataAsync(Stream fs)
-    {
-        await using var writer = new NbtWriterStream(fs, NbtCompression.GZip, "");
-
-        writer.WriteBool("hardcore", LevelData.Hardcore);
-        writer.WriteBool("MapFeatures", LevelData.MapFeatures);
-        writer.WriteBool("raining", LevelData.Raining);
-        writer.WriteBool("thundering", LevelData.Thundering);
-        writer.WriteInt("GameType", (int)LevelData.DefaultGamemode);
-        writer.WriteByte("Difficulty", (byte)LevelData.Difficulty);
-        writer.WriteBool("DifficultyLocked", LevelData.DifficultyLocked);
-        writer.WriteInt("generatorVersion", LevelData.GeneratorVersion);
-        writer.WriteInt("rainTime", LevelData.RainTime);
-        var spawn = LevelData.SpawnPosition.Floor();
-        writer.WriteInt("SpawnX", (int)spawn.X);
-        writer.WriteInt("SpawnY", (int)spawn.Y);
-        writer.WriteInt("SpawnZ", (int)spawn.Z);
-        writer.WriteInt("thunderTime", LevelData.ThunderTime);
-        writer.WriteInt("version", LevelData.Version);
-        writer.WriteLong("LastPlayed", DateTimeOffset.Now.ToUnixTimeMilliseconds());
-        writer.WriteLong("RandomSeed", LevelData.RandomSeed);
-        writer.WriteLong("Time", Time);
-        writer.WriteString("generatorName", Generator.Id);
-        writer.WriteString("LevelName", Name);
-        WriteGameRules(writer);
-        WriteEndFightNbt(writer);
-        WriteRaidsNbt(writer);
-        writer.EndCompound();
-
-        await writer.TryFinishAsync();
+        finally
+        {
+            this.saveLock.Release();
+        }
     }
 
     /// <summary>
@@ -277,7 +205,7 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         try
         {
             await this.FlushRegionsAsync();
-            await this.SaveLevelAsync();
+            this.SaveLevel();
         }
         finally
         {
@@ -318,9 +246,10 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
 
     public override void Initialize(DimensionCodec codec)
     {
-        this.FolderPath = this.vanillaFolder ?? Path.Combine(ServerConstants.WorldsPath, Name);
+        this.WorldFolderPath = this.folder ?? Path.Combine(ServerConstants.WorldsPath, Name);
 
         this.SetDimension(codec.Name, codec);
+        this.FolderPath = Path.Combine(this.WorldFolderPath, WorldLayout.LevelFolder(codec.Name));
 
         this.LevelData = new LevelData
         {
@@ -329,9 +258,9 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
             GeneratorName = Generator.Id
         };
 
-        this.PlayerDataPath = Path.Combine(this.FolderPath, "playerdata");
-        this.Maps = new MapStorage(this.FolderPath);
-        this.LevelDataFilePath = Path.Combine(this.FolderPath, "level.dat");
+        this.PlayerDataPath = Path.Combine(this.WorldFolderPath, WorldLayout.PlayerDataFolder);
+        this.Maps = new MapStorage(this.WorldFolderPath);
+        this.LevelDataFilePath = Path.Combine(this.WorldFolderPath, WorldLayout.LevelDataFile);
 
         Directory.CreateDirectory(this.PlayerDataPath);
         Directory.CreateDirectory(this.FolderPath);

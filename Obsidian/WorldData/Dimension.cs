@@ -5,6 +5,7 @@ using Obsidian.API.Registry.Codecs.Dimensions;
 using System.Collections.Frozen;
 using System.IO;
 using Obsidian.Nbt;
+using Obsidian.Nbt.Interfaces;
 
 namespace Obsidian.WorldData;
 
@@ -12,24 +13,20 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
     IEventDispatcher eventDispatcher, ILevelGenerator worldGenerator, string name, IWorld world) :
     AbstractLevel(logger, packetBroadcaster, configuration, eventDispatcher, worldGenerator, name, world.Seed), IDimension
 {
-    // The dimensions besides the overworld that vanilla's worlds have.
-    private static readonly string[] vanillaDimensions = ["minecraft:the_nether", "minecraft:the_end"];
+    // Vanilla's dimensions, whose folders no other dimension may take even before they're loaded.
+    private static readonly string[] vanillaDimensions = ["minecraft:overworld", "minecraft:the_nether", "minecraft:the_end"];
 
     public IWorld ParentWorld { get; } = world;
 
-    private bool UsesVanillaLayout => this.ParentWorld is World { UsesVanillaLayout: true };
-
-    protected override string RegionFolderName => this.UsesVanillaLayout ? "region" : "regions";
-
     public override void Initialize(DimensionCodec codec)
     {
-        var worldFolder = this.UsesVanillaLayout
-            ? this.ParentWorld.FolderPath
+        var worldFolder = this.ParentWorld is World world
+            ? world.WorldFolderPath
             : Path.Combine(ServerConstants.WorldsPath, ParentWorld.Name);
 
-        var folder = this.Folder(this.Name);
+        var folder = WorldLayout.LevelFolder(this.Name);
         this.FolderPath = Path.Combine(worldFolder, folder);
-        CheckInWorld(worldFolder, folder, this.FolderPath);
+        CheckInWorld(worldFolder, this.FolderPath);
         this.CheckOwnFolder(worldFolder, folder);
 
         // A dimension is named after its level stem, which plugins' dimensions don't share with their type.
@@ -47,27 +44,29 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
             Hardcore = ParentWorld.LevelData.Hardcore
         };
 
-        this.LevelDataFilePath = Path.Combine(this.FolderPath, "level.dat");
+        // A dimension has no level.dat of its own: vanilla keeps what it has of it in the world's, and the rest is in
+        // Obsidian's state.
+        this.LevelDataFilePath = this.StatePath;
 
         Directory.CreateDirectory(this.FolderPath);
     }
 
     // Plugins name their dimensions, and a folder is made from the name, so one that would leave the world's
-    // dimensions folder is refused (the nether's and end's vanilla folders sit in the world's folder itself).
-    private void CheckInWorld(string worldFolder, string folder, string path)
+    // dimensions folder is refused.
+    private void CheckInWorld(string worldFolder, string path)
     {
-        var root = folder is "DIM-1" or "DIM1" ? worldFolder : Path.Combine(worldFolder, "dimensions");
+        var root = Path.Combine(worldFolder, "dimensions");
         var rootPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root)) + Path.DirectorySeparatorChar;
 
         if (!Path.GetFullPath(path).StartsWith(rootPath, StringComparison.Ordinal))
             throw new InvalidOperationException($"{this.Name}'s folder {path} would be outside {root}.");
     }
 
-    // A dimension needs a folder of its own: two identifiers can map to one folder, like ruby:world and
-    // minecraft:ruby/world in Obsidian's layout, or a name Windows reads differently, like ruby. for ruby. So every
-    // part of the folder must be portable, and it can't be another dimension's folder (one this world has, or vanilla's
-    // nether's or end's, which may not be loaded yet), or one of the folders a dimension keeps its data in. Like
-    // vanilla, a dimension may sit in another's folder otherwise: ruby:foo/bar's chunks don't mix with ruby:foo's.
+    // A dimension needs a folder of its own: two identifiers can map to one folder on Windows, like ruby. and ruby, or
+    // ones differing only by case. So every part of the folder must be portable, and it can't be another dimension's
+    // folder (the world's own level's, one of its dimensions', or vanilla's, which may not be loaded yet), or one of the
+    // folders a dimension keeps its data in. Like vanilla, a dimension may sit in another's folder otherwise:
+    // ruby:foo/bar's chunks don't mix with ruby:foo's.
     private void CheckOwnFolder(string worldFolder, string folder)
     {
         if (!folder.Split(Path.DirectorySeparatorChar).All(PluginTags.IsPortableName))
@@ -75,12 +74,13 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
 
         var others = vanillaDimensions
             .Where(name => name != this.Name)
-            .Select(name => Path.Combine(worldFolder, this.Folder(name)))
+            .Select(name => Path.Combine(worldFolder, WorldLayout.LevelFolder(name)))
             .Concat(this.ParentWorld is World world
                 ? world.dimensions.Values
                     .OfType<Dimension>()
                     .Where(dimension => dimension != this)
                     .Select(dimension => dimension.FolderPath)
+                    .Append(world.FolderPath)
                 : []);
 
         var path = WithSeparator(this.FolderPath);
@@ -110,50 +110,13 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
     private static readonly FrozenSet<string> dataFolders = FrozenSet.Create(
         StringComparer.OrdinalIgnoreCase,
         "region",
-        "regions",
         "entities",
         "poi",
         "data");
 
-    private string Folder(string dimension) =>
-        this.UsesVanillaLayout ? VanillaFolder(dimension) : ObsidianFolder(dimension);
-
     /// <summary>
-    /// A dimension's folder in a vanilla save (vanilla's <c>DimensionType.getStorageFolder</c>): <c>DIM-1</c> for the
-    /// nether, <c>DIM1</c> for the end, and <c>dimensions/&lt;namespace&gt;/&lt;path&gt;</c> for others.
-    /// </summary>
-    internal static string VanillaFolder(string dimension)
-    {
-        switch (dimension)
-        {
-            case "minecraft:the_nether":
-                return "DIM-1";
-            case "minecraft:the_end":
-                return "DIM1";
-        }
-
-        var id = dimension.Contains(':') ? dimension : $"minecraft:{dimension}";
-        var parts = id.Split(':', 2);
-
-        return Path.Combine("dimensions", parts[0], parts[1]);
-    }
-
-    /// <summary>
-    /// A dimension's folder in Obsidian's layout: <c>dimensions/&lt;path&gt;</c> for vanilla's, and
-    /// <c>dimensions/&lt;namespace&gt;/&lt;path&gt;</c> for plugins', as vanilla stores data packs' dimensions.
-    /// </summary>
-    private static string ObsidianFolder(string dimension)
-    {
-        var id = dimension.Contains(':') ? dimension : $"minecraft:{dimension}";
-        var parts = id.Split(':', 2);
-
-        return parts[0] == "minecraft"
-            ? Path.Combine("dimensions", parts[1])
-            : Path.Combine("dimensions", parts[0], parts[1]);
-    }
-
-    /// <summary>
-    /// Whether the dimension was saved before: it has level data or chunks in its folder. Known once it's initialized.
+    /// Whether the dimension was saved before: it has Obsidian's state or chunks in its folder. Known once it's
+    /// initialized.
     /// </summary>
     /// <remarks>
     /// Region files alone don't count: generating a new dimension creates them before it saves any chunk, so a
@@ -165,23 +128,18 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
         {
             var regions = Path.Combine(this.FolderPath, this.RegionFolderName);
 
-            return File.Exists(this.LevelDataFilePath)
+            return File.Exists(this.StatePath)
                 || (Directory.Exists(regions) && Directory.EnumerateFiles(regions, "*.mca").Any(RegionFile.HasChunks));
         }
     }
 
     public override async Task<bool> LoadAsync(DimensionCodec codec)
     {
-        if (!File.Exists(LevelDataFilePath)) return false;
-        await using var stream = File.OpenRead(LevelDataFilePath);
-        var reader = new NbtReader(stream, NbtCompression.GZip);
-        if (reader.ReadNextTag() is not NbtCompound data) return false;
-        ReadGameRules(data);
-        ReadEndFightNbt(data);
-        ReadRaidsNbt(data);
-        if (data.TryGetTagValue<int>("SpawnX", out var x) && data.TryGetTagValue<int>("SpawnY", out var y) && data.TryGetTagValue<int>("SpawnZ", out var z))
-            LevelData.SpawnPosition = new VectorF(x + 0.5f, y, z + 0.5f);
-        if (data.TryGetTagValue<long>("Time", out var time)) LevelData.Time = time;
+        if (!this.IsSaved)
+            return false;
+
+        this.ReadLevelState();
+
         var (chunkX, chunkZ) = LevelData.SpawnPosition.ToChunkCoord();
         var index = 0;
         for (var cx = chunkX - Configuration.SpawnChunkRadius; cx < chunkX + Configuration.SpawnChunkRadius; cx++)
@@ -194,20 +152,32 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
         return true;
     }
 
-    public override async Task SaveAsync()
+    // Vanilla keeps no spawn or time of a dimension's own, so they're in Obsidian's state.
+    protected override void ReadOwnState(NbtCompound state)
     {
-        await FlushRegionsAsync();
-        await using var stream = File.Create(LevelDataFilePath);
-        await using var writer = new NbtWriterStream(stream, NbtCompression.GZip, "");
+        if (state.TryGetTagValue<int>("SpawnX", out var x) && state.TryGetTagValue<int>("SpawnY", out var y) && state.TryGetTagValue<int>("SpawnZ", out var z))
+            LevelData.SpawnPosition = new VectorF(x + 0.5f, y, z + 0.5f);
+        if (state.TryGetTagValue<long>("Time", out var time))
+            LevelData.Time = time;
+    }
+
+    protected override void WriteOwnState(INbtWriter writer)
+    {
         var spawn = (Vector)LevelData.SpawnPosition.Floor();
         writer.WriteInt("SpawnX", spawn.X);
         writer.WriteInt("SpawnY", spawn.Y);
         writer.WriteInt("SpawnZ", spawn.Z);
         writer.WriteLong("Time", LevelData.Time);
-        WriteGameRules(writer);
-        WriteEndFightNbt(writer);
-        WriteRaidsNbt(writer);
-        writer.EndCompound();
-        await writer.TryFinishAsync();
+    }
+
+    public override async Task SaveAsync()
+    {
+        await FlushRegionsAsync();
+
+        // Under the world's save lock, as the world's saves write the dimension's state too.
+        if (this.ParentWorld is World world)
+            await world.SaveExclusiveAsync(this.SaveLevelState);
+        else
+            this.SaveLevelState();
     }
 }

@@ -91,8 +91,7 @@ public class VanillaLevelDataTests
         var data = VanillaLevelData.Create(new NewWorldConfiguration { WorldType = "flat" }, "Flat", 1, "superflat");
         Assert.Equal("superflat", VanillaLevelData.GetGeneratorId(data));
 
-        var worldGen = (NbtCompound)data["WorldGenSettings"];
-        var overworld = (NbtCompound)((NbtCompound)worldGen["dimensions"])["minecraft:overworld"];
+        var overworld = (NbtCompound)((NbtCompound)data.WorldGenSettings["dimensions"])["minecraft:overworld"];
         var settings = (NbtCompound)((NbtCompound)overworld["generator"])["settings"];
         var dirt = (NbtCompound)((NbtList)settings["layers"])[1];
 
@@ -131,7 +130,7 @@ public class VanillaLevelDataTests
         };
 
         var data = VanillaLevelData.Create(new NewWorldConfiguration(), "Pack", 1, "minecraft:mojang_generator");
-        var dimensions = (NbtCompound)((NbtCompound)data["WorldGenSettings"])["dimensions"];
+        var dimensions = (NbtCompound)data.WorldGenSettings["dimensions"];
         var generator = (NbtCompound)((NbtCompound)dimensions["minecraft:overworld"])["generator"];
 
         generator.Remove("biome_source");
