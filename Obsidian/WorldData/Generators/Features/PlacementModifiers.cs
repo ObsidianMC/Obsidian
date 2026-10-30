@@ -56,7 +56,7 @@ internal sealed partial class FeatureRegistry
             }
             case "minecraft:random_chance":
             {
-                var probability = json.GetProperty("probability").GetSingle();
+                var probability = json.GetProperty("chance").GetSingle();
                 return Filter((_, random, _) => random.NextFloat() < probability);
             }
             case "minecraft:height_range":

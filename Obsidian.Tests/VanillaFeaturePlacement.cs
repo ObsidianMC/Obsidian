@@ -91,6 +91,20 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
 
         var expected = entry.GetProperty("changes").EnumerateArray().Select(ExpectedChange).ToList();
         var actual = Changes(region, chunkX, chunkZ, layers, entry);
+        if (entry.TryGetProperty("expectChanges", out var expectChanges))
+        {
+            if (expectChanges.GetBoolean())
+            {
+                Assert.NotEmpty(expected);
+                Assert.NotEmpty(actual);
+            }
+            else
+            {
+                Assert.Empty(expected);
+                Assert.Empty(actual);
+            }
+        }
+
         Assert.Equal(expected, actual);
         Assert.Equal(entry.GetProperty("placed").GetBoolean(), placed);
         Assert.Equal(entry.GetProperty("nextRandom").GetInt32(), nextRandom);
