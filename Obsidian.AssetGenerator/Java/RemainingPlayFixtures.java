@@ -203,7 +203,7 @@ class RemainingPlayFixtures extends ScreenFixtures {
         var rawIron = net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.world.item.Items.RAW_IRON);
         var sets = new LinkedHashMap<ResourceKey<net.minecraft.world.item.crafting.RecipePropertySet>, net.minecraft.world.item.crafting.RecipePropertySet>();
         for (var name : List.of("smithing_base", "smithing_template", "smithing_addition", "furnace_input",
-                "blast_furnace_input", "smoker_input", "campfire_input")) {
+                "blast_furnace_input", "smoker_input", "campfire_input", "brewing_input", "brewing_reagent")) {
             var key = ResourceKey.create(net.minecraft.world.item.crafting.RecipePropertySet.TYPE_KEY, Identifier.withDefaultNamespace(name));
             sets.put(key, net.minecraft.world.item.crafting.RecipePropertySet.create(
                 name.equals("furnace_input") || name.equals("blast_furnace_input") ? List.of(rawIron) : List.of()));

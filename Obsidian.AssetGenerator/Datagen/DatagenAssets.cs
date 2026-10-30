@@ -49,6 +49,14 @@ internal static class DatagenAssets
         var tillTables = Combine(Path.Combine(data, "loot_table", "till"), path => ToId("till/" + path));
         WriteJson(Path.Combine(outputDirectory, "block_transformer_loot.json"), tillTables);
 
+        // The context number providers and predicates fuel, brewing fuel and compostable components name (see
+        // Obsidian's ComponentNumbers).
+        WriteJson(Path.Combine(outputDirectory, "context_int_providers.json"),
+            Combine(Path.Combine(data, "context_int_provider"), ToId));
+        WriteJson(Path.Combine(outputDirectory, "context_float_providers.json"),
+            Combine(Path.Combine(data, "context_float_provider"), ToId));
+        WriteJson(Path.Combine(outputDirectory, "predicates.json"), Combine(Path.Combine(data, "predicate"), ToId));
+
         WriteTags(Path.Combine(data, "tags"), outputDirectory);
         CodecAssets.Write(data, outputDirectory);
     }

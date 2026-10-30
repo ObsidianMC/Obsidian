@@ -470,7 +470,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
 
         var container = this.container;
 
-        BrewingRegistry.Add(container, new PotionMix(from, ingredient, to), () => container.IsClosing);
+        PluginPotionMixes.Add(container, new PotionMix(from, ingredient, to), () => container.IsClosing);
 
         return this;
     }
@@ -483,7 +483,7 @@ public sealed partial class PluginRegistry(PluginManager pluginManager, EventDis
 
         var container = this.container;
 
-        BrewingRegistry.Add(container, new ContainerMix(from, ingredient, to), () => container.IsClosing);
+        PluginPotionMixes.Add(container, new ContainerMix(from, ingredient, to), () => container.IsClosing);
 
         return this;
     }

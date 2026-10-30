@@ -28,22 +28,31 @@ public class ComposterBlocks
 
         var position = new Vector(8, 65, 8);
         var level = context.World;
-        await context.World.SetBlockAsync(position, composter.WithProperty("level", "2"), true);
+        await level.SetBlockAsync(position, composter.WithProperty("level", "2"), true);
 
+        // Part full, it takes items from above and gives nothing below.
         var top = level.GetItemAccess(position, BlockFace.Up);
+
         Assert.NotNull(top);
         Assert.Equal(1, top.SlotCount);
         Assert.Null(level.GetItemAccess(position, BlockFace.Down)?.GetItem(0));
 
+        // A cake's compostable always adds a layer, and the composter takes one of the stack.
         var cake = new ItemStack(ItemsRegistry.Get(ItemIds.Cake), 3);
-        Assert.Equal(2, top.Insert(cake)?.Count);
-        Assert.Equal("3", context.World.BlockUpdates.GetBlock(position).GetProperty("level"));
 
-        await context.World.SetBlockAsync(position, composter.WithProperty("level", Composters.Ready.ToString()), true);
+        Assert.Equal(2, top.Insert(cake)?.Count);
+        Assert.Equal("3", LevelAt(level, position));
+
+        // Ready, it gives bone meal below and empties.
+        await level.SetBlockAsync(position, composter.WithProperty("level", Composters.Ready.ToString()), true);
         var bottom = level.GetItemAccess(position, BlockFace.Down);
+
         Assert.NotNull(bottom);
         Assert.Equal(ItemIds.BoneMeal, bottom.GetItem(0)?.Holder.Id ?? -1);
         Assert.Equal(1, bottom.Extract(0, 1)?.Count);
-        Assert.Equal("0", context.World.BlockUpdates.GetBlock(position).GetProperty("level"));
+        Assert.Equal("0", LevelAt(level, position));
     }
+
+    private static string? LevelAt(World level, Vector position) =>
+        level.BlockUpdates.GetBlock(position).GetProperty("level");
 }
