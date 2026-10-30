@@ -1,24 +1,25 @@
 # Vanilla worldgen captures
 
-`VanillaWorldGeneration` and `VanillaStructureGeneration` replay references recorded from vanilla. The references live
-in `Obsidian.Tests/Assets/vanilla_worldgen.json`. They cover noise router values, biomes, chunks after the surface,
-carver and decoration steps, full chunks, the spawn, light, structure piece lists, structure blocks and a treasure map.
-Each entry holds a case's inputs (seed, chunk, structure...) and the values vanilla produced for them. Each entry is one
-test case.
+The worldgen parity tests replay references recorded from vanilla. Each entry holds a case's inputs (seed, position,
+noise...) and the values vanilla produced for them, and each entry is one test case. There are two fixtures while
+Phase 5 of `docs/porting-26.3-plan.md` builds the 26.3 generator beside the legacy one:
+
+- `Obsidian.Tests/Assets/vanilla_worldgen_26.3.json` holds 26.3 references, which `VanillaDensityFunctions` replays:
+  noise samples (`noises`) and the value of every noise router and aquifer function of each dimension's noise
+  settings at block positions (`router`). 26.3 evaluates noise and density in single precision, so the values are
+  floats and must match bit for bit. Each step of Phase 5 adds its sections here.
+- `Obsidian.Tests/Assets/vanilla_worldgen.json` holds the 1.21.11 references of the legacy generator, which
+  `VanillaWorldGeneration` and `VanillaStructureGeneration` replay: noise router values, biomes, chunks after the
+  surface, carver and decoration steps, full chunks, the spawn, light, structure piece lists, structure blocks and a
+  treasure map. They can't be re-recorded on 26.3; Phase 5 replaces them section by section with 26.3 captures.
 
 ## Re-recording
-
-**Unavailable on 26.3:** the build target and direct `capture-worldgen` command fail immediately, before downloading
-or changing fixtures. The worldgen capture probe hasn't been adapted to 26.3 yet; see Phase 5 of
-`docs/porting-26.3-plan.md`. Its old `SURFACE`/`CARVERS` statuses and density-function APIs need adapting to the new
-terrain pipeline. The instructions below describe the capture workflow to restore in Phase 5; the existing fixtures
-remain 1.21.11 references.
 
 ```sh
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen
 ```
 
-This rewrites every captured value in `vanilla_worldgen.json` in place, using the server of the Minecraft version
+This rewrites every captured value in `vanilla_worldgen_26.3.json` in place, using the server of the Minecraft version
 `Obsidian.csproj` targets (`MinecraftVersion`). Like the asset generator, it needs Java 25, and it needs internet
 access the first time a version is downloaded. A run takes about a minute. It prints one line per case, either
 `unchanged` or `CHANGED` with the old and new values, so `git diff` of the fixture shows everything that moved.
@@ -43,27 +44,15 @@ For each seed in the fixture, with structures off and then on, `WorldgenCaptures
    (`server.properties` in a scratch folder under the work directory). It saves the world and exits. Picking the spawn
    generates chunks around it, so
 2. it deletes the world's chunks (`region`, `entities` and `poi`), then
-3. starts the server again on the saved world and runs that world's cases.
+3. starts the server again on the saved world and runs that world's cases, each as a task on the server thread.
 
-Vanilla's own chunk map generates every chunk, and nothing is reimplemented. Most cases run as a single task on the
-server thread, so no tick or chunk unload happens in the middle of one:
+Nothing is reimplemented:
 
-- **Router values, biomes:** `RandomState.create` and the overworld's biome source, with the case's seed.
-- **Surface, carved and decorated chunks:** the chunk requested at `SURFACE`, `CARVERS` or `FEATURES`. For a decorated
-  chunk, its neighbours are requested at `CARVERS` first, so only the center is decorated. A chunk that was already
-  generated further fails the capture instead of producing a wrong reference.
-- **Lit chunks:** the 7x7 chunks carved, the 5x5 decorated and the 3x3 lit (`LIGHT`), each in z-then-x order, then the
-  center's effective sky and block light.
-- **Full chunks and structure blocks:** the chunks are force-loaded (like `/forceload`) with ticks frozen, and read once
-  the server ticks them. Vanilla post-processes a chunk, which applies shape updates such as fence connections, only
-  when the chunk starts ticking. So a chunk that is merely `FULL` doesn't match a server world yet.
-- **Structure pieces:** the start in the chunk's `STRUCTURE_STARTS`. It is described in the test's format, including
-  Obsidian's class name for each structure piece type (`PIECE_CLASSES`).
-- **Spawn:** the world's respawn data.
-- **Treasure map:** `findNearestMapStructure`, then `MapItem.create` and `renderBiomePreviewMap`, as the shipwreck map
-  loot's `exploration_map` function does.
+- **Noises:** `RandomState.create(noises, seed, overworld settings).getOrCreateNoise(noise).get(x, y, z)`.
+- **Router values:** `RandomState.create(noises, seed, settings)` for the case's noise settings, then
+  `sampleBlockValueUncached(function, x, y, z)` for each function of its `noise_router` and `aquifers`.
 
-The hash formats are defined by the tests. The harness reproduces them byte for byte, so the two must change together.
-
-The 1.21.11 references were first recorded with an external harness that isn't in this repo. This harness reproduces
-all of them exactly.
+The 1.21.11 probe also captured chunks at each status, lit and full chunks, structure pieces and blocks, the spawn and a
+treasure map (in git history before Phase 5). The terrain, feature and structure steps of Phase 5 adapt those captures
+to 26.3's chunk pipeline as they need them; the hash formats are defined by the tests, and the harness reproduces them
+byte for byte, so the two must change together.

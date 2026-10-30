@@ -3,29 +3,24 @@ using System.Text.Json;
 namespace Obsidian.AssetGenerator;
 
 /// <summary>
-/// Re-records the vanilla worldgen and structure references the parity tests replay
-/// (<c>Obsidian.Tests/Assets/vanilla_worldgen.json</c>), by running <c>Captures/WorldgenCaptures.java</c> against
+/// Re-records the 26.3 vanilla worldgen references the parity tests replay
+/// (<c>Obsidian.Tests/Assets/vanilla_worldgen_26.3.json</c>), by running <c>Captures/WorldgenCaptures.java</c> against
 /// the vanilla server. See <c>docs/vanilla-captures.md</c>.
 /// </summary>
 /// <remarks>
-/// The capture runs a headless vanilla server per world (seed, with and without structures), which generates every
-/// captured chunk with vanilla's own chunk map. It is slow and needs no rebuild of the assets, so it only runs on request
+/// The capture runs a headless vanilla server per world (seed, with and without structures), which evaluates every
+/// case with vanilla's own code. It is slow and needs no rebuild of the assets, so it only runs on request
 /// (<c>dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen</c>), not on every build.
 /// </remarks>
 internal static class WorldgenCaptures
 {
-    internal const string UnavailableMessage = "The worldgen capture probe hasn't been adapted to 26.3 yet; see Phase 5 of docs/porting-26.3-plan.md.";
-
     // A world's server can hang rather than exit when it fails (the probe waits for it to become ready and for chunks to
     // load), so each run is killed after this long. A whole capture takes about a minute.
     private static readonly TimeSpan WorldTimeout = TimeSpan.FromMinutes(15);
 
     private static string Source(string name) => Path.Combine(AppContext.BaseDirectory, name);
 
-    public static Task RunAsync(VanillaServer server, string fixturePath) => throw new NotSupportedException(UnavailableMessage);
-
-    // Kept for Phase 5, when the probe's chunk statuses and density-function APIs are adapted to 26.3.
-    private static async Task CaptureAsync(VanillaServer server, string fixturePath)
+    public static async Task RunAsync(VanillaServer server, string fixturePath)
     {
         // Each world rewrites its own cases, so they're captured into a copy that replaces the fixture only once every
         // world succeeded. A failed capture never leaves a fixture mixing versions.
