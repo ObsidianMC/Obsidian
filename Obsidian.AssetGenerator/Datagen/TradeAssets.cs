@@ -10,7 +10,7 @@ namespace Obsidian.AssetGenerator.Datagen;
 /// <c>villager_trade</c> isn't a registry clients know, so the server reads its tags only here, never syncing them.
 /// A trade set's <c>trades</c> becomes the list of trade ids in vanilla's tag order, which the offer draws index into.
 /// Enchantment and potion <c>options</c> and <c>double_trade_price_enchantments</c> become lists of ids too, which
-/// the runtime modifier reader expects (like loot's).
+/// keeps the generated trade snapshot independent of runtime data pack tag changes.
 /// </remarks>
 internal static class TradeAssets
 {

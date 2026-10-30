@@ -42,7 +42,9 @@ internal sealed class Assets
         BiomeEntry[] biomes = [.. codecs["biomes"].Select(biome => new BiomeEntry(biome.Name, biome.RegistryId))];
         EnchantmentEntry[] enchantments = GetEnchantments(files.GetJsonFromArray("enchantments"));
         EntityTypeEntry[] entityTypes = GetEntityTypes(files.GetJsonFromArray("entities"));
-        Tag[] tags = GetTags(files.GetJsonFromArray("tags"), blocks, items, fluids, biomes, enchantments, entityTypes);
+        PotionEntry[] potions = GetPotions(files.GetJsonFromArray("enums"));
+        Tag[] tags = GetTags(files.GetJsonFromArray("tags"), blocks, items, fluids, biomes,
+            enchantments, entityTypes, potions);
 
         IDictionary<string, List<Sound>> sounds = GetSounds(files.GetJsonFromArray("sounds"));
 
@@ -162,6 +164,17 @@ internal sealed class Assets
         }
 
         return fluids.ToArray();
+    }
+
+    private static PotionEntry[] GetPotions(string? json)
+    {
+        if (json is null)
+            return [];
+
+        using var document = JsonDocument.Parse(json);
+        return document.RootElement.GetProperty("minecraft:potion").EnumerateObject()
+            .Select(entry => new PotionEntry(entry.Name, entry.Value.GetProperty("protocol_id").GetInt32()))
+            .ToArray();
     }
 
     public static EnchantmentEntry[] GetEnchantments(string? json)
@@ -285,7 +298,7 @@ internal sealed class Assets
     }
 
     public static Tag[] GetTags(string? json, Block[] blocks, Item[] items, Fluid[] fluids, BiomeEntry[] biomes,
-        EnchantmentEntry[] enchantments, EntityTypeEntry[] entityTypes)
+        EnchantmentEntry[] enchantments, EntityTypeEntry[] entityTypes, PotionEntry[] potions)
     {
         if (json is null)
             return [];
@@ -298,6 +311,7 @@ internal sealed class Assets
         taggables.AddRange(biomes);
         taggables.AddRange(enchantments);
         taggables.AddRange(entityTypes);
+        taggables.AddRange(potions);
 
         using var document = JsonDocument.Parse(json);
 

@@ -94,6 +94,8 @@ public final class TradeFixtures {
             new GsonBuilder().setPrettyPrinting().create().toJson(captureTransition()) + "\n");
         Files.writeString(Path.of(arguments[0]).resolveSibling("merchant-predicates-26.3.json"),
             new GsonBuilder().setPrettyPrinting().create().toJson(capturePredicates()) + "\n");
+        Files.writeString(Path.of(arguments[0]).resolveSibling("trade-holder-sets-26.3.json"),
+            new GsonBuilder().setPrettyPrinting().create().toJson(captureHolderSets()) + "\n");
     }
 
     // The built-in registries and the vanilla pack's data pack registries, with their tags, as a server loads them.
@@ -255,6 +257,51 @@ public final class TradeFixtures {
             HolderSet.class, int.class);
         draw.setAccessible(true);
         draw.invoke(null, context, offers, tradeSet.trades(), amount);
+    }
+
+    private static JsonArray captureHolderSets() throws Exception {
+        var rows = new JsonArray();
+        for (var options : List.of("\"minecraft:water\"", "\"#minecraft:douses_fire\"",
+            "[\"minecraft:water\",\"minecraft:awkward\"]", "[]", "absent")) {
+            var modifier = new JsonObject();
+            modifier.addProperty("type", "minecraft:set_random_potion");
+            if (!options.equals("absent")) {
+                modifier.add("options", JsonParser.parseString(options));
+            }
+            rows.add(captureModifier(modifier, JsonParser.parseString("""
+                {"id":"minecraft:potion","components":{"minecraft:potion_contents":{
+                  "potion":"minecraft:awkward","custom_color":123456,"custom_name":"kept"}}}
+                """)));
+        }
+        for (var function : List.of("enchant_randomly", "enchant_with_levels")) {
+            for (var options : List.of("\"minecraft:sharpness\"", "\"#minecraft:tradeable\"",
+                "[\"minecraft:sharpness\",\"minecraft:smite\"]")) {
+                var modifier = new JsonObject();
+                modifier.addProperty("type", "minecraft:" + function);
+                modifier.add("options", JsonParser.parseString(options));
+                if (function.equals("enchant_with_levels")) {
+                    modifier.addProperty("levels", 15);
+                }
+                rows.add(captureModifier(modifier, JsonParser.parseString("{\"id\":\"minecraft:book\"}")));
+            }
+        }
+        return rows;
+    }
+
+    private static JsonObject captureModifier(JsonObject modifier, JsonElement input) throws Exception {
+        var function = net.minecraft.world.level.storage.loot.functions.LootItemFunctions.DIRECT_CODEC
+            .parse(ops, modifier).getOrThrow();
+        var stack = net.minecraft.world.item.ItemStack.CODEC.parse(ops, input).getOrThrow();
+        var random = net.minecraft.util.RandomSource.create(12345);
+        var merchant = (Villager) allocate(Villager.class);
+        var output = function.apply(stack, merchantContext(merchant, random));
+        var row = new JsonObject();
+        row.add("modifier", modifier);
+        row.add("input", input);
+        row.add("output", net.minecraft.world.item.ItemStack.CODEC.encodeStart(ops, output).getOrThrow());
+        row.addProperty("seed", 12345);
+        row.addProperty("nextInt", random.nextInt());
+        return row;
     }
 
     private static JsonArray capturePredicates() throws Exception {

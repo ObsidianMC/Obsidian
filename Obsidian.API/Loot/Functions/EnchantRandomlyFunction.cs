@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
@@ -15,6 +16,8 @@ public sealed class EnchantRandomlyFunction : LootFunction
     /// </summary>
     public ImmutableArray<EnchantmentDefinition>? Options { get; init; }
 
+    internal JsonElement? OptionsSet { get; init; }
+
     /// <summary>
     /// Only picks enchantments that support the item. Books accept any enchantment either way.
     /// </summary>
@@ -30,7 +33,8 @@ public sealed class EnchantRandomlyFunction : LootFunction
     {
         var isBook = LootItems.Is(stack, ItemsRegistry.Book);
         var onlyCompatible = !isBook && this.OnlyCompatible;
-        IReadOnlyList<EnchantmentDefinition> options = this.Options.HasValue ? this.Options.Value : EnchantmentsRegistry.All;
+        var resolved = LootTableJson.ReadEnchantmentOptions(this.OptionsSet) ?? this.Options;
+        IReadOnlyList<EnchantmentDefinition> options = resolved.HasValue ? resolved.Value : EnchantmentsRegistry.All;
         var candidates = options
             .Where(enchantment => !onlyCompatible || enchantment.CanEnchant(stack))
             .ToList();

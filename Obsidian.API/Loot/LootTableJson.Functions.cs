@@ -34,18 +34,19 @@ public static partial class LootTableJson
         return new DataFunction((stack, context) => LootFunction.ApplyAll(functions, stack, context));
     }
 
-    // The enchantments an enchant_with_levels function picks from. The generator expands tags before the runtime
-    // reads a gameplay table, so options are ids; every enchantment when absent.
-    private static ImmutableArray<EnchantmentDefinition>? ReadEnchantmentOptions(JsonElement json)
+    private static JsonElement? ReadOptionsSet(JsonElement json) =>
+        json.TryGetProperty("options", out var options) ? options.Clone() : null;
+
+    // Holder sets keep their tags until evaluation so runtime-loaded tables see the current data pack tags.
+    internal static ImmutableArray<EnchantmentDefinition>? ReadEnchantmentOptions(JsonElement? options)
     {
-        if (!json.TryGetProperty("options", out var options))
+        if (options is not JsonElement set)
             return null;
 
-        var ids = options.ValueKind == JsonValueKind.Array
-            ? options.EnumerateArray().Select(id => id.GetString()!)
-            : [options.GetString()!];
-        return ids.Select(id => EnchantmentsRegistry.All.FirstOrDefault(definition => definition.Identifier == Qualify(id))
-            ?? throw new InvalidDataException($"Unknown enchantment option {id}.")).ToImmutableArray();
+        return RegistrySetIds(set, "enchantment")
+            .Select(id => EnchantmentsRegistry.All.FirstOrDefault(definition => definition.Identifier == id)
+                ?? throw new InvalidDataException($"Unknown enchantment option {id}."))
+            .ToImmutableArray();
     }
 
     private static LootFunction ReadFunction(JsonElement json)
@@ -103,14 +104,14 @@ public static partial class LootTableJson
                 {
                     Conditions = conditions,
                     Levels = ReadIntNumber(json.GetProperty("levels")),
-                    Options = ReadEnchantmentOptions(json),
+                    OptionsSet = ReadOptionsSet(json),
                     IncludeAdditionalCostComponent = ReadFlag(json, "include_additional_cost_component", false)
                 };
             case "minecraft:enchant_randomly":
                 return new EnchantRandomlyFunction
                 {
                     Conditions = conditions,
-                    Options = ReadEnchantmentOptions(json),
+                    OptionsSet = ReadOptionsSet(json),
                     OnlyCompatible = ReadFlag(json, "only_compatible", true),
                     IncludeAdditionalCostComponent = ReadFlag(json, "include_additional_cost_component", false)
                 };
@@ -245,12 +246,12 @@ public static partial class LootTableJson
     // stack's potion, keeping its other potion contents.
     private static LootFunction RandomPotion(JsonElement json, ImmutableArray<Conditions.ILootCondition> conditions)
     {
-        var options = json.TryGetProperty("options", out var ids)
-            ? ids.EnumerateArray().Select(id => ParsePotion(id.GetString()!)).ToImmutableArray()
-            : [.. Enum.GetValues<Potion>()];
-
+        var set = ReadOptionsSet(json);
         return new DataFunction((stack, context) =>
         {
+            var options = set is JsonElement ids
+                ? RegistrySetIds(ids, "potion").Select(ParsePotion).ToImmutableArray()
+                : [.. Enum.GetValues<Potion>()];
             if (options.IsEmpty)
                 return stack;
 

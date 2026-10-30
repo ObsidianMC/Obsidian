@@ -179,8 +179,8 @@ internal static class VillagerTrades
 
         public required ContextFloatProvider ReputationDiscount { get; init; }
 
-        /// <summary>Enchantment ids that double the additional cost of an enchanted book that stores one.</summary>
-        public FrozenSet<string>? DoubleTradePriceEnchantments { get; init; }
+        /// <summary>Enchantment holder set that doubles the additional cost of a book storing a match.</summary>
+        public JsonElement? DoubleTradePriceEnchantments { get; init; }
 
         public static VillagerTrade Read(JsonElement json)
         {
@@ -208,7 +208,7 @@ internal static class VillagerTrades
                     ? ContextNumberProviders.ReadFloat(discount)
                     : ContextNumberProviders.ParseFloat("0"),
                 DoubleTradePriceEnchantments = json.TryGetProperty("double_trade_price_enchantments", out var doubled)
-                    ? doubled.EnumerateArray().Select(id => id.GetString()!).ToFrozenSet()
+                    ? doubled.Clone()
                     : null
             };
         }
@@ -272,13 +272,16 @@ internal static class VillagerTrades
 
         private bool StoresDoublePriceEnchantment(ItemStack stack)
         {
-            if (this.DoubleTradePriceEnchantments is null)
+            if (this.DoubleTradePriceEnchantments is not JsonElement options)
                 return false;
 
             var stored = stack.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(
                 DataComponentType.StoredEnchantments)?.Value ?? [];
             return stored.Any(enchantment =>
-                this.DoubleTradePriceEnchantments.Contains(EnchantmentsRegistry.All[enchantment.Id].Identifier));
+            {
+                var definition = EnchantmentsRegistry.All[enchantment.Id];
+                return LootTableJson.MatchesRegistrySet(options, "enchantment", definition.Identifier, definition.Id);
+            });
         }
     }
 

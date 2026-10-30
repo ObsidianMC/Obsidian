@@ -450,8 +450,13 @@ public static partial class LootTableJson
         if (!TagsRegistry.TryGet(registry, Qualify(name[1..]), out var tag))
             throw new InvalidDataException($"Unknown {registry} tag {name}.");
 
-        return tag.Entries.Select(id => registry == "item" ? ItemsRegistry.Get(id).UnlocalizedName
-            : throw new InvalidDataException($"Unsupported registry set {registry}."));
+        return tag.Entries.Select(id => registry switch
+        {
+            "item" => ItemsRegistry.Get(id).UnlocalizedName,
+            "potion" => "minecraft:" + ((Potion)id).ToString().ToSnakeCase(),
+            "enchantment" => EnchantmentsRegistry.All[id].Identifier,
+            _ => throw new InvalidDataException($"Unsupported registry set {registry}.")
+        });
     }
 
     /// <summary>Tests an identifier, a list of identifiers, or a tag using the live registry tags.</summary>
