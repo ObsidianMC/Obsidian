@@ -60,7 +60,7 @@ internal sealed partial class FeatureRegistry
 
                 if (aboveFluid)
                 {
-                    MarkAboveDisk(level, position);
+                    FeatureHelpers.MarkAboveForPostProcessing(level, position);
                 }
             }
 
@@ -80,7 +80,7 @@ internal sealed partial class FeatureRegistry
                     if (level.GetBlock(position).IsSolid() && canLine(level, position))
                     {
                         level.SetBlock(position, barrier);
-                        MarkAboveDisk(level, position);
+                        FeatureHelpers.MarkAboveForPostProcessing(level, position);
                     }
                 }
             }
