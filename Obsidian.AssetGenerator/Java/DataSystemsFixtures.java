@@ -17,6 +17,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.item.equipment.trim.TrimMaterial;
 import net.minecraft.world.attribute.EnvironmentAttribute;
 import net.minecraft.world.attribute.EnvironmentAttributes;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Captures transformer providers, mushroom survival, clocks/markers and item-supplied pottery/trim data.
@@ -131,7 +132,8 @@ class DataSystemsFixtures {
                     above = Blocks.AIR.defaultBlockState();
                     boolean includeFailure = block == Blocks.STONE
                         || block == Blocks.DIRT
-                        || block == Blocks.ROOTED_DIRT;
+                        || block == Blocks.ROOTED_DIRT
+                        || block instanceof CopperChestBlock;
                     if (!eligible(transformer, level) && !includeFailure) {
                         continue;
                     }
@@ -277,6 +279,24 @@ class DataSystemsFixtures {
         return samples;
     }
 
+    static JsonArray chestUses() {
+        var samples = new JsonArray();
+        for (var block : BuiltInRegistries.BLOCK) {
+            if (!(block instanceof CopperChestBlock)) {
+                continue;
+            }
+
+            var state = block.defaultBlockState();
+            var hit = new net.minecraft.world.phys.BlockHitResult(Vec3.ZERO, Direction.UP, BlockPos.ZERO, false);
+            var result = state.useWithoutItem(null, null, hit);
+            var sample = new JsonObject();
+            sample.add("input", state(state));
+            sample.addProperty("consumes", result.consumesAction());
+            samples.add(sample);
+        }
+        return samples;
+    }
+
     public static void main(String[] args) throws Exception {
         SharedConstants.tryDetectVersion();
         Bootstrap.bootStrap();
@@ -291,6 +311,7 @@ class DataSystemsFixtures {
         result.add("tracks", tracks());
         result.add("pottery", pottery());
         result.add("trims", trims());
+        result.add("chest_uses", chestUses());
 
         Files.writeString(Path.of(args[0]), new Gson().toJson(result));
     }

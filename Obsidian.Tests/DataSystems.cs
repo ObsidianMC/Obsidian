@@ -59,6 +59,8 @@ public sealed class DataSystems
 
     private sealed record PotteryCase(string Item, string Pattern, string Asset);
 
+    private sealed record ChestCase(JsonElement Input, bool Consumes);
+
     private static JsonElement LoadCapture()
     {
         using var stream = typeof(AbstractLevel).Assembly
@@ -266,6 +268,49 @@ public sealed class DataSystems
         var drops = world.GetNonPlayerEntitiesInRange((VectorD)position, 3).OfType<Entities.ItemEntity>();
         Assert.Contains(drops, entity =>
             entity.Item.Holder == ItemsRegistry.HangingRoots);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CopperChestUsePreservesMenuAndToolState(bool sneaking)
+    {
+        foreach (var sample in Cases<ChestCase>("chest_uses"))
+        {
+            await using var context = TestServerFactory.CreateServer($"copper-use-{Guid.NewGuid():N}");
+            var world = context.World;
+            var position = new Vector(8, 70, 8);
+            AddChunk(world);
+            var input = ItemUseOnBehaviors.ReadState(sample.Input);
+            world.GetLoadedChunk(0, 0)!.SetBlock(position, input);
+            var player = TestServerFactory.CreateConnectedPlayer(
+                context.Server, world, "ChestUser", new VectorD(8, 71, 9));
+            player.Sneaking = sneaking;
+            player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.IronAxe));
+            var transform = Cases<TransformerCase>("transformers").Single(row =>
+                row.Transformer == "minecraft:axe"
+                && row.Input.GetRawText() == sample.Input.GetRawText()
+                && row.Above == "minecraft:air"
+                && row.Face == "up");
+
+            await BlockUpdates.UseOn(position, BlockFace.Up).HandleAsync(context.Server, player);
+
+            Assert.True(sample.Consumes);
+            var expected = input;
+            var damage = 0;
+            if (sneaking && transform.Output.ValueKind != JsonValueKind.Undefined)
+            {
+                expected = ItemUseOnBehaviors.ReadState(transform.Output);
+                damage = transform.Damage;
+            }
+
+            Assert.Equal(expected.GetHashCode(), world.GetLoadedChunk(0, 0)!.GetBlock(position).GetHashCode());
+            Assert.Equal(damage, player.Inventory.GetItem(player.CurrentHeldItemSlot)!.Damage);
+            if (sneaking)
+                Assert.Null(player.OpenedContainer);
+            else
+                Assert.NotNull(player.OpenedContainer);
+        }
     }
 
     private static void AddChunk(World world)

@@ -27,6 +27,8 @@ public partial class UseItemOnPacket
         BlockIds.Barrel, BlockIds.BlastFurnace, BlockIds.Grindstone, BlockIds.BrewingStand, BlockIds.EnchantingTable,
         BlockIds.SmithingTable, BlockIds.Stonecutter, BlockIds.Loom, BlockIds.CartographyTable, BlockIds.Dispenser,
         BlockIds.Dropper, BlockIds.Beacon, BlockIds.Lectern, BlockIds.Crafter,
+        // Like ChestBlock.useWithoutItem, copper chests consume normal use before an axe can scrape them.
+        .. TagsRegistry.Block.CopperChests.Entries,
         .. TagsRegistry.Block.ShulkerBoxes.Entries
     ];
 
