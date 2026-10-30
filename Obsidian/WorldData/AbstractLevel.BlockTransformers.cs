@@ -19,7 +19,7 @@ public abstract partial class AbstractLevel
             position.Z + 0.5 + zOffset);
 
         var xMotion = direction.X == 0 ? random.NextDouble() * 0.2 - 0.1 : direction.X * 0.1;
-        var yMotion = direction.Y == 0 ? random.NextDouble() * 0.2 : direction.Y * 0.1 + 0.1;
+        var yMotion = direction.Y == 0 ? random.NextDouble() * 0.1 : direction.Y * 0.1 + 0.1;
         var zMotion = direction.Z == 0 ? random.NextDouble() * 0.2 - 0.1 : direction.Z * 0.1;
         var motion = new VectorD(xMotion, yMotion, zMotion);
 
