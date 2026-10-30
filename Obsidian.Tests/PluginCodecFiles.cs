@@ -249,6 +249,56 @@ public partial class PluginCodecFiles
         Assert.Equal(expected, expected.Select(_ => provider.Sample(random)));
     }
 
+    [Theory]
+    [InlineData("""{"type":"minecraft:trapezoid","min":1,"max":5,"plateau":1}""",
+        1, 5, new int[] { 3, 3, 3, 3, 3, 4, 2, 3 }, 56)]
+    [InlineData("""{"type":"minecraft:trapezoid","min":-3,"max":3,"plateau":0}""",
+        -3, 3, new int[] { 2, 2, -2, -1, 2, 2, 0, -1 }, 56)]
+    [InlineData("""{"type":"minecraft:trapezoid","min":1,"max":5,"plateau":4}""",
+        1, 5, new int[] { 1, 4, 4, 5, 1, 1, 1, 4 }, 19)]
+    [InlineData("""{"type":"minecraft:trapezoid","min":2,"max":2,"plateau":0}""",
+        2, 2, new int[] { 2, 2, 2, 2, 2, 2, 2, 2 }, 19)]
+    [InlineData("""{"type":"minecraft:trapezoid","min":1,"max":5,"plateau":-1}""",
+        1, 5, new int[] { 3, 3, 2, 5, 4, 5, 1, 5 }, 56)]
+    [InlineData("""{"type":"minecraft:very_biased_to_bottom","min_inclusive":1,"max_inclusive":5}""",
+        1, 5, new int[] { 1, 1, 1, 2, 1, 1, 4, 1 }, 43)]
+    public void RoundTripsAndSamples26_3IntProviders(
+        string json,
+        int min,
+        int max,
+        int[] expected,
+        int nextDraw)
+    {
+        using var document = JsonDocument.Parse(json);
+        var random = new LegacyRandomSource(42);
+
+        var provider = IntProviderCodec.Read(document.RootElement, "count");
+        var encoded = Format121Data.ToJson(IntProviderCodec.ToNbt(provider, "count"));
+        var samples = expected.Select(_ => provider.Sample(random)).ToArray();
+
+        // Captured from the 26.3 providers with RandomSource.create(42), including the following draw.
+        Assert.Equal(min, provider.MinValue);
+        Assert.Equal(max, provider.MaxValue);
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(json), encoded));
+        Assert.Equal(expected, samples);
+        Assert.Equal(nextDraw, random.NextInt(100));
+    }
+
+    [Theory]
+    [InlineData("""{"type":"minecraft:trapezoid","min":5,"max":1,"plateau":0}""")]
+    [InlineData("""{"type":"minecraft:trapezoid","min":1,"max":5,"plateau":5}""")]
+    [InlineData("""{"type":"minecraft:trapezoid","max":5,"plateau":1}""")]
+    [InlineData("""{"type":"minecraft:trapezoid","min":1,"plateau":1}""")]
+    [InlineData("""{"type":"minecraft:trapezoid","min":1,"max":5}""")]
+    [InlineData("""{"type":"minecraft:very_biased_to_bottom","min_inclusive":5,"max_inclusive":1}""")]
+    [InlineData("""{"type":"minecraft:very_biased_to_bottom","max_inclusive":5}""")]
+    public void RejectsInvalid26_3IntProviders(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+
+        Assert.Throws<InvalidDataException>(() => IntProviderCodec.Read(document.RootElement, "count"));
+    }
+
     [Fact(DisplayName = "The server applies a dimension type's gameplay attributes, and vanilla's nether's")]
     public void AppliesGameplayAttributes()
     {
