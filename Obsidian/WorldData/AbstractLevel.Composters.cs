@@ -1,4 +1,5 @@
 using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.WorldData;
@@ -42,7 +43,7 @@ public abstract partial class AbstractLevel
                 var stack = player.Inventory[handSlot];
                 if (level >= Composters.Full
                     || stack.IsNullOrAir()
-                    || Composters.ChanceOf(stack!.Holder.Id) is not float chance)
+                    || Composters.LayersOf(stack!) is not ComponentIntValue layers)
                 {
                     return false;
                 }
@@ -50,7 +51,7 @@ public abstract partial class AbstractLevel
                 if (player.GameMode != GameMode.Creative)
                     player.Inventory.RemoveItem(handSlot, 1);
 
-                this.Fill(position, chance);
+                this.Fill(position, layers);
                 held = player.Inventory[handSlot] is ItemStack current
                     ? Obsidian.Net.NetworkBuffer.SnapshotItemStack(current)
                     : null;
@@ -67,10 +68,10 @@ public abstract partial class AbstractLevel
     }
 
     /// <summary>
-    /// Puts one item in a composter below full, rolling its chance: the level rises if the roll passes. The item is
+    /// Puts one item in a composter below full: the level rises by the layers it adds, which may be none. The item is
     /// used up either way. Runs under the tick lock; returns whether the level rose.
     /// </summary>
-    internal bool Fill(Vector position, float chance)
+    internal bool Fill(Vector position, ComponentIntValue layers)
     {
         lock (this.Fluids.TickLock)
         {
@@ -79,7 +80,7 @@ public abstract partial class AbstractLevel
             if (!block.Is(BlockIds.Composter) || Composters.LevelOf(block) >= Composters.Full)
                 return false;
 
-            var next = Composters.Filled(block, chance, Random.Shared.NextSingle(), out var rose);
+            var next = Composters.Filled(block, layers, Random.Shared, out var rose);
             if (rose)
                 updates.SetBlock(position, next);
 
@@ -142,11 +143,14 @@ internal sealed class ComposterItemAccess(AbstractLevel level, Vector position, 
     public ItemStack? Insert(int slot, ItemStack stack, bool simulate = false)
     {
         var leftover = stack.Count > 1 ? new ItemStack(stack, stack.Count - 1) : null;
-        if (slot != 0 || stack.IsNullOrAir() || !this.Accepts || Composters.ChanceOf(stack.Holder.Id) is not float chance)
+        if (slot != 0
+            || stack.IsNullOrAir()
+            || !this.Accepts
+            || Composters.LayersOf(stack) is not ComponentIntValue layers)
             return stack;
 
         if (!simulate)
-            level.Fill(position, chance);
+            level.Fill(position, layers);
 
         return leftover;
     }
