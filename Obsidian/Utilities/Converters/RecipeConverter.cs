@@ -8,11 +8,6 @@ using System.Text.Json.Serialization;
 namespace Obsidian.Utilities.Converters;
 public sealed class RecipesConverter : JsonConverter<IRecipe[]>
 {
-    // Special crafting recipes that 26.1 added, which Obsidian doesn't evaluate yet (see docs/known-gaps.md, "Special
-    // crafting recipes"), so they're left out.
-    private static readonly HashSet<string> unsupportedTypes = ["minecraft:crafting_dye", "minecraft:crafting_imbue"];
-
-    //TODO PARSE SPECIAL RECIPES
     public override IRecipe[]? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         var recipes = new List<IRecipe>();
@@ -27,9 +22,6 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
             var typeId = value.GetProperty("type").GetString()!;
             var type = typeId.TrimResourceTag();
             var group = value.TryGetProperty("group", out var groupValue) ? groupValue.GetString()! : string.Empty;
-
-            if (unsupportedTypes.Contains(typeId))
-                continue;
 
             if (!Enum.TryParse<CraftingType>(type, true, out var craftingType))
                 throw new JsonException($"Unknown recipe type '{type}' in {recipeName}.");
@@ -63,8 +55,16 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
                 continue;
             }
 
-            // Special recipes are built in code. Since 26.1 most of them name a result too, which isn't always an item
-            // (map extending's is empty), so only the types below read one.
+            if (craftingType is CraftingType.CraftingDye
+                or CraftingType.CraftingImbue
+                or CraftingType.CraftingTransmute)
+            {
+                recipes.Add(ReadConfigurableSpecial(recipeName, craftingType, group, value, options));
+                continue;
+            }
+
+            // The older special recipes are built in code. Since 26.1 most of them name a result too, which isn't
+            // always an item (map extending's is empty), so only the types below read one.
             if (craftingType is not (CraftingType.CraftingShaped or CraftingType.CraftingShapeless or CraftingType.Blasting
                 or CraftingType.Smelting or CraftingType.Smoking or CraftingType.CampfireCooking
                 or CraftingType.Stonecutting or CraftingType.SmithingTransform))
@@ -146,6 +146,116 @@ public sealed class RecipesConverter : JsonConverter<IRecipe[]>
 
         return recipes.ToArray();
     }
+
+    // 26.1's configurable special crafting recipes, which name their ingredients and result like other recipes.
+    private static ICraftingRecipe ReadConfigurableSpecial(
+        string identifier,
+        CraftingType type,
+        string group,
+        JsonElement value,
+        JsonSerializerOptions options)
+    {
+        var category = CraftingCategory(value);
+
+        switch (type)
+        {
+            case CraftingType.CraftingDye:
+                return new DyeRecipe
+                {
+                    Identifier = identifier,
+                    Type = type,
+                    Group = group,
+                    Category = category,
+                    Target = value.GetProperty("target").Deserialize<Ingredient>(options)!,
+                    Dye = value.GetProperty("dye").Deserialize<Ingredient>(options)!,
+                    Result = ReadResultStack(value.GetProperty("result"))
+                };
+            case CraftingType.CraftingImbue:
+                return new ImbueRecipe
+                {
+                    Identifier = identifier,
+                    Type = type,
+                    Group = group,
+                    Category = category,
+                    Source = value.GetProperty("source").Deserialize<Ingredient>(options)!,
+                    Material = value.GetProperty("material").Deserialize<Ingredient>(options)!,
+                    Result = ReadResultStack(value.GetProperty("result"))
+                };
+            default:
+                return ReadTransmute(identifier, type, group, category, value, options);
+        }
+    }
+
+    private static TransmuteRecipe ReadTransmute(
+        string identifier,
+        CraftingType type,
+        string group,
+        CraftingBookCategory category,
+        JsonElement value,
+        JsonSerializerOptions options)
+    {
+        var (min, max) = ReadMaterialCount(value);
+        var (resultItem, resultCount) = ReadTransmuteResult(value.GetProperty("result"));
+        var addMaterialCount = value.TryGetProperty("add_material_count_to_result", out var add) && add.GetBoolean();
+
+        return new TransmuteRecipe
+        {
+            Identifier = identifier,
+            Type = type,
+            Group = group,
+            Category = category,
+            Input = value.GetProperty("input").Deserialize<Ingredient>(options)!,
+            Material = value.GetProperty("material").Deserialize<Ingredient>(options)!,
+            MinMaterialCount = min,
+            MaxMaterialCount = max,
+            ResultItem = resultItem,
+            ResultCount = resultCount,
+            AddMaterialCountToResult = addMaterialCount
+        };
+    }
+
+    // A transmute recipe's material count: exactly 1 by default, else exact (a number) or a range whose missing ends
+    // are 1 and 8.
+    private static (int Min, int Max) ReadMaterialCount(JsonElement recipe)
+    {
+        if (!recipe.TryGetProperty("material_count", out var count))
+            return (1, 1);
+
+        var bounds = count.ValueKind == JsonValueKind.Number
+            ? (Min: count.GetInt32(), Max: count.GetInt32())
+            : (Min: OptionalInt(count, "min", 1), Max: OptionalInt(count, "max", 8));
+
+        if (bounds.Min < 1 || bounds.Max > 8 || bounds.Min > bounds.Max)
+            throw new JsonException($"A material count must be within 1 to 8, not {bounds.Min} to {bounds.Max}.");
+
+        return bounds;
+    }
+
+    // A transmute recipe's result: an item's name, or an object whose item, when it's left out, is the input's.
+    private static (Item? Item, int Count) ReadTransmuteResult(JsonElement result)
+    {
+        if (result.ValueKind == JsonValueKind.String)
+            return (ItemsRegistry.Get(result.GetString()!), 1);
+
+        if (result.TryGetProperty("components", out _))
+            throw new JsonException("Transmute results can't set components yet.");
+
+        var item = result.TryGetProperty("id", out var id) ? ItemsRegistry.Get(id.GetString()!) : null;
+        return (item, OptionalInt(result, "count", 1));
+    }
+
+    // A result that's an item and a count. Vanilla's dye and imbue results set no components.
+    private static ItemStack ReadResultStack(JsonElement value)
+    {
+        if (value.TryGetProperty("components", out _))
+            throw new JsonException("Dye and imbue results can't set components yet.");
+
+        var item = ItemsRegistry.Get(value.GetProperty("id").GetString()!);
+        return new ItemStack(item, OptionalInt(value, "count", 1));
+    }
+
+    private static int OptionalInt(JsonElement value, string name, int fallback) =>
+        value.TryGetProperty(name, out var number) ? number.GetInt32() : fallback;
 
     // Vanilla's PotionIngredient: an item ingredient, and optionally the potions (potion_contents' "potions", one or a
     // list) its item holds.

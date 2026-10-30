@@ -217,11 +217,10 @@ class RemainingPlayFixtures extends ScreenFixtures {
         output.add("update_recipes", recipes);
 
         var table = new net.minecraft.world.item.crafting.display.SlotDisplay.ItemSlotDisplay(net.minecraft.world.item.Items.CRAFTING_TABLE);
-        net.minecraft.world.item.crafting.display.SlotDisplay stoneSlot = new net.minecraft.world.item.crafting.display.SlotDisplay.ItemSlotDisplay(stone);
-        net.minecraft.world.item.crafting.display.SlotDisplay either = new net.minecraft.world.item.crafting.display.SlotDisplay.Composite(List.of(
-            new net.minecraft.world.item.crafting.display.SlotDisplay.ItemSlotDisplay(net.minecraft.world.item.Items.COBBLESTONE),
-            new net.minecraft.world.item.crafting.display.SlotDisplay.ItemSlotDisplay(net.minecraft.world.item.Items.ANDESITE)));
+        // Recipes display their ingredients as Ingredient.display does.
         var eitherIngredient = net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.world.item.Items.COBBLESTONE, net.minecraft.world.item.Items.ANDESITE);
+        var stoneSlot = net.minecraft.world.item.crafting.Ingredient.of(stone).display();
+        var either = eitherIngredient.display();
         var shaped = new net.minecraft.world.item.crafting.display.ShapedCraftingRecipeDisplay(2, 2,
             List.of(stoneSlot, net.minecraft.world.item.crafting.display.SlotDisplay.Empty.INSTANCE, either, stoneSlot),
             new net.minecraft.world.item.crafting.display.SlotDisplay.ItemStackSlotDisplay(new net.minecraft.world.item.ItemStackTemplate(net.minecraft.world.item.Items.STONE_BRICKS, 4)),

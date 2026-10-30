@@ -463,6 +463,25 @@ public sealed class MenuClicks
 
             Assert.Equal(64, player.Inventory.GetItem(44)?.Count);
             Assert.Equal(1, player.Inventory.GetItem(1)?.Count);
+        },
+        ["Shift-crafting a special recipe takes one of each item per craft, while its result stays the same"] =
+            async (server, player) =>
+        {
+            var mapId = ComponentBuilder.MapId with { Value = 7 };
+            player.Inventory.SetItem(1, new ItemStack(ItemsRegistry.FilledMap, 3, mapId));
+            player.Inventory.SetItem(2, new ItemStack(ItemsRegistry.Map, 5));
+            await MainEventHandler.RefreshCraftingResultAsync(player);
+
+            // Each map and blank map clone into two maps, three times; two blank maps alone craft nothing.
+            await ClickAsync(server, player, 0, 0, ClickType.QuickMove);
+
+            var cloned = player.Inventory.GetItem(44);
+            Assert.True(cloned?.Is(ItemsRegistry.FilledMap));
+            Assert.Equal(6, cloned?.Count);
+            Assert.Equal(7, cloned?.GetComponent<SimpleDataComponent<int>>(DataComponentType.MapId)?.Value);
+            Assert.Null(player.Inventory.GetItem(1));
+            Assert.Equal(2, player.Inventory.GetItem(2)?.Count);
+            Assert.Null(player.Inventory.GetItem(0));
         }
     };
 

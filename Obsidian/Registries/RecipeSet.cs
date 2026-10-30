@@ -18,7 +18,9 @@ internal sealed class RecipeSet
 
     public static readonly RecipeSet Empty = new(FrozenDictionary<string, IRecipe>.Empty, []);
 
-    private readonly FrozenDictionary<int, List<IRecipeWithResult>> craftingRecipes;
+    // The crafting recipes a grid with each number of items may craft, in display id order. Shaped and shapeless
+    // recipes take a set number; the special ones, any.
+    private readonly FrozenDictionary<int, ICraftingRecipe[]> craftingRecipes;
 
     private readonly SmeltingRecipe[] cookingRecipes;
     private readonly FrozenDictionary<(CraftingType, int), SmeltingRecipe[]> cookingInputs;
@@ -42,17 +44,18 @@ internal sealed class RecipeSet
             .ToFrozenDictionary(group => group.Key, group => group.ToArray());
 
         // Grids try crafting recipes in display id order, so vanilla's come first and a plugin's recipe keeps its
-        // place across reloads.
+        // place across reloads. A transmute recipe has a display for each number of materials it takes.
         var crafting = book
             .Where(entry => entry is not null)
             .Select(entry => entry!.Recipe)
+            .Distinct()
             .ToList();
 
-        this.craftingRecipes = crafting
-            .GroupBy(recipe => recipe is ShapedRecipe shaped
-                ? shaped.Pattern.Sum(row => row.Count(symbol => symbol != ' '))
-                : ((ShapelessRecipe)recipe).Ingredients.Count)
-            .ToFrozenDictionary(group => group.Key, group => group.ToList());
+        this.craftingRecipes = Enumerable.Range(1, 9).ToFrozenDictionary(
+            count => count,
+            count => crafting
+                .Where(recipe => IngredientCount(recipe) is not int taken || taken == count)
+                .ToArray());
         this.cookingRecipes = [.. recipes.OrderBy(pair => pair.Key, StringComparer.Ordinal)
             .Select(pair => pair.Value).OfType<SmeltingRecipe>()];
         this.cookingInputs = this.cookingRecipes
@@ -141,12 +144,22 @@ internal sealed class RecipeSet
         displayId >= 0 && displayId < this.Book.Count ? this.Book[displayId] : null;
 
     /// <summary>
-    /// The recipe the ingredients in slots 1 to <paramref name="width"/>² of <paramref name="grid"/> craft, shaped
-    /// and shapeless recipes in display id order (shaped recipes mirrored too), or <c>null</c>.
+    /// The recipe the ingredients in slots 1 to <paramref name="width"/>² of <paramref name="grid"/> craft, crafting
+    /// recipes in display id order (shaped recipes mirrored too), or <c>null</c>.
     /// </summary>
-    public IRecipeWithResult? FindRecipe(BaseContainer grid, int width)
+    public ICraftingRecipe? FindRecipe(BaseContainer grid, int width) => this.FindCraft(grid, width)?.Recipe;
+
+    /// <summary>
+    /// Like <see cref="FindRecipe"/>, with what the recipe crafts from the grid. A shaped or shapeless recipe's
+    /// result is the one the recipe holds: copy it to put it in a slot.
+    /// </summary>
+    internal CraftingMatch? FindCraft(BaseContainer grid, int width)
     {
-        return this.FindCraftingRecipe(Enumerable.Range(1, width * width).Select(slot => grid[slot]).ToArray(), width);
+        var items = Enumerable.Range(1, width * width)
+            .Select(slot => grid[slot])
+            .ToArray();
+
+        return this.FindCraftingRecipe(items, width);
     }
 
     /// <summary>Evaluates caller-owned copies against this single snapshot.</summary>
@@ -157,13 +170,13 @@ internal sealed class RecipeSet
             throw new ArgumentException("A crafting grid must contain width squared slots, with width 2 or 3.");
 
         var inputs = grid.Select(item => item is null ? null : new ItemStack(item, item.Count)).ToArray();
-        var recipe = this.FindCraftingRecipe(inputs, width);
-        if (recipe?.Result.FirstOrDefault() is not ItemStack output)
+        if (this.FindCraftingRecipe(inputs, width) is not CraftingMatch match)
             return null;
 
+        var output = match.Result;
         var consumed = inputs.Select(item => item.IsNullOrAir() || item!.Count <= 0 ? 0 : 1).ToArray();
         var remainders = inputs.Select(CraftingRemainder).ToArray();
-        return new CraftingEvaluation(new ItemStack(output, output.Count), recipe.Identifier,
+        return new CraftingEvaluation(new ItemStack(output, output.Count), match.Recipe.Identifier,
             Array.AsReadOnly(consumed), Array.AsReadOnly(remainders), this.Revision);
     }
 
@@ -206,7 +219,7 @@ internal sealed class RecipeSet
         return null;
     }
 
-    private IRecipeWithResult? FindCraftingRecipe(IReadOnlyList<ItemStack?> grid, int width)
+    private CraftingMatch? FindCraftingRecipe(IReadOnlyList<ItemStack?> grid, int width)
     {
         var occupiedSlots = Enumerable.Range(0, width * width)
             .Where(slot => !grid[slot].IsNullOrAir() && grid[slot]!.Count > 0)
@@ -233,18 +246,30 @@ internal sealed class RecipeSet
                 if (MatchesShaped(grid, width, minX, minY, shaped, false)
                     || MatchesShaped(grid, width, minX, minY, shaped, true))
                 {
-                    return recipe;
+                    return new CraftingMatch(recipe, shaped.Result.First());
                 }
             }
-            else if (recipe is ShapelessRecipe shapeless
-                && MatchesShapeless(items, shapeless.Ingredients, 0, new bool[items.Count]))
+            else if (recipe is ShapelessRecipe shapeless)
             {
-                return recipe;
+                if (MatchesShapeless(items, shapeless.Ingredients, 0, new bool[items.Count]))
+                    return new CraftingMatch(recipe, shapeless.Result.First());
+            }
+            else if (SpecialCrafting.Assemble(recipe, grid, width) is ItemStack result)
+            {
+                return new CraftingMatch(recipe, result);
             }
         }
 
         return null;
     }
+
+    // How many items a crafting recipe takes, or null for a special recipe, which takes a varying number.
+    private static int? IngredientCount(ICraftingRecipe recipe) => recipe switch
+    {
+        ShapedRecipe shaped => shaped.Pattern.Sum(row => row.Count(symbol => symbol != ' ')),
+        ShapelessRecipe shapeless => shapeless.Ingredients.Count,
+        _ => null
+    };
 
     /// <summary>
     /// Whether a recipe of <paramref name="type"/> cooks <paramref name="item"/>, which a furnace of that type
@@ -347,21 +372,28 @@ internal sealed class RecipeSet
 }
 
 /// <summary>
-/// A crafting recipe as the recipe book shows it.
+/// A crafting recipe and what its grid crafts: a new stack for a special recipe, the recipe's own result otherwise.
+/// </summary>
+internal readonly record struct CraftingMatch(ICraftingRecipe Recipe, ItemStack Result);
+
+/// <summary>
+/// A crafting recipe as the recipe book shows it: one of its displays. Most recipes have one, a transmute recipe one
+/// for each number of materials it takes.
 /// </summary>
 /// <param name="DisplayId">The id the client knows it by, in the recipe book packets and when placing it.</param>
-/// <param name="Recipe">The shaped or shapeless recipe.</param>
+/// <param name="Recipe">The crafting recipe.</param>
 /// <param name="Group">
 /// The id of its group, which the client shows as one entry, or <c>null</c> when it has none. Recipes with the same
 /// group name share the id, whoever registered them, like vanilla's.
 /// </param>
-internal sealed record RecipeBookEntry(int DisplayId, IRecipeWithResult Recipe, int? Group)
+internal sealed record RecipeBookEntry(int DisplayId, ICraftingRecipe Recipe, int? Group)
 {
+    /// <summary>Which of the recipe's displays this is, from 0.</summary>
+    public int Display { get; init; }
+
     /// <summary>The registration's revision, used to detect replacement without keeping old recipes alive.</summary>
     public long Revision { get; init; }
 
     /// <summary>The recipe book tab the recipe shows in.</summary>
-    public CraftingBookCategory Category => this.Recipe is ShapedRecipe shaped
-        ? shaped.Category
-        : ((ShapelessRecipe)this.Recipe).Category;
+    public CraftingBookCategory Category => this.Recipe.Category;
 }
