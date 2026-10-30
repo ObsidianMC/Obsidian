@@ -186,6 +186,13 @@ internal sealed partial class MaterialRules
             chunk.SetBlock(this.localX, y, this.localZ, block);
             UpdateHeight(chunk, HeightmapType.WorldSurfaceWG, this.localX, y, this.localZ, block);
             UpdateHeight(chunk, HeightmapType.OceanFloorWG, this.localX, y, this.localZ, block);
+
+            // Vanilla's material column marks every state with a fluid for post-processing, such as the water of
+            // swamp rules. Unlike density fill, it doesn't consult the aquifer's scheduling decision.
+            if (block.HasFluid())
+            {
+                this.Terrain.MarkForPostProcessing(this.X, y, this.Z);
+            }
         }
     }
 }

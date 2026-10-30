@@ -134,7 +134,9 @@ internal sealed class TerrainContext
     {
         if (block.IsLiquid && this.Aquifer.ShouldScheduleFluidUpdate)
         {
-            this.FluidUpdates?.Add(new Vector(x, y, z));
+            this.MarkForPostProcessing(x, y, z);
         }
     }
+
+    public void MarkForPostProcessing(int x, int y, int z) => this.FluidUpdates?.Add(new Vector(x, y, z));
 }

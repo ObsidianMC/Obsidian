@@ -66,9 +66,11 @@ Nothing is reimplemented:
 
 ## Terrain references
 
-All terrain cases use seed `12345`. The nine overworld locations cover ocean and flooded caves `(0, 0)`, iron veins
-and underground fluids `(-10, 0)`, meadow/deep dark `(30, 40)`, frozen ocean `(100, -100)`, stony peaks `(-44, -16)`,
-snowy slopes `(-24, 48)`, eroded badlands `(-304, -280)`, desert/river `(-140, 28)` and sulfur caves `(56, 68)`.
+All terrain cases use seed `12345`. The eleven overworld locations cover ocean and flooded caves `(0, 0)`, iron
+veins and underground fluids `(-10, 0)`, meadow/deep dark `(30, 40)`, frozen ocean `(100, -100)`, stony peaks
+`(-44, -16)`, snowy slopes `(-24, 48)`, eroded badlands `(-304, -280)`, desert/river `(-140, 28)`, sulfur caves
+`(56, 68)`, swamp `(-352, 248)`, whose material rules place water that vanilla marks for post-processing, and
+mangrove swamp `(-101, -92)`.
 Nether cases cover wastes `(0, 0)`, warped forest `(20, -30)`, basalt deltas `(-16, 16)` and soul-sand valley
 `(-24, 4)`. End cases cover the central island `(0, 0)` and outer islands `(80, -60)`.
 

@@ -138,9 +138,10 @@ internal static class TerrainCarvers
             {
                 chunk.SetBlock(x, y - 1, z, top);
 
-                if (top.IsLiquid)
+                // Like the material column, vanilla marks any state with a fluid here.
+                if (top.HasFluid())
                 {
-                    terrain.FluidUpdates?.Add(new Vector(blockX, y - 1, blockZ));
+                    terrain.MarkForPostProcessing(blockX, y - 1, blockZ);
                 }
             }
         }
