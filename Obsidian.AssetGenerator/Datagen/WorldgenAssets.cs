@@ -74,6 +74,23 @@ internal static class WorldgenAssets
     // Entries referenced from several categories (or none) go to this category.
     private const string SharedCategory = "common";
 
+    /// <summary>
+    /// Copies the current version's noises, density functions and noise settings (the noise router's data) to
+    /// <c>Assets/worldgen_26_3</c>, per file in the data pack layout (<c>noise/temperature.json</c>).
+    /// </summary>
+    /// <remarks>
+    /// Temporary, while Phase 5 of <c>docs/porting-26.3-plan.md</c> builds the 26.3 generator beside the legacy one:
+    /// the live generator still reads the legacy <c>worldgen</c> folder. The folder name keeps these out of the source
+    /// generators' <c>worldgen/</c> assets and the legacy assets' embedded names; Phase 5 makes it <c>worldgen</c>.
+    /// </remarks>
+    public static void WriteRouterData(string dataDirectory, string outputDirectory)
+    {
+        var worldgen = Path.Combine(dataDirectory, "worldgen");
+
+        foreach (var registry in new[] { "density_function", "noise", "noise_settings" })
+            CopyDirectory(Path.Combine(worldgen, registry), Path.Combine(outputDirectory, registry));
+    }
+
     /// <param name="worldgenGroupsPath">
     /// The Java dumper's <c>{ "feature": { id: class }, "placed_feature": { id: class } }</c>.
     /// </param>
