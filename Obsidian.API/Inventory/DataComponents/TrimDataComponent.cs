@@ -6,6 +6,22 @@ namespace Obsidian.API.Inventory.DataComponents;
 
 public sealed record class TrimDataComponent : DataComponent
 {
+    private ComponentValueKey Comparison => new(new object?[]
+    {
+        this.materialRegistryId,
+        this.patternRegistryId,
+        this.material,
+        this.pattern,
+        this.materialDescription,
+        this.patternDescription,
+        this.showInToolTip
+    });
+
+    public bool Equals(TrimDataComponent? other) => ReferenceEquals(this, other)
+        || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
+
+    public override int GetHashCode() => HashCode.Combine(base.GetHashCode(), this.Comparison);
+
     public override DataComponentType Type => DataComponentType.Trim;
 
     public override string Identifier => "minecraft:trim";
