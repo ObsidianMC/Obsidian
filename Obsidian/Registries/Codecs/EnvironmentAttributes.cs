@@ -7,7 +7,7 @@ using static Obsidian.Registries.Codecs.CodecJson;
 namespace Obsidian.Registries.Codecs;
 
 /// <summary>
-/// An environment attribute map, the <c>attributes</c> of a 1.21.11 biome or dimension type: values by attribute,
+/// An environment attribute map, the <c>attributes</c> of a 26.3 biome or dimension type: values by attribute,
 /// each given as is (vanilla's override) or as <c>{"modifier": ..., "argument": ...}</c>.
 /// </summary>
 /// <param name="Entries">Each attribute's entry, encoded as vanilla's codecs write it.</param>
@@ -122,7 +122,7 @@ internal sealed record EnvironmentAttributeMap(ImmutableArray<EnvironmentAttribu
 internal sealed record EnvironmentAttributeEntry(string Attribute, bool Syncable, INbtTag Value);
 
 /// <summary>
-/// Reads environment attribute maps like vanilla 1.21.11's EnvironmentAttributeMap codecs, with the value codec,
+/// Reads environment attribute maps like vanilla 26.3's EnvironmentAttributeMap codecs, with the value codec,
 /// range and modifiers of each of vanilla's attributes (EnvironmentAttributes, AttributeTypes, AttributeModifier).
 /// </summary>
 /// <remarks>
@@ -146,7 +146,8 @@ internal static class EnvironmentAttributes
         Particle,
         AmbientParticles,
         BackgroundMusic,
-        AmbientSounds
+        AmbientSounds,
+        MobSpawns
     }
 
     // Whether clients get an attribute (vanilla's syncable), whether biomes may set it (isPositional) and its range.
@@ -157,7 +158,7 @@ internal static class EnvironmentAttributes
         float Min = float.NegativeInfinity,
         float Max = float.PositiveInfinity);
 
-    // Vanilla 1.21.11's attributes. The ids, types, flags and ranges have to match vanilla's: they decide what files
+    // Vanilla 26.3's attributes. The ids, types, flags and ranges have to match vanilla's: they decide what files
     // vanilla accepts and what clients are sent.
     private static readonly FrozenDictionary<string, Definition> definitions = new Dictionary<string, Definition>
     {
@@ -178,8 +179,11 @@ internal static class EnvironmentAttributes
         ["visual/star_angle"] = new(ValueType.Float, Syncable: true),
         ["visual/moon_phase"] = new(ValueType.MoonPhase, Syncable: true),
         ["visual/star_brightness"] = new(ValueType.Float, Syncable: true, Min: 0, Max: 1),
+        ["visual/block_light_tint"] = new(ValueType.RgbColor, Syncable: true),
         ["visual/sky_light_color"] = new(ValueType.RgbColor, Syncable: true),
         ["visual/sky_light_factor"] = new(ValueType.Float, Syncable: true, Min: 0, Max: 1),
+        ["visual/night_vision_color"] = new(ValueType.RgbColor, Syncable: true),
+        ["visual/ambient_light_color"] = new(ValueType.RgbColor, Syncable: true),
         ["visual/default_dripstone_particle"] = new(ValueType.Particle, Syncable: true),
         ["visual/ambient_particles"] = new(ValueType.AmbientParticles, Syncable: true),
         ["audio/background_music"] = new(ValueType.BackgroundMusic, Syncable: true),
@@ -190,6 +194,7 @@ internal static class EnvironmentAttributes
         ["gameplay/can_start_raid"] = new(ValueType.Boolean, Syncable: false),
         ["gameplay/water_evaporates"] = new(ValueType.Boolean, Syncable: true),
         ["gameplay/bed_rule"] = new(ValueType.BedRule, Syncable: false),
+        ["gameplay/straw_bed_rule"] = new(ValueType.BedRule, Syncable: false),
         ["gameplay/respawn_anchor_works"] = new(ValueType.Boolean, Syncable: false),
         ["gameplay/nether_portal_spawns_piglin"] = new(ValueType.Boolean, Syncable: false),
         ["gameplay/fast_lava"] = new(ValueType.Boolean, Syncable: true, Positional: false),
@@ -204,6 +209,9 @@ internal static class EnvironmentAttributes
         ["gameplay/bees_stay_in_hive"] = new(ValueType.Boolean, Syncable: false),
         ["gameplay/monsters_burn"] = new(ValueType.Boolean, Syncable: false),
         ["gameplay/can_pillager_patrol_spawn"] = new(ValueType.Boolean, Syncable: false),
+        ["gameplay/natural_mob_spawns"] = new(ValueType.MobSpawns, Syncable: false),
+        ["gameplay/creature_world_gen_spawn_probability"] =
+            new(ValueType.Float, Syncable: false, Min: 0, Max: 0.9999999f),
         ["gameplay/villager_activity"] = new(ValueType.Activity, Syncable: false),
         ["gameplay/baby_villager_activity"] = new(ValueType.Activity, Syncable: false)
     }.ToFrozenDictionary(entry => $"minecraft:{entry.Key}", entry => entry.Value);
@@ -305,6 +313,7 @@ internal static class EnvironmentAttributes
             ValueType.AmbientParticles => ReadAmbientParticles(value, path, name),
             ValueType.BackgroundMusic => ReadBackgroundMusic(value, path, name),
             ValueType.AmbientSounds => ReadAmbientSounds(value, path, name),
+            ValueType.MobSpawns => BiomeData.ReadMobSpawns(value, path, name),
             _ => throw new ArgumentOutOfRangeException(nameof(definition))
         };
 
@@ -327,6 +336,8 @@ internal static class EnvironmentAttributes
                 new NbtTag<string>(name, FormatRgb(RgbColor(value, path))),
             (ValueType.ArgbColor, "multiply") => ReadArgbMultiplier(value, path),
             (ValueType.RgbColor or ValueType.ArgbColor, "blend_to_gray") => ReadBlendToGray(value, path),
+            (ValueType.AmbientParticles, "append") => ReadAmbientParticles(value, path, name),
+            (ValueType.MobSpawns, "overlay") => BiomeData.ReadMobSpawns(value, path, name),
             _ => null
         };
     }
@@ -425,8 +436,13 @@ internal static class EnvironmentAttributes
             new NbtTag<string>("can_set_spawn", canSetSpawn)
         };
 
-        if (TryGet(value, "explodes", out var explodes) && Bool(explodes, Field(path, "explodes")))
-            rule.Add(Byte("explodes", true));
+        foreach (var field in (ReadOnlySpan<string>)["destroy_on_use", "destroy_on_leave"])
+        {
+            if (TryGet(value, field, out var flag) && Bool(flag, Field(path, field)))
+            {
+                rule.Add(Byte(field, true));
+            }
+        }
 
         if (errorMessage is not null)
             rule.Add(new NbtTag<string>("error_message", errorMessage));

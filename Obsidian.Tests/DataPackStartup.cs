@@ -12,7 +12,9 @@ using Obsidian.Tests.Fakes;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -34,7 +36,7 @@ public sealed class VanillaDimensionTypesCollection
 [Collection(VanillaDimensionTypesCollection.Name)]
 public sealed class DataPackStartup : IDisposable
 {
-    private const string PackMetadata = """{ "pack": { "description": "", "min_format": 94, "max_format": 94 } }""";
+    private const string PackMetadata = """{ "pack": { "description": "", "min_format": 121, "max_format": 121 } }""";
 
     private readonly string folder = Path.Join(Path.GetTempPath(), $"obsidian-startup-packs-{Guid.NewGuid():N}");
 
@@ -42,6 +44,119 @@ public sealed class DataPackStartup : IDisposable
     {
         if (Directory.Exists(this.folder))
             Directory.Delete(this.folder, recursive: true);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Format121PacksOverridePluginsAndSurviveTheirUnload(bool zipped)
+    {
+        using var biomes = Format121Data.Read("biome");
+        using var metadata = Format121Data.Read("pack");
+        var biome = JsonNode.Parse(biomes.RootElement.GetProperty("minecraft:plains").GetRawText())!.AsObject();
+
+        // Generation is tested separately; this pack exercises the current biome and spawn codecs at startup.
+        biome["features"] = new JsonArray();
+        biome["carvers"] = new JsonArray();
+        biome["temperature"] = 0.25f;
+        var rootBiome = biome.ToJsonString();
+        biome["temperature"] = 0.75f;
+        var overlayBiome = biome.ToJsonString();
+
+        var packMetadata = JsonNode.Parse(metadata.RootElement.GetRawText())!.AsObject();
+        packMetadata["overlays"] = JsonNode.Parse("""
+            { "entries": [
+              { "directory": "current", "min_format": [121, 0], "max_format": [121, 0] },
+              { "directory": "future", "min_format": [121, 1], "max_format": [121, 1] }
+            ] }
+            """);
+
+        const string biomePath = "data/minecraft/worldgen/biome/plains.json";
+        var files = new Dictionary<string, string>
+        {
+            ["pack.mcmeta"] = packMetadata.ToJsonString(),
+            [biomePath] = rootBiome,
+            [$"current/{biomePath}"] = overlayBiome,
+            [$"future/{biomePath}"] = "{}"
+        };
+        var packs = Path.Join(this.folder, "packs");
+        Directory.CreateDirectory(packs);
+
+        if (zipped)
+        {
+            using var zip = ZipFile.Open(Path.Join(packs, "format121.zip"), ZipArchiveMode.Create);
+
+            foreach (var (path, json) in files)
+            {
+                using var writer = new StreamWriter(zip.CreateEntry(path).Open());
+                writer.Write(json);
+            }
+        }
+        else
+        {
+            foreach (var (path, json) in files)
+            {
+                var file = Path.Join(packs, "format121", path);
+                Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+                File.WriteAllText(file, json);
+            }
+        }
+
+        biome["temperature"] = 0.5f;
+        var pluginFiles = new Dictionary<string, byte[]>
+        {
+            [biomePath] = Encoding.UTF8.GetBytes(biome.ToJsonString())
+        };
+        var pluginPath = Path.Join(this.folder, "probe.obby");
+        File.WriteAllBytes(pluginPath, PluginLoading.ProbeArchive("1.0.0", pluginFiles));
+        var vanilla = CodecRegistry.Biomes.Plains.Element;
+        var manager = CreateManager();
+
+        try
+        {
+            var plugin = await manager.LoadPluginAsync(pluginPath);
+            Assert.NotNull(plugin);
+            Assert.Equal(0.5f, CodecRegistry.Biomes.Plains.Element.Temperature);
+
+            manager.FinishStartup(packs);
+
+            var applied = CodecRegistry.Biomes.Plains.Element;
+            Assert.Equal(0.75f, applied.Temperature);
+            Assert.NotEmpty(applied.Spawners);
+            Assert.NotNull(applied.Spawners["creature"][0].Count);
+
+            await manager.UnloadPluginAsync(plugin);
+
+            Assert.Same(applied, CodecRegistry.Biomes.Plains.Element);
+        }
+        finally
+        {
+            await manager.DisposeAsync();
+            PluginCodecs.Apply([], NullLogger.Instance, levelsCreated: false);
+            PluginSpawns.Apply([], [], NullLogger.Instance);
+        }
+
+        Assert.Same(vanilla, CodecRegistry.Biomes.Plains.Element);
+    }
+
+    [Theory]
+    [InlineData("121", "121", true)]
+    [InlineData("[121, 0]", "[121, 0]", true)]
+    [InlineData("[120, 9]", "[120, 9]", false)]
+    [InlineData("[121, 1]", "[121, 1]", false)]
+    public void Format121OverlayRangesSelectCurrentMinor(string min, string max, bool applies)
+    {
+        using var vanilla = Format121Data.Read("pack");
+        var metadata = JsonNode.Parse(vanilla.RootElement.GetRawText())!.AsObject();
+        metadata["overlays"] = JsonNode.Parse($$"""
+            { "entries": [{ "directory": "selected", "min_format": {{min}}, "max_format": {{max}} }] }
+            """);
+        var logger = new PluginFeatureFiles.ListLogger();
+
+        var read = DataPackMetadata.Read("format121", Encoding.UTF8.GetBytes(metadata.ToJsonString()), logger);
+
+        Assert.Equal(applies, read.Overlays.Contains("selected"));
+        Assert.Empty(logger.Messages);
     }
 
     [Fact(DisplayName = "A stem startup can't read until a dimension type override is left out is read once it is")]
@@ -53,6 +168,7 @@ public sealed class DataPackStartup : IDisposable
             {
               "has_skylight": true,
               "has_ceiling": false,
+              "has_ender_dragon_fight": false,
               "coordinate_scale": 1,
               "min_y": 0,
               "height": 256,
@@ -112,6 +228,7 @@ public sealed class DataPackStartup : IDisposable
             {
               "has_skylight": true,
               "has_ceiling": false,
+              "has_ender_dragon_fight": false,
               "coordinate_scale": 1,
               "min_y": 0,
               "height": 512,

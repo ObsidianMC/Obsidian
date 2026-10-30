@@ -8,6 +8,15 @@ metadata move over in one step:
 dotnet run --project Obsidian.Porting -- <mod folder or jar> <output folder>
 ```
 
+The format-121 readers target Minecraft 26.3. NeoForge 26.3 exists; its `26.3.0.99` source artifact was checked for
+this update ([release artifacts](https://maven.neoforged.net/releases/net/neoforged/neoforge/26.3.0.99/)). Its spawn
+modifiers use vanilla's `count` int provider instead of `minCount`/`maxCount`; the converter preserves that provider,
+and Obsidian's biome modifier reader accepts it. Older Forge/NeoForge bounds remain supported for imports.
+
+The channel query, negotiated-channel setup, common version/register and frozen-registry payload fields are unchanged
+from the supported handshake. No channel payload encoding change is needed for 26.3. This source-format check does
+not replace a live modded-client interoperability test.
+
 The input is the mod's jar, or a folder laid out like it (say, `src/main/resources`). The output folder, which must
 be new or empty, gets the files an Obsidian plugin ships besides its assembly (see
 [plugin-archives.md](plugin-archives.md)), and `porting-report.txt`, which the tool also prints. The tool exits

@@ -12,7 +12,7 @@ using System.Text.Json;
 namespace Obsidian.Registries.Codecs;
 
 /// <summary>
-/// Reads a level stem file (a data pack's <c>dimension/&lt;path&gt;.json</c>) like vanilla 1.21.11's LevelStem codec
+/// Reads a level stem file (a data pack's <c>dimension/&lt;path&gt;.json</c>) like vanilla 26.3's LevelStem codec
 /// reads it, into the dimension its generator builds.
 /// </summary>
 /// <remarks>

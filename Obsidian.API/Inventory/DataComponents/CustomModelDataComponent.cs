@@ -2,6 +2,20 @@ namespace Obsidian.API.Inventory.DataComponents;
 
 public sealed record CustomModelDataComponent : DataComponent
 {
+    private ComponentValueKey Comparison => new(new object?[]
+    {
+        ComponentValueKey.Sequence(this.floats),
+        ComponentValueKey.Sequence(this.flags),
+        ComponentValueKey.Sequence(this.strings),
+        ComponentValueKey.Sequence(this.colors)
+    });
+
+    public bool Equals(CustomModelDataComponent? other) => ReferenceEquals(this, other)
+        || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
+
+    public override int GetHashCode() =>
+        HashCode.Combine(base.GetHashCode(), this.Comparison);
+
     public override DataComponentType Type => DataComponentType.CustomModelData;
     public override string Identifier => "minecraft:custom_model_data";
     private ImmutableArray<float> floats = [];

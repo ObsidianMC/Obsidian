@@ -119,7 +119,7 @@ public partial class MainEventHandler
         if (!RecipeBookSync.CanSend(player, recipes))
             recipes = RecipesRegistry.Current;
 
-        var result = recipes.FindRecipe(grid, width)?.Result.FirstOrDefault();
+        var result = recipes.FindCraft(grid, width)?.Result;
         Debug.Assert(result is null || (result.Count > 0 && result.Count <= result.MaxStackSize),
             "Generated crafting results must fit in one stack.");
 
@@ -190,7 +190,7 @@ public partial class MainEventHandler
                     return;
             }
 
-            if (PlayerRecipes(player).FindRecipe(grid, width) is IRecipeWithResult recipe)
+            if (PlayerRecipes(player).FindRecipe(grid, width) is ICraftingRecipe recipe)
                 player.RecordProgressCraft(recipe.Identifier, result);
 
             ConsumeCraftingIngredients(player, grid, width);

@@ -7,6 +7,18 @@ namespace Obsidian.API.Inventory.DataComponents;
 /// </summary>
 public sealed record class FoodDataComponent : DataComponent
 {
+    private ComponentValueKey Comparison => new(new object?[]
+    {
+        this.nutrition,
+        this.saturationModifier,
+        this.canAlwaysEat
+    });
+
+    public bool Equals(FoodDataComponent? other) => ReferenceEquals(this, other)
+        || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
+
+    public override int GetHashCode() => HashCode.Combine(base.GetHashCode(), this.Comparison);
+
     public override DataComponentType Type => DataComponentType.Food;
 
     public override string Identifier => "minecraft:food";

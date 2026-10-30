@@ -3,6 +3,20 @@ namespace Obsidian.API.Inventory.DataComponents;
 
 public sealed record class PotionContentsDataComponent : DataComponent
 {
+    private ComponentValueKey Comparison => new(new object?[]
+    {
+        this.potion,
+        this.customColor,
+        ComponentValueKey.Sequence(this.customEffects),
+        this.customName
+    });
+
+    public bool Equals(PotionContentsDataComponent? other) => ReferenceEquals(this, other)
+        || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
+
+    public override int GetHashCode() =>
+        HashCode.Combine(base.GetHashCode(), this.Comparison);
+
     public override DataComponentType Type => DataComponentType.PotionContents;
 
     public override string Identifier => "minecraft:potion_contents";
