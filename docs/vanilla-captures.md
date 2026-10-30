@@ -218,6 +218,9 @@ biome-filter identity. Every placement records `nextRandom`, including rejected 
 
 Component cases use `probe: provider`, `modifier`, `predicate` or `rule`, with the corresponding inline
 codec input. They record the optional state, ordered positions, or boolean result and the next random int.
+Provider cases with `requiredState: true` instead call the required-state path. Empty `random_block` lists and
+tags exercise both paths: optional reads return null, required reads preserve the existing state's properties,
+and neither consumes randomness.
 `FeatureComponentMatchesVanilla` replays these independently of feature placement. The cases exercise
 nested and fixed-direction rotated providers, float noise count boundaries, integer-provider short circuits,
 26.x support-sensitive survival, modifier termination and thresholds, rule matching, and height limits.
@@ -237,3 +240,49 @@ small deterministic captures. Fixture setup edits never count as successful plac
 The explicit simple-provider capture uses 26.3's `minecraft:simple`. Its `compatibilityProvider` additionally
 replays Obsidian's existing `minecraft:simple_state_provider` alias against the same captured state and random
 tail. Vanilla rejects that older type name. Random-chance captures use the current `chance` field.
+
+The `non_tree_` cases form a separate block of 26.3 references. They cover scattered ore, lakes, dripstone and
+sulfur speleothems and clusters, vegetation patches (including waterlogged interiors), neighbor spreading,
+overlays, multiface growth, templates, replacement blobs, deltas, pillars, stepped columns, End islands,
+gateways and chorus plants. Additional references cover block piles, freezing, coral branches, root systems
+and the unchanged algorithms shared with the legacy generator. Actual vanilla entries exercise basalt
+columns and pillars, glowstone, twisting and weeping vines, sulfur springs, desert wells and warm-ocean coral.
+These references verify blocks, placement results and the next placement-random value; multiface and sulfur
+template cases also verify the ordered post-processing marks. Multiface cases with `postProcess` additionally
+verify the resulting neighbor shapes. Sulfur templates use `captureMarks` to record marks independently of fluid
+ticks and shape processing; `expectMarks` requires a nonempty mark list.
+Direct magma, soul sand and mushroom captures distinguish the position above bubble-column sources from a
+mushroom's own position. Templates rely on the region's write-time marks rather than enqueueing duplicates.
+
+The review captures cover exact template processor states (compact and property-bearing states, including
+random exact-state rules), and End platforms whose origins lie just outside the writable region. A platform at
+`(32, 0, 0)` overlaps the region in x=30..31; one at x=34 has no writable overlap but still returns true.
+
+The `coverage_` cases add a second placement random seed (19) across twelve representative algorithms, water
+lakes with observable freezing, air lake barriers, actual bamboo podzol, ceiling-only dripstone and sulfur
+clusters, and root systems with water inside and just beyond their allowance. Lake shell predicates, unsupported
+multiface growth and occupied cluster origins reject inside the algorithms, without an always-false placement
+filter. `expectBlocks` pins the advertised branch outputs in both the capture and replay.
+
+Eleven Nether and End cases select a vanilla `dimension` and record its `minY`, `height` and generator `seaLevel`.
+The replay uses these values for its chunks and region: both dimensions build from 0 through 255, with sea levels
+32 and 0 respectively. Existing cases without dimension parameters retain their Overworld defaults.
+The decoration context separately uses the dimension's noise generator range, including the Nether's height of 128.
+
+Provider references cover `noise`, its Obsidian compatibility alias `noise_provider`, `dual_noise` and
+`random_block`. Large and negative coordinates distinguish float scaling from double scaling. Modifier
+references cover `fixed_placement`, `count_on_every_layer`, `cuboid` and `randomly_selected`, including empty
+outputs and count resampling. Predicate references add `height_range` and `volume_match` boundaries.
+
+Template features require an explicit 26.3 template resolver. The replay extracts templates from the cached
+26.3 server jar instead of using the legacy structure cache; NBT templates are not checked into the repository.
+Processor lists are read from the 26.3 worldgen assets, adapting compact block states at the feature compiler
+boundary before invoking the shared processor algorithms. These additions do not switch the live generator.
+
+A recursive scan of the 26.3 `feature` assets, including inline child features, finds 56 feature types. The
+26.3 registry currently implements 43 of them. The remaining types are `end_podium`, `fallen_tree`, `fossil`,
+`geode`, `huge_brown_mushroom`, `huge_fungus`, `huge_red_mushroom`, `iceberg`, `large_dripstone`, `sculk_patch`,
+`spike`, `tree` and `underwater_magma`. Trees, fallen trees, spikes, huge mushrooms and huge fungi belong to
+the parallel tree work. The other seven remain follow-up work. In particular, the legacy iceberg algorithm
+differs from 26.3 captures and is deliberately not registered as a 26.3 implementation. Unsupported types
+continue to fail explicitly when compiled.

@@ -80,6 +80,8 @@ internal static class ShapeUpdater
 
         switch (state.BlockClass())
         {
+            case "PointedDripstoneBlock" or "SulfurSpikeBlock":
+                return Generators.Features.SpeleothemShapes.Update(level, state, position, direction);
             case "FenceBlock":
                 return IsHorizontal(direction)
                     ? state.WithProperty(direction.PropertyName(), FenceConnectsTo(state, neighbor, direction.Opposite()))

@@ -16,7 +16,10 @@ internal sealed partial class FeatureRegistry
 
         if (scattered)
         {
-            throw new NotSupportedException("The 26.3 feature minecraft:scattered_ore isn't implemented yet.");
+            return new ScatteredOre(
+                json.GetProperty("targets").EnumerateArray().Select(this.OreTarget).ToArray(),
+                json.GetProperty("size").GetInt32(),
+                json.GetProperty("discard_chance_on_air_exposure").GetSingle()).Place;
         }
 
         return ore.Place;
