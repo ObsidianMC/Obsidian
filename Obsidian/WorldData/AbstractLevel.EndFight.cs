@@ -264,12 +264,14 @@ public abstract partial class AbstractLevel
         {
             if (player.GameMode == GameMode.Spectator || endPortalCooldowns.ContainsKey(player.Uuid))
                 continue;
+
             var position = (Vector)player.Position.Floor();
             var block = await GetBlockAsync(position);
             if (block?.RegistryId == BlockIds.EndGateway)
             {
                 if (await FindEndGatewayExitAsync(position) is not Vector destination)
                     continue;
+
                 endPortalCooldowns[player.Uuid] = 100;
                 await player.TeleportAsync(new VectorD(destination.X + 0.5, destination.Y, destination.Z + 0.5));
             }
@@ -291,40 +293,63 @@ public abstract partial class AbstractLevel
             var values = savedExit.GetArray();
             destination = new Vector(values[0], values[1], values[2]);
         }
+        else if (await BuildEndGatewayExitAsync(gateway) is Vector built)
+        {
+            destination = built;
+        }
         else
         {
-            var length = Math.Sqrt(gateway.X * (double)gateway.X + gateway.Z * (double)gateway.Z);
-            if (length < 1)
-                return null;
-            destination = new Vector(
-                (int)Math.Floor(gateway.X / length * 1024),
-                75,
-                (int)Math.Floor(gateway.Z / length * 1024));
-            if (await GetChunkAsync(destination.X >> 4, destination.Z >> 4) is not { IsGenerated: true })
-                return null;
-            var terrain = new MobTerrain(this);
-            for (var y = MinY + Height - 1; y >= MinY; y--)
-            {
-                if (terrain.GetBlock(new Vector(destination.X, y, destination.Z)) is { IsAir: false })
-                {
-                    destination = new Vector(destination.X, y + 3, destination.Z);
-                    break;
-                }
-            }
-            // Gateways always have a safe arrival platform, including gateways aimed into the void.
-            for (var x = -2; x <= 2; x++)
-            {
-                for (var z = -2; z <= 2; z++)
-                    await SetBlockAsync(destination + new Vector(x, -2, z), BlocksRegistry.EndStone, true);
-            }
-            var returnGateway = destination + new Vector(0, 1, 0);
-            await CreateEndGatewayAsync(returnGateway);
-            await StoreGatewayExitAsync(returnGateway, gateway + new Vector(0, 3, 0));
-            await StoreGatewayExitAsync(gateway, destination + new Vector(2, -1, 0));
-            destination += new Vector(2, -1, 0);
+            return null;
         }
+
         if (await GetChunkAsync(destination.X >> 4, destination.Z >> 4) is not { IsGenerated: true })
             return null;
+
+        return destination;
+    }
+
+    /// <summary>
+    /// Builds the far gateway 1024 blocks out from <paramref name="gateway"/>, on an End stone platform, links the two
+    /// and returns where an entity arrives; null for the gateway at the centre or when the far chunk isn't generated.
+    /// </summary>
+    private async ValueTask<Vector?> BuildEndGatewayExitAsync(Vector gateway)
+    {
+        var length = Math.Sqrt(gateway.X * (double)gateway.X + gateway.Z * (double)gateway.Z);
+        if (length < 1)
+            return null;
+
+        var destination = new Vector(
+            (int)Math.Floor(gateway.X / length * 1024),
+            75,
+            (int)Math.Floor(gateway.Z / length * 1024));
+        if (await GetChunkAsync(destination.X >> 4, destination.Z >> 4) is not { IsGenerated: true })
+            return null;
+
+        destination = FindGatewayExitSurface(destination);
+        // Gateways always have a safe arrival platform, including gateways aimed into the void.
+        for (var x = -2; x <= 2; x++)
+        {
+            for (var z = -2; z <= 2; z++)
+                await SetBlockAsync(destination + new Vector(x, -2, z), BlocksRegistry.EndStone, true);
+        }
+
+        var returnGateway = destination + new Vector(0, 1, 0);
+        await CreateEndGatewayAsync(returnGateway);
+        await StoreGatewayExitAsync(returnGateway, gateway + new Vector(0, 3, 0));
+        await StoreGatewayExitAsync(gateway, destination + new Vector(2, -1, 0));
+        return destination + new Vector(2, -1, 0);
+    }
+
+    /// <summary>Three blocks above the highest block in <paramref name="destination"/>'s column, if any.</summary>
+    private Vector FindGatewayExitSurface(Vector destination)
+    {
+        var terrain = new MobTerrain(this);
+        for (var y = MinY + Height - 1; y >= MinY; y--)
+        {
+            if (terrain.GetBlock(new Vector(destination.X, y, destination.Z)) is { IsAir: false })
+                return new Vector(destination.X, y + 3, destination.Z);
+        }
+
         return destination;
     }
 
@@ -355,11 +380,13 @@ public abstract partial class AbstractLevel
     {
         if (!HasEndFight || dragon.Uuid != fightDragon || dragonKilled)
             return;
+
         dragonKilled = true;
         fightDragon = Guid.Empty;
         await CreateExitPortalAsync(true);
         if (!dragonPreviouslyKilled)
             await SetBlockAsync(exitPortal + new Vector(0, 4, 0), BlocksRegistry.DragonEgg, true);
+
         dragonPreviouslyKilled = true;
         if (gatewaysCreated >= 20)
             return;
@@ -378,27 +405,43 @@ public abstract partial class AbstractLevel
             for (var y = -2; y <= 2; y++)
             {
                 for (var z = -1; z <= 1; z++)
-                {
-                    var block = x == 0 && y == 0 && z == 0
-                        ? BlocksRegistry.EndGateway
-                        : y != 0 && (Math.Abs(y) == 2 ? x == 0 && z == 0 : x == 0 || z == 0)
-                            ? BlocksRegistry.Bedrock
-                            : BlocksRegistry.Air;
-                    await SetBlockAsync(gateway + new Vector(x, y, z), block, true);
-                }
+                    await SetBlockAsync(gateway + new Vector(x, y, z), GatewayFrameBlock(x, y, z), true);
             }
         }
+
         if (await GetBlockEntityAsync(gateway) == null)
-            await SetBlockEntity(gateway, new DataBlockEntity { Id = "minecraft:end_gateway", BlockPosition = gateway });
+        {
+            var data = new DataBlockEntity { Id = "minecraft:end_gateway", BlockPosition = gateway };
+            await SetBlockEntity(gateway, data);
+        }
+
         PacketBroadcaster.QueuePacketToLevel(this, new LevelEventPacket(3000, gateway, 0));
+    }
+
+    /// <summary>
+    /// The block at an offset from a gateway: the gateway in the middle, bedrock in the cross around it above and
+    /// below and in the single blocks capping it, air elsewhere.
+    /// </summary>
+    private static IBlock GatewayFrameBlock(int x, int y, int z)
+    {
+        if (x == 0 && y == 0 && z == 0)
+            return BlocksRegistry.EndGateway;
+
+        if (y == 0)
+            return BlocksRegistry.Air;
+
+        var frame = Math.Abs(y) == 2 ? x == 0 && z == 0 : x == 0 || z == 0;
+        return frame ? BlocksRegistry.Bedrock : BlocksRegistry.Air;
     }
 
     internal async ValueTask AbortDragonResurrectionAsync(EndCrystal? destroyed = null)
     {
         if (!HasEndFight || resurrectionTicks < 0)
             return;
+
         if (destroyed != null && !resurrectionCrystals.Contains(destroyed.Uuid))
             return;
+
         resurrectionTicks = -1;
         resurrectionCrystals = [];
         foreach (var crystal in GetEntitiesInRange(new VectorD(0, 128, 0), 256).OfType<EndCrystal>())
@@ -406,8 +449,17 @@ public abstract partial class AbstractLevel
             crystal.Invulnerable = false;
             crystal.SetBeam(null);
         }
+
         await CreateExitPortalAsync(true);
     }
+
+    private static readonly (Vector Offset, string Facing)[] ExitPortalTorches =
+    [
+        (new Vector(1, 2, 0), "east"),
+        (new Vector(-1, 2, 0), "west"),
+        (new Vector(0, 2, 1), "south"),
+        (new Vector(0, 2, -1), "north"),
+    ];
 
     private async ValueTask CreateExitPortalAsync(bool active)
     {
@@ -416,29 +468,42 @@ public abstract partial class AbstractLevel
             for (var z = -4; z <= 4; z++)
             {
                 var distance = x * x + z * z;
-                    if (distance > 12)
-                        continue;
+                if (distance > 12)
+                    continue;
+
                 for (var y = -1; y <= 3; y++)
                 {
-                    var block = BlocksRegistry.Air;
-                    if (y == -1)
-                        block = distance <= 6 ? BlocksRegistry.Bedrock : BlocksRegistry.EndStone;
-                    else if (y == 0 && distance > 6)
-                        block = BlocksRegistry.Bedrock;
-                    else if (y == 0 && active)
-                        block = BlocksRegistry.EndPortal;
-
-                        if (x == 0 && z == 0 && y >= 0)
-                            block = BlocksRegistry.Bedrock;
+                    var block = ExitPortalBlock(x, y, z, distance, active);
                     await SetBlockAsync(exitPortal + new Vector(x, y, z), block, true);
                 }
             }
         }
-        foreach (var (offset, facing) in new[] { (new Vector(1, 2, 0), "east"), (new Vector(-1, 2, 0), "west"),
-            (new Vector(0, 2, 1), "south"), (new Vector(0, 2, -1), "north") })
+
+        foreach (var (offset, facing) in ExitPortalTorches)
         {
-            await SetBlockAsync(exitPortal + offset, BlocksRegistry.WallTorch.WithProperty("facing", facing), true);
+            var torch = BlocksRegistry.WallTorch.WithProperty("facing", facing);
+            await SetBlockAsync(exitPortal + offset, torch, true);
         }
+    }
+
+    /// <summary>
+    /// The exit portal's block at an offset <paramref name="distance"/> (squared) from its centre: a bedrock and End
+    /// stone base, a bedrock rim, the portal itself when active, and the bedrock pillar in the middle.
+    /// </summary>
+    private static IBlock ExitPortalBlock(int x, int y, int z, int distance, bool active)
+    {
+        var block = BlocksRegistry.Air;
+        if (y == -1)
+            block = distance <= 6 ? BlocksRegistry.Bedrock : BlocksRegistry.EndStone;
+        else if (y == 0 && distance > 6)
+            block = BlocksRegistry.Bedrock;
+        else if (y == 0 && active)
+            block = BlocksRegistry.EndPortal;
+
+        if (x == 0 && z == 0 && y >= 0)
+            block = BlocksRegistry.Bedrock;
+
+        return block;
     }
 
     // The order vanilla places the 20 gateways in, seeded by the world.
@@ -456,62 +521,11 @@ public abstract partial class AbstractLevel
             await crystal.RemoveAsync();
 
         if (resurrecting)
-        {
-            for (var x = -10; x <= 10; x++)
-            {
-                for (var y = -10; y <= 10; y++)
-                {
-                    for (var z = -10; z <= 10; z++)
-                    {
-                        var position = new Vector(spike.CenterX + x, spike.Height + y, spike.CenterZ + z);
-                        await SetBlockAsync(position, BlocksRegistry.Air, true);
-                    }
-                }
-            }
-            var blast = new EndCrystal
-            {
-                Level = this,
-                EntityId = Server.GetNextEntityId(),
-                Position = new VectorD(spike.CenterX + 0.5, spike.Height, spike.CenterZ + 0.5)
-            };
-            await ExplodeAsync(blast, 5, blast, ExplosionInteraction.Block);
-        }
-        var radius = spike.Radius;
-        for (var x = -radius; x <= radius; x++)
-        {
-            for (var z = -radius; z <= radius; z++)
-            {
-                for (var y = MinY; y <= spike.Height + 10; y++)
-                {
-                    var block = x * x + z * z <= radius * radius + 1 && y < spike.Height
-                        ? BlocksRegistry.ObsidianBlock
-                        : BlocksRegistry.Air;
-                            if (block.IsAir && y <= 65)
-                                continue;
-                    await SetBlockAsync(new Vector(spike.CenterX + x, y, spike.CenterZ + z), block, true);
-                }
-            }
-        }
+            await BlastSpikeTopAsync(spike);
+
+        await BuildSpikePillarAsync(spike);
         if (spike.Guarded)
-        {
-            for (var x = -2; x <= 2; x++)
-            {
-                for (var z = -2; z <= 2; z++)
-                {
-                    for (var y = 0; y <= 3; y++)
-                    {
-                        if (Math.Abs(x) == 2 || Math.Abs(z) == 2 || y == 3)
-                        {
-                            await SetBlockAsync(new Vector(spike.CenterX + x, spike.Height + y, spike.CenterZ + z),
-                                BlocksRegistry.IronBars.WithProperty("north", (Math.Abs(x) == 2 || y == 3) && z != -2)
-                                .WithProperty("south", (Math.Abs(x) == 2 || y == 3) && z != 2)
-                                .WithProperty("west", (Math.Abs(z) == 2 || y == 3) && x != -2)
-                                .WithProperty("east", (Math.Abs(z) == 2 || y == 3) && x != 2), true);
-                        }
-                    }
-                }
-            }
-        }
+            await BuildSpikeCageAsync(spike);
 
         await SetBlockAsync(new Vector(spike.CenterX, spike.Height, spike.CenterZ), BlocksRegistry.Bedrock, true);
         var crystalEntity = new EndCrystal
@@ -523,13 +537,89 @@ public abstract partial class AbstractLevel
         };
         if (resurrecting)
             crystalEntity.SetBeam(new Vector(0, 128, 0));
+
         SpawnEntity(crystalEntity);
     }
 
+    /// <summary>A resurrection clears the blocks around the spike's top and sets off an explosion there.</summary>
+    private async ValueTask BlastSpikeTopAsync(EndSpike spike)
+    {
+        for (var x = -10; x <= 10; x++)
+        {
+            for (var y = -10; y <= 10; y++)
+            {
+                for (var z = -10; z <= 10; z++)
+                {
+                    var position = new Vector(spike.CenterX + x, spike.Height + y, spike.CenterZ + z);
+                    await SetBlockAsync(position, BlocksRegistry.Air, true);
+                }
+            }
+        }
+
+        var blast = new EndCrystal
+        {
+            Level = this,
+            EntityId = Server.GetNextEntityId(),
+            Position = new VectorD(spike.CenterX + 0.5, spike.Height, spike.CenterZ + 0.5)
+        };
+        await ExplodeAsync(blast, 5, blast, ExplosionInteraction.Block);
+    }
+
+    /// <summary>The obsidian pillar, with the air above it cleared (and the air below y 66 left alone).</summary>
+    private async ValueTask BuildSpikePillarAsync(EndSpike spike)
+    {
+        var radius = spike.Radius;
+        for (var x = -radius; x <= radius; x++)
+        {
+            for (var z = -radius; z <= radius; z++)
+            {
+                for (var y = MinY; y <= spike.Height + 10; y++)
+                {
+                    var block = x * x + z * z <= radius * radius + 1 && y < spike.Height
+                        ? BlocksRegistry.ObsidianBlock
+                        : BlocksRegistry.Air;
+                    if (block.IsAir && y <= 65)
+                        continue;
+
+                    await SetBlockAsync(new Vector(spike.CenterX + x, y, spike.CenterZ + z), block, true);
+                }
+            }
+        }
+    }
+
+    /// <summary>The iron bars caging a guarded spike's crystal.</summary>
+    private async ValueTask BuildSpikeCageAsync(EndSpike spike)
+    {
+        for (var x = -2; x <= 2; x++)
+        {
+            for (var z = -2; z <= 2; z++)
+            {
+                for (var y = 0; y <= 3; y++)
+                {
+                    if (Math.Abs(x) == 2 || Math.Abs(z) == 2 || y == 3)
+                    {
+                        var position = new Vector(spike.CenterX + x, spike.Height + y, spike.CenterZ + z);
+                        await SetBlockAsync(position, SpikeCageBars(x, y, z), true);
+                    }
+                }
+            }
+        }
+    }
+
+    private static IBlock SpikeCageBars(int x, int y, int z)
+    {
+        var alongX = Math.Abs(x) == 2 || y == 3;
+        var alongZ = Math.Abs(z) == 2 || y == 3;
+        return BlocksRegistry.IronBars.WithProperty("north", alongX && z != -2)
+            .WithProperty("south", alongX && z != 2)
+            .WithProperty("west", alongZ && x != -2)
+            .WithProperty("east", alongZ && x != 2);
+    }
+
     /// <summary>
-    /// Reads the fight from the payload of vanilla's <c>ender_dragon_fight.dat</c>, after <see cref="ReadEndFightNbt"/>
-    /// read Obsidian's own state: vanilla's file wins for what both keep, so a fight vanilla ran since Obsidian last saved
-    /// the world isn't undone.
+    /// Reads the fight from the payload of vanilla's <c>ender_dragon_fight.dat</c>, after
+    /// <see cref="ReadEndFightNbt"/> read Obsidian's own state: vanilla's file wins for what both keep, so a fight
+    /// vanilla ran since Obsidian last saved the world isn't undone.
     /// </summary>
     internal void ReadVanillaEndFight(NbtCompound fight)
     {
@@ -574,6 +664,7 @@ public abstract partial class AbstractLevel
     {
         if (!HasEndFight)
             return;
+
         writer.WriteCompoundStart("ObsidianEndFight");
         writer.WriteBool("Initialized", endFightInitialized);
         writer.WriteBool("DragonKilled", dragonKilled);
@@ -590,17 +681,22 @@ public abstract partial class AbstractLevel
     {
         if (!tag.TryGetTag<NbtCompound>("ObsidianEndFight", out var fight))
             return;
+
         endFightInitialized = fight.TryGetBool("Initialized", out var initialized) && initialized;
         dragonKilled = fight.TryGetBool("DragonKilled", out var killed) && killed;
         dragonPreviouslyKilled = fight.TryGetBool("PreviouslyKilled", out var previous) && previous;
         if (fight.TryGetTagValue<string>("Dragon", out var dragon))
             Guid.TryParse(dragon, out fightDragon);
+
         if (fight.TryGetTagValue<int>("PortalY", out var y))
             exitPortal = new Vector(0, Math.Clamp(y, MinY + 1, MinY + Height - 5), 0);
+
         if (fight.TryGetTagValue<int>("Gateways", out var gateways))
             gatewaysCreated = Math.Clamp(gateways, 0, 20);
+
         if (fight.TryGetTagValue<int>("RespawnTicks", out var ticks))
             resurrectionTicks = Math.Clamp(ticks, -1, 601);
+
         if (fight.TryGetTagValue<string>("Crystals", out var crystals))
         {
             resurrectionCrystals = crystals.Split(',')
