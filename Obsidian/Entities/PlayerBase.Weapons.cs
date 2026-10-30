@@ -25,12 +25,14 @@ public partial class PlayerBase
             Item = hand == InteractionHand.MainHand ? GetHeldItem() : GetOffHandItem(),
             Hand = hand,
         };
+
         await Server.EventDispatcher.ExecuteEventAsync(use);
         if (use.IsCancelled)
             return;
 
-        if (use.Item is { Count: > 0 } stack && Plugins.ItemBehaviors.CanUseItems(this) &&
-            await Plugins.ItemBehaviors.UseAsync(new ItemUseContext { Player = this, Stack = stack, Hand = hand }))
+        if (use.Item is { Count: > 0 } stack
+            && Plugins.ItemBehaviors.CanUseItems(this)
+            && await Plugins.ItemBehaviors.UseAsync(new ItemUseContext { Player = this, Stack = stack, Hand = hand }))
         {
             return;
         }
@@ -56,11 +58,13 @@ public partial class PlayerBase
 
     private void PlayEquipSound(ItemStack item)
     {
-        var sound = item.GetComponent<EquippableDataComponent>(DataComponentType.Equippable)?.EquipSound.ResourceLocation;
+        var equippable = item.GetComponent<EquippableDataComponent>(DataComponentType.Equippable);
+        var sound = equippable?.EquipSound.ResourceLocation;
         if (sound is null)
         {
             var component = CombatItems.Component(item, "equippable");
-            if (component.ValueKind == JsonValueKind.Object && component.TryGetProperty("equip_sound", out var name)
+            if (component.ValueKind == JsonValueKind.Object
+                && component.TryGetProperty("equip_sound", out var name)
                 && name.ValueKind == JsonValueKind.String)
             {
                 sound = name.GetString();
@@ -70,7 +74,7 @@ public partial class PlayerBase
         if (sound is null || Silent)
             return;
 
-        PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SoundPacket
+        var packet = new SoundPacket
         {
             SoundLocation = sound,
             SoundPosition = new SoundPosition(Position.X, Position.Y, Position.Z),
@@ -78,70 +82,47 @@ public partial class PlayerBase
             Volume = 1,
             Pitch = 1,
             Seed = Globals.Random.NextInt64()
-        });
+        };
+
+        PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, packet);
     }
 
     internal async ValueTask StartUsingItemAsync(InteractionHand hand)
     {
         if (!Alive || Respawning || GameMode == GameMode.Spectator || usingWeapon != null || eatingItem != null)
             return;
+
         var slot = hand == InteractionHand.OffHand ? 45 : CurrentHeldItemSlot;
         var item = Inventory.GetItem(slot);
         if (item is not { Count: > 0 } || item.IsAir)
             return;
+
         var armorSlot = CombatItems.PlayerArmorSlot(item);
         if (armorSlot >= 0)
         {
-            var existing = Inventory.GetItem(armorSlot);
-            if (CombatItems.EnchantmentLevel(existing, EnchantmentsRegistry.BindingCurse) > 0 && GameMode != GameMode.Creative)
-                return;
-            var equipped = new ItemStack(item);
-            Inventory.SetItem(armorSlot, equipped);
-            Inventory.RemoveItem(slot, 1);
-            if (existing is { Count: > 0 } && !existing.IsAir)
-                Inventory.SetItem(slot, existing);
-            // Vanilla's LivingEntity.onEquipItem: a changed equipment slot plays its equip sound to everyone nearby.
-            if (!equipped.Equals(existing))
-                PlayEquipSound(equipped);
-            await SyncInventorySlotAsync(slot);
-            await SyncInventorySlotAsync(armorSlot);
+            await EquipArmorAsync(item, slot, armorSlot);
             return;
         }
+
         var charged = item.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(
             DataComponentType.ChargedProjectiles);
         if (item.Is(ItemsRegistry.Crossbow) && charged?.Value is { Length: > 0 } loaded)
         {
-            if (await ShootCrossbowAsync(item, loaded))
-            {
-                this.Statistics.Increment(item.Holder.UnlocalizedName, type: "minecraft:used");
-                item[DataComponentType.ChargedProjectiles] = ComponentBuilder.ChargedProjectiles with { Value = [] };
-                var fireworks = loaded.Any(projectile => projectile.Is(ItemsRegistry.FireworkRocket));
-                await DamageInventoryItemAsync(slot, fireworks ? 3 : 1);
-                await SyncInventorySlotAsync(slot);
-            }
+            await FireChargedCrossbowAsync(item, slot, loaded);
             return;
         }
+
         var spear = CombatItems.Component(item, "kinetic_weapon").ValueKind == JsonValueKind.Object;
         var bundle = ItemOwners.IsBundle(item);
-        if (item.Holder.Id is not (ItemIds.Bow or ItemIds.Crossbow or ItemIds.Trident or ItemIds.Shield) && !spear && !bundle)
+        var usable = item.Holder.Id is ItemIds.Bow or ItemIds.Crossbow or ItemIds.Trident or ItemIds.Shield;
+        if (!usable && !spear && !bundle)
         {
             StartEating(hand);
             return;
         }
-        if (item.Holder.Id is ItemIds.Bow or ItemIds.Crossbow
-            && FindAmmunition(item.Is(ItemsRegistry.Crossbow)) < 0
-            && GameMode != GameMode.Creative)
-        {
-            return;
-        }
 
-        if (item.Is(ItemsRegistry.Shield) && shieldCooldown > 0)
+        if (!CanStartUsing(item))
             return;
-        if (item.Is(ItemsRegistry.Trident) && (item.Damage >= CombatItems.MaxDamage(item) - 1 ||
-            CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Riptide) > 0 && !IsWet()))
-        {
-            return;
-        }
 
         usingWeapon = item;
         weaponSlot = slot;
@@ -152,13 +133,75 @@ public partial class PlayerBase
             LivingBitMask |= LivingBitMask.ActiveHand;
         else
             LivingBitMask &= ~LivingBitMask.ActiveHand;
+
         SyncFoodMetadata();
+    }
+
+    /// <summary>Swaps a worn item into its armor slot, unless the piece there is cursed with binding.</summary>
+    private async ValueTask EquipArmorAsync(ItemStack item, int slot, int armorSlot)
+    {
+        var existing = Inventory.GetItem(armorSlot);
+        var cursed = CombatItems.EnchantmentLevel(existing, EnchantmentsRegistry.BindingCurse) > 0;
+        if (cursed && GameMode != GameMode.Creative)
+            return;
+
+        var equipped = new ItemStack(item);
+        Inventory.SetItem(armorSlot, equipped);
+        Inventory.RemoveItem(slot, 1);
+        if (existing is { Count: > 0 } && !existing.IsAir)
+            Inventory.SetItem(slot, existing);
+
+        // Vanilla's LivingEntity.onEquipItem: a changed equipment slot plays its equip sound to everyone nearby.
+        if (!equipped.Equals(existing))
+            PlayEquipSound(equipped);
+
+        await SyncInventorySlotAsync(slot);
+        await SyncInventorySlotAsync(armorSlot);
+    }
+
+    private async ValueTask FireChargedCrossbowAsync(ItemStack item, int slot, ImmutableArray<ItemStack> loaded)
+    {
+        if (await ShootCrossbowAsync(item, loaded))
+        {
+            this.Statistics.Increment(item.Holder.UnlocalizedName, type: "minecraft:used");
+            item[DataComponentType.ChargedProjectiles] = ComponentBuilder.ChargedProjectiles with { Value = [] };
+            var fireworks = loaded.Any(projectile => projectile.Is(ItemsRegistry.FireworkRocket));
+            await DamageInventoryItemAsync(slot, fireworks ? 3 : 1);
+            await SyncInventorySlotAsync(slot);
+        }
+    }
+
+    /// <summary>
+    /// A bow or crossbow needs ammunition outside creative, a shield can't be raised while disabled, and a trident
+    /// can't be used about to break, or with riptide out of water and rain.
+    /// </summary>
+    private bool CanStartUsing(ItemStack item)
+    {
+        if (item.Holder.Id is ItemIds.Bow or ItemIds.Crossbow
+            && FindAmmunition(item.Is(ItemsRegistry.Crossbow)) < 0
+            && GameMode != GameMode.Creative)
+        {
+            return false;
+        }
+
+        if (item.Is(ItemsRegistry.Shield) && shieldCooldown > 0)
+            return false;
+
+        if (item.Is(ItemsRegistry.Trident)
+            && (item.Damage >= CombatItems.MaxDamage(item) - 1
+                || CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Riptide) > 0 && !IsWet()))
+        {
+            return false;
+        }
+
+        return true;
     }
 
     internal void CancelWeaponUse()
     {
         if (usingWeapon == null)
             return;
+
         usingWeapon = null;
         weaponTicks = 0;
         spearContacts.Clear();
@@ -175,7 +218,8 @@ public partial class PlayerBase
 
     private int FindAmmunition(bool crossbow)
     {
-        foreach (var slot in new[] { 45, (int)CurrentHeldItemSlot }.Concat(Enumerable.Range(9, 36)).Distinct())
+        var slots = new[] { 45, (int)CurrentHeldItemSlot }.Concat(Enumerable.Range(9, 36)).Distinct();
+        foreach (var slot in slots)
         {
             if (Inventory.GetItem(slot) is { Count: > 0 } item &&
                 (item.Holder.Id is ItemIds.Arrow or ItemIds.TippedArrow or ItemIds.SpectralArrow
@@ -190,84 +234,123 @@ public partial class PlayerBase
         return -1;
     }
 
+    /// <summary>The stack in <paramref name="ammunitionSlot"/>, or in creative without one, a free arrow.</summary>
+    private ItemStack? GetAmmunition(int ammunitionSlot)
+    {
+        if (ammunitionSlot >= 0)
+            return Inventory.GetItem(ammunitionSlot)!;
+
+        return GameMode == GameMode.Creative ? new ItemStack(ItemsRegistry.Arrow) : null;
+    }
+
     private int CrossbowChargeTicks(ItemStack item)
-        => Math.Max(1, (int)((1.25f - 0.25f * CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.QuickCharge)) * 20));
+    {
+        var quickCharge = CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.QuickCharge);
+        return Math.Max(1, (int)((1.25f - 0.25f * quickCharge) * 20));
+    }
 
     public async ValueTask ReleaseUsingItemAsync()
     {
         CancelEating();
         if (usingWeapon is not { } item)
             return;
+
         var slot = weaponSlot;
         var ticks = weaponTicks;
-        var valid = ReferenceEquals(Inventory.GetItem(slot), item) && item.Count > 0 && (slot == 45 || slot == CurrentHeldItemSlot) && Alive && !Respawning;
+        var valid = ReferenceEquals(Inventory.GetItem(slot), item)
+            && item.Count > 0
+            && (slot == 45 || slot == CurrentHeldItemSlot)
+            && Alive
+            && !Respawning;
         CancelWeaponUse();
         if (!valid)
             return;
+
         if (item.Is(ItemsRegistry.Bow))
-        {
-            var draw = ticks / 20f;
-            draw = Math.Min(1, (draw * draw + draw * 2) / 3);
-            if (draw < 0.1f)
-                return;
-            var ammunitionSlot = FindAmmunition(false);
-            var ammunition = ammunitionSlot >= 0 ? Inventory.GetItem(ammunitionSlot)! : GameMode == GameMode.Creative ? new ItemStack(ItemsRegistry.Arrow) : null;
-            if (ammunition == null)
-                return;
-            var infinite = GameMode == GameMode.Creative
-                || ammunition.Is(ItemsRegistry.Arrow)
-                    && CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Infinity) > 0;
-            if (!ShootArrow(item, ammunition, draw * 3, draw == 1, infinite ? ArrowPickup.CreativeOnly : ArrowPickup.Allowed))
-                return;
-            if (!infinite && ammunitionSlot >= 0)
-            {
-                Inventory.RemoveItem(ammunitionSlot, 1);
-                await SyncInventorySlotAsync(ammunitionSlot);
-            }
-            this.Statistics.Increment(item.Holder.UnlocalizedName, type: "minecraft:used");
-            await DamageInventoryItemAsync(slot, 1);
-        }
+            await ReleaseBowAsync(item, slot, ticks);
         else if (item.Is(ItemsRegistry.Trident) && ticks >= 10)
+            await ReleaseTridentAsync(item, slot);
+    }
+
+    private async ValueTask ReleaseBowAsync(ItemStack item, int slot, int ticks)
+    {
+        var draw = ticks / 20f;
+        draw = Math.Min(1, (draw * draw + draw * 2) / 3);
+        if (draw < 0.1f)
+            return;
+
+        var ammunitionSlot = FindAmmunition(false);
+        var ammunition = GetAmmunition(ammunitionSlot);
+        if (ammunition == null)
+            return;
+
+        var infinite = GameMode == GameMode.Creative
+            || ammunition.Is(ItemsRegistry.Arrow)
+                && CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Infinity) > 0;
+        var pickup = infinite ? ArrowPickup.CreativeOnly : ArrowPickup.Allowed;
+        if (!ShootArrow(item, ammunition, draw * 3, draw == 1, pickup))
+            return;
+
+        if (!infinite && ammunitionSlot >= 0)
         {
-            var riptide = CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Riptide);
-            if (riptide > 0)
-            {
-                if (!IsWet())
-                    return;
-                await DamageInventoryItemAsync(slot, 1);
-                this.Statistics.Increment(item.Holder.UnlocalizedName, type: "minecraft:used");
-                riptideTicks = 20;
-                riptideDamage = CombatItems.Attribute(item, "attack_damage", "mainhand", 0);
-                LivingBitMask |= LivingBitMask.InRiptideSpinAttack;
-                ApplyImpulse(GetLookDirection() * (1.5f + riptide * 0.75f) +
-                    (MovementFlags.HasFlag(MovementFlags.OnGround) ? new VectorD(0, 1.2, 0) : VectorD.Zero));
-                SyncFoodMetadata();
-                return;
-            }
-            var thrown = new Trident
-            {
-                Level = Level,
-                EntityId = Obsidian.Server.GetNextEntityId(),
-                Owner = this,
-                Position = Position + new VectorD(0, 1.52, 0),
-                Motion = ShotDirection(0) * 2.5 + CombatMotion,
-                Weapon = new ItemStack(item),
-                PickupItem = new ItemStack(item),
-                Pickup = GameMode == GameMode.Creative ? ArrowPickup.CreativeOnly : ArrowPickup.Allowed,
-                LoyaltyLevel = CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Loyalty)
-            };
-            if (!Level.TryAddEntity(thrown))
-                return;
-            this.Statistics.Increment(item.Holder.UnlocalizedName, type: "minecraft:used");
-            await DamageInventoryItemAsync(slot, 1);
-            thrown.PickupItem = new ItemStack(item);
-            if (GameMode != GameMode.Creative)
-            {
-                Inventory.RemoveItem(slot, 1);
-                await SyncInventorySlotAsync(slot);
-            }
-            thrown.SpawnEntity();
+            Inventory.RemoveItem(ammunitionSlot, 1);
+            await SyncInventorySlotAsync(ammunitionSlot);
         }
+
+        this.Statistics.Increment(item.Holder.UnlocalizedName, type: "minecraft:used");
+        await DamageInventoryItemAsync(slot, 1);
+    }
+
+    private async ValueTask ReleaseTridentAsync(ItemStack item, int slot)
+    {
+        var riptide = CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Riptide);
+        if (riptide > 0)
+        {
+            await StartRiptideAsync(item, slot, riptide);
+            return;
+        }
+
+        var thrown = new Trident
+        {
+            Level = Level,
+            EntityId = Obsidian.Server.GetNextEntityId(),
+            Owner = this,
+            Position = Position + new VectorD(0, 1.52, 0),
+            Motion = ShotDirection(0) * 2.5 + CombatMotion,
+            Weapon = new ItemStack(item),
+            PickupItem = new ItemStack(item),
+            Pickup = GameMode == GameMode.Creative ? ArrowPickup.CreativeOnly : ArrowPickup.Allowed,
+            LoyaltyLevel = CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Loyalty)
+        };
+
+        if (!Level.TryAddEntity(thrown))
+            return;
+
+        this.Statistics.Increment(item.Holder.UnlocalizedName, type: "minecraft:used");
+        await DamageInventoryItemAsync(slot, 1);
+        thrown.PickupItem = new ItemStack(item);
+        if (GameMode != GameMode.Creative)
+        {
+            Inventory.RemoveItem(slot, 1);
+            await SyncInventorySlotAsync(slot);
+        }
+
+        thrown.SpawnEntity();
+    }
+
+    private async ValueTask StartRiptideAsync(ItemStack item, int slot, int riptide)
+    {
+        if (!IsWet())
+            return;
+
+        await DamageInventoryItemAsync(slot, 1);
+        this.Statistics.Increment(item.Holder.UnlocalizedName, type: "minecraft:used");
+        riptideTicks = 20;
+        riptideDamage = CombatItems.Attribute(item, "attack_damage", "mainhand", 0);
+        LivingBitMask |= LivingBitMask.InRiptideSpinAttack;
+        var lift = MovementFlags.HasFlag(MovementFlags.OnGround) ? new VectorD(0, 1.2, 0) : VectorD.Zero;
+        ApplyImpulse(GetLookDirection() * (1.5f + riptide * 0.75f) + lift);
+        SyncFoodMetadata();
     }
 
     /// <summary>
@@ -290,16 +373,26 @@ public partial class PlayerBase
     {
         VectorD direction = GetLookDirection();
         var radians = angle * Math.PI / 180;
-        direction = new VectorD(direction.X * Math.Cos(radians) - direction.Z * Math.Sin(radians), direction.Y,
+        direction = new VectorD(
+            direction.X * Math.Cos(radians) - direction.Z * Math.Sin(radians),
+            direction.Y,
             direction.X * Math.Sin(radians) + direction.Z * Math.Cos(radians));
         // Vanilla's triangular inaccuracy distribution, with divergence 1.
-        direction += new VectorD((Globals.Random.NextDouble() - Globals.Random.NextDouble()) * 0.0172275,
+        direction += new VectorD(
+            (Globals.Random.NextDouble() - Globals.Random.NextDouble()) * 0.0172275,
             (Globals.Random.NextDouble() - Globals.Random.NextDouble()) * 0.0172275,
             (Globals.Random.NextDouble() - Globals.Random.NextDouble()) * 0.0172275);
         return direction / direction.Magnitude;
     }
 
-    private bool ShootArrow(ItemStack weapon, ItemStack ammunition, float speed, bool critical, ArrowPickup pickup, float angle = 0, bool crossbow = false)
+    private bool ShootArrow(
+        ItemStack weapon,
+        ItemStack ammunition,
+        float speed,
+        bool critical,
+        ArrowPickup pickup,
+        float angle = 0,
+        bool crossbow = false)
     {
         var arrow = new Arrow
         {
@@ -319,11 +412,14 @@ public partial class PlayerBase
             Effect = ammunition.Is(ItemsRegistry.SpectralArrow) ? (int)PotionEffect.Glowing - 1 : -1,
             EffectDuration = ammunition.Is(ItemsRegistry.SpectralArrow) ? 200 : 0
         };
+
         var power = CombatItems.EnchantmentLevel(weapon, EnchantmentsRegistry.Power);
         if (power > 0)
             arrow.Damage += power * 0.5f + 0.5f;
+
         if (!Level.TryAddEntity(arrow))
             return false;
+
         arrow.SpawnEntity();
         return true;
     }
@@ -333,33 +429,51 @@ public partial class PlayerBase
         var fired = false;
         for (var index = 0; index < ammunition.Length; index++)
         {
-            var angle = index == 0 ? 0 : index % 2 == 1 ? -10 : 10;
+            var angle = CrossbowShotAngle(index);
             var round = ammunition[index];
             if (round.Is(ItemsRegistry.FireworkRocket))
             {
-                var rocket = new FireworkRocket
-                {
-                    Level = Level,
-                    EntityId = Obsidian.Server.GetNextEntityId(),
-                    Owner = this,
-                    Item = new ItemStack(round),
-                    Position = Position + new VectorD(0, 1.52, 0),
-                    Motion = ShotDirection(angle) * 1.6,
-                    ShotAtAngle = true
-                };
-                if (Level.TryAddEntity(rocket))
-                {
-                    rocket.SpawnEntity();
-                    fired = true;
-            }
+                fired |= ShootCrossbowRocket(round, angle);
             }
             else
             {
-                fired |= ShootArrow(weapon, round, 3.15f, true,
-                GameMode == GameMode.Creative || index > 0 ? ArrowPickup.CreativeOnly : ArrowPickup.Allowed, angle, true);
+                var pickup = GameMode == GameMode.Creative || index > 0
+                    ? ArrowPickup.CreativeOnly
+                    : ArrowPickup.Allowed;
+                fired |= ShootArrow(weapon, round, 3.15f, true, pickup, angle, true);
             }
         }
+
         return ValueTask.FromResult(fired);
+    }
+
+    /// <summary>A multishot crossbow fires its first round straight ahead, the others 10 degrees to each side.</summary>
+    private static int CrossbowShotAngle(int index)
+    {
+        if (index == 0)
+            return 0;
+
+        return index % 2 == 1 ? -10 : 10;
+    }
+
+    private bool ShootCrossbowRocket(ItemStack round, int angle)
+    {
+        var rocket = new FireworkRocket
+        {
+            Level = Level,
+            EntityId = Obsidian.Server.GetNextEntityId(),
+            Owner = this,
+            Item = new ItemStack(round),
+            Position = Position + new VectorD(0, 1.52, 0),
+            Motion = ShotDirection(angle) * 1.6,
+            ShotAtAngle = true
+        };
+
+        if (!Level.TryAddEntity(rocket))
+            return false;
+
+        rocket.SpawnEntity();
+        return true;
     }
 
     private async ValueTask TickWeaponUseAsync()
@@ -371,70 +485,106 @@ public partial class PlayerBase
             CancelWeaponUse();
             return;
         }
+
         if (riptideTicks > 0)
-        {
-            if (--riptideTicks == 0)
-            {
-                LivingBitMask &= ~LivingBitMask.InRiptideSpinAttack;
-                SyncFoodMetadata();
-            }
-            else
-            {
-                foreach (var target in Level.GetEntitiesInRange(Position, 1.5f).OfType<Living>())
-                {
-                    if (!ReferenceEquals(target, this))
-                {
-                    await target.DamageCombatAsync(this, riptideDamage, CombatDamageKind.Melee, GetHeldItem());
-                    riptideTicks = 0;
-                    LivingBitMask &= ~LivingBitMask.InRiptideSpinAttack;
-                    SyncFoodMetadata();
-                    break;
-                }
-                }
-            }
-        }
+            await TickRiptideAsync();
+
         if (usingWeapon is not { } item)
             return;
-        if (!Alive || Respawning || GameMode == GameMode.Spectator || !ReferenceEquals(Inventory.GetItem(weaponSlot), item) || item.Count <= 0 || weaponSlot != 45 && weaponSlot != CurrentHeldItemSlot)
+
+        var lostWeapon = !Alive
+            || Respawning
+            || GameMode == GameMode.Spectator
+            || !ReferenceEquals(Inventory.GetItem(weaponSlot), item)
+            || item.Count <= 0
+            || weaponSlot != 45 && weaponSlot != CurrentHeldItemSlot;
+        if (lostWeapon)
         {
             CancelWeaponUse();
             return;
         }
+
         if (ItemOwners.IsBundle(item))
         {
-            // Vanilla's BundleItem.onUseTick: the remaining use time decides the drops; the use ends with the duration.
-            if (Bundles.DropsOnTick(Bundles.UseDurationTicks - weaponTicks))
-                await DropBundleContentsAsync(item);
-            weaponTicks++;
-            if (weaponTicks >= Bundles.UseDurationTicks)
-                CancelWeaponUse();
+            await TickBundleUseAsync(item);
             return;
         }
+
         weaponTicks++;
         if (item.Is(ItemsRegistry.Crossbow) && weaponTicks >= CrossbowChargeTicks(item))
         {
-            var slot = FindAmmunition(true);
-            var ammunition = slot >= 0 ? Inventory.GetItem(slot)! : GameMode == GameMode.Creative ? new ItemStack(ItemsRegistry.Arrow) : null;
-            if (ammunition == null)
-            {
-                CancelWeaponUse();
-                return;
-            }
-            var count = CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Multishot) > 0 ? 3 : 1;
-            item[DataComponentType.ChargedProjectiles] = ComponentBuilder.ChargedProjectiles with
-            { Value = Enumerable.Range(0, count).Select(_ => new ItemStack(ammunition)).ToImmutableArray() };
-            if (GameMode != GameMode.Creative && slot >= 0)
-            {
-                Inventory.RemoveItem(slot, 1);
-                await SyncInventorySlotAsync(slot);
-            }
-            await SyncInventorySlotAsync(weaponSlot);
-            CancelWeaponUse();
+            await ChargeCrossbowAsync(item);
         }
         else if (CombatItems.Component(item, "kinetic_weapon") is { ValueKind: JsonValueKind.Object } kinetic)
         {
             await TickSpearAsync(item, kinetic);
         }
+    }
+
+    /// <summary>A riptide spin ends after its ticks run out, or on hitting the first living entity it meets.</summary>
+    private async ValueTask TickRiptideAsync()
+    {
+        if (--riptideTicks == 0)
+        {
+            LivingBitMask &= ~LivingBitMask.InRiptideSpinAttack;
+            SyncFoodMetadata();
+        }
+        else
+        {
+            await HitRiptideTargetAsync();
+        }
+    }
+
+    private async ValueTask HitRiptideTargetAsync()
+    {
+        foreach (var target in Level.GetEntitiesInRange(Position, 1.5f).OfType<Living>())
+        {
+            if (!ReferenceEquals(target, this))
+            {
+                await target.DamageCombatAsync(this, riptideDamage, CombatDamageKind.Melee, GetHeldItem());
+                riptideTicks = 0;
+                LivingBitMask &= ~LivingBitMask.InRiptideSpinAttack;
+                SyncFoodMetadata();
+                return;
+            }
+        }
+    }
+
+    private async ValueTask TickBundleUseAsync(ItemStack item)
+    {
+        // Vanilla's BundleItem.onUseTick: the remaining use time decides the drops; the use ends with the duration.
+        if (Bundles.DropsOnTick(Bundles.UseDurationTicks - weaponTicks))
+            await DropBundleContentsAsync(item);
+
+        weaponTicks++;
+        if (weaponTicks >= Bundles.UseDurationTicks)
+            CancelWeaponUse();
+    }
+
+    /// <summary>A fully drawn crossbow loads one round, three with multishot, from the player's ammunition.</summary>
+    private async ValueTask ChargeCrossbowAsync(ItemStack item)
+    {
+        var slot = FindAmmunition(true);
+        var ammunition = GetAmmunition(slot);
+        if (ammunition == null)
+        {
+            CancelWeaponUse();
+            return;
+        }
+
+        var count = CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Multishot) > 0 ? 3 : 1;
+        var rounds = Enumerable.Range(0, count)
+            .Select(_ => new ItemStack(ammunition))
+            .ToImmutableArray();
+        item[DataComponentType.ChargedProjectiles] = ComponentBuilder.ChargedProjectiles with { Value = rounds };
+        if (GameMode != GameMode.Creative && slot >= 0)
+        {
+            Inventory.RemoveItem(slot, 1);
+            await SyncInventorySlotAsync(slot);
+        }
+
+        await SyncInventorySlotAsync(weaponSlot);
+        CancelWeaponUse();
     }
 
     /// <summary>
@@ -467,7 +617,7 @@ public partial class PlayerBase
 
     private void PlayBundleSound(string sound, float volume)
     {
-        PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SoundPacket
+        var packet = new SoundPacket
         {
             SoundLocation = sound,
             SoundPosition = new SoundPosition(Position.X, Position.Y, Position.Z),
@@ -475,39 +625,71 @@ public partial class PlayerBase
             Volume = volume,
             Pitch = 1,
             Seed = Globals.Random.NextInt64()
-        });
+        };
+
+        PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, packet);
     }
 
     private IEnumerable<Living> SpearTargets(ItemStack item)
     {
         var range = CombatItems.Component(item, "attack_range");
-        var reach = CombatItems.Number(range, GameMode == GameMode.Creative ? "max_creative_reach" : "max_reach", 4.5f);
-        var minimum = CombatItems.Number(range, GameMode == GameMode.Creative ? "min_creative_reach" : "min_reach", 2);
+        var creative = GameMode == GameMode.Creative;
+        var reach = CombatItems.Number(range, creative ? "max_creative_reach" : "max_reach", 4.5f);
+        var minimum = CombatItems.Number(range, creative ? "min_creative_reach" : "min_reach", 2);
         var eye = Position + new VectorD(0, 1.62, 0);
         var direction = GetLookDirection();
         var start = eye + direction * minimum;
         var ray = direction * (reach - minimum);
         var margin = new VectorD(CombatItems.Number(range, "hitbox_margin", 0.125f));
-        return Level.GetEntitiesInRange(Position, reach + 2).OfType<Living>().Where(target => !ReferenceEquals(target, this) && target.Alive &&
-            MobTerrain.SegmentIntersects(new BoundingBox(target.Dimension.CreateBBFromPosition(target.Position).Min - margin,
-                target.Dimension.CreateBBFromPosition(target.Position).Max + margin), start, ray) && CanAttack(target, item));
+        return Level.GetEntitiesInRange(Position, reach + 2)
+            .OfType<Living>()
+            .Where(target => !ReferenceEquals(target, this)
+                && target.Alive
+                && MobTerrain.SegmentIntersects(GetSpearHitbox(target, margin), start, ray)
+                && CanAttack(target, item));
+    }
+
+    private static BoundingBox GetSpearHitbox(Living target, VectorD margin)
+    {
+        var bounds = target.Dimension.CreateBBFromPosition(target.Position);
+        return new BoundingBox(bounds.Min - margin, bounds.Max + margin);
     }
 
     public async ValueTask StabAsync()
     {
         var item = GetHeldItem();
-        if (item == null || CombatItems.Component(item, "piercing_weapon").ValueKind != JsonValueKind.Object || AttackCharge < 1 || !Alive || Respawning || GameMode == GameMode.Spectator)
+        if (item == null
+            || CombatItems.Component(item, "piercing_weapon").ValueKind != JsonValueKind.Object
+            || AttackCharge < 1
+            || !Alive
+            || Respawning
+            || GameMode == GameMode.Spectator)
+        {
             return;
+        }
+
         try
         {
             foreach (var target in SpearTargets(item).ToArray())
             {
                 var (damage, critical) = GetAttackDamage(target);
-                await EventDispatcher.ExecuteEventAsync(new PlayerAttackEntityEventArgs(this, target, Server, Sneaking)
-                { Damage = damage, IsCrit = critical, Weapon = item, WeaponSlot = CurrentHeldItemSlot, PiercingAttack = true });
+                var attack = new PlayerAttackEntityEventArgs(this, target, Server, Sneaking)
+                {
+                    Damage = damage,
+                    IsCrit = critical,
+                    Weapon = item,
+                    WeaponSlot = CurrentHeldItemSlot,
+                    PiercingAttack = true
+                };
+
+                await EventDispatcher.ExecuteEventAsync(attack);
             }
         }
-        finally { attackTicks = 0; }
+        finally
+        {
+            attackTicks = 0;
+        }
+
         var lunge = CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.Lunge);
         if (lunge > 0 && FoodLevel >= 6 && !IsWet() && !FlyingWithElytra && Vehicle == null)
         {
@@ -523,40 +705,72 @@ public partial class PlayerBase
         var elapsed = weaponTicks - (int)CombatItems.Number(kinetic, "delay_ticks");
         if (elapsed < 0)
             return;
+
         var look = GetLookDirection();
         var ownMotion = Vehicle?.Motion ?? CombatMotion;
         var speed = (ownMotion.X * look.X + ownMotion.Y * look.Y + ownMotion.Z * look.Z) * 20;
         foreach (var target in SpearTargets(item).ToArray())
         {
-            if (spearContacts.TryGetValue(target.EntityId, out var tick) && weaponTicks - tick < CombatItems.Number(kinetic, "contact_cooldown_ticks", 10))
-                continue;
-            spearContacts[target.EntityId] = weaponTicks;
-            var targetMotion = target is PlayerBase player ? player.CombatMotion : target.Motion;
-            var relative = Math.Max(0, speed - (targetMotion.X * look.X + targetMotion.Y * look.Y + targetMotion.Z * look.Z) * 20);
-            bool Meets(string name) => kinetic.TryGetProperty(name, out var condition) &&
-                elapsed <= CombatItems.Number(condition, "max_duration_ticks") &&
-                speed >= CombatItems.Number(condition, "min_speed") && relative >= CombatItems.Number(condition, "min_relative_speed");
-            var damage = Meets("damage_conditions");
-            var knockback = Meets("knockback_conditions");
-            var dismount = Meets("dismount_conditions");
-            if (damage || knockback || dismount)
+            if (spearContacts.TryGetValue(target.EntityId, out var tick)
+                && weaponTicks - tick < CombatItems.Number(kinetic, "contact_cooldown_ticks", 10))
             {
-                var amount = CombatItems.Attribute(item, "attack_damage", weaponSlot == 45 ? "offhand" : "mainhand", 1) +
-                    (float)Math.Floor(relative * CombatItems.Number(kinetic, "damage_multiplier", 1)) + CombatEffects.DamageBonus(item, target);
-                var attack = new PlayerAttackEntityEventArgs(this, target, Server, Sneaking)
-                {
-                    Damage = damage ? amount : 0,
-                    Weapon = item,
-                    WeaponSlot = weaponSlot,
-                    ChargeAttack = true,
-                    ChargeKnockback = knockback,
-                    ChargeDismount = dismount
-                };
-                // Charge damage has its own per-target contact cooldown, independent of jab cooldown.
-                await EventDispatcher.ExecuteEventAsync(attack);
+                continue;
             }
+
+            spearContacts[target.EntityId] = weaponTicks;
+            await ChargeSpearAtAsync(item, kinetic, target, look, speed, elapsed);
         }
     }
+
+    /// <summary>
+    /// A charged spear damages, knocks back or dismounts <paramref name="target"/> as far as the charge's duration,
+    /// speed and speed relative to the target meet each effect's conditions.
+    /// </summary>
+    private async ValueTask ChargeSpearAtAsync(
+        ItemStack item,
+        JsonElement kinetic,
+        Living target,
+        VectorD look,
+        double speed,
+        int elapsed)
+    {
+        var targetMotion = target is PlayerBase player ? player.CombatMotion : target.Motion;
+        var targetSpeed = (targetMotion.X * look.X + targetMotion.Y * look.Y + targetMotion.Z * look.Z) * 20;
+        var relative = Math.Max(0, speed - targetSpeed);
+        var damage = MeetsSpearCondition(kinetic, "damage_conditions", elapsed, speed, relative);
+        var knockback = MeetsSpearCondition(kinetic, "knockback_conditions", elapsed, speed, relative);
+        var dismount = MeetsSpearCondition(kinetic, "dismount_conditions", elapsed, speed, relative);
+        if (damage || knockback || dismount)
+        {
+            var hand = weaponSlot == 45 ? "offhand" : "mainhand";
+            var baseDamage = CombatItems.Attribute(item, "attack_damage", hand, 1);
+            var speedDamage = (float)Math.Floor(relative * CombatItems.Number(kinetic, "damage_multiplier", 1));
+            var amount = baseDamage + speedDamage + CombatEffects.DamageBonus(item, target);
+            var attack = new PlayerAttackEntityEventArgs(this, target, Server, Sneaking)
+            {
+                Damage = damage ? amount : 0,
+                Weapon = item,
+                WeaponSlot = weaponSlot,
+                ChargeAttack = true,
+                ChargeKnockback = knockback,
+                ChargeDismount = dismount
+            };
+
+            // Charge damage has its own per-target contact cooldown, independent of jab cooldown.
+            await EventDispatcher.ExecuteEventAsync(attack);
+        }
+    }
+
+    private static bool MeetsSpearCondition(
+        JsonElement kinetic,
+        string name,
+        int elapsed,
+        double speed,
+        double relative) =>
+        kinetic.TryGetProperty(name, out var condition)
+        && elapsed <= CombatItems.Number(condition, "max_duration_ticks")
+        && speed >= CombatItems.Number(condition, "min_speed")
+        && relative >= CombatItems.Number(condition, "min_relative_speed");
 
     // Blocks the damage with a raised shield facing incomingFrom, where it comes from.
     private async ValueTask<bool> TryBlockDamageAsync(
@@ -566,22 +780,35 @@ public partial class PlayerBase
         ItemStack? weapon,
         VectorD incomingFrom)
     {
-        if (usingWeapon?.Is(ItemsRegistry.Shield) != true || weaponTicks < 5 || shieldCooldown > 0 ||
-            kind is not (CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion
+        if (usingWeapon?.Is(ItemsRegistry.Shield) != true
+            || weaponTicks < 5
+            || shieldCooldown > 0
+            || kind is not (CombatDamageKind.Melee
+                or CombatDamageKind.Projectile
+                or CombatDamageKind.Explosion
                 or CombatDamageKind.Thorns))
         {
             return false;
         }
 
-        if (kind == CombatDamageKind.Projectile && CombatItems.EnchantmentLevel(weapon, EnchantmentsRegistry.Piercing) > 0)
+        if (kind == CombatDamageKind.Projectile
+            && CombatItems.EnchantmentLevel(weapon, EnchantmentsRegistry.Piercing) > 0)
+        {
             return false;
+        }
+
         var incoming = incomingFrom - Position;
         var look = GetLookDirection();
         if (incoming.X * look.X + incoming.Z * look.Z <= 0)
             return false;
+
         if (amount >= 3)
             await DamageInventoryItemAsync(weaponSlot, 1 + (int)Math.Floor(amount));
-        if (kind == CombatDamageKind.Melee && source is Living attacker && weapon?.Holder.UnlocalizedName.EndsWith("_axe", StringComparison.Ordinal) == true)
+
+        var axeBlow = kind == CombatDamageKind.Melee
+            && source is Living
+            && weapon?.Holder.UnlocalizedName.EndsWith("_axe", StringComparison.Ordinal) == true;
+        if (axeBlow)
         {
             shieldCooldown = 100;
             CancelWeaponUse();
@@ -591,9 +818,10 @@ public partial class PlayerBase
         {
             await this.QueuePacketAsync(new EntityEventPacket { EntityId = EntityId, Event = 29 });
         }
+
         // Vanilla LivingEntity.hurtServer -> BlocksAttacks.onBlocked: the shield's block_sound (item.shield.block)
         // plays at the blocker's position for nearby players, with pitch 0.8 + random * 0.4.
-        PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SoundPacket
+        var blockSound = new SoundPacket
         {
             SoundLocation = "minecraft:item.shield.block",
             SoundPosition = new SoundPosition(Position.X, Position.Y, Position.Z),
@@ -601,7 +829,9 @@ public partial class PlayerBase
             Volume = 1,
             Pitch = 0.8f + Globals.Random.NextSingle() * 0.4f,
             Seed = Globals.Random.NextInt64()
-        });
+        };
+
+        PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, blockSound);
         return true;
     }
 
@@ -613,40 +843,13 @@ public partial class PlayerBase
         if (creativeOnly)
             return true;
 
-        ContainerSetSlotPacket? update = null;
-        ClickWindowState state = default;
+        ContainerSetSlotPacket? update;
+        ClickWindowState state;
 
         // Taken like an item pickup takes it, which the slot is sent in order with too (see PickupNearbyItemsAsync).
         using (await Inventory.LockAsync())
         {
-            for (var pass = 0; pass < 2; pass++)
-            {
-                foreach (var slot in Enumerable.Range(36, 9).Concat(Enumerable.Range(9, 27)))
-                {
-                    var existing = Inventory.GetItem(slot);
-                    var empty = existing.IsNullOrAir() || existing.Count <= 0;
-                    if (pass == 0 ? empty || existing != item || existing.Count >= existing.MaxStackSize : !empty)
-                        continue;
-
-                    if (empty)
-                        Inventory.SetItem(slot, new ItemStack(item));
-                    else
-                        existing.Count++;
-
-                    update = new ContainerSetSlotPacket
-                    {
-                        ContainerId = 0,
-                        Slot = (short)slot,
-                        SlotData = NetworkBuffer.SnapshotItemStack(Inventory.GetItem(slot)!),
-                        StateId = Inventory.StateId++
-                    };
-                    state = ClickWindowState.Of(this);
-                    break;
-                }
-
-                if (update is not null)
-                    break;
-            }
+            update = StoreReceivedProjectile(item, out state);
         }
 
         if (update is null)
@@ -658,9 +861,51 @@ public partial class PlayerBase
         return true;
     }
 
+    /// <summary>
+    /// Adds <paramref name="item"/> to a hotbar or main inventory stack of it with room, else to the first empty slot,
+    /// returning the slot update and the window state after it (null and default when nothing has room).
+    /// </summary>
+    private ContainerSetSlotPacket? StoreReceivedProjectile(ItemStack item, out ClickWindowState state)
+    {
+        for (var pass = 0; pass < 2; pass++)
+        {
+            foreach (var slot in Enumerable.Range(36, 9).Concat(Enumerable.Range(9, 27)))
+            {
+                var existing = Inventory.GetItem(slot);
+                var empty = existing.IsNullOrAir() || existing.Count <= 0;
+                var skip = pass == 0
+                    ? empty || existing != item || existing.Count >= existing.MaxStackSize
+                    : !empty;
+                if (skip)
+                    continue;
+
+                if (empty)
+                    Inventory.SetItem(slot, new ItemStack(item));
+                else
+                    existing.Count++;
+
+                var update = new ContainerSetSlotPacket
+                {
+                    ContainerId = 0,
+                    Slot = (short)slot,
+                    SlotData = NetworkBuffer.SnapshotItemStack(Inventory.GetItem(slot)!),
+                    StateId = Inventory.StateId++
+                };
+
+                state = ClickWindowState.Of(this);
+                return update;
+            }
+        }
+
+        state = default;
+        return null;
+    }
+
     private static partial class Log
     {
-        [LoggerMessage(Level = LogLevel.Warning, Message = "{Username} couldn't drop {Count} {Item} from a bundle; they stay in it")]
+        [LoggerMessage(
+            Level = LogLevel.Warning,
+            Message = "{Username} couldn't drop {Count} {Item} from a bundle; they stay in it")]
         public static partial void BundleDropRefused(ILogger logger, string username, string item, int count);
     }
 }
