@@ -385,9 +385,9 @@ public interface IPluginRegistry
     /// <paramref name="to"/>. The ingredient slot takes the ingredient, and shift-clicking sends it there.
     /// </summary>
     /// <remarks>
-    /// Vanilla's mixes are tried first, then plugins' in the order they were added, so a plugin can't change what one
-    /// of vanilla's brews. The mix is removed when the plugin unloads; a reload adds it again. Servers that don't brew,
-    /// like the Obsidian client, ignore mixes.
+    /// Brewing recipes (vanilla's <c>minecraft:brewing</c> recipes and plugins' recipe files) are tried first, then
+    /// plugins' mixes in the order they were added, so a mix can't change what a recipe brews. The mix is removed when
+    /// the plugin unloads; a reload adds it again. Servers that don't brew, like the Obsidian client, ignore mixes.
     /// </remarks>
     /// <exception cref="InvalidOperationException">The plugin is unloading.</exception>
     public IPluginRegistry AddPotionMix(Potion from, Item ingredient, Potion to) => this;

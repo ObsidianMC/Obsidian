@@ -23,7 +23,7 @@ public abstract partial class AbstractLevel
             this.UnpackLootTable(machine, null);
 
         var inventory = machine.Inventory;
-        bool slots;
+        FurnaceBlockEntity.Step step;
         bool properties;
         lock (this.Fluids.TickLock)
         {
@@ -36,7 +36,7 @@ public abstract partial class AbstractLevel
                     return;
 
                 var before = (machine.LitRemaining, machine.LitTotal, machine.CookingSpent, machine.CookingTotal);
-                slots = machine.Cook(this.CookingRecipes);
+                step = machine.Cook(this.CookingRecipes);
                 properties = before !=
                     (machine.LitRemaining, machine.LitTotal, machine.CookingSpent, machine.CookingTotal);
             }
@@ -48,7 +48,10 @@ public abstract partial class AbstractLevel
                 this.BlockUpdates.SetBlock(machine.BlockPosition, block.WithProperty("lit", lit));
         }
 
-        if (slots)
+        if (step.Remainder is ItemStack remainder)
+            this.DropItemStack(machine.BlockPosition, remainder);
+
+        if (step.Slots)
             await MainEventHandler.RefreshViewersAsync(inventory);
 
         if (properties)

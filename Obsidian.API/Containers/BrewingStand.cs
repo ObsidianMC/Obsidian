@@ -28,14 +28,29 @@ public sealed class BrewingStand : ResultContainer
     public Vector BlockPosition { get; set; }
 
     /// <summary>
-    /// The ticks the brew in progress has left, from 400 down; 0 when nothing brews.
+    /// The ticks the brew in progress has left, from <see cref="TotalBrewTime"/> down; 0 when nothing brews.
     /// </summary>
     public int BrewTime { get; set; }
 
     /// <summary>
-    /// How many more brews the fuel used so far lasts, up to 20.
+    /// How long the brew in progress takes in all: 400 ticks, divided by the fuel's speed multiplier.
+    /// </summary>
+    public int TotalBrewTime { get; set; } = 400;
+
+    /// <summary>
+    /// How many more brews the fuel used so far lasts, up to <see cref="TotalFuel"/>.
     /// </summary>
     public int Fuel { get; set; }
+
+    /// <summary>
+    /// How many brews the fuel used last lasts in all (20 for blaze powder), from its <c>minecraft:brewing_fuel</c>.
+    /// </summary>
+    public int TotalFuel { get; set; } = 20;
+
+    /// <summary>
+    /// How much faster than normal the fuel used last brews, from its <c>minecraft:brewing_fuel</c>.
+    /// </summary>
+    public float SpeedMultiplier { get; set; } = 1f;
 
     /// <summary>
     /// The ingredient the brew in progress started with, which it stops without (vanilla's <c>ingredient</c>, which

@@ -129,13 +129,20 @@ internal class VanillaContainerBlockEntity(BaseContainer inventory, params strin
 internal sealed partial class BrewingStandBlockEntity : VanillaContainerBlockEntity
 {
     public BrewingStandBlockEntity(Vector position)
-        : base(new BrewingStand { BlockPosition = position }, "BrewTime", "Fuel")
+        : base(
+            new BrewingStand { BlockPosition = position },
+            "BrewTime",
+            "Fuel",
+            "total_brew_time",
+            "total_fuel",
+            "speed_multiplier")
     {
     }
 
     public BrewingStand Stand => (BrewingStand)this.Inventory;
 
-    // Vanilla's BrewingStandBlockEntity.loadAdditional: the brew's time left and the fuel left.
+    // Vanilla's BrewingStandBlockEntity.loadAdditional: the brew's time left and the fuel left, with their totals and
+    // the fuel's speed.
     protected internal override void Load(NbtCompound tag)
     {
         base.Load(tag);
@@ -145,6 +152,11 @@ internal sealed partial class BrewingStandBlockEntity : VanillaContainerBlockEnt
             : tag.TryGetTagValue<short>("BrewTime", out var legacyTime) ? legacyTime : 0;
         stand.Fuel = tag.TryGetTagValue<int>("Fuel", out var fuel) ? fuel
             : tag.TryGetTagValue<byte>("Fuel", out var legacyFuel) ? legacyFuel : 0;
+        stand.TotalBrewTime = tag.TryGetTagValue<int>("total_brew_time", out var totalBrewTime)
+            ? totalBrewTime
+            : Brewing.BrewTime;
+        stand.TotalFuel = tag.TryGetTagValue<int>("total_fuel", out var totalFuel) ? totalFuel : 20;
+        stand.SpeedMultiplier = tag.TryGetTagValue<float>("speed_multiplier", out var speed) ? speed : 1f;
 
         // A brew in progress takes its unsaved ingredient from the ingredient slot, so it goes on after a reload
         // instead of stopping and spending another fuel use.
@@ -157,6 +169,9 @@ internal sealed partial class BrewingStandBlockEntity : VanillaContainerBlockEnt
 
         tag.Add(new NbtTag<int>("BrewTime", this.Stand.BrewTime));
         tag.Add(new NbtTag<int>("Fuel", this.Stand.Fuel));
+        tag.Add(new NbtTag<int>("total_brew_time", this.Stand.TotalBrewTime));
+        tag.Add(new NbtTag<int>("total_fuel", this.Stand.TotalFuel));
+        tag.Add(new NbtTag<float>("speed_multiplier", this.Stand.SpeedMultiplier));
     }
 
     protected internal override ValueTask TickAsync() =>

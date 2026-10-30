@@ -186,7 +186,11 @@ matcher. Special recipes such as repairing tools and decorating shields are not 
 outputs and remainders still need implementation. Public evaluations are detached plans, not inventory reservations
 or result-slot commit callbacks for custom menus.
 
-**Where to start:** capture each supported special recipe's output and remainder behavior in vanilla 1.21.11 and
+26.1's configurable special recipes aren't read either: `crafting_dye` (dyeing armour) and `crafting_imbue` (tipped
+arrows) are skipped when recipes load (`RecipeConverter`), and `crafting_transmute` recipes, map cloning among them,
+load as nothing.
+
+**Where to start:** capture each supported special recipe's output and remainder behavior in vanilla 26.3 and
 extend the shared matcher and consumption path together. Add a custom-menu commit API when a concrete menu needs it.
 
 ## Workstation details
@@ -288,8 +292,8 @@ hoppers, droppers and dispensers; the rest of vanilla's item movers aren't model
   armour, igniting TNT, shearing, ...) aren't modelled, and a dispenser with nothing to fire doesn't emit vanilla's
   `block_activate` game event.
 - **Composters** take items put in by hand and by a hopper above, and give bone meal out by hand and to a hopper
-  below, with vanilla's chance table. Items thrown into one (item entities) aren't taken yet, and the ready tick
-  is checked by scheduling and running it directly, not over a 20-tick world run.
+  below, adding the layers each item's `minecraft:compostable` gives. Items thrown into one (item entities) aren't
+  taken yet, and the ready tick is checked by scheduling and running it directly, not over a 20-tick world run.
 - **Minecarts with chests or hoppers** are neither containers hoppers reach (vanilla's `getEntityContainer`) nor
   hoppers themselves.
 - **Hopper timing.** A hopper takes in item entities on its own tick, not also as they move into it (vanilla's
@@ -526,13 +530,20 @@ cover the rest of the behavior.
 and replace `SoulSandBlock` and `MagmaBlock` in `BlockOwnerBehaviors` with them, then re-enable the skipped tests in
 `BubbleColumns`.
 
-## Cooking speed from fuel
+## Item component numbers
 
-**Status:** open until Phase 4 of [the porting plan](porting-26.3-plan.md).
+**Status:** mostly done. Furnaces, brewing stands and composters read 26.3's `minecraft:cooking_fuel`,
+`minecraft:brewing_fuel` and `minecraft:compostable` components (`WorldData/ItemFuels.cs`), and brewing stands brew
+by the `minecraft:brewing` recipes.
 
-26.1 gives blasting and smoking recipes the same 200 ticks as smelting; a furnace now cooks at the speed multiplier of
-the fuel it lit with, saved as `speed_multiplier`. Obsidian still reads each recipe's cooking time as is, so blast
-furnaces and smokers cook at a furnace's speed for now, and the cooking test is skipped.
+- The components' numbers name context number providers, which `WorldData/ComponentNumbers.cs` works out with only
+  the provider and predicate types vanilla's fuel and compost providers use. It stands in for Phase 4's context
+  number providers and should be replaced by them.
+- A brewing fuel's numbers are worked out for a default brewing stand rather than the stand's own block state, and a
+  fuel's crafting remainder (none of vanilla's brewing fuels has one) isn't given back.
+- Brewing outputs can set only `minecraft:potion_contents`, and potion tags in brewing inputs aren't read.
+- `minecraft:villager_food` and `minecraft:mob_visibility` aren't read: villagers don't pick up or share food, and
+  mobs don't see players wearing heads any less yet.
 
-**Where to start:** replace `FurnaceFuels` with the fuel component's burn time and speed multiplier, as Phase 4 lists,
-then re-enable `Cooking.MachinesCookAcrossSaveAndAutomationAndAwardExperience`.
+**Where to start:** once context number providers land, resolve `ComponentIntValue` and `ComponentFloatValue` with
+them and delete `ComponentNumbers`.
