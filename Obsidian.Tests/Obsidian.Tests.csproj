@@ -72,6 +72,7 @@
 		                  ReferenceOutputAssembly="false" />
 		<AdditionalFiles Include="data\**\*.json" />
 		<None Include="data\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+		<None Include="Assets\vanilla-26.3-world\**" Exclude="Assets\vanilla-26.3-world\README.md" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
 	<!-- The engine sample fixture, built first; its output, laid out like its archive, is copied into EngineSample/,
