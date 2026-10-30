@@ -100,7 +100,7 @@ internal sealed partial class FurnaceBlockEntity
     {
         var input = this.Inventory[IngredientSlot];
         var fuel = this.Inventory[FuelSlot];
-        if (this.LitRemaining == 0 && this.CookingSpent == 0 && input.IsNullOrAir())
+        if (this.LitRemaining <= 0 && this.CookingSpent == 0 && input.IsNullOrAir())
             return default;
 
         var before = (this.LitRemaining, this.LitTotal, this.CookingSpent, this.CookingTotal);
@@ -122,7 +122,8 @@ internal sealed partial class FurnaceBlockEntity
         // Vanilla lets cooling progress decay by two only when there is neither a flame nor both input and fuel.
         if (this.LitRemaining > 0 || !fuel.IsNullOrAir() && !input.IsNullOrAir())
         {
-            if (this.LitRemaining == 0 && canCook && fuel is not null)
+            // Like vanilla, fuel burning for no time leaves the furnace unlit, so the next tick tries again.
+            if (this.LitRemaining <= 0 && canCook && fuel is not null)
             {
                 var duration = this.Light(fuel, recipe!);
                 if (duration > 0)

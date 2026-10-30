@@ -162,6 +162,28 @@ public sealed class Cooking
             Assert.Empty(dropped);
     }
 
+    [Fact(DisplayName = "A furnace whose fuel burns for no time lights with the next fuel",
+        Timeout = TestServerFactory.TestTimeout)]
+    public async Task FuelWithoutBurnTimeLeavesTheFurnaceReadyToLight()
+    {
+        await using var kitchen = await Kitchen.OpenAsync("no burn time");
+        var furnace = await kitchen.PlaceAsync<FurnaceBlockEntity>(BlocksRegistry.Furnace);
+        furnace.Inventory[0] = new ItemStack(ItemsRegistry.RawIron, 1);
+        furnace.Inventory[1] = CookingFuel(ItemsRegistry.Dirt, 1, burnTime: -1);
+
+        // Like vanilla's, the furnace keeps the burn time as it is, stays unlit and keeps the fuel.
+        await kitchen.TickAsync(furnace, 1);
+
+        Assert.Equal(-1, furnace.LitRemaining);
+        Assert.Equal(1, furnace.Inventory[1]?.Count);
+
+        // Swapped for coal, it lights on the next tick and cooks the iron in 200.
+        furnace.Inventory[1] = new ItemStack(ItemsRegistry.Coal, 1);
+        await kitchen.TickAsync(furnace, 200);
+
+        Assert.True(furnace.Inventory[2]?.Is(ItemsRegistry.IronIngot));
+    }
+
     [Fact(DisplayName = "A campfire cooks across a save, showing items without their private components",
         Timeout = TestServerFactory.TestTimeout)]
     public async Task CampfireCooksAcrossSaveAndHidesPrivateComponents()
