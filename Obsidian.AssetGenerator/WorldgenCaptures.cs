@@ -46,7 +46,8 @@ internal static class WorldgenCaptures
         {
             foreach (var structures in new[] { false, true })
             {
-                var world = Path.Combine(server.Directory, "captures", $"{seed}-{(structures ? "structures" : "no-structures")}");
+                var worldName = $"{seed}-{(structures ? "structures" : "no-structures")}";
+                var world = Path.Combine(server.ScratchDirectory, "captures", worldName);
                 if (Directory.Exists(world))
                     Directory.Delete(world, recursive: true);
                 Directory.CreateDirectory(world);

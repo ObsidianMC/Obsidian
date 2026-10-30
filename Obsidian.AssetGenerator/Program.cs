@@ -2,23 +2,26 @@ using Obsidian.AssetGenerator;
 using Obsidian.AssetGenerator.Datagen;
 using System.Diagnostics;
 
-// Usage: Obsidian.AssetGenerator <minecraft version> <legacy version> <work directory> <assets directory>
-//        Obsidian.AssetGenerator capture-worldgen <minecraft version> <work directory> <fixture>
+// Usage: Obsidian.AssetGenerator <minecraft version> <legacy version> <cache directory> <scratch directory>
+//            <assets directory>
+//        Obsidian.AssetGenerator capture-worldgen <minecraft version> <cache directory> <scratch directory> <fixture>
 //
 // Downloads the vanilla server jar of the version, runs its data generators and the Java dumper against it, and writes
 // the assets the source generators and the server read into the assets directory (replacing what's there). The worldgen
 // assets come from the legacy version's data generators instead, into legacy-<legacy version> (temporary,
-// until Phase 5 of docs/porting-26.3-plan.md; see DatagenAssets.WriteLegacy).
+// until Phase 5 of docs/porting-26.3-plan.md; see DatagenAssets.WriteLegacy). The jars and data generator output are
+// cached per version in the cache directory, which checkouts share; this checkout's runs work in the scratch directory.
 //
 // capture-worldgen instead re-records the vanilla worldgen references in the fixture (in place) with the version's
 // server; see docs/vanilla-captures.md.
 var timer = Stopwatch.StartNew();
 using var httpClient = new HttpClient();
 
-if (args is ["capture-worldgen", var captureVersion, var captureWorkDirectory, var fixture])
+if (args is ["capture-worldgen", var captureVersion, var captureCache, var captureScratch, var fixture])
 {
-    var captureDirectory = Path.Combine(Path.GetFullPath(captureWorkDirectory), captureVersion);
-    var vanilla = await VanillaServer.PrepareAsync(httpClient, captureVersion, captureDirectory);
+    var vanilla = await VanillaServer.PrepareAsync(httpClient, captureVersion,
+        Path.Combine(Path.GetFullPath(captureCache), captureVersion),
+        Path.Combine(Path.GetFullPath(captureScratch), captureVersion));
     await WorldgenCaptures.RunAsync(vanilla, Path.GetFullPath(fixture));
 
     var seconds = timer.Elapsed.TotalSeconds;
@@ -26,17 +29,24 @@ if (args is ["capture-worldgen", var captureVersion, var captureWorkDirectory, v
     return 0;
 }
 
-if (args.Length != 4)
+if (args.Length != 5)
 {
-    Console.Error.WriteLine("Usage: Obsidian.AssetGenerator <minecraft version> <legacy version> <work directory> <assets directory>");
-    Console.Error.WriteLine("       Obsidian.AssetGenerator capture-worldgen <minecraft version> <work directory> <fixture>");
+    Console.Error.WriteLine("Usage: Obsidian.AssetGenerator <minecraft version> <legacy version> <cache directory>");
+    Console.Error.WriteLine("           <scratch directory> <assets directory>");
+    Console.Error.WriteLine("       Obsidian.AssetGenerator capture-worldgen <minecraft version> <cache directory>");
+    Console.Error.WriteLine("           <scratch directory> <fixture>");
     return 1;
 }
 
-var (version, legacyVersion, workDirectory, assetsDirectory) = (args[0], args[1], Path.GetFullPath(args[2]), Path.GetFullPath(args[3]));
+var (version, legacyVersion) = (args[0], args[1]);
+var cacheDirectory = Path.GetFullPath(args[2]);
+var scratchDirectory = Path.GetFullPath(args[3]);
+var assetsDirectory = Path.GetFullPath(args[4]);
 
-var server = await VanillaServer.PrepareAsync(httpClient, version, Path.Combine(workDirectory, version));
-var legacy = await VanillaServer.PrepareAsync(httpClient, legacyVersion, Path.Combine(workDirectory, legacyVersion));
+var server = await VanillaServer.PrepareAsync(httpClient, version,
+    Path.Combine(cacheDirectory, version), Path.Combine(scratchDirectory, version));
+var legacy = await VanillaServer.PrepareAsync(httpClient, legacyVersion,
+    Path.Combine(cacheDirectory, legacyVersion), Path.Combine(scratchDirectory, legacyVersion));
 
 // Written next to the assets and moved in place once complete, so a failed run leaves the previous assets alone.
 var staging = assetsDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + ".tmp";
