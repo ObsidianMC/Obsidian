@@ -135,10 +135,11 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
 
     public override async Task<bool> LoadAsync(DimensionCodec codec)
     {
+        // Read even when the dimension is new: vanilla saves a dimension's data before it has chunks, like the dragon
+        // fight of an end nobody went to.
+        this.ReadLevelState();
         if (!this.IsSaved)
             return false;
-
-        this.ReadLevelState();
 
         var (chunkX, chunkZ) = LevelData.SpawnPosition.ToChunkCoord();
         var index = 0;
