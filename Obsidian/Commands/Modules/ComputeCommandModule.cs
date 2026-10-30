@@ -162,7 +162,7 @@ public sealed class ComputeCommandModule : CommandModuleBase
         };
     }
 
-    private static int FloorDouble(double value)
+    internal static int FloorDouble(double value)
     {
         var truncated = double.IsNaN(value) ? 0 : (int)Math.Clamp(value, int.MinValue, int.MaxValue);
         return value < truncated ? unchecked(truncated - 1) : truncated;

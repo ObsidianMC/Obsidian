@@ -467,6 +467,66 @@ public final class CommandFixtures {
         return rows;
     }
 
+    /** What {@code /data get} returns for each kind of tag, read from a fixed compound (see the test). */
+    private static JsonArray dataGet() throws Exception {
+        var data = new net.minecraft.nbt.CompoundTag();
+        data.putInt("int", 7);
+        data.putDouble("double", -2.5);
+        data.putString("string", "hello");
+        var list = new net.minecraft.nbt.ListTag();
+        for (int value = 1; value <= 3; value++) {
+            list.add(net.minecraft.nbt.IntTag.valueOf(value));
+        }
+        data.put("list", list);
+        var compound = new net.minecraft.nbt.CompoundTag();
+        compound.putInt("a", 1);
+        compound.putInt("b", 2);
+        data.put("compound", compound);
+        data.putByte("byte", (byte)3);
+        data.putIntArray("ints", new int[]{1, 2});
+        var accessorType = net.minecraft.server.commands.data.DataAccessor.class;
+        var accessor = Proxy.newProxyInstance(accessorType.getClassLoader(), new Class<?>[]{accessorType},
+            (proxy, method, values) -> switch (method.getName()) {
+                case "getData" -> data.copy();
+                case "setData" -> null;
+                default -> net.minecraft.network.chat.Component.empty();
+            });
+        var source = Commands.createCompilationContext(net.minecraft.server.permissions.PermissionSet.ALL_PERMISSIONS)
+            .withSuppressedOutput();
+        var commands = net.minecraft.server.commands.data.DataCommands.class;
+        var whole = commands.getDeclaredMethod("getData", CommandSourceStack.class, accessorType);
+        var atPath = commands.getDeclaredMethod("getData", CommandSourceStack.class, accessorType,
+            net.minecraft.commands.arguments.NbtPathArgument.NbtPath.class);
+        whole.setAccessible(true);
+        atPath.setAccessible(true);
+        var rows = new JsonArray();
+        for (var path : List.of("", "int", "double", "string", "list", "compound", "byte", "ints", "list[0]",
+            "missing")) {
+            var row = new JsonObject();
+            row.addProperty("path", path);
+            try {
+                Object result;
+                if (path.isEmpty()) {
+                    result = whole.invoke(null, source, accessor);
+                } else {
+                    var parsed = net.minecraft.commands.arguments.NbtPathArgument.nbtPath()
+                        .parse(new com.mojang.brigadier.StringReader(path));
+                    result = atPath.invoke(null, source, accessor, parsed);
+                }
+                row.addProperty("success", true);
+                row.addProperty("result", (int)result);
+            } catch (InvocationTargetException exception) {
+                if (!(exception.getCause() instanceof com.mojang.brigadier.exceptions.CommandSyntaxException)) {
+                    throw exception;
+                }
+                row.addProperty("success", false);
+                row.addProperty("result", 0);
+            }
+            rows.add(row);
+        }
+        return rows;
+    }
+
     /** How vanilla's NumericTag converts each number type, which entity loading relies on. */
     private static JsonArray numericTags() {
         var rows = new JsonArray();
@@ -554,6 +614,7 @@ public final class CommandFixtures {
         output.add("slots", slots(context, access));
         output.add("item_counts", itemCounts(context));
         output.add("numeric_tags", numericTags());
+        output.add("data_get", dataGet());
         output.add("time", time(commands, access));
         output.add("marker_completions", markerCompletions);
         output.add("posteffect", postEffects());

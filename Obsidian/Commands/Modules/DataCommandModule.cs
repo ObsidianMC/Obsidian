@@ -22,62 +22,87 @@ public sealed partial class DataCommandModule : CommandModuleBase
     public sealed class Get : CommandModuleBase
     {
         [Command("storage")]
-        public Task StorageAsync(ResourceLocation target) => this.StorageAsync(target, null);
+        public Task<int> StorageAsync(ResourceLocation target) => this.StorageAsync(target, null);
 
         [CommandOverload]
-        public async Task StorageAsync(ResourceLocation target, string? path)
+        public async Task<int> StorageAsync(ResourceLocation target, string? path)
         {
             var tag = CommandStorage.Read(this.Server, target.ToString());
-            await this.ShowAsync(tag, path, $"{target} has the following contents: ");
+            return await this.ShowAsync(tag, path, $"{target} has the following contents: ");
         }
 
         [Command("entity")]
-        public Task EntityAsync(IEntity target) => this.EntityAsync(target, null);
+        public Task<int> EntityAsync(IEntity target) => this.EntityAsync(target, null);
 
         [CommandOverload]
-        public async Task EntityAsync(IEntity target, string? path)
+        public async Task<int> EntityAsync(IEntity target, string? path)
         {
             if (target is not Entity entity)
             {
                 await this.CommandContext.FailAsync("No entity was found");
-                return;
+                return 0;
             }
 
             var tag = new NbtCompound();
             entity.WriteNbt(tag);
 
-            await this.ShowAsync(tag, path, $"{NameOf(target)} has the following entity data: ");
+            return await this.ShowAsync(tag, path, $"{NameOf(target)} has the following entity data: ");
         }
 
         [Command("block")]
-        public Task BlockAsync(Vector pos) => this.BlockAsync(pos, null);
+        public Task<int> BlockAsync(Vector pos) => this.BlockAsync(pos, null);
 
         [CommandOverload]
-        public async Task BlockAsync(Vector pos, string? path)
+        public async Task<int> BlockAsync(Vector pos, string? path)
         {
             var blockEntity = await LevelOf(this.CommandContext).GetBlockEntityAsync(pos);
             if (blockEntity is null || BlockEntityNbt.Save(blockEntity) is not NbtCompound tag)
             {
                 await this.CommandContext.FailAsync("The target block is not a block entity");
-                return;
+                return 0;
             }
 
-            await this.ShowAsync(tag, path, $"{Format(pos)} has the following block data: ");
+            return await this.ShowAsync(tag, path, $"{Format(pos)} has the following block data: ");
         }
 
-        private async Task ShowAsync(NbtCompound tag, string? path, string prefix)
+        private async Task<int> ShowAsync(NbtCompound tag, string? path, string prefix)
         {
             INbtTag? found = tag;
             if (path is not null)
                 found = Find(tag, path);
 
-            if (found is null)
+            if (found is null || Result(found, path is null) is not { } result)
             {
                 await this.CommandContext.FailAsync($"Found no elements matching {path}");
-                return;
+                return 0;
             }
 
             await this.CommandContext.SuccessAsync(prefix + Snbt.Write(found));
+            return result;
+        }
+
+        /// <summary>
+        /// Vanilla's <c>/data get</c> result: 1 for the whole data, otherwise a number floored, a collection's size or a
+        /// string's length. Other tags have no result and fail.
+        /// </summary>
+        internal static int? Result(INbtTag found, bool whole)
+        {
+            if (whole)
+                return 1;
+
+            if (found.TryGetNumber(out double number))
+                return ComputeCommandModule.FloorDouble(number);
+
+            return found switch
+            {
+                NbtCompound compound => compound.Count,
+                NbtList list => list.Count,
+                NbtArray<int> array => array.Count,
+                NbtArray<long> array => array.Count,
+                NbtArray<byte> array => array.Count,
+                NbtTag<string> text => text.Value.Length,
+                _ => null
+            };
         }
     }
 

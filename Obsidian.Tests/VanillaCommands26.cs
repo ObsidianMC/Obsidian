@@ -49,6 +49,7 @@ public sealed class VanillaCommands26
     public static IEnumerable<object[]> SpamCases => Rows("spam");
     public static IEnumerable<object[]> ItemCountCases => Rows("item_counts");
     public static IEnumerable<object[]> NumericTagCases => Rows("numeric_tags");
+    public static IEnumerable<object[]> DataGetCases => Rows("data_get");
 
     private static IEnumerable<object[]> Rows(string section) => fixture.GetProperty(section).EnumerateArray()
         .Select((row, index) => new object[] { $"{section}-{index}", row.GetRawText() });
@@ -488,6 +489,32 @@ public sealed class VanillaCommands26
     }
 
     [Theory]
+    [MemberData(nameof(DataGetCases))]
+    public async Task DataGetResultsMatchVanilla(string name, string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        var row = document.RootElement;
+        await using var server = TestServerFactory.CreateServer($"{name}-{Guid.NewGuid():N}");
+        var handler = (CommandHandler)server.Server.CommandHandler;
+        handler.RegisterCommandClass<DataCommandModule>(null);
+        handler.RegisterCommandClass<ExecuteCommandModule>(null);
+        CommandStorage.Write(server.Server, "test:values", DataGetFixture());
+        var command = $"data get storage test:values {row.GetProperty("path").GetString()}".TrimEnd();
+        var direct = Context(server.Server, command);
+        var executed = Context(server.Server, "execute run " + command);
+
+        await handler.ProcessCommand(direct);
+        await handler.ProcessCommand(executed);
+
+        var success = row.GetProperty("success").GetBoolean();
+        var result = row.GetProperty("result").GetInt32();
+        Assert.Equal(success, direct.Succeeded);
+        Assert.Equal(result, direct.Result);
+        Assert.Equal(success, executed.Succeeded);
+        Assert.Equal(result, executed.Result);
+    }
+
+    [Theory]
     [InlineData("integer", "5", 5f)]
     [InlineData("float", "7.5", 7.5f)]
     public async Task ComputedEntityDataReachesTheLiveEntity(string kind, string value, float health)
@@ -613,6 +640,27 @@ public sealed class VanillaCommands26
         server.Server.AddPlayer(player);
         return player;
     }
+
+    // The compound CommandFixtures.dataGet reads.
+    private static NbtCompound DataGetFixture() => new()
+    {
+        new NbtTag<int>("int", 7),
+        new NbtTag<double>("double", -2.5),
+        new NbtTag<string>("string", "hello"),
+        new NbtList(NbtTagType.Int, "list")
+        {
+            new NbtTag<int>("", 1),
+            new NbtTag<int>("", 2),
+            new NbtTag<int>("", 3)
+        },
+        new NbtCompound("compound")
+        {
+            new NbtTag<int>("a", 1),
+            new NbtTag<int>("b", 2)
+        },
+        new NbtTag<byte>("byte", 3),
+        new NbtArray<int>("ints", [1, 2])
+    };
 
     // Builds the tag a captured SNBT number (like -2.5f or 300s) stands for.
     private static INbtTag NumericTag(string type, string snbt)
