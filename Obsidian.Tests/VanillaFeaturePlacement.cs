@@ -176,7 +176,11 @@ public class VanillaFeaturePlacement(WorldgenFixture fixture)
             case "provider":
             {
                 var provider = registry.Provider(entry.GetProperty("provider"));
-                var state = provider(region, random, origin);
+                var required = entry.TryGetProperty("requiredState", out var requiredState)
+                    && requiredState.GetBoolean();
+                var state = required
+                    ? FeatureRegistry.State(provider, region, random, origin)
+                    : provider(region, random, origin);
                 var expected = entry.GetProperty("state");
 
                 if (expected.ValueKind == JsonValueKind.Null)

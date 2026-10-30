@@ -167796,6 +167796,174 @@
           "minecraft:air"
         ]
       ]
+    },
+    {
+      "name": "review_random_block_empty_list_optional",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 2,
+      "layers": [
+        [
+          "minecraft:stone",
+          -1
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "provider",
+      "provider": {
+        "type": "minecraft:random_block",
+        "blocks": []
+      },
+      "requiredState": false,
+      "edits": [
+        [
+          0,
+          0,
+          0,
+          {
+            "id": "minecraft:oak_log",
+            "properties": {
+              "axis": "x"
+            }
+          }
+        ]
+      ],
+      "state": null,
+      "nextRandom": -1154715079
+    },
+    {
+      "name": "review_random_block_empty_list_required",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 2,
+      "layers": [
+        [
+          "minecraft:stone",
+          -1
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "provider",
+      "provider": {
+        "type": "minecraft:random_block",
+        "blocks": []
+      },
+      "requiredState": true,
+      "edits": [
+        [
+          0,
+          0,
+          0,
+          {
+            "id": "minecraft:oak_log",
+            "properties": {
+              "axis": "x"
+            }
+          }
+        ]
+      ],
+      "state": "minecraft:oak_log{axis=x}",
+      "nextRandom": -1154715079
+    },
+    {
+      "name": "review_random_block_empty_tag_optional",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 2,
+      "layers": [
+        [
+          "minecraft:stone",
+          -1
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "provider",
+      "provider": {
+        "type": "minecraft:random_block",
+        "blocks": "#minecraft:supports_frogspawn"
+      },
+      "requiredState": false,
+      "edits": [
+        [
+          0,
+          0,
+          0,
+          {
+            "id": "minecraft:oak_log",
+            "properties": {
+              "axis": "x"
+            }
+          }
+        ]
+      ],
+      "state": null,
+      "nextRandom": -1154715079
+    },
+    {
+      "name": "review_random_block_empty_tag_required",
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "randomSeed": 2,
+      "layers": [
+        [
+          "minecraft:stone",
+          -1
+        ]
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "provider",
+      "provider": {
+        "type": "minecraft:random_block",
+        "blocks": "#minecraft:supports_frogspawn"
+      },
+      "requiredState": true,
+      "edits": [
+        [
+          0,
+          0,
+          0,
+          {
+            "id": "minecraft:oak_log",
+            "properties": {
+              "axis": "x"
+            }
+          }
+        ]
+      ],
+      "state": "minecraft:oak_log{axis=x}",
+      "nextRandom": -1154715079
     }
   ],
   "biomes": [

@@ -1163,7 +1163,10 @@ class WorldgenCaptures {
             case "provider" -> {
                 var provider = net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProvider.CODEC
                     .parse(ops, entry.get("provider")).getOrThrow().value();
-                var state = provider.getOptionalState(region, random, origin);
+                boolean required = entry.has("requiredState") && entry.get("requiredState").getAsBoolean();
+                var state = required
+                    ? provider.getState(region, random, origin)
+                    : provider.getOptionalState(region, random, origin);
                 entry.add("state", state == null ? JsonNull.INSTANCE : new JsonPrimitive(stateName(state)));
             }
             case "modifier" -> {

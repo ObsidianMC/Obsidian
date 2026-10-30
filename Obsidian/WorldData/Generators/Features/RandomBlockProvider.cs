@@ -8,6 +8,11 @@ internal sealed partial class FeatureRegistry
     {
         var states = this.BlockChoices(json.GetProperty("blocks")).ToArray();
 
+        if (states.Length == 0)
+        {
+            return (_, _, _) => null;
+        }
+
         return (_, random, _) => states[random.NextInt(states.Length)];
     }
 
