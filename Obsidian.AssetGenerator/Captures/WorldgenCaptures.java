@@ -32,6 +32,13 @@ import net.minecraft.world.level.levelgen.densityfunction.DensityFunction;
 import net.minecraft.world.level.levelgen.densityfunction.DensityVolume;
 import net.minecraft.world.level.levelgen.material.MaterialRuleContext;
 import net.minecraft.world.level.levelgen.material.rule.MaterialRule;
+import net.minecraft.world.level.levelgen.placement.FeaturePlacer;
+import net.minecraft.server.level.WorldGenRegion;
+import net.minecraft.util.StaticCache2D;
+import net.minecraft.world.attribute.EnvironmentAttributeSystem;
+import net.minecraft.world.level.chunk.status.ChunkPyramid;
+import net.minecraft.world.level.chunk.status.ChunkStep;
+import net.minecraft.world.ticks.WorldGenTickAccess;
 import net.minecraft.world.level.levelgen.synth.NormalNoise;
 
 /**
@@ -45,8 +52,8 @@ import net.minecraft.world.level.levelgen.synth.NormalNoise;
  * <p>It runs a headless vanilla dedicated server in this JVM for its registries and runs every case on the server
  * thread. Only the fixture's cases for this world are recaptured, and the fixture is rewritten in place.
  *
- * <p>Phase 5 of docs/porting-26.3-plan.md adds sections step by step. Terrain and material captures are here;
- * biome sources and spawn attributes are captured too. Features, structures and lighting follow in later steps.
+ * <p>Phase 5 of docs/porting-26.3-plan.md adds sections step by step. Terrain, materials, single features,
+ * biome sources and spawn attributes are captured here. Decoration, structures and lighting follow later.
  */
 class WorldgenCaptures {
     // Which world (structures on or off) each section's cases are captured in.
@@ -60,6 +67,7 @@ class WorldgenCaptures {
         SECTIONS.put("materials", false);
         SECTIONS.put("aquifers", false);
         SECTIONS.put("carvers", false);
+        SECTIONS.put("features", false);
         SECTIONS.put("biome_search", false);
         SECTIONS.put("biome_points", false);
         SECTIONS.put("spawn_attributes", false);
@@ -92,6 +100,7 @@ class WorldgenCaptures {
         var report = new ArrayList<String>();
         try {
             startServer(seed, structures);
+            preflightFeatures(cases.getOrDefault("features", List.of()));
 
             for (var section : cases.entrySet()) {
                 for (var entry : section.getValue()) {
@@ -117,6 +126,34 @@ class WorldgenCaptures {
 
         // The world is thrown away, so skip the server's save on exit.
         Runtime.getRuntime().halt(0);
+    }
+
+    // Reject malformed new inputs before running the expensive terrain and region probes.
+    static void preflightFeatures(List<JsonObject> entries) {
+        var ops = RegistryOps.create(JsonOps.INSTANCE, server.registryAccess());
+        var errors = new ArrayList<String>();
+        for (var entry : entries) {
+            try {
+                var kind = entry.has("probe") ? entry.get("probe").getAsString() : "placement";
+                switch (kind) {
+                    case "provider" -> net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProvider.CODEC
+                        .parse(ops, entry.get("provider")).getOrThrow();
+                    case "modifier" -> net.minecraft.world.level.levelgen.placement.PlacementModifier.CODEC
+                        .parse(ops, entry.get("modifier")).getOrThrow();
+                    case "predicate" -> net.minecraft.world.level.levelgen.blockpredicates.BlockPredicate.CODEC
+                        .parse(ops, entry.get("predicate")).getOrThrow();
+                    case "rule" -> net.minecraft.world.level.levelgen.structure.templatesystem.RuleTest.CODEC
+                        .parse(ops, entry.get("rule")).getOrThrow();
+                    default -> net.minecraft.world.level.levelgen.placement.PlacedFeature.CODEC
+                        .parse(ops, entry.get("feature")).getOrThrow();
+                }
+            } catch (RuntimeException exception) {
+                errors.add(entry.get("name") + ": " + exception.getMessage());
+            }
+        }
+        if (!errors.isEmpty()) {
+            throw new IllegalArgumentException(String.join("\n", errors));
+        }
     }
 
     // The fixture's cases for this world, by section.
@@ -172,6 +209,12 @@ class WorldgenCaptures {
         if (section.equals("terrain") || section.equals("biomes")) {
             inputs = new JsonObject();
             for (var field : List.of("seed", "dimension", "chunkX", "chunkZ")) {
+                inputs.add(field, before.get(field));
+            }
+        }
+        if (section.equals("features")) {
+            inputs = new JsonObject();
+            for (var field : List.of("seed", "feature", "biome", "chunkX", "chunkZ")) {
                 inputs.add(field, before.get(field));
             }
         }
@@ -240,6 +283,7 @@ class WorldgenCaptures {
                     case "materials" -> materialRule(entry);
                     case "aquifers" -> aquifer(entry);
                     case "carvers" -> carvers(entry);
+                    case "features" -> feature(entry);
                     case "biomes" -> biomeSections(entry);
                     case "biome_search" -> biomeSearch(entry);
                     case "biome_points" -> biomePoint(entry);
@@ -994,5 +1038,317 @@ class WorldgenCaptures {
         } catch (Exception exception) {
             throw new RuntimeException(exception);
         }
+    }
+
+    // ---------------------------------------------------------------- features
+
+    // One placed feature on prepared terrain, without biome selection: every chunk of a features-step region holds
+    // the case's layers (each fills from the previous top + 1 up to its own top; air above) and the case's biome.
+    // Vanilla's own WorldGenRegion, FeaturePlacer and decoration random place it the way applyBiomeDecoration does
+    // for one feature, and the blocks of the writable 3x3 chunks that differ from the layers are recorded.
+    static void feature(JsonObject entry) {
+        try {
+            featureChecked(entry);
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    static void featureChecked(JsonObject entry) throws Exception {
+        var level = server.overworld();
+        var generator = level.getChunkSource().getGenerator();
+        long seed = entry.get("seed").getAsLong();
+        int chunkX = entry.get("chunkX").getAsInt();
+        int chunkZ = entry.get("chunkZ").getAsInt();
+        var biomeKey = ResourceKey.create(Registries.BIOME, Identifier.parse(entry.get("biome").getAsString()));
+        var biome = server.registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(biomeKey);
+        var layers = layers(entry);
+        var step = ChunkPyramid.GENERATION_PYRAMID.getStepTo(ChunkStatus.FEATURES);
+        int radius = step.accumulatedDependencies().getRadius();
+
+        var chunks = new HashMap<Long, ProtoChunk>();
+        StaticCache2D<ChunkAccess> cache = StaticCache2D.create(chunkX, chunkZ, radius, (x, z) -> {
+            var chunk = layeredChunk(level, new ChunkPos(x, z), layers, biome, entry);
+            chunks.put(ChunkPos.pack(x, z), chunk);
+            return chunk;
+        });
+        var center = chunks.get(ChunkPos.pack(chunkX, chunkZ));
+        var region = region(level, cache, step, center);
+        if (entry.has("regionRandomSeed")) {
+            setField(region, "random", new XoroshiroRandomSource(entry.get("regionRandomSeed").getAsLong()));
+        }
+
+        var ops = RegistryOps.create(JsonOps.INSTANCE, server.registryAccess());
+        var random = new WorldgenRandom(new XoroshiroRandomSource(0L));
+        int minX = chunkX * 16;
+        int minZ = chunkZ * 16;
+        long decorationSeed = random.setDecorationSeed(seed, minX, minZ);
+        random.setFeatureSeed(decorationSeed, entry.get("index").getAsInt(), entry.get("step").getAsInt());
+        if (entry.has("randomSeed")) {
+            random = new WorldgenRandom(new LegacyRandomSource(entry.get("randomSeed").getAsLong()));
+        }
+        var origin = entry.has("origin")
+            ? position(entry.getAsJsonArray("origin"))
+            : new BlockPos(minX, region.getMinY(), minZ);
+
+        if (entry.has("probe")) {
+            component(entry, region, generator, random, origin, ops);
+            entry.addProperty("nextRandom", random.nextInt());
+            return;
+        }
+
+        var placed = net.minecraft.world.level.levelgen.placement.PlacedFeature.CODEC
+            .parse(ops, entry.get("feature")).getOrThrow().value();
+        boolean result = new FeaturePlacer(region, generator).placeWithBiomeCheck(placed, random, origin);
+        entry.addProperty("nextRandom", random.nextInt());
+
+        entry.addProperty("regionRadius", radius);
+        entry.addProperty("placed", result);
+        entry.add("changes", changes(region, chunkX, chunkZ, layers, entry));
+        if (entry.has("regionRandomSeed")) {
+            entry.addProperty("nextRegionRandom", region.getRandom().nextInt());
+        }
+        if (entry.has("postProcess")) {
+            var marks = featureMarks(chunks, chunkX, chunkZ);
+            var recorded = new JsonArray();
+            marks.forEach(pos -> recorded.add(coordinates(pos)));
+            entry.add("marks", recorded);
+
+            // These cases contain no fluids or block-specific post-processing; this is vanilla's shape pass.
+            for (var pos : marks) {
+                var state = region.getBlockState(pos);
+                var updated = net.minecraft.world.level.block.Block.updateFromNeighbourShapes(state, region, pos);
+                region.setBlock(pos, updated, 18);
+            }
+            entry.add("postChanges", changes(region, chunkX, chunkZ, layers, entry));
+        }
+    }
+
+    static List<BlockPos> featureMarks(Map<Long, ProtoChunk> chunks, int centerX, int centerZ) {
+        var result = new ArrayList<BlockPos>();
+        for (int z = centerZ - 1; z <= centerZ + 1; z++) {
+            for (int x = centerX - 1; x <= centerX + 1; x++) {
+                var chunk = chunks.get(ChunkPos.pack(x, z));
+                var sections = chunk.getPostProcessing();
+                for (int i = 0; i < sections.length; i++) {
+                    if (sections[i] == null) {
+                        continue;
+                    }
+                    for (short packed : sections[i]) {
+                        result.add(ProtoChunk.unpackOffsetCoordinates(
+                            packed, chunk.getSectionYFromSectionIndex(i), chunk.getPos()));
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    static BlockPos position(JsonArray coordinates) {
+        int x = coordinates.get(0).getAsInt();
+        int y = coordinates.get(1).getAsInt();
+        int z = coordinates.get(2).getAsInt();
+        return new BlockPos(x, y, z);
+    }
+
+    // Small component probes stay in the features section and use vanilla's own codecs and runtime methods.
+    static void component(
+        JsonObject entry,
+        WorldGenRegion region,
+        ChunkGenerator generator,
+        net.minecraft.util.RandomSource random,
+        BlockPos origin,
+        RegistryOps<JsonElement> ops) {
+        switch (entry.get("probe").getAsString()) {
+            case "provider" -> {
+                var provider = net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProvider.CODEC
+                    .parse(ops, entry.get("provider")).getOrThrow().value();
+                var state = provider.getOptionalState(region, random, origin);
+                entry.add("state", state == null ? JsonNull.INSTANCE : new JsonPrimitive(stateName(state)));
+            }
+            case "modifier" -> {
+                var modifier = net.minecraft.world.level.levelgen.placement.PlacementModifier.CODEC
+                    .parse(ops, entry.get("modifier")).getOrThrow();
+                var context = new net.minecraft.world.level.levelgen.placement.PlacementContext(
+                    region, generator, Optional.empty());
+                var positions = new JsonArray();
+                modifier.modify(context, random, origin, pos -> positions.add(coordinates(pos)));
+                entry.add("positions", positions);
+            }
+            case "predicate" -> {
+                var predicate = net.minecraft.world.level.levelgen.blockpredicates.BlockPredicate.CODEC
+                    .parse(ops, entry.get("predicate")).getOrThrow();
+                entry.addProperty("result", predicate.test(region, origin));
+            }
+            case "rule" -> {
+                var rule = net.minecraft.world.level.levelgen.structure.templatesystem.RuleTest.CODEC
+                    .parse(ops, entry.get("rule")).getOrThrow();
+                var state = BlockState.CODEC.parse(ops, entry.get("inputState")).getOrThrow();
+                entry.addProperty("result", rule.test(state, origin, random));
+            }
+            default -> throw new IllegalArgumentException("Unknown feature probe " + entry.get("probe"));
+        }
+    }
+
+    static JsonArray coordinates(BlockPos position) {
+        var result = new JsonArray();
+        result.add(position.getX());
+        result.add(position.getY());
+        result.add(position.getZ());
+        return result;
+    }
+
+    // The case's layers from the bottom up: a block id and the highest Y it fills.
+    static List<Map.Entry<BlockState, Integer>> layers(JsonObject entry) {
+        var result = new ArrayList<Map.Entry<BlockState, Integer>>();
+        for (var element : entry.getAsJsonArray("layers")) {
+            var layer = element.getAsJsonArray();
+            var block = BuiltInRegistries.BLOCK.getValue(Identifier.parse(layer.get(0).getAsString()));
+            result.add(Map.entry(block.defaultBlockState(), layer.get(1).getAsInt()));
+        }
+        return result;
+    }
+
+    static BlockState layerState(List<Map.Entry<BlockState, Integer>> layers, int y) {
+        for (var layer : layers) {
+            if (y <= layer.getValue()) {
+                return layer.getKey();
+            }
+        }
+        return net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
+    }
+
+    // A chunk at the terrain status, as decoration finds it: final heightmaps follow writes from here on, while the
+    // world generation heightmaps keep the terrain's values.
+    static ProtoChunk layeredChunk(
+        ServerLevel level,
+        ChunkPos position,
+        List<Map.Entry<BlockState, Integer>> layers,
+        Holder<Biome> biome,
+        JsonObject entry) {
+        var chunk = new ProtoChunk(
+            position,
+            UpgradeData.EMPTY,
+            level,
+            PalettedContainerFactory.create(server.registryAccess()),
+            null);
+        var block = new BlockPos.MutableBlockPos();
+        int minY = chunk.getMinY();
+        int topY = layers.getLast().getValue();
+        for (int y = minY; y <= topY; y++) {
+            var state = layerState(layers, y);
+            if (state.isAir()) {
+                continue;
+            }
+            for (int z = 0; z < 16; z++) {
+                for (int x = 0; x < 16; x++) {
+                    chunk.setBlockState(block.set(position.getMinBlockX() + x, y, position.getMinBlockZ() + z), state);
+                }
+            }
+        }
+        if (entry.has("edits")) {
+            var ops = RegistryOps.create(JsonOps.INSTANCE, server.registryAccess());
+            for (var element : entry.getAsJsonArray("edits")) {
+                var edit = element.getAsJsonArray();
+                var pos = position(edit);
+                if ((pos.getX() >> 4) == position.x() && (pos.getZ() >> 4) == position.z()) {
+                    var state = BlockState.CODEC.parse(ops, edit.get(3)).getOrThrow();
+                    chunk.setBlockState(pos, state);
+                }
+            }
+        }
+        chunk.fillBiomesFromNoise((x, y, z) -> biome);
+        chunk.setPersistedStatus(ChunkStatus.TERRAIN);
+        Heightmap.primeHeightmaps(chunk, EnumSet.allOf(Heightmap.Types.class));
+        return chunk;
+    }
+
+    // Vanilla's WorldGenRegion maps generation holders to chunks in its constructor. These chunks have no holders,
+    // so the region is allocated without it and given the fields the constructor would set.
+    static WorldGenRegion region(
+        ServerLevel level,
+        StaticCache2D<ChunkAccess> cache,
+        ChunkStep step,
+        ChunkAccess center) throws Exception {
+        var unsafeField = Class.forName("sun.misc.Unsafe").getDeclaredField("theUnsafe");
+        unsafeField.setAccessible(true);
+        var unsafe = unsafeField.get(null);
+        var allocate = unsafe.getClass().getMethod("allocateInstance", Class.class);
+        var region = (WorldGenRegion) allocate.invoke(unsafe, WorldGenRegion.class);
+
+        var randomName = WorldGenRegion.class.getDeclaredField("WORLDGEN_REGION_RANDOM");
+        randomName.setAccessible(true);
+        var randomFactory = level.getChunkSource()
+            .randomState()
+            .getOrCreateRandomFactory((Identifier) randomName.get(null));
+        var seed = level.getSeed();
+
+        setField(region, "cache", cache);
+        setField(region, "center", center);
+        setField(region, "level", level);
+        setField(region, "seed", seed);
+        setField(region, "levelData", level.getLevelData());
+        setField(region, "random", randomFactory.at(center.getPos().getWorldPosition()));
+        setField(region, "dimensionType", level.dimensionType());
+        setField(region, "uncachedBiomeResolver", level.uncachedBiomeResolver());
+        setField(region, "blockTicks", new WorldGenTickAccess<>(pos -> region.getChunk(pos).getBlockTicks()));
+        setField(region, "fluidTicks", new WorldGenTickAccess<>(pos -> region.getChunk(pos).getFluidTicks()));
+        setField(region, "subTickCount", new java.util.concurrent.atomic.AtomicLong());
+        setField(region, "generatingStep", step);
+        setField(region, "biomeManager", new BiomeManager(region, BiomeManager.obfuscateSeed(seed)));
+        setField(region, "centerChunkX", center.getPos().x());
+        setField(region, "centerChunkZ", center.getPos().z());
+        setField(region, "writeRadius", step.blockStateWriteRadius());
+        Supplier<String> generating = () -> "feature capture";
+        setField(region, "currentlyGenerating", generating);
+
+        var attributes = EnvironmentAttributeSystem.builder().addStaticLayers(region).build();
+        setField(region, "environmentAttributes", attributes);
+        return region;
+    }
+
+    static void setField(Object target, String name, Object value) throws Exception {
+        var field = target.getClass().getDeclaredField(name);
+        field.setAccessible(true);
+        field.set(target, value);
+    }
+
+    // The blocks of the writable chunks that differ from the layers, as [x, y, z, state] in z, x, y order.
+    static JsonArray changes(
+        WorldGenRegion region,
+        int chunkX,
+        int chunkZ,
+        List<Map.Entry<BlockState, Integer>> layers,
+        JsonObject entry) {
+        var baseline = new HashMap<BlockPos, BlockState>();
+        if (entry.has("edits")) {
+            var ops = RegistryOps.create(JsonOps.INSTANCE, server.registryAccess());
+            for (var element : entry.getAsJsonArray("edits")) {
+                var edit = element.getAsJsonArray();
+                baseline.put(position(edit), BlockState.CODEC.parse(ops, edit.get(3)).getOrThrow());
+            }
+        }
+        var result = new JsonArray();
+        var block = new BlockPos.MutableBlockPos();
+        int minY = region.getMinY();
+        int maxY = minY + region.getHeight();
+        for (int z = chunkZ * 16 - 16; z < chunkZ * 16 + 32; z++) {
+            for (int x = chunkX * 16 - 16; x < chunkX * 16 + 32; x++) {
+                for (int y = minY; y < maxY; y++) {
+                    var state = region.getBlockState(block.set(x, y, z));
+                    var initial = baseline.getOrDefault(block, layerState(layers, y));
+                    if (state == initial) {
+                        continue;
+                    }
+                    var change = new JsonArray();
+                    change.add(x);
+                    change.add(y);
+                    change.add(z);
+                    change.add(stateName(state));
+                    result.add(change);
+                }
+            }
+        }
+        return result;
     }
 }

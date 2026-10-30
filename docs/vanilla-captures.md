@@ -72,6 +72,10 @@ Nothing is reimplemented:
   with the case's density, which records the block (or `null` for a barrier) and `shouldScheduleFluidUpdate`. Then
   `computeFluid` records the fluid status of the position as an aquifer center.
 - **Carvers:** the terrain capture's carving mask and carver sources alone, for a chunk that needs no blocks.
+- **Features:** one placed feature on layered terrain. Every chunk of a features-step region is a protochunk at the
+  terrain status holding the case's `layers` and `biome`. Vanilla's own `WorldGenRegion` (given the fields its
+  constructor would set, since the chunks have no generation holders), `FeaturePlacer.placeWithBiomeCheck` and
+  decoration random place it, and the changed blocks of the writable 3x3 chunks are recorded.
 
 ## Terrain references
 
@@ -183,3 +187,46 @@ replays their blocks and scheduling decisions. They have `Category=Worldgen` too
 
 The 1.21.11 probe also captured lit/full chunks, structure pieces and blocks, the spawn and a treasure map (in git
 history before Phase 5). The feature and structure steps adapt those captures to 26.3 as they need them.
+
+## Feature references
+
+`features` cases place one 26.3 placed feature without biome selection, so features can be verified while 26.3
+biomes are built separately. Each case gives a `seed`, a chunk (`chunkX`, `chunkZ`), the decoration `step` and
+`index` that seed its random (vanilla's `setDecorationSeed` and `setFeatureSeed`), a `biome` that lists the feature
+(for its biome filter), and `layers`: block ids from the bottom up, each filling from the previous layer's top + 1 to
+its own top, with air above. The capture records `placed` (the placement's result), `regionRadius` (vanilla's region
+radius for the features step) and `changes`: `[x, y, z, state]` for each block of the writable 3x3 chunks that
+differs from the layers, in z, x, y order.
+
+`VanillaFeaturePlacement` replays them with `WorldData/Generators/Features/FeatureRegistry`, the 26.3 feature
+machinery built beside the legacy features. It builds the layered chunks two chunks around the decorated one; the
+features replayed so far read no further. Cases whose feature types aren't implemented yet (trees and spikes) are
+captured and listed as pending in the test. Biome decoration (each biome's ordered steps) waits for 26.3 biome
+selection. The replays have `Category=Worldgen`.
+
+Feature review regressions extend the same `features` section. A named case may provide an inline placed
+feature, an explicit `origin`, a legacy `randomSeed`, and localized `edits` (`[x, y, z, block state]`). Edits
+are part of the initial terrain and are excluded from `changes`. Registered-feature cases retain their
+biome-filter identity. Every placement records `nextRandom`, including rejected placements.
+
+Component cases use `probe: provider`, `modifier`, `predicate` or `rule`, with the corresponding inline
+codec input. They record the optional state, ordered positions, or boolean result and the next random int.
+`FeatureComponentMatchesVanilla` replays these independently of feature placement. The cases exercise
+nested and fixed-direction rotated providers, float noise count boundaries, integer-provider short circuits,
+26.x support-sensitive survival, modifier termination and thresholds, rule matching, and height limits.
+
+Moss carpet cases seed the region random independently with `regionRandomSeed` and record its next value
+as `nextRegionRandom`; the placement random is checked separately. They cover wall sides, toppers,
+unsupported upper sides and blocked toppers. Disk cases with `postProcess` record ordered chunk/section
+`marks` and `postChanges` after vanilla's neighbor-shape pass. These cases have no fluid or block-specific
+post-processing. Replays run Obsidian's actual chunk post-processing and compare the resulting blocks.
+
+`expectChanges: true` advertises a nonempty placement: the replay fails if either the captured or replayed
+changes are empty. Existing rejection captures remain, with added native-feature successes for flowers,
+pumpkins, mushrooms on mycelium, berries, water and lava springs with one lateral opening, and kelp.
+Selectors, sequences, writable-region crossings, biome rejection and exposed-ore discard chances also have
+small deterministic captures. Fixture setup edits never count as successful placement evidence.
+
+The explicit simple-provider capture uses 26.3's `minecraft:simple`. Its `compatibilityProvider` additionally
+replays Obsidian's existing `minecraft:simple_state_provider` alias against the same captured state and random
+tail. Vanilla rejects that older type name. Random-chance captures use the current `chance` field.
