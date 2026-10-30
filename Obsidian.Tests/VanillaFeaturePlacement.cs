@@ -22,7 +22,7 @@ namespace Obsidian.Tests;
 /// </summary>
 [Trait("Category", TestCategory.Worldgen)]
 [Collection(WorldgenCollection.Name)]
-public class VanillaFeaturePlacement
+public class VanillaFeaturePlacement(WorldgenFixture fixture)
 {
     private const int MinY = -64;
     private const int Height = 384;
@@ -45,9 +45,14 @@ public class VanillaFeaturePlacement
 
     public sealed record FeatureCase(JsonElement Entry)
     {
-        public override string ToString() =>
-            $"{this.Entry.GetProperty("feature").GetString()} "
-            + $"({this.Entry.GetProperty("chunkX")}, {this.Entry.GetProperty("chunkZ")})";
+        public override string ToString()
+        {
+            var label = this.Entry.TryGetProperty("name", out var name)
+                ? name.GetString()
+                : this.Entry.GetProperty("feature").ToString();
+
+            return $"{label} ({this.Entry.GetProperty("chunkX")}, {this.Entry.GetProperty("chunkZ")})";
+        }
     }
 
     public static TheoryData<FeatureCase> FeatureCases()
@@ -56,7 +61,8 @@ public class VanillaFeaturePlacement
 
         foreach (var entry in VanillaWorldgenCaptures.CurrentCases("features"))
         {
-            if (!pending.Contains(entry.GetProperty("feature").GetString()!))
+            if (!entry.TryGetProperty("probe", out _)
+                && !pending.Contains(entry.GetProperty("feature").ToString()))
             {
                 cases.Add(new FeatureCase(entry));
             }
@@ -73,24 +79,176 @@ public class VanillaFeaturePlacement
         var layers = Layers(entry);
         var chunkX = entry.GetProperty("chunkX").GetInt32();
         var chunkZ = entry.GetProperty("chunkZ").GetInt32();
-        var region = Region(chunkX, chunkZ, entry.GetProperty("seed").GetInt64(), layers);
+        var region = Region(chunkX, chunkZ, entry, layers, out var chunks);
         var biome = entry.GetProperty("biome").GetString()!;
         var context = new DecorationContext(registry, region, _ => biome, MinY, Height);
-        var feature = registry.Placed(entry.GetProperty("feature").GetString()!);
+        var feature = registry.Placed(entry.GetProperty("feature"));
 
         var random = DecorationRandom(entry, chunkX, chunkZ);
-        var origin = new Vector(chunkX * 16, MinY, chunkZ * 16);
+        var origin = Origin(entry, chunkX, chunkZ);
         var placed = feature.PlaceWithBiomeCheck(context, random, origin);
+        var nextRandom = random.NextInt();
 
         var expected = entry.GetProperty("changes").EnumerateArray().Select(ExpectedChange).ToList();
-        var actual = Changes(region, chunkX, chunkZ, layers);
+        var actual = Changes(region, chunkX, chunkZ, layers, entry);
         Assert.Equal(expected, actual);
         Assert.Equal(entry.GetProperty("placed").GetBoolean(), placed);
+        Assert.Equal(entry.GetProperty("nextRandom").GetInt32(), nextRandom);
+
+        if (entry.TryGetProperty("nextRegionRandom", out var nextRegionRandom))
+        {
+            Assert.Equal(nextRegionRandom.GetInt32(), region.Random.NextInt());
+        }
+
+        if (entry.TryGetProperty("postProcess", out _))
+        {
+            var marks = FeatureMarks(chunks, chunkX, chunkZ);
+            var expectedMarks = entry.GetProperty("marks").EnumerateArray().Select(Position).ToList();
+
+            Assert.Equal(expectedMarks, marks);
+
+            var builder = fixture.Builder(MojangDimension.Overworld, entry.GetProperty("seed").GetInt64(), false);
+
+            for (var z = chunkZ - 1; z <= chunkZ + 1; z++)
+            {
+                for (var x = chunkX - 1; x <= chunkX + 1; x++)
+                {
+                    builder.PostProcess(chunks, x, z);
+                }
+            }
+
+            var postExpected = entry.GetProperty("postChanges").EnumerateArray().Select(ExpectedChange).ToList();
+            var postActual = Changes(region, chunkX, chunkZ, layers, entry);
+
+            Assert.Equal(postExpected, postActual);
+        }
+
+    }
+
+    public static TheoryData<FeatureCase> ComponentCases()
+    {
+        var cases = new TheoryData<FeatureCase>();
+
+        foreach (var entry in VanillaWorldgenCaptures.CurrentCases("features"))
+        {
+            if (entry.TryGetProperty("probe", out _))
+            {
+                cases.Add(new FeatureCase(entry));
+            }
+        }
+
+        return cases;
+    }
+
+    [Theory]
+    [MemberData(nameof(ComponentCases))]
+    public void FeatureComponentMatchesVanilla(FeatureCase testCase)
+    {
+        var entry = testCase.Entry;
+        var chunkX = entry.GetProperty("chunkX").GetInt32();
+        var chunkZ = entry.GetProperty("chunkZ").GetInt32();
+        var layers = Layers(entry);
+        var region = Region(chunkX, chunkZ, entry, layers, out _);
+        var biome = entry.GetProperty("biome").GetString()!;
+        var context = new DecorationContext(registry, region, _ => biome, MinY, Height);
+        var origin = Origin(entry, chunkX, chunkZ);
+        var random = DecorationRandom(entry, chunkX, chunkZ);
+
+        switch (entry.GetProperty("probe").GetString())
+        {
+            case "provider":
+            {
+                var provider = registry.Provider(entry.GetProperty("provider"));
+                var state = provider(region, random, origin);
+                var expected = entry.GetProperty("state");
+
+                if (expected.ValueKind == JsonValueKind.Null)
+                {
+                    Assert.Null(state);
+                }
+                else
+                {
+                    Assert.NotNull(state);
+                    Assert.True(VanillaTerrainGeneration.ParseBlock(expected.GetString()!).IsSameState(state));
+                }
+
+                if (entry.TryGetProperty("compatibilityProvider", out var compatibilityProvider))
+                {
+                    var compatibilityRandom = DecorationRandom(entry, chunkX, chunkZ);
+                    var compatibility = registry.Provider(compatibilityProvider);
+                    var compatibilityState = compatibility(region, compatibilityRandom, origin);
+
+                    Assert.NotNull(compatibilityState);
+                    Assert.True(compatibilityState.IsSameState(state));
+                    Assert.Equal(entry.GetProperty("nextRandom").GetInt32(), compatibilityRandom.NextInt());
+                }
+
+                break;
+            }
+            case "modifier":
+            {
+                var positions = new List<Vector>();
+                var modifier = registry.Modifier(entry.GetProperty("modifier"));
+                modifier(new PlacementContext(context, null), random, origin, positions);
+                var expected = entry.GetProperty("positions").EnumerateArray().Select(Position).ToList();
+
+                Assert.Equal(expected, positions);
+                break;
+            }
+            case "predicate":
+            {
+                var predicate = registry.Predicate(entry.GetProperty("predicate"));
+                var result = predicate(region, origin);
+
+                Assert.Equal(entry.GetProperty("result").GetBoolean(), result);
+                break;
+            }
+            case "rule":
+            {
+                var rule = registry.Rule(entry.GetProperty("rule"));
+                var state = FeatureRegistry.ReadBlock(entry.GetProperty("inputState"));
+                var result = rule(state, origin, random);
+
+                Assert.Equal(entry.GetProperty("result").GetBoolean(), result);
+                break;
+            }
+            default:
+                throw new InvalidOperationException("Unknown feature component probe.");
+        }
+
+        Assert.Equal(entry.GetProperty("nextRandom").GetInt32(), random.NextInt());
+    }
+
+    private static Vector Position(JsonElement coordinates) =>
+        new(coordinates[0].GetInt32(), coordinates[1].GetInt32(), coordinates[2].GetInt32());
+
+    private static Vector Origin(JsonElement entry, int chunkX, int chunkZ) =>
+        entry.TryGetProperty("origin", out var origin) ? Position(origin) : new Vector(chunkX * 16, MinY, chunkZ * 16);
+
+    private static List<Vector> FeatureMarks(Dictionary<(int X, int Z), IChunk> chunks, int centerX, int centerZ)
+    {
+        var result = new List<Vector>();
+
+        for (var z = centerZ - 1; z <= centerZ + 1; z++)
+        {
+            for (var x = centerX - 1; x <= centerX + 1; x++)
+            {
+                var chunk = (Chunk)chunks[(x, z)];
+                result.AddRange(chunk.PostProcessing.OrderBy(position => (position.Y - MinY) >> 4));
+            }
+        }
+
+        return result;
     }
 
     // Vanilla's decoration random: a population seed from the chunk's corner, then the feature's step and index.
     private static WorldgenRandom DecorationRandom(JsonElement entry, int chunkX, int chunkZ)
     {
+        if (entry.TryGetProperty("randomSeed", out var randomSeed))
+        {
+            return new WorldgenRandom(new LegacyRandomSource(randomSeed.GetInt64()));
+        }
+
         var random = new WorldgenRandom(new XoroshiroRandomSource(0L));
         var seed = entry.GetProperty("seed").GetInt64();
         var decorationSeed = random.SetDecorationSeed(seed, chunkX * 16, chunkZ * 16);
@@ -122,27 +280,36 @@ public class VanillaFeaturePlacement
 
     // Layered chunks at the terrain status, with their world generation heightmaps. The region computes the final
     // heightmaps from the blocks and keeps them up to date with every write.
-    private static WorldGenRegion Region(int centerX, int centerZ, long seed, (IBlock Block, int Top)[] layers)
+    private static WorldGenRegion Region(
+        int centerX,
+        int centerZ,
+        JsonElement entry,
+        (IBlock Block, int Top)[] layers,
+        out Dictionary<(int X, int Z), IChunk> chunks)
     {
-        var chunks = new Dictionary<(int X, int Z), IChunk>();
+        chunks = new Dictionary<(int X, int Z), IChunk>();
 
         for (var chunkX = centerX - RegionRadius; chunkX <= centerX + RegionRadius; chunkX++)
         {
             for (var chunkZ = centerZ - RegionRadius; chunkZ <= centerZ + RegionRadius; chunkZ++)
             {
-                chunks[(chunkX, chunkZ)] = LayeredChunk(chunkX, chunkZ, layers);
+                chunks[(chunkX, chunkZ)] = LayeredChunk(chunkX, chunkZ, layers, entry);
             }
         }
 
-        // Neither the biome source nor the region's random is used: features see the case's biome, and these
-        // features don't draw from the region's random.
+        // Features see the case's fixed biome; moss carpet also draws from this independent region random.
+        var seed = entry.GetProperty("seed").GetInt64();
         var biomes = new FixedBiomeSource(CodecRegistry.Biomes.Plains);
-        var random = new XoroshiroRandomSource(0L);
+        var regionSeed = entry.TryGetProperty("regionRandomSeed", out var regionRandomSeed)
+            ? regionRandomSeed.GetInt64()
+            : 0L;
+        var random = new XoroshiroRandomSource(regionSeed);
 
         return new WorldGenRegion(chunks, centerX, centerZ, seed, MinY, Height, SeaLevel, biomes, random, false);
     }
 
-    private static Chunk LayeredChunk(int chunkX, int chunkZ, (IBlock Block, int Top)[] layers)
+    private static Chunk LayeredChunk(
+        int chunkX, int chunkZ, (IBlock Block, int Top)[] layers, JsonElement entry)
     {
         var chunk = new Chunk(chunkX, chunkZ, MinY, Height);
         var top = layers[^1].Top;
@@ -165,6 +332,14 @@ public class VanillaFeaturePlacement
             }
         }
 
+        foreach (var (position, block) in Edits(entry))
+        {
+            if (position.X >> 4 == chunkX && position.Z >> 4 == chunkZ)
+            {
+                chunk.SetBlock(position.X, position.Y, position.Z, block);
+            }
+        }
+
         WorldgenHeightmaps.Update(chunk, MinY, Height);
         return chunk;
     }
@@ -177,8 +352,10 @@ public class VanillaFeaturePlacement
     }
 
     // The writable chunks' blocks that differ from the layers, in the capture's z, x, y order.
-    private static List<string> Changes(WorldGenRegion region, int chunkX, int chunkZ, (IBlock, int)[] layers)
+    private static List<string> Changes(
+        WorldGenRegion region, int chunkX, int chunkZ, (IBlock, int)[] layers, JsonElement entry)
     {
+        var baseline = Edits(entry);
         var changes = new List<string>();
 
         for (var z = chunkZ * 16 - 16; z < chunkZ * 16 + 32; z++)
@@ -187,9 +364,11 @@ public class VanillaFeaturePlacement
             {
                 for (var y = MinY; y < MinY + Height; y++)
                 {
-                    var block = region.GetBlock(new Vector(x, y, z));
+                    var position = new Vector(x, y, z);
+                    var block = region.GetBlock(position);
+                    var initial = baseline.GetValueOrDefault(position) ?? LayerBlock(layers, y);
 
-                    if (!block.IsSameState(LayerBlock(layers, y)))
+                    if (!block.IsSameState(initial))
                     {
                         changes.Add(Change(x, y, z, block));
                     }
@@ -198,6 +377,21 @@ public class VanillaFeaturePlacement
         }
 
         return changes;
+    }
+
+    private static Dictionary<Vector, IBlock> Edits(JsonElement entry)
+    {
+        var result = new Dictionary<Vector, IBlock>();
+
+        if (entry.TryGetProperty("edits", out var edits))
+        {
+            foreach (var edit in edits.EnumerateArray())
+            {
+                result[Position(edit)] = FeatureRegistry.ReadBlock(edit[3]);
+            }
+        }
+
+        return result;
     }
 
     private static string Change(int x, int y, int z, IBlock block)

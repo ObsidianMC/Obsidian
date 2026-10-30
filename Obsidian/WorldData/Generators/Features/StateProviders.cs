@@ -1,6 +1,7 @@
 using Obsidian.API.World.Features;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Generators.Density;
+using Obsidian.WorldData.Features;
 using System.Text.Json;
 
 namespace Obsidian.WorldData.Generators.Features;
@@ -44,6 +45,7 @@ internal sealed partial class FeatureRegistry
 
         switch (type)
         {
+            case "minecraft:simple":
             case "minecraft:simple_state_provider":
             {
                 var block = ReadBlock(json.GetProperty("state"));
@@ -55,13 +57,7 @@ internal sealed partial class FeatureRegistry
                 return (_, random, _) => entries.Pick(random);
             }
             case "minecraft:rotated":
-            {
-                var block = ReadBlock(json.GetProperty("state"));
-
-                // Direction.Axis.getRandom picks from X, Y, Z.
-                string[] axes = ["x", "y", "z"];
-                return (_, random, _) => block.WithProperty("axis", axes[random.NextInt(axes.Length)]);
-            }
+                return this.Rotated(json);
             case "minecraft:randomized_int":
                 return this.RandomizedInt(json);
             case "minecraft:rule_based":
@@ -76,6 +72,52 @@ internal sealed partial class FeatureRegistry
     /// <summary>A provider's <c>getState</c>: rule-based providers without a state keep the existing block.</summary>
     public static IBlock State(StateProvider provider, IWorldGenLevel level, IRandomSource random, Vector position) =>
         provider(level, random, position) ?? level.GetBlock(position);
+
+    private StateProvider Rotated(JsonElement json)
+    {
+        var source = this.Provider(json.GetProperty("state"));
+        BlockFace? fixedDirection = json.TryGetProperty("direction", out var direction)
+            ? FeatureHelpers.ParseFace(direction.GetString())
+            : null;
+
+        return (level, random, position) =>
+        {
+            // 26.3 chooses a direction before sampling the wrapped provider's required state.
+            var face = fixedDirection ?? FeatureHelpers.RandomDirection(random);
+            var state = State(source, level, random, position);
+            var axis = face switch
+            {
+                BlockFace.East or BlockFace.West => "x",
+                BlockFace.North or BlockFace.South => "z",
+                _ => "y"
+            };
+            // AXIS and HORIZONTAL_AXIS share a name, but vanilla only updates the three-axis property.
+            var hasThreeAxes = state.WithProperty("axis", "y").GetProperty("axis") == "y";
+
+            if (hasThreeAxes)
+            {
+                state = state.WithProperty("axis", axis);
+            }
+
+            if (state.HasProperty("facing"))
+            {
+                // Six-way, horizontal and hopper facings also share a name. The hopper property is excluded.
+                var acceptsUp = state.WithProperty("facing", "up").GetProperty("facing") == "up";
+                var acceptsDown = state.WithProperty("facing", "down").GetProperty("facing") == "down";
+                var hasSixWayFacing = acceptsUp && acceptsDown;
+                var hasHorizontalFacing = !acceptsUp && !acceptsDown;
+                var horizontal = face is not (BlockFace.Up or BlockFace.Down);
+                var canRotateFacing = hasSixWayFacing || horizontal && hasHorizontalFacing;
+
+                if (canRotateFacing)
+                {
+                    state = state.WithProperty("facing", face.ToString().ToLowerInvariant());
+                }
+            }
+
+            return state;
+        };
+    }
 
     private StateProvider RandomizedInt(JsonElement json)
     {

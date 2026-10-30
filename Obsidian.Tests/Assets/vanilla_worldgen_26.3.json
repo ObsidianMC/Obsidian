@@ -894,7 +894,7 @@
         "temperature": -0.9067838,
         "vegetation": 0.15336975,
         "continents": -0.2712552,
-        "erosion": 8.3004124E-4,
+        "erosion": 0.00083004124,
         "depth": 0.47781247,
         "ridges": 0.25431758,
         "chunk_surface_level": 32.0,
@@ -66335,7 +66335,8 @@
           19,
           "minecraft:short_grass"
         ]
-      ]
+      ],
+      "nextRandom": -1499116298
     },
     {
       "seed": 12345,
@@ -66832,7 +66833,8 @@
           -11,
           "minecraft:short_grass"
         ]
-      ]
+      ],
+      "nextRandom": 1611961525
     },
     {
       "seed": 12345,
@@ -66866,7 +66868,8 @@
       ],
       "regionRadius": 10,
       "placed": false,
-      "changes": []
+      "changes": [],
+      "nextRandom": -1527555066
     },
     {
       "seed": 12345,
@@ -66900,7 +66903,8 @@
       ],
       "regionRadius": 10,
       "placed": false,
-      "changes": []
+      "changes": [],
+      "nextRandom": -1972344176
     },
     {
       "seed": 12345,
@@ -67223,7 +67227,8 @@
           10,
           "minecraft:tall_grass{half=upper}"
         ]
-      ]
+      ],
+      "nextRandom": -1624664165
     },
     {
       "seed": 12345,
@@ -67257,7 +67262,8 @@
       ],
       "regionRadius": 10,
       "placed": false,
-      "changes": []
+      "changes": [],
+      "nextRandom": 446540542
     },
     {
       "seed": 12345,
@@ -67291,7 +67297,8 @@
       ],
       "regionRadius": 10,
       "placed": false,
-      "changes": []
+      "changes": [],
+      "nextRandom": 1099272648
     },
     {
       "seed": 12345,
@@ -67325,7 +67332,8 @@
       ],
       "regionRadius": 10,
       "placed": false,
-      "changes": []
+      "changes": [],
+      "nextRandom": 599874289
     },
     {
       "seed": 12345,
@@ -67359,7 +67367,8 @@
       ],
       "regionRadius": 10,
       "placed": false,
-      "changes": []
+      "changes": [],
+      "nextRandom": 157745802
     },
     {
       "seed": 12345,
@@ -67393,7 +67402,8 @@
       ],
       "regionRadius": 10,
       "placed": false,
-      "changes": []
+      "changes": [],
+      "nextRandom": -392076045
     },
     {
       "seed": 12345,
@@ -67452,7 +67462,8 @@
           9,
           "minecraft:red_shrub"
         ]
-      ]
+      ],
+      "nextRandom": -630737611
     },
     {
       "seed": 12345,
@@ -67505,7 +67516,8 @@
           -26,
           "minecraft:red_shrub"
         ]
-      ]
+      ],
+      "nextRandom": -1176069832
     },
     {
       "seed": 12345,
@@ -67539,7 +67551,8 @@
       ],
       "regionRadius": 10,
       "placed": false,
-      "changes": []
+      "changes": [],
+      "nextRandom": 1636815198
     },
     {
       "seed": 12345,
@@ -67573,7 +67586,8 @@
       ],
       "regionRadius": 10,
       "placed": false,
-      "changes": []
+      "changes": [],
+      "nextRandom": 1479799240
     },
     {
       "seed": 12345,
@@ -67607,7 +67621,8 @@
       ],
       "regionRadius": 10,
       "placed": false,
-      "changes": []
+      "changes": [],
+      "nextRandom": 1794883559
     },
     {
       "seed": 12345,
@@ -67641,7 +67656,8 @@
       ],
       "regionRadius": 10,
       "placed": false,
-      "changes": []
+      "changes": [],
+      "nextRandom": 2003193479
     },
     {
       "seed": 12345,
@@ -70838,7 +70854,8 @@
           15,
           "minecraft:leaf_litter{facing=north, segment_amount=3}"
         ]
-      ]
+      ],
+      "nextRandom": -1713685667
     },
     {
       "seed": 12345,
@@ -74215,7 +74232,8 @@
           -14,
           "minecraft:leaf_litter{facing=north, segment_amount=2}"
         ]
-      ]
+      ],
+      "nextRandom": 844346298
     },
     {
       "seed": 12345,
@@ -78054,7 +78072,8 @@
           20,
           "minecraft:yellow_poplar_leaves{distance=5, persistent=false, waterlogged=false}"
         ]
-      ]
+      ],
+      "nextRandom": 1694884603
     },
     {
       "seed": 12345,
@@ -85865,7 +85884,8 @@
           -14,
           "minecraft:red_poplar_leaves{distance=4, persistent=false, waterlogged=false}"
         ]
-      ]
+      ],
+      "nextRandom": 405678286
     },
     {
       "seed": 12345,
@@ -86356,7 +86376,8 @@
           13,
           "minecraft:iron_ore"
         ]
-      ]
+      ],
+      "nextRandom": 188681011
     },
     {
       "seed": 12345,
@@ -86787,7 +86808,8 @@
           -22,
           "minecraft:iron_ore"
         ]
-      ]
+      ],
+      "nextRandom": -532601807
     },
     {
       "seed": 12345,
@@ -87230,7 +87252,8 @@
           15,
           "minecraft:coal_ore"
         ]
-      ]
+      ],
+      "nextRandom": 336988159
     },
     {
       "seed": 12345,
@@ -87727,7 +87750,8 @@
           -19,
           "minecraft:coal_ore"
         ]
-      ]
+      ],
+      "nextRandom": 1441446032
     },
     {
       "seed": 12345,
@@ -88974,7 +88998,8 @@
           14,
           "minecraft:dirt"
         ]
-      ]
+      ],
+      "nextRandom": -989517565
     },
     {
       "seed": 12345,
@@ -93197,7 +93222,8 @@
           -14,
           "minecraft:dirt"
         ]
-      ]
+      ],
+      "nextRandom": -1337834542
     },
     {
       "seed": 12345,
@@ -93268,7 +93294,8 @@
           7,
           "minecraft:deepslate_diamond_ore"
         ]
-      ]
+      ],
+      "nextRandom": -1083901393
     },
     {
       "seed": 12345,
@@ -93327,7 +93354,8 @@
           -18,
           "minecraft:deepslate_diamond_ore"
         ]
-      ]
+      ],
+      "nextRandom": 72791155
     },
     {
       "seed": 12345,
@@ -93500,7 +93528,8 @@
           13,
           "minecraft:lapis_ore"
         ]
-      ]
+      ],
+      "nextRandom": -452515370
     },
     {
       "seed": 12345,
@@ -93643,7 +93672,8 @@
           -20,
           "minecraft:lapis_ore"
         ]
-      ]
+      ],
+      "nextRandom": -1350751256
     },
     {
       "seed": 12345,
@@ -94218,7 +94248,8 @@
           13,
           "minecraft:copper_ore"
         ]
-      ]
+      ],
+      "nextRandom": 404253240
     },
     {
       "seed": 12345,
@@ -94799,7 +94830,8 @@
           -17,
           "minecraft:copper_ore"
         ]
-      ]
+      ],
+      "nextRandom": -431992182
     },
     {
       "seed": 12345,
@@ -94841,7 +94873,8 @@
       ],
       "regionRadius": 10,
       "placed": false,
-      "changes": []
+      "changes": [],
+      "nextRandom": -515822010
     },
     {
       "seed": 12345,
@@ -94883,7 +94916,8 @@
       ],
       "regionRadius": 10,
       "placed": false,
-      "changes": []
+      "changes": [],
+      "nextRandom": -1852334927
     },
     {
       "seed": 12345,
@@ -97342,7 +97376,8 @@
           19,
           "minecraft:sand"
         ]
-      ]
+      ],
+      "nextRandom": -843894180
     },
     {
       "seed": 12345,
@@ -99069,7 +99104,8 @@
           -19,
           "minecraft:sand"
         ]
-      ]
+      ],
+      "nextRandom": 1603130442
     },
     {
       "seed": 12345,
@@ -99278,7 +99314,8 @@
           3,
           "minecraft:clay"
         ]
-      ]
+      ],
+      "nextRandom": 988391112
     },
     {
       "seed": 12345,
@@ -99391,7 +99428,8 @@
           -21,
           "minecraft:clay"
         ]
-      ]
+      ],
+      "nextRandom": 554755981
     },
     {
       "seed": 12345,
@@ -100014,7 +100052,8 @@
           18,
           "minecraft:gravel"
         ]
-      ]
+      ],
+      "nextRandom": -1432254930
     },
     {
       "seed": 12345,
@@ -100397,7 +100436,8 @@
           -17,
           "minecraft:gravel"
         ]
-      ]
+      ],
+      "nextRandom": -129301516
     },
     {
       "seed": 12345,
@@ -100594,7 +100634,8 @@
           14,
           "minecraft:mossy_cobblestone"
         ]
-      ]
+      ],
+      "nextRandom": -1512964683
     },
     {
       "seed": 12345,
@@ -100743,7 +100784,8 @@
           -27,
           "minecraft:mossy_cobblestone"
         ]
-      ]
+      ],
+      "nextRandom": -203566567
     },
     {
       "seed": 12345,
@@ -102374,7 +102416,8 @@
           17,
           "minecraft:packed_ice"
         ]
-      ]
+      ],
+      "nextRandom": -213539224
     },
     {
       "seed": 12345,
@@ -103537,7 +103580,8 @@
           -18,
           "minecraft:packed_ice"
         ]
-      ]
+      ],
+      "nextRandom": 328182575
     },
     {
       "seed": 12345,
@@ -103932,7 +103976,8 @@
           21,
           "minecraft:tall_seagrass{half=upper}"
         ]
-      ]
+      ],
+      "nextRandom": -249770514
     },
     {
       "seed": 12345,
@@ -104291,7 +104336,8 @@
           -19,
           "minecraft:seagrass"
         ]
-      ]
+      ],
+      "nextRandom": 649338741
     },
     {
       "seed": 12345,
@@ -104325,7 +104371,8 @@
       ],
       "regionRadius": 10,
       "placed": false,
-      "changes": []
+      "changes": [],
+      "nextRandom": 778285655
     },
     {
       "seed": 12345,
@@ -104359,7 +104406,8 @@
       ],
       "regionRadius": 10,
       "placed": false,
-      "changes": []
+      "changes": [],
+      "nextRandom": -639312130
     },
     {
       "seed": 12345,
@@ -104400,7 +104448,8 @@
           14,
           "minecraft:cactus{age=0}"
         ]
-      ]
+      ],
+      "nextRandom": -1041442527
     },
     {
       "seed": 12345,
@@ -104434,7 +104483,273 @@
       ],
       "regionRadius": 10,
       "placed": false,
-      "changes": []
+      "changes": [],
+      "nextRandom": 1648920113
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "provider",
+      "name": "rotated_east_log",
+      "provider": {
+        "type": "minecraft:rotated",
+        "state": {
+          "id": "minecraft:oak_log"
+        },
+        "direction": "east"
+      },
+      "state": "minecraft:oak_log{axis=x}",
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "provider",
+      "name": "rotated_nested_weighted",
+      "provider": {
+        "type": "minecraft:rotated",
+        "state": {
+          "type": "minecraft:weighted",
+          "entries": [
+            {
+              "data": {
+                "id": "minecraft:oak_log"
+              },
+              "weight": 1
+            },
+            {
+              "data": {
+                "id": "minecraft:birch_log"
+              },
+              "weight": 2
+            }
+          ]
+        }
+      },
+      "state": "minecraft:oak_log{axis=x}",
+      "nextRandom": -423279216
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "provider",
+      "name": "rotated_facing_up",
+      "provider": {
+        "type": "minecraft:rotated",
+        "state": {
+          "id": "minecraft:observer"
+        },
+        "direction": "up"
+      },
+      "state": "minecraft:observer{facing=up, powered=false}",
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "provider",
+      "name": "rotated_horizontal_east",
+      "provider": {
+        "type": "minecraft:rotated",
+        "state": {
+          "type": "minecraft:simple",
+          "state": {
+            "id": "minecraft:oak_stairs"
+          }
+        },
+        "direction": "east"
+      },
+      "state": "minecraft:oak_stairs{facing=east, half=bottom, shape=straight, waterlogged=false}",
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "provider",
+      "name": "rotated_horizontal_up",
+      "provider": {
+        "type": "minecraft:rotated",
+        "state": {
+          "id": "minecraft:oak_stairs"
+        },
+        "direction": "up"
+      },
+      "state": "minecraft:oak_stairs{facing=north, half=bottom, shape=straight, waterlogged=false}",
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "provider",
+      "name": "rotated_required_fallback",
+      "provider": {
+        "type": "minecraft:rotated",
+        "state": {
+          "type": "minecraft:rule_based",
+          "rules": []
+        },
+        "direction": "north"
+      },
+      "state": "minecraft:air",
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "provider",
+      "name": "rotated_horizontal_axis_unchanged",
+      "provider": {
+        "type": "minecraft:rotated",
+        "state": {
+          "id": "minecraft:nether_portal"
+        },
+        "direction": "north"
+      },
+      "state": "minecraft:nether_portal{axis=x}",
+      "nextRandom": -1154715079
+    },
+    {
+      "seed": 12345,
+      "chunkX": 0,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "index": 0,
+      "step": 0,
+      "layers": [
+        [
+          "minecraft:stone",
+          -64
+        ]
+      ],
+      "randomSeed": 2,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "probe": "provider",
+      "name": "rotated_hopper_facing_unchanged",
+      "provider": {
+        "type": "minecraft:rotated",
+        "state": {
+          "id": "minecraft:hopper"
+        },
+        "direction": "east"
+      },
+      "state": "minecraft:hopper{enabled=true, facing=down}",
+      "nextRandom": -1154715079
     }
   ],
   "biomes": [
