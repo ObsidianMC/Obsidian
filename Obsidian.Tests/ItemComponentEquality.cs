@@ -14,7 +14,7 @@ using PlayerEntity = Obsidian.Entities.Player;
 
 namespace Obsidian.Tests;
 
-public sealed class ItemComponentEquality
+public sealed partial class ItemComponentEquality
 {
     // Components whose records hold collections, which C# compares by reference unless Obsidian compares them itself.
     private static readonly DataComponentType[] CollectionComponents =
@@ -44,13 +44,14 @@ public sealed class ItemComponentEquality
     [Fact]
     public void CollectionComponentsMergeByValue()
     {
-        FixtureCases.AssertAll(
-            CollectionComponents,
-            type => type.ToString(),
-            type => { AssertEqualComponentsMerge(type);
-            AssertDifferentComponentsDoNotMerge(type);
-            AssertDecodedComponentsKeepValueEquality(type);
-        });
+        FixtureCases.AssertAll(CollectionComponents, type => type.ToString(), AssertCollectionComponentMergesByValue);
+    }
+
+    private static void AssertCollectionComponentMergesByValue(DataComponentType type)
+    {
+        AssertEqualComponentsMerge(type);
+        AssertDifferentComponentsDoNotMerge(type);
+        AssertDecodedComponentsKeepValueEquality(type);
     }
 
     private static void AssertEqualComponentsMerge(DataComponentType type)
