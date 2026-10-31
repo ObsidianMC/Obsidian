@@ -28,6 +28,38 @@ public sealed class RuntimeHeightmaps
     private static readonly JsonElement reference = LoadReference();
     private static readonly bool[] modes = [false, true];
 
+    [Fact]
+    public void ChunkWritesAndClonesPreserveCustomHeightmapPredicates()
+    {
+        var chunk = new Chunk(0, 0);
+        chunk.Heightmaps[HeightmapType.WorldSurface] = new Heightmap(HeightmapType.WorldSurface, chunk)
+        {
+            Predicate = static block => block.Is(BlockIds.Water)
+        };
+        chunk.SetBlock(0, 20, 0, BlocksRegistry.Water);
+        chunk.SetBlock(0, 50, 0, BlocksRegistry.Stone);
+        var clone = chunk.Clone(1, 0);
+
+        (int Y, IBlock Block, int Surface, int Blocking)[] writes =
+        [
+            (70, BlocksRegistry.Water, 71, 71),
+            (70, BlocksRegistry.Stone, 21, 71),
+            (70, BlocksRegistry.Air, 21, 51),
+            (20, BlocksRegistry.Air, chunk.MinY, 51)
+        ];
+
+        // Custom predicates survive replacement and cloning; ordinary cloned maps still follow the vanilla mask.
+        foreach (var target in new IChunk[] { chunk, clone })
+        {
+            foreach (var (y, block, surface, blocking) in writes)
+            {
+                target.SetBlock(0, y, 0, block);
+                Assert.Equal(surface, target.Heightmaps[HeightmapType.WorldSurface].GetHeight(0, 0));
+                Assert.Equal(blocking, target.Heightmaps[HeightmapType.MotionBlocking].GetHeight(0, 0));
+            }
+        }
+    }
+
     [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task GeneratorHandoffsKeepIndependentMapsMatchingARescan()
     {

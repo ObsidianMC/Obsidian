@@ -34,6 +34,9 @@ internal static class WorldgenHeightmaps
     // The mask of every block state, indexed by state id: generation checks the predicates for every block it writes.
     private static readonly byte[] masks = BuildMasks();
 
+    // Shared with stored heightmaps so a column rescan can test vanilla states without predicate delegates.
+    internal static ReadOnlySpan<byte> StateMasks => masks;
+
     /// <summary>
     /// Recomputes both heightmaps from the chunk's blocks. Values are the first free Y above the highest
     /// matching block, like vanilla.

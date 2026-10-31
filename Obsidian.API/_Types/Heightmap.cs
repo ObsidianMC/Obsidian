@@ -19,6 +19,8 @@ public sealed class Heightmap
 
     public Predicate<IBlock> Predicate;
 
+    private readonly Predicate<IBlock> defaultPredicate;
+
     // 1 while the heights changed since the chunk's last save took the mark (see TakeUnsaved). A new one is unsaved.
     private int unsaved = 1;
 
@@ -40,7 +42,8 @@ public sealed class Heightmap
         // Like vanilla, entries hold 0 to the chunk height inclusive: ceil(log2(height + 1)) bits.
         data = new DataArray(32 - BitOperations.LeadingZeroCount((uint)chunk.Height), 256);
 
-        Predicate = block => Matches(type, block);
+        this.defaultPredicate = this.DefaultMatches;
+        Predicate = this.defaultPredicate;
     }
 
     private Heightmap(HeightmapType type, IChunk chunk, DataArray data)
@@ -49,50 +52,58 @@ public sealed class Heightmap
         this.chunk = chunk;
         this.data = data;
 
-        Predicate = block => Matches(type, block);
+        this.defaultPredicate = this.DefaultMatches;
+        Predicate = this.defaultPredicate;
     }
 
-    public bool Update(int x, int y, int z, IBlock blockState)
+    private bool DefaultMatches(IBlock block) => Matches(this.HeightmapType, block);
+
+    public bool Update(int x, int y, int z, IBlock blockState) =>
+        this.Update(x, y, z, blockState, 0, 0, default);
+
+    /// <summary>Uses the host's captured state masks for the default predicate, preserving custom predicates.</summary>
+    internal bool Update(int x, int y, int z, IBlock blockState, int mask, int bit, ReadOnlySpan<byte> stateMasks)
     {
         lock (this.dataLock)
         {
-            return this.UpdateCore(x, y, z, blockState);
+            if (!ReferenceEquals(this.Predicate, this.defaultPredicate))
+                bit = 0;
+
+            return this.UpdateCore(x, y, z, blockState, mask, bit, stateMasks);
         }
     }
 
-    private bool UpdateCore(int x, int y, int z, IBlock blockState)
+    private bool UpdateCore(int x, int y, int z, IBlock blockState, int mask, int bit, ReadOnlySpan<byte> stateMasks)
     {
-        int height = this.GetHeight(x, z);
-
+        var index = GetIndex(x, z);
+        var height = this.GetHeight(index);
         if (y <= height - 2)
             return false;
 
-        if (this.Predicate(blockState))
+        var matches = bit == 0 ? this.Predicate(blockState) : (mask & bit) != 0;
+        if (matches)
         {
             if (y >= height)
             {
-                this.Set(x, z, y + 1);
+                this.SetCore(index, y + 1);
                 return true;
             }
         }
         else if (height - 1 == y)
         {
-            Vector pos;
-
             for (int i = y - 1; i >= this.chunk.MinY; --i)
             {
-                pos = new Vector(x, i, z);
-                var otherBlock = this.chunk.GetBlock(pos);
+                var otherBlock = this.chunk.GetBlock(x, i, z);
 
-                if (this.Predicate(otherBlock))
+                if (this.MatchesState(otherBlock, bit, stateMasks))
                 {
-                    this.Set(x, z, i + 1);
+                    this.SetCore(index, i + 1);
 
                     return true;
                 }
             }
 
-            this.Set(x, z, this.chunk.MinY);
+            this.SetCore(index, this.chunk.MinY);
 
             return true;
         }
@@ -100,13 +111,29 @@ public sealed class Heightmap
         return false;
     }
 
+    private bool MatchesState(IBlock block, int bit, ReadOnlySpan<byte> stateMasks)
+    {
+        if (bit == 0)
+            return this.Predicate(block);
+
+        var stateId = block.GetHashCode();
+        return (uint)stateId < (uint)stateMasks.Length
+            ? (stateMasks[stateId] & bit) != 0
+            : this.Predicate(block);
+    }
+
     public void Set(int x, int z, int value)
     {
         lock (this.dataLock)
         {
-            this.data[GetIndex(x, z)] = value - this.chunk.MinY;
-            Volatile.Write(ref this.unsaved, 1);
+            this.SetCore(GetIndex(x, z), value);
         }
+    }
+
+    private void SetCore(int index, int value)
+    {
+        this.data[index] = value - this.chunk.MinY;
+        Volatile.Write(ref this.unsaved, 1);
     }
 
     public int GetHeight(int x, int z)
@@ -134,7 +161,7 @@ public sealed class Heightmap
                     while (y >= this.chunk.MinY && !this.Predicate(this.chunk.GetBlock(x, y, z)))
                         y--;
 
-                    this.Set(x, z, y + 1);
+                    this.SetCore(GetIndex(x, z), y + 1);
                 }
             }
         }
@@ -157,7 +184,11 @@ public sealed class Heightmap
     {
         lock (this.dataLock)
         {
-            return new Heightmap(HeightmapType, chunk, data.Clone()) { Predicate = this.Predicate };
+            var clone = new Heightmap(HeightmapType, chunk, data.Clone());
+            if (!ReferenceEquals(this.Predicate, this.defaultPredicate))
+                clone.Predicate = this.Predicate;
+
+            return clone;
         }
     }
 }
