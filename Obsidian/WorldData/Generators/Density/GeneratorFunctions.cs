@@ -30,6 +30,8 @@ internal sealed class ContextFunction(string name, float defaultValue) : Density
     public string Name { get; } = name;
 
     public override float Sample(int x, int y, int z) => defaultValue;
+
+    public override void SampleVolume(Span<float> output, in DensityVolume volume) => output.Fill(defaultValue);
 }
 
 /// <summary>
@@ -273,6 +275,35 @@ internal sealed class GradientFunction : DensityFunction
                 var mirrored = (tile & 1) == 0 ? local : this.coordinateRange - local;
 
                 return this.fromValue + mirrored * this.slope;
+            }
+        }
+    }
+
+    // Each value as Sample computes it, without a call per point: terrain samples y gradients at every block.
+    public override void SampleVolume(Span<float> output, in DensityVolume volume)
+    {
+        var index = 0;
+
+        for (var indexZ = 0; indexZ < volume.SizeZ; indexZ++)
+        {
+            var z = volume.BlockZ(indexZ);
+
+            for (var indexX = 0; indexX < volume.SizeX; indexX++)
+            {
+                var x = volume.BlockX(indexX);
+
+                if (this.axis != DensityAxis.Y)
+                {
+                    output.Slice(index, volume.SizeY).Fill(this.Sample(x, 0, z));
+                    index += volume.SizeY;
+                    continue;
+                }
+
+                for (var indexY = 0; indexY < volume.SizeY; indexY++)
+                {
+                    output[index] = this.Sample(x, volume.BlockY(indexY), z);
+                    index++;
+                }
             }
         }
     }

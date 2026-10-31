@@ -18,11 +18,21 @@ internal sealed class ClimateSource : IBiomeSource
     private readonly DensityFunction[] functions;
     private readonly BiomeParameters? parameters;
 
+    // The parameter list's biomes by their name instances, which the tree's searches return: comparing references
+    // is cheaper than hashing the names. Read only, so threads share it.
+    private readonly Dictionary<string, BiomeCodec> codecs = new(ReferenceEqualityComparer.Instance);
+
     /// <param name="preset">minecraft:overworld, minecraft:nether, or minecraft:the_end.</param>
     public ClimateSource(WorldgenData data, DensityRouter router, string preset)
     {
         this.functions = climateFields.Select(field => router.Functions[field]).ToArray();
         this.parameters = preset == "minecraft:the_end" ? null : BiomeParameters.Read(data, preset);
+
+        foreach (var (_, biome) in this.parameters?.Entries ?? [])
+        {
+            if (CodecRegistry.TryGetBiome(biome, out var codec))
+                this.codecs.TryAdd(biome, codec!);
+        }
     }
 
     public TargetPoint Sample(int quartX, int quartY, int quartZ)
@@ -45,7 +55,7 @@ internal sealed class ClimateSource : IBiomeSource
     private TargetPoint CachedSample(int quartX, int quartY, int quartZ)
     {
         var cache = climateCache ??= new CachedClimate[ClimateCacheSize];
-        var slot = (int)((uint)HashCode.Combine(quartX, quartY, quartZ) & (ClimateCacheSize - 1));
+        var slot = (int)(QuartHash(quartX, quartY, quartZ) & (ClimateCacheSize - 1));
         ref var entry = ref cache[slot];
 
         if (entry.Source == this && entry.X == quartX && entry.Y == quartY && entry.Z == quartZ)
@@ -71,8 +81,13 @@ internal sealed class ClimateSource : IBiomeSource
             ? this.EndBiome(quartX, quartY, quartZ)
             : this.parameters.Tree.Search(this.CachedSample(quartX, quartY, quartZ));
 
-        return GetBiome(name);
+        return this.codecs.TryGetValue(name, out var codec) ? codec : GetBiome(name);
     }
+
+    // Spreads neighboring quarts over the cache's slots; cheaper than HashCode.Combine, which a lookup per block
+    // would pay for.
+    private static uint QuartHash(int quartX, int quartY, int quartZ) =>
+        unchecked((uint)(quartX * 73856093 ^ quartY * 19349663 ^ quartZ * 83492791));
 
     /// <summary>
     /// Writes the BIOMES status before terrain. Climate uses a quart-spaced volume; search order is ascending

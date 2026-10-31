@@ -251,8 +251,17 @@ internal sealed class OreBlob((RuleTest Target, IBlock State)[] targets, int siz
         return discardChance < 1.0f && random.NextFloat() >= discardChance;
     }
 
-    private static bool IsAdjacentToAir(IWorldGenLevel level, Vector position) =>
-        FeatureHelpers.Directions.Any(face => FeatureHelpers.IsAirAt(level, position.Offset(face)));
+    // A loop rather than Any, whose closure would be allocated for every block an ore tries.
+    private static bool IsAdjacentToAir(IWorldGenLevel level, Vector position)
+    {
+        foreach (var face in FeatureHelpers.Directions)
+        {
+            if (FeatureHelpers.IsAirAt(level, position.Offset(face)))
+                return true;
+        }
+
+        return false;
+    }
 
     private readonly record struct OreLine(
         double StartX,

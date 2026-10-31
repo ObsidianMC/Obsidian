@@ -44,7 +44,7 @@ internal sealed class BiomeParameterTree<T>
         ReadOnlySpan<long> point = [target.Temperature, target.Humidity, target.Continentalness, target.Erosion, target.Depth, target.Weirdness, 0L];
         var state = this.searches.Value!;
         var last = state.Last;
-        var slot = (int)((uint)target.GetHashCode() & (RememberedSearches - 1));
+        var slot = (int)(Hash(target) & (RememberedSearches - 1));
         ref var remembered = ref state.Remembered[slot];
 
         if (remembered.Leaf is not null && remembered.Target == target)
@@ -68,6 +68,18 @@ internal sealed class BiomeParameterTree<T>
         state.Last = leaf;
 
         return leaf.Value;
+    }
+
+    // Cheaper than the record's hash, which combines each field through an equality comparer.
+    private static uint Hash(in TargetPoint target)
+    {
+        var hash = target.Temperature * 31 + target.Humidity;
+        hash = hash * 31 + target.Continentalness;
+        hash = hash * 31 + target.Erosion;
+        hash = hash * 31 + target.Depth;
+        hash = hash * 31 + target.Weirdness;
+
+        return unchecked((uint)(hash ^ hash >> 32) * 0x9E3779B1u);
     }
 
     private static Node Build(List<Node> children, int childrenPerNode)

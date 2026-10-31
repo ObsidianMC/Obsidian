@@ -29,8 +29,7 @@ internal sealed class ScatteredOre((RuleTest Target, IBlock State)[] targets, in
 
                 var skipAirCheck = discardChance <= 0.0f
                     || discardChance < 1.0f && random.NextFloat() >= discardChance;
-                var exposed = !skipAirCheck && FeatureHelpers.Directions.Any(
-                    face => level.GetBlock(position.Offset(face)).IsAir);
+                var exposed = !skipAirCheck && IsAdjacentToAir(level, position);
 
                 if (exposed)
                 {
@@ -44,6 +43,17 @@ internal sealed class ScatteredOre((RuleTest Target, IBlock State)[] targets, in
 
         // Vanilla reports completion even when no target matched or the attempt count was zero.
         return true;
+    }
+
+    private static bool IsAdjacentToAir(IWorldGenLevel level, Vector position)
+    {
+        foreach (var face in FeatureHelpers.Directions)
+        {
+            if (level.GetBlock(position.Offset(face)).IsAir)
+                return true;
+        }
+
+        return false;
     }
 
     private static int Offset(IRandomSource random, int spread)
