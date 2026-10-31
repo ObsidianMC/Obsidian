@@ -19,6 +19,7 @@ internal sealed partial class MaterialRules
         private readonly Dictionary<NoiseStack, float> blockNoises = new(ReferenceEqualityComparer.Instance);
         private float[]? surfaceLevels;
         private string? biome;
+        private int? biomeId;
         private int localX;
         private int localZ;
 
@@ -69,6 +70,9 @@ internal sealed partial class MaterialRules
         public int GradientZ { get; private set; }
 
         public string Biome => this.biome ??= this.Terrain.BiomeAt(this.X, this.Y, this.Z);
+
+        /// <summary>The <see cref="Biome"/>'s number among those biome conditions name, or -1.</summary>
+        public int BiomeId => this.biomeId ??= this.owner.FindBiomeId(this.Biome);
 
         public double Secondary
         {
@@ -132,6 +136,7 @@ internal sealed partial class MaterialRules
             this.Below = below;
             this.Water = water;
             this.biome = null;
+            this.biomeId = null;
             this.blockNoises.Clear();
         }
 

@@ -44,17 +44,26 @@ internal sealed class BiomeParameterTree<T>
         ReadOnlySpan<long> point = [target.Temperature, target.Humidity, target.Continentalness, target.Erosion, target.Depth, target.Weirdness, 0L];
         var state = this.searches.Value!;
         var last = state.Last;
+
+        // The previous result is at the smallest distance from its own target, so asking again returns it.
+        if (last is not null && state.LastTarget == target)
+            return last.Value;
+
         var slot = (int)(Hash(target) & (RememberedSearches - 1));
         ref var remembered = ref state.Remembered[slot];
 
         if (remembered.Leaf is not null && remembered.Target == target)
         {
             if (last is not null && last.Distance(point) == remembered.Distance)
+            {
+                state.LastTarget = target;
                 return last.Value;
+            }
 
             if (remembered.First is Leaf first)
             {
                 state.Last = first;
+                state.LastTarget = target;
                 return first.Value;
             }
         }
@@ -66,6 +75,7 @@ internal sealed class BiomeParameterTree<T>
         var isFirst = !ReferenceEquals(leaf, last);
         remembered = new RememberedSearch(target, distance, leaf, isFirst ? leaf : null);
         state.Last = leaf;
+        state.LastTarget = target;
 
         return leaf.Value;
     }
@@ -188,6 +198,9 @@ internal sealed class BiomeParameterTree<T>
     private sealed class SearchState
     {
         public Leaf? Last { get; set; }
+
+        /// <summary>The target <see cref="Last"/> was returned for.</summary>
+        public TargetPoint LastTarget { get; set; }
 
         public RememberedSearch[] Remembered { get; } = new RememberedSearch[RememberedSearches];
     }

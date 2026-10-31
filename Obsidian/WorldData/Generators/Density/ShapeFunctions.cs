@@ -28,19 +28,35 @@ internal sealed class LerpFunction(DensityFunction alpha, DensityFunction first,
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
     {
         alpha.SampleVolume(output, volume);
+
+        // An alpha of 0 or 1 everywhere takes one side, so the other isn't sampled (the terrain's y gradients, say).
+        if (!output.ContainsAnyExcept(0.0f))
+        {
+            first.SampleVolume(output, volume);
+            return;
+        }
+
+        if (!output.ContainsAnyExcept(1.0f))
+        {
+            second.SampleVolume(output, volume);
+            return;
+        }
+
         using var starts = DensityBuffer.Sample(first, volume);
         using var ends = DensityBuffer.Sample(second, volume);
+        var startValues = starts.Span;
+        var endValues = ends.Span;
 
         for (var i = 0; i < output.Length; i++)
         {
             var amount = output[i];
 
             if (amount == 0.0f)
-                output[i] = starts.Span[i];
+                output[i] = startValues[i];
             else if (amount == 1.0f)
-                output[i] = ends.Span[i];
+                output[i] = endValues[i];
             else
-                output[i] = FloatMath.Lerp(amount, starts.Span[i], ends.Span[i]);
+                output[i] = FloatMath.Lerp(amount, startValues[i], endValues[i]);
         }
     }
 }
@@ -82,16 +98,64 @@ internal sealed class RangeChoiceFunction(
         return chosen.Sample(x, y, z);
     }
 
+    // Each point takes its value from the branch it chooses, so a branch no point chooses isn't sampled, and a
+    // constant one is written without sampling it into a buffer. Ore veins nest these over a chunk's every block.
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
     {
-        whenInRange.SampleVolume(output, volume);
         using var inputs = DensityBuffer.Sample(input, volume);
-        using var outside = DensityBuffer.Sample(whenOutOfRange, volume);
+        var values = inputs.Span;
+        var inRange = 0;
+
+        for (var i = 0; i < values.Length; i++)
+        {
+            if (this.InRange(values[i]))
+                inRange++;
+        }
+
+        if (inRange == values.Length)
+        {
+            whenInRange.SampleVolume(output, volume);
+            return;
+        }
+
+        if (inRange == 0)
+        {
+            whenOutOfRange.SampleVolume(output, volume);
+            return;
+        }
+
+        if (whenInRange is ConstantFunction inside)
+        {
+            whenOutOfRange.SampleVolume(output, volume);
+            this.Choose(output, values, inside.Value, chooseInRange: true);
+            return;
+        }
+
+        whenInRange.SampleVolume(output, volume);
+
+        if (whenOutOfRange is ConstantFunction outside)
+        {
+            this.Choose(output, values, outside.Value, chooseInRange: false);
+            return;
+        }
+
+        using var outsideValues = DensityBuffer.Sample(whenOutOfRange, volume);
+        var outsides = outsideValues.Span;
 
         for (var i = 0; i < output.Length; i++)
         {
-            if (!this.InRange(inputs.Span[i]))
-                output[i] = outside.Span[i];
+            if (!this.InRange(values[i]))
+                output[i] = outsides[i];
+        }
+    }
+
+    // Writes value to the points whose input is in range, or to those whose input isn't.
+    private void Choose(Span<float> output, ReadOnlySpan<float> inputs, float value, bool chooseInRange)
+    {
+        for (var i = 0; i < output.Length; i++)
+        {
+            if (this.InRange(inputs[i]) == chooseInRange)
+                output[i] = value;
         }
     }
 
