@@ -525,42 +525,31 @@ public partial class Entity : IEquatable<Entity>, IEntity
 
     protected virtual EntityBitMask GenerateBitmask()
     {
+        // Update pose
+        if (Sneaking)
+            Pose = Pose.Sneaking;
+        else if (Swimming)
+            Pose = Pose.Swimming;
+        else if ((!Sneaking && Pose == Pose.Sneaking) || (!Swimming && Pose == Pose.Swimming))
+            Pose = Pose.Standing;
+
+        // Collect flags
         EntityBitMask mask = EntityBitMask.None;
 
         if (Sneaking)
-        {
-            Pose = Pose.Sneaking;
             mask |= EntityBitMask.Crouched;
-        }
-        else if (Swimming)
-        {
-            Pose = Pose.Swimming;
+        if (Swimming)
             mask |= EntityBitMask.Swimming;
-        }
-        else if (!Sneaking && Pose == Pose.Sneaking || !Swimming && Pose == Pose.Swimming)
-        {
-            Pose = Pose.Standing;
-        }
-        else if (Sprinting)
-        {
+        if (Sprinting)
             mask |= EntityBitMask.Sprinting;
-        }
-        else if (Glowing)
-        {
+        if (Glowing)
             mask |= EntityBitMask.Glowing;
-        }
-        else if (Invisible)
-        {
+        if (Invisible)
             mask |= EntityBitMask.Invisible;
-        }
-        else if (Burning)
-        {
+        if (Burning)
             mask |= EntityBitMask.OnFire;
-        }
-        else if (FlyingWithElytra)
-        {
+        if (FlyingWithElytra)
             mask |= EntityBitMask.FlyingWithElytra;
-        }
 
         return mask;
     }
