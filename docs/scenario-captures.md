@@ -18,6 +18,9 @@ replaces only what vanilla produced.
   as well as the completed fall, so immediate disappearance, missing drops and endlessly falling entities fail.
   `recordProjectile` samples embedded projectiles; projectile actions exercise collision handling through the live
   entity tick. RCON samples do not record sound effects.
+  Projectile actions can supply `inBlockState` to load an embedded projectile in vanilla's format. The `*_release_*`
+  references cover release into short grass, retention near a solid replacement, and the saved-state equality guard
+  when the current block has no collision. Each case covers arrows, spectral arrows and tridents.
   `spawnFalling` supplies a block, position and motion; `recordFallingMotion` records its height, vertical velocity
   and grounded flag. The sand references cover a full floor, a partial floor and waiting for a moving piston to
   clear. `withoutBlockEntity` validates the absence of a block entity after vanilla's bare moving-piston placement;
@@ -35,6 +38,10 @@ replaces only what vanilla produced.
   The `shape_*` probes record vanilla's returned shape and scheduled water ticks for wet and dry panes, bars,
   leaves, sulfur spikes and pointed dripstone. Each reference is replayed through both the notification pipeline
   and the fluid shape-update path, including cases where a registered behavior returns an unchanged state.
+  The `arrow_saved_state_*` probes record the `BlockState.CODEC` NBT representation used by vanilla's arrow saves.
+  `ProjectilePersistence.VanillaBlockStateSurvivesRoundTripAndReleases` checks that the captured `inBlockState`
+  survives loading and saving before the block changes. Default states are strings in 26.3; non-default states are
+  `id`/`properties` compounds. These checks require the saved field, independently of collision-based release.
 
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.

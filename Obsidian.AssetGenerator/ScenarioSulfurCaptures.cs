@@ -122,8 +122,11 @@ internal static class ScenarioSulfurCaptures
         var position = string.Join(" ", projectile["pos"]!.AsArray());
         var motion = string.Join(",", projectile["motion"]!.AsArray().Select(value => $"{value}d"));
         var type = projectile["type"]!.GetValue<string>();
+        var savedState = projectile["inBlockState"] is { } state
+            ? $",inGround:1b,inBlockState:{state.ToJsonString()}" : "";
         return vanilla.RunInAsync(ScenarioServer.Overworld,
-            $"summon minecraft:{type} {position} {{Tags:[\"sulfur_projectile\"],NoGravity:1b,Motion:[{motion}]}}");
+            $"summon minecraft:{type} {position} "
+            + $"{{Tags:[\"sulfur_projectile\"],NoGravity:1b,Motion:[{motion}]{savedState}}}");
     }
 
     private static Task<string> PlaceAsync(ScenarioServer vanilla, JsonNode placement) =>

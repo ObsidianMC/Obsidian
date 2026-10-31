@@ -75,7 +75,7 @@ public partial class Arrow : Entity
     }
 
     protected bool embedded;
-    private Vector? embeddedBlock;
+    private IBlock? embeddedBlockState;
 
     public override void Write(INetStreamWriter writer)
     {
@@ -144,11 +144,11 @@ public partial class Arrow : Entity
 
         if (embedded)
         {
-            // Older saves have no hit-cell anchor. Vanilla's small collision volume supplies their release check.
+            // Vanilla compares the saved hit state with the arrow's current cell, then checks nearby collisions.
             var clearance = new BoundingBox(this.Position - new VectorD(0.06), this.Position + new VectorD(0.06));
-            var anchored = this.embeddedBlock is { } anchor
-                ? !level.BlockUpdates.GetBlock(anchor).IsAir
-                : new MobTerrain(level).GetCollisions(clearance).Any(shape =>
+            var current = level.BlockUpdates.GetBlock((Vector)this.Position.Floor());
+            var anchored = this.embeddedBlockState?.IsSameState(current) == true
+                || new MobTerrain(level).GetCollisions(clearance).Any(shape =>
                     shape.Max.X > clearance.Min.X && shape.Min.X < clearance.Max.X
                     && shape.Max.Y > clearance.Min.Y && shape.Min.Y < clearance.Max.Y
                     && shape.Max.Z > clearance.Min.Z && shape.Min.Z < clearance.Max.Z);
@@ -159,7 +159,6 @@ public partial class Arrow : Entity
             }
 
             this.embedded = false;
-            this.embeddedBlock = null;
             this.PacketBroadcaster.QueuePacketToLevelInRange(this.Level, this.Position,
                 new SetEntityDataPacket { EntityId = this.EntityId, Entity = this });
         }
@@ -431,6 +430,8 @@ public partial class Arrow : Entity
             return;
         }
 
+        this.embeddedBlockState = level.BlockUpdates.GetBlock(collision.Position);
+
         // Like vanilla's onHitBlock, a block the arrow hits reacts before the arrow embeds.
         if (Level is AbstractLevel hitLevel)
         {
@@ -451,7 +452,14 @@ public partial class Arrow : Entity
         }
 
         embedded = true;
-        this.embeddedBlock = collision.Position;
+        // Vanilla retreats by 0.05 along each moving axis before applying its nearby collision release check.
+        var embeddedPosition = this.Position
+            - new VectorD(Math.Sign(Motion.X), Math.Sign(Motion.Y), Math.Sign(Motion.Z)) * 0.05f;
+        if (level.TryMoveEntity(this, this.Position, embeddedPosition))
+        {
+            this.Position = embeddedPosition;
+        }
+
         Crit = false;
         Motion = VectorD.Zero;
         var packet = new SetEntityDataPacket { EntityId = EntityId, Entity = this };
@@ -537,8 +545,9 @@ public partial class Arrow : Entity
         tag.SetOrRemove("Owner", ownerTag);
         tag.Set(new NbtTag<int>("ObsidianLife", age));
         tag.Set(new NbtTag<bool>("inGround", embedded));
-        tag.SetOrRemove("ObsidianEmbeddedBlock", this.embeddedBlock is { } anchor
-            ? new NbtArray<int>("ObsidianEmbeddedBlock", [anchor.X, anchor.Y, anchor.Z]) : null);
+        tag.Remove("ObsidianEmbeddedBlock");
+        tag.SetOrRemove("inBlockState", this.embeddedBlockState is { } state
+            ? BlockStateNbt.Write(state, "inBlockState") : null);
         tag.Set(new NbtTag<double>("damage", Damage));
         tag.Set(new NbtTag<int>("ObsidianEffect", Effect));
         tag.Set(new NbtTag<int>("ObsidianEffectDuration", EffectDuration));
@@ -561,12 +570,7 @@ public partial class Arrow : Entity
             age = Math.Clamp(life, 0, 1200);
 
         embedded = tag.TryGetBool("inGround", out var ground) && ground;
-        this.embeddedBlock = null;
-        if (embedded && tag.TryGetTag<NbtArray<int>>("ObsidianEmbeddedBlock", out var anchor) && anchor.Count == 3)
-        {
-            var coordinates = anchor.GetArray();
-            this.embeddedBlock = new Vector(coordinates[0], coordinates[1], coordinates[2]);
-        }
+        this.embeddedBlockState = tag.TryGetTag("inBlockState", out var state) ? BlockStateNbt.Read(state) : null;
 
         if (tag.TryGetNumber<double>("damage", out var damage) && double.IsFinite(damage))
             Damage = (float)Math.Clamp(damage, 0, float.MaxValue);

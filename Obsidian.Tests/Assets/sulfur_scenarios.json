@@ -7487,6 +7487,1269 @@
      ]
     }
    ]
+  },
+  {
+   "name": "arrow_release_grass",
+   "setup": [
+    {
+     "pos": [
+      1,
+      71,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      72,
+      1
+     ],
+     "state": "minecraft:stone"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "projectile": {
+      "type": "arrow",
+      "pos": [
+       1.5,
+       72.5,
+       0.1
+      ],
+      "motion": [
+       0,
+       0,
+       2
+      ]
+     }
+    },
+    {
+     "tick": 3,
+     "pos": [
+      1,
+      72,
+      1
+     ],
+     "state": "minecraft:short_grass"
+    }
+   ],
+   "watch": [
+    [
+     1,
+     72,
+     1
+    ]
+   ],
+   "ticks": 6,
+   "interval": 1,
+   "recordProjectile": true,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 41,
+     "states": [
+      "minecraft:stone"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 1,
+     "gameTime": 42,
+     "states": [
+      "minecraft:stone"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 2,
+     "gameTime": 43,
+     "states": [
+      "minecraft:stone"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 3,
+     "gameTime": 44,
+     "states": [
+      "minecraft:short_grass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 4,
+     "gameTime": 45,
+     "states": [
+      "minecraft:short_grass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 5,
+     "gameTime": 46,
+     "states": [
+      "minecraft:short_grass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 6,
+     "gameTime": 47,
+     "states": [
+      "minecraft:short_grass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    }
+   ]
+  },
+  {
+   "name": "arrow_release_solid",
+   "setup": [
+    {
+     "pos": [
+      1,
+      71,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      72,
+      1
+     ],
+     "state": "minecraft:stone"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "projectile": {
+      "type": "arrow",
+      "pos": [
+       1.5,
+       72.5,
+       0.1
+      ],
+      "motion": [
+       0,
+       0,
+       2
+      ]
+     }
+    },
+    {
+     "tick": 3,
+     "pos": [
+      1,
+      72,
+      1
+     ],
+     "state": "minecraft:glass"
+    },
+    {
+     "tick": 5,
+     "pos": [
+      1,
+      72,
+      1
+     ],
+     "state": "minecraft:air"
+    }
+   ],
+   "watch": [
+    [
+     1,
+     72,
+     1
+    ]
+   ],
+   "ticks": 6,
+   "interval": 1,
+   "recordProjectile": true,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 87,
+     "states": [
+      "minecraft:stone"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 1,
+     "gameTime": 88,
+     "states": [
+      "minecraft:stone"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 2,
+     "gameTime": 89,
+     "states": [
+      "minecraft:stone"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 3,
+     "gameTime": 90,
+     "states": [
+      "minecraft:glass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 4,
+     "gameTime": 91,
+     "states": [
+      "minecraft:glass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 5,
+     "gameTime": 92,
+     "states": [
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 6,
+     "gameTime": 93,
+     "states": [
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    }
+   ]
+  },
+  {
+   "name": "arrow_release_same_state",
+   "setup": [
+    {
+     "pos": [
+      1,
+      71,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      72,
+      1
+     ],
+     "state": "minecraft:short_grass"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "projectile": {
+      "type": "arrow",
+      "pos": [
+       1.5,
+       72.5,
+       1.5
+      ],
+      "motion": [
+       0,
+       0,
+       0
+      ],
+      "inBlockState": "minecraft:short_grass"
+     }
+    },
+    {
+     "tick": 3,
+     "pos": [
+      1,
+      72,
+      1
+     ],
+     "state": "minecraft:fern"
+    }
+   ],
+   "watch": [
+    [
+     1,
+     72,
+     1
+    ]
+   ],
+   "ticks": 6,
+   "interval": 1,
+   "recordProjectile": true,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 133,
+     "states": [
+      "minecraft:short_grass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 1,
+     "gameTime": 134,
+     "states": [
+      "minecraft:short_grass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 2,
+     "gameTime": 135,
+     "states": [
+      "minecraft:short_grass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 3,
+     "gameTime": 136,
+     "states": [
+      "minecraft:fern"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 4,
+     "gameTime": 137,
+     "states": [
+      "minecraft:fern"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 5,
+     "gameTime": 138,
+     "states": [
+      "minecraft:fern"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 6,
+     "gameTime": 139,
+     "states": [
+      "minecraft:fern"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    }
+   ]
+  },
+  {
+   "name": "spectral_arrow_release_grass",
+   "setup": [
+    {
+     "pos": [
+      1,
+      71,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      72,
+      1
+     ],
+     "state": "minecraft:stone"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "projectile": {
+      "type": "spectral_arrow",
+      "pos": [
+       1.5,
+       72.5,
+       0.1
+      ],
+      "motion": [
+       0,
+       0,
+       2
+      ]
+     }
+    },
+    {
+     "tick": 3,
+     "pos": [
+      1,
+      72,
+      1
+     ],
+     "state": "minecraft:short_grass"
+    }
+   ],
+   "watch": [
+    [
+     1,
+     72,
+     1
+    ]
+   ],
+   "ticks": 6,
+   "interval": 1,
+   "recordProjectile": true,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 179,
+     "states": [
+      "minecraft:stone"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 1,
+     "gameTime": 180,
+     "states": [
+      "minecraft:stone"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 2,
+     "gameTime": 181,
+     "states": [
+      "minecraft:stone"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 3,
+     "gameTime": 182,
+     "states": [
+      "minecraft:short_grass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 4,
+     "gameTime": 183,
+     "states": [
+      "minecraft:short_grass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 5,
+     "gameTime": 184,
+     "states": [
+      "minecraft:short_grass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 6,
+     "gameTime": 185,
+     "states": [
+      "minecraft:short_grass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    }
+   ]
+  },
+  {
+   "name": "spectral_arrow_release_solid",
+   "setup": [
+    {
+     "pos": [
+      1,
+      71,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      72,
+      1
+     ],
+     "state": "minecraft:stone"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "projectile": {
+      "type": "spectral_arrow",
+      "pos": [
+       1.5,
+       72.5,
+       0.1
+      ],
+      "motion": [
+       0,
+       0,
+       2
+      ]
+     }
+    },
+    {
+     "tick": 3,
+     "pos": [
+      1,
+      72,
+      1
+     ],
+     "state": "minecraft:glass"
+    },
+    {
+     "tick": 5,
+     "pos": [
+      1,
+      72,
+      1
+     ],
+     "state": "minecraft:air"
+    }
+   ],
+   "watch": [
+    [
+     1,
+     72,
+     1
+    ]
+   ],
+   "ticks": 6,
+   "interval": 1,
+   "recordProjectile": true,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 225,
+     "states": [
+      "minecraft:stone"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 1,
+     "gameTime": 226,
+     "states": [
+      "minecraft:stone"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 2,
+     "gameTime": 227,
+     "states": [
+      "minecraft:stone"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 3,
+     "gameTime": 228,
+     "states": [
+      "minecraft:glass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 4,
+     "gameTime": 229,
+     "states": [
+      "minecraft:glass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 5,
+     "gameTime": 230,
+     "states": [
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 6,
+     "gameTime": 231,
+     "states": [
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    }
+   ]
+  },
+  {
+   "name": "spectral_arrow_release_same_state",
+   "setup": [
+    {
+     "pos": [
+      1,
+      71,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      72,
+      1
+     ],
+     "state": "minecraft:short_grass"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "projectile": {
+      "type": "spectral_arrow",
+      "pos": [
+       1.5,
+       72.5,
+       1.5
+      ],
+      "motion": [
+       0,
+       0,
+       0
+      ],
+      "inBlockState": "minecraft:short_grass"
+     }
+    },
+    {
+     "tick": 3,
+     "pos": [
+      1,
+      72,
+      1
+     ],
+     "state": "minecraft:fern"
+    }
+   ],
+   "watch": [
+    [
+     1,
+     72,
+     1
+    ]
+   ],
+   "ticks": 6,
+   "interval": 1,
+   "recordProjectile": true,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 271,
+     "states": [
+      "minecraft:short_grass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 1,
+     "gameTime": 272,
+     "states": [
+      "minecraft:short_grass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 2,
+     "gameTime": 273,
+     "states": [
+      "minecraft:short_grass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 3,
+     "gameTime": 274,
+     "states": [
+      "minecraft:fern"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 4,
+     "gameTime": 275,
+     "states": [
+      "minecraft:fern"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 5,
+     "gameTime": 276,
+     "states": [
+      "minecraft:fern"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 6,
+     "gameTime": 277,
+     "states": [
+      "minecraft:fern"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    }
+   ]
+  },
+  {
+   "name": "trident_release_grass",
+   "setup": [
+    {
+     "pos": [
+      1,
+      71,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      72,
+      1
+     ],
+     "state": "minecraft:stone"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "projectile": {
+      "type": "trident",
+      "pos": [
+       1.5,
+       72.5,
+       0.1
+      ],
+      "motion": [
+       0,
+       0,
+       2
+      ]
+     }
+    },
+    {
+     "tick": 3,
+     "pos": [
+      1,
+      72,
+      1
+     ],
+     "state": "minecraft:short_grass"
+    }
+   ],
+   "watch": [
+    [
+     1,
+     72,
+     1
+    ]
+   ],
+   "ticks": 6,
+   "interval": 1,
+   "recordProjectile": true,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 317,
+     "states": [
+      "minecraft:stone"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 1,
+     "gameTime": 318,
+     "states": [
+      "minecraft:stone"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 2,
+     "gameTime": 319,
+     "states": [
+      "minecraft:stone"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 3,
+     "gameTime": 320,
+     "states": [
+      "minecraft:short_grass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 4,
+     "gameTime": 321,
+     "states": [
+      "minecraft:short_grass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 5,
+     "gameTime": 322,
+     "states": [
+      "minecraft:short_grass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 6,
+     "gameTime": 323,
+     "states": [
+      "minecraft:short_grass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    }
+   ]
+  },
+  {
+   "name": "trident_release_solid",
+   "setup": [
+    {
+     "pos": [
+      1,
+      71,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      72,
+      1
+     ],
+     "state": "minecraft:stone"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "projectile": {
+      "type": "trident",
+      "pos": [
+       1.5,
+       72.5,
+       0.1
+      ],
+      "motion": [
+       0,
+       0,
+       2
+      ]
+     }
+    },
+    {
+     "tick": 3,
+     "pos": [
+      1,
+      72,
+      1
+     ],
+     "state": "minecraft:glass"
+    },
+    {
+     "tick": 5,
+     "pos": [
+      1,
+      72,
+      1
+     ],
+     "state": "minecraft:air"
+    }
+   ],
+   "watch": [
+    [
+     1,
+     72,
+     1
+    ]
+   ],
+   "ticks": 6,
+   "interval": 1,
+   "recordProjectile": true,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 363,
+     "states": [
+      "minecraft:stone"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 1,
+     "gameTime": 364,
+     "states": [
+      "minecraft:stone"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 2,
+     "gameTime": 365,
+     "states": [
+      "minecraft:stone"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 3,
+     "gameTime": 366,
+     "states": [
+      "minecraft:glass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 4,
+     "gameTime": 367,
+     "states": [
+      "minecraft:glass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 5,
+     "gameTime": 368,
+     "states": [
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 6,
+     "gameTime": 369,
+     "states": [
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    }
+   ]
+  },
+  {
+   "name": "trident_release_same_state",
+   "setup": [
+    {
+     "pos": [
+      1,
+      71,
+      1
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      72,
+      1
+     ],
+     "state": "minecraft:short_grass"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 1,
+     "projectile": {
+      "type": "trident",
+      "pos": [
+       1.5,
+       72.5,
+       1.5
+      ],
+      "motion": [
+       0,
+       0,
+       0
+      ],
+      "inBlockState": "minecraft:short_grass"
+     }
+    },
+    {
+     "tick": 3,
+     "pos": [
+      1,
+      72,
+      1
+     ],
+     "state": "minecraft:fern"
+    }
+   ],
+   "watch": [
+    [
+     1,
+     72,
+     1
+    ]
+   ],
+   "ticks": 6,
+   "interval": 1,
+   "recordProjectile": true,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 409,
+     "states": [
+      "minecraft:short_grass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 1,
+     "gameTime": 410,
+     "states": [
+      "minecraft:short_grass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 2,
+     "gameTime": 411,
+     "states": [
+      "minecraft:short_grass"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 1
+    },
+    {
+     "tick": 3,
+     "gameTime": 412,
+     "states": [
+      "minecraft:fern"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 4,
+     "gameTime": 413,
+     "states": [
+      "minecraft:fern"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 5,
+     "gameTime": 414,
+     "states": [
+      "minecraft:fern"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    },
+    {
+     "tick": 6,
+     "gameTime": 415,
+     "states": [
+      "minecraft:fern"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0
+    }
+   ]
   }
  ],
  "_notes": "Recorded from a frozen vanilla 26.3 server over RCON, seed test-seed. Setup and actions use setblock with updates. Each checkpoint records absolute game time, full states at watched positions and potent sulfur's saved countdown. Reload actions save and restart vanilla; their elapsed game ticks are retained. Other actions run before the next tick. Optional entity samples count live falling blocks, damaging falling blocks and total items (sulfur spikes unless item is supplied). Projectile samples count embedded projectiles. Falling-motion samples retain height, vertical velocity and OnGround for explicitly summoned falling blocks. withoutBlockEntity validates a bare moving_piston's absent block entity before stepping. These samples do not record sound effects. CaptureCases selects individual scenarios without re-recording the Java probes."

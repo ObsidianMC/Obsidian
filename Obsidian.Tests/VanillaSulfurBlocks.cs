@@ -36,6 +36,9 @@ public sealed class VanillaSulfurBlocks
     {
         foreach (var probe in probes.GetProperty("cases").EnumerateArray())
         {
+            if (probe.GetProperty("kind").GetString() == "arrow_saved_state")
+                continue;
+
             var name = probe.GetProperty("name").GetString()!;
             yield return [name, false];
             if (probe.GetProperty("kind").GetString() == "shape_update")
@@ -354,6 +357,15 @@ public sealed class VanillaSulfurBlocks
                     arrow.EntityId = Obsidian.Server.GetNextEntityId();
                     arrow.Position = Location(projectile.GetProperty("pos"));
                     arrow.Motion = Location(projectile.GetProperty("motion"));
+                    if (projectile.TryGetProperty("inBlockState", out var state))
+                    {
+                        arrow.ReadNbt(new NbtCompound
+                        {
+                            new NbtTag<bool>("inGround", true),
+                            Obsidian.Utilities.Converters.JsonNbt.ToNbt("inBlockState", state)
+                        });
+                    }
+
                     arrow.NoGravity = true;
                     Assert.True(world.TryAddEntity(arrow));
                 }

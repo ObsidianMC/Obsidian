@@ -65,7 +65,12 @@ public final class SulfurFixtures {
             }
 
             var origin = position(input.getAsJsonArray("origin"));
-            if (input.get("kind").getAsString().equals("shape_update")) {
+            if (input.get("kind").getAsString().equals("arrow_saved_state")) {
+                var encoded = BlockState.CODEC.encodeStart(net.minecraft.nbt.NbtOps.INSTANCE,
+                    level.getBlockState(origin)).getOrThrow();
+                input.add("savedState", net.minecraft.nbt.NbtOps.INSTANCE.convertTo(
+                    com.mojang.serialization.JsonOps.INSTANCE, encoded));
+            } else if (input.get("kind").getAsString().equals("shape_update")) {
                 var ticks = new JsonArray();
                 var blockTicks = java.lang.reflect.Proxy.newProxyInstance(
                     SulfurFixtures.class.getClassLoader(),

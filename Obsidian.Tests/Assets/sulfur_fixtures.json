@@ -5584,6 +5584,71 @@
       ],
       "updated": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]",
       "fluidTicks": []
+    },
+    {
+      "name": "arrow_saved_state_stone",
+      "kind": "arrow_saved_state",
+      "origin": [
+        1,
+        72,
+        1
+      ],
+      "setup": [
+        {
+          "pos": [
+            1,
+            72,
+            1
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "savedState": "minecraft:stone"
+    },
+    {
+      "name": "arrow_saved_state_log_axis_x",
+      "kind": "arrow_saved_state",
+      "origin": [
+        1,
+        72,
+        1
+      ],
+      "setup": [
+        {
+          "pos": [
+            1,
+            72,
+            1
+          ],
+          "state": "minecraft:oak_log[axis=x]"
+        }
+      ],
+      "savedState": {
+        "id": "minecraft:oak_log",
+        "properties": {
+          "axis": "x"
+        }
+      }
+    },
+    {
+      "name": "arrow_saved_state_grass",
+      "kind": "arrow_saved_state",
+      "origin": [
+        1,
+        72,
+        1
+      ],
+      "setup": [
+        {
+          "pos": [
+            1,
+            72,
+            1
+          ],
+          "state": "minecraft:short_grass"
+        }
+      ],
+      "savedState": "minecraft:short_grass"
     }
   ]
 }
