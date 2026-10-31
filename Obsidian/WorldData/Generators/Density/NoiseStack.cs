@@ -1,4 +1,7 @@
 using System.Buffers;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace Obsidian.WorldData.Generators.Density;
 
@@ -69,8 +72,24 @@ internal sealed class NoiseStack(IReadOnlyList<NoiseStack.Layer> layers)
                 var layerYScale = yScale * layer.Frequency;
                 var amplitude = layer.Amplitude;
                 var noise = layer.Noise;
+                var i = 0;
 
-                for (var i = 0; i < values.Length; i++)
+                if (PerlinNoise.CanSampleEight)
+                {
+                    for (; i + 8 <= values.Length; i += 8)
+                    {
+                        var sampled = noise.Get8(
+                            Scale(xs, i, layerXzScale, upper: false),
+                            Scale(xs, i, layerXzScale, upper: true),
+                            Scale(ys, i, layerYScale, upper: false),
+                            Scale(ys, i, layerYScale, upper: true),
+                            Scale(zs, i, layerXzScale, upper: false),
+                            Scale(zs, i, layerXzScale, upper: true));
+                        Accumulate(values, i, amplitude, sampled);
+                    }
+                }
+
+                for (; i < values.Length; i++)
                     values[i] += amplitude * noise.Get(xs[i] * layerXzScale, ys[i] * layerYScale, zs[i] * layerXzScale);
             }
         }
@@ -102,8 +121,31 @@ internal sealed class NoiseStack(IReadOnlyList<NoiseStack.Layer> layers)
                 for (var indexX = 0; indexX < volume.SizeX; indexX++)
                 {
                     var x = volume.BlockX(indexX) * layerXzScale;
+                    var indexY = 0;
 
-                    for (var indexY = 0; indexY < volume.SizeY; indexY++)
+                    // Eight y of the column at once.
+                    if (PerlinNoise.CanSampleEight)
+                    {
+                        var xs = Vector256.Create(x);
+                        var zs = Vector256.Create(z);
+
+                        for (; indexY + 8 <= volume.SizeY; indexY += 8)
+                        {
+                            var firstY = volume.BlockY(indexY);
+                            var blockYs = Vector256.Create(firstY) + Vector256.Create(0, 1, 2, 3, 4, 5, 6, 7) * volume.StepY;
+                            var sampled = noise.Get8(
+                                xs,
+                                xs,
+                                Scale(blockYs.GetLower(), layerYScale),
+                                Scale(blockYs.GetUpper(), layerYScale),
+                                zs,
+                                zs);
+                            Accumulate(buffer, index, layerAmplitude, sampled);
+                            index += 8;
+                        }
+                    }
+
+                    for (; indexY < volume.SizeY; indexY++)
                     {
                         var y = volume.BlockY(indexY) * layerYScale;
                         buffer[index] += layerAmplitude * noise.Get(x, y, z);
@@ -112,5 +154,24 @@ internal sealed class NoiseStack(IReadOnlyList<NoiseStack.Layer> layers)
                 }
             }
         }
+    }
+
+    // Four ints from start (or the four after them), widened to double and times the scale, as the scalar path's
+    // int times double.
+    private static Vector256<double> Scale(ReadOnlySpan<int> values, int start, double scale, bool upper)
+    {
+        var ints = Vector128.Create<int>(values.Slice(upper ? start + 4 : start, 4));
+        return Scale(ints, scale);
+    }
+
+    private static Vector256<double> Scale(Vector128<int> values, double scale) =>
+        Avx.ConvertToVector256Double(values) * Vector256.Create(scale);
+
+    // Adds the amplitude times eight samples to eight values from start, as the scalar path's value += amplitude * n.
+    private static void Accumulate(Span<float> values, int start, float amplitude, Vector256<float> sampled)
+    {
+        ref var first = ref MemoryMarshal.GetReference(values.Slice(start, 8));
+        var sum = Vector256.LoadUnsafe(ref first) + Vector256.Create(amplitude) * sampled;
+        sum.StoreUnsafe(ref first);
     }
 }

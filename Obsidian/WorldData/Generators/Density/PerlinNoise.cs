@@ -66,7 +66,7 @@ internal abstract class GradientNoise
 /// Matches vanilla's PerlinNoise bit for bit: the coordinates are wrapped and offset in double, the position inside the
 /// lattice cell is narrowed to float, and the gradients, fade curve and interpolation are float.
 /// </remarks>
-internal class PerlinNoise : GradientNoise
+internal partial class PerlinNoise : GradientNoise
 {
     // Coordinates are wrapped into vanilla's range of 2^25 so that large ones keep their precision (no far lands).
     private const double WrapPeriod = 33554432.0;
@@ -80,6 +80,9 @@ internal class PerlinNoise : GradientNoise
     // calls; every noise layer samples through here.
     private readonly double smearScaleY;
 
+    // The permuted values as ints, which vector lookups gather.
+    private readonly int[] permutationTable = new int[256];
+
     public PerlinNoise(IRandomSource random)
         : this(random, 0.0)
     {
@@ -89,6 +92,9 @@ internal class PerlinNoise : GradientNoise
         : base(random, 256.0)
     {
         this.smearScaleY = smearScaleY;
+
+        for (var i = 0; i < this.permutationTable.Length; i++)
+            this.permutationTable[i] = this.Permute(i);
     }
 
     /// <summary>The noise at a point.</summary>
