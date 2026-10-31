@@ -66,16 +66,38 @@ internal abstract class GradientNoise
 /// Matches vanilla's PerlinNoise bit for bit: the coordinates are wrapped and offset in double, the position inside the
 /// lattice cell is narrowed to float, and the gradients, fade curve and interpolation are float.
 /// </remarks>
-internal class PerlinNoise(IRandomSource random) : GradientNoise(random, 256.0)
+internal partial class PerlinNoise : GradientNoise
 {
     // Coordinates are wrapped into vanilla's range of 2^25 so that large ones keep their precision (no far lands).
     private const double WrapPeriod = 33554432.0;
     private static readonly double halfWrapPeriod = Math.BitDecrement(16777216.0);
 
-    /// <summary>
-    /// The noise at a point. <paramref name="y"/> is passed unwrapped to <see cref="SampleCell"/>, which the smeared
-    /// variant needs.
-    /// </summary>
+    // The gradients with float components, four floats apart: vanilla widens each int component before multiplying,
+    // so multiplying by these rounds the same.
+    private static readonly float[] floatGradients = CreateFloatGradients();
+
+    // The smeared variant's y quantum, or 0. A field rather than an override keeps the octave loop free of virtual
+    // calls; every noise layer samples through here.
+    private readonly double smearScaleY;
+
+    // The permuted values as ints, which vector lookups gather.
+    private readonly int[] permutationTable = new int[256];
+
+    public PerlinNoise(IRandomSource random)
+        : this(random, 0.0)
+    {
+    }
+
+    protected PerlinNoise(IRandomSource random, double smearScaleY)
+        : base(random, 256.0)
+    {
+        this.smearScaleY = smearScaleY;
+
+        for (var i = 0; i < this.permutationTable.Length; i++)
+            this.permutationTable[i] = this.Permute(i);
+    }
+
+    /// <summary>The noise at a point.</summary>
     public float Get(double x, double y, double z)
     {
         var wrappedX = Wrap(x) + this.OffsetX;
@@ -87,21 +109,33 @@ internal class PerlinNoise(IRandomSource random) : GradientNoise(random, 256.0)
         var floorZ = (int)Math.Floor(wrappedZ);
 
         var relativeX = (float)(wrappedX - floorX);
+        var relativeY = wrappedY - floorY;
         var relativeZ = (float)(wrappedZ - floorZ);
 
-        return this.SampleCell(floorX, floorY, floorZ, relativeX, wrappedY - floorY, relativeZ, y);
+        if (this.smearScaleY == 0.0)
+        {
+            var narrowedY = (float)relativeY;
+            return this.SampleAndLerp(floorX, floorY, floorZ, relativeX, narrowedY, relativeZ, narrowedY);
+        }
+
+        return this.SampleSmeared(floorX, floorY, floorZ, relativeX, relativeY, relativeZ, y);
     }
 
     /// <summary>
-    /// Samples the lattice cell at a position inside it. <paramref name="relativeY"/> stays double so the smeared
-    /// variant can adjust it before narrowing.
+    /// Vanilla's SmearedPerlinNoise: the y position inside the cell is quantised before narrowing, with its double
+    /// fudge and float epsilon, while the fade still follows the unquantised position.
     /// </summary>
     /// <param name="originalY">The y coordinate before wrapping and offsetting.</param>
-    protected virtual float SampleCell(int floorX, int floorY, int floorZ, float relativeX, double relativeY,
+    private float SampleSmeared(int floorX, int floorY, int floorZ, float relativeX, double relativeY,
         float relativeZ, double originalY)
     {
-        var y = (float)relativeY;
-        return this.SampleAndLerp(floorX, floorY, floorZ, relativeX, y, relativeZ, y);
+        var fudgeLimit = originalY >= 0.0 && originalY < relativeY ? originalY : relativeY;
+
+        // 1.0E-7F is a float literal in vanilla, widened to double here.
+        var fudge = Math.Floor(fudgeLimit / this.smearScaleY + (double)1.0E-7f) * this.smearScaleY;
+        var fudgedY = (float)(relativeY - fudge);
+
+        return this.SampleAndLerp(floorX, floorY, floorZ, relativeX, fudgedY, relativeZ, (float)relativeY);
     }
 
     /// <summary>
@@ -137,12 +171,26 @@ internal class PerlinNoise(IRandomSource random) : GradientNoise(random, 256.0)
         return FloatMath.Lerp(alphaZ, bottom, top);
     }
 
-    // The int gradient components widen to float before multiplying, as in vanilla; the sum order is vanilla's.
+    // The sum order is vanilla's.
     private static float Dot(int hash, float x, float y, float z)
     {
         // Masked like Permute, so without a bounds check.
-        ref var gradient = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(gradients), hash & 15);
-        return gradient.X * x + gradient.Y * y + gradient.Z * z;
+        ref var gradient = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(floatGradients), (hash & 15) << 2);
+        return gradient * x + Unsafe.Add(ref gradient, 1) * y + Unsafe.Add(ref gradient, 2) * z;
+    }
+
+    private static float[] CreateFloatGradients()
+    {
+        var components = new float[gradients.Length * 4];
+
+        for (var i = 0; i < gradients.Length; i++)
+        {
+            components[i * 4] = gradients[i].X;
+            components[i * 4 + 1] = gradients[i].Y;
+            components[i * 4 + 2] = gradients[i].Z;
+        }
+
+        return components;
     }
 
     private static double Wrap(double value)
@@ -157,18 +205,5 @@ internal class PerlinNoise(IRandomSource random) : GradientNoise(random, 256.0)
 /// <summary>
 /// The gradient noise of <c>old_blended_noise</c>, which quantises the y position inside a cell ("smearing").
 /// </summary>
-/// <remarks>Matches vanilla's SmearedPerlinNoise, including its double fudge and float epsilon.</remarks>
-internal sealed class SmearedPerlinNoise(IRandomSource random, double fudgeYScale) : PerlinNoise(random)
-{
-    protected override float SampleCell(int floorX, int floorY, int floorZ, float relativeX, double relativeY,
-        float relativeZ, double originalY)
-    {
-        var fudgeLimit = originalY >= 0.0 && originalY < relativeY ? originalY : relativeY;
-
-        // 1.0E-7F is a float literal in vanilla, widened to double here.
-        var fudge = Math.Floor(fudgeLimit / fudgeYScale + (double)1.0E-7f) * fudgeYScale;
-        var fudgedY = (float)(relativeY - fudge);
-
-        return this.SampleAndLerp(floorX, floorY, floorZ, relativeX, fudgedY, relativeZ, (float)relativeY);
-    }
-}
+/// <param name="fudgeYScale">The y quantum; positive, as <c>old_blended_noise</c>'s scales are.</param>
+internal sealed class SmearedPerlinNoise(IRandomSource random, double fudgeYScale) : PerlinNoise(random, fudgeYScale);

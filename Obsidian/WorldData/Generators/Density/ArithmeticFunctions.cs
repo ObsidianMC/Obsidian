@@ -21,25 +21,26 @@ internal sealed class UnaryFunction(UnaryOperation operation, DensityFunction in
 {
     public override bool IsFlat => input.IsFlat;
 
+    public override bool SamplesCheaply => input.SamplesCheaply;
+
     public override float Sample(int x, int y, int z) => this.Apply(input.Sample(x, y, z));
 
     public override void SampleSelected(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices)
     {
         input.SampleSelected(output, volume, indices);
-
-        for (var i = 0; i < output.Length; i++)
-            output[i] = this.Apply(output[i]);
+        DensityLoops.Apply(operation, output);
     }
 
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
     {
         input.SampleVolume(output, volume);
-
-        for (var i = 0; i < output.Length; i++)
-            output[i] = this.Apply(output[i]);
+        DensityLoops.Apply(operation, output);
     }
 
-    private float Apply(float value) => operation switch
+    private float Apply(float value) => Apply(operation, value);
+
+    /// <summary>The operation's result for one value.</summary>
+    public static float Apply(UnaryOperation operation, float value) => operation switch
     {
         UnaryOperation.Abs => MathF.Abs(value),
         UnaryOperation.Square => value * value,
@@ -195,6 +196,8 @@ internal abstract class BinaryFunction : DensityFunction
     {
         public override bool IsFlat => left.IsFlat && right.IsFlat;
 
+        public override bool SamplesCheaply => left.SamplesCheaply && right.SamplesCheaply;
+
         public override float Sample(int x, int y, int z)
         {
             var leftValue = left.Sample(x, y, z);
@@ -221,19 +224,14 @@ internal abstract class BinaryFunction : DensityFunction
             left.SampleSelected(output, volume, indices);
             using var rights = new DensityBuffer(indices.Length);
             right.SampleSelected(rights.Span, volume, indices);
-
-            for (var i = 0; i < output.Length; i++)
-                output[i] = Combine(operation, output[i], rights.Span[i]);
+            DensityLoops.Combine(operation, output, rights.Span);
         }
 
         public override void SampleVolume(Span<float> output, in DensityVolume volume)
         {
             left.SampleVolume(output, volume);
-            using var rightValues = DensityBuffer.Sample(right, volume);
-            var rights = rightValues.Span;
-
-            for (var i = 0; i < output.Length; i++)
-                output[i] = Combine(operation, output[i], rights[i]);
+            using var rights = DensityBuffer.Sample(right, volume);
+            DensityLoops.Combine(operation, output, rights.Span);
         }
     }
 
@@ -242,6 +240,8 @@ internal abstract class BinaryFunction : DensityFunction
         : BinaryFunction
     {
         public override bool IsFlat => input.IsFlat;
+
+        public override bool SamplesCheaply => input.SamplesCheaply;
 
         public override float Sample(int x, int y, int z)
         {
@@ -259,17 +259,13 @@ internal abstract class BinaryFunction : DensityFunction
         public override void SampleSelected(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices)
         {
             input.SampleSelected(output, volume, indices);
-
-            for (var i = 0; i < output.Length; i++)
-                output[i] = Combine(operation, output[i], constant);
+            DensityLoops.Combine(operation, output, constant);
         }
 
         public override void SampleVolume(Span<float> output, in DensityVolume volume)
         {
             input.SampleVolume(output, volume);
-
-            for (var i = 0; i < output.Length; i++)
-                output[i] = Combine(operation, output[i], constant);
+            DensityLoops.Combine(operation, output, constant);
         }
     }
 
@@ -278,6 +274,8 @@ internal abstract class BinaryFunction : DensityFunction
         : BinaryFunction
     {
         public override bool IsFlat => input.IsFlat;
+
+        public override bool SamplesCheaply => input.SamplesCheaply;
 
         public override float Sample(int x, int y, int z) => this.Apply(input.Sample(x, y, z));
 
@@ -300,16 +298,6 @@ internal abstract class BinaryFunction : DensityFunction
         private float Apply(float value) => operation == BinaryOperation.Sub ? constant - value : constant / value;
     }
 
-    // Vanilla's volume loops: sub adds the negation, and min and max replace only on a strict comparison.
-    private static float Combine(BinaryOperation operation, float left, float right) => operation switch
-    {
-        BinaryOperation.Add => left + right,
-        BinaryOperation.Sub => left + -right,
-        BinaryOperation.Mul => left * right,
-        BinaryOperation.Div => left / right,
-        BinaryOperation.Min => right < left ? right : left,
-        _ => right > left ? right : left
-    };
 }
 
 /// <summary>

@@ -58,17 +58,19 @@ internal readonly ref struct DensitySelection : IDisposable
 
         if (function is ConstantFunction constant)
         {
-            for (var i = 0; i < this.count; i++)
-                output[this.storage[this.capacity + i]] = constant.Value;
+            foreach (var destination in this.storage.AsSpan(this.capacity, this.count))
+                output[destination] = constant.Value;
 
             return;
         }
 
         using var values = new DensityBuffer(this.count);
-        function.SampleSelected(values.Span, volume, this.storage.AsSpan(0, this.count));
+        var sampled = values.Span;
+        var destinations = this.storage.AsSpan(this.capacity, this.count);
+        function.SampleSelected(sampled, volume, this.storage.AsSpan(0, this.count));
 
-        for (var i = 0; i < this.count; i++)
-            output[this.storage[this.capacity + i]] = values.Span[i];
+        for (var i = 0; i < destinations.Length; i++)
+            output[destinations[i]] = sampled[i];
     }
 
     public void Dispose() => ArrayPool<int>.Shared.Return(this.storage);

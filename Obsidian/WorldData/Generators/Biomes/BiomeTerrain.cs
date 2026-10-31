@@ -6,6 +6,7 @@ using Obsidian.WorldData.Generators.Mojang.Features;
 using Obsidian.WorldData.Generators.Mojang.Structures;
 using Obsidian.WorldData.Generators.Terrain;
 using Obsidian.WorldData.Structures;
+using System.Collections.Concurrent;
 using System.Text.Json;
 using TerrainGenerator = Obsidian.WorldData.Generators.Terrain.TerrainGenerator;
 
@@ -19,6 +20,9 @@ internal sealed class BiomeTerrain
     private readonly FeatureRegistry? features;
     private readonly int unlitBrightness;
     private readonly TerrainColumns columns;
+
+    // Each biome's carvers, read once: every chunk asks for the 289 chunks its carvers can start in.
+    private readonly ConcurrentDictionary<string, string[]> carversByBiome = new();
     private BiomeDecoration? decoration;
 
     /// <param name="features">
@@ -244,10 +248,16 @@ internal sealed class BiomeTerrain
         return new TerrainBiomes(Surface: (x, y, z) => stored.GetBiome(x, y, z).Name, Carving: this.BiomeAt);
     }
 
+    /// <summary>The carvers of the biome a chunk's carvers start in. Callers mustn't change the list.</summary>
     public string[] CarversAt(int chunkX, int chunkZ)
     {
         var biome = this.Source.GetNoiseBiome(chunkX << 2, 0, chunkZ << 2);
-        var data = this.terrain.Data.Read("biome", biome.Name);
+        return this.carversByBiome.GetOrAdd(biome.Name, this.ReadCarvers);
+    }
+
+    private string[] ReadCarvers(string biome)
+    {
+        var data = this.terrain.Data.Read("biome", biome);
         var carvers = data.GetProperty("carvers");
 
         if (carvers.ValueKind == JsonValueKind.String)

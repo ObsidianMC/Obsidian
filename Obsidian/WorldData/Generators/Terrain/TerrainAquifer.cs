@@ -1,6 +1,7 @@
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Generators.Mojang;
+using System.Runtime.Intrinsics;
 
 namespace Obsidian.WorldData.Generators.Terrain;
 
@@ -28,6 +29,14 @@ internal sealed class TerrainAquifer
     ];
 
     private readonly ImmutableDictionary<string, DensityFunction>? functions;
+
+    // The functions sampled per position or per aquifer, looked up once.
+    private readonly DensityFunction? barrier;
+    private readonly DensityFunction? surfaceLevel;
+    private readonly DensityFunction? exclusion;
+    private readonly DensityFunction? floodedness;
+    private readonly DensityFunction? spread;
+    private readonly DensityFunction? lava;
     private readonly IPositionalRandomFactory random;
     private readonly Dictionary<(int X, int Z), int> surfaceLevels = [];
     private readonly FluidPicker globalFluidPicker;
@@ -48,6 +57,12 @@ internal sealed class TerrainAquifer
 
     public bool ShouldScheduleFluidUpdate { get; private set; }
 
+    /// <summary>
+    /// Above this y, <see cref="ComputeSubstance"/> gives every position that isn't solid the global fluid picker's
+    /// block, which depends on y alone, and schedules no fluid update.
+    /// </summary>
+    public int GlobalFluidAboveY => this.skipSamplingAboveY;
+
     public TerrainAquifer(TerrainContext context)
         : this(context.Generator, context.Volume)
     {
@@ -67,6 +82,13 @@ internal sealed class TerrainAquifer
         {
             return;
         }
+
+        this.barrier = this.functions["barrier"];
+        this.surfaceLevel = this.functions["surface_level"];
+        this.exclusion = this.functions["exclusion"];
+        this.floodedness = this.functions["fluid_level_floodedness"];
+        this.spread = this.functions["fluid_level_spread"];
+        this.lava = this.functions["lava"];
 
         this.minGridX = GridX(volume.MinBlockX - 5);
         this.minGridY = GridY(volume.MinBlockY + 1) - 1;
@@ -92,15 +114,13 @@ internal sealed class TerrainAquifer
         this.skipSamplingAboveY = FromGridY(GridY(surface + 12) - 1, 11) - 1;
     }
 
-    private float Sample(string name, int x, int y, int z) => this.functions![name].Sample(x, y, z);
-
     private int SurfaceLevel(int x, int z)
     {
         var key = (x & ~3, z & ~3);
 
         if (!this.surfaceLevels.TryGetValue(key, out var level))
         {
-            level = (int)MathF.Floor(this.Sample("surface_level", key.Item1, 0, key.Item2));
+            level = (int)MathF.Floor(this.surfaceLevel!.Sample(key.Item1, 0, key.Item2));
             this.surfaceLevels.Add(key, level);
         }
 
@@ -119,7 +139,7 @@ internal sealed class TerrainAquifer
             4,
             1,
             4);
-        using var values = DensityBuffer.Sample(this.functions!["surface_level"], volume);
+        using var values = DensityBuffer.Sample(this.surfaceLevel!, volume);
         var maximum = int.MinValue;
 
         for (var z = 0; z < volume.SizeZ; z++)
@@ -161,10 +181,12 @@ internal sealed class TerrainAquifer
         var gridY = GridY(y + 1);
         var gridZ = GridZ(z - 5);
 
-        // Equal distances choose the later candidate in vanilla's x, y, z search order.
+        // Equal distances choose the later candidate in vanilla's x, y, z search order. Each candidate's key packs its
+        // distance and its search order, latest first, and the four smallest keys stay sorted in a vector without
+        // branches, which would mispredict.
         var candidates = this.GetCandidates(gridX, gridY, gridZ);
-        Span<int> nearest = stackalloc int[4];
-        nearest.Fill(int.MaxValue);
+        var nearest = Vector128.Create(int.MaxValue);
+        var shiftRight = Vector128.Create(4, 0, 1, 2);
 
         for (var i = 0; i < candidates.Length; i++)
         {
@@ -172,29 +194,26 @@ internal sealed class TerrainAquifer
             var dx = candidate.X - x;
             var dy = candidate.Y - y;
             var dz = candidate.Z - z;
-            var key = (dx * dx + dy * dy + dz * dz) << 4 | (15 - i);
+            var key = Vector128.Create((dx * dx + dy * dy + dz * dz) << 4 | (15 - i));
 
-            for (var slot = 0; slot < nearest.Length; slot++)
-            {
-                if (key >= nearest[slot])
-                {
-                    continue;
-                }
-
-                var displaced = nearest[slot];
-                nearest[slot] = key;
-                key = displaced;
-            }
+            // Each slot takes the smaller of its key and the larger of the new key and the slot before. Keys aren't
+            // negative, so the zero shifted into the first slot never wins.
+            var shifted = Vector128.Shuffle(nearest, shiftRight);
+            nearest = Vector128.Min(nearest, Vector128.Max(shifted, key));
         }
 
-        var distance1 = nearest[0] >> 4;
-        var distance2 = nearest[1] >> 4;
-        var distance3 = nearest[2] >> 4;
-        var distance4 = nearest[3] >> 4;
-        var index1 = candidates[15 - (nearest[0] & 15)].Index;
-        var index2 = candidates[15 - (nearest[1] & 15)].Index;
-        var index3 = candidates[15 - (nearest[2] & 15)].Index;
-        var index4 = candidates[15 - (nearest[3] & 15)].Index;
+        var key1 = nearest.GetElement(0);
+        var key2 = nearest.GetElement(1);
+        var key3 = nearest.GetElement(2);
+        var key4 = nearest.GetElement(3);
+        var distance1 = key1 >> 4;
+        var distance2 = key2 >> 4;
+        var distance3 = key3 >> 4;
+        var distance4 = key4 >> 4;
+        var index1 = candidates[15 - (key1 & 15)].Index;
+        var index2 = candidates[15 - (key2 & 15)].Index;
+        var index3 = candidates[15 - (key3 & 15)].Index;
+        var index4 = candidates[15 - (key4 & 15)].Index;
 
         var closest = this.GetAquiferStatus(index1);
         var similarity12 = Similarity(distance1, distance2);
@@ -303,7 +322,7 @@ internal sealed class TerrainAquifer
         {
             if (double.IsNaN(barrier))
             {
-                barrier = this.Sample("barrier", x, y, z);
+                barrier = this.barrier!.Sample(x, y, z);
             }
 
             barrierValue = barrier;
@@ -435,7 +454,7 @@ internal sealed class TerrainAquifer
         double fullyFlooded;
 
         // Deep dark regions stay dry.
-        if (this.Sample("exclusion", x, y, z) > 0.0f)
+        if (this.exclusion!.Sample(x, y, z) > 0.0f)
         {
             partiallyFlooded = -1.0;
             fullyFlooded = -1.0;
@@ -444,7 +463,7 @@ internal sealed class TerrainAquifer
         {
             var distanceBelowSurface = lowestPreliminarySurface + 8 - y;
             var surfaceProximity = surfaceIsFlooded ? ClampedMap(distanceBelowSurface, 0.0, 64.0, 1.0, 0.0) : 0.0;
-            var floodedness = Math.Clamp(this.Sample("fluid_level_floodedness", x, y, z), -1.0, 1.0);
+            var floodedness = Math.Clamp(this.floodedness!.Sample(x, y, z), -1.0, 1.0);
             var fullyFloodedThreshold = Map(surfaceProximity, 1.0, 0.0, -0.3, 0.8);
             var partiallyFloodedThreshold = Map(surfaceProximity, 1.0, 0.0, -0.8, 0.4);
 
@@ -475,7 +494,7 @@ internal sealed class TerrainAquifer
         // Vanilla samples the spread noise at the cell indices, not at block coordinates. It scales the float sample by
         // 10.0f before widening, so the product rounds to a float first: -0.3f * 10.0f is exactly -3.0f, where the
         // double product is just below it and quantizes a whole step lower.
-        var spread = this.Sample("fluid_level_spread", cellX, cellY, cellZ) * 10.0f;
+        var spread = this.spread!.Sample(cellX, cellY, cellZ) * 10.0f;
         var quantizedSpread = (int)Math.Floor(spread / 3.0) * 3;
 
         return Math.Min(lowestPreliminarySurface, cellMiddleY + quantizedSpread);
@@ -489,7 +508,7 @@ internal sealed class TerrainAquifer
         }
 
         // Like the spread noise, the lava noise is sampled at cell indices.
-        var lava = this.functions!["lava"].Sample(
+        var lava = this.lava!.Sample(
             (int)Math.Floor(x / 64.0),
             (int)Math.Floor(y / 40.0),
             (int)Math.Floor(z / 64.0));
