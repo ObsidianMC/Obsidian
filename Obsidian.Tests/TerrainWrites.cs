@@ -8,6 +8,7 @@ using Obsidian.WorldData;
 using Obsidian.WorldData.Portals;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -97,8 +98,15 @@ public sealed class TerrainWrites
         });
 
         Assert.Equal(91, chunk.Heightmaps[HeightmapType.WorldSurface].GetHeight(0, 0));
-        using (chunk.BeginTerrainWrites())
+
+        // Another thread can take the scope, so the failed one released its lock (a reentrant lock leaked on this
+        // thread would still let this thread in).
+        var retry = Task.Run(() =>
+        {
+            using var writes = chunk.BeginTerrainWrites();
             chunk.SetBlock(0, 90, 0, BlocksRegistry.Air);
+        });
+        Assert.True(retry.Wait(TimeSpan.FromSeconds(10)), "The failed terrain scope kept the chunk locked.");
 
         chunk.SetChunkStatus(ChunkGenStage.features);
         Assert.Throws<InvalidOperationException>(() => chunk.BeginTerrainWrites());
