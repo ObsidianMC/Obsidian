@@ -37,15 +37,6 @@ public class EmptyWorldGenerator : ILevelGenerator
             }
         }
 
-        Heightmap motionBlockingHeightmap = chunk.Heightmaps[HeightmapType.MotionBlocking];
-        for (int bx = 0; bx < 16; bx++)
-        {
-            for (int bz = 0; bz < 16; bz++)
-            {
-                motionBlockingHeightmap.Set(bx, bz, -64);
-            }
-        }
-
         chunk.SetChunkStatus(ChunkGenStage.full);
 
         return chunk;

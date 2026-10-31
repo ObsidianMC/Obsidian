@@ -87,7 +87,6 @@ public sealed class IslandGenerator : ILevelGenerator
                             chunk.SetBiome(bx, y, bz, biome);
                         }
                         chunk.SetBlock(bx, y, bz, BlocksRegistry.Stone);
-                        chunk.Heightmaps[HeightmapType.MotionBlocking].Set(bx, bz, y);
                         chunk.Heightmaps[HeightmapType.WorldSurfaceWG].Set(bx, bz, y);
                     }
                     else

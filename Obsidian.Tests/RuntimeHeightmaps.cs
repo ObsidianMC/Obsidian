@@ -1,5 +1,6 @@
 using Obsidian.API;
 using Obsidian.API.Registries;
+using Obsidian.API.World;
 using Obsidian.ChunkData;
 using Obsidian.Nbt;
 using Obsidian.Net;
@@ -8,6 +9,8 @@ using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.Tests.Utilities;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Generators;
+using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Lighting;
 using System;
 using System.Collections.Generic;
@@ -24,6 +27,69 @@ public sealed class RuntimeHeightmaps
 {
     private static readonly JsonElement reference = LoadReference();
     private static readonly bool[] modes = [false, true];
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task GeneratorHandoffsKeepIndependentMapsMatchingARescan()
+    {
+        await using var context = TestServerFactory.CreateServer($"heightmap-generators-{Guid.NewGuid():N}");
+        (string Name, Func<ILevelGenerator> Create, int X)[] cases =
+        [
+            ("overworld", () => new OverworldGenerator(), 0),
+            ("superflat", () => new SuperflatGenerator(), 0),
+            ("flat stem", () => new FlatStem("heights:flat", "minecraft:overworld",
+                new FlatLevelSettings([BlocksRegistry.Stone, BlocksRegistry.Water, BlocksRegistry.OakLeaves],
+                    CodecRegistry.Biomes.Plains)).CreateGenerator(), 0),
+            ("debug", () => new DebugStem("heights:debug", "minecraft:overworld").CreateGenerator(), 0),
+            ("empty spawn", () => new EmptyWorldGenerator(), 0),
+            ("empty void", () => new EmptyWorldGenerator(), 1),
+            ("islands", () => new IslandGenerator(), 0),
+            ("mob test", () => new MobTestGenerator(), 0),
+            ("plugin", () => new ProbeGenerator(new ProbeScopedService()), 0)
+        ];
+
+        await FixtureCases.AssertAllAsync(cases, input => input.Name, async input =>
+        {
+            var generator = input.Create();
+            generator.Init(context.World);
+
+            // Resume the overworld builder at its final-map handoff, independently of terrain and decoration.
+            var supplied = new Chunk(input.X, 0, ChunkGenStage.features);
+            supplied.SetBlock(0, 50, 0, BlocksRegistry.Stone);
+            var chunk = await generator.GenerateChunkAsync(input.X, 0, supplied);
+            Assert.True(chunk.IsGenerated);
+            AssertMatchesRescan(chunk);
+
+            chunk.SetBlock(0, 100, 0, BlocksRegistry.Water);
+            AssertMatchesRescan(chunk);
+            chunk.SetBlock(0, 100, 0, BlocksRegistry.Air);
+            AssertMatchesRescan(chunk);
+        });
+    }
+
+    private static void AssertMatchesRescan(IChunk chunk)
+    {
+        Assert.Equal(4, chunk.Heightmaps.Count);
+        Assert.Equal(4, chunk.Heightmaps.Values.Distinct().Count());
+        foreach (var (type, actual) in chunk.Heightmaps)
+        {
+            Assert.Equal(type, actual.HeightmapType);
+            var expected = new Heightmap(type, chunk);
+            for (var z = 0; z < 16; z++)
+            {
+                for (var x = 0; x < 16; x++)
+                {
+                    var y = chunk.MinY + chunk.Height - 1;
+                    while (y >= chunk.MinY && !WorldgenHeightmaps.Matches(type, chunk.GetBlock(x, y, z)))
+                        y--;
+
+                    expected.Set(x, z, y + 1);
+                    Assert.Equal(expected.GetHeight(x, z), actual.GetHeight(x, z));
+                }
+            }
+
+            Assert.Equal(expected.GetDataArray(), actual.GetDataArray());
+        }
+    }
 
     [Fact]
     public void ReplayVanillaRuntimeHeightmapReference()

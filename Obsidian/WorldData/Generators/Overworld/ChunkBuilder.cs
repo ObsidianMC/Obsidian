@@ -288,51 +288,6 @@ internal static class ChunkBuilder
         }
     }
 
-    internal static void Heightmaps(IChunk chunk)
-    {
-        for (int x = 0; x < 16; x++)
-        {
-            for (int z = 0; z < 16; z++)
-            {
-                bool worldSurfaceSet = false;
-                bool motionBlockingSet = false;
-                bool motionBlockingLeavesSet = false;
-                chunk.Heightmaps[HeightmapType.OceanFloor] = chunk.Heightmaps[HeightmapType.WorldSurfaceWG];
-
-                for (int y = 319; y >= -64; y--)
-                {
-                    var secIndex = (y >> 4) + 4;
-                    if (chunk.Sections[secIndex].IsEmpty)
-                    {
-                        y -= 15;
-                        continue;
-                    }
-
-                    var b = chunk.GetBlock(x, y, z);
-                    if (!worldSurfaceSet && !b.IsAir)
-                    {
-                        chunk.Heightmaps[HeightmapType.WorldSurface].Set(x, z, y);
-                        worldSurfaceSet = true;
-                    }
-
-                    if (!motionBlockingSet && WorldgenHeightmaps.Matches(HeightmapType.MotionBlocking, b))
-                    {
-                        chunk.Heightmaps[HeightmapType.MotionBlocking].Set(x, z, y);
-                        motionBlockingSet = true;
-                    }
-
-                    if (!motionBlockingLeavesSet && WorldgenHeightmaps.Matches(HeightmapType.MotionBlockingNoLeaves, b))
-                    {
-                        chunk.Heightmaps[HeightmapType.MotionBlockingNoLeaves].Set(x, z, y);
-                        motionBlockingLeavesSet = true;
-                    }
-
-                    if (worldSurfaceSet && motionBlockingSet && motionBlockingLeavesSet)
-                    {
-                        break;
-                    }
-                }
-            }
-        }
-    }
+    internal static void Heightmaps(IChunk chunk) =>
+        WorldgenHeightmaps.UpdateFinal(chunk, chunk.MinY, chunk.Height);
 }
