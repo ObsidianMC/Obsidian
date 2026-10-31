@@ -175,7 +175,7 @@ public partial class Living : Entity, ILiving
         if (Burning != fireTicks > 0)
         {
             Burning = fireTicks > 0;
-            PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SetEntityDataPacket { EntityId = EntityId, Entity = this }, EntityId);
+            PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SetEntityDataPacket { EntityId = EntityId, Entity = this });
         }
     }
 
