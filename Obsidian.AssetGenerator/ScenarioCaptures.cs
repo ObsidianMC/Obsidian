@@ -25,6 +25,7 @@ internal static class ScenarioCaptures
     public const string MoreBlocks = "more_blocks";
     public const string StructurePieces = "structure_pieces";
     public const string Heightmaps = "heightmaps";
+    public const string SavedHeightmaps = "saved_heightmaps";
 
     private const string Symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -51,7 +52,8 @@ internal static class ScenarioCaptures
     // The fixtures whose probes record only the cases asked for.
     private static readonly string[] SelectableCases = [Sulfur, MoreBlocks, StructurePieces];
 
-    public static readonly string[] All = [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps];
+    public static readonly string[] All =
+        [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps];
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -91,6 +93,13 @@ internal static class ScenarioCaptures
         {
             throw new ArgumentException(
                 "Case selection requires CaptureFixtures=sulfur, more_blocks or structure_pieces.");
+        }
+
+        if (fixtures.Contains(SavedHeightmaps))
+        {
+            await FixtureDumper.DumpSavedHeightmapsAsync(server, Path.Combine(assetsDirectory, "saved_heightmaps.json"));
+            if (fixtures.Count == 1)
+                return;
         }
 
         if (fixtures.Contains(Heightmaps))
