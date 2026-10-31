@@ -70,14 +70,15 @@ internal sealed record BenchDimension(string Name, MojangDimension Dimension, in
 {
     // Optimizations must not change them. The live generator's were recorded on origin/26.3.x 80555196, whose block
     // states and saved chunks differ from 1.21.x's (on 1.21.x they were c73225baaf86c6fe and 0525f8628623dc64 for the
-    // overworld); the 26.3 pipeline's were recorded there too, when its performance work started.
+    // overworld). The 26.3 pipeline's were re-recorded after #638 (on dc0416fa), which keeps stored heightmaps up to
+    // date on every block write; the bench doesn't yet hand decoration's final heightmaps to the saved chunk.
     public static IReadOnlyList<BenchDimension> All { get; } =
     [
         new("overworld", MojangDimension.Overworld, 6, -2, "6f824c2e873bca90", "869a5df6644e5d41",
-            "minecraft:overworld", "c41960463b5b0d88", "c2f3c20883d6d150"),
+            "minecraft:overworld", "5ec7961dd197dba8", "ea3dd2b92140e97a"),
         new("nether", MojangDimension.Nether, 0, 0, "2880fa86ca3c5e6c", "fec88678179d32d9",
-            "minecraft:nether", "4771e394196351ed", "0796eaa405cabb9b"),
+            "minecraft:nether", "161cdadb4851906d", "e32931894dfc95c2"),
         new("end", MojangDimension.End, 6, 0, "5c34c3f5867f27ac", "d940fd5e665d6164",
-            "minecraft:the_end", "d28d968cb752b41a", "b75171a96e6db01e"),
+            "minecraft:the_end", "d0bd6e11ce09aa81", "d4ee92f29c956268"),
     ];
 }
