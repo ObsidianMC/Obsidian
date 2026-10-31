@@ -16,6 +16,12 @@ public sealed class StructureStart
 
     private bool stateRestored;
 
+    // The save of this start that RestoreState rejected, kept as it was to be saved again.
+    private NbtCompound? rejectedState;
+
+    // Set with rejectedState, for readers that don't take the lock.
+    private volatile bool rejected;
+
     // See Retire; set without the lock, read under it.
     private volatile bool retired;
 
@@ -70,6 +76,10 @@ public sealed class StructureStart
     /// </remarks>
     internal bool TryAddReference()
     {
+        // A rejected start keeps its saved references as they were.
+        if (this.rejected)
+            return false;
+
         while (true)
         {
             var current = this.references;
@@ -109,7 +119,7 @@ public sealed class StructureStart
             return;
 
         using var scope = this.stateLock.EnterScope();
-        if (this.retired)
+        if (this.retired || this.rejected)
             return;
 
         // Pieces may orient themselves around the start piece's bottom center.
@@ -179,8 +189,20 @@ public sealed class StructureStart
         return this.retiredState;
     }
 
+    /// <summary>
+    /// Whether <see cref="RestoreState"/> rejected the start's save, which was of other pieces than those generated
+    /// (another version of the structure, a changed data pack, another generator). The save is kept as it was, and
+    /// the start isn't used: it isn't placed, takes no references, doesn't adapt terrain and isn't a fortress for
+    /// spawning. Searches still find its start chunk, where a structure of its type started. Until the start is
+    /// restored (as the first chunk it reaches is decorated, or a search loads it), its generated pieces count.
+    /// </summary>
+    internal bool IsRejected => this.rejected;
+
     private NbtCompound SaveStateLocked()
     {
+        if (this.rejectedState is not null)
+            return this.rejectedState;
+
         var children = new NbtList(NbtTagType.Compound, "Children");
 
         foreach (var piece in this.Pieces)
@@ -205,9 +227,8 @@ public sealed class StructureStart
     /// Only the first call does anything; it must happen before the start is first placed.
     /// </summary>
     /// <remarks>
-    /// Saved state for a different set of pieces (from another version of the structure, or another generator) is
-    /// ignored: the pieces have to match in number and, where the save has them (Obsidian's older saves don't), in
-    /// type.
+    /// A save of other pieces than those generated is rejected (see <see cref="Accepts"/> and
+    /// <see cref="IsRejected"/>).
     /// </remarks>
     internal void RestoreState(NbtCompound? saved)
     {
@@ -221,13 +242,18 @@ public sealed class StructureStart
         if (saved is null)
             return;
 
+        if (!this.AcceptsLocked(saved))
+        {
+            this.rejectedState = saved;
+            this.rejected = true;
+            return;
+        }
+
         // References only ever grow, so one taken already isn't undone.
         if (saved.TryGetTag<NbtTag<int>>("references", out var references))
             InterlockedMax(ref this.references, references.Value);
 
-        if (!saved.TryGetTag<NbtList>("Children", out var children) || !this.Matches(children))
-            return;
-
+        var children = (NbtList)saved["Children"];
         for (var i = 0; i < children.Count; i++)
         {
             if (children[i] is NbtCompound child)
@@ -235,19 +261,32 @@ public sealed class StructureStart
         }
     }
 
-    private bool Matches(NbtList children)
+    /// <summary>
+    /// Whether <see cref="RestoreState"/> would restore <paramref name="saved"/> rather than reject it: its pieces are
+    /// these, in number, and each piece saved with its type (Obsidian's older saves aren't) is this one as generated
+    /// (see <see cref="StructurePiece.IsSavedAs"/>). Only meaningful before the start is placed.
+    /// </summary>
+    internal bool Accepts(NbtCompound saved)
     {
-        if (children.Count != this.Pieces.Count)
+        using var scope = this.stateLock.EnterScope();
+        return this.AcceptsLocked(saved);
+    }
+
+    private bool AcceptsLocked(NbtCompound saved)
+    {
+        if (!saved.TryGetTag<NbtList>("Children", out var children) || children.Count != this.Pieces.Count)
             return false;
 
         for (var i = 0; i < children.Count; i++)
         {
-            if (children[i] is NbtCompound child
-                && child.TryGetTag<NbtTag<string>>("id", out var id)
-                && id.Value != this.Pieces[i].TypeId)
-            {
+            if (children[i] is not NbtCompound child)
                 return false;
-            }
+
+            if (!child.TryGetTag<NbtTag<string>>("id", out var id))
+                continue;
+
+            if (id.Value != this.Pieces[i].TypeId || !this.Pieces[i].IsSavedAs(child))
+                return false;
         }
 
         return true;

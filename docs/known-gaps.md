@@ -75,24 +75,26 @@ add `/forceload` and the separate block-ticking border when a concrete user need
 
 ## Structure pieces in saved chunks
 
-**Status:** saved in vanilla 26.3's format; a few placement details and plugin-defined pieces remain.
+**Status:** saved in vanilla 26.3's format; starts saved of other pieces are kept but unused, and inline processor
+lists and plugin-defined pieces save incompletely.
 
 Starts and their pieces are saved like vanilla 26.3's `StructureStart.createTag`, for every piece type Obsidian
-generates (`VanillaStructureSaves` replays 28 starts vanilla saved, `Assets/structure_pieces.json`), and vanilla's
-own loader reads them with every piece. Obsidian still recomputes starts from the seed and reads back only what
-placing changes (boxes, heights, chests, spawners...), from its own saves, older ones without piece ids included, and
-from vanilla's, when the pieces match the generated ones in number and type. What remains:
+generates, as generated and once placed (`VanillaStructureSaves` replays 28 starts vanilla saved, 11 of them placed,
+`Assets/structure_pieces.json`), and vanilla's own loader reads them with every piece. Obsidian still recomputes
+starts from the seed and reads back only what placing changes (boxes, heights, chests, spawners...), from its own
+saves, older ones without piece ids included, and from vanilla's. What remains:
 
-- A start vanilla saved that Obsidian doesn't generate the same way is kept in the chunk as saved, but Obsidian
-  doesn't place it or use its bounds.
-- Vanilla saves where an igloo, or a shipwreck too big for its decoration region, was last placed (its box, which
-  vanilla moves as it places it); Obsidian keeps those pieces where they were generated and saves that box.
-  Vanilla recomputes the placement from the template position, which matches.
+- A save whose pieces aren't those Obsidian generates (in number, type, or a field placing doesn't change: another
+  structure version, a changed data pack, another generator) is rejected (`StructureStart.IsRejected`). The chunk
+  keeps it as saved, and the start isn't placed, takes no references, doesn't adapt terrain and isn't a fortress
+  for spawning; searches still find its start chunk. Obsidian doesn't build the saved pieces, so the structure
+  isn't finished or used, and until the start is restored (as the first chunk it reaches is decorated) its
+  generated pieces count.
 - Template pools a data pack defines with a non-empty processor list inline (vanilla's own only inline empty lists)
   save that list empty; plugin pool elements save only their type and projection, and plugin structure pieces
   only the fields every piece has (`obsidian:plugin_piece`). Vanilla knows none of the plugins' types anyway.
 
-**Where to start:** keep the box of the placements above in the piece (as the shipwreck's adjusted height is), and
+**Where to start:** build pieces from the saved tag (vanilla's piece types' load constructors) for rejected saves, and
 add a codec for processor lists to save inline ones.
 
 ## Attachment interoperability and saved-data migrations

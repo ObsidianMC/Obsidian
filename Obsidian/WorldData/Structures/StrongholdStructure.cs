@@ -411,6 +411,9 @@ public static class StrongholdPieces
 
         internal override string TypeId => "minecraft:shcc";
 
+        private protected override bool IsPlacementState(string field) =>
+            field == "Chest" || base.IsPlacementState(field);
+
         public override void AddChildren(StructurePiece start, IStructurePieceAccessor pieces, IRandomSource random) =>
             this.GenerateSmallDoorChildForward((StartPiece)start, pieces, random, 1, 1);
 
@@ -880,6 +883,9 @@ public static class StrongholdPieces
         }
 
         internal override string TypeId => "minecraft:shpr";
+
+        private protected override bool IsPlacementState(string field) =>
+            field == "Mob" || base.IsPlacementState(field);
 
         public override void AddChildren(StructurePiece start, IStructurePieceAccessor pieces, IRandomSource random) =>
             ((StartPiece)start).PortalRoom = this;

@@ -72,6 +72,13 @@ public sealed class OceanRuinPiece : TemplateStructurePiece
 
     internal override string TypeId => "minecraft:orp";
 
+    private protected override bool BoxMovesWhenPlaced => true;
+
+    private protected override bool IsPlacementState(string field) => field == "TPY" || base.IsPlacementState(field);
+
+    // Vanilla moves the template to the sea floor where it places it, and saves it there.
+    private protected override Vector SavedTemplatePosition => this.LastPlacement ?? this.TemplatePosition;
+
     internal override void SaveState(NbtCompound tag)
     {
         base.SaveState(tag);

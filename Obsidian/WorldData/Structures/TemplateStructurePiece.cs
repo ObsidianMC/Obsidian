@@ -12,6 +12,9 @@ public abstract class TemplateStructurePiece : StructurePiece
     // The template position moves with the bounding box (StructurePiece.Move), so it's kept relative to the box.
     private Vector templateOffset;
 
+    // Where the template was last placed in this session, which vanilla's piece keeps its box at (see PlaceTemplate).
+    private Vector? placedAt;
+
     /// <param name="templateId">The template id, e.g. <c>minecraft:igloo/top</c>; also the piece's template name.</param>
     /// <param name="settings">How the template is placed; copied for each placement, so it isn't changed afterwards.</param>
     /// <param name="templatePosition">Where the template's origin is placed.</param>
@@ -50,6 +53,18 @@ public abstract class TemplateStructurePiece : StructurePiece
     /// template.
     /// </summary>
     private protected virtual Vector SavedTemplatePosition => this.TemplatePosition;
+
+    /// <summary>
+    /// Where the template was last placed in this session, or null. Vanilla's pieces move their box there when
+    /// placing, and some (shipwrecks, ocean ruins) their template position too.
+    /// </summary>
+    private protected Vector? LastPlacement => this.placedAt;
+
+    // Vanilla's TemplateStructurePiece.postProcess sets the box to the template's at the position it places it at.
+    private protected override BlockBox SavedBoundingBox =>
+        this.placedAt is Vector position
+            ? this.Template.GetBoundingBox(this.PlaceSettings, position)
+            : this.BoundingBox;
 
     public override void PostProcess(StructurePieceContext context) => this.PlaceTemplate(context, context.Box, this.TemplatePosition);
 
@@ -116,6 +131,9 @@ public abstract class TemplateStructurePiece : StructurePiece
     /// </remarks>
     protected void PlaceTemplate(StructurePieceContext context, BlockBox box, Vector templatePosition)
     {
+        // Placing runs under the start's lock, as saving does (see StructureStart.PlaceInChunk).
+        this.placedAt = templatePosition;
+
         var settings = this.PlaceSettings.Copy();
         settings.BoundingBox = box;
         var level = context.Level;

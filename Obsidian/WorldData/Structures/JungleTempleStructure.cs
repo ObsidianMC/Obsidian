@@ -40,6 +40,10 @@ public sealed class JungleTemplePiece : ScatteredFeaturePiece
 
     internal override string TypeId => "minecraft:tejp";
 
+    private protected override bool IsPlacementState(string field) =>
+        field is "placedMainChest" or "placedHiddenChest" or "placedTrap1" or "placedTrap2"
+        || base.IsPlacementState(field);
+
     internal override void SaveState(NbtCompound tag)
     {
         base.SaveState(tag);

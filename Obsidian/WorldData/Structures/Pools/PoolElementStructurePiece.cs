@@ -78,6 +78,14 @@ public sealed class PoolElementStructurePiece : StructurePiece, IJigsawPiece
             tag.Add(new NbtTag<string>("liquid_settings", LiquidSettingsName(this.LiquidSettings)));
     }
 
+    // Vanilla recomputes the box of a terrain matching piece it loads, and saves that box, so a save may hold either.
+    private protected override bool IsPlacementState(string field) => field == "BB";
+
+    // Placing changes nothing; and a box vanilla recomputed would move the position, which is kept from the box.
+    internal override void LoadState(NbtCompound tag)
+    {
+    }
+
     internal static string LiquidSettingsName(LiquidSettings settings) =>
         settings == LiquidSettings.IgnoreWaterlogging ? "ignore_waterlogging" : "apply_waterlogging";
 

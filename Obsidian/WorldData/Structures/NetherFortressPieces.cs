@@ -789,6 +789,9 @@ public static class NetherFortressPieces
 
         internal override string TypeId => "minecraft:nesclt";
 
+        private protected override bool IsPlacementState(string field) =>
+            field == "Chest" || base.IsPlacementState(field);
+
         internal override void SaveState(NbtCompound tag)
         {
             base.SaveState(tag);
@@ -884,6 +887,9 @@ public static class NetherFortressPieces
         }
 
         internal override string TypeId => "minecraft:nescrt";
+
+        private protected override bool IsPlacementState(string field) =>
+            field == "Chest" || base.IsPlacementState(field);
 
         internal override void SaveState(NbtCompound tag)
         {
@@ -1030,6 +1036,9 @@ public static class NetherFortressPieces
         }
 
         internal override string TypeId => "minecraft:nemt";
+
+        private protected override bool IsPlacementState(string field) =>
+            field == "Mob" || base.IsPlacementState(field);
 
         internal override void SaveState(NbtCompound tag)
         {

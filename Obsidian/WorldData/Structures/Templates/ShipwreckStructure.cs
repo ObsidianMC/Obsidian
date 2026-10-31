@@ -123,9 +123,19 @@ public sealed class ShipwreckPiece : TemplateStructurePiece
 
     internal override string TypeId => "minecraft:shipwreck";
 
-    // Vanilla moves the template to the adjusted height, and saves it there.
+    private protected override bool BoxMovesWhenPlaced => true;
+
+    private protected override bool IsPlacementState(string field) =>
+        field is "TPY" or "height_adjusted" || base.IsPlacementState(field);
+
+    // Vanilla moves the template, and its box, to where it placed it, the adjusted height. Obsidian's older saves
+    // hold only that height.
     private protected override Vector SavedTemplatePosition =>
-        this.TemplatePosition with { Y = this.adjustedHeight ?? this.TemplatePosition.Y };
+        this.LastPlacement ?? this.TemplatePosition with { Y = this.adjustedHeight ?? this.TemplatePosition.Y };
+
+    private protected override BlockBox SavedBoundingBox => this.LastPlacement is null
+        ? this.BoundingBox.Move(0, this.SavedTemplatePosition.Y - this.TemplatePosition.Y, 0)
+        : base.SavedBoundingBox;
 
     internal override void SaveState(NbtCompound tag)
     {

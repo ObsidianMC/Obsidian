@@ -687,11 +687,14 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         try
         {
             using var calls = builder.EnterGenerator();
-            return manager.GetReferencingStarts(position.X >> 4, position.Z >> 4, fortress).Any(start =>
-                start.Pieces.Any(piece => piece.BoundingBox.IsInside(position)) ||
-                start.BoundingBox.IsInside(position) && this.world is AbstractLevel level &&
-                level.GetLoadedChunk(position.X >> 4, position.Z >> 4)
-                    ?.GetBlock(position.X, position.Y - 1, position.Z).RegistryId == BlockIds.NetherBricks);
+            // A start whose save was rejected isn't the fortress there (see StructureStart.IsRejected).
+            return manager.GetReferencingStarts(position.X >> 4, position.Z >> 4, fortress)
+                .Where(start => !start.IsRejected)
+                .Any(start =>
+                    start.Pieces.Any(piece => piece.BoundingBox.IsInside(position)) ||
+                    start.BoundingBox.IsInside(position) && this.world is AbstractLevel level &&
+                    level.GetLoadedChunk(position.X >> 4, position.Z >> 4)
+                        ?.GetBlock(position.X, position.Y - 1, position.Z).RegistryId == BlockIds.NetherBricks);
         }
         catch (Exception ex) when (this.Contain(ex))
         {

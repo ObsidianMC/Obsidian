@@ -24,8 +24,10 @@ import net.minecraft.world.level.levelgen.structure.pieces.StructurePieceSeriali
  * entries of a chunk) on a headless dedicated server, in a new world of the fixture's seed with structures on.
  *
  * <p>Each case names a start (its structure, dimension and start chunk) and gets {@code fresh}, the start's tag as
- * generated, and with {@code place}, {@code placed}, its tag once every chunk its box reaches is decorated. A tag is
- * kept as its compact SNBT: the start without its pieces, then one string per piece.
+ * generated, and with {@code place}, {@code placed}, its tag once every chunk its box reaches is decorated, in x then
+ * z order. When loading the last of those tags ({@code StructureStart.loadStaticStart}, as a chunk is loaded) and
+ * saving it again gives another tag, that is {@code reloaded}. A tag is kept as its compact SNBT: the start without
+ * its pieces, then one string per piece.
  */
 public final class StructurePieceFixtures {
     private static MinecraftServer server;
@@ -74,8 +76,12 @@ public final class StructurePieceFixtures {
             throw new IllegalStateException("No " + key + " starts in chunk " + chunkX + ", " + chunkZ);
 
         entry.add("fresh", describe(level, start));
-        if (!entry.has("place") || !entry.get("place").getAsBoolean())
+        entry.remove("placed");
+        entry.remove("reloaded");
+        if (!entry.has("place") || !entry.get("place").getAsBoolean()) {
+            reload(entry, level, start);
             return;
+        }
 
         // Decorating a chunk places the pieces reaching it, which moves some and records what they placed.
         var box = start.getBoundingBox();
@@ -85,6 +91,20 @@ public final class StructurePieceFixtures {
         }
 
         entry.add("placed", describe(level, start));
+        reload(entry, level, start);
+    }
+
+    // What a chunk saves of the start after it was loaded from its last save, when that changes it.
+    private static void reload(JsonObject entry, ServerLevel level, StructureStart start) {
+        var context = StructurePieceSerializationContext.fromLevel(level);
+        var saved = start.createTag(context, start.getChunkPos());
+        var loaded = StructureStart.loadStaticStart(context, saved, level.getSeed());
+        if (loaded == null || !loaded.isValid())
+            throw new IllegalStateException("Vanilla can't load its own save of " + entry.get("name"));
+
+        var reloaded = describe(level, loaded);
+        if (!reloaded.equals(describe(level, start)))
+            entry.add("reloaded", reloaded);
     }
 
     private static JsonObject describe(ServerLevel level, StructureStart start) {

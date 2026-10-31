@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.Commands;
 using Obsidian.Nbt;
 using Obsidian.WorldData.Features;
 
@@ -91,7 +92,7 @@ public abstract class StructurePiece
     internal virtual void SaveState(NbtCompound tag)
     {
         tag.Add(new NbtTag<string>("id", this.TypeId));
-        tag.Add(SaveBox("BB", this.BoundingBox));
+        tag.Add(SaveBox("BB", this.SavedBoundingBox));
         tag.Add(new NbtTag<int>("O", HorizontalIndex(this.Orientation)));
         tag.Add(new NbtTag<int>("GD", this.GenDepth));
     }
@@ -105,6 +106,66 @@ public abstract class StructurePiece
         if (TryLoadBox(tag, "BB", out var box))
             this.BoundingBox = box;
     }
+
+    /// <summary>
+    /// Whether <paramref name="saved"/>, a save with the piece's type's fields (vanilla's, or Obsidian's since it
+    /// writes them), is of this piece as generated: every field but those placing changes holds the same value, so
+    /// its state can be restored into this piece. Only meaningful before the piece is placed.
+    /// </summary>
+    internal bool IsSavedAs(NbtCompound saved)
+    {
+        var generated = new NbtCompound();
+        this.SaveState(generated);
+
+        var fields = generated.Select(field => field.Key).Union(saved.Select(field => field.Key));
+        foreach (var field in fields)
+        {
+            if (this.IsPlacementState(field))
+                continue;
+
+            if (!generated.TryGetTag(field, out var mine) || !saved.TryGetTag(field, out var theirs))
+                return false;
+
+            if (!(field == "BB" ? this.IsSameBox(mine, theirs) : IsSameValue(mine, theirs)))
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Whether a saved field is one that placing the piece changes (a chest placed, a height found...), which
+    /// <see cref="IsSavedAs"/> doesn't compare.
+    /// </summary>
+    private protected virtual bool IsPlacementState(string field) => false;
+
+    /// <summary>
+    /// Whether placing the piece moves its box up or down, so that a save may hold it moved.
+    /// </summary>
+    private protected virtual bool BoxMovesWhenPlaced => false;
+
+    /// <summary>
+    /// The box vanilla saves, where its piece last placed itself: pieces that place themselves elsewhere than their
+    /// box without moving it, since they're shared between chunks, give the box moved there.
+    /// </summary>
+    private protected virtual BlockBox SavedBoundingBox => this.BoundingBox;
+
+    private bool IsSameBox(INbtTag generated, INbtTag saved)
+    {
+        if (!this.BoxMovesWhenPlaced)
+            return IsSameValue(generated, saved);
+
+        if (generated is not NbtArray<int> mine || saved is not NbtArray<int> theirs)
+            return false;
+
+        if (!TryLoadBox(mine, out var box) || !TryLoadBox(theirs, out var other))
+            return false;
+
+        return box.Move(0, other.MinY - box.MinY, 0) == other;
+    }
+
+    // Values compare by their SNBT, which tells types and values apart (but not how an empty list is typed).
+    private static bool IsSameValue(INbtTag generated, INbtTag saved) => Snbt.Write(generated) == Snbt.Write(saved);
 
     /// <summary>
     /// Vanilla's <c>BoundingBox</c> codec: <c>[minX, minY, minZ, maxX, maxY, maxZ]</c>.

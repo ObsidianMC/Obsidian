@@ -2,6 +2,7 @@ using Obsidian.API.World.Generator.DensityFunctions;
 using Obsidian.API.World.Generator.Noise;
 using Obsidian.API.World.Structures;
 using Obsidian.WorldData.Structures;
+using Obsidian.WorldData.Structures.Pools;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -121,7 +122,7 @@ internal sealed partial class WorldgenReader(
                 Field(path, "placement"))!
             : [];
 
-        return new PlacedFeature
+        var placed = new PlacedFeature
         {
             Identifier = identifier ?? string.Empty,
             Feature = feature.ValueKind == JsonValueKind.String
@@ -129,6 +130,11 @@ internal sealed partial class WorldgenReader(
                 : this.ReadConfiguredFeature(feature, typeof(ConfiguredFeatureBase), null, featurePath),
             Placement = placement
         };
+
+        if (identifier is null)
+            FeaturePoolElement.InlineDefinitions.AddOrUpdate(placed, json.GetRawText());
+
+        return placed;
     }
 
     private ConfiguredFeatureBase ReadConfiguredFeature(JsonElement json, Type target, string? identifier, string path)

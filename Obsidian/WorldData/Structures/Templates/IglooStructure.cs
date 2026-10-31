@@ -51,6 +51,8 @@ public sealed class IglooPiece : TemplateStructurePiece
 
     internal override string TypeId => "minecraft:iglu";
 
+    private protected override bool BoxMovesWhenPlaced => true;
+
     internal override void SaveState(NbtCompound tag)
     {
         base.SaveState(tag);

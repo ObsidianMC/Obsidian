@@ -75,10 +75,13 @@ replaces only what vanilla produced.
   structure starts (`StructureStart.createTag`), from `Java/StructurePieceFixtures.java`, which runs a dedicated
   server of its own in a new world (the file's `seed`, structures on) under the scratch directory. A case names a
   start of the worldgen `structures` capture (structure, dimension, start chunk) and records `fresh`, its save as
-  generated, and with `place`, `placed`, its save once every chunk its box reaches is decorated: what placing moved
-  and flagged (heights, chests, spawners, a spider's spawner). Each save is compact SNBT, the start without
-  `Children`, then one string per piece. The replay generates each start through the 26.3 pipeline, checks that
-  Obsidian saves it as vanilla did, then restores vanilla's last save into it and checks that it saves that back.
+  generated, and with `place`, `placed`, its save once every chunk its box reaches is decorated, in x then z order:
+  what placing moved and flagged (heights, chests, spawners, a spider's spawner). When vanilla loading its last save
+  and saving it again changes it (it recomputes igloo and terrain matching jigsaw boxes), that is `reloaded`. Each
+  save is compact SNBT, the start without `Children`, then one string per piece. The replay generates each start
+  through the 26.3 pipeline and checks that Obsidian saves it as vanilla did, accepts each of vanilla's saves of it,
+  and restores vanilla's last save and saves that back. For placed starts it also decorates every chunk the start
+  reaches in the capture's order, in one world, and checks that Obsidian then saves what vanilla saved.
   The cases are one start of each structure type, 28 in all, which reach every piece type Obsidian generates except
   the ocean monument's rooms, which vanilla doesn't save (it saves the building and regenerates its rooms).
 

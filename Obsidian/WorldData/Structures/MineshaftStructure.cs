@@ -378,6 +378,9 @@ public sealed class MineshaftCorridor : MineshaftPiece
 
     internal override string TypeId => "minecraft:mscorridor";
 
+    private protected override bool IsPlacementState(string field) =>
+        field == "hps" || base.IsPlacementState(field);
+
     internal override void SaveState(NbtCompound tag)
     {
         base.SaveState(tag);

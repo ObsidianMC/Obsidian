@@ -3,6 +3,7 @@ using Obsidian.API.World.Structures;
 using Obsidian.Nbt;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Structures.Processors;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Obsidian.WorldData.Structures.Pools;
@@ -304,14 +305,31 @@ public sealed class FeaturePoolElement : StructurePoolElement
     public required PlacedFeature Feature { get; init; }
 
     /// <summary>
+    /// The JSON the placed features defined inline were read from, which a feature element saves in place of an
+    /// identifier.
+    /// </summary>
+    internal static ConditionalWeakTable<PlacedFeature, string> InlineDefinitions { get; } = [];
+
+    /// <summary>
     /// Whether the jigsaw has no name, like 26.3's, which attaches to any target; 1.21.11's is
     /// <c>minecraft:bottom</c>.
     /// </summary>
     internal bool UnnamedJigsaw { get; set; }
 
+    // A feature defined inline is saved as its definition, which vanilla's codec reads like its own.
     private protected override void SaveFields(NbtCompound tag)
     {
-        tag.Add(new NbtTag<string>("feature", this.Feature.Identifier));
+        if (InlineDefinitions.TryGetValue(this.Feature, out var definition))
+        {
+            var feature = JsonNbt.ToCompound(definition);
+            feature.Name = "feature";
+            tag.Add(feature);
+        }
+        else
+        {
+            tag.Add(new NbtTag<string>("feature", this.Feature.Identifier));
+        }
+
         base.SaveFields(tag);
     }
 
