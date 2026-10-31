@@ -21,6 +21,9 @@ public abstract partial class AbstractLevel
     private bool dragonPreviouslyKilled;
     private Guid fightDragon;
     private Vector exitPortal = new(0, 64, 0);
+
+    // Whether the fight has its portal's origin: from the first scan, or saved by vanilla.
+    private bool exitPortalKnown;
     private int gatewaysCreated;
     private int resurrectionTicks = -1;
     private Guid[] resurrectionCrystals = [];
@@ -97,44 +100,71 @@ public abstract partial class AbstractLevel
         return ready;
     }
 
+    // Like vanilla's first scan of a fight: any end portal near the island means the dragon was killed before, and
+    // with one the fight is over unless a dragon is still alive. The spikes and crystals decoration placed stay (only
+    // a resurrection rebuilds them), and an inactive exit portal is built only where no fountain stands yet.
     private void InitializeEndFight(IEntity[] entities)
     {
-        var terrain = new MobTerrain(this);
-        var portalFound = LocateExitPortal(terrain);
-        dragonKilled = terrain.GetBlock(exitPortal + new Vector(1, 0, 0))?.RegistryId == BlockIds.EndPortal;
-        dragonPreviouslyKilled = dragonKilled;
+        var portals = EndPortalsNearIsland().ToArray();
+        var activePortal = portals.Length > 0;
+        var found = LocateExitPortal(portals);
 
         var existing = entities.OfType<EnderDragon>().FirstOrDefault();
         if (existing != null)
             fightDragon = existing.Uuid;
 
-        // Like vanilla's first scan, the spikes and crystals decoration placed stay as they are (only a resurrection
-        // rebuilds them), and an inactive exit portal is built only where there's none yet.
-        if (!dragonKilled && !portalFound)
+        dragonPreviouslyKilled = activePortal;
+        dragonKilled = activePortal && existing == null;
+
+        if (!activePortal && found is null)
             CreateExitPortal(false);
 
         endFightInitialized = true;
     }
 
-    /// <summary>
-    /// Finds the highest block at the island's center from y 127 down: the exit portal's bedrock pillar, whose top is
-    /// three above the portal, or else the ground the portal is to be built on.
-    /// </summary>
-    /// <returns>Whether the pillar of an existing portal was found.</returns>
-    private bool LocateExitPortal(MobTerrain terrain)
+    // The end portal block entities of the island's chunks, by chunk x and then z.
+    private IEnumerable<Vector> EndPortalsNearIsland()
     {
-        for (var y = 127; y >= MinY; y--)
+        for (var x = -8; x <= 8; x++)
         {
-            if (terrain.GetBlock(new Vector(0, y, 0)) is not { IsAir: false } center)
-                continue;
+            for (var z = -8; z <= 8; z++)
+            {
+                if (GetLoadedChunk(x, z) is not Chunk chunk)
+                    continue;
 
-            var pillar = center.Is(BlockIds.Bedrock);
-            var portalY = pillar ? y - 3 : y + 1;
-            exitPortal = new Vector(0, portalY, 0);
-            return pillar;
+                foreach (var blockEntity in chunk.BlockEntities.Values)
+                {
+                    if (blockEntity.Id == "minecraft:end_portal")
+                        yield return blockEntity.BlockPosition;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Finds the fountain of an existing exit portal (see <see cref="ExitPortalSearch.Find"/>). Unless the fight
+    /// already knows where its portal is, the portal is the found one's, or else where a new one is to be built.
+    /// </summary>
+    /// <returns>The found fountain's origin, or null.</returns>
+    private Vector? LocateExitPortal(Vector[] portals)
+    {
+        // The centre column's heights from its blocks: a running chunk's stored heightmaps keep generation's.
+        var terrain = new MobTerrain(this);
+        var blocking = ExitPortalSearch.Surface(terrain.GetBlock, HeightmapType.MotionBlocking, MinY, Height);
+        var found = ExitPortalSearch.Find(terrain.GetBlock, portals, blocking, MinY);
+
+        if (!exitPortalKnown)
+        {
+            var surface = ExitPortalSearch.Surface(
+                terrain.GetBlock,
+                HeightmapType.MotionBlockingNoLeaves,
+                MinY,
+                Height);
+            exitPortal = found ?? ExitPortalSearch.SpawnOrigin(terrain.GetBlock, surface, MinY);
+            exitPortalKnown = true;
         }
 
-        return false;
+        return found;
     }
 
     // Keeps the fight's dragon attached, and spawns a new one when it's been missing for a minute.
@@ -621,7 +651,10 @@ public abstract partial class AbstractLevel
             ? EntityNbt.UuidFromInts(dragon.GetArray())
             : Guid.Empty;
         if (fight.TryGetTag<NbtArray<int>>("exit_portal_location", out var portal) && portal.Count == 3)
+        {
             exitPortal = new Vector(0, Math.Clamp(portal[1], MinY + 1, MinY + Height - 5), 0);
+            exitPortalKnown = true;
+        }
 
         // The gateways not created yet, which vanilla creates from the end of the list.
         if (fight.TryGetTag<NbtList>("gateways", out var gateways))
