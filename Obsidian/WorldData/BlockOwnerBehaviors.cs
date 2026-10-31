@@ -88,6 +88,10 @@ internal static class TickBehaviors
 /// </summary>
 internal static class ShapeUpdateBehaviors
 {
+    internal static IShapeUpdateBehavior FenceBlock { get; } = new FenceBlockBehavior();
+
+    internal static IShapeUpdateBehavior NoteBlock { get; } = new NoteBlockBehavior();
+
     internal static IShapeUpdateBehavior SpeleothemBlock { get; } = new SulfurSpikeBehavior();
 
     internal static IShapeUpdateBehavior PotentSulfurBlock { get; } = new PotentSulfurBlockBehavior();

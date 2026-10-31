@@ -870,6 +870,10 @@ public abstract partial class AbstractLevel : ILevel
         this.TickRandomBlocks();
         timings.Lap("random ticks");
 
+        // Like ServerLevel's block-event phase, after chunk ticks and before entity ticks.
+        this.ProcessNoteBlockEvents();
+        timings.Lap("block events");
+
         foreach (var entity in this.SnapshotEntities())
         {
             if (entity is Mob { HasAi: true } or ItemEntity or ExperienceOrb && !IsMobTicking(entity.Position))

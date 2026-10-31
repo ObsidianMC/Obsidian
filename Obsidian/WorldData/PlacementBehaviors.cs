@@ -49,9 +49,11 @@ internal static class PlacementBehaviors
     internal static IBlockBehavior DriedGhastBlock => HorizontalOpposite;
     internal static IBlockBehavior EnderChestBlock => HorizontalOpposite;
     internal static IBlockBehavior FaceAttachedHorizontalDirectionalBlock => FaceAttached;
+    internal static IBlockBehavior FenceBlock { get; } = new FenceBlockBehavior();
     internal static IBlockBehavior HopperBlock => ClickedFaceOpposite;
     internal static IBlockBehavior IronBarsBlock { get; } = new IronBarsPlacementBehavior();
     internal static IBlockBehavior LecternBlock => HorizontalOpposite;
+    internal static IBlockBehavior NoteBlock { get; } = new NoteBlockBehavior();
     internal static IBlockBehavior ObserverBlock => Observer;
     internal static IBlockBehavior PistonBaseBlock => Piston;
     internal static IBlockBehavior PotentSulfurBlock { get; } = new PotentSulfurBlockBehavior();
@@ -60,6 +62,11 @@ internal static class PlacementBehaviors
     internal static IBlockBehavior RepeaterBlock => Repeater;
     internal static IBlockBehavior LeavesBlock => Leaves;
     internal static IBlockBehavior ShulkerBoxBlock => ClickedFace;
+
+    // Vanilla skulls follow the player's rotation, including subclasses such as player and wither-skeleton heads.
+    internal static IBlockBehavior SkullBlock { get; } = new DerivedPlacement(context =>
+        context.Block.WithProperty("rotation", (int)Math.Floor(context.Player.Yaw.Degrees * 16 / 360 + 0.5) & 15));
+
     internal static IBlockBehavior VaultBlock => HorizontalOpposite;
 
     /// <returns>The implemented behaviour of the vanilla class that owns this block's placement override, or null.</returns>

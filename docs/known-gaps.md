@@ -532,14 +532,46 @@ Offers come from the 26.3 trade sets in vanilla's draw order (see `TradeFixtures
 
 ## 26.3 blocks
 
-**Status:** Phase 6 step 1's sulfur slice is implemented. The remaining block groups need their own captures and
-implementation PRs:
+**Status:** Phase 6 step 1's sulfur slice and construction/music slice are implemented with the limits below.
+`VanillaMoreBlocks.ReplayConstructionAndMusicReference` replays `more_blocks.json` as one test with labelled
+failures across every case. `MoreBlockFixtures.java`, registered in `FixtureDumper.cs`, records it through
+`CaptureFixtures=more_blocks`.
 
-- Golden dandelion interactions and persisted age locking, including stopping aging.
-- Note block trumpet instrument selection and playback.
-- Poplar wood behavior, wool and concrete stairs/slabs, colored leaves and the straw bed's sleep rules. Some of
-  these already inherit generic block-family behavior; that is not a completed parity audit. Poplar sapling growth
-  is tracked separately below.
+Poplar logs/wood and stripped variants, planks, stairs, slabs, fences, gates, doors, trapdoors, buttons, pressure
+plates and signs use the existing block-family APIs. The reference checks axis placement, axe stripping (state,
+sound ID and durability cost), door upper halves, opening/closing states and sound IDs, powered placement, gate
+wall placement and fence connections. Standing and ceiling sign probes start with the variant already selected;
+sign item selection and editing still use the shared sign implementation. The shelf's basic placement is covered,
+but storage, quick swapping and connections are not implemented for shelves of any wood.
+
+All 16 colors of wool and concrete stairs/slabs have captured placement, waterlogging, slab merging and stair
+corner updates/placement. Red, orange and yellow poplar leaves have captured persistent placement, waterlogging,
+live distance scheduling and recomputation against poplar logs and other leaves. The live leaf and fence paths
+use current tags; this does not change the legacy worldgen helpers. Decay and loot use the existing leaf/loot
+paths; per-color decay drops and client ambient leaf particles have not been separately captured here.
+
+Note blocks derive their instrument on placement and vertical neighbor updates from generated 26.3 instrument
+data, including the four trumpet oxidation stages and waxed copper. The reference checks above-block instrument
+priority, blocked playback, exact tunable pitch, sound IDs/volume/seeds, random draw order and block-event packets
+that make vanilla clients produce note particles. Native lifecycle captures cover coalescing activations into the
+block-event phase, using its final state and cancelling playback after replacement. Native server use-item cases
+cover top-instrument head placement without tuning, side-face/ordinary-item tuning and correct skull rotation.
+Door-hinge captures include mixed wood/iron/copper doors and distinguish full collision cubes from top slabs.
+Custom player-head sound lookup from skull block entities
+remains unsupported; a head without a custom sound is silent as in vanilla.
+
+Note block events have their own queue, drained after the piston actions. Vanilla drains every block event from
+one insertion-ordered, deduplicated set, so a note activated before a piston that moves the note block in the same
+tick plays in vanilla, while Obsidian moves the block first and cancels the note. Fixing it means one shared
+block-event queue (keyed by position, block, event and parameter, and taking events added while it drains) for
+notes, pistons and the other block-event users, with a captured note-then-piston scenario.
+
+Remaining block work needs separate interaction/lifecycle captures:
+
+- Golden dandelion interactions and persisted age locking, including stopping aging, cooldown and particles.
+- Straw bed placement and sleep rules: its own environment attribute, spawn behavior and break-on-wake behavior.
+- Shared shelf storage, quick swapping and connected shelf behavior, including poplar shelves.
+- Poplar sapling growth is tracked separately below; poplar boats remain entity work.
 
 Sulfur, chiseled/polished sulfur and sulfur bricks use the generated properties, sounds, shapes and loot. Their
 stairs, slabs and walls share the existing placement and waterlogging APIs. Potent sulfur validates its water and
@@ -561,8 +593,9 @@ Remaining sulfur limits:
 - Gas uses the existing entity eye-height implementations; remaining species/pose eye-height differences belong
   to the entity behavior work.
 
-**Where to start:** add cases to the two sulfur captures before extending these behaviors. The remaining block
-groups need separate scenario references. Sulfur cubes and cushions remain Phase 6 step 2 work.
+**Where to start:** extend the sulfur or construction/music references before changing the covered behavior.
+Golden dandelions and straw beds need new interaction and sleep lifecycle scenarios. Sulfur cubes, cushions and
+poplar boats remain Phase 6 step 2 work.
 
 ## Entity behavior beyond 26.3 metadata
 

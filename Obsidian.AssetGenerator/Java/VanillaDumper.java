@@ -151,6 +151,7 @@ public final class VanillaDumper {
         dumper.dumpBlockLight();
         dumper.dumpBlockSounds();
         dumper.dumpBlockPhysics();
+        NoteBlockInstruments.dumpInstruments(output.resolve("note_block_instruments.json"));
         dumper.dumpBlockPlacementClasses();
         dumper.dumpBlockOverrideClasses();
         dumper.dumpSaplingGrowers();
