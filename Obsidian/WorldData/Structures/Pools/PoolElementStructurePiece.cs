@@ -81,6 +81,19 @@ public sealed class PoolElementStructurePiece : StructurePiece, IJigsawPiece
     // Vanilla recomputes the box of a terrain matching piece it loads, and saves that box, so a save may hold either.
     private protected override bool IsPlacementState(string field) => field == "BB";
 
+    // Inline placed features are compared by where they are, not their definitions (see
+    // StructurePoolElement.WithoutInlineFeatures).
+    private protected override bool IsSameField(string field, INbtTag generated, INbtTag saved)
+    {
+        if (field != "pool_element" || generated is not NbtCompound mine || saved is not NbtCompound theirs)
+            return base.IsSameField(field, generated, saved);
+
+        var withoutMine = StructurePoolElement.WithoutInlineFeatures(mine);
+        var withoutTheirs = StructurePoolElement.WithoutInlineFeatures(theirs);
+
+        return IsSameValue(withoutMine, withoutTheirs);
+    }
+
     // Placing changes nothing; and a box vanilla recomputed would move the position, which is kept from the box.
     internal override void LoadState(NbtCompound tag)
     {

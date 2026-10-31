@@ -126,7 +126,7 @@ public abstract class StructurePiece
             if (!generated.TryGetTag(field, out var mine) || !saved.TryGetTag(field, out var theirs))
                 return false;
 
-            if (!(field == "BB" ? this.IsSameBox(mine, theirs) : IsSameValue(mine, theirs)))
+            if (!this.IsSameField(field, mine, theirs))
                 return false;
         }
 
@@ -150,6 +150,13 @@ public abstract class StructurePiece
     /// </summary>
     private protected virtual BlockBox SavedBoundingBox => this.BoundingBox;
 
+    /// <summary>
+    /// Whether a saved field holds the value the generated piece saves; its box may be moved (see
+    /// <see cref="BoxMovesWhenPlaced"/>).
+    /// </summary>
+    private protected virtual bool IsSameField(string field, INbtTag generated, INbtTag saved) =>
+        field == "BB" ? this.IsSameBox(generated, saved) : IsSameValue(generated, saved);
+
     private bool IsSameBox(INbtTag generated, INbtTag saved)
     {
         if (!this.BoxMovesWhenPlaced)
@@ -165,7 +172,8 @@ public abstract class StructurePiece
     }
 
     // Values compare by their SNBT, which tells types and values apart (but not how an empty list is typed).
-    private static bool IsSameValue(INbtTag generated, INbtTag saved) => Snbt.Write(generated) == Snbt.Write(saved);
+    private protected static bool IsSameValue(INbtTag generated, INbtTag saved) =>
+        Snbt.Write(generated) == Snbt.Write(saved);
 
     /// <summary>
     /// Vanilla's <c>BoundingBox</c> codec: <c>[minX, minY, minZ, maxX, maxY, maxZ]</c>.

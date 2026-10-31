@@ -42,6 +42,34 @@ public abstract class StructurePoolElement
     }
 
     /// <summary>
+    /// A saved element (see <see cref="Save"/>) with each placed feature defined inline replaced by a marker, for
+    /// comparing saves: Obsidian saves the definition it read, which vanilla's codecs write normalised (defaults left
+    /// out, numbers typed), so the same element may be saved differently. Everything else is kept.
+    /// </summary>
+    internal static NbtCompound WithoutInlineFeatures(NbtCompound element)
+    {
+        if (element.TryGetTag<NbtCompound>("feature", out _))
+        {
+            var copy = NbtCopy.Copy(element, "feature");
+            copy.Add(new NbtTag<string>("feature", "<inline>"));
+            return copy;
+        }
+
+        if (element.TryGetTag<NbtList>("elements", out var elements))
+        {
+            var copy = NbtCopy.Copy(element, "elements");
+            var list = new NbtList(NbtTagType.Compound, "elements");
+            foreach (var child in elements)
+                list.Add(child is NbtCompound compound ? WithoutInlineFeatures(compound) : child);
+
+            copy.Add(list);
+            return copy;
+        }
+
+        return element;
+    }
+
+    /// <summary>
     /// Adds the element's fields; by default its projection.
     /// </summary>
     private protected virtual void SaveFields(NbtCompound tag) =>

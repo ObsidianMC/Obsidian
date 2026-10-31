@@ -713,10 +713,17 @@
       "structure": "minecraft:buried_treasure",
       "chunkX": 47,
       "chunkZ": 25,
+      "place": true,
       "fresh": {
         "start": "{ChunkX:47,ChunkZ:25,id:\"minecraft:buried_treasure\",references:0}",
         "pieces": [
           "{BB:[I;761,90,409,761,90,409],GD:0,O:-1,id:\"minecraft:btp\"}"
+        ]
+      },
+      "placed": {
+        "start": "{ChunkX:47,ChunkZ:25,id:\"minecraft:buried_treasure\",references:0}",
+        "pieces": [
+          "{BB:[I;761,65,409,761,65,409],GD:0,O:-1,id:\"minecraft:btp\"}"
         ]
       }
     },

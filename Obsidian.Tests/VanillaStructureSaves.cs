@@ -1,4 +1,6 @@
 using Obsidian.API;
+using Obsidian.API.Utilities;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Commands;
 using Obsidian.Nbt;
 using Obsidian.Tests.Utilities;
@@ -9,6 +11,7 @@ using Obsidian.WorldData.Generators.Biomes;
 using Obsidian.WorldData.Generators.Mojang.Structures;
 using Obsidian.WorldData.Structures;
 using Obsidian.WorldData.Structures.Pools;
+using Obsidian.WorldData.Structures.Templates;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -147,7 +150,101 @@ public class VanillaStructureSaves
     [InlineData(
         "{\"feature\": \"minecraft:oak\", \"placement\": [{\"type\": \"minecraft:count\", \"count\": 2}]}",
         "{feature: \"minecraft:oak\", placement: [{count: 2, type: \"minecraft:count\"}]}")]
+    [InlineData(
+        "{\"feature\": {\"type\": \"minecraft:no_op\", \"config\": {}}, \"placement\": []}",
+        "{feature: {config: {}, type: \"minecraft:no_op\"}, placement: []}")]
     public void FeatureElementsSaveTheirFeature(string feature, string saved)
+    {
+        var element = FeatureElement(feature);
+
+        var expected = $"{{element_type: \"minecraft:feature_pool_element\", feature: {saved}, projection: \"rigid\"}}";
+        Assert.Equal(expected, Snbt.Write(element.Save(null)));
+    }
+
+    // A jigsaw piece with an inline placed feature is the piece vanilla saved with the feature as its codec writes it
+    // (vanilla's save, recorded from its StructurePoolElement codec, leaves the empty config out); the rest of the
+    // element still has to match.
+    [Theory]
+    [InlineData(
+        "{element_type:\"minecraft:feature_pool_element\",feature:{feature:{type:\"minecraft:no_op\"},placement:[]},"
+        + "projection:\"rigid\"}",
+        true)]
+    [InlineData(
+        "{element_type:\"minecraft:feature_pool_element\",feature:{feature:{type:\"minecraft:no_op\"},placement:[]},"
+        + "projection:\"terrain_matching\"}",
+        false)]
+    [InlineData(
+        "{element_type:\"minecraft:feature_pool_element\",feature:\"minecraft:oak\",projection:\"rigid\"}",
+        false)]
+    public void InlineFeaturesMatchVanillasSaves(string element, bool matches)
+    {
+        var feature = FeatureElement(
+            "{\"feature\": {\"type\": \"minecraft:no_op\", \"config\": {}}, \"placement\": []}");
+        var position = new Vector(0, 64, 0);
+        var box = new BlockBox(position, position);
+        var piece = new PoolElementStructurePiece(
+            feature, position, 1, StructureRotation.None, box, LiquidSettings.ApplyWaterlogging);
+        var saved = new NbtCompound();
+        var vanilla = SnbtReader.ReadCompound(element);
+
+        piece.SaveState(saved);
+        saved.Remove("pool_element");
+        vanilla.Name = "pool_element";
+        saved.Add(vanilla);
+
+        Assert.Equal(matches, piece.IsSavedAs(saved));
+    }
+
+    // A ship too big for a decoration region (vanilla's are all small enough, so it's a 33 by 20 by 15 template) gets
+    // its height as the structure is built, which counts as adjusted; others don't have one until placed.
+    [Theory]
+    [InlineData(true, 40, true)]
+    [InlineData(false, 90, false)]
+    public void OversizedShipwrecksSaveTheirHeightAsAdjusted(bool oversized, int height, bool adjusted)
+    {
+        var oversizedTemplate = EmptyTemplate(new Vector(33, 20, 15));
+        using var templates = StructureRegistry.Use(oversized ? _ => oversizedTemplate : VanillaFeatureTemplates.Get);
+        var random = new LegacyRandomSource(0L);
+        var piece = ShipwreckPiece.AddRandomPiece(
+            new Vector(0, 90, 0), StructureRotation.None, new StructurePiecesBuilder(), random, false);
+
+        Assert.Equal(oversized, piece.IsTooBigToFitInWorldGenRegion);
+
+        if (oversized)
+            piece.AdjustPositionHeight(height);
+
+        var saved = new NbtCompound();
+        piece.SaveState(saved);
+
+        Assert.Equal(height, saved.GetInt("TPY"));
+        Assert.True(saved.TryGetBool("height_adjusted", out var flag));
+        Assert.Equal(adjusted, flag);
+    }
+
+    // A template of that size without blocks, read from vanilla's template format.
+    private static StructureTemplate EmptyTemplate(Vector size)
+    {
+        using var stream = new MemoryStream();
+
+        using (var writer = new NbtWriterStream(stream, NbtCompression.None, ""))
+        {
+            writer.WriteTag(new NbtList(NbtTagType.Int, "size")
+            {
+                new NbtTag<int>(string.Empty, size.X),
+                new NbtTag<int>(string.Empty, size.Y),
+                new NbtTag<int>(string.Empty, size.Z)
+            });
+            writer.WriteTag(new NbtList(NbtTagType.Compound, "palette"));
+            writer.WriteTag(new NbtList(NbtTagType.Compound, "blocks"));
+            writer.WriteTag(new NbtList(NbtTagType.Compound, "entities"));
+            writer.EndCompound();
+            writer.TryFinish();
+        }
+
+        return StructureTemplate.Load(new MemoryStream(stream.ToArray()), NbtCompression.None);
+    }
+
+    private static StructurePoolElement FeatureElement(string feature)
     {
         var reader = new WorldgenReader(
             WorldgenTypes.BuiltIn,
@@ -158,10 +255,7 @@ public class VanillaStructureSaves
             """;
 
         using var document = JsonDocument.Parse(json);
-        var element = reader.Read<StructurePoolElement>(document.RootElement);
-
-        var expected = $"{{element_type: \"minecraft:feature_pool_element\", feature: {saved}, projection: \"rigid\"}}";
-        Assert.Equal(expected, Snbt.Write(element.Save(null)));
+        return reader.Read<StructurePoolElement>(document.RootElement);
     }
 
     // Decorates each chunk the start's box reaches, in x then z order like the capture, in one world: terrain is

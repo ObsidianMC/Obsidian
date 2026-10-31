@@ -94,8 +94,18 @@ public sealed class ShipwreckPiece : TemplateStructurePiece
     /// <summary>Vanilla <c>calculateBeachedPosition</c>: half the ship's height below the surface, plus 0 to 2.</summary>
     internal int CalculateBeachedPosition(int surface, IRandomSource random) => surface - this.Template.Size.Y / 2 - random.NextInt(3);
 
-    /// <summary>Vanilla <c>adjustPositionHeight</c>: moves the template, but not the bounding box.</summary>
-    internal void AdjustPositionHeight(int y) => this.SetTemplatePosition(this.TemplatePosition with { Y = y });
+    /// <summary>
+    /// Vanilla <c>adjustPositionHeight</c>, for ships too big to fit in a decoration region: moves the template, but
+    /// not the bounding box, and the height counts as adjusted.
+    /// </summary>
+    internal void AdjustPositionHeight(int y)
+    {
+        lock (this.heightLock)
+        {
+            this.SetTemplatePosition(this.TemplatePosition with { Y = y });
+            this.adjustedHeight = y;
+        }
+    }
 
     /// <summary>
     /// Vanilla <c>postProcess</c>: ships that fit in the region sit at the mean (or, beached, lowest) height of their
