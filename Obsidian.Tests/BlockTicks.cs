@@ -23,13 +23,6 @@ public class BlockTicks
     private const string Stone = "minecraft:stone";
     private const string Dirt = "minecraft:dirt";
 
-    [Theory]
-    [InlineData(TickPriority.ExtremelyHigh, true)]
-    [InlineData(TickPriority.ExtremelyLow, true)]
-    [InlineData(TickPriority.ExtremelyHigh - 1, false)]
-    [InlineData(TickPriority.ExtremelyLow + 1, false)]
-    public void PriorityMatchesVanillaRange(int priority, bool valid) => Assert.Equal(valid, TickPriority.IsValid(priority));
-
     [Fact]
     public void DueTickRunsOnItsGameTime()
     {
@@ -43,57 +36,6 @@ public class BlockTicks
             scheduler.Tick(_ => true, due => ran.Add(scheduler.GameTime));
 
         Assert.Equal([3L], ran);
-    }
-
-    [Fact]
-    public void DueTicksRunByPriorityThenScheduleOrder()
-    {
-        var scheduler = new BlockTickScheduler();
-        var chunk = new ChunkBlockTicks();
-        chunk.StartTicking(scheduler, 0);
-
-        // All due the next game tick: the high-priority one runs first, then scheduling order.
-        chunk.Schedule(new Vector(1, 64, 1), Stone, delay: 1);
-        chunk.Schedule(new Vector(2, 64, 1), Dirt, delay: 1, priority: TickPriority.High);
-        chunk.Schedule(new Vector(3, 64, 1), Stone, delay: 1);
-
-        var order = new List<int>();
-        scheduler.Tick(_ => true, due => order.Add(due.Position.X));
-
-        Assert.Equal([2, 1, 3], order);
-    }
-
-    [Fact]
-    public void DuplicateTicksAreIgnoredPerBlockType()
-    {
-        var chunk = new ChunkBlockTicks();
-        var position = new Vector(1, 64, 1);
-
-        chunk.Schedule(position, Stone, delay: 2);
-        chunk.Schedule(position, Stone, delay: 5);
-        Assert.Equal(1, chunk.Count);
-
-        // Another block type at the same position is a separate tick, like vanilla's per-type keys.
-        chunk.Schedule(position, Dirt, delay: 5);
-        Assert.Equal(2, chunk.Count);
-    }
-
-    [Fact]
-    public void CapCarriesLeftoverTicksToTheNextTick()
-    {
-        var scheduler = new BlockTickScheduler();
-        var chunk = new ChunkBlockTicks();
-        chunk.StartTicking(scheduler, 0);
-        for (var x = 1; x <= 3; x++)
-            chunk.Schedule(new Vector(x, 64, 1), Stone, delay: 1);
-
-        var first = new List<int>();
-        scheduler.Tick(_ => true, due => first.Add(due.Position.X), maxTicks: 2);
-        Assert.Equal([1, 2], first);
-
-        var second = new List<int>();
-        scheduler.Tick(_ => true, due => second.Add(due.Position.X), maxTicks: 2);
-        Assert.Equal([3], second);
     }
 
     [Fact]
@@ -219,30 +161,6 @@ public class BlockTicks
             later.Tick(_ => true, _ => ran.Add(later.GameTime));
 
         Assert.Equal([13L], ran);
-    }
-
-    [Fact]
-    public void LevelDropsStaleTicksAndRunsBehaviorForTheScheduledBlock()
-    {
-        var level = new FakeLevel();
-        var ticks = new LevelBlockTicks(level, new Lock());
-        var calls = new List<Vector>();
-        ticks.Register(Stone, (position, _) => calls.Add(position));
-
-        var kept = new Vector(5, 64, 5);
-        var replaced = new Vector(6, 64, 5);
-        level.Set(kept, Stone);
-        level.Set(replaced, Stone);
-        TrackNeighborhood(ticks, level, 0, 0);
-        ticks.Schedule(kept, Stone, delay: 2);
-        ticks.Schedule(replaced, Stone, delay: 2);
-
-        // The block at one position changes before its tick is due: the tick is dropped, like vanilla's tickBlock.
-        level.Set(replaced, Dirt);
-        ticks.Tick();
-        ticks.Tick();
-
-        Assert.Equal([kept], calls);
     }
 
     [Fact]

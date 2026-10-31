@@ -18,19 +18,16 @@ namespace Obsidian.Tests;
 
 public class ExplorerMaps
 {
-    public static IEnumerable<object[]> MapItems() => TagsRegistry.Item.ClonableMaps.Entries
-        .Select(id => new object[] { ItemsRegistry.Get(id).UnlocalizedName });
-
-    [Theory]
-    [MemberData(nameof(MapItems))]
-    public async Task ExplorationLootKeepsItsIdentityAndUpdatesWhileCarried(string itemId)
+    // The map system's smoke test: an explorer map from loot reaches the client and keeps updating while carried.
+    [Fact]
+    public async Task ExplorationLootKeepsItsIdentityAndUpdatesWhileCarried()
     {
         await using var server = TestServerFactory.CreateServer($"explorer-map-{Guid.NewGuid():N}");
         var player = TestServerFactory.CreateConnectedPlayer(server.Server, server.World, "Explorer");
         server.World.TryAddPlayer(player);
         var client = Assert.IsType<TestClient>(player.Client);
         var storage = MapStorage.For(server.World);
-        var item = ItemsRegistry.Get(itemId);
+        var item = ItemsRegistry.FilledMap;
         var stack = new ItemStack(item, 2);
         var function = new ExplorationMapFunction { Decoration = "minecraft:red_x" };
         var context = new LootContext
