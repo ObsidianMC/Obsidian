@@ -43,6 +43,20 @@ public class EndExitPortal
         new("no island", -1, [], [], null, new Vector(0, MinY + 1, 0)),
         new("bedrock above y 63", 63, [], Column(64, 70, BlocksRegistry.Bedrock), null, new Vector(0, 63, 0)),
         new("bedrock below y 63", 48, [], Column(49, 50, BlocksRegistry.Bedrock), null, new Vector(0, 50, 0)),
+        new(
+            "leaves above the centre",
+            63,
+            [],
+            [(new Vector(0, 66, 0), BlocksRegistry.OakLeaves)],
+            null,
+            new Vector(0, 63, 0)),
+        new(
+            "waterlogged leaves above the centre",
+            63,
+            [],
+            [(new Vector(0, 66, 0), BlocksRegistry.OakLeaves.WithProperty("waterlogged", true))],
+            null,
+            new Vector(0, 66, 0)),
         new("inactive fountain", 63, [(new Vector(0, 63, 0), false)], [], new Vector(0, 63, 0), new Vector(0, 63, 0)),
         new(
             "block above a fountain",

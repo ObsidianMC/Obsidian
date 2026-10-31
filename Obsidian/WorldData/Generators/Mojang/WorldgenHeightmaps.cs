@@ -166,13 +166,13 @@ internal static class WorldgenHeightmaps
             mask |= OceanFloorBit;
 
         if (block.BlocksMotion() || block.HasFluid())
-        {
             mask |= MotionBlockingBit;
 
-            // Vanilla's LeavesBlock is abstract; the concrete leaves classes all end with its name.
-            if (!block.BlockClass().EndsWith("LeavesBlock", StringComparison.Ordinal))
-                mask |= MotionBlockingNoLeavesBit;
-        }
+        // Vanilla's LeavesBlock is abstract; the concrete leaves classes all end with its name. Leaves don't count
+        // unless they hold a fluid: any fluid counts, waterlogged leaves too.
+        var leaves = block.BlockClass().EndsWith("LeavesBlock", StringComparison.Ordinal);
+        if (block.HasFluid() || block.BlocksMotion() && !leaves)
+            mask |= MotionBlockingNoLeavesBit;
 
         return mask;
     }
