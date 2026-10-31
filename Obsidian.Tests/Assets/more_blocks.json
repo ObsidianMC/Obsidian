@@ -1,6 +1,6 @@
 {
   "version": "26.3",
-  "_notes": "MoreBlockFixtures.java records vanilla 26.3 routines against an explicit bounded block view. Placement calls getStateForPlacement and canSurvive on an already chosen block/sign variant. Shape outputs include scheduled block/fluid ticks; scheduled leaf distance and axe-provider outputs include the next seeded random draw. Door/trapdoor/gate use records sound IDs (their replay checks IDs and state, not pitch); placed_by records door upper halves. Note playback invokes playNote and triggerEvent and records trigger success, events, exact sound volume/pitch/seed and next random draw. Writes do not recursively notify neighbors in the probe; shape cases replay through Obsidian live notifications. One test replays the entire reference and reports all differing cases.",
+  "_notes": "MoreBlockFixtures.java records vanilla 26.3 routines against an explicit bounded block view. Placement calls getStateForPlacement and canSurvive on an already chosen block/sign variant. Shape outputs include scheduled block/fluid ticks; scheduled leaf distance and axe-provider outputs include the next seeded random draw. Door/trapdoor/gate use records sound IDs (their replay checks IDs and state, not pitch); placed_by records door upper halves. Note playback invokes playNote and triggerEvent and records trigger success, events, exact sound volume/pitch/seed and next random draw. Writes do not recursively notify neighbors in the probe; shape cases replay through Obsidian live notifications. One test replays the entire reference and reports all differing cases. Review lifecycle cases call the real ServerLevel.blockEvent and runBlockEvents routines with an initialized native event set, recording queue size, pre-phase output, final sound/event packets, exact seeds and next draw. Use-item cases call ServerPlayerGameMode.useItemOn with a survival player, empty advancement listeners, no entities obstructing placement, and the bounded write-backed level; they record the note counter, placed target state and remaining item count. Their neighbor notification effects are covered separately by shape probes.",
   "cases": [
     {
       "name": "note_trumpet_0_air",
@@ -24418,6 +24418,3542 @@
           "delay": 5
         }
       ]
+    },
+    {
+      "name": "review_door_hinge_north_left_oak_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            -1,
+            72,
+            0
+          ],
+          "state": "minecraft:oak_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "north",
+      "rotation": 180.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "north",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=north,half=lower,hinge=right,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_north_left_iron_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            -1,
+            72,
+            0
+          ],
+          "state": "minecraft:iron_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "north",
+      "rotation": 180.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "north",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=north,half=lower,hinge=right,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_north_left_upper_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            -1,
+            72,
+            0
+          ],
+          "state": "minecraft:oak_door[half=upper]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "north",
+      "rotation": 180.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "north",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=north,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_north_left_top_slab",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            -1,
+            72,
+            0
+          ],
+          "state": "minecraft:oak_slab[type=top]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "north",
+      "rotation": 180.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "north",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=north,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_north_left_full_block",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            -1,
+            72,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "north",
+      "rotation": 180.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "north",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=north,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_north_right_oak_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            1,
+            72,
+            0
+          ],
+          "state": "minecraft:oak_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "north",
+      "rotation": 180.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "north",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=north,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_north_right_iron_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            1,
+            72,
+            0
+          ],
+          "state": "minecraft:iron_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "north",
+      "rotation": 180.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "north",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=north,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_north_right_upper_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            1,
+            72,
+            0
+          ],
+          "state": "minecraft:oak_door[half=upper]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "north",
+      "rotation": 180.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "north",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=north,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_north_right_top_slab",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            1,
+            72,
+            0
+          ],
+          "state": "minecraft:oak_slab[type=top]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "north",
+      "rotation": 180.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "north",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=north,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_north_right_full_block",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            1,
+            72,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "north",
+      "rotation": 180.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "north",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=north,half=lower,hinge=right,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_south_left_oak_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            1,
+            72,
+            0
+          ],
+          "state": "minecraft:oak_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "south",
+      "rotation": 0.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "south",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=south,half=lower,hinge=right,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_south_left_iron_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            1,
+            72,
+            0
+          ],
+          "state": "minecraft:iron_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "south",
+      "rotation": 0.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "south",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=south,half=lower,hinge=right,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_south_left_upper_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            1,
+            72,
+            0
+          ],
+          "state": "minecraft:oak_door[half=upper]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "south",
+      "rotation": 0.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "south",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=south,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_south_left_top_slab",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            1,
+            72,
+            0
+          ],
+          "state": "minecraft:oak_slab[type=top]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "south",
+      "rotation": 0.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "south",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=south,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_south_left_full_block",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            1,
+            72,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "south",
+      "rotation": 0.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "south",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=south,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_south_right_oak_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            -1,
+            72,
+            0
+          ],
+          "state": "minecraft:oak_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "south",
+      "rotation": 0.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "south",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=south,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_south_right_iron_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            -1,
+            72,
+            0
+          ],
+          "state": "minecraft:iron_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "south",
+      "rotation": 0.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "south",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=south,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_south_right_upper_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            -1,
+            72,
+            0
+          ],
+          "state": "minecraft:oak_door[half=upper]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "south",
+      "rotation": 0.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "south",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=south,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_south_right_top_slab",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            -1,
+            72,
+            0
+          ],
+          "state": "minecraft:oak_slab[type=top]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "south",
+      "rotation": 0.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "south",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=south,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_south_right_full_block",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            -1,
+            72,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "south",
+      "rotation": 0.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "south",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=south,half=lower,hinge=right,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_east_left_oak_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            -1
+          ],
+          "state": "minecraft:oak_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "east",
+      "rotation": 270.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "east",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=east,half=lower,hinge=right,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_east_left_iron_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            -1
+          ],
+          "state": "minecraft:iron_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "east",
+      "rotation": 270.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "east",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=east,half=lower,hinge=right,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_east_left_upper_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            -1
+          ],
+          "state": "minecraft:oak_door[half=upper]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "east",
+      "rotation": 270.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "east",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=east,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_east_left_top_slab",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            -1
+          ],
+          "state": "minecraft:oak_slab[type=top]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "east",
+      "rotation": 270.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "east",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=east,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_east_left_full_block",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            -1
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "east",
+      "rotation": 270.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "east",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=east,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_east_right_oak_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            1
+          ],
+          "state": "minecraft:oak_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "east",
+      "rotation": 270.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "east",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=east,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_east_right_iron_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            1
+          ],
+          "state": "minecraft:iron_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "east",
+      "rotation": 270.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "east",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=east,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_east_right_upper_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            1
+          ],
+          "state": "minecraft:oak_door[half=upper]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "east",
+      "rotation": 270.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "east",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=east,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_east_right_top_slab",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            1
+          ],
+          "state": "minecraft:oak_slab[type=top]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "east",
+      "rotation": 270.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "east",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=east,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_east_right_full_block",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            1
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "east",
+      "rotation": 270.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "east",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=east,half=lower,hinge=right,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_west_left_oak_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            1
+          ],
+          "state": "minecraft:oak_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "west",
+      "rotation": 90.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "west",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=west,half=lower,hinge=right,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_west_left_iron_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            1
+          ],
+          "state": "minecraft:iron_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "west",
+      "rotation": 90.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "west",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=west,half=lower,hinge=right,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_west_left_upper_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            1
+          ],
+          "state": "minecraft:oak_door[half=upper]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "west",
+      "rotation": 90.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "west",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=west,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_west_left_top_slab",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            1
+          ],
+          "state": "minecraft:oak_slab[type=top]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "west",
+      "rotation": 90.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "west",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=west,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_west_left_full_block",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            1
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "west",
+      "rotation": 90.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "west",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=west,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_west_right_oak_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            -1
+          ],
+          "state": "minecraft:oak_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "west",
+      "rotation": 90.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "west",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=west,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_west_right_iron_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            -1
+          ],
+          "state": "minecraft:iron_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "west",
+      "rotation": 90.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "west",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=west,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_west_right_upper_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            -1
+          ],
+          "state": "minecraft:oak_door[half=upper]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "west",
+      "rotation": 90.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "west",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=west,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_west_right_top_slab",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            -1
+          ],
+          "state": "minecraft:oak_slab[type=top]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "west",
+      "rotation": 90.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "west",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=west,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_west_right_full_block",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            -1
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "west",
+      "rotation": 90.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "west",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=west,half=lower,hinge=right,open=false,powered=false]"
+    },
+    {
+      "name": "review_note_double_activation_123",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "note_lifecycle",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[instrument=trumpet,note=3]"
+        }
+      ],
+      "seed": 123,
+      "actions": [
+        {
+          "action": "play"
+        },
+        {
+          "action": "set",
+          "state": "minecraft:note_block[instrument=trumpet,note=15]"
+        },
+        {
+          "action": "play"
+        },
+        {
+          "action": "phase"
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 1,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.note_block.trumpet",
+              "volume": 3.0,
+              "pitch": 1.1892071,
+              "seed": -5106534569952410475,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            }
+          ],
+          "events": [
+            {
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "queued": 0,
+          "soundsBefore": 1,
+          "eventsBefore": 1,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.note_block.trumpet",
+              "volume": 3.0,
+              "pitch": 1.1892071,
+              "seed": -5106534569952410475,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            }
+          ],
+          "events": [
+            {
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ]
+        }
+      ],
+      "nextRandom": -39088943
+    },
+    {
+      "name": "review_note_replaced_before_phase_123",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "note_lifecycle",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[instrument=trumpet,note=3]"
+        }
+      ],
+      "seed": 123,
+      "actions": [
+        {
+          "action": "play"
+        },
+        {
+          "action": "set",
+          "state": "minecraft:stone"
+        },
+        {
+          "action": "phase"
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 1,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [],
+          "events": []
+        },
+        {
+          "queued": 0,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [],
+          "events": []
+        }
+      ],
+      "nextRandom": -1188957731
+    },
+    {
+      "name": "review_note_replaced_then_restored_123",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "note_lifecycle",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[instrument=trumpet,note=3]"
+        }
+      ],
+      "seed": 123,
+      "actions": [
+        {
+          "action": "play"
+        },
+        {
+          "action": "set",
+          "state": "minecraft:stone"
+        },
+        {
+          "action": "set",
+          "state": "minecraft:note_block[instrument=trumpet,note=21]"
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 1,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.note_block.trumpet",
+              "volume": 3.0,
+              "pitch": 1.6817929,
+              "seed": -5106534569952410475,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            }
+          ],
+          "events": [
+            {
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ]
+        }
+      ],
+      "nextRandom": -39088943
+    },
+    {
+      "name": "review_note_final_instrument_123",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "note_lifecycle",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[instrument=trumpet,note=3]"
+        }
+      ],
+      "seed": 123,
+      "actions": [
+        {
+          "action": "play"
+        },
+        {
+          "action": "set",
+          "state": "minecraft:note_block[instrument=trumpet_oxidized,note=18]"
+        },
+        {
+          "action": "play"
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 1,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.note_block.trumpet_oxidized",
+              "volume": 3.0,
+              "pitch": 1.4142135,
+              "seed": -5106534569952410475,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            }
+          ],
+          "events": [
+            {
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ]
+        }
+      ],
+      "nextRandom": -39088943
+    },
+    {
+      "name": "review_note_blocked_after_activation_123",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "note_lifecycle",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[instrument=trumpet,note=3]"
+        }
+      ],
+      "seed": 123,
+      "actions": [
+        {
+          "action": "play"
+        },
+        {
+          "action": "set",
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 1,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.note_block.trumpet",
+              "volume": 3.0,
+              "pitch": 0.59460354,
+              "seed": -5106534569952410475,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            }
+          ],
+          "events": [
+            {
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ]
+        }
+      ],
+      "nextRandom": -39088943
+    },
+    {
+      "name": "review_note_later_phase_activation_123",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "note_lifecycle",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[instrument=trumpet,note=3]"
+        }
+      ],
+      "seed": 123,
+      "actions": [
+        {
+          "action": "play"
+        },
+        {
+          "action": "phase"
+        },
+        {
+          "action": "set",
+          "state": "minecraft:note_block[instrument=trumpet,note=18]"
+        },
+        {
+          "action": "play"
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 1,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.note_block.trumpet",
+              "volume": 3.0,
+              "pitch": 0.59460354,
+              "seed": -5106534569952410475,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            }
+          ],
+          "events": [
+            {
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "queued": 1,
+          "soundsBefore": 1,
+          "eventsBefore": 1,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.note_block.trumpet",
+              "volume": 3.0,
+              "pitch": 0.59460354,
+              "seed": -5106534569952410475,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            },
+            {
+              "sound": "minecraft:block.note_block.trumpet",
+              "volume": 3.0,
+              "pitch": 1.4142135,
+              "seed": -167885730524958550,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            }
+          ],
+          "events": [
+            {
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            },
+            {
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ]
+        }
+      ],
+      "nextRandom": 1087885590
+    },
+    {
+      "name": "review_note_different_positions_123",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "note_lifecycle",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[instrument=trumpet,note=3]"
+        },
+        {
+          "pos": [
+            2,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[instrument=trumpet_weathered,note=12]"
+        }
+      ],
+      "seed": 123,
+      "actions": [
+        {
+          "action": "play"
+        },
+        {
+          "action": "play",
+          "pos": [
+            2,
+            72,
+            0
+          ]
+        },
+        {
+          "action": "set",
+          "state": "minecraft:note_block[instrument=trumpet,note=6]"
+        },
+        {
+          "action": "play"
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 2,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.note_block.trumpet",
+              "volume": 3.0,
+              "pitch": 0.70710677,
+              "seed": -5106534569952410475,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            },
+            {
+              "sound": "minecraft:block.note_block.trumpet_weathered",
+              "volume": 3.0,
+              "pitch": 1.0,
+              "seed": -167885730524958550,
+              "pos": [
+                2.5,
+                72.5,
+                0.5
+              ]
+            }
+          ],
+          "events": [
+            {
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            },
+            {
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                2,
+                72,
+                0
+              ]
+            }
+          ]
+        }
+      ],
+      "nextRandom": 1087885590
+    },
+    {
+      "name": "review_note_double_activation_9876",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "note_lifecycle",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[instrument=trumpet,note=3]"
+        }
+      ],
+      "seed": 9876,
+      "actions": [
+        {
+          "action": "play"
+        },
+        {
+          "action": "set",
+          "state": "minecraft:note_block[instrument=trumpet,note=15]"
+        },
+        {
+          "action": "play"
+        },
+        {
+          "action": "phase"
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 1,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.note_block.trumpet",
+              "volume": 3.0,
+              "pitch": 1.1892071,
+              "seed": -2360040439971204046,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            }
+          ],
+          "events": [
+            {
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "queued": 0,
+          "soundsBefore": 1,
+          "eventsBefore": 1,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.note_block.trumpet",
+              "volume": 3.0,
+              "pitch": 1.1892071,
+              "seed": -2360040439971204046,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            }
+          ],
+          "events": [
+            {
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ]
+        }
+      ],
+      "nextRandom": -720661461
+    },
+    {
+      "name": "review_note_replaced_before_phase_9876",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "note_lifecycle",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[instrument=trumpet,note=3]"
+        }
+      ],
+      "seed": 9876,
+      "actions": [
+        {
+          "action": "play"
+        },
+        {
+          "action": "set",
+          "state": "minecraft:stone"
+        },
+        {
+          "action": "phase"
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 1,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [],
+          "events": []
+        },
+        {
+          "queued": 0,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [],
+          "events": []
+        }
+      ],
+      "nextRandom": -549489735
+    },
+    {
+      "name": "review_note_replaced_then_restored_9876",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "note_lifecycle",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[instrument=trumpet,note=3]"
+        }
+      ],
+      "seed": 9876,
+      "actions": [
+        {
+          "action": "play"
+        },
+        {
+          "action": "set",
+          "state": "minecraft:stone"
+        },
+        {
+          "action": "set",
+          "state": "minecraft:note_block[instrument=trumpet,note=21]"
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 1,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.note_block.trumpet",
+              "volume": 3.0,
+              "pitch": 1.6817929,
+              "seed": -2360040439971204046,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            }
+          ],
+          "events": [
+            {
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ]
+        }
+      ],
+      "nextRandom": -720661461
+    },
+    {
+      "name": "review_note_final_instrument_9876",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "note_lifecycle",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[instrument=trumpet,note=3]"
+        }
+      ],
+      "seed": 9876,
+      "actions": [
+        {
+          "action": "play"
+        },
+        {
+          "action": "set",
+          "state": "minecraft:note_block[instrument=trumpet_oxidized,note=18]"
+        },
+        {
+          "action": "play"
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 1,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.note_block.trumpet_oxidized",
+              "volume": 3.0,
+              "pitch": 1.4142135,
+              "seed": -2360040439971204046,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            }
+          ],
+          "events": [
+            {
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ]
+        }
+      ],
+      "nextRandom": -720661461
+    },
+    {
+      "name": "review_note_blocked_after_activation_9876",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "note_lifecycle",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[instrument=trumpet,note=3]"
+        }
+      ],
+      "seed": 9876,
+      "actions": [
+        {
+          "action": "play"
+        },
+        {
+          "action": "set",
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 1,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.note_block.trumpet",
+              "volume": 3.0,
+              "pitch": 0.59460354,
+              "seed": -2360040439971204046,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            }
+          ],
+          "events": [
+            {
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ]
+        }
+      ],
+      "nextRandom": -720661461
+    },
+    {
+      "name": "review_note_later_phase_activation_9876",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "note_lifecycle",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[instrument=trumpet,note=3]"
+        }
+      ],
+      "seed": 9876,
+      "actions": [
+        {
+          "action": "play"
+        },
+        {
+          "action": "phase"
+        },
+        {
+          "action": "set",
+          "state": "minecraft:note_block[instrument=trumpet,note=18]"
+        },
+        {
+          "action": "play"
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 1,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.note_block.trumpet",
+              "volume": 3.0,
+              "pitch": 0.59460354,
+              "seed": -2360040439971204046,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            }
+          ],
+          "events": [
+            {
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "queued": 1,
+          "soundsBefore": 1,
+          "eventsBefore": 1,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.note_block.trumpet",
+              "volume": 3.0,
+              "pitch": 0.59460354,
+              "seed": -2360040439971204046,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            },
+            {
+              "sound": "minecraft:block.note_block.trumpet",
+              "volume": 3.0,
+              "pitch": 1.4142135,
+              "seed": -3095217408624949530,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            }
+          ],
+          "events": [
+            {
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            },
+            {
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ]
+        }
+      ],
+      "nextRandom": -1507127294
+    },
+    {
+      "name": "review_note_different_positions_9876",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "note_lifecycle",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[instrument=trumpet,note=3]"
+        },
+        {
+          "pos": [
+            2,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[instrument=trumpet_weathered,note=12]"
+        }
+      ],
+      "seed": 9876,
+      "actions": [
+        {
+          "action": "play"
+        },
+        {
+          "action": "play",
+          "pos": [
+            2,
+            72,
+            0
+          ]
+        },
+        {
+          "action": "set",
+          "state": "minecraft:note_block[instrument=trumpet,note=6]"
+        },
+        {
+          "action": "play"
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 2,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.note_block.trumpet",
+              "volume": 3.0,
+              "pitch": 0.70710677,
+              "seed": -2360040439971204046,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            },
+            {
+              "sound": "minecraft:block.note_block.trumpet_weathered",
+              "volume": 3.0,
+              "pitch": 1.0,
+              "seed": -3095217408624949530,
+              "pos": [
+                2.5,
+                72.5,
+                0.5
+              ]
+            }
+          ],
+          "events": [
+            {
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            },
+            {
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                2,
+                72,
+                0
+              ]
+            }
+          ]
+        }
+      ],
+      "nextRandom": -1507127294
+    },
+    {
+      "name": "review_note_use_zombie_head_up",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "use_item",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[note=5]"
+        }
+      ],
+      "item": "minecraft:zombie_head",
+      "face": "up",
+      "rotation": 180.0,
+      "sneaking": false,
+      "note": 5,
+      "target": "minecraft:zombie_head[powered=false,rotation=8]",
+      "remaining": 1
+    },
+    {
+      "name": "review_note_use_zombie_head_north",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "use_item",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[note=5]"
+        }
+      ],
+      "item": "minecraft:zombie_head",
+      "face": "north",
+      "rotation": 180.0,
+      "sneaking": false,
+      "note": 6,
+      "target": "minecraft:air",
+      "remaining": 2
+    },
+    {
+      "name": "review_note_use_skeleton_skull_up",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "use_item",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[note=5]"
+        }
+      ],
+      "item": "minecraft:skeleton_skull",
+      "face": "up",
+      "rotation": 180.0,
+      "sneaking": false,
+      "note": 5,
+      "target": "minecraft:skeleton_skull[powered=false,rotation=8]",
+      "remaining": 1
+    },
+    {
+      "name": "review_note_use_skeleton_skull_north",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "use_item",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[note=5]"
+        }
+      ],
+      "item": "minecraft:skeleton_skull",
+      "face": "north",
+      "rotation": 180.0,
+      "sneaking": false,
+      "note": 6,
+      "target": "minecraft:air",
+      "remaining": 2
+    },
+    {
+      "name": "review_note_use_wither_skeleton_skull_up",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "use_item",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[note=5]"
+        }
+      ],
+      "item": "minecraft:wither_skeleton_skull",
+      "face": "up",
+      "rotation": 180.0,
+      "sneaking": false,
+      "note": 5,
+      "target": "minecraft:wither_skeleton_skull[powered=false,rotation=8]",
+      "remaining": 1
+    },
+    {
+      "name": "review_note_use_wither_skeleton_skull_north",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "use_item",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[note=5]"
+        }
+      ],
+      "item": "minecraft:wither_skeleton_skull",
+      "face": "north",
+      "rotation": 180.0,
+      "sneaking": false,
+      "note": 6,
+      "target": "minecraft:air",
+      "remaining": 2
+    },
+    {
+      "name": "review_note_use_creeper_head_up",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "use_item",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[note=5]"
+        }
+      ],
+      "item": "minecraft:creeper_head",
+      "face": "up",
+      "rotation": 180.0,
+      "sneaking": false,
+      "note": 5,
+      "target": "minecraft:creeper_head[powered=false,rotation=8]",
+      "remaining": 1
+    },
+    {
+      "name": "review_note_use_creeper_head_north",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "use_item",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[note=5]"
+        }
+      ],
+      "item": "minecraft:creeper_head",
+      "face": "north",
+      "rotation": 180.0,
+      "sneaking": false,
+      "note": 6,
+      "target": "minecraft:air",
+      "remaining": 2
+    },
+    {
+      "name": "review_note_use_dragon_head_up",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "use_item",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[note=5]"
+        }
+      ],
+      "item": "minecraft:dragon_head",
+      "face": "up",
+      "rotation": 180.0,
+      "sneaking": false,
+      "note": 5,
+      "target": "minecraft:dragon_head[powered=false,rotation=8]",
+      "remaining": 1
+    },
+    {
+      "name": "review_note_use_dragon_head_north",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "use_item",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[note=5]"
+        }
+      ],
+      "item": "minecraft:dragon_head",
+      "face": "north",
+      "rotation": 180.0,
+      "sneaking": false,
+      "note": 6,
+      "target": "minecraft:air",
+      "remaining": 2
+    },
+    {
+      "name": "review_note_use_piglin_head_up",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "use_item",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[note=5]"
+        }
+      ],
+      "item": "minecraft:piglin_head",
+      "face": "up",
+      "rotation": 180.0,
+      "sneaking": false,
+      "note": 5,
+      "target": "minecraft:piglin_head[powered=false,rotation=8]",
+      "remaining": 1
+    },
+    {
+      "name": "review_note_use_piglin_head_north",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "use_item",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[note=5]"
+        }
+      ],
+      "item": "minecraft:piglin_head",
+      "face": "north",
+      "rotation": 180.0,
+      "sneaking": false,
+      "note": 6,
+      "target": "minecraft:air",
+      "remaining": 2
+    },
+    {
+      "name": "review_note_use_player_head_up",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "use_item",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[note=5]"
+        }
+      ],
+      "item": "minecraft:player_head",
+      "face": "up",
+      "rotation": 180.0,
+      "sneaking": false,
+      "note": 5,
+      "target": "minecraft:player_head[powered=false,rotation=8]",
+      "remaining": 1
+    },
+    {
+      "name": "review_note_use_player_head_north",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "use_item",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[note=5]"
+        }
+      ],
+      "item": "minecraft:player_head",
+      "face": "north",
+      "rotation": 180.0,
+      "sneaking": false,
+      "note": 6,
+      "target": "minecraft:air",
+      "remaining": 2
+    },
+    {
+      "name": "review_note_use_stone_up",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "use_item",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[note=5]"
+        }
+      ],
+      "item": "minecraft:stone",
+      "face": "up",
+      "rotation": 180.0,
+      "sneaking": false,
+      "note": 6,
+      "target": "minecraft:air",
+      "remaining": 2
+    },
+    {
+      "name": "review_note_use_stone_north",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "use_item",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[note=5]"
+        }
+      ],
+      "item": "minecraft:stone",
+      "face": "north",
+      "rotation": 180.0,
+      "sneaking": false,
+      "note": 6,
+      "target": "minecraft:air",
+      "remaining": 2
+    },
+    {
+      "name": "review_note_use_zombie_head_sneaking",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "use_item",
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[note=5]"
+        }
+      ],
+      "item": "minecraft:zombie_head",
+      "face": "up",
+      "rotation": 90.0,
+      "sneaking": true,
+      "note": 5,
+      "target": "minecraft:zombie_head[powered=false,rotation=4]",
+      "remaining": 1
+    },
+    {
+      "name": "review_door_hinge_north_left_copper_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            -1,
+            72,
+            0
+          ],
+          "state": "minecraft:copper_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "north",
+      "rotation": 180.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "north",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=north,half=lower,hinge=right,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_north_right_copper_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            1,
+            72,
+            0
+          ],
+          "state": "minecraft:copper_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "north",
+      "rotation": 180.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "north",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=north,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_south_left_copper_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            1,
+            72,
+            0
+          ],
+          "state": "minecraft:copper_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "south",
+      "rotation": 0.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "south",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=south,half=lower,hinge=right,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_south_right_copper_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            -1,
+            72,
+            0
+          ],
+          "state": "minecraft:copper_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "south",
+      "rotation": 0.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "south",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=south,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_east_left_copper_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            -1
+          ],
+          "state": "minecraft:copper_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "east",
+      "rotation": 270.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "east",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=east,half=lower,hinge=right,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_east_right_copper_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            1
+          ],
+          "state": "minecraft:copper_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "east",
+      "rotation": 270.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "east",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=east,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_west_left_copper_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            1
+          ],
+          "state": "minecraft:copper_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "west",
+      "rotation": 90.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "west",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=west,half=lower,hinge=right,open=false,powered=false]"
+    },
+    {
+      "name": "review_door_hinge_west_right_copper_door",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "kind": "placement",
+      "setup": [
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            -1
+          ],
+          "state": "minecraft:copper_door[half=lower]"
+        }
+      ],
+      "block": "minecraft:poplar_door",
+      "face": "up",
+      "look": "west",
+      "rotation": 90.0,
+      "replacesClicked": true,
+      "cursor": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "horizontal": "west",
+      "nearest": "down",
+      "placed": "minecraft:poplar_door[facing=west,half=lower,hinge=left,open=false,powered=false]"
     }
   ]
 }

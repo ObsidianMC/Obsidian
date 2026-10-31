@@ -4,11 +4,12 @@ using Obsidian.API.Registries;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
+using Obsidian.Tests.Utilities;
+using Obsidian.API.Inventory;
 using Obsidian.WorldData;
 using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.Features;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -26,25 +27,10 @@ public sealed class VanillaMoreBlocks(ITestOutputHelper output)
             .GetManifestResourceStream("Obsidian.Tests.Assets.more_blocks.json")!;
         using var document = JsonDocument.Parse(stream);
         var root = document.RootElement;
-        var failures = new List<string>();
-        var cases = 0;
-        foreach (var probe in root.GetProperty("cases").EnumerateArray())
-        {
-            cases++;
-            var name = probe.GetProperty("name").GetString()!;
-            try
-            {
-                Assert.Equal(ServerConstants.ProtocolDescription, root.GetProperty("version").GetString());
-                await Replay(probe);
-            }
-            catch (Exception exception)
-            {
-                failures.Add($"{name}: {exception.Message}");
-            }
-        }
-
-        output.WriteLine($"Replayed {cases} construction and music cases.");
-        Assert.True(cases > 0 && failures.Count == 0, string.Join("\n", failures));
+        var cases = root.GetProperty("cases").EnumerateArray().ToArray();
+        Assert.Equal(ServerConstants.ProtocolDescription, root.GetProperty("version").GetString());
+        await FixtureCases.AssertAllAsync(cases, probe => probe.GetProperty("name").GetString()!, Replay);
+        output.WriteLine($"Replayed {cases.Length} construction and music cases.");
     }
 
     private static async Task Replay(JsonElement probe)
@@ -150,6 +136,27 @@ public sealed class VanillaMoreBlocks(ITestOutputHelper output)
             return;
         }
 
+        if (kind == "use_item")
+        {
+            var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "HeadPlacer",
+                new VectorD(0.5, 72, 3));
+            player.GameMode = GameMode.Survival;
+            player.Yaw = probe.GetProperty("rotation").GetSingle();
+            player.Sneaking = probe.GetProperty("sneaking").GetBoolean();
+            player.Pitch = 45;
+            var item = ItemsRegistry.Get(probe.GetProperty("item").GetString()!);
+            player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(item, 2));
+            var side = Face(probe.GetProperty("face").GetString()!);
+            await BlockUpdates.UseOn(origin, side).HandleAsync(context.Server, player);
+            await world.BlockNotifications.DrainAsync();
+            Assert.Equal(probe.GetProperty("note").GetInt32(),
+                int.Parse(world.BlockUpdates.GetBlock(origin).GetProperty("note")!));
+            AssertState(probe.GetProperty("target"), world.BlockUpdates.GetBlock(origin.Offset(side)));
+            Assert.Equal(probe.GetProperty("remaining").GetInt32(),
+                player.Inventory.GetItem(player.CurrentHeldItemSlot)?.Count ?? 0);
+            return;
+        }
+
         world.GrowthRandom.SetSeed(probe.TryGetProperty("seed", out var seed) ? seed.GetInt64() : 123);
         if (kind == "strip")
         {
@@ -174,6 +181,53 @@ public sealed class VanillaMoreBlocks(ITestOutputHelper output)
             world.BlockUpdates.RunScheduledTick(origin, state.UnlocalizedName);
             AssertState(probe.GetProperty("updated"), world.BlockUpdates.GetBlock(origin));
         }
+        else if (kind == "note_lifecycle")
+        {
+            var listener = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Listener",
+                new VectorD(8, 80, 8));
+            world.Players.TryAdd(listener.Uuid, listener);
+            var client = Assert.IsType<TestClient>(listener.Client);
+            var phaseIndex = 0;
+            foreach (var action in probe.GetProperty("actions").EnumerateArray())
+            {
+                var position = action.TryGetProperty("pos", out var coordinates) ? Position(coordinates) : origin;
+                switch (action.GetProperty("action").GetString())
+                {
+                    case "set":
+                        world.BlockUpdates.SetBlock(position, Parse(action.GetProperty("state").GetString()!),
+                            BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);
+                        break;
+                    case "play":
+                        world.PlayNoteBlock(position);
+                        break;
+                    case "phase":
+                        var phase = probe.GetProperty("phases")[phaseIndex++];
+                        Assert.Equal(phase.GetProperty("queued").GetInt32(), world.PendingNoteBlockEvents);
+                        Assert.Equal(phase.GetProperty("soundsBefore").GetInt32(),
+                            client.SentPackets.OfType<SoundPacket>().Count());
+                        Assert.Equal(phase.GetProperty("eventsBefore").GetInt32(),
+                            client.SentPackets.OfType<BlockEventPacket>().Count());
+                        await world.DoWorldTickAsync();
+                        Assert.Equal(phase.GetProperty("pendingAfter").GetInt32(), world.PendingNoteBlockEvents);
+                        AssertNoteSounds(phase.GetProperty("sounds"), client);
+                        var events = client.SentPackets.OfType<BlockEventPacket>().ToArray();
+                        var expected = phase.GetProperty("events").EnumerateArray().ToArray();
+                        Assert.Equal(expected.Length, events.Length);
+                        for (var index = 0; index < expected.Length; index++)
+                        {
+                            Assert.Equal(Position(expected[index].GetProperty("pos")), events[index].Position);
+                            Assert.Equal(BlockIds.NoteBlock, events[index].BlockType);
+                            Assert.Equal(expected[index].GetProperty("id").GetInt32(), events[index].ActionId);
+                            Assert.Equal(expected[index].GetProperty("parameter").GetInt32(),
+                                events[index].ActionParam);
+                        }
+
+                        break;
+                    default:
+                        throw new InvalidOperationException($"Unknown lifecycle action: {action}");
+                }
+            }
+        }
         else if (kind == "note")
         {
             var listener = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Listener",
@@ -181,18 +235,8 @@ public sealed class VanillaMoreBlocks(ITestOutputHelper output)
             world.Players.TryAdd(listener.Uuid, listener);
             var client = Assert.IsType<TestClient>(listener.Client);
             world.PlayNoteBlock(origin);
-            var packets = client.SentPackets.OfType<SoundPacket>().ToArray();
-            var sounds = probe.GetProperty("sounds").EnumerateArray().ToArray();
-            Assert.Equal(sounds.Length, packets.Length);
-            for (var i = 0; i < sounds.Length; i++)
-            {
-                Assert.Equal(sounds[i].GetProperty("sound").GetString(), packets[i].SoundLocation);
-                Assert.Equal(sounds[i].GetProperty("volume").GetSingle(), packets[i].Volume);
-                Assert.Equal(sounds[i].GetProperty("pitch").GetSingle(), packets[i].Pitch);
-                Assert.Equal(sounds[i].GetProperty("seed").GetInt64(), packets[i].Seed);
-                Assert.Equal(SoundCategory.Records, packets[i].Category);
-                Assert.Equal(new SoundPosition(0.5, 72.5, 0.5), packets[i].SoundPosition);
-            }
+            world.ProcessNoteBlockEvents();
+            AssertNoteSounds(probe.GetProperty("sounds"), client);
 
             var events = client.SentPackets.OfType<BlockEventPacket>().ToArray();
             Assert.Equal(probe.GetProperty("triggered").GetBoolean() ? 1 : 0, events.Length);
@@ -211,6 +255,25 @@ public sealed class VanillaMoreBlocks(ITestOutputHelper output)
         }
 
         Assert.Equal(probe.GetProperty("nextRandom").GetInt32(), world.GrowthRandom.NextInt());
+    }
+
+    private static void AssertNoteSounds(JsonElement expected, TestClient client)
+    {
+        var packets = client.SentPackets.OfType<SoundPacket>().ToArray();
+        var sounds = expected.EnumerateArray().ToArray();
+        Assert.Equal(sounds.Length, packets.Length);
+        for (var index = 0; index < sounds.Length; index++)
+        {
+            Assert.Equal(sounds[index].GetProperty("sound").GetString(), packets[index].SoundLocation);
+            Assert.Equal(sounds[index].GetProperty("volume").GetSingle(), packets[index].Volume);
+            Assert.Equal(sounds[index].GetProperty("pitch").GetSingle(), packets[index].Pitch);
+            Assert.Equal(sounds[index].GetProperty("seed").GetInt64(), packets[index].Seed);
+            Assert.Equal(SoundCategory.Records, packets[index].Category);
+            var position = sounds[index].TryGetProperty("pos", out var coordinates)
+                ? Location(coordinates)
+                : new VectorD(0.5, 72.5, 0.5);
+            Assert.Equal(new SoundPosition(position.X, position.Y, position.Z), packets[index].SoundPosition);
+        }
     }
 
     private static void AssertPlacement(JsonElement probe, IBlock? placed)

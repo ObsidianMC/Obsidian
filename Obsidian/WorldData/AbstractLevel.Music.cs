@@ -7,6 +7,17 @@ namespace Obsidian.WorldData;
 public abstract partial class AbstractLevel
 {
     private readonly ConcurrentDictionary<Vector, int> playingJukeboxes = [];
+    private readonly Queue<Vector> noteBlockEvents = [];
+    private readonly HashSet<Vector> queuedNoteBlocks = [];
+
+    internal int PendingNoteBlockEvents
+    {
+        get
+        {
+            lock (this.Fluids.TickLock)
+                return this.noteBlockEvents.Count;
+        }
+    }
 
     internal void StartJukebox(Vector point, int song, int elapsed = 0)
     {
@@ -84,35 +95,70 @@ public abstract partial class AbstractLevel
 
     internal void PlayNoteBlock(Vector point, IEntity? source = null)
     {
-        var block = GameEventBlock(point);
-        if (block?.RegistryId != BlockIds.NoteBlock)
-            return;
-
-        var instrument = NoteBlockBehavior.GetInstrument(block);
-        if (!instrument.Above && GameEventBlock(point + Vector.Up)?.IsAir != true)
-            return;
-
-        EmitGameEvent(MobGameEvent.NoteBlockPlay, (VectorD)point + new VectorD(0.5, 0.5, 0.5), source);
-        if (instrument.Custom)
-            return;
-
-        // Vanilla's block event lets the client produce note particles from the block's current state.
-        PacketBroadcaster.QueuePacketToLevelInRange(this, (VectorD)point, new BlockEventPacket
+        lock (this.Fluids.TickLock)
         {
-            Position = point,
-            BlockType = BlockIds.NoteBlock,
-            ActionId = 0,
-            ActionParam = 0
-        });
-        var note = int.TryParse(block.GetProperty("note"), out var number) ? number : 0;
-        PacketBroadcaster.QueuePacketToLevelInRange(this, (VectorD)point, new SoundPacket
+            var block = GameEventBlock(point);
+            if (block?.RegistryId != BlockIds.NoteBlock)
+                return;
+
+            var instrument = NoteBlockBehavior.GetInstrument(block);
+            if (!instrument.Above && GameEventBlock(point + Vector.Up)?.IsAir != true)
+                return;
+
+            // Vanilla coalesces identical note block events, but emits the game event for each activation.
+            if (this.queuedNoteBlocks.Add(point))
+            {
+                this.noteBlockEvents.Enqueue(point);
+            }
+
+            EmitGameEvent(MobGameEvent.NoteBlockPlay, (VectorD)point + new VectorD(0.5, 0.5, 0.5), source);
+        }
+    }
+
+    internal void ProcessNoteBlockEvents()
+    {
+        lock (this.Fluids.TickLock)
         {
-            SoundLocation = instrument.Sound,
-            Category = SoundCategory.Records,
-            SoundPosition = new SoundPosition(point.X + 0.5, point.Y + 0.5, point.Z + 0.5),
-            Volume = 3,
-            Pitch = instrument.Tunable ? (float)Math.Pow(2, (note - 12) / 12d) : 1,
-            Seed = this.GrowthRandom.NextLong()
-        });
+            var count = this.noteBlockEvents.Count;
+            for (var index = 0; index < count; index++)
+            {
+                var point = this.noteBlockEvents.Dequeue();
+                if (!this.IsMobTicking((VectorD)point))
+                {
+                    this.noteBlockEvents.Enqueue(point);
+                    continue;
+                }
+
+                this.queuedNoteBlocks.Remove(point);
+                var block = GameEventBlock(point);
+                if (block?.RegistryId != BlockIds.NoteBlock)
+                    continue;
+
+                // Vanilla's block-event phase reads the current state and draws a seed only for successful playback.
+                var instrument = NoteBlockBehavior.GetInstrument(block);
+                if (instrument.Custom)
+                    continue;
+
+                var note = int.TryParse(block.GetProperty("note"), out var number) ? number : 0;
+                PacketBroadcaster.QueuePacketToLevelInRange(this, (VectorD)point, new SoundPacket
+                {
+                    SoundLocation = instrument.Sound,
+                    Category = SoundCategory.Records,
+                    SoundPosition = new SoundPosition(point.X + 0.5, point.Y + 0.5, point.Z + 0.5),
+                    Volume = 3,
+                    Pitch = instrument.Tunable ? (float)Math.Pow(2, (note - 12) / 12d) : 1,
+                    Seed = this.GrowthRandom.NextLong()
+                });
+
+                // The client runs this event to produce the note particles from its current block state.
+                PacketBroadcaster.QueuePacketToLevelInRange(this, (VectorD)point, new BlockEventPacket
+                {
+                    Position = point,
+                    BlockType = BlockIds.NoteBlock,
+                    ActionId = 0,
+                    ActionParam = 0
+                });
+            }
+        }
     }
 }

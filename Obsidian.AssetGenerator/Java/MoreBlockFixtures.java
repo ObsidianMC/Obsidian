@@ -2,8 +2,10 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,13 +15,26 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientboundBlockEventPacket;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.dedicated.DedicatedPlayerList;
+import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerPlayerGameMode;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Abilities;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.flag.FeatureFlagSet;
+import net.minecraft.world.flag.FeatureFlags;
+import net.minecraft.world.item.ItemCooldowns;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.DirectionalPlaceContext;
 import net.minecraft.world.level.GameType;
@@ -34,7 +49,6 @@ import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-
 
 /** Records construction-family state transitions and the note block's actual instrument and sound routines. */
 public final class MoreBlockFixtures {
@@ -122,6 +136,54 @@ public final class MoreBlockFixtures {
                 var placed = level.getBlockState(origin);
                 placed.getBlock().setPlacedBy(level, origin, placed, null, new ItemStack(placed.getBlock()));
                 input.addProperty("upper", text(level.getBlockState(origin.above())));
+            } else if (kind.equals("note_lifecycle")) {
+                initializeEvents(level);
+                var phases = new JsonArray();
+                for (var value : input.getAsJsonArray("actions")) {
+                    var action = value.getAsJsonObject();
+                    var pos = action.has("pos") ? position(action.getAsJsonArray("pos")) : origin;
+                    switch (action.get("action").getAsString()) {
+                        case "set" -> level.blocks.put(pos, state(action.get("state").getAsString()));
+                        case "play" -> playNote(level, pos);
+                        case "phase" -> {
+                            var phase = new JsonObject();
+                            phase.addProperty("queued", queuedEvents(level));
+                            phase.addProperty("soundsBefore", level.sounds.size());
+                            phase.addProperty("eventsBefore", level.events.size());
+                            runBlockEvents(level);
+                            phase.addProperty("pendingAfter", queuedEvents(level));
+                            phase.add("sounds", level.sounds.deepCopy());
+                            phase.add("events", level.events.deepCopy());
+                            phases.add(phase);
+                        }
+                        default -> throw new IllegalArgumentException("Unknown lifecycle action: " + action);
+                    }
+                }
+
+                input.add("phases", phases);
+                input.addProperty("nextRandom", random.nextInt());
+            } else if (kind.equals("use_item")) {
+                initializeEvents(level);
+                var player = (ProbeServerPlayer)allocate(ProbeServerPlayer.class);
+                player.world = level;
+                player.held = new ItemStack(BuiltInRegistries.ITEM.getValue(
+                    Identifier.parse(input.get("item").getAsString())), 2);
+                player.cooldowns = new ItemCooldowns();
+                field(Player.class, "abilities").set(player, new Abilities());
+                var advancements = allocate(net.minecraft.server.PlayerAdvancements.class);
+                field(net.minecraft.server.PlayerAdvancements.class, "activeTriggers")
+                    .set(advancements, new HashMap<>());
+                field(ServerPlayer.class, "advancements").set(player, advancements);
+                player.secondary = input.get("sneaking").getAsBoolean();
+                player.setYRot(input.get("rotation").getAsFloat());
+                field(ServerPlayer.class, "gameMode").set(player, new ServerPlayerGameMode(player));
+                var side = direction(input.get("face").getAsString());
+                var hit = new BlockHitResult(Vec3.atCenterOf(origin), side, origin, false);
+                player.gameMode.useItemOn(player, level, player.held, InteractionHand.MAIN_HAND, hit);
+                input.addProperty("note", level.getBlockState(origin)
+                    .getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.NOTE));
+                input.addProperty("target", text(level.getBlockState(origin.relative(side))));
+                input.addProperty("remaining", player.held.getCount());
             } else if (kind.equals("note")) {
                 var note = level.getBlockState(origin);
                 var play = NoteBlock.class.getDeclaredMethod("playNote", Entity.class, BlockState.class,
@@ -148,6 +210,40 @@ public final class MoreBlockFixtures {
         if (!args[1].equals("-")) {
             NoteBlockInstruments.dumpInstruments(Path.of(args[1]));
         }
+    }
+
+    private static void playNote(ProbeLevel level, BlockPos pos) throws Exception {
+        var play = NoteBlock.class.getDeclaredMethod("playNote", Entity.class, BlockState.class,
+            Level.class, BlockPos.class);
+        play.setAccessible(true);
+        play.invoke(Blocks.NOTE_BLOCK, null, level.getBlockState(pos), level, pos);
+    }
+
+    private static void initializeEvents(ProbeLevel level) throws Exception {
+        level.deferredEvents = true;
+        field(ServerLevel.class, "blockEvents").set(level, new ObjectLinkedOpenHashSet<>());
+        field(ServerLevel.class, "blockEventsToReschedule").set(level, new ArrayList<>());
+        var server = (ProbeServer)allocate(ProbeServer.class);
+        var players = (ProbePlayerList)allocate(ProbePlayerList.class);
+        players.world = level;
+        field(MinecraftServer.class, "playerList").set(server, players);
+        field(ServerLevel.class, "server").set(level, server);
+    }
+
+    private static java.lang.reflect.Field field(Class<?> owner, String name) throws Exception {
+        var field = owner.getDeclaredField(name);
+        field.setAccessible(true);
+        return field;
+    }
+
+    private static int queuedEvents(ProbeLevel level) throws Exception {
+        return ((java.util.Set<?>)field(ServerLevel.class, "blockEvents").get(level)).size();
+    }
+
+    private static void runBlockEvents(ProbeLevel level) throws Exception {
+        var method = ServerLevel.class.getDeclaredMethod("runBlockEvents");
+        method.setAccessible(true);
+        method.invoke(level);
     }
 
     private static ProbeLevel createLevel() throws Exception {
@@ -218,6 +314,84 @@ public final class MoreBlockFixtures {
         }
     }
 
+    private static final class ProbeServerPlayer extends ServerPlayer {
+        ProbeLevel world;
+        ItemStack held;
+        ItemCooldowns cooldowns;
+        boolean secondary;
+
+        private ProbeServerPlayer() {
+            super(null, null, null, null);
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public ServerLevel level() {
+            return world;
+        }
+
+        @Override public ItemStack getMainHandItem() {
+            return held;
+        }
+
+        @Override public ItemStack getOffhandItem() {
+            return ItemStack.EMPTY;
+        }
+
+        @Override public ItemStack getItemInHand(InteractionHand hand) {
+            return hand == InteractionHand.MAIN_HAND ? held : ItemStack.EMPTY;
+        }
+
+        @Override public void setItemInHand(InteractionHand hand, ItemStack item) {
+            held = item;
+        }
+
+        @Override public boolean isSecondaryUseActive() {
+            return secondary;
+        }
+
+        @Override public ItemCooldowns getCooldowns() {
+            return cooldowns;
+        }
+
+        @Override public void awardStat(net.minecraft.stats.Stat<?> stat, int amount) {
+        }
+    }
+
+    private static final class ProbeServer extends DedicatedServer {
+        private ProbeServer() {
+            super(null, null, null, null, null, null, null, null, null, null);
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public net.minecraft.server.ReloadableServerRegistries.Holder reloadableRegistries() {
+            return new net.minecraft.server.ReloadableServerRegistries.Holder(net.minecraft.core.RegistryAccess.EMPTY);
+        }
+    }
+
+    private static final class ProbePlayerList extends DedicatedPlayerList {
+        ProbeLevel world;
+
+        private ProbePlayerList() {
+            super(null, null, null);
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public void broadcast(Player ignored, double x, double y, double z, double range,
+            ResourceKey<Level> dimension, Packet<?> packet) {
+            if (packet instanceof ClientboundBlockEventPacket event) {
+                var value = new JsonObject();
+                value.addProperty("id", event.getB0());
+                value.addProperty("parameter", event.getB1());
+                var pos = new JsonArray();
+                pos.add(event.getPos().getX());
+                pos.add(event.getPos().getY());
+                pos.add(event.getPos().getZ());
+                value.add("pos", pos);
+                world.events.add(value);
+            }
+        }
+    }
+
     private static final class ProbeLevel extends ServerLevel {
         Map<BlockPos, BlockState> blocks;
         JsonArray ticks;
@@ -225,6 +399,7 @@ public final class MoreBlockFixtures {
         JsonArray sounds;
         RandomSource random;
         boolean powered;
+        boolean deferredEvents;
 
         private ProbeLevel() {
             super(null, null, null, null, null, null, false, 0, List.of(), false);
@@ -241,6 +416,19 @@ public final class MoreBlockFixtures {
 
         @Override public net.minecraft.world.level.block.entity.BlockEntity getBlockEntity(BlockPos pos) {
             return null;
+        }
+
+        @Override public boolean shouldTickBlocksAt(long chunk) {
+            return true;
+        }
+
+        @Override public FeatureFlagSet enabledFeatures() {
+            return FeatureFlags.VANILLA_SET;
+        }
+
+        @Override public boolean isUnobstructed(BlockState state, BlockPos pos,
+            net.minecraft.world.phys.shapes.CollisionContext context) {
+            return true;
         }
 
         @Override public int getMinY() {
@@ -265,6 +453,11 @@ public final class MoreBlockFixtures {
         }
 
         @Override public void blockEvent(BlockPos pos, Block block, int id, int parameter) {
+            if (deferredEvents) {
+                super.blockEvent(pos, block, id, parameter);
+                return;
+            }
+
             var value = new JsonObject();
             value.addProperty("id", id);
             value.addProperty("parameter", parameter);
@@ -291,6 +484,14 @@ public final class MoreBlockFixtures {
             value.addProperty("volume", volume);
             value.addProperty("pitch", pitch);
             value.addProperty("seed", seed);
+            if (deferredEvents) {
+                var pos = new JsonArray();
+                pos.add(x);
+                pos.add(y);
+                pos.add(z);
+                value.add("pos", pos);
+            }
+
             sounds.add(value);
         }
 

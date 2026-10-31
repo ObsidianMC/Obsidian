@@ -553,7 +553,11 @@ paths; per-color decay drops and client ambient leaf particles have not been sep
 Note blocks derive their instrument on placement and vertical neighbor updates from generated 26.3 instrument
 data, including the four trumpet oxidation stages and waxed copper. The reference checks above-block instrument
 priority, blocked playback, exact tunable pitch, sound IDs/volume/seeds, random draw order and block-event packets
-that make vanilla clients produce note particles. Custom player-head sound lookup from skull block entities
+that make vanilla clients produce note particles. Native lifecycle captures cover coalescing activations into the
+block-event phase, using its final state and cancelling playback after replacement. Native server use-item cases
+cover top-instrument head placement without tuning, side-face/ordinary-item tuning and correct skull rotation.
+Door-hinge captures include mixed wood/iron/copper doors and distinguish full collision cubes from top slabs.
+Custom player-head sound lookup from skull block entities
 remains unsupported; a head without a custom sound is silent as in vanilla.
 
 Remaining block work needs separate interaction/lifecycle captures:

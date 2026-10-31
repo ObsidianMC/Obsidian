@@ -270,13 +270,13 @@ internal static class VanillaPlacement
 
         var powered = level.HasNeighborSignal(position) || level.HasNeighborSignal(position + Vector.Up);
         return Waterlog(level, block.WithProperty("facing", Name(looking)).WithProperty("half", "lower")
-            .WithProperty("hinge", Hinge(level, block, position, looking, cursor))
+            .WithProperty("hinge", Hinge(level, position, looking, cursor))
             .WithProperty("powered", powered).WithProperty("open", powered), position);
     }
 
     // Vanilla DoorBlock.getHinge: against the wall beside it, or beside a door so the two open as a pair, or where
     // the player clicked.
-    private static string Hinge(LevelBlockUpdates level, IBlock door, Vector position, BlockFace facing, VectorD cursor)
+    private static string Hinge(LevelBlockUpdates level, Vector position, BlockFace facing, VectorD cursor)
     {
         var left = position.Offset(facing.CounterClockWise());
         var right = position.Offset(facing.ClockWise());
@@ -284,8 +284,8 @@ internal static class VanillaPlacement
         var rightState = level.GetBlock(right);
         var walls = (Full(leftState) ? -1 : 0) + (Full(level.GetBlock(left + Vector.Up)) ? -1 : 0)
             + (Full(rightState) ? 1 : 0) + (Full(level.GetBlock(right + Vector.Up)) ? 1 : 0);
-        var doorLeft = leftState.RegistryId == door.RegistryId && leftState.GetProperty("half") == "lower";
-        var doorRight = rightState.RegistryId == door.RegistryId && rightState.GetProperty("half") == "lower";
+        var doorLeft = IsLowerDoor(leftState);
+        var doorRight = IsLowerDoor(rightState);
 
         if (doorLeft && !doorRight || walls > 0)
             return "right";
@@ -296,7 +296,10 @@ internal static class VanillaPlacement
         return step.X < 0 && cursor.Z < 0.5 || step.X > 0 && cursor.Z > 0.5
             || step.Z < 0 && cursor.X > 0.5 || step.Z > 0 && cursor.X < 0.5 ? "right" : "left";
 
-        static bool Full(IBlock block) => block.HasFullTopCollisionFace();
+        static bool Full(IBlock block) => block.IsCollisionShapeFullBlock();
+
+        static bool IsLowerDoor(IBlock block) =>
+            block.BlockClass() is "DoorBlock" or "WeatheringCopperDoorBlock" && block.GetProperty("half") == "lower";
     }
 
     // Vanilla ChestBlock.getStateForPlacement: a chest pairs with a single chest beside it facing the same way, or,

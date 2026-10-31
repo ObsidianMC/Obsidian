@@ -17,9 +17,21 @@ public partial class UseItemOnPacket
             return false;
         }
 
-        if (player.Health <= 0 || player.GameMode is GameMode.Spectator or GameMode.Adventure || (player.Position - (VectorD)Position).MagnitudeSquared() > 36) return true;
+        if (player.Health <= 0 || player.GameMode is GameMode.Spectator or GameMode.Adventure
+            || (player.Position - (VectorD)Position).MagnitudeSquared() > 36)
+        {
+            return true;
+        }
+
         if (block.Is(BlockIds.NoteBlock))
         {
+            // Vanilla lets top-instrument items reach their use-on-block path instead of tuning on an upward click.
+            if (this.Face == BlockFace.Up && held is { Count: > 0 }
+                && TagsRegistry.Item.NoteblockTopInstruments.Entries.Contains(held.Holder.Id))
+            {
+                return false;
+            }
+
             var note = int.TryParse(block.GetProperty("note"), out var number) ? number : 0;
             await level.SetBlockAsync(Position, block.WithProperty("note", (note + 1) % 25), true);
             level.PlayNoteBlock(Position, player);

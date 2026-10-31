@@ -61,8 +61,15 @@ replaces only what vanilla produced.
   trapdoor and gate uses check state and sound ID (their captured pitch is not asserted by this replay); door
   placement checks the upper half. Note cases invoke vanilla's note and block-event routines, capture trigger
   success, sound ID/volume/pitch/seed and the next random draw, and replay sound and block-event packets. A single
-  test loops over the entire file, collects all case-labelled failures, and asserts once. These bounded probes do
-  not claim an RCON interaction or sleep lifecycle capture.
+  test uses `FixtureCases.AssertAllAsync` over the entire file and reports all case-labelled failures once.
+  Review lifecycle cases call the real `ServerLevel.blockEvent` and `runBlockEvents` routines. They record pending
+  event counts, pre-phase silence, final playback and packets, exact seeds and the next draw: duplicate activation,
+  cancellation on replacement, restoration, state/instrument changes, distinct positions and later-phase playback.
+  Their replay advances the real Obsidian world tick, checking the block-event phase is connected. The use-item
+  cases call `ServerPlayerGameMode.useItemOn` with all seven top-instrument heads and stone controls on upward and
+  side faces, plus a sneaking control; they check note counters, target block states/rotations and consumption
+  through Obsidian's `UseItemOnPacket`. The bounded level suppresses advancement/stat delivery and unrelated
+  neighbor updates. These are native routine captures, rather than an RCON interaction or sleep lifecycle capture.
 
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.
