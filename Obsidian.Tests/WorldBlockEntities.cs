@@ -480,6 +480,7 @@ public sealed class WorldBlockEntities : IDisposable
         // A loot function waits for work under the tick lock, as explorer maps do when chunks publish. Saving the
         // same plugin container must finish meanwhile, with the pending table rather than a partial fill.
         var rolls = 0;
+        Exception? saveFailure = null;
         crate.LootTable = "probe:snapshot";
         PluginLootTables.Apply([new LootTable
         {
@@ -495,22 +496,36 @@ public sealed class WorldBlockEntities : IDisposable
             Functions = [new SnapshotLootFunction(() =>
             {
                 rolls++;
-                Task.Run(() =>
+
+                // Kept for the assertions below: thrown here, the plugin call would swallow it and return no item.
+                // The limit only has to tell a deadlock from a busy machine.
+                try
                 {
-                    lock (context.World.Fluids.TickLock)
+                    Task.Run(() =>
                     {
-                        var saved = BlockEntityNbt.Save(crate)!;
-                        Assert.True(saved.TryGetTagValue<string>("LootTable", out var pending));
-                        Assert.Equal("probe:snapshot", pending);
-                        Assert.False(saved.HasTag("Items"));
-                    }
-                }).WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+                        lock (context.World.Fluids.TickLock)
+                        {
+                            var saved = BlockEntityNbt.Save(crate)!;
+                            Assert.True(saved.TryGetTagValue<string>("LootTable", out var pending));
+                            Assert.Equal("probe:snapshot", pending);
+                            Assert.False(saved.HasTag("Items"));
+                        }
+                    }).WaitAsync(TimeSpan.FromSeconds(30)).GetAwaiter().GetResult();
+                }
+                catch (Exception exception)
+                {
+                    saveFailure = exception;
+                }
             })]
         }]);
         try
         {
             var access = context.World.GetItemAccess(position, null)!;
-            Assert.Equal(5, access.GetItem(0)!.Count);
+            var first = access.GetItem(0);
+
+            Assert.Null(saveFailure);
+            Assert.NotNull(first);
+            Assert.Equal(5, first.Count);
             Assert.Equal(5, access.GetItem(0)!.Count);
             Assert.Equal(1, rolls);
             Assert.Null(crate.LootTable);

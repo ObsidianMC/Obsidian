@@ -261,7 +261,8 @@ public class ModdedNetworking
 
                 resume.TrySetResult();
                 var received = new byte[expected.Size];
-                await WaitAsync(peer.GetStream().ReadExactlyAsync(received).AsTask(), client, $"{state}: ordered bytes");
+                var read = peer.GetStream().ReadExactlyAsync(received).AsTask();
+                await WaitAsync(read, client, $"{state}: ordered bytes");
                 Assert.Equal(expected.AsSpan(0, expected.Size).ToArray(), received);
 
                 var eof = peer.GetStream().ReadAsync(new byte[1]).AsTask();
