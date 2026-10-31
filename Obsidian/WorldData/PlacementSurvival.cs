@@ -42,6 +42,12 @@ internal static class PlacementSurvival
             case "CocoaBlock":
                 var facing = FeatureHelpers.ParseFace(block.GetProperty("facing"));
                 return BlockSurvival.JungleLogs.Contains(level.GetBlock(position.Offset(facing)));
+            case "SugarCaneBlock":
+                return BlockSurvival.SugarCaneMayStay(level.GetBlock, position);
+            case "CactusBlock":
+                return BlockSurvival.CactusMayStay(level.GetBlock, position);
+            case "BambooStalkBlock" or "BambooSaplingBlock":
+                return BlockSurvival.BambooMayStay(level.GetBlock, position);
             default:
                 return true;
         }
