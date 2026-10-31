@@ -206,7 +206,7 @@ public class VanillaTerrainGeneration
     {
         var updates = new List<Vector>();
 
-        replay.Generator.Generate(replay.Chunk, replay.BiomeAt, replay.CarversAt, updates);
+        replay.Generator.Generate(replay.Chunk, replay.Biomes, replay.CarversAt, updates);
 
         AssertBlocks(entry.GetProperty("blocks"), replay.Chunk);
         AssertHeightmaps(entry.GetProperty("heightmaps"), replay.Chunk);
@@ -226,8 +226,9 @@ public class VanillaTerrainGeneration
     private sealed class Replay
     {
         // Mask-only carver cases capture no block biomes.
-        private readonly string[]? biomes;
-        private readonly int[]? biomeIndices;
+        private readonly BlockBiomes? surfaceBiomes;
+        private readonly BlockBiomes? carvingBiomes;
+        private readonly WorldgenPipelines pipelines;
         private readonly string[][] carvers;
 
         public Replay(JsonElement entry, WorldgenPipelines pipelines)
@@ -242,12 +243,13 @@ public class VanillaTerrainGeneration
             this.Generator = pipelines.Terrain(seed, settings);
             this.Chunk = new Chunk(x, z, minY, height);
 
-            if (entry.TryGetProperty("materialBiomes", out var biomes))
-            {
-                var palette = biomes.GetProperty("palette").EnumerateArray();
-                this.biomes = palette.Select(value => value.GetString()!).ToArray();
-                this.biomeIndices = Decode(biomes.GetProperty("data").GetString()!);
-            }
+            if (entry.TryGetProperty("materialBiomes", out var surface))
+                this.surfaceBiomes = new BlockBiomes(surface);
+
+            if (entry.TryGetProperty("carvingBiomes", out var carving))
+                this.carvingBiomes = new BlockBiomes(carving);
+
+            this.pipelines = pipelines;
 
             this.carvers = entry.GetProperty("carverSources").EnumerateArray()
                 .Select(names => names.EnumerateArray().Select(name => name.GetString()!).ToArray())
@@ -260,21 +262,49 @@ public class VanillaTerrainGeneration
 
         public Chunk Chunk { get; }
 
-        public TerrainContext Context => field ??= this.Generator.CreateContext(this.Chunk, this.BiomeAt);
+        public TerrainContext Context => field ??= this.Generator.CreateContext(this.Chunk, this.Biomes);
 
-        public string BiomeAt(int x, int y, int z)
+        /// <summary>The surface's captured biomes, and carving's.</summary>
+        public TerrainBiomes Biomes => new(this.SurfaceBiomeAt, this.CarvingBiomeAt);
+
+        private string SurfaceBiomeAt(int x, int y, int z)
         {
-            if (this.biomes is null || this.biomeIndices is null)
-            {
-                throw new InvalidOperationException("This case captured no block biomes.");
-            }
+            var biomes = this.surfaceBiomes ?? throw new InvalidOperationException("This case captured no block biomes.");
 
-            var index = ((z & 15) * 16 + (x & 15)) * (this.Chunk.Height + 1) + y - this.Chunk.MinY;
-            return this.biomes[this.biomeIndices[index]];
+            return biomes.At(this.Chunk, x, y, z);
+        }
+
+        // Without captured carving biomes, carving reads fresh lookups, as vanilla's carvers do.
+        private string CarvingBiomeAt(int x, int y, int z)
+        {
+            if (this.carvingBiomes is BlockBiomes captured)
+                return captured.At(this.Chunk, x, y, z);
+
+            var dimension = this.Entry.GetProperty("dimension").GetString()!;
+            var seed = this.Entry.GetProperty("seed").GetInt64();
+
+            return this.pipelines.Biomes(dimension, seed).BiomeAt(x, y, z);
         }
 
         public IReadOnlyList<string> CarversAt(int x, int z) =>
             this.carvers[(x - this.Chunk.X + 8) * 17 + z - this.Chunk.Z + 8];
+    }
+
+    /// <summary>A captured buffer of a chunk's block biomes, in z, x, y order with one extra y at the top.</summary>
+    private sealed class BlockBiomes(JsonElement captured)
+    {
+        private readonly string[] palette = captured.GetProperty("palette").EnumerateArray()
+            .Select(value => value.GetString()!)
+            .ToArray();
+
+        private readonly int[] indices = Decode(captured.GetProperty("data").GetString()!);
+
+        public string At(Chunk chunk, int x, int y, int z)
+        {
+            var index = ((z & 15) * 16 + (x & 15)) * (chunk.Height + 1) + y - chunk.MinY;
+
+            return this.palette[this.indices[index]];
+        }
     }
 
     internal static void AssertBlocks(JsonElement expected, Chunk chunk)

@@ -240,7 +240,7 @@ Each case records these independent boundaries:
 | `aquiferFluids` | Aquifer fluid levels and types at specified underground/surface positions, where settings have aquifers. |
 | `blocks`, `heightmaps`, `status` | Every block state and both generation heightmaps at the actual terrain status. |
 | `postProcessing` | Fluid post-processing positions, including duplicates, in section order and insertion order within each section. |
-| `materialBiomes`, `carverSources` | Captured dependency inputs: the block-level biomes material rules read (the zoom over stored biomes) and the ordered carver lists of the 17-by-17 source chunks. |
+| `materialBiomes`, `carvingBiomes`, `carverSources` | Captured dependency inputs: the block-level biomes the surface's material rules read (the zoom over stored biomes), those carving's top materials read (the zoom over uncached searches), and the ordered carver lists of the 17-by-17 source chunks. |
 
 `minY` and `height` describe the whole dimension's build range. Blocks include the air above the Nether and End's
 noise ranges; density and mask buffers cover the noise settings' generation volume. A block buffer holds a palette

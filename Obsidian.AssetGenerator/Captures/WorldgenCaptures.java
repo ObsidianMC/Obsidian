@@ -577,28 +577,38 @@ class WorldgenCaptures {
         }
         entry.add("postProcessing", postProcessing);
 
-        // The block biomes material rules read, the zoom over the stored biomes. The terrain replay supplies them
-        // through an explicit hook.
-        var biomeNames = new LinkedHashMap<String, Integer>();
-        var biomeBytes = new ByteArrayOutputStream();
-        var biomeOutput = new DataOutputStream(biomeBytes);
+        // The block biomes material rules read: the surface's zoom over the stored biomes, and the zoom over uncached
+        // searches that carving's top materials read (as generateCarvers swaps in). The terrain replay supplies them
+        // through explicit hooks.
+        entry.add("materialBiomes", blockBiomes(manager, chunkX, chunkZ, buildMinY, buildHeight));
+        var carvingManager = manager.withDifferentSource(resolver);
+        entry.add("carvingBiomes", blockBiomes(carvingManager, chunkX, chunkZ, buildMinY, buildHeight));
+
+        entry.add("carverSources", carverSources(resolver, chunkX, chunkZ));
+    }
+
+    // A chunk's block biomes in z, x, y order, with one extra y at the top (surface building looks up the biome above
+    // the highest block).
+    static JsonObject blockBiomes(BiomeManager manager, int chunkX, int chunkZ, int minY, int height) throws Exception {
+        var names = new LinkedHashMap<String, Integer>();
+        var bytes = new ByteArrayOutputStream();
+        var output = new DataOutputStream(bytes);
         for (int z = 0; z < 16; z++) {
             for (int x = 0; x < 16; x++) {
-                for (int y = buildMinY; y <= buildMinY + buildHeight; y++) {
+                for (int y = minY; y <= minY + height; y++) {
                     var biome = manager.getBiome(chunkX * 16 + x, y, chunkZ * 16 + z);
                     var name = biome.unwrapKey().orElseThrow().identifier().toString();
-                    biomeOutput.writeInt(biomeNames.computeIfAbsent(name, key -> biomeNames.size()));
+                    output.writeInt(names.computeIfAbsent(name, key -> names.size()));
                 }
             }
         }
+
         var biomes = new JsonObject();
         var palette = new JsonArray();
-        biomeNames.keySet().forEach(palette::add);
+        names.keySet().forEach(palette::add);
         biomes.add("palette", palette);
-        biomes.addProperty("data", compressed(biomeBytes.toByteArray()));
-        entry.add("materialBiomes", biomes);
-
-        entry.add("carverSources", carverSources(resolver, chunkX, chunkZ));
+        biomes.addProperty("data", compressed(bytes.toByteArray()));
+        return biomes;
     }
 
     // Captures actual BIOMES status storage, independent of the later terrain/material stage.

@@ -83,7 +83,7 @@ public class VanillaBiomeDecoration
             for (var x = chunkX - 1; x <= chunkX + 1; x++)
             {
                 var chunk = new Chunk(x, z, minY, height);
-                pipeline.Generate(chunk);
+                pipeline.Generate(chunk, neighbors: (nearX, nearZ) => chunks.GetValueOrDefault((nearX, nearZ)));
                 chunks.Add((x, z), chunk);
             }
         }
