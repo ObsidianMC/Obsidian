@@ -34,9 +34,12 @@ internal abstract class BenchGenerator
     public abstract void Decorate(IReadOnlyDictionary<(int X, int Z), IChunk> area, int x, int z);
 
     /// <summary>Runs what follows decoration before light, if the pipeline has such a stage.</summary>
-    public abstract void PostProcess(IReadOnlyDictionary<(int X, int Z), IChunk> area, int x, int z, StageTimer<SerialStage> timer);
+    public abstract void PostProcess(IReadOnlyDictionary<(int X, int Z), IChunk> area, int x, int z,
+        StageTimer<SerialStage> timer);
 
-    /// <summary>Starts the structures that are placed on first use and in parallel, so they stay out of the stages.</summary>
+    /// <summary>
+    /// Starts the structures that are placed on first use and in parallel, so they stay out of the stages.
+    /// </summary>
     public void PrepareStructures(int centerX, int centerZ)
     {
         if (this.Structures is StructureManager structures)

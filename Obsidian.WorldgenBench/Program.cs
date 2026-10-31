@@ -50,8 +50,8 @@ if (mode == "pipeline" && options.Generator != BenchGeneratorKind.Legacy)
 using (var httpClient = new HttpClient())
 {
     var cache = Path.Combine(Path.GetTempPath(), "obsidian-tests", ServerConstants.VanillaCachePath);
-    StructureRegistry.Initialize(await VanillaServerJar.ExtractStructuresAsync(httpClient, cache, ServerConstants.LegacyVersion,
-        NullLogger.Instance));
+    StructureRegistry.Initialize(await VanillaServerJar.ExtractStructuresAsync(httpClient, cache,
+        ServerConstants.LegacyVersion, NullLogger.Instance));
     var current = await VanillaServerJar.ExtractStructuresAsync(httpClient, cache, ServerConstants.ProtocolDescription,
         NullLogger.Instance);
     StructureRegistry.InitializeCurrent(() => Task.FromResult(current));

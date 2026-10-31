@@ -15,7 +15,8 @@ namespace Obsidian.WorldData.Generators.Density;
 /// </para>
 /// <para>
 /// <see cref="DensityCompiler"/> builds the functions from JSON the way vanilla's compiler does: references are
-/// inlined, caches only remember values (<see cref="CacheFunction"/>), and constant operands pick the same specialised arithmetic vanilla picks.
+/// inlined, caches only remember values (<see cref="CacheFunction"/>), and constant operands pick the same
+/// specialised arithmetic vanilla picks.
 /// </para>
 /// </remarks>
 internal abstract class DensityFunction

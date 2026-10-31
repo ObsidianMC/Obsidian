@@ -62,8 +62,8 @@ internal sealed record BenchOptions(IReadOnlyList<BenchDimension> Dimensions, in
 }
 
 /// <summary>
-/// A dimension, the chunk its square is centred on, and the hashes of the square's chunks for the default seed and radius:
-/// the live generator's, and the 26.3 pipeline's (<see cref="CurrentPreset"/> is its biome preset).
+/// A dimension, the chunk its square is centred on, and the hashes of the square's chunks for the default seed and
+/// radius: the live generator's, and the 26.3 pipeline's (<see cref="CurrentPreset"/> is its biome preset).
 /// </summary>
 internal sealed record BenchDimension(string Name, MojangDimension Dimension, int CenterX, int CenterZ, string ExpectedHash,
     string ExpectedNbtHash, string CurrentPreset, string CurrentHash, string CurrentNbtHash)

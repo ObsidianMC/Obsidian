@@ -239,6 +239,8 @@ internal sealed class BiomeTerrain
 
         // Contributions add up in registry order of the structures; vanilla walks a hash map, so float sums of
         // overlapping structures of different types could round differently (no capture shows it).
-        return Beardifier.ForStructuresInChunk(this.Structures.GetTerrainAdaptingStarts(chunkX, chunkZ), chunkX, chunkZ);
+        var starts = this.Structures.GetTerrainAdaptingStarts(chunkX, chunkZ);
+
+        return Beardifier.ForStructuresInChunk(starts, chunkX, chunkZ);
     }
 }

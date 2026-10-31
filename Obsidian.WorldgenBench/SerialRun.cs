@@ -48,10 +48,13 @@ internal static class SerialRun
         allocated = GC.GetAllocatedBytesForCurrentThread() - allocated;
 
         var full = order.Count;
-        Console.WriteLine($"== {bench.Name} {GeneratorName(options.Generator)} serial, seed {options.Seed}, {full} chunks around ({bench.CenterX}, {bench.CenterZ}): " +
+        Console.WriteLine($"== {bench.Name} {GeneratorName(options.Generator)} serial, seed {options.Seed}, " +
+            $"{full} chunks around ({bench.CenterX}, {bench.CenterZ}): " +
             $"{generator.CarvedCount} carved, {generator.DecoratedCount} decorated");
-        Console.WriteLine($"generation {total.Elapsed.TotalSeconds:F2} s = {total.Elapsed.TotalMilliseconds / full:F2} ms per chunk " +
-            $"({full / total.Elapsed.TotalSeconds:F0} chunks/s), allocated {allocated / 1024.0 / full:F0} KB per chunk; " +
+        Console.WriteLine($"generation {total.Elapsed.TotalSeconds:F2} s = " +
+            $"{total.Elapsed.TotalMilliseconds / full:F2} ms per chunk " +
+            $"({full / total.Elapsed.TotalSeconds:F0} chunks/s), " +
+            $"allocated {allocated / 1024.0 / full:F0} KB per chunk; " +
             $"structure setup {setup.Elapsed.TotalMilliseconds:F0} ms; GCs {GC.CollectionCount(0) - gcCounts.Item1}/" +
             $"{GC.CollectionCount(1) - gcCounts.Item2}/{GC.CollectionCount(2) - gcCounts.Item3}, paused {gcPause.TotalMilliseconds:F0} ms");
         generator.Timer.Print(full);
@@ -83,7 +86,8 @@ internal static class SerialRun
     /// </summary>
     private static void Warm(BenchDimension bench, BenchOptions options)
     {
-        var generator = new SerialGenerator(BenchGenerator.Create(options.Generator, bench, options.Seed + 1), bench.Dimension);
+        var builder = BenchGenerator.Create(options.Generator, bench, options.Seed + 1);
+        var generator = new SerialGenerator(builder, bench.Dimension);
         for (var x = 500; x < 503; x++)
         {
             for (var z = 500; z < 503; z++)
