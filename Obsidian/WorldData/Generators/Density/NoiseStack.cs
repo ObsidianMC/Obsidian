@@ -33,6 +33,31 @@ internal sealed class NoiseStack(IReadOnlyList<NoiseStack.Layer> layers)
         return value;
     }
 
+    /// <summary>Samples selected volume positions with the volume path's scale-before-coordinate ordering.</summary>
+    public void SampleSelected(
+        Span<float> output,
+        in DensityVolume volume,
+        ReadOnlySpan<int> indices,
+        double xzScale,
+        double yScale)
+    {
+        for (var i = 0; i < indices.Length; i++)
+        {
+            volume.Position(indices[i], out var x, out var y, out var z);
+            var value = 0.0f;
+
+            foreach (var layer in this.layers)
+            {
+                // Vanilla multiplies scale by frequency first over a volume; point sampling rounds differently.
+                var layerXzScale = xzScale * layer.Frequency;
+                var layerYScale = yScale * layer.Frequency;
+                value += layer.Amplitude * layer.Noise.Get(x * layerXzScale, y * layerYScale, z * layerXzScale);
+            }
+
+            output[i] = value;
+        }
+    }
+
     /// <summary>
     /// Adds the noise times <paramref name="amplitude"/> to each point of a volume, as vanilla samples volumes: the
     /// scale is multiplied by each layer's frequency before the block coordinate is, which rounds differently from

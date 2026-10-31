@@ -24,4 +24,13 @@ internal readonly record struct DensityVolume(
     public int BlockY(int indexY) => this.MinBlockY + indexY * this.StepY;
 
     public int BlockZ(int indexZ) => this.MinBlockZ + indexZ * this.StepZ;
+
+    /// <summary>The block position of a flattened volume index.</summary>
+    public void Position(int index, out int x, out int y, out int z)
+    {
+        var column = index / this.SizeY;
+        x = this.BlockX(column % this.SizeX);
+        y = this.BlockY(index % this.SizeY);
+        z = this.BlockZ(column / this.SizeX);
+    }
 }

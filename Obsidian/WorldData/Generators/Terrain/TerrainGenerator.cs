@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.ChunkData;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Mojang.Structures;
@@ -101,13 +102,20 @@ internal sealed class TerrainGenerator
                         continue;
                     }
 
-                    chunk.SetBlock(x, blockY, z, block);
+                    // Noise fill owns the unfinished chunk, like the live generator's direct section writes.
+                    // Its generation heightmaps are recomputed below rather than maintained for every block.
+                    if (chunk.Sections[(blockY - chunk.MinY) >> 4] is ChunkSection section)
+                        section.SetBlockUntracked(x, blockY & 15, z, block);
+                    else
+                        chunk.SetBlock(x, blockY, z, block);
+
                     context.ScheduleFluid(blockX, blockY, blockZ, block);
                 }
             }
         }
 
         WorldgenHeightmaps.Update(chunk, volume.MinBlockY, volume.SizeY);
+        WorldgenHeightmaps.UpdateFinal(chunk, chunk.MinY, chunk.Height);
     }
 }
 

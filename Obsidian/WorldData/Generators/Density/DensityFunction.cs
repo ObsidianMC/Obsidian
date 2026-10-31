@@ -30,6 +30,38 @@ internal abstract class DensityFunction
     /// </summary>
     public virtual bool IsFlat => false;
 
+    /// <summary>
+    /// Samples sorted, distinct indices of the original volume into a compact output buffer.
+    /// Selection never changes the volume's origin: vanilla's interpolation accumulates rounding from that origin.
+    /// Functions without a selective implementation retain their full-volume arithmetic and gather its results.
+    /// </summary>
+    public virtual void SampleSelected(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices)
+    {
+        using var values = DensityBuffer.Sample(this, volume);
+
+        for (var i = 0; i < indices.Length; i++)
+            output[i] = values.Span[indices[i]];
+    }
+
+    /// <summary>Uses the full volume when no selection is supplied, otherwise its selected indices.</summary>
+    public void SampleSelection(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices)
+    {
+        if (indices.IsEmpty)
+            this.SampleVolume(output, volume);
+        else
+            this.SampleSelected(output, volume, indices);
+    }
+
+    /// <summary>Samples selected positions for functions whose point and volume arithmetic agree.</summary>
+    protected void SampleSelectedPoints(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices)
+    {
+        for (var i = 0; i < indices.Length; i++)
+        {
+            volume.Position(indices[i], out var x, out var y, out var z);
+            output[i] = this.Sample(x, y, z);
+        }
+    }
+
     /// <summary>Writes the value at each point of <paramref name="volume"/> to <paramref name="output"/>.</summary>
     public virtual void SampleVolume(Span<float> output, in DensityVolume volume)
     {
