@@ -18,6 +18,8 @@ internal static class PlacementBehaviors
     private static readonly IBlockBehavior ClickedFaceOpposite = new ClickedFaceFacing(opposite: true);
     private static readonly IBlockBehavior Leaves = new LeavesBlockBehavior.Placement();
     private static readonly IBlockBehavior BambooStalk = new BambooStalkPlacement();
+    private static readonly IBlockBehavior Kelp = new KelpPlacement();
+    private static readonly IBlockBehavior Seagrass = new SeagrassPlacement();
     private static readonly IBlockBehavior Crafter = new CrafterPlacement();
     private static readonly IBlockBehavior Rail = new RailPlacement();
     private static readonly IBlockBehavior FaceAttached = new FaceAttachedPlacement();
@@ -35,6 +37,8 @@ internal static class PlacementBehaviors
     internal static IBlockBehavior BarrelBlock => NearestOpposite;
     internal static IBlockBehavior BaseRailBlock => Rail;
     internal static IBlockBehavior BambooStalkBlock => BambooStalk;
+    internal static IBlockBehavior KelpBlock => Kelp;
+    internal static IBlockBehavior SeagrassBlock => Seagrass;
     internal static IBlockBehavior BedBlock => Horizontal;
     internal static IBlockBehavior BeehiveBlock => HorizontalOpposite;
     internal static IBlockBehavior CampfireBlock => Horizontal;
@@ -122,6 +126,41 @@ internal static class PlacementBehaviors
             return belowBelow.Is(BlockIds.Bamboo)
                 ? context.Block.WithProperty("leaves", belowBelow.GetProperty("leaves"))
                 : BlocksRegistry.GetDefault(BlockIds.BambooSapling);
+        }
+    }
+
+    private sealed class KelpPlacement : IBlockBehavior
+    {
+        public IBlock? GetStateForPlacement(BlockPlaceContext context)
+        {
+            var position = context.Position;
+            var block = context.Level.GetBlock(position);
+            var fluid = block.GetFluid();
+
+            if ((fluid != FluidKind.Water && fluid != FluidKind.FlowingWater)
+                || block.FluidAmount() < 8)
+                    return null;
+
+            if (context.Level.GetBlock(position + Vector.Up).RegistryId is BlockIds.Kelp or BlockIds.KelpPlant)
+                return BlocksRegistry.KelpPlant;
+            else
+                return BlocksRegistry.Kelp.WithProperty("age", context.Level.Random.NextInt(25));
+        }
+    }
+
+    private sealed class SeagrassPlacement : IBlockBehavior
+    {
+        public IBlock? GetStateForPlacement(BlockPlaceContext context)
+        {
+            var position = context.Position;
+            var block = context.Level.GetBlock(position);
+            var fluid = block.GetFluid();
+
+            if ((fluid != FluidKind.Water && fluid != FluidKind.FlowingWater)
+                || block.FluidAmount() < 8)
+                return null;
+
+            return context.Block;
         }
     }
 

@@ -155,6 +155,13 @@ internal static class ShapeUpdater
                 or "CocoaBlock" or "CactusFlowerBlock":
                 // Vegetation and carpets turn into air whenever they're updated without support.
                 return state.CanSurvive(level, position, rawBrightness) ? state : air;
+            case "KelpBlock":
+                if (direction == BlockFace.Up
+                    && neighbor.RegistryId is BlockIds.Kelp or BlockIds.KelpPlant)
+                {
+                    return BlocksRegistry.KelpPlant;
+                }
+                return state;
         }
 
         // SnowyDirtBlock and its subclasses (grass blocks, mycelium, podzol).

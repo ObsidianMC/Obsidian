@@ -48,6 +48,10 @@ internal static class PlacementSurvival
                 return BlockSurvival.CactusMayStay(level.GetBlock, position);
             case "BambooStalkBlock" or "BambooSaplingBlock":
                 return BlockSurvival.BambooMayStay(level.GetBlock, position);
+            case "KelpBlock":
+                return BlockSurvival.KelpMayPlaceOn(level.GetBlock(position + Vector.Down));
+            case "SeagrassBlock":
+                return BlockSurvival.SeagrassMayPlaceOn(level.GetBlock(position + Vector.Down));
             default:
                 return true;
         }
