@@ -1,12 +1,16 @@
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Generators.Density;
+using System.Buffers;
 
 namespace Obsidian.WorldData.Generators.Terrain;
 
 internal sealed partial class MaterialRules
 {
-    /// <summary>The column depths and cached samples visible to a material rule evaluation.</summary>
-    internal sealed class MaterialContext
+    /// <summary>
+    /// The column depths and cached samples visible to a material rule evaluation. Disposing it returns its density
+    /// buffers to the pool.
+    /// </summary>
+    internal sealed class MaterialContext : IDisposable
     {
         private readonly MaterialRules owner;
         private readonly DensityVolume volume;
@@ -163,12 +167,20 @@ internal sealed partial class MaterialRules
 
             if (!this.densities.TryGetValue(function, out var values))
             {
-                values = new float[this.volume.Size];
-                function.SampleVolume(values, this.volume);
+                values = ArrayPool<float>.Shared.Rent(this.volume.Size);
+                function.SampleVolume(values.AsSpan(0, this.volume.Size), this.volume);
                 this.densities.Add(function, values);
             }
 
             return values[this.volume.Index(x, y, z)];
+        }
+
+        public void Dispose()
+        {
+            foreach (var values in this.densities.Values)
+                ArrayPool<float>.Shared.Return(values);
+
+            this.densities.Clear();
         }
 
         public IBlock GetBlock(int y)

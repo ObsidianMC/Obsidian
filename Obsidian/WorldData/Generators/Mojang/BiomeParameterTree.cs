@@ -10,10 +10,13 @@ internal sealed class BiomeParameterTree<T>
 {
     private const int Dimensions = 7;
 
+    // Searches remembered per thread; a power of two.
+    private const int RememberedSearches = 1024;
+
     private readonly Node root;
 
     // Vanilla starts each search from the previous result on the same thread; it only matters for exact ties.
-    private readonly ThreadLocal<Leaf?> lastResult = new();
+    private readonly ThreadLocal<SearchState> searches = new(() => new SearchState());
 
     /// <param name="childrenPerNode">6 for the live legacy pipeline, 19 for 26.3.</param>
     public BiomeParameterTree(IReadOnlyList<(ParameterPoint Point, T Value)> values, int childrenPerNode = 6)
@@ -25,13 +28,44 @@ internal sealed class BiomeParameterTree<T>
         this.root = Build(leaves, childrenPerNode);
     }
 
+    /// <remarks>
+    /// <para>
+    /// The search finds the smallest distance to the target. It returns the previous result if that is at the
+    /// smallest distance, and otherwise the first leaf at the smallest distance in the tree's order, whatever the
+    /// previous result was. So each thread remembers, per target, the smallest distance and that first leaf (once
+    /// a search has returned it), and only searches the tree when neither answers: the result is the same.
+    /// </para>
+    /// <para>
+    /// Material rules look a biome up for every block, mostly in the few quarts around it.
+    /// </para>
+    /// </remarks>
     public T Search(TargetPoint target)
     {
         ReadOnlySpan<long> point = [target.Temperature, target.Humidity, target.Continentalness, target.Erosion, target.Depth, target.Weirdness, 0L];
-        var last = this.lastResult.Value;
+        var state = this.searches.Value!;
+        var last = state.Last;
+        var slot = (int)((uint)target.GetHashCode() & (RememberedSearches - 1));
+        ref var remembered = ref state.Remembered[slot];
+
+        if (remembered.Leaf is not null && remembered.Target == target)
+        {
+            if (last is not null && last.Distance(point) == remembered.Distance)
+                return last.Value;
+
+            if (remembered.First is Leaf first)
+            {
+                state.Last = first;
+                return first.Value;
+            }
+        }
+
         var leaf = this.root.Search(point, last);
-        if (!ReferenceEquals(leaf, last))
-            this.lastResult.Value = leaf;
+        var distance = leaf.Distance(point);
+
+        // A result other than the previous one is the first leaf at the smallest distance.
+        var isFirst = !ReferenceEquals(leaf, last);
+        remembered = new RememberedSearch(target, distance, leaf, isFirst ? leaf : null);
+        state.Last = leaf;
 
         return leaf.Value;
     }
@@ -138,6 +172,18 @@ internal sealed class BiomeParameterTree<T>
 
         return distance;
     }
+
+    private sealed class SearchState
+    {
+        public Leaf? Last { get; set; }
+
+        public RememberedSearch[] Remembered { get; } = new RememberedSearch[RememberedSearches];
+    }
+
+    /// <param name="Leaf">The leaf a search returned, which marks the entry as used.</param>
+    /// <param name="Distance">The smallest distance from the target to any leaf.</param>
+    /// <param name="First">The first leaf at that distance in the tree's order, once known.</param>
+    private readonly record struct RememberedSearch(TargetPoint Target, long Distance, Leaf? Leaf, Leaf? First);
 
     private abstract class Node(ClimateParameter[] parameterSpace)
     {

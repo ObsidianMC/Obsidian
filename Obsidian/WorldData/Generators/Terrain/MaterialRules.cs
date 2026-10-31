@@ -27,7 +27,7 @@ internal sealed partial class MaterialRules
 
     public void Apply(TerrainContext terrain)
     {
-        var context = new MaterialContext(this, terrain);
+        using var context = new MaterialContext(this, terrain);
         var chunk = terrain.Chunk;
 
         // Each column sees the heightmaps updated by earlier columns, including badlands and iceberg extensions.
@@ -113,7 +113,7 @@ internal sealed partial class MaterialRules
     /// <summary>A freshly exposed surface during carving uses depth one and a one-block density volume.</summary>
     public IBlock? TopMaterial(TerrainContext terrain, int x, int y, int z, bool underwater)
     {
-        var context = new MaterialContext(this, terrain, new DensityVolume(1, 1, 1, x, y, z));
+        using var context = new MaterialContext(this, terrain, new DensityVolume(1, 1, 1, x, y, z));
         context.UpdateColumn(x & 15, z & 15);
         context.UpdateBlock(y, 1, 1, underwater ? y + 1 : int.MinValue);
 

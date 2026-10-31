@@ -9,8 +9,9 @@ namespace Obsidian.WorldData.Generators.Density;
 /// <para>
 /// Density functions are pure, so remembering a value changes nothing as long as each sampling path remembers its own
 /// (points and volumes can round differently). Each thread remembers the last point and the last volume it sampled:
-/// a router samples the same function several times over the same cell corners, and a spline samples its
-/// coordinates at the point its caller just sampled them.
+/// a router samples the same function several times over the same cell corners, the ore veins sample their toggle
+/// over a chunk's material volume for each vein and for richness, and a spline samples its coordinates at the point
+/// its caller just sampled them.
 /// </para>
 /// <para>
 /// A flat input (see <see cref="DensityFunction.IsFlat"/>) is sampled over one layer of a volume and copied down each
@@ -20,9 +21,6 @@ namespace Obsidian.WorldData.Generators.Density;
 /// </remarks>
 internal sealed class CacheFunction(DensityFunction input) : DensityFunction
 {
-    // Volumes larger than this, such as a chunk's every block, are sampled once by their callers already.
-    private const int MaxRememberedVolume = 4096;
-
     private readonly bool flat = input.IsFlat;
     private readonly ThreadLocal<Remembered> remembered = new(() => new Remembered());
 
@@ -68,12 +66,6 @@ internal sealed class CacheFunction(DensityFunction input) : DensityFunction
 
     private void SampleRemembered(Span<float> output, in DensityVolume volume)
     {
-        if (volume.Size > MaxRememberedVolume)
-        {
-            input.SampleVolume(output, volume);
-            return;
-        }
-
         var last = this.remembered.Value!;
 
         if (last.HasVolume && last.Volume == volume)
@@ -116,7 +108,7 @@ internal sealed class CacheFunction(DensityFunction input) : DensityFunction
         public void RememberVolume(in DensityVolume volume, ReadOnlySpan<float> values)
         {
             if (this.Values.Length < values.Length)
-                this.Values = new float[MaxRememberedVolume];
+                this.Values = new float[values.Length];
 
             values.CopyTo(this.Values);
             this.Volume = volume;
