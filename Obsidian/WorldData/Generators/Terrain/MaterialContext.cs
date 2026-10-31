@@ -13,6 +13,7 @@ internal sealed partial class MaterialRules
     internal sealed class MaterialContext : IDisposable
     {
         private readonly MaterialRules owner;
+        private readonly Func<int, int, int, string> biomeAt;
         private readonly DensityVolume volume;
         private readonly Dictionary<DensityFunction, float[]> densities = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<NoiseStack, float> columnNoises = new(ReferenceEqualityComparer.Instance);
@@ -27,10 +28,16 @@ internal sealed partial class MaterialRules
         private int localX;
         private int localZ;
 
-        public MaterialContext(MaterialRules owner, TerrainContext terrain, DensityVolume? volume = null)
+        /// <param name="biomeAt">The block biomes the rules read (see <see cref="TerrainBiomes"/>).</param>
+        public MaterialContext(
+            MaterialRules owner,
+            TerrainContext terrain,
+            Func<int, int, int, string> biomeAt,
+            DensityVolume? volume = null)
         {
             this.owner = owner;
             this.Terrain = terrain;
+            this.biomeAt = biomeAt;
 
             if (volume is DensityVolume supplied)
             {
@@ -73,7 +80,7 @@ internal sealed partial class MaterialRules
 
         public int GradientZ { get; private set; }
 
-        public string Biome => this.biome ??= this.Terrain.BiomeAt(this.X, this.Y, this.Z);
+        public string Biome => this.biome ??= this.biomeAt(this.X, this.Y, this.Z);
 
         /// <summary>The <see cref="Biome"/>'s number among those biome conditions name, or -1.</summary>
         public int BiomeId => this.biomeId ??= this.NumberBiome(this.Biome);

@@ -45,28 +45,45 @@ internal sealed class TerrainGenerator
     public MaterialRules Materials { get; }
 
     /// <summary>
-    /// Runs the entire terrain status. The biome lookup uses block coordinates; the carver lookup uses source chunk
-    /// coordinates and returns the biome's ordered carver identifiers. Neither lookup may generate terrain recursively.
+    /// Runs the entire terrain status. The biome lookups use block coordinates; the carver lookup uses source chunk
+    /// coordinates and returns the biome's ordered carver identifiers. No lookup may generate terrain recursively.
     /// </summary>
     /// <param name="beardifier">The structures' density around the chunk, added to the final density.</param>
     public void Generate(
         IChunk chunk,
-        Func<int, int, int, string> biomeAt,
+        TerrainBiomes biomes,
         Func<int, int, IReadOnlyList<string>> carversAt,
         ICollection<Vector>? fluidUpdates = null,
         Beardifier? beardifier = null)
     {
-        var context = this.CreateContext(chunk, biomeAt, fluidUpdates);
+        var context = this.CreateContext(chunk, biomes, fluidUpdates);
 
         this.Fill(context, beardifier);
         this.Materials.Apply(context);
         TerrainCarvers.Apply(context, carversAt);
     }
 
+    /// <summary>Runs the entire terrain status, with one biome lookup for both the surface and carving.</summary>
+    /// <param name="biomeAt">The biomes both the surface and the carvers read.</param>
+    public void Generate(
+        IChunk chunk,
+        Func<int, int, int, string> biomeAt,
+        Func<int, int, IReadOnlyList<string>> carversAt,
+        ICollection<Vector>? fluidUpdates = null,
+        Beardifier? beardifier = null) =>
+        this.Generate(chunk, new TerrainBiomes(biomeAt, biomeAt), carversAt, fluidUpdates, beardifier);
+
+    public TerrainContext CreateContext(
+        IChunk chunk,
+        TerrainBiomes biomes,
+        ICollection<Vector>? fluidUpdates = null) => new(this, chunk, biomes, fluidUpdates);
+
+    /// <param name="biomeAt">The biomes both the surface and the carvers read.</param>
     public TerrainContext CreateContext(
         IChunk chunk,
         Func<int, int, int, string> biomeAt,
-        ICollection<Vector>? fluidUpdates = null) => new(this, chunk, biomeAt, fluidUpdates);
+        ICollection<Vector>? fluidUpdates = null) =>
+        this.CreateContext(chunk, new TerrainBiomes(biomeAt, biomeAt), fluidUpdates);
 
     /// <summary>Fills a chunk volume using vanilla's volume path and z, x, descending-y write order.</summary>
     /// <remarks>
@@ -119,18 +136,27 @@ internal sealed class TerrainGenerator
     }
 }
 
+/// <summary>The block biomes one chunk's terrain status reads, by block coordinates.</summary>
+/// <param name="Surface">
+/// What material rules read for the surface: vanilla zooms over the biomes stored in the chunk and its neighbors.
+/// </param>
+/// <param name="Carving">
+/// What material rules read for the top blocks carving exposes: vanilla zooms over uncached climate searches there.
+/// </param>
+internal readonly record struct TerrainBiomes(Func<int, int, int, string> Surface, Func<int, int, int, string> Carving);
+
 /// <summary>Mutable state of one terrain status. It is never shared by concurrently generated chunks.</summary>
 internal sealed class TerrainContext
 {
     public TerrainContext(
         TerrainGenerator generator,
         IChunk chunk,
-        Func<int, int, int, string> biomeAt,
+        TerrainBiomes biomes,
         ICollection<Vector>? fluidUpdates)
     {
         this.Generator = generator;
         this.Chunk = chunk;
-        this.BiomeAt = biomeAt;
+        this.Biomes = biomes;
         this.FluidUpdates = fluidUpdates;
 
         var minY = Math.Max(chunk.MinY, generator.Settings.MinY);
@@ -145,7 +171,7 @@ internal sealed class TerrainContext
 
     public DensityVolume Volume { get; }
 
-    public Func<int, int, int, string> BiomeAt { get; }
+    public TerrainBiomes Biomes { get; }
 
     public ICollection<Vector>? FluidUpdates { get; }
 

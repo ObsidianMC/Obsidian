@@ -31,7 +31,8 @@ internal sealed partial class MaterialRules
 
     public void Apply(TerrainContext terrain)
     {
-        using var context = new MaterialContext(this, terrain);
+        var biomeAt = terrain.Biomes.Surface;
+        using var context = new MaterialContext(this, terrain, biomeAt);
         var chunk = terrain.Chunk;
 
         // Each column sees the heightmaps updated by earlier columns, including badlands and iceberg extensions.
@@ -41,7 +42,7 @@ internal sealed partial class MaterialRules
             for (var z = 0; z < 16; z++)
             {
                 var startY = SurfaceHeight(chunk, x, z);
-                var biome = terrain.BiomeAt(terrain.Volume.BlockX(x), startY, terrain.Volume.BlockZ(z));
+                var biome = biomeAt(terrain.Volume.BlockX(x), startY, terrain.Volume.BlockZ(z));
                 context.UpdateColumn(x, z);
 
                 if (biome == "minecraft:eroded_badlands")
@@ -114,10 +115,13 @@ internal sealed partial class MaterialRules
         }
     }
 
-    /// <summary>A freshly exposed surface during carving uses depth one and a one-block density volume.</summary>
+    /// <summary>
+    /// A freshly exposed surface during carving uses depth one, a one-block density volume and the carving biomes.
+    /// </summary>
     public IBlock? TopMaterial(TerrainContext terrain, int x, int y, int z, bool underwater)
     {
-        using var context = new MaterialContext(this, terrain, new DensityVolume(1, 1, 1, x, y, z));
+        var volume = new DensityVolume(1, 1, 1, x, y, z);
+        using var context = new MaterialContext(this, terrain, terrain.Biomes.Carving, volume);
         context.UpdateColumn(x & 15, z & 15);
         context.UpdateBlock(y, 1, 1, underwater ? y + 1 : int.MinValue);
 

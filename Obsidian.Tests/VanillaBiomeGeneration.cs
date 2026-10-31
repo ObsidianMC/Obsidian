@@ -89,8 +89,8 @@ public sealed class VanillaBiomeGeneration
         Assert.Equal(expected.Length, index);
     }
 
-    // Spawning reads stored sections, independently of materialBiomes, whose uncached point climate path can round
-    // differently at cave borders. The positions include chunk and vertical storage boundaries.
+    // Spawning reads stored sections, like materialBiomes, through the same zoom. The positions include chunk and
+    // vertical storage boundaries.
     private static void AssertSpawnBiomes(JsonElement entry, BiomeTerrain pipeline)
     {
         var chunk = CreateChunk(entry);
@@ -139,6 +139,7 @@ public sealed class VanillaBiomeGeneration
 
         pipeline.Source.FillBiomes(chunk);
 
+        var biomeAt = pipeline.ChunkBiomes(chunk).Surface;
         var index = 0;
 
         for (var z = 0; z < 16; z++)
@@ -147,7 +148,7 @@ public sealed class VanillaBiomeGeneration
             {
                 for (var y = chunk.MinY; y <= chunk.MinY + chunk.Height; y++)
                 {
-                    var actual = pipeline.BiomeAt(chunk.X * 16 + x, y, chunk.Z * 16 + z);
+                    var actual = biomeAt(chunk.X * 16 + x, y, chunk.Z * 16 + z);
                     Assert.True(palette[expected[index]] == actual,
                         $"Material biome at ({x}, {y}, {z}): expected {palette[expected[index]]}, actual {actual}");
                     index++;

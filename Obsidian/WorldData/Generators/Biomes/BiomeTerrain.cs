@@ -1,3 +1,4 @@
+using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Features;
@@ -15,7 +16,6 @@ internal sealed class BiomeTerrain
 {
     private readonly TerrainGenerator terrain;
     private readonly BiomeManager manager;
-    private readonly long zoomSeed;
     private readonly FeatureRegistry? features;
     private readonly int unlitBrightness;
     private readonly TerrainColumns columns;
@@ -40,7 +40,6 @@ internal sealed class BiomeTerrain
         // Point lookups must revisit the tree: memoizing a quart changes later exact ties' previous-leaf input.
         this.manager = new BiomeManager(this.Source, terrain.Seed, terrain.Settings.MinY,
             terrain.Settings.Height, cacheNoiseBiomes: false, clampToHeight: false);
-        this.zoomSeed = BiomeManager.ObfuscateSeed(terrain.Seed);
         this.columns = new TerrainColumns(terrain);
         this.MinY = dimensionType.GetProperty("min_y").GetInt32();
         this.Height = dimensionType.GetProperty("height").GetInt32();
@@ -218,14 +217,27 @@ internal sealed class BiomeTerrain
         };
     }
 
+    /// <summary>A block's biome over uncached climate searches, as carving's top materials read it.</summary>
     public string BiomeAt(int x, int y, int z) => this.manager.GetBiome(x, y, z).Name;
 
     /// <summary>
-    /// <see cref="BiomeAt"/> for the blocks of one chunk's terrain status, which asks for nearly every block's biome.
-    /// Use it on one thread.
+    /// The biomes one chunk's terrain status reads. Its surface reads the biomes stored in the chunk, which must be
+    /// filled (<see cref="ClimateSource.FillBiomes"/>), and in its neighbors, which needn't be: vanilla's terrain
+    /// reads them through its region's biome manager. Carving reads <see cref="BiomeAt"/>. Use them on one thread.
     /// </summary>
-    public Func<int, int, int, string> ChunkBiomes(IChunk chunk) =>
-        new ChunkBiomeLookup(this.Source, this.zoomSeed, chunk).BiomeAt;
+    public TerrainBiomes ChunkBiomes(IChunk chunk)
+    {
+        var stored = new BiomeManager(
+            new SurfaceBiomeSource(this.Source, chunk),
+            this.terrain.Seed,
+            chunk.MinY,
+            chunk.Height,
+            cacheNoiseBiomes: false,
+            readsNeighbors: true);
+        stored.FocusOn(chunk.X, chunk.Z);
+
+        return new TerrainBiomes(Surface: (x, y, z) => stored.GetBiome(x, y, z).Name, Carving: this.BiomeAt);
+    }
 
     public string[] CarversAt(int chunkX, int chunkZ)
     {
@@ -268,5 +280,36 @@ internal sealed class BiomeTerrain
         var starts = this.Structures.GetTerrainAdaptingStarts(chunkX, chunkZ);
 
         return Beardifier.ForStructuresInChunk(starts, chunkX, chunkZ);
+    }
+
+    /// <summary>
+    /// The biomes stored in a chunk and its neighbors, by quart, as a region reads them. A block's zoomed lookup
+    /// reaches one quart past the chunk, so only the eight neighbors are asked for.
+    /// </summary>
+    private sealed class SurfaceBiomeSource(ClimateSource source, IChunk chunk) : IBiomeSource
+    {
+        // The neighbor read last: a column's blocks read one neighbor's quarts after another.
+        private StoredBiomes? neighbor;
+        private int neighborX;
+        private int neighborZ;
+
+        /// <param name="quartY">A quart y within the chunk's build range.</param>
+        public BiomeCodec GetNoiseBiome(int quartX, int quartY, int quartZ)
+        {
+            var chunkX = quartX >> 2;
+            var chunkZ = quartZ >> 2;
+
+            if (chunkX == chunk.X && chunkZ == chunk.Z)
+                return chunk.GetBiome((quartX & 3) << 2, quartY << 2, (quartZ & 3) << 2);
+
+            if (this.neighbor is null || this.neighborX != chunkX || this.neighborZ != chunkZ)
+            {
+                this.neighbor = source.Stored(chunkX, chunkZ, chunk.MinY, chunk.Height);
+                this.neighborX = chunkX;
+                this.neighborZ = chunkZ;
+            }
+
+            return this.neighbor.Get(quartX & 3, quartY - (chunk.MinY >> 2), quartZ & 3);
+        }
     }
 }

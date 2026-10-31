@@ -1,6 +1,7 @@
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Generators.Mojang;
+using System.Threading;
 
 namespace Obsidian.WorldData.Generators.Biomes;
 
@@ -12,30 +13,47 @@ internal sealed class ClimateSource : IBiomeSource
 
     private const int ClimateCacheSize = 4096;
 
+    // How many chunks' stored biomes are kept before all are forgotten at once: room for the neighbors of every chunk
+    // generated around the same time. Filling a forgotten chunk again gives the same biomes (see Fill).
+    private const int MaxStoredChunks = 4096;
+
     [ThreadStatic]
     private static CachedClimate[]? climateCache;
 
     private readonly DensityFunction[] functions;
 
-    // Which of the functions have the same value at every y of a column (see DensityFunction.IsFlat).
-    private readonly bool[] flat;
     private readonly BiomeParameters? parameters;
 
     // The parameter list's biomes by their name instances, which the tree's searches return: comparing references
     // is cheaper than hashing the names. Read only, so threads share it.
     private readonly Dictionary<string, BiomeCodec> codecs = new(ReferenceEqualityComparer.Instance);
 
+    // The biomes this source returns, numbered for the stored chunks. Read only, so threads share them.
+    private readonly List<BiomeCodec> palette = [];
+    private readonly Dictionary<BiomeCodec, byte> paletteIndices = new(ReferenceEqualityComparer.Instance);
+
+    private readonly ConcurrentDictionary<(int X, int Z), StoredBiomes> stored = new();
+    private int storedCount;
+
     /// <param name="preset">minecraft:overworld, minecraft:nether, or minecraft:the_end.</param>
     public ClimateSource(WorldgenData data, DensityRouter router, string preset)
     {
         this.functions = climateFields.Select(field => router.Functions[field]).ToArray();
-        this.flat = this.functions.Select(function => function.IsFlat).ToArray();
         this.parameters = preset == "minecraft:the_end" ? null : BiomeParameters.Read(data, preset);
 
         foreach (var (_, biome) in this.parameters?.Entries ?? [])
         {
             if (CodecRegistry.TryGetBiome(biome, out var codec))
                 this.codecs.TryAdd(biome, codec!);
+        }
+
+        foreach (var biome in this.PossibleBiomes)
+        {
+            if (!CodecRegistry.TryGetBiome(biome, out var codec))
+                continue;
+
+            if (this.paletteIndices.TryAdd(codec!, checked((byte)this.palette.Count)))
+                this.palette.Add(codec!);
         }
     }
 
@@ -54,51 +72,8 @@ internal sealed class ClimateSource : IBiomeSource
             Climate.Quantize(this.functions[5].Sample(x, y, z)));
     }
 
-    /// <summary>
-    /// The climate fields of a quart column that are the same at every y, for <see cref="Sample(int, int, int, in
-    /// TargetPoint)"/> to reuse for each quart of the column. The other fields are 0.
-    /// </summary>
-    public TargetPoint SampleColumn(int quartX, int quartZ)
-    {
-        var x = quartX << 2;
-        var z = quartZ << 2;
-
-        return new TargetPoint(
-            this.ColumnField(0, x, z),
-            this.ColumnField(1, x, z),
-            this.ColumnField(2, x, z),
-            this.ColumnField(3, x, z),
-            this.ColumnField(4, x, z),
-            this.ColumnField(5, x, z));
-    }
-
-    /// <summary>
-    /// <see cref="Sample(int, int, int)"/>, taking the fields that are the same at every y from the quart's column
-    /// (<see cref="SampleColumn"/>).
-    /// </summary>
-    public TargetPoint Sample(int quartX, int quartY, int quartZ, in TargetPoint column)
-    {
-        var x = quartX << 2;
-        var y = quartY << 2;
-        var z = quartZ << 2;
-
-        return new TargetPoint(
-            this.QuartField(0, column.Temperature, x, y, z),
-            this.QuartField(1, column.Humidity, x, y, z),
-            this.QuartField(2, column.Continentalness, x, y, z),
-            this.QuartField(3, column.Erosion, x, y, z),
-            this.QuartField(4, column.Depth, x, y, z),
-            this.QuartField(5, column.Weirdness, x, y, z));
-    }
-
-    private long ColumnField(int field, int x, int z) =>
-        this.flat[field] ? Climate.Quantize(this.functions[field].Sample(x, 0, z)) : 0L;
-
-    private long QuartField(int field, long columnValue, int x, int y, int z) =>
-        this.flat[field] ? columnValue : Climate.Quantize(this.functions[field].Sample(x, y, z));
-
-    // Material rules look a biome up for each block, mostly in quarts just sampled. Each thread keeps the last
-    // climate samples by quart; the tree search still runs for each lookup (see BiomeTerrain).
+    // Block lookups over uncached searches (carvers' top materials, BiomeTerrain.BiomeAt) mostly ask for quarts just
+    // sampled. Each thread keeps the last climate samples by quart; the tree search still runs for each lookup.
     private TargetPoint CachedSample(int quartX, int quartY, int quartZ)
     {
         var cache = climateCache ??= new CachedClimate[ClimateCacheSize];
@@ -116,9 +91,6 @@ internal sealed class ClimateSource : IBiomeSource
         return point;
     }
 
-    /// <summary>The climate search over the parameter list, or <c>null</c> for the End's fixed regions.</summary>
-    public BiomeParameterTree<string>? Tree => this.parameters?.Tree;
-
     /// <summary>Source encounter order, which also determines decoration's feature identities.</summary>
     public IEnumerable<string> PossibleBiomes => this.parameters is null
         ? ["minecraft:the_end", "minecraft:end_highlands", "minecraft:end_midlands",
@@ -131,25 +103,78 @@ internal sealed class ClimateSource : IBiomeSource
             ? this.EndBiome(quartX, quartY, quartZ)
             : this.parameters.Tree.Search(this.CachedSample(quartX, quartY, quartZ));
 
-        return this.codecs.TryGetValue(name, out var codec) ? codec : GetBiome(name);
+        return this.Codec(name);
     }
+
+    private BiomeCodec Codec(string name) => this.codecs.TryGetValue(name, out var codec) ? codec : GetBiome(name);
 
     // Spreads neighboring quarts over the cache's slots; cheaper than HashCode.Combine, which a lookup per block
     // would pay for.
     private static uint QuartHash(int quartX, int quartY, int quartZ) =>
         unchecked((uint)(quartX * 73856093 ^ quartY * 19349663 ^ quartZ * 83492791));
 
-    /// <summary>
-    /// Writes the BIOMES status before terrain. Climate uses a quart-spaced volume; search order is ascending
-    /// section, then x, y, z within each section, matching vanilla's fillBiomesFromNoise tie history.
-    /// </summary>
+    /// <summary>Writes the BIOMES status before terrain: the biomes <see cref="Stored"/> gives the chunk.</summary>
     public void FillBiomes(IChunk chunk)
     {
-        var volume = new DensityVolume(4, chunk.Height >> 2, 4,
-            chunk.X << 4, chunk.MinY, chunk.Z << 4, 4, 4, 4);
-        var samples = this.parameters is null ? [] : this.SampleVolume(volume);
+        var biomes = this.Stored(chunk.X, chunk.Z, chunk.MinY, chunk.Height);
 
-        for (var sectionY = 0; sectionY < chunk.Height; sectionY += 16)
+        for (var quartY = 0; quartY < biomes.QuartHeight; quartY++)
+        {
+            for (var x = 0; x < 4; x++)
+            {
+                for (var z = 0; z < 4; z++)
+                {
+                    chunk.SetBiome(x << 2, chunk.MinY + (quartY << 2), z << 2, biomes.Get(x, quartY, z));
+                }
+            }
+        }
+
+        chunk.SetChunkStatus(ChunkGenStage.biomes);
+    }
+
+    /// <summary>
+    /// The biomes the BIOMES status stores in a chunk with the given build range. Vanilla fills a chunk's biomes once
+    /// and its neighbors' terrain reads them there, so they're kept for the neighbors, whether or not the chunk itself
+    /// has been filled yet.
+    /// </summary>
+    public StoredBiomes Stored(int chunkX, int chunkZ, int minY, int height)
+    {
+        var key = (chunkX, chunkZ);
+
+        if (this.stored.TryGetValue(key, out var biomes) && biomes.MinY == minY && biomes.Height == height)
+            return biomes;
+
+        biomes = this.Fill(chunkX, chunkZ, minY, height);
+
+        if (Interlocked.Increment(ref this.storedCount) > MaxStoredChunks)
+        {
+            this.stored.Clear();
+            Volatile.Write(ref this.storedCount, 0);
+        }
+
+        this.stored[key] = biomes;
+
+        return biomes;
+    }
+
+    /// <summary>
+    /// Vanilla's fillBiomesFromNoise: climate over a quart-spaced volume, searched by ascending section, then x, y, z
+    /// within each section.
+    /// </summary>
+    /// <remarks>
+    /// Each search starts from the result of the one before it, as vanilla's do on its thread, which decides exact
+    /// ties. Vanilla's first search starts from whatever its thread searched last; here it starts from no result, as on
+    /// a thread that hasn't searched yet. So a chunk's biomes don't depend on what was searched before them, and are
+    /// the same however often and in whichever order chunks are filled.
+    /// </remarks>
+    private StoredBiomes Fill(int chunkX, int chunkZ, int minY, int height)
+    {
+        var volume = new DensityVolume(4, height >> 2, 4, chunkX << 4, minY, chunkZ << 4, 4, 4, 4);
+        var samples = this.parameters is null ? [] : this.SampleVolume(volume);
+        var indices = new byte[StoredBiomes.Size(height)];
+        var run = new BiomeParameterTree<string>.SearchRun();
+
+        for (var sectionY = 0; sectionY < height; sectionY += 16)
         {
             for (var x = 0; x < 4; x++)
             {
@@ -159,19 +184,17 @@ internal sealed class ClimateSource : IBiomeSource
 
                     for (var z = 0; z < 4; z++)
                     {
-                        var index = volume.Index(x, quartY, z);
                         var biome = this.parameters is null
-                            ? this.GetNoiseBiome((chunk.X << 2) + x, (chunk.MinY >> 2) + quartY,
-                                (chunk.Z << 2) + z)
-                            : GetBiome(this.parameters.Tree.Search(samples[index]));
+                            ? this.GetNoiseBiome((chunkX << 2) + x, (minY >> 2) + quartY, (chunkZ << 2) + z)
+                            : this.Codec(this.parameters.Tree.Search(samples[volume.Index(x, quartY, z)], ref run));
 
-                        chunk.SetBiome(x << 2, chunk.MinY + (quartY << 2), z << 2, biome);
+                        indices[StoredBiomes.Index(x, quartY, z)] = this.paletteIndices[biome];
                     }
                 }
             }
         }
 
-        chunk.SetChunkStatus(ChunkGenStage.biomes);
+        return new StoredBiomes(this.palette, indices, minY, height);
     }
 
     private TargetPoint[] SampleVolume(DensityVolume volume)

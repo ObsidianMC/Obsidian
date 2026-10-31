@@ -71,8 +71,9 @@ internal sealed record BenchDimension(string Name, MojangDimension Dimension, in
     // Optimizations must not change them. The live generator's were recorded on origin/26.3.x 80555196, whose block
     // states and saved chunks differ from 1.21.x's (on 1.21.x they were c73225baaf86c6fe and 0525f8628623dc64 for the
     // overworld). The 26.3 references include BiomeTerrain.CompleteHeightmaps: decoration's final maps are handed
-    // to chunk storage after all neighboring decoration, before lighting and saving. Terrain write batching keeps
-    // the previous references unchanged when that handoff is omitted; only the handoff changes these hashes.
+    // to chunk storage after all neighboring decoration, before lighting and saving. Its surfaces read the biomes
+    // stored in the chunk and its neighbors, like vanilla's, rather than fresh climate searches, which resolve some
+    // exact ties differently.
     public static IReadOnlyList<BenchDimension> All { get; } =
     [
         new("overworld", MojangDimension.Overworld, 6, -2, "6f824c2e873bca90", "869a5df6644e5d41",

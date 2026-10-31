@@ -45,7 +45,7 @@ internal sealed class BiomeParameterTree<T>
     /// a search has returned it), and only searches the tree when neither answers: the result is the same.
     /// </para>
     /// <para>
-    /// Material rules look a biome up for every block, mostly in the few quarts around it.
+    /// Block lookups zoom over uncached point searches, so they ask for the same few quarts again and again.
     /// </para>
     /// </remarks>
     public T Search(TargetPoint target)
@@ -93,84 +93,26 @@ internal sealed class BiomeParameterTree<T>
     }
 
     /// <summary>
-    /// What decides every search for <paramref name="target"/> (see <see cref="Search(TargetPoint)"/>'s remarks): the
-    /// smallest distance and the first leaf at it. It doesn't depend on, or change, the thread's previous result.
+    /// Searches for <paramref name="target"/> as the next search of <paramref name="run"/>: it starts from the run's
+    /// previous result, as vanilla's searches on one thread start from the thread's. It neither reads nor changes the
+    /// thread's previous result, so a run's results only depend on its own targets.
     /// </summary>
-    /// <param name="near">A target prepared nearby, whose leaf is likely close, or <c>default</c>.</param>
-    public Prepared Prepare(TargetPoint target, in Prepared near = default)
+    public T Search(TargetPoint target, ref SearchRun run)
     {
-        var point = Point(target);
+        ReadOnlySpan<long> point =
+        [
+            target.Temperature,
+            target.Humidity,
+            target.Continentalness,
+            target.Erosion,
+            target.Depth,
+            target.Weirdness,
+            0L
+        ];
+        var leaf = this.root.Search(point, run.Last as Leaf);
+        run.Last = leaf;
 
-        // Starting from a close leaf prunes most of the tree. That search finds the smallest distance, but on a tie
-        // returns the leaf it started from rather than the first one.
-        var start = near.First as Leaf ?? this.State().Last;
-        var nearest = this.root.Search(point, start);
-        var distance = nearest.Distance(point);
-        var first = this.root.FirstAt(point, distance)!;
-
-        return new Prepared(target, distance, first);
-    }
-
-    /// <summary>
-    /// Whether the thread's previous result is the first leaf of <paramref name="prepared"/>: then searching for it
-    /// returns that leaf whatever the tie.
-    /// </summary>
-    public bool IsPrevious(in Prepared prepared) => ReferenceEquals(this.State().Last, prepared.First);
-
-    /// <summary>
-    /// Searches for a prepared target: the same result, and the same previous result for the thread's next search, as
-    /// <see cref="Search(TargetPoint)"/> gives for its target.
-    /// </summary>
-    public T Search(in Prepared prepared)
-    {
-        var state = this.State();
-        var target = prepared.Target;
-        var first = (Leaf)prepared.First;
-        var last = state.Last;
-        state.LastTarget = target;
-
-        if (ReferenceEquals(last, first))
-            return first.Value;
-
-        if (last is not null)
-        {
-            var point = Point(target);
-
-            if (last.Distance(point) == prepared.Distance)
-                return last.Value;
-        }
-
-        state.Last = first;
-        return first.Value;
-    }
-
-    private SearchState State()
-    {
-        var state = lastSearched;
-        if (state is null || state.Owner != this.identity)
-            lastSearched = state = this.searches.Value!;
-
-        return state;
-    }
-
-    // A target as the tree's 7 parameters; the last, the offset, is 0 for every target.
-    private static PointBuffer Point(in TargetPoint target)
-    {
-        var point = new PointBuffer();
-        point[0] = target.Temperature;
-        point[1] = target.Humidity;
-        point[2] = target.Continentalness;
-        point[3] = target.Erosion;
-        point[4] = target.Depth;
-        point[5] = target.Weirdness;
-
-        return point;
-    }
-
-    [System.Runtime.CompilerServices.InlineArray(Dimensions)]
-    private struct PointBuffer
-    {
-        private long element;
+        return leaf.Value;
     }
 
     // Cheaper than the record's hash, which combines each field through an equality comparer.
@@ -302,23 +244,13 @@ internal sealed class BiomeParameterTree<T>
     }
 
     /// <summary>
-    /// A target with the smallest distance to it and the first leaf at that distance (see <see cref="Prepare"/>).
+    /// A run of searches, each starting from the previous one's result (see <see cref="Search(TargetPoint, ref
+    /// SearchRun)"/>). A new run starts its first search from no result.
     /// </summary>
-    public readonly struct Prepared
+    public struct SearchRun
     {
-        internal Prepared(TargetPoint target, long distance, object first)
-        {
-            this.Target = target;
-            this.Distance = distance;
-            this.First = first;
-        }
-
-        public TargetPoint Target { get; }
-
-        internal long Distance { get; }
-
-        // A Leaf, which is private to the tree.
-        internal object First { get; }
+        // The run's last result, a Leaf (which is private to the tree), or null before its first search.
+        internal object? Last;
     }
 
     /// <param name="Leaf">The leaf a search returned, which marks the entry as used.</param>
@@ -337,12 +269,6 @@ internal sealed class BiomeParameterTree<T>
 
         public abstract Leaf Search(ReadOnlySpan<long> target, Leaf? candidate);
 
-        /// <summary>
-        /// The first leaf in the tree's order at <paramref name="distance"/>, the smallest distance to
-        /// <paramref name="target"/>, or <c>null</c> when none is in this subtree.
-        /// </summary>
-        public abstract Leaf? FirstAt(ReadOnlySpan<long> target, long distance);
-
         public long Distance(ReadOnlySpan<long> target) => BoundsDistance(this.Bounds, target);
     }
 
@@ -351,9 +277,6 @@ internal sealed class BiomeParameterTree<T>
         public T Value { get; } = value;
 
         public override Leaf Search(ReadOnlySpan<long> target, Leaf? candidate) => this;
-
-        public override Leaf? FirstAt(ReadOnlySpan<long> target, long distance) =>
-            this.Distance(target) == distance ? this : null;
     }
 
     private sealed class SubTree(List<Node> children) : Node(BuildParameterSpace(children))
@@ -392,25 +315,6 @@ internal sealed class BiomeParameterTree<T>
             }
 
             return best!;
-        }
-
-        // A search without a previous result returns the first leaf at the smallest distance: it only replaces its
-        // best leaf with a strictly closer one, and only skips children that can't hold a closer one.
-        public override Leaf? FirstAt(ReadOnlySpan<long> target, long distance)
-        {
-            var children = this.Children;
-
-            for (var i = 0; i < children.Length; i++)
-            {
-                var childDistance = BoundsDistance(this.childBounds.AsSpan(i * Dimensions * 2), target);
-                if (childDistance > distance)
-                    continue;
-
-                if (children[i].FirstAt(target, distance) is Leaf leaf)
-                    return leaf;
-            }
-
-            return null;
         }
 
         private static ClimateParameter[] BuildParameterSpace(List<Node> children)

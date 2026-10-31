@@ -42,7 +42,7 @@ public class VanillaMaterialRules
         heightmap.Set(x & 15, (z + 1) & 15, 64 + entry.GetProperty("gradientZ").GetInt32());
         var terrain = generator.CreateContext(chunk, (_, _, _) => biome);
         var volume = new DensityVolume(1, 1, 1, x, y, z);
-        var context = new MaterialRules.MaterialContext(generator.Materials, terrain, volume);
+        var context = new MaterialRules.MaterialContext(generator.Materials, terrain, terrain.Biomes.Surface, volume);
         context.UpdateColumn(x & 15, z & 15);
         context.UpdateBlock(
             y,

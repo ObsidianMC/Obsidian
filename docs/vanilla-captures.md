@@ -131,6 +131,10 @@ Nothing is reimplemented:
 - **Terrain:** the dimension's chunk source generates a chunk to `ChunkStatus.TERRAIN`, with structures disabled.
   A separate empty protochunk runs vanilla's own fill, material and carver methods, sharing one `NoiseChunk`. The
   probe checks that this isolated run produces the same blocks as the actual terrain status before recording it.
+  As in vanilla's terrain step, material rules read the biomes stored in the chunk and its eight neighbors, through
+  the zoomed biome manager, while carving's top materials read uncached climate searches. Each of those chunks is
+  filled by vanilla's own biome step on a new thread: a climate search starts from its thread's previous result,
+  which decides exact ties, so a fresh thread fills a chunk the same way in every capture.
 - **Materials:** `MaterialRule.CODEC` parses a rule or reference. Vanilla's material context supplies the captured
   biome, column depths, water height and surface gradients, and the rule evaluates one block. These cases exercise
   depth and height boundaries, gradients, biome conditions, 2D/3D noise thresholds, sequence fallthrough, block
@@ -192,7 +196,8 @@ entities decoration added to the nine chunks, by chunk in z, x order and in each
 `ShowBottom`; the rest of a fresh entity's tag is its random UUID and defaults. The replay compares Obsidian's
 generated entities, filling in the values they load by default.
 
-The probe builds fresh terrain and biome chunks for the writable 3x3 region, invokes vanilla's
+The probe fills fresh biome chunks for the 5x5 chunks around the center (as for terrain above), builds fresh
+terrain for the writable 3x3 region, invokes vanilla's
 `ChunkGenerator.applyBiomeDecoration`, and records all nine chunks' blocks and six heightmaps, ordered
 post-processing marks (including terrain marks), and block entities. Each heightmap is gzip/base64 encoded big-endian
 int32 heights in z/x column order, like the existing block-index arrays. Cases with `verifyStatus` also check the
@@ -235,7 +240,7 @@ Each case records these independent boundaries:
 | `aquiferFluids` | Aquifer fluid levels and types at specified underground/surface positions, where settings have aquifers. |
 | `blocks`, `heightmaps`, `status` | Every block state and both generation heightmaps at the actual terrain status. |
 | `postProcessing` | Fluid post-processing positions, including duplicates, in section order and insertion order within each section. |
-| `materialBiomes`, `carverSources` | Captured dependency inputs: block-level biomes and the ordered carver lists of the 17-by-17 source chunks. |
+| `materialBiomes`, `carverSources` | Captured dependency inputs: the block-level biomes material rules read (the zoom over stored biomes) and the ordered carver lists of the 17-by-17 source chunks. |
 
 `minY` and `height` describe the whole dimension's build range. Blocks include the air above the Nether and End's
 noise ranges; density and mask buffers cover the noise settings' generation volume. A block buffer holds a palette
@@ -278,8 +283,8 @@ Stable sorting and the previous winning leaf on each thread decide equal-distanc
   caves and dappled forest), plus more End locations. `palette` and `data` encode every stored quart in ascending
   y, z, x order, with big-endian 32-bit palette indices compressed as above. Selection uses vanilla's climate
   volume path, at quart corners, and searches in section, x, y, z order. Those are distinct from buffer order.
-  `spawnBiomes` separately records full-resolution block lookups over stored sections, in z, x, y order. Those
-  can differ from the uncached point-climate `materialBiomes` at cave borders, and clamp Y to storage height.
+  `spawnBiomes` separately records full-resolution block lookups over the actual stored sections, in z, x, y
+  order, clamping Y to storage height like `materialBiomes`.
 - `spawn_attributes` records vanilla's resolution of default, dimension and biome maps. It covers ordinary and
   new overworld biomes, the deep dark's empty categories, Nether costs and the End, plus inherited dimension
   spawns, explicit empty categories, overridden costs, an empty override and a probability modifier.
