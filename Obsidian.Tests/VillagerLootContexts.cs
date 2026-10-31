@@ -10,6 +10,7 @@ using Obsidian.Entities;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -17,16 +18,28 @@ namespace Obsidian.Tests;
 [Collection(nameof(PluginTagFiles))]
 public sealed class VillagerLootContexts
 {
-    [Theory(Timeout = TestServerFactory.TestTimeout)]
-    [InlineData("villager", "entity")]
-    [InlineData("zombie_villager", "entity")]
-    [InlineData("villager", "block")]
-    [InlineData("zombie_villager", "block")]
-    [InlineData("villager", "container")]
-    [InlineData("zombie_villager", "container")]
-    [InlineData("villager", "vehicle")]
-    [InlineData("zombie_villager", "vehicle")]
-    public async Task GameplayLootResolvesVillagerVariants(string entityType, string source)
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task GameplayLootResolvesVillagerVariants()
+    {
+        (string EntityType, string Source)[] cases =
+        [
+            ("villager", "entity"),
+            ("zombie_villager", "entity"),
+            ("villager", "block"),
+            ("zombie_villager", "block"),
+            ("villager", "container"),
+            ("zombie_villager", "container"),
+            ("villager", "vehicle"),
+            ("zombie_villager", "vehicle")
+        ];
+
+        await FixtureCases.AssertAllAsync(
+            cases,
+            row => $"entityType={row.EntityType}, source={row.Source}",
+            row => AssertGameplayLootResolvesVillagerVariants(row.EntityType, row.Source));
+    }
+
+    private static async Task AssertGameplayLootResolvesVillagerVariants(string entityType, string source)
     {
         await using var context = TestServerFactory.CreateServer($"variant-loot-{Guid.NewGuid():N}");
         WorldBlockEntities.AddEmptyChunk(context.World);

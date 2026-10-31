@@ -16,6 +16,7 @@ using Obsidian.Nbt;
 using Obsidian.Entities;
 using Obsidian.Entities.Factories;
 using Obsidian.Tests.Fakes;
+using Obsidian.Tests.Utilities;
 using Obsidian.Registries;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData;
@@ -142,47 +143,17 @@ public class VanillaLoot
         using var stream = typeof(VanillaLoot).Assembly.GetManifestResourceStream(
             "Obsidian.Tests.Assets.context_numbers.json")!;
         using var capture = JsonDocument.Parse(stream);
+        var rows = capture.RootElement.EnumerateArray().Select((row, index) => (Row: row, Index: index));
 
-        foreach (var row in capture.RootElement.EnumerateArray())
-        {
-            if (!row.TryGetProperty("case", out _))
-            {
-                ReplayContextNumber(row);
-            }
-        }
+        FixtureCases.AssertAll(rows, ContextNumberName, row => ReplayContextNumber(row.Row));
     }
 
-    public static IEnumerable<object[]> ContextNumberEdgeCases()
+    private static string ContextNumberName((JsonElement Row, int Index) row)
     {
-        using var stream = typeof(VanillaLoot).Assembly.GetManifestResourceStream(
-            "Obsidian.Tests.Assets.context_numbers.json")!;
-        using var capture = JsonDocument.Parse(stream);
+        if (row.Row.TryGetProperty("case", out var name))
+            return $"[{row.Index}] {name.GetString()}";
 
-        return capture.RootElement.EnumerateArray()
-            .Where(row => row.TryGetProperty("case", out _))
-            .Select(row => row.GetProperty("case").GetString()!)
-            .Distinct()
-            .Select(name => new object[] { name })
-            .ToArray();
-    }
-
-    [Theory]
-    [MemberData(nameof(ContextNumberEdgeCases))]
-    public void ContextNumberEdgeCasesMatchVanilla(string caseName)
-    {
-        using var stream = typeof(VanillaLoot).Assembly.GetManifestResourceStream(
-            "Obsidian.Tests.Assets.context_numbers.json")!;
-        using var capture = JsonDocument.Parse(stream);
-        var rows = capture.RootElement.EnumerateArray()
-            .Where(row => row.TryGetProperty("case", out var name) && name.GetString() == caseName)
-            .ToArray();
-
-        foreach (var row in rows)
-        {
-            ReplayContextNumber(row);
-        }
-
-        Assert.Equal(2, rows.Length);
+        return $"[{row.Index}]";
     }
 
     [Fact]

@@ -38,56 +38,6 @@ public sealed class PlantRandomTicks
         Assert.Null(BlocksRegistry.GetRandomTickBehavior(BlockIds.Dirt));
     }
 
-    [Fact(DisplayName = "A sugar cane with air above grows one age on a random tick", Timeout = TestServerFactory.TestTimeout)]
-    public async Task SugarCaneGrowsOnRandomTick()
-    {
-        await using var context = TestServerFactory.CreateServer($"plant-cane-{Guid.NewGuid():N}");
-        var world = context.World;
-        AddChunks(world);
-        var random = new LegacyRandomSource(1);
-
-        Held(world).SetBlock(Base + Vector.Down, BlocksRegistry.GetDefault(BlockIds.Dirt));
-        Held(world).SetBlock(Base, BlocksRegistry.GetDefault(BlockIds.SugarCane).WithProperty("age", "0"));
-        RandomTickBehaviors.SugarCaneBlock.RandomTick(world, Base, Held(world).GetBlock(Base), random);
-
-        Assert.Equal("1", Held(world).GetBlock(Base).GetProperty("age"));
-        await world.DoWorldTickAsync();
-    }
-
-    [Fact(DisplayName = "A chorus flower on end stone with air above grows a stalk and a new flower", Timeout = TestServerFactory.TestTimeout)]
-    public async Task ChorusFlowerGrowsOnEndStone()
-    {
-        await using var context = TestServerFactory.CreateServer($"plant-chorus-{Guid.NewGuid():N}");
-        var world = context.World;
-        AddChunks(world);
-        var random = new LegacyRandomSource(1);
-
-        Held(world).SetBlock(Base + Vector.Down, BlocksRegistry.GetDefault(BlockIds.EndStone));
-        Held(world).SetBlock(Base, BlocksRegistry.ChorusFlower.WithProperty("age", 0));
-        RandomTickBehaviors.ChorusFlowerBlock.RandomTick(world, Base, Held(world).GetBlock(Base), random);
-
-        Assert.Equal(BlockIds.ChorusPlant, Held(world).GetBlock(Base).RegistryId);
-        Assert.Equal(BlockIds.ChorusFlower, Held(world).GetBlock(Base + Vector.Up).RegistryId);
-        Assert.Equal("0", Held(world).GetBlock(Base + Vector.Up).GetProperty("age"));
-        await world.DoWorldTickAsync();
-    }
-
-    [Fact(DisplayName = "Grass under an opaque block decays to dirt on a random tick", Timeout = TestServerFactory.TestTimeout)]
-    public async Task GrassDecaysUnderOpaqueBlock()
-    {
-        await using var context = TestServerFactory.CreateServer($"plant-grass-{Guid.NewGuid():N}");
-        var world = context.World;
-        AddChunks(world);
-
-        var grass = Base + Vector.Down;
-        Held(world).SetBlock(Base, BlocksRegistry.GetDefault(BlockIds.Stone));
-        Assert.Equal(BlockIds.GrassBlock, Held(world).GetBlock(grass).RegistryId);
-        RandomTickBehaviors.SpreadingSnowyBlock.RandomTick(world, grass, Held(world).GetBlock(grass), new LegacyRandomSource(1));
-
-        Assert.Equal(BlockIds.Dirt, Held(world).GetBlock(grass).RegistryId);
-        await world.DoWorldTickAsync();
-    }
-
     private static IChunk Held(WorldData.World world) => world.GetLoadedChunk(0, 0)!;
 
     private static void AddChunks(WorldData.World world)

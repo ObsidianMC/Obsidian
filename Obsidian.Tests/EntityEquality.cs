@@ -1,4 +1,5 @@
 using Obsidian.Entities;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -20,10 +21,22 @@ public sealed class EntityEquality
         Assert.False(missing != alsoMissing);
     }
 
-    [Theory]
-    [InlineData(1, 1, true)]
-    [InlineData(1, 2, false)]
-    public void EqualityUsesEntityIds(int firstId, int secondId, bool equal)
+    [Fact]
+    public void EqualityUsesEntityIds()
+    {
+        (int FirstId, int SecondId, bool Equal)[] cases =
+        [
+            (1, 1, true),
+            (1, 2, false)
+        ];
+
+        FixtureCases.AssertAll(
+            cases,
+            row => $"firstId={row.FirstId}, secondId={row.SecondId}, equal={row.Equal}",
+            row => AssertEqualityUsesEntityIds(row.FirstId, row.SecondId, row.Equal));
+    }
+
+    private static void AssertEqualityUsesEntityIds(int firstId, int secondId, bool equal)
     {
         var first = new Entity { Level = null!, EntityId = firstId };
         var second = new Entity { Level = null!, EntityId = secondId };

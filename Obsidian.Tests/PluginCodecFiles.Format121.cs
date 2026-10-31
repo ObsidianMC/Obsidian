@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -16,10 +17,22 @@ namespace Obsidian.Tests;
 public partial class PluginCodecFiles
 {
     // These assets retain vanilla's complete datagen JSON, before the codec source generator selects its fields.
-    [Theory]
-    [InlineData(PluginCodecs.Biome, "biome", 67)]
-    [InlineData(PluginCodecs.DimensionType, "dimension_type", 4)]
-    public void VanillaFormat121RegistryFilesRoundTrip(string registry, string asset, int count)
+    [Fact]
+    public void VanillaFormat121RegistryFilesRoundTrip()
+    {
+        (string Registry, string Asset, int Count)[] cases =
+        [
+            (PluginCodecs.Biome, "biome", 67),
+            (PluginCodecs.DimensionType, "dimension_type", 4)
+        ];
+
+        FixtureCases.AssertAll(
+            cases,
+            row => $"registry={row.Registry}, asset={row.Asset}, count={row.Count}",
+            row => AssertVanillaFormat121RegistryFilesRoundTrip(row.Registry, row.Asset, row.Count));
+    }
+
+    private static void AssertVanillaFormat121RegistryFilesRoundTrip(string registry, string asset, int count)
     {
         using var document = Format121Data.Read(asset);
         var files = document.RootElement.EnumerateObject().ToArray();
@@ -173,10 +186,19 @@ public partial class PluginCodecFiles
         Assert.Equal(probability, biome.CreatureSpawnProbability);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void ReadsNaturalSpawnsAsValuesOrModifiers(bool direct)
+    [Fact]
+    public void ReadsNaturalSpawnsAsValuesOrModifiers()
+    {
+        bool[] cases =
+        [
+            false,
+            true
+        ];
+
+        FixtureCases.AssertAll(cases, row => $"direct={row}", AssertReadsNaturalSpawnsAsValuesOrModifiers);
+    }
+
+    private static void AssertReadsNaturalSpawnsAsValuesOrModifiers(bool direct)
     {
         using var document = Format121Data.Read("biome");
         var original = document.RootElement.GetProperty("minecraft:plains");
@@ -198,12 +220,24 @@ public partial class PluginCodecFiles
         AssertVanillaSpawns(original, parsed);
     }
 
-    [Theory]
-    [InlineData("default_clock", "\"missing:clock\"")]
-    [InlineData("default_clock", "\"INVALID\"")]
-    [InlineData("has_ender_dragon_fight", "null")]
-    [InlineData("has_ender_dragon_fight", "\"true\"")]
-    public void RejectsInvalidFormat121DimensionFields(string field, string value)
+    [Fact]
+    public void RejectsInvalidFormat121DimensionFields()
+    {
+        (string Field, string Value)[] cases =
+        [
+            ("default_clock", "\"missing:clock\""),
+            ("default_clock", "\"INVALID\""),
+            ("has_ender_dragon_fight", "null"),
+            ("has_ender_dragon_fight", "\"true\"")
+        ];
+
+        FixtureCases.AssertAll(
+            cases,
+            row => $"field={row.Field}, value={row.Value}",
+            row => AssertRejectsInvalidFormat121DimensionFields(row.Field, row.Value));
+    }
+
+    private static void AssertRejectsInvalidFormat121DimensionFields(string field, string value)
     {
         using var document = Format121Data.Read("dimension_type");
         var root = JsonNode.Parse(document.RootElement.GetProperty("minecraft:overworld").GetRawText())!;

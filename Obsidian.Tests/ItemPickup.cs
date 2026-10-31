@@ -1,6 +1,7 @@
 using Obsidian.API;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
+using Obsidian.Tests.Utilities;
 using Xunit;
 using PlayerEntity = Obsidian.Entities.Player;
 
@@ -28,10 +29,22 @@ public sealed class ItemPickup
         Assert.Null(inventory.GetItem(heldSlot));
     }
 
-    [Theory]
-    [InlineData(false, 10)]
-    [InlineData(true, 0)]
-    public void FullInventoryKeepsTheStackUnlessCreative(bool infiniteMaterials, int expectedLeft)
+    [Fact]
+    public void FullInventoryKeepsTheStackUnlessCreative()
+    {
+        (bool InfiniteMaterials, int ExpectedLeft)[] cases =
+        [
+            (false, 10),
+            (true, 0)
+        ];
+
+        FixtureCases.AssertAll(
+            cases,
+            row => $"infiniteMaterials={row.InfiniteMaterials}, expectedLeft={row.ExpectedLeft}",
+            row => AssertFullInventoryKeepsTheStackUnlessCreative(row.InfiniteMaterials, row.ExpectedLeft));
+    }
+
+    private static void AssertFullInventoryKeepsTheStackUnlessCreative(bool infiniteMaterials, int expectedLeft)
     {
         var inventory = new Container(46);
         for (var slot = 9; slot <= 45; slot++)

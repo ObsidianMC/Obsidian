@@ -3,6 +3,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities;
 using System.IO;
 using System.IO.Compression;
+using Obsidian.Tests.Utilities;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -55,10 +56,19 @@ public sealed class Compression(ITestOutputHelper output)
         AssertDelimiter(buffer);
     }
 
-    [Theory(DisplayName = "Packets round-trip through compressed framing")]
-    [InlineData(10)]
-    [InlineData(4000)]
-    public void CompressedFramingRoundTrip(int messageLength)
+    [Fact(DisplayName = "Packets round-trip through compressed framing")]
+    public void CompressedFramingRoundTrip()
+    {
+        int[] cases =
+        [
+            10,
+            4000
+        ];
+
+        FixtureCases.AssertAll(cases, row => $"messageLength={row}", AssertCompressedFramingRoundTrip);
+    }
+
+    private static void AssertCompressedFramingRoundTrip(int messageLength)
     {
         var message = new string('x', messageLength);
         var chat = new SystemChatPacket(message, false);

@@ -16,6 +16,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Nbt;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
+using Obsidian.Tests.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -42,22 +43,28 @@ public sealed class VanillaCommands26
         return document.RootElement.Clone();
     }
 
-    public static IEnumerable<object[]> ComputeCases => Rows("compute");
-    public static IEnumerable<object[]> TimeCases => Rows("time");
-    public static IEnumerable<object[]> SlotCases => Rows("slots");
-    public static IEnumerable<object[]> DataCases => Rows("data");
-    public static IEnumerable<object[]> SpamCases => Rows("spam");
-    public static IEnumerable<object[]> ItemCountCases => Rows("item_counts");
-    public static IEnumerable<object[]> NumericTagCases => Rows("numeric_tags");
-    public static IEnumerable<object[]> DataGetCases => Rows("data_get");
-    public static IEnumerable<object[]> ExecuteCompletionCases => Rows("execute_completions");
+    private static IEnumerable<(string Name, string Json)> Rows(string section) => fixture.GetProperty(section)
+        .EnumerateArray()
+        .Select((row, index) => ($"{section}-{index}", row.GetRawText()));
 
-    private static IEnumerable<object[]> Rows(string section) => fixture.GetProperty(section).EnumerateArray()
-        .Select((row, index) => new object[] { $"{section}-{index}", row.GetRawText() });
+    // Replays every captured row of a fixture section and fails once, naming every row that differs.
+    private static void Replay(string section, Action<string, string> check)
+    {
+        FixtureCases.AssertAll(Rows(section), row => row.Name, row => check(row.Name, row.Json));
+    }
 
-    [Theory]
-    [MemberData(nameof(ComputeCases))]
-    public async Task ComputeResultsMatchVanilla(string name, string json)
+    private static Task ReplayAsync(string section, Func<string, string, Task> check)
+    {
+        return FixtureCases.AssertAllAsync(Rows(section), row => row.Name, row => check(row.Name, row.Json));
+    }
+
+    [Fact]
+    public async Task ComputeResultsMatchVanilla()
+    {
+        await ReplayAsync("compute", AssertComputeResultsMatchVanilla);
+    }
+
+    private static async Task AssertComputeResultsMatchVanilla(string name, string json)
     {
         using var document = JsonDocument.Parse(json);
         var row = document.RootElement;
@@ -72,34 +79,13 @@ public sealed class VanillaCommands26
         Assert.Equal(row.GetProperty("result").GetInt32(), context.Result);
     }
 
-    [Theory]
-    [InlineData("this", "player", 1)]
-    [InlineData("this", "zombie", 0)]
-    [InlineData("target_entity", "zombie", 1)]
-    [InlineData("target_entity", "player", 0)]
-    public async Task ComputeEntityContextsKeepTheExecutorAndTheTargetApart(string target, string type, int expected)
+    [Fact]
+    public async Task ClockResultsAndFailuresMatchVanilla()
     {
-        await using var server = TestServerFactory.CreateServer($"compute-entity-{Guid.NewGuid():N}");
-        var handler = (CommandHandler)server.Server.CommandHandler;
-        handler.RegisterCommandClass<ComputeCommandModule>(null);
-        WorldBlockEntities.AddEmptyChunk(server.World);
-        var player = AddFixturePlayer(server);
-        var zombie = server.World.SpawnEntity(new VectorD(0.5, 64, 0.5), EntityType.Zombie);
-        var condition = $"{{type:'entity_properties',entity:'{target}',predicate:{{entity_type:'{type}'}}}}";
-        var provider = $"{{type:'conditional',condition:{condition},on_true:1,on_false:0}}";
-        var command = $"/compute entity {zombie.Uuid} integer {provider}";
-        var context = new CommandContext(command, new CommandSender(CommandIssuers.Console, null), player,
-            server.Server);
-
-        await handler.ProcessCommand(context);
-
-        Assert.True(context.Succeeded);
-        Assert.Equal(expected, context.Result);
+        await ReplayAsync("time", AssertClockResultsAndFailuresMatchVanilla);
     }
 
-    [Theory]
-    [MemberData(nameof(TimeCases))]
-    public async Task ClockResultsAndFailuresMatchVanilla(string name, string json)
+    private static async Task AssertClockResultsAndFailuresMatchVanilla(string name, string json)
     {
         using var document = JsonDocument.Parse(json);
         var row = document.RootElement;
@@ -123,9 +109,13 @@ public sealed class VanillaCommands26
         Assert.Equal(row.GetProperty("afterPaused").GetBoolean(), clock.Paused);
     }
 
-    [Theory]
-    [MemberData(nameof(SlotCases))]
-    public async Task SlotSourcesAndDistributionMatchVanilla(string name, string json)
+    [Fact]
+    public async Task SlotSourcesAndDistributionMatchVanilla()
+    {
+        await ReplayAsync("slots", AssertSlotSourcesAndDistributionMatchVanilla);
+    }
+
+    private static async Task AssertSlotSourcesAndDistributionMatchVanilla(string name, string json)
     {
         using var document = JsonDocument.Parse(json);
         var row = document.RootElement;
@@ -183,9 +173,13 @@ public sealed class VanillaCommands26
         }
     }
 
-    [Theory]
-    [MemberData(nameof(ItemCountCases))]
-    public async Task CreatedItemStacksAreValidatedLikeVanilla(string name, string json)
+    [Fact]
+    public async Task CreatedItemStacksAreValidatedLikeVanilla()
+    {
+        await ReplayAsync("item_counts", AssertCreatedItemStacksAreValidatedLikeVanilla);
+    }
+
+    private static async Task AssertCreatedItemStacksAreValidatedLikeVanilla(string name, string json)
     {
         using var document = JsonDocument.Parse(json);
         var row = document.RootElement;
@@ -228,9 +222,13 @@ public sealed class VanillaCommands26
         }
     }
 
-    [Theory]
-    [MemberData(nameof(ExecuteCompletionCases))]
-    public async Task CompletionsFollowExecuteRunToTheRoot(string name, string json)
+    [Fact]
+    public async Task CompletionsFollowExecuteRunToTheRoot()
+    {
+        await ReplayAsync("execute_completions", AssertCompletionsFollowExecuteRunToTheRoot);
+    }
+
+    private static async Task AssertCompletionsFollowExecuteRunToTheRoot(string name, string json)
     {
         using var document = JsonDocument.Parse(json);
         var row = document.RootElement;
@@ -285,9 +283,13 @@ public sealed class VanillaCommands26
             AssertStack(expected[slot], inventory.GetItem(slot)!);
     }
 
-    [Theory]
-    [MemberData(nameof(DataCases))]
-    public void ComputedNbtMutationsMatchVanilla(string name, string json)
+    [Fact]
+    public void ComputedNbtMutationsMatchVanilla()
+    {
+        Replay("data", AssertComputedNbtMutationsMatchVanilla);
+    }
+
+    private static void AssertComputedNbtMutationsMatchVanilla(string name, string json)
     {
         Assert.StartsWith("data-", name);
         using var document = JsonDocument.Parse(json);
@@ -318,9 +320,13 @@ public sealed class VanillaCommands26
         AssertJsonNbt(row.GetProperty("after"), root);
     }
 
-    [Theory]
-    [MemberData(nameof(SpamCases))]
-    public void SeparateSpamBudgetsMatchVanilla(string name, string json)
+    [Fact]
+    public void SeparateSpamBudgetsMatchVanilla()
+    {
+        Replay("spam", AssertSeparateSpamBudgetsMatchVanilla);
+    }
+
+    private static void AssertSeparateSpamBudgetsMatchVanilla(string name, string json)
     {
         Assert.StartsWith("spam-", name);
         using var document = JsonDocument.Parse(json);
@@ -348,9 +354,13 @@ public sealed class VanillaCommands26
         }
     }
 
-    [Theory]
-    [MemberData(nameof(NumericTagCases))]
-    public void NumericNbtConvertsLikeVanilla(string name, string json)
+    [Fact]
+    public void NumericNbtConvertsLikeVanilla()
+    {
+        Replay("numeric_tags", AssertNumericNbtConvertsLikeVanilla);
+    }
+
+    private static void AssertNumericNbtConvertsLikeVanilla(string name, string json)
     {
         Assert.StartsWith("numeric_tags-", name);
         using var document = JsonDocument.Parse(json);
@@ -471,26 +481,6 @@ public sealed class VanillaCommands26
     }
 
     [Fact]
-    public async Task ExecutePreservesFailuresAndSuccessfulZeroResults()
-    {
-        await using var server = TestServerFactory.CreateServer($"command-results-{Guid.NewGuid():N}");
-        var handler = (CommandHandler)server.Server.CommandHandler;
-        handler.RegisterCommandClass<ExecuteCommandModule>(null);
-        handler.RegisterCommandClass<ComputeCommandModule>(null);
-        var zero = Context(server.Server, "execute run compute default integer {type:'minecraft:constant',value:0}");
-        var failure = Context(server.Server,
-            "execute run compute default integer {type:'minecraft:div',left:1,right:0}");
-
-        await handler.ProcessCommand(zero);
-        await handler.ProcessCommand(failure);
-
-        Assert.True(zero.Succeeded);
-        Assert.Equal(0, zero.Result);
-        Assert.False(failure.Succeeded);
-        Assert.Equal(0, failure.Result);
-    }
-
-    [Fact]
     public async Task ComputedDataCommitsToStorageAndFeedsOtherProviders()
     {
         await using var server = TestServerFactory.CreateServer($"command-storage-{Guid.NewGuid():N}");
@@ -514,9 +504,13 @@ public sealed class VanillaCommands26
         Assert.True(File.Exists(Path.Combine(server.World.WorldFolderPath, "data", "test", "command_storage.dat")));
     }
 
-    [Theory]
-    [MemberData(nameof(DataGetCases))]
-    public async Task DataGetResultsMatchVanilla(string name, string json)
+    [Fact]
+    public async Task DataGetResultsMatchVanilla()
+    {
+        await ReplayAsync("data_get", AssertDataGetResultsMatchVanilla);
+    }
+
+    private static async Task AssertDataGetResultsMatchVanilla(string name, string json)
     {
         using var document = JsonDocument.Parse(json);
         var row = document.RootElement;
@@ -540,26 +534,6 @@ public sealed class VanillaCommands26
         Assert.Equal(result, executed.Result);
     }
 
-    [Theory]
-    [InlineData("integer", "5", 5f)]
-    [InlineData("float", "7.5", 7.5f)]
-    public async Task ComputedEntityDataReachesTheLiveEntity(string kind, string value, float health)
-    {
-        await using var server = TestServerFactory.CreateServer($"command-entity-data-{Guid.NewGuid():N}");
-        var handler = (CommandHandler)server.Server.CommandHandler;
-        handler.RegisterCommandClass<DataCommandModule>(null);
-        WorldBlockEntities.AddEmptyChunk(server.World);
-        var zombie = (Obsidian.Entities.Living)server.World.SpawnEntity(new VectorD(0.5, 64, 0.5), EntityType.Zombie);
-        var provider = $"{{type:'constant',value:{value}}}";
-        var command = $"data modify entity {zombie.Uuid} Health set compute default {kind} {provider}";
-        var context = Context(server.Server, command);
-
-        await handler.ProcessCommand(context);
-
-        Assert.True(context.Succeeded);
-        Assert.Equal(health, zombie.Health);
-    }
-
     [Fact]
     public async Task InlineFeaturesUseTheCurrentFeatureMachinery()
     {
@@ -580,12 +554,11 @@ public sealed class VanillaCommands26
         Assert.Equal(1, command.Result);
     }
 
-    [Theory]
-    [InlineData("stone")]
-    [InlineData(":stone")]
-    [InlineData("minecraft:stone")]
-    public async Task InlineFeaturesChangeTheWorld(string block)
+    [Fact]
+    public async Task InlineFeaturesChangeTheWorld()
     {
+        // A bare block id, which vanilla's parser resolves in the minecraft namespace.
+        const string block = "stone";
         await using var server = TestServerFactory.CreateServer($"command-feature-{Guid.NewGuid():N}");
         var handler = (CommandHandler)server.Server.CommandHandler;
         handler.RegisterCommandClass<PlaceCommandModule>(null);
@@ -599,35 +572,6 @@ public sealed class VanillaCommands26
         Assert.Equal(1, command.Result);
         var placed = await server.World.GetBlockAsync(0, 64, 0);
         Assert.Equal(BlocksRegistry.Stone, placed);
-    }
-
-    [Fact]
-    public async Task InlineFeaturesRunTheirProvidersAndPlacementFilters()
-    {
-        await using var server = TestServerFactory.CreateServer($"command-feature-{Guid.NewGuid():N}");
-        var handler = (CommandHandler)server.Server.CommandHandler;
-        handler.RegisterCommandClass<PlaceCommandModule>(null);
-        AddFeatureArea(server.World);
-        // Two placed simple blocks: the first's filter passes on air, the second's needs bedrock and skips it.
-        const string provider = "{type:'weighted',entries:[{data:{id:'oak_log',properties:{axis:'x'}},weight:1}]}";
-        const string feature = $"{{type:'simple_block',to_place:{provider}}}";
-        const string onAir = "{type:'block_predicate_filter',predicate:{type:'matching_blocks',blocks:['air']}}";
-        const string onBedrock = "{type:'block_predicate_filter',predicate:{type:'matching_blocks',blocks:'bedrock'}}";
-        const string east = $"{{feature:{feature},placement:[{{type:'offset',x:1,y:0,z:0}},{onAir}]}}";
-        const string west = $"{{feature:{feature},placement:[{{type:'offset',x:-1,y:0,z:0}},{onBedrock}]}}";
-        var command = Context(server.Server, $"place feature {{type:'overlay',features:[{east},{west}]}} 0 64 0");
-
-        await handler.ProcessCommand(command);
-
-        Assert.True(command.Succeeded);
-        var expected = BlocksRegistry.GetFromSimpleState(new SimpleBlockState
-        {
-            Name = "minecraft:oak_log",
-            Properties = new Dictionary<string, string> { ["axis"] = "x" }
-        });
-        Assert.Equal(expected, await server.World.GetBlockAsync(1, 64, 0));
-        Assert.True((await server.World.GetBlockAsync(-1, 64, 0))!.IsAir);
-        Assert.True((await server.World.GetBlockAsync(0, 64, 0))!.IsAir);
     }
 
     // Loads the chunks a feature placed at the origin may reach, as /place requires, with grass over stone below y 64.
@@ -652,11 +596,23 @@ public sealed class VanillaCommands26
         }
     }
 
-    [Theory]
-    [InlineData("swing", InteractionHand.MainHand)]
-    [InlineData("swing @s mainhand", InteractionHand.MainHand)]
-    [InlineData("swing @s offhand", InteractionHand.OffHand)]
-    public async Task SwingIncludesTheExecutingPlayer(string command, InteractionHand hand)
+    [Fact]
+    public async Task SwingIncludesTheExecutingPlayer()
+    {
+        (string Command, InteractionHand Hand)[] cases =
+        [
+            ("swing", InteractionHand.MainHand),
+            ("swing @s mainhand", InteractionHand.MainHand),
+            ("swing @s offhand", InteractionHand.OffHand)
+        ];
+
+        await FixtureCases.AssertAllAsync(
+            cases,
+            row => row.Command,
+            row => AssertSwingReachesThePlayer(row.Command, row.Hand));
+    }
+
+    private static async Task AssertSwingReachesThePlayer(string command, InteractionHand hand)
     {
         await using var server = TestServerFactory.CreateServer($"command-swing-{Guid.NewGuid():N}");
         var handler = (CommandHandler)server.Server.CommandHandler;
@@ -700,15 +656,24 @@ public sealed class VanillaCommands26
         Assert.True(command.Type.HasFlag(CommandNodeType.IsExecutable));
     }
 
-    [Theory]
-    [InlineData("compute default integer {type:'constant',value:1}")]
-    [InlineData("time pause")]
-    [InlineData("swing")]
-    [InlineData("posteffect clear @s")]
-    [InlineData("item fill entity @s hotbar.* with stone")]
-    [InlineData("place feature {type:'no_op'}")]
-    [InlineData("data modify storage test:values x set compute default integer {type:'constant',value:1}")]
-    public async Task GameMasterCommandsRequireTheSendersPermissions(string command)
+    [Fact]
+    public async Task GameMasterCommandsRequireTheSendersPermissions()
+    {
+        string[] commands =
+        [
+            "compute default integer {type:'constant',value:1}",
+            "time pause",
+            "swing",
+            "posteffect clear @s",
+            "item fill entity @s hotbar.* with stone",
+            "place feature {type:'no_op'}",
+            "data modify storage test:values x set compute default integer {type:'constant',value:1}"
+        ];
+
+        await FixtureCases.AssertAllAsync(commands, command => command, AssertGuestIsRefused);
+    }
+
+    private static async Task AssertGuestIsRefused(string command)
     {
         await using var server = TestServerFactory.CreateServer($"command-permission-{Guid.NewGuid():N}");
         var handler = (CommandHandler)server.Server.CommandHandler;

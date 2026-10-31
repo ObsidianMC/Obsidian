@@ -8,6 +8,7 @@ using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -101,21 +102,21 @@ public class MovementPayloads
         return JsonDocument.Parse(stream);
     }
 
-    // Every captured packet, so that a capture without a row here fails rather than going untested.
-    public static TheoryData<string> Captured()
+    // Replays every captured packet, so that a capture without a row here fails rather than going untested.
+    [Fact]
+    public void MatchesVanilla()
     {
         using var fixture = Fixture();
-        return new(fixture.RootElement.EnumerateObject().Select(packet => packet.Name));
+        var captured = fixture.RootElement.EnumerateObject();
+
+        FixtureCases.AssertAll(captured, packet => packet.Name, AssertPacketMatchesVanilla);
     }
 
-    [Theory]
-    [MemberData(nameof(Captured))]
-    public void MatchesVanilla(string packet)
+    private static void AssertPacketMatchesVanilla(JsonProperty packet)
     {
-        using var fixture = Fixture();
-        var bytes = Convert.FromHexString(fixture.RootElement.GetProperty(packet).GetString()!);
+        var bytes = Convert.FromHexString(packet.Value.GetString()!);
 
-        Assert.True(packets.TryGetValue(packet, out var check), $"No row replays vanilla's {packet}.");
+        Assert.True(packets.TryGetValue(packet.Name, out var check), $"No row replays vanilla's {packet.Name}.");
         check(bytes);
     }
 

@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Obsidian.Tests.Utilities;
 using Xunit;
 using Dimension = Obsidian.WorldData.Dimension;
 
@@ -70,12 +71,22 @@ public sealed class WorldFolders : IDisposable
         }
     }
 
-    [Theory(DisplayName = "A vanilla 26.3 world with stray legacy folders keeps its level data and world data")]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task StrayLegacyFoldersKeepVanillaData(bool withFiles)
+    [Fact(DisplayName = "A vanilla 26.3 world with stray legacy folders keeps its level data and world data")]
+    public async Task StrayLegacyFoldersKeepVanillaData()
     {
-        var folder = Path.Combine(this.root, "world");
+        bool[] cases =
+        [
+            false,
+            true
+        ];
+
+        await FixtureCases.AssertAllAsync(cases, row => $"withFiles={row}", AssertStrayLegacyFoldersKeepVanillaData);
+    }
+
+    private async Task AssertStrayLegacyFoldersKeepVanillaData(bool withFiles)
+    {
+        // Each case gets its own world.
+        var folder = Path.Combine(this.root, withFiles ? "with-files" : "empty", "world");
         CopyFolder(Path.Combine(AppContext.BaseDirectory, "Assets", "vanilla-26.3-world"), folder);
         WriteSavedData(Path.Combine(folder, "data", "sample", "global.dat"), new NbtCompound("data"));
 
@@ -105,10 +116,22 @@ public sealed class WorldFolders : IDisposable
         Assert.True(world.LevelData.GetBooleanRule("keep_inventory", defaultValue: false));
     }
 
-    [Theory(DisplayName = "A world Obsidian saved in a 1.21.11 layout is upgraded once, after a complete backup")]
-    [InlineData("obsidian", 5000)]
-    [InlineData("vanilla", 9000)]
-    public async Task LegacyWorldsUpgrade(string layout, long gameTime)
+    [Fact(DisplayName = "A world Obsidian saved in a 1.21.11 layout is upgraded once, after a complete backup")]
+    public async Task LegacyWorldsUpgrade()
+    {
+        (string Layout, long GameTime)[] cases =
+        [
+            ("obsidian", 5000),
+            ("vanilla", 9000)
+        ];
+
+        await FixtureCases.AssertAllAsync(
+            cases,
+            row => $"layout={row.Layout}, gameTime={row.GameTime}",
+            row => AssertLegacyWorldsUpgrade(row.Layout, row.GameTime));
+    }
+
+    private async Task AssertLegacyWorldsUpgrade(string layout, long gameTime)
     {
         var folder = Path.Combine(this.root, layout);
         if (layout == "obsidian")
@@ -203,12 +226,22 @@ public sealed class WorldFolders : IDisposable
         Assert.Single(Directory.GetDirectories(this.root, "world-*"));
     }
 
-    [Theory(DisplayName = "A backup's staging folder is reused only when it's a stopped copy of the same world")]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task BackupStagingKeepsOtherFolders(bool stoppedCopy)
+    [Fact(DisplayName = "A backup's staging folder is reused only when it's a stopped copy of the same world")]
+    public async Task BackupStagingKeepsOtherFolders()
     {
-        var folder = Path.Combine(this.root, "world");
+        bool[] cases =
+        [
+            false,
+            true
+        ];
+
+        await FixtureCases.AssertAllAsync(cases, row => $"stoppedCopy={row}", AssertBackupStagingKeepsOtherFolders);
+    }
+
+    private async Task AssertBackupStagingKeepsOtherFolders(bool stoppedCopy)
+    {
+        // Each case gets its own world.
+        var folder = Path.Combine(this.root, stoppedCopy ? "stopped-copy" : "other-world", "world");
         await WriteObsidianWorldAsync(folder);
         var original = ReadFiles(folder);
 

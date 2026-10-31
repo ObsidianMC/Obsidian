@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Obsidian.Tests.Utilities;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -66,13 +67,25 @@ public class Commands
         Assert.Equal("bye", Command.arg2out);
     }
 
-    [Theory(DisplayName = "Command lines complete to subcommands and suggested argument values")]
-    [InlineData("/sug", 1, 3, "suggest")]
-    [InlineData("/suggest ", 9, 0, "draw,g,give,mix,paint,say,set")] // not the denied locked and hidden groups
-    [InlineData("/suggest set n", 13, 1, "night,noon")]
-    [InlineData("/suggest draw ", 14, 0, "circle,rounded_square")] // from the enum's members
-    [InlineData("/suggest say \"h", 13, 2, "\"hello \\\"world\\\"\",\"hi\"")] // replaces the opening quote too
-    public async Task CompletesCommandLines(string input, int start, int length, string expected)
+    [Fact(DisplayName = "Command lines complete to subcommands and suggested argument values")]
+    public async Task CompletesCommandLines()
+    {
+        (string Input, int Start, int Length, string Expected)[] cases =
+        [
+            ("/sug", 1, 3, "suggest"),
+            ("/suggest ", 9, 0, "draw,g,give,mix,paint,say,set"), // not the denied locked and hidden groups
+            ("/suggest set n", 13, 1, "night,noon"),
+            ("/suggest draw ", 14, 0, "circle,rounded_square"), // from the enum's members
+            ("/suggest say \"h", 13, 2, "\"hello \\\"world\\\"\",\"hi\"") // replaces the opening quote too
+        ];
+
+        await FixtureCases.AssertAllAsync(
+            cases,
+            row => $"input={row.Input}, start={row.Start}, length={row.Length}, expected={row.Expected}",
+            row => AssertCompletesCommandLines(row.Input, row.Start, row.Length, row.Expected));
+    }
+
+    private async Task AssertCompletesCommandLines(string input, int start, int length, string expected)
     {
         var handler = this.CreateSuggestionHandler();
 

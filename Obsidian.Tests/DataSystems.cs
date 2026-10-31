@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -238,14 +239,26 @@ public sealed class DataSystems
         }
     }
 
-    [Theory]
-    [InlineData("down")]
-    [InlineData("up")]
-    [InlineData("north")]
-    [InlineData("south")]
-    [InlineData("west")]
-    [InlineData("east")]
-    public async Task TransformerUseCommitsCapturedStateAndDamage(string faceName)
+    [Fact]
+    public async Task TransformerUseCommitsCapturedStateAndDamage()
+    {
+        string[] cases =
+        [
+            "down",
+            "up",
+            "north",
+            "south",
+            "west",
+            "east"
+        ];
+
+        await FixtureCases.AssertAllAsync(
+            cases,
+            row => $"faceName={row}",
+            AssertTransformerUseCommitsCapturedStateAndDamage);
+    }
+
+    private static async Task AssertTransformerUseCommitsCapturedStateAndDamage(string faceName)
     {
         // Prepare a real packet use from a captured rooted-dirt case.
         var sample = Cases<TransformerCase>("transformers").First(row =>
@@ -305,10 +318,22 @@ public sealed class DataSystems
         Assert.Equal(expected[2], actual.Z, precision: 12);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task CopperChestUsePreservesMenuAndToolState(bool sneaking)
+    [Fact]
+    public async Task CopperChestUsePreservesMenuAndToolState()
+    {
+        bool[] cases =
+        [
+            false,
+            true
+        ];
+
+        await FixtureCases.AssertAllAsync(
+            cases,
+            row => $"sneaking={row}",
+            AssertCopperChestUsePreservesMenuAndToolState);
+    }
+
+    private static async Task AssertCopperChestUsePreservesMenuAndToolState(bool sneaking)
     {
         foreach (var sample in Cases<ChestCase>("chest_uses"))
         {
@@ -348,12 +373,24 @@ public sealed class DataSystems
         }
     }
 
-    [Theory]
-    [InlineData("minecraft:overworld", true)]
-    [InlineData("minecraft:the_end", true)]
-    [InlineData(null, true)]
-    [InlineData("minecraft:overworld", false)]
-    public async Task CompletedSleepUsesDimensionClock(string? defaultClock, bool advanceTime)
+    [Fact]
+    public async Task CompletedSleepUsesDimensionClock()
+    {
+        (string? DefaultClock, bool AdvanceTime)[] cases =
+        [
+            ("minecraft:overworld", true),
+            ("minecraft:the_end", true),
+            (null, true),
+            ("minecraft:overworld", false)
+        ];
+
+        await FixtureCases.AssertAllAsync(
+            cases,
+            row => $"defaultClock={row.DefaultClock}, advanceTime={row.AdvanceTime}",
+            row => AssertCompletedSleepUsesDimensionClock(row.DefaultClock, row.AdvanceTime));
+    }
+
+    private static async Task AssertCompletedSleepUsesDimensionClock(string? defaultClock, bool advanceTime)
     {
         foreach (var sample in Cases<SleepClockCase>("sleep_clocks").Where(row =>
             row.Clock == (defaultClock ?? WorldClocks.Overworld)))

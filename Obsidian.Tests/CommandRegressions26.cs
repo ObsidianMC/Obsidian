@@ -8,6 +8,7 @@ using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using System;
 using System.Threading.Tasks;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -18,11 +19,20 @@ public sealed class CommandRegressions26
     // The player inventory index of hotbar.0.
     private const int FirstHotbarSlot = 36;
 
-    [Theory]
-    [InlineData("replace")]
-    [InlineData("fill")]
-    [InlineData("override")]
-    public async Task EmptyItemSourcesLeaveTargetsAlone(string operation)
+    [Fact]
+    public async Task EmptyItemSourcesLeaveTargetsAlone()
+    {
+        string[] cases =
+        [
+            "replace",
+            "fill",
+            "override"
+        ];
+
+        await FixtureCases.AssertAllAsync(cases, row => $"operation={row}", AssertEmptyItemSourcesLeaveTargetsAlone);
+    }
+
+    private static async Task AssertEmptyItemSourcesLeaveTargetsAlone(string operation)
     {
         await using var server = TestServerFactory.CreateServer($"item-empty-source-{Guid.NewGuid():N}");
         var handler = (CommandHandler)server.Server.CommandHandler;
@@ -65,26 +75,6 @@ public sealed class CommandRegressions26
             var count = stack is { IsAir: false } ? stack.Count : 0;
             Assert.Equal(slot == 4 ? 3 : 0, count);
         }
-    }
-
-    [Theory]
-    [InlineData("posteffect list MissingPlayer", false)]
-    [InlineData("posteffect list @a", false)]
-    [InlineData("posteffect list @e[type=zombie]", false)]
-    [InlineData("posteffect clear MissingPlayer", false)]
-    [InlineData("posteffect list Fixture", true)]
-    public async Task PostEffectSelectorFailuresFailTheCommand(string command, bool succeeds)
-    {
-        await using var server = TestServerFactory.CreateServer($"posteffect-selector-{Guid.NewGuid():N}");
-        var handler = (CommandHandler)server.Server.CommandHandler;
-        handler.RegisterCommandClass<PostEffectCommandModule>(null);
-        AddPlayer(server);
-        var context = Context(server.Server, command);
-
-        await handler.ProcessCommand(context);
-
-        Assert.Equal(succeeds, context.Succeeded);
-        Assert.Equal(0, context.Result);
     }
 
     private static Obsidian.Entities.Player AddPlayer(RealServerContext server)

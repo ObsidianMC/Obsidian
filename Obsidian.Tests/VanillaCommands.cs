@@ -13,6 +13,7 @@ using Obsidian.Utilities;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Obsidian.Tests.Utilities;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -72,22 +73,32 @@ public class VanillaCommands(ITestOutputHelper output)
         Assert.Equal(["stone"], completion.Suggestions.Select(x => x.Text));
     }
 
-    [Theory(DisplayName = "Target selectors parse like vanilla's")]
-    [InlineData("@a", true)]
-    [InlineData("@e[type=zombie,limit=2,sort=nearest]", true)]
-    [InlineData("@e[type=!minecraft:pig,distance=..5]", true)]
-    [InlineData("@p[distance=2..8,gamemode=!creative]", true)]
-    [InlineData("@n", true)]
-    [InlineData("Notch", true)]
-    [InlineData("069a79f4-44e9-4726-a5be-fca90e38aaf5", true)]
-    [InlineData("@x", false)]
-    [InlineData("@e[limit=0]", false)]
-    [InlineData("@e[unknown=1]", false)]
-    [InlineData("@e[type=not_a_mob]", false)]
-    [InlineData("@s[limit=2]", false)]
-    [InlineData("@e[distance=5..1]", false)]
-    [InlineData("bad name!", false)]
-    public void ParsesSelectors(string input, bool valid) => Assert.Equal(valid, EntitySelector.TryParse(input, out _));
+    [Fact(DisplayName = "Target selectors parse like vanilla's")]
+    public void ParsesSelectors()
+    {
+        (string Input, bool Valid)[] cases =
+        [
+            ("@a", true),
+            ("@e[type=zombie,limit=2,sort=nearest]", true),
+            ("@e[type=!minecraft:pig,distance=..5]", true),
+            ("@p[distance=2..8,gamemode=!creative]", true),
+            ("@n", true),
+            ("Notch", true),
+            ("069a79f4-44e9-4726-a5be-fca90e38aaf5", true),
+            ("@x", false),
+            ("@e[limit=0]", false),
+            ("@e[unknown=1]", false),
+            ("@e[type=not_a_mob]", false),
+            ("@s[limit=2]", false),
+            ("@e[distance=5..1]", false),
+            ("bad name!", false)
+        ];
+
+        FixtureCases.AssertAll(
+            cases,
+            row => row.Input,
+            row => Assert.Equal(row.Valid, EntitySelector.TryParse(row.Input, out _)));
+    }
 
     [Fact(DisplayName = "Single-entity selectors are told apart")]
     public void TellsSingleSelectors()
@@ -98,14 +109,26 @@ public class VanillaCommands(ITestOutputHelper output)
         Assert.True(EntitySelector.TryParse("@a", out var players) && players.PlayersOnly);
     }
 
-    [Theory(DisplayName = "Coordinates are absolute, relative or local")]
-    [InlineData("1 64 2", 1.5, 64, 2.5)]
-    [InlineData("1.25 64 -2.75", 1.25, 64, -2.75)]
-    [InlineData("~ ~1 ~-2", 10, 65, 18)]
-    [InlineData("^ ^ ^1", 10, 64, 21)] // facing south, +z
-    [InlineData("^1 ^ ^", 11, 64, 20)] // left of south is east, +x
-    [InlineData("^ ^2 ^", 10, 66, 20)]
-    public void ReadsCoordinates(string input, double x, double y, double z)
+    [Fact(DisplayName = "Coordinates are absolute, relative or local")]
+    public void ReadsCoordinates()
+    {
+        (string Input, double X, double Y, double Z)[] cases =
+        [
+            ("1 64 2", 1.5, 64, 2.5),
+            ("1.25 64 -2.75", 1.25, 64, -2.75),
+            ("~ ~1 ~-2", 10, 65, 18),
+            ("^ ^ ^1", 10, 64, 21), // facing south, +z
+            ("^1 ^ ^", 11, 64, 20), // left of south is east, +x
+            ("^ ^2 ^", 10, 66, 20)
+        ];
+
+        FixtureCases.AssertAll(
+            cases,
+            row => $"input={row.Input}, x={row.X}, y={row.Y}, z={row.Z}",
+            row => AssertReadsCoordinates(row.Input, row.X, row.Y, row.Z));
+    }
+
+    private static void AssertReadsCoordinates(string input, double x, double y, double z)
     {
         var context = new CommandContext("/", new CommandSender(CommandIssuers.Console, null), null, null)
         {
@@ -119,12 +142,21 @@ public class VanillaCommands(ITestOutputHelper output)
         Assert.Equal(z, position.Z, 6);
     }
 
-    [Theory(DisplayName = "Malformed coordinates are refused")]
-    [InlineData("1 2")]
-    [InlineData("^ ~ ^")]
-    [InlineData("1 two 3")]
-    [InlineData("~ ~ ~ ~")]
-    public void RefusesCoordinates(string input)
+    [Fact(DisplayName = "Malformed coordinates are refused")]
+    public void RefusesCoordinates()
+    {
+        string[] cases =
+        [
+            "1 2",
+            "^ ~ ^",
+            "1 two 3",
+            "~ ~ ~ ~"
+        ];
+
+        FixtureCases.AssertAll(cases, row => $"input={row}", AssertRefusesCoordinates);
+    }
+
+    private static void AssertRefusesCoordinates(string input)
     {
         var context = new CommandContext("/", new CommandSender(CommandIssuers.Console, null), null, null) { Origin = default, Rotation = (0f, 0f) };
 

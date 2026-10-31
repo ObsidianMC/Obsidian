@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -49,11 +50,14 @@ public sealed class ChunkSaves
         ["structure starts"] = (null, chunk => chunk.StructureStarts = new NbtCompound("starts")),
     };
 
-    public static TheoryData<string> Changes => [.. changes.Keys];
+    // A change that left its chunk saved would be lost at the next flush.
+    [Fact]
+    public void ChangesMarkTheChunkUnsaved()
+    {
+        FixtureCases.AssertAll(changes.Keys, change => change, AssertChangeMarksTheChunkUnsaved);
+    }
 
-    [Theory]
-    [MemberData(nameof(Changes))]
-    public void ChangesMarkTheChunkUnsaved(string change)
+    private static void AssertChangeMarksTheChunkUnsaved(string change)
     {
         var (setup, apply) = changes[change];
         var chunk = new Chunk(0, 0, ChunkGenStage.light);

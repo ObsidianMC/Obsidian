@@ -9,16 +9,26 @@ using Obsidian.Tests.Fakes;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
 
 public sealed class PlayerSaveState
 {
-    [Theory]
-    [InlineData(nameof(Boat))]
-    [InlineData(nameof(Pig))]
-    public async Task RiderComesBackOnTheirVehicle(string kind)
+    [Fact]
+    public async Task RiderComesBackOnTheirVehicle()
+    {
+        string[] cases =
+        [
+            nameof(Boat),
+            nameof(Pig)
+        ];
+
+        await FixtureCases.AssertAllAsync(cases, row => $"kind={row}", AssertRiderComesBackOnTheirVehicle);
+    }
+
+    private static async Task AssertRiderComesBackOnTheirVehicle(string kind)
     {
         await using var context = TestServerFactory.CreateServer($"player-rider-{Guid.NewGuid():N}");
         var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Rider");

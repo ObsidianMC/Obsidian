@@ -5,7 +5,10 @@ using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Loot;
 using Obsidian.API.Registries;
 using Obsidian.Net;
+using Obsidian.Tests.Utilities;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -16,26 +19,25 @@ namespace Obsidian.Tests;
 /// </summary>
 public class ItemStackNetwork
 {
-    public static TheoryData<string, string> Stacks
+    private static IEnumerable<(string Stack, string Wire)> Stacks()
     {
-        get
+        using var fixture = ItemComponentWire.Fixture();
+        foreach (var row in fixture.RootElement.GetProperty("cases").EnumerateArray())
         {
-            using var fixture = ItemComponentWire.Fixture();
-            var rows = new TheoryData<string, string>();
-            foreach (var row in fixture.RootElement.GetProperty("cases").EnumerateArray())
-            {
-                var name = row.GetProperty("name").GetString()!;
-                if (name.StartsWith("network_", StringComparison.Ordinal))
-                    rows.Add(name["network_".Length..], row.GetProperty("wire").GetString()!);
-            }
-            Assert.Equal(5, rows.Count);
-            return rows;
+            var name = row.GetProperty("name").GetString()!;
+            if (name.StartsWith("network_", StringComparison.Ordinal))
+                yield return (name["network_".Length..], row.GetProperty("wire").GetString()!);
         }
     }
 
-    [Theory]
-    [MemberData(nameof(Stacks))]
-    public void StacksMatchVanilla(string stack, string expected) => Assert.Equal(expected, Encode(Create(stack)));
+    [Fact]
+    public void StacksMatchVanilla()
+    {
+        var stacks = Stacks().ToList();
+
+        Assert.Equal(5, stacks.Count);
+        FixtureCases.AssertAll(stacks, row => row.Stack, row => Assert.Equal(row.Wire, Encode(Create(row.Stack))));
+    }
 
     private static ItemStack Create(string stack)
     {

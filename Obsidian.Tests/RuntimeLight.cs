@@ -17,6 +17,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -485,10 +486,22 @@ public sealed class RuntimeLightTests
         }
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task LiveSectionWritesShareTickLockAndRelight(bool byStateId)
+    [Fact]
+    public async Task LiveSectionWritesShareTickLockAndRelight()
+    {
+        bool[] cases =
+        [
+            false,
+            true
+        ];
+
+        await FixtureCases.AssertAllAsync(
+            cases,
+            row => $"byStateId={row}",
+            AssertLiveSectionWritesShareTickLockAndRelight);
+    }
+
+    private static async Task AssertLiveSectionWritesShareTickLockAndRelight(bool byStateId)
     {
         var chunks = CreateArea(true);
         var engine = Track(chunks, true);

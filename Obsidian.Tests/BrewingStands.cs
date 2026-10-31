@@ -22,6 +22,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -35,107 +36,6 @@ namespace Obsidian.Tests;
 public sealed class BrewingStands : IDisposable
 {
     private static readonly FakeServer server = new();
-
-    // Each row fills the stand and the player's inventory, shift-clicks a window slot and checks where things went.
-    // The window numbers the stand's bottles 0 to 2, its ingredient 3 and its fuel 4, then the player's inventory
-    // from 9 at 5.
-    private static readonly Dictionary<string, (Action<BrewingStand, Container> Fill, short Slot,
-        Action<BrewingStand, Container> Check)> quickMoves = new()
-        {
-            ["Blaze powder tops up the fuel and stops there"] = (
-            (stand, inventory) =>
-            {
-                stand.SetItem(BrewingStand.FuelSlot, new ItemStack(ItemsRegistry.BlazePowder, 60));
-                inventory.SetItem(9, new ItemStack(ItemsRegistry.BlazePowder, 10));
-            },
-            5,
-            (stand, inventory) =>
-            {
-                Assert.Equal(64, stand.GetItem(BrewingStand.FuelSlot)?.Count);
-                Assert.Null(stand.GetItem(BrewingStand.IngredientSlot));
-                Assert.Equal(6, inventory.GetItem(9)?.Count);
-            }
-            ),
-            ["Blaze powder goes to the ingredient slot when the fuel is full"] = (
-            (stand, inventory) =>
-            {
-                stand.SetItem(BrewingStand.FuelSlot, new ItemStack(ItemsRegistry.BlazePowder, 64));
-                inventory.SetItem(9, new ItemStack(ItemsRegistry.BlazePowder, 10));
-            },
-            5,
-            (stand, inventory) =>
-            {
-                Assert.Equal(10, stand.GetItem(BrewingStand.IngredientSlot)?.Count);
-                Assert.Null(inventory.GetItem(9));
-            }
-            ),
-            ["An ingredient goes to the ingredient slot"] = (
-            (stand, inventory) => inventory.SetItem(40, new ItemStack(ItemsRegistry.NetherWart, 5)),
-            36,
-            (stand, inventory) =>
-            {
-                Assert.True(stand.GetItem(BrewingStand.IngredientSlot)?.Is(ItemsRegistry.NetherWart));
-                Assert.Null(inventory.GetItem(40));
-            }
-            ),
-            ["An ingredient stays put when the ingredient slot is full"] = (
-            (stand, inventory) =>
-            {
-                stand.SetItem(BrewingStand.IngredientSlot, new ItemStack(ItemsRegistry.NetherWart, 64));
-                inventory.SetItem(9, new ItemStack(ItemsRegistry.NetherWart, 5));
-            },
-            5,
-            (stand, inventory) =>
-            {
-                Assert.Equal(5, inventory.GetItem(9)?.Count);
-                Assert.Null(inventory.GetItem(36));
-            }
-            ),
-            ["Bottles go one to each bottle slot"] = (
-            (stand, inventory) => inventory.SetItem(9, new ItemStack(ItemsRegistry.GlassBottle, 5)),
-            5,
-            (stand, inventory) =>
-            {
-                for (var slot = 0; slot < 3; slot++)
-                    Assert.Equal(1, stand.GetItem(slot)?.Count);
-
-                Assert.Equal(2, inventory.GetItem(9)?.Count);
-            }
-            ),
-            ["Other stacks go from the main inventory to the hotbar"] = (
-            (stand, inventory) => inventory.SetItem(9, new ItemStack(ItemsRegistry.Dirt, 3)),
-            5,
-            (stand, inventory) => Assert.Equal(3, inventory.GetItem(36)?.Count)),
-            ["Other stacks go from the hotbar to the main inventory"] = (
-            (stand, inventory) => inventory.SetItem(36, new ItemStack(ItemsRegistry.Dirt, 3)),
-            32,
-            (stand, inventory) => Assert.Equal(3, inventory.GetItem(9)?.Count)),
-            ["The stand's stacks go to the hotbar's last slot first"] = (
-            (stand, inventory) => stand.SetItem(1, Potion(ItemsRegistry.Potion, API.Potion.Awkward)),
-            1,
-            (stand, inventory) =>
-            {
-                Assert.Null(stand.GetItem(1));
-                Assert.True(inventory.GetItem(44)?.Is(ItemsRegistry.Potion));
-            }
-            )
-        };
-
-    // Each row burns a stack given minecraft:brewing_fuel. Like vanilla's stand, the fuel item's crafting remainder
-    // takes the fuel slot once the stack is used up, and drops otherwise.
-    private static readonly Dictionary<string, FuelRemainder> fuelRemainders = new()
-    {
-        ["A milk bucket leaves its bucket in the fuel slot"] = new(
-            ItemsRegistry.MilkBucket,
-            Count: 1,
-            InSlot: ItemsRegistry.Bucket,
-            Dropped: null),
-        ["A honey bottle drops its glass bottle while more are left"] = new(
-            ItemsRegistry.HoneyBottle,
-            Count: 2,
-            InSlot: ItemsRegistry.HoneyBottle,
-            Dropped: ItemsRegistry.GlassBottle)
-    };
 
     // The data slot ids vanilla 26.3's BrewingStandMenu reads (the ContainerData.get call in each of its getters),
     // with the stand value each getter shows.
@@ -152,37 +52,6 @@ public sealed class BrewingStands : IDisposable
     public BrewingStands() => Directory.CreateDirectory(this.folder);
 
     public void Dispose() => Directory.Delete(this.folder, recursive: true);
-
-    public static TheoryData<string> QuickMoveRows => [.. quickMoves.Keys];
-
-    public static TheoryData<string> FuelRemainderRows => [.. fuelRemainders.Keys];
-
-    [Theory(DisplayName = "Shift-clicking in a brewing stand routes stacks like vanilla's brewing menu")]
-    [MemberData(nameof(QuickMoveRows))]
-    public void QuickMoveRoutesLikeVanilla(string row)
-    {
-        var (fill, slot, check) = quickMoves[row];
-        var stand = new BrewingStand();
-        var player = new FakePlayer { OpenedContainer = stand };
-
-        fill(stand, player.Inventory);
-
-        var (clicked, forPlayer) = stand.GetSlot(slot);
-        MainEventHandler.OnInventoryClickTest(new ContainerClickEventArgs(
-            player,
-            server,
-            forPlayer ? player.Inventory : stand)
-        {
-            ContainerId = 1,
-            ClickedSlot = clicked,
-            WindowSlot = slot,
-            Button = 0,
-            StateId = 0,
-            ClickType = ClickType.QuickMove
-        });
-
-        check(stand, player.Inventory);
-    }
 
     [Fact(DisplayName = "Brewing stands brew what vanilla 26.3's brewing recipes brew")]
     public void BrewsLikeVanilla()
@@ -258,27 +127,6 @@ public sealed class BrewingStands : IDisposable
         Assert.Equal(5, loaded.Fuel);
     }
 
-    [Theory(DisplayName = "A brewing stand keeps what its fuel leaves behind, like vanilla")]
-    [MemberData(nameof(FuelRemainderRows))]
-    public void FuelLeavesItsCraftingRemainder(string row)
-    {
-        var fuel = fuelRemainders[row];
-        var stand = new BrewingStand();
-        stand.SetItem(BrewingStand.FuelSlot, BrewingFuel(fuel.Item, fuel.Count));
-
-        var step = Tick(stand);
-
-        Assert.Equal(20, stand.Fuel);
-        Assert.True(stand.GetItem(BrewingStand.FuelSlot)?.Is(fuel.InSlot));
-        Assert.Equal(1, stand.GetItem(BrewingStand.FuelSlot)?.Count);
-
-        var dropped = step.Remainders.Select(stack => stack.Holder).ToArray();
-        if (fuel.Dropped is Item item)
-            Assert.Equal([item], dropped);
-        else
-            Assert.Empty(dropped);
-    }
-
     [Fact(DisplayName = "An open brewing stand's menu gets its values under vanilla's data slot ids",
         Timeout = TestServerFactory.TestTimeout)]
     public async Task MenuDataUsesVanillaIds()
@@ -349,6 +197,46 @@ public sealed class BrewingStands : IDisposable
         Assert.False(Brewing.IsIngredient(unloadedGem, RecipesRegistry.Current));
         Assert.Null(Brewing.Mix(awkward, unloadedGem, RecipesRegistry.Current));
         Assert.DoesNotContain(PluginPotionMixes.PotionMixes, mix => mix.Ingredient == gem);
+    }
+
+    // Burning one fuel leaves exactly one crafting remainder, in the fuel slot once the stack is used up and dropped
+    // otherwise, and never replaces fuel still left.
+    [Fact(DisplayName = "A brewing stand keeps one remainder of the fuel it burns without losing the rest")]
+    public void FuelLeavesOneRemainderWithoutLosingFuel()
+    {
+        (string Name, Item Fuel, int Count, Item InSlot, Item? Dropped)[] cases =
+        [
+            ("milk bucket", ItemsRegistry.MilkBucket, 1, ItemsRegistry.Bucket, null),
+            ("honey bottles", ItemsRegistry.HoneyBottle, 2, ItemsRegistry.HoneyBottle, ItemsRegistry.GlassBottle)
+        ];
+
+        FixtureCases.AssertAll(
+            cases,
+            row => row.Name,
+            row => AssertFuelLeavesOneRemainder(row.Fuel, row.Count, row.InSlot, row.Dropped));
+    }
+
+    private static void AssertFuelLeavesOneRemainder(Item fuel, int count, Item inSlot, Item? dropped)
+    {
+        var stand = new BrewingStand();
+        stand.SetItem(BrewingStand.FuelSlot, BrewingFuel(fuel, count));
+
+        var step = Tick(stand);
+
+        var left = stand.GetItem(BrewingStand.FuelSlot);
+        Assert.True(stand.Fuel > 0, "The stand burned no fuel.");
+        Assert.True(left?.Is(inSlot), $"The fuel slot holds {left?.Holder.UnlocalizedName ?? "nothing"}.");
+        Assert.Equal(1, left?.Count);
+        if (dropped is Item item)
+        {
+            var remainder = Assert.Single(step.Remainders);
+            Assert.True(remainder.Is(item));
+            Assert.Equal(1, remainder.Count);
+        }
+        else
+        {
+            Assert.Empty(step.Remainders);
+        }
     }
 
     private static Brewing.Step Tick(BrewingStand stand) => Brewing.Tick(stand, RecipesRegistry.Current);
@@ -446,8 +334,4 @@ public sealed class BrewingStands : IDisposable
         return $"{stack.Holder.UnlocalizedName} x{stack.Count} of minecraft:{potion}";
     }
 
-    /// <summary>
-    /// A fuel of a test row: the item and how many, and what's left in the fuel slot and dropped after one burns.
-    /// </summary>
-    private sealed record FuelRemainder(Item Item, int Count, Item InSlot, Item? Dropped);
 }

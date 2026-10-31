@@ -9,6 +9,7 @@ using Obsidian.Entities;
 using Obsidian.Entities.Factories;
 using Obsidian.Net;
 using Obsidian.Registries;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -23,15 +24,15 @@ public class EntityMetadataParity
         return JsonDocument.Parse(stream);
     }
 
-    public static IEnumerable<object[]> Cases()
+    private static IEnumerable<(string Kind, string Name)> Cases()
     {
-        // Include even the factory's generic fallbacks, so adding an implementation needs no new test row.
+        // Include even the factory's generic fallbacks, so adding an implementation needs no new test case.
         foreach (var type in Enum.GetValues<EntityType>())
-            yield return ["entity", type.ToString()];
+            yield return ("entity", type.ToString());
 
         using var fixture = Fixture();
         foreach (var serializer in fixture.RootElement.GetProperty("serializerNames").EnumerateObject())
-            yield return ["serializer", serializer.Value.GetString()!];
+            yield return ("serializer", serializer.Value.GetString()!);
     }
 
     [Fact]
@@ -118,9 +119,16 @@ public class EntityMetadataParity
         }
     }
 
-    [Theory]
-    [MemberData(nameof(Cases))]
-    public void MetadataMatchesVanilla(string kind, string name)
+    [Fact]
+    public void MetadataMatchesVanilla()
+    {
+        FixtureCases.AssertAll(
+            Cases(),
+            row => $"{row.Kind} {row.Name}",
+            row => AssertMatchesVanilla(row.Kind, row.Name));
+    }
+
+    private static void AssertMatchesVanilla(string kind, string name)
     {
         using var fixture = Fixture();
         var serializers = fixture.RootElement.GetProperty("serializerNames");

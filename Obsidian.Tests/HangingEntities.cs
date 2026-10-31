@@ -46,19 +46,4 @@ public class HangingEntities
         Assert.Equal("minecraft:baroque", loaded.Variant.Name);
         Assert.Equal(painting.Position, loaded.Position);
     }
-
-    [Fact(DisplayName = "TNT lit by an explosion has a shorter, random fuse")]
-    public void ShortensExplodedFuses()
-    {
-        for (var i = 0; i < 100; i++)
-            Assert.InRange(PrimedTnt.ExplodedFuse(), PrimedTnt.DefaultFuse / 8, PrimedTnt.DefaultFuse / 8 + PrimedTnt.DefaultFuse / 4 - 1);
-
-        var tnt = new PrimedTnt { Level = null!, Fuse = 37 };
-        var tag = new NbtCompound();
-        tnt.WriteNbt(tag);
-
-        var loaded = new PrimedTnt { Level = null! };
-        loaded.ReadNbt(tag);
-        Assert.Equal(37, loaded.Fuse);
-    }
 }

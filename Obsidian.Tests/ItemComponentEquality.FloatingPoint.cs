@@ -4,14 +4,15 @@ using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Nbt;
 using System;
 using System.Collections.Generic;
-using Xunit;
 
 namespace Obsidian.Tests;
 
-public sealed partial class ItemComponentEqualityRegressions
+public sealed partial class ItemComponentEquality
 {
-    public static TheoryData<string> FloatingPointFields => new()
-    {
+    // Every float or double a component holds, each compared the way Java compares boxed floats: by bits, so -0 and
+    // 0 differ and every NaN is the same NaN.
+    private static readonly string[] FloatingPointFields =
+    [
         "model",
         "food",
         "cooldown",
@@ -38,56 +39,23 @@ public sealed partial class ItemComponentEqualityRegressions
         "jukebox-sound",
         "nbt-float",
         "nbt-double"
-    };
+    ];
 
-    [Theory]
-    [MemberData(nameof(FloatingPointFields))]
-    public void SignedZeroPreventsMerging(string field)
+    private static IEnumerable<ComponentPair> FloatingPointPairs()
     {
         var negativeSingle = BitConverter.Int32BitsToSingle(unchecked((int)0x80000000));
         var negativeDouble = BitConverter.Int64BitsToDouble(unchecked((long)0x8000000000000000));
-        var first = FloatingComponent(field, 0.0f, 0.0);
-        var second = FloatingComponent(field, negativeSingle, negativeDouble);
+        var firstNaN = BitConverter.Int32BitsToSingle(0x7fc00001);
+        var secondNaN = BitConverter.Int32BitsToSingle(unchecked((int)0xffc12345));
+        var firstDoubleNaN = BitConverter.Int64BitsToDouble(0x7ff8000000000001);
+        var secondDoubleNaN = BitConverter.Int64BitsToDouble(unchecked((long)0xfff8000000012345));
 
-        AssertDoNotMerge(first, second);
-
-        if (field == "model")
+        foreach (var field in FloatingPointFields)
         {
-            Assert.NotEqual(first.GetHashCode(), second.GetHashCode());
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FloatingPointFields))]
-    public void NaNPayloadsHaveEqualHashesAndMerge(string field)
-    {
-        var firstSingle = BitConverter.Int32BitsToSingle(0x7fc00001);
-        var secondSingle = BitConverter.Int32BitsToSingle(unchecked((int)0xffc12345));
-        var firstDouble = BitConverter.Int64BitsToDouble(0x7ff8000000000001);
-        var secondDouble = BitConverter.Int64BitsToDouble(unchecked((long)0xfff8000000012345));
-        var first = FloatingComponent(field, firstSingle, firstDouble);
-        var second = FloatingComponent(field, secondSingle, secondDouble);
-
-        AssertMerge(first, second);
-    }
-
-    [Theory]
-    [InlineData(1.0f, 1.0f, true)]
-    [InlineData(1.0f, 2.0f, false)]
-    [InlineData(float.PositiveInfinity, float.PositiveInfinity, true)]
-    [InlineData(float.PositiveInfinity, float.NegativeInfinity, false)]
-    public void ModelFloatsRetainOtherJavaEqualityCases(float firstValue, float secondValue, bool equal)
-    {
-        var first = new CustomModelDataComponent { Floats = [firstValue] };
-        var second = new CustomModelDataComponent { Floats = [secondValue] };
-
-        if (equal)
-        {
-            AssertMerge(first, second);
-        }
-        else
-        {
-            AssertDoNotMerge(first, second);
+            yield return Differs($"{field} 0 and -0", FloatingComponent(field, 0.0f, 0.0),
+                FloatingComponent(field, negativeSingle, negativeDouble));
+            yield return Merges($"{field} NaN payloads", FloatingComponent(field, firstNaN, firstDoubleNaN),
+                FloatingComponent(field, secondNaN, secondDoubleNaN));
         }
     }
 

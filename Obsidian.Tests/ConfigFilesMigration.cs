@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -27,11 +28,23 @@ public sealed class ConfigFilesMigration : IDisposable
         Assert.True(this.Load().Whitelist);
     }
 
-    [Theory]
-    [InlineData("{ \"motd\": \"Old server\" }", false, true)]
-    [InlineData("{ \"Whitelist\": true }", true, false)]
-    [InlineData("{ \"whitelist\": false }", false, false)]
-    public async Task ExistingConfigsKeepTheirWhitelist(string json, bool whitelist, bool noticed)
+    [Fact]
+    public async Task ExistingConfigsKeepTheirWhitelist()
+    {
+        (string Json, bool Whitelist, bool Noticed)[] cases =
+        [
+            ("{ \"motd\": \"Old server\" }", false, true),
+            ("{ \"Whitelist\": true }", true, false),
+            ("{ \"whitelist\": false }", false, false)
+        ];
+
+        await FixtureCases.AssertAllAsync(
+            cases,
+            row => $"json={row.Json}, whitelist={row.Whitelist}, noticed={row.Noticed}",
+            row => AssertExistingConfigsKeepTheirWhitelist(row.Json, row.Whitelist, row.Noticed));
+    }
+
+    private async Task AssertExistingConfigsKeepTheirWhitelist(string json, bool whitelist, bool noticed)
     {
         Directory.CreateDirectory(this.directory);
         var path = Path.Combine(this.directory, "server.json");

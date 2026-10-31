@@ -16,6 +16,7 @@ using System.IO.Compression;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -46,10 +47,22 @@ public sealed class DataPackStartup : IDisposable
             Directory.Delete(this.folder, recursive: true);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task Format121PacksOverridePluginsAndSurviveTheirUnload(bool zipped)
+    [Fact]
+    public async Task Format121PacksOverridePluginsAndSurviveTheirUnload()
+    {
+        bool[] cases =
+        [
+            false,
+            true
+        ];
+
+        await FixtureCases.AssertAllAsync(
+            cases,
+            row => $"zipped={row}",
+            AssertFormat121PacksOverridePluginsAndSurviveTheirUnload);
+    }
+
+    private async Task AssertFormat121PacksOverridePluginsAndSurviveTheirUnload(bool zipped)
     {
         using var biomes = Format121Data.Read("biome");
         using var metadata = Format121Data.Read("pack");
@@ -79,7 +92,9 @@ public sealed class DataPackStartup : IDisposable
             [$"current/{biomePath}"] = overlayBiome,
             [$"future/{biomePath}"] = "{}"
         };
-        var packs = Path.Join(this.folder, "packs");
+        // Each case gets its own packs and plugin, so the other case's pack can't stand in for this one's.
+        var root = Path.Join(this.folder, zipped ? "zipped" : "directory");
+        var packs = Path.Join(root, "packs");
         Directory.CreateDirectory(packs);
 
         if (zipped)
@@ -107,7 +122,7 @@ public sealed class DataPackStartup : IDisposable
         {
             [biomePath] = Encoding.UTF8.GetBytes(biome.ToJsonString())
         };
-        var pluginPath = Path.Join(this.folder, "probe.obby");
+        var pluginPath = Path.Join(root, "probe.obby");
         File.WriteAllBytes(pluginPath, PluginLoading.ProbeArchive("1.0.0", pluginFiles));
         var vanilla = CodecRegistry.Biomes.Plains.Element;
         var manager = CreateManager();
@@ -134,17 +149,30 @@ public sealed class DataPackStartup : IDisposable
             await manager.DisposeAsync();
             PluginCodecs.Apply([], NullLogger.Instance, levelsCreated: false);
             PluginSpawns.Apply([], [], NullLogger.Instance);
+            Directory.Delete(root, recursive: true);
         }
 
         Assert.Same(vanilla, CodecRegistry.Biomes.Plains.Element);
     }
 
-    [Theory]
-    [InlineData("121", "121", true)]
-    [InlineData("[121, 0]", "[121, 0]", true)]
-    [InlineData("[120, 9]", "[120, 9]", false)]
-    [InlineData("[121, 1]", "[121, 1]", false)]
-    public void Format121OverlayRangesSelectCurrentMinor(string min, string max, bool applies)
+    [Fact]
+    public void Format121OverlayRangesSelectCurrentMinor()
+    {
+        (string Min, string Max, bool Applies)[] cases =
+        [
+            ("121", "121", true),
+            ("[121, 0]", "[121, 0]", true),
+            ("[120, 9]", "[120, 9]", false),
+            ("[121, 1]", "[121, 1]", false)
+        ];
+
+        FixtureCases.AssertAll(
+            cases,
+            row => $"min={row.Min}, max={row.Max}, applies={row.Applies}",
+            row => AssertFormat121OverlayRangesSelectCurrentMinor(row.Min, row.Max, row.Applies));
+    }
+
+    private static void AssertFormat121OverlayRangesSelectCurrentMinor(string min, string max, bool applies)
     {
         using var vanilla = Format121Data.Read("pack");
         var metadata = JsonNode.Parse(vanilla.RootElement.GetRawText())!.AsObject();

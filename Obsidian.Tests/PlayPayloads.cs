@@ -22,32 +22,43 @@ using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
 
 public sealed class PlayPayloads
 {
-    [Theory]
-    [InlineData("set_player_team")]
-    [InlineData("level_particles")]
-    [InlineData("explode")]
-    [InlineData("update_advancements")]
-    [InlineData("game_rule_values")]
-    [InlineData("set_game_rule")]
-    [InlineData("low_disk_space_warning")]
-    [InlineData("add_transient_block")]
-    [InlineData("update_attributes")]
-    [InlineData("player_chat")]
-    [InlineData("delete_chat")]
-    [InlineData("chat")]
-    [InlineData("chat_command_signed")]
-    [InlineData("pick_item_from_block")]
-    [InlineData("damage_event")]
-    [InlineData("disguised_chat")]
-    [InlineData("update_recipes")]
-    [InlineData("recipe_book_add")]
-    public async Task PayloadsMatchVanilla(string packet)
+    // The packets captured in the fixture, each a section of references.
+    private static readonly string[] Packets =
+    [
+        "set_player_team",
+        "level_particles",
+        "explode",
+        "update_advancements",
+        "game_rule_values",
+        "set_game_rule",
+        "low_disk_space_warning",
+        "add_transient_block",
+        "update_attributes",
+        "player_chat",
+        "delete_chat",
+        "chat",
+        "chat_command_signed",
+        "pick_item_from_block",
+        "damage_event",
+        "disguised_chat",
+        "update_recipes",
+        "recipe_book_add"
+    ];
+
+    [Fact]
+    public async Task PayloadsMatchVanilla()
+    {
+        await FixtureCases.AssertAllAsync(Packets, packet => packet, AssertPayloadMatchesVanilla);
+    }
+
+    private static async Task AssertPayloadMatchesVanilla(string packet)
     {
         using var fixture = ReadFixture();
         var root = fixture.RootElement;

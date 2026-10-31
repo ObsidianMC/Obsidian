@@ -5,6 +5,7 @@ using Obsidian.WorldData;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -24,10 +25,22 @@ public sealed class EntityRangeQueries
         Assert.Null(context.World.GetEntitiesInRange(VectorD.Zero, float.MaxValue).FirstOrDefault(candidate => candidate.Uuid == missingOwner));
     }
 
-    [Theory]
-    [InlineData(32f)]
-    [InlineData(512f)]
-    public async Task QueryPreservesDistanceFilteringAcrossRegionBoundaries(float distance)
+    [Fact]
+    public async Task QueryPreservesDistanceFilteringAcrossRegionBoundaries()
+    {
+        float[] cases =
+        [
+            32f,
+            512f
+        ];
+
+        await FixtureCases.AssertAllAsync(
+            cases,
+            row => $"distance={row}",
+            AssertQueryPreservesDistanceFilteringAcrossRegionBoundaries);
+    }
+
+    private static async Task AssertQueryPreservesDistanceFilteringAcrossRegionBoundaries(float distance)
     {
         await using var context = TestServerFactory.CreateServer($"entity-range-{Guid.NewGuid():N}");
         var origin = new VectorD(511, 64, 0);

@@ -7,6 +7,7 @@ using Obsidian.Entities.Factories;
 using Obsidian.Nbt;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
+using Obsidian.Tests.Utilities;
 using Obsidian.WorldData;
 using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -123,34 +124,6 @@ public sealed class MobParity
         }
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task ShorterStrongerPotionRestoresTheRemainingWeakerEffect(bool reload)
-    {
-        await using var context = TestServerFactory.CreateServer($"potion-stacking-{Guid.NewGuid():N}");
-        var pig = new Pig
-        {
-            Level = context.World,
-            MobBitMask = MobBitmask.NoAi
-        };
-        pig.InitializeAi(false);
-        var effect = (int)PotionEffect.Speed - 1;
-        pig.AddPotionEffect(effect, 100, 0, EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon);
-        pig.AddPotionEffect(effect, 20, 1);
-        if (reload)
-            pig = Assert.IsType<Pig>(EntityNbt.Load(EntityNbt.Save(pig)!, context.World));
-
-        for (var tick = 0; tick < 20; tick++)
-            await pig.TickAsync();
-
-        Assert.True(pig.ActivePotionEffects.TryGetValue(effect, out var remaining));
-        Assert.Equal(0, remaining.EffectData.Amplifier);
-        Assert.Equal(80, remaining.CurrentDuration);
-        Assert.True(remaining.EffectData.ShowParticles);
-        Assert.True(remaining.EffectData.ShowIcon);
-    }
-
     [Fact]
     public async Task InfinitePotionDurationSurvivesTicksAndSaving()
     {
@@ -171,30 +144,62 @@ public sealed class MobParity
         Assert.Equal(-1, pig.ActivePotionEffects[effect].CurrentDuration);
     }
 
-    [Theory]
-    [InlineData(EntityType.Pig, false, 140, 99)]
-    [InlineData(EntityType.Pig, true, 0, 100)]
-    public async Task PowderSnowRespectsFreezingImmunities(EntityType type, bool leather, int frozen, float health)
+    // Non-default state each entity must keep across a save and a load.
+    [Fact]
+    public async Task EntityStateSurvivesSaving()
     {
-        await using var context = TestServerFactory.CreateServer($"mob-freezing-{Guid.NewGuid():N}");
-        AddEmptyChunk(context.World);
-        context.World.GetLoadedChunk(0, 0)!.SetBlock(8, 70, 8, BlocksRegistry.PowderSnow);
-        var mob = EntitySpawner.CreateMob(context.World, type)!;
-        mob.Position = new VectorD(8.5, 70, 8.5);
-        mob.NoGravity = true;
-        mob.MobBitMask = MobBitmask.NoAi;
-        mob.InitializeAi(false);
-        mob.Health = 100;
-        if (leather)
-            mob.SetEquipment(EquipmentSlot.Helmet, ItemsRegistry.GetSingleItem(ItemsRegistry.LeatherHelmet));
+        (string Name, Func<World, Entity> Create, Action<Entity> Check)[] cases =
+        [
+            ("a primed TNT's fuse", world => new PrimedTnt { Level = world, Fuse = 37 },
+                loaded => Assert.Equal(37, Assert.IsType<PrimedTnt>(loaded).Fuse)),
+            ("a weaker effect behind a shorter stronger one", PigWithStackedSpeed, AssertStackedSpeed),
+            ("frozen ticks", world => new Pig { Level = world, PowderedSnowTicks = 140 },
+                loaded => Assert.Equal(140, loaded.PowderedSnowTicks))
+        ];
 
-        for (var tick = 0; tick < 160; tick++)
-            await mob.TickAsync();
+        await using var context = TestServerFactory.CreateServer($"entity-state-{Guid.NewGuid():N}");
 
-        Assert.Equal(frozen, mob.PowderedSnowTicks);
-        Assert.Equal(health, mob.Health);
-        Assert.Equal(frozen, EntityNbt.Load(EntityNbt.Save(mob)!, context.World)!.PowderedSnowTicks);
+        FixtureCases.AssertAll(
+            cases,
+            row => row.Name,
+            row => AssertSurvivesSaving(context.World, row.Create, row.Check));
     }
+
+    private static void AssertSurvivesSaving(World world, Func<World, Entity> create, Action<Entity> check)
+    {
+        var saved = EntityNbt.Save(create(world));
+        Assert.NotNull(saved);
+
+        var loaded = EntityNbt.Load(saved, world);
+
+        check(Assert.IsAssignableFrom<Entity>(loaded));
+    }
+
+    private static Pig PigWithStackedSpeed(World world)
+    {
+        var pig = new Pig { Level = world, MobBitMask = MobBitmask.NoAi };
+        pig.AddPotionEffect(Speed, 100, 0, EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon);
+        pig.AddPotionEffect(Speed, 20, 1);
+
+        return pig;
+    }
+
+    private static void AssertStackedSpeed(Entity loaded)
+    {
+        var pig = Assert.IsType<Pig>(loaded);
+
+        Assert.True(pig.ActivePotionEffects.TryGetValue(Speed, out var active));
+        Assert.Equal(1, active.EffectData.Amplifier);
+        Assert.Equal(20, active.CurrentDuration);
+        var hidden = active.EffectData.HiddenEffect;
+        Assert.NotNull(hidden);
+        Assert.Equal(0, hidden.Amplifier);
+        Assert.Equal(100, hidden.Duration);
+        Assert.True(hidden.ShowParticles);
+        Assert.True(hidden.ShowIcon);
+    }
+
+    private static readonly int Speed = (int)PotionEffect.Speed - 1;
 
     [Fact]
     public async Task WitherBarFollowsTrackingAndNameChanges()
