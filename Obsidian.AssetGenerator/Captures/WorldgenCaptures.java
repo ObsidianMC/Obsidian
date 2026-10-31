@@ -1170,6 +1170,9 @@ class WorldgenCaptures {
         featureMarks(chunks, chunkX, chunkZ).forEach(position -> marks.add(coordinates(position)));
         entry.add("marks", marks);
         entry.add("blockEntities", blockEntities(region, chunks, chunkX, chunkZ));
+        if (entry.has("recordEntities") && entry.get("recordEntities").getAsBoolean()) {
+            entry.add("entities", entities(chunks, chunkX, chunkZ));
+        }
         if (entry.has("verifyStatus") && entry.get("verifyStatus").getAsBoolean()) {
             var actual = level.getChunkSource().getChunk(chunkX, chunkZ, ChunkStatus.FEATURES, true);
             var actualBlocks = blocks(actual, level.getMinY(), level.getHeight());
@@ -1773,6 +1776,46 @@ class WorldgenCaptures {
             result.add(record);
         }
         return result;
+    }
+
+    // The fields a generated end crystal keeps from its feature; the rest of a fresh entity's tag is its UUID and
+    // the defaults every entity saves.
+    static final List<String> ENTITY_FIELDS = List.of("beam_target", "Invulnerable", "ShowBottom");
+
+    // The entities decoration added to the region's chunks, by chunk in z, x order and in each chunk in the order
+    // they were added: [x, y, z, yaw, pitch, type, data].
+    static JsonArray entities(Map<Long, ProtoChunk> chunks, int centerX, int centerZ) {
+        var result = new JsonArray();
+        for (int z = centerZ - 1; z <= centerZ + 1; z++) {
+            for (int x = centerX - 1; x <= centerX + 1; x++) {
+                for (var tag : chunks.get(ChunkPos.pack(x, z)).getEntities()) {
+                    result.add(entity(tag));
+                }
+            }
+        }
+        return result;
+    }
+
+    static JsonArray entity(net.minecraft.nbt.CompoundTag tag) {
+        var position = tag.getListOrEmpty("Pos");
+        var rotation = tag.getListOrEmpty("Rotation");
+        var record = new JsonArray();
+        for (int axis = 0; axis < 3; axis++) {
+            record.add(position.getDoubleOr(axis, 0.0));
+        }
+        record.add(rotation.getFloatOr(0, 0.0f));
+        record.add(rotation.getFloatOr(1, 0.0f));
+        record.add(tag.getStringOr("id", ""));
+
+        var data = new net.minecraft.nbt.CompoundTag();
+        for (var field : ENTITY_FIELDS) {
+            var value = tag.get(field);
+            if (value != null) {
+                data.put(field, value.copy());
+            }
+        }
+        record.add(net.minecraft.nbt.NbtOps.INSTANCE.convertTo(JsonOps.INSTANCE, data));
+        return record;
     }
 
     static BlockPos position(JsonArray coordinates) {

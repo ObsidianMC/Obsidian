@@ -477,8 +477,8 @@ public partial class Portals
 
         AddChunks(world);
 
-        // Ground at (0, 63, 0) so the End fight initializes exitPortal at (0, 64, 0).
-        await end.SetBlockAsync(new Vector(0, 63, 0), BlocksRegistry.EndStone);
+        // Ground at (0, 64, 0): like vanilla's, the End fight builds its exit portal in the ground's top block.
+        await end.SetBlockAsync(new Vector(0, 64, 0), BlocksRegistry.EndStone);
 
         var player = TestServerFactory.CreateConnectedPlayer(
             context.Server, world, "DragonSlayer", new VectorD(10.5, 64, 10.5));

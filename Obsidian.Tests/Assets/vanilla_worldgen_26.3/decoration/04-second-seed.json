@@ -23859,8 +23859,8 @@
       "name": "second_end",
       "seed": 987654321,
       "dimension": "minecraft:the_end",
-      "chunkX": -110,
-      "chunkZ": -130,
+      "chunkX": -55,
+      "chunkZ": -70,
       "verifyStatus": true,
       "minY": 0,
       "height": 256,
@@ -23900,8 +23900,8 @@
       "status": "minecraft:features",
       "chunks": [
         {
-          "chunkX": -111,
-          "chunkZ": -131,
+          "chunkX": -56,
+          "chunkZ": -71,
           "blocks": {
             "palette": [
               "minecraft:air"
@@ -23919,8 +23919,8 @@
           }
         },
         {
-          "chunkX": -110,
-          "chunkZ": -131,
+          "chunkX": -55,
+          "chunkZ": -71,
           "blocks": {
             "palette": [
               "minecraft:air"
@@ -23938,8 +23938,8 @@
           }
         },
         {
-          "chunkX": -109,
-          "chunkZ": -131,
+          "chunkX": -54,
+          "chunkZ": -71,
           "blocks": {
             "palette": [
               "minecraft:air"
@@ -23957,8 +23957,8 @@
           }
         },
         {
-          "chunkX": -111,
-          "chunkZ": -130,
+          "chunkX": -56,
+          "chunkZ": -70,
           "blocks": {
             "palette": [
               "minecraft:air"
@@ -23976,8 +23976,48 @@
           }
         },
         {
-          "chunkX": -110,
-          "chunkZ": -130,
+          "chunkX": -55,
+          "chunkZ": -70,
+          "blocks": {
+            "palette": [
+              "minecraft:air",
+              "minecraft:end_stone"
+            ],
+            "data": "H4sIAAAAAAAA/+3bsQ3AMAwEMXn/pTNBgHRGdOQEbq56eQYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgI/O7QcA1+gfuvQPXfqHLv1Dl/6hS/8AAAAAAAAAAPBf7n+gS//QdEb/UKV/6NI/dOkfuvQPbfqHLv0DAAAAAADAHvY/6NI/NLn/hS79Q5f+oUv/0KV/6NI/dOkf2vQPAAAAAAAAe9j/oMn9D3TpH5rO6B+KzugfqvQPXfqHNv1Dm/6hS/8AAAAAAACwi/0Pmuz/0KV/6PH/B7r0D136hy79Q5f+Af1Dl/4BAAAAAABgF/sfNNn/oUv/0OP+H7r0D136hy79Q5f+Af1Dl/4BAAAAAABgF/sfNNn/oUv/0OP+H7r0D136hy79Q5f+Af1Dl/4BAAAAAABgF/sfNNn/oUv/0OT+H5r8/4Eu/UOX/qFN/9Cmf+jSPwAAAAAAAOxi/4Mu/UOT+x/o0j906R+69A9d+ocu/UOX/qFN//DiATMnxQkAAAQA",
+            "hash": "34eef078cbfe2d26e5f824686fb5d2b5bf6412d9ebc2c6148adfe9f0dc46c043"
+          },
+          "heightmaps": {
+            "WORLD_SURFACE_WG": "H4sIAAAAAAAA/2NgGAWjYBSMVAAALq+17wAEAAA=",
+            "WORLD_SURFACE": "H4sIAAAAAAAA/2NgGAXDHFjiwZToJWQGMXpH9Q+wfgCHXdelAAQAAA==",
+            "OCEAN_FLOOR_WG": "H4sIAAAAAAAA/2NgGAWjYBSMVAAALq+17wAEAAA=",
+            "OCEAN_FLOOR": "H4sIAAAAAAAA/2NgGAXDHFjiwZToJWQGMXpH9Q+wfgCHXdelAAQAAA==",
+            "MOTION_BLOCKING": "H4sIAAAAAAAA/2NgGAXDHFjiwZToJWQGMXpH9Q+wfgCHXdelAAQAAA==",
+            "MOTION_BLOCKING_NO_LEAVES": "H4sIAAAAAAAA/2NgGAXDHFjiwZToJWQGMXpH9Q+wfgCHXdelAAQAAA=="
+          }
+        },
+        {
+          "chunkX": -54,
+          "chunkZ": -70,
+          "blocks": {
+            "palette": [
+              "minecraft:air",
+              "minecraft:end_stone"
+            ],
+            "data": "H4sIAAAAAAAA/+3bMQEAMAyAsM6/6bkoPRIFGGAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGDNqwMAAAAAAAAAAAAAAAAAAAAA/z8AAAAAAAAAAAAAAAAAAAAc4P8HAAAAAAAAAAAAAAAAAACAnv8fAAAAAAAAAAAAAAAAAAAAev5/AAAAAAAAAAAAAAAAAAAA6Pn/AQAAAAAAAAAAAAAAAAAAoOf/BwAAAAAAAAAAAAAAAAAA4LwPDVZ4qQAABAA=",
+            "hash": "b015f99d39a692ac6d415f2da560bfde2265aa0cfa2011bcfc7cb0fa8e972457"
+          },
+          "heightmaps": {
+            "WORLD_SURFACE_WG": "H4sIAAAAAAAA/2NgGAWjYBSMVAAALq+17wAEAAA=",
+            "WORLD_SURFACE": "H4sIAAAAAAAA/2NgGAWjgCJgOap/6OoHACRsRdYABAAA",
+            "OCEAN_FLOOR_WG": "H4sIAAAAAAAA/2NgGAWjYBSMVAAALq+17wAEAAA=",
+            "OCEAN_FLOOR": "H4sIAAAAAAAA/2NgGAWjgCJgOap/6OoHACRsRdYABAAA",
+            "MOTION_BLOCKING": "H4sIAAAAAAAA/2NgGAWjgCJgOap/6OoHACRsRdYABAAA",
+            "MOTION_BLOCKING_NO_LEAVES": "H4sIAAAAAAAA/2NgGAWjgCJgOap/6OoHACRsRdYABAAA"
+          }
+        },
+        {
+          "chunkX": -56,
+          "chunkZ": -69,
           "blocks": {
             "palette": [
               "minecraft:air"
@@ -23995,65 +24035,28 @@
           }
         },
         {
-          "chunkX": -109,
-          "chunkZ": -130,
+          "chunkX": -55,
+          "chunkZ": -69,
           "blocks": {
             "palette": [
-              "minecraft:air"
+              "minecraft:air",
+              "minecraft:end_stone"
             ],
-            "data": "H4sIAAAAAAAA/+3BMQEAAADCoPVP7W0HoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA3gAi6g7iAAAEAA==",
-            "hash": "7ca6cee56f9ff064a0ba5673f32ff0e50cfee789df0ca1cdf3e04843272049d9"
+            "data": "H4sIAAAAAAAA/+3asQ0AMAzDsOT/p/tB16IQeYEXbZ4BAAAAAAAA+Ma+HgA8o39o2tE/VOkfuvQPXfqHLv1Dm/6hS/8AAAAAAAAAAPAv/x/o0j906R+69A9d+ocu/UOX/gEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAqwMw1EauAAAEAA==",
+            "hash": "69b02a5de37422c79e93c7966132991a4724b49eac76c5f8abe06ff059a52281"
           },
           "heightmaps": {
             "WORLD_SURFACE_WG": "H4sIAAAAAAAA/2NgGAWjYBSMVAAALq+17wAEAAA=",
-            "WORLD_SURFACE": "H4sIAAAAAAAA/2NgGAWjYBSMVAAALq+17wAEAAA=",
+            "WORLD_SURFACE": "H4sIAAAAAAAA/2NgwAssicCEACV6R8EoGAU0BAABFd/nAAQAAA==",
             "OCEAN_FLOOR_WG": "H4sIAAAAAAAA/2NgGAWjYBSMVAAALq+17wAEAAA=",
-            "OCEAN_FLOOR": "H4sIAAAAAAAA/2NgGAWjYBSMVAAALq+17wAEAAA=",
-            "MOTION_BLOCKING": "H4sIAAAAAAAA/2NgGAWjYBSMVAAALq+17wAEAAA=",
-            "MOTION_BLOCKING_NO_LEAVES": "H4sIAAAAAAAA/2NgGAWjYBSMVAAALq+17wAEAAA="
+            "OCEAN_FLOOR": "H4sIAAAAAAAA/2NgwAssicCEACV6R8EoGAU0BAABFd/nAAQAAA==",
+            "MOTION_BLOCKING": "H4sIAAAAAAAA/2NgwAssicCEACV6R8EoGAU0BAABFd/nAAQAAA==",
+            "MOTION_BLOCKING_NO_LEAVES": "H4sIAAAAAAAA/2NgwAssicCEACV6R8EoGAU0BAABFd/nAAQAAA=="
           }
         },
         {
-          "chunkX": -111,
-          "chunkZ": -129,
-          "blocks": {
-            "palette": [
-              "minecraft:air"
-            ],
-            "data": "H4sIAAAAAAAA/+3BMQEAAADCoPVP7W0HoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA3gAi6g7iAAAEAA==",
-            "hash": "7ca6cee56f9ff064a0ba5673f32ff0e50cfee789df0ca1cdf3e04843272049d9"
-          },
-          "heightmaps": {
-            "WORLD_SURFACE_WG": "H4sIAAAAAAAA/2NgGAWjYBSMVAAALq+17wAEAAA=",
-            "WORLD_SURFACE": "H4sIAAAAAAAA/2NgGAWjYBSMVAAALq+17wAEAAA=",
-            "OCEAN_FLOOR_WG": "H4sIAAAAAAAA/2NgGAWjYBSMVAAALq+17wAEAAA=",
-            "OCEAN_FLOOR": "H4sIAAAAAAAA/2NgGAWjYBSMVAAALq+17wAEAAA=",
-            "MOTION_BLOCKING": "H4sIAAAAAAAA/2NgGAWjYBSMVAAALq+17wAEAAA=",
-            "MOTION_BLOCKING_NO_LEAVES": "H4sIAAAAAAAA/2NgGAWjYBSMVAAALq+17wAEAAA="
-          }
-        },
-        {
-          "chunkX": -110,
-          "chunkZ": -129,
-          "blocks": {
-            "palette": [
-              "minecraft:air"
-            ],
-            "data": "H4sIAAAAAAAA/+3BMQEAAADCoPVP7W0HoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA3gAi6g7iAAAEAA==",
-            "hash": "7ca6cee56f9ff064a0ba5673f32ff0e50cfee789df0ca1cdf3e04843272049d9"
-          },
-          "heightmaps": {
-            "WORLD_SURFACE_WG": "H4sIAAAAAAAA/2NgGAWjYBSMVAAALq+17wAEAAA=",
-            "WORLD_SURFACE": "H4sIAAAAAAAA/2NgGAWjYBSMVAAALq+17wAEAAA=",
-            "OCEAN_FLOOR_WG": "H4sIAAAAAAAA/2NgGAWjYBSMVAAALq+17wAEAAA=",
-            "OCEAN_FLOOR": "H4sIAAAAAAAA/2NgGAWjYBSMVAAALq+17wAEAAA=",
-            "MOTION_BLOCKING": "H4sIAAAAAAAA/2NgGAWjYBSMVAAALq+17wAEAAA=",
-            "MOTION_BLOCKING_NO_LEAVES": "H4sIAAAAAAAA/2NgGAWjYBSMVAAALq+17wAEAAA="
-          }
-        },
-        {
-          "chunkX": -109,
-          "chunkZ": -129,
+          "chunkX": -54,
+          "chunkZ": -69,
           "blocks": {
             "palette": [
               "minecraft:air"

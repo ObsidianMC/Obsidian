@@ -383,7 +383,12 @@ Re-capture with the Phase 0 harness first, then work in this order. Each step ha
 6. **Structures.** Abandoned camps (jigsaw, so mostly data) and the changed templates. Structure starts are saved
    with vanilla's piece ids and fields, checked against starts vanilla saved (`VanillaStructureSaves`); what remains
    is in `known-gaps.md`, "Structure pieces in saved chunks".
-7. **The Nether and the End,** including the new End island composition.
+7. **The Nether and the End,** including the new End island composition. The Nether's terrain (lava sea, bedrock,
+   material rules), multi-noise biomes, carvers, structures and decoration, and the End's composed islands
+   (`end/islands`: the main island's distance gradient and `end_outer_islands`), biome source, structures and
+   decoration all match 26.3 captures. `decoration/05-the-end-and-nether` places spikes with their crystals and
+   cages, the obsidian platform and return gateways. The exit portal and the 20 gateways are the dragon fight's
+   (Phase 6 entity work), not worldgen; see [mob parity](mob-parity.md).
 8. **Performance.** Re-record `WorldgenBench` and compare with the 1.21.x numbers in `worldgen-benchmarks.md`. Single
    precision may make generation faster.
 

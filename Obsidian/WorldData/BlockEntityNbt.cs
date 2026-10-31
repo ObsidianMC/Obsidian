@@ -67,6 +67,10 @@ internal static partial class BlockEntityNbt
                 Add(new NbtTag<int>("total_fuel", 20));
                 Add(new NbtTag<float>("speed_multiplier", 1f));
                 break;
+            case "minecraft:end_gateway":
+                // Its age, which counts up from 0 once it ticks.
+                Add(new NbtTag<long>("Age", 0L));
+                break;
             case "minecraft:decorated_pot":
                 if (tag.TryGetTag<NbtList>("sherds", out var sherds))
                 {
