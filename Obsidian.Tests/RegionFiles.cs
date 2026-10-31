@@ -1,7 +1,10 @@
 using Obsidian.API;
 using Obsidian.API.BlockEntities;
 using Obsidian.API.Containers;
+using Obsidian.API.Inventory;
+using Obsidian.API.Registries;
 using Obsidian.ChunkData;
+using Obsidian.Entities;
 using Obsidian.Registries;
 using Obsidian.WorldData;
 using Obsidian.Nbt;
@@ -273,11 +276,70 @@ public sealed class RegionFiles : IDisposable
             ("header write interrupted", path => InterruptedWriteAsync(path, RegionFile.Step.HeaderWriting)),
             ("external chunk rewritten in another codec, interrupted", ExternalRewriteKeepsItsCodecAsync),
             ("entries sharing sectors", SharedSectorsStayWithTheirOtherChunkAsync),
-            ("reservation given up between two writes", GivenUpReservationKeepsOrderAsync)
+            ("reservation given up between two writes", GivenUpReservationKeepsOrderAsync),
+            ("commit and its cleanup failing before the entries",
+                path => FailedCleanupEndsEveryWriteAsync(path, RegionFile.Step.Flushed)),
+            ("commit and its cleanup failing at an entry",
+                path => FailedCleanupEndsEveryWriteAsync(path, RegionFile.Step.HeaderWriting))
         ];
 
         await FixtureCases.AssertAllAsync(cases, testCase => testCase.Name,
             testCase => testCase.Check(this.RegionPath(testCase.Name)));
+    }
+
+    [Fact]
+    public async Task ExternalFilesKeepOnlyTheCommittedVersion()
+    {
+        (string Name, Func<string, Task> Check)[] cases =
+        [
+            ("stale file's deferred deletion ending as a new file moves in", DeferredDeletionLeavesTheNewFileAsync),
+            ("temporary failing once written", FailedTemporaryGoesWithItsWriteAsync),
+            ("temporaries left by a crash", LeftTemporariesAreReclaimedAsync)
+        ];
+
+        await FixtureCases.AssertAllAsync(cases, testCase => testCase.Name,
+            testCase => testCase.Check(this.RegionPath(testCase.Name)));
+    }
+
+    [Fact]
+    public async Task SaveFailingInBothFilesRetriesBoth()
+    {
+        // An item saved with its chunk, then picked up, and the chunk's next save failing in both files: the save
+        // after it still writes the chunk's entities, without the item, so the item isn't there once reloaded.
+        var regionFolder = Path.Join(this.folder, "world");
+        await using (var region = new Region(0, 0, regionFolder))
+        {
+            await region.InitAsync();
+            var chunk = Complete(0, 0);
+            region.SetChunk(chunk);
+            var item = new ItemEntity
+            {
+                Level = null!,
+                EntityId = 1,
+                Position = new VectorF(8.5f, 65f, 8.5f),
+                Item = new ItemStack(ItemsRegistry.Apple, 3)
+            };
+            region.TryAddEntity(item);
+            await region.FlushAsync();
+
+            region.TryRemoveEntity(item);
+            chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+            region.ChunkFile.Observe = FailAt(RegionFile.Step.Flushed);
+            region.EntityFile.Observe = FailAt(RegionFile.Step.Flushed);
+
+            await Assert.ThrowsAsync<AggregateException>(() => region.FlushAsync());
+
+            region.ChunkFile.Observe = null;
+            region.EntityFile.Observe = null;
+            await region.FlushAsync();
+        }
+
+        await using var reloaded = new Region(0, 0, regionFolder);
+        await reloaded.InitAsync();
+        var reloadedChunk = (Chunk)await reloaded.GetChunkAsync(0, 0);
+
+        Assert.Equal(BlocksRegistry.Stone, reloadedChunk.GetBlock(1, 64, 1));
+        Assert.Empty(reloadedChunk.PendingEntities);
     }
 
     [Fact]
@@ -377,6 +439,114 @@ public sealed class RegionFiles : IDisposable
         await StageAsync(file, third, Payload(3, 100));
         await file.CommitAsync();
         Assert.Equal(3, VersionOf((await file.GetChunkBytesAsync(0, 0))!.Value.Span));
+    }
+
+    // An internal, an external and another internal rewrite committed together, the commit failing at a step and
+    // deleting the external one's temporary failing too: every write still ends, with the commit's failure, and the
+    // chunks keep their previous versions and take their next writes. Opening the file again reclaims the temporary.
+    private static async Task FailedCleanupEndsEveryWriteAsync(string path, RegionFile.Step failingAt)
+    {
+        var previous = Payload(1, 100);
+        var next = Payload(3, 100);
+        await using (var file = await OpenAsync(path))
+        {
+            for (var x = 0; x < 3; x++)
+                await WriteAsync(file, x, 0, previous);
+
+            file.Observe = FailAt(failingAt, RegionFile.Step.TemporaryDiscarding);
+            RegionFile.ChunkWrite[] writes =
+            [
+                await StageAsync(file, 0, 0, Payload(2, 100)),
+                await StageAsync(file, 1, 0, Payload(2, 1_300_000)),
+                await StageAsync(file, 2, 0, Payload(2, 100))
+            ];
+
+            var failure = await Assert.ThrowsAsync<AggregateException>(file.CommitAsync);
+            await Task.WhenAll(writes.Select(write => write.Done)).WaitAsync(TimeSpan.FromSeconds(10));
+
+            Assert.All(writes, write => Assert.Same(failure.InnerExceptions[0], write.Failure));
+
+            file.Observe = null;
+            for (var x = 0; x < 3; x++)
+                Assert.Equal(previous, (await file.GetChunkBytesAsync(x, 0))!.Value.ToArray());
+
+            await WriteAsync(file, 1, 0, next);
+            Assert.Equal(next, (await file.GetChunkBytesAsync(1, 0))!.Value.ToArray());
+        }
+
+        Assert.Single(Temporaries(path));
+
+        await (await OpenAsync(path)).DisposeAsync();
+        Assert.Empty(Temporaries(path));
+    }
+
+    // An external chunk rewritten internal while a read of another chunk runs, which defers deleting its stale
+    // external file, then external again; the read ends once the new file is moved in, before its entry switches. The
+    // deferred deletion leaves the new file, which the chunk then reads.
+    private static async Task DeferredDeletionLeavesTheNewFileAsync(string path)
+    {
+        await using var file = await OpenAsync(path);
+        await WriteAsync(file, 0, 0, Payload(1, 100));
+        await WriteAsync(file, 2, 2, Payload(1, 1_300_000));
+
+        // The read keeps running until resumed.
+        var read = new Pause();
+        file.Observe = step => step is { Step: RegionFile.Step.Reading, ChunkX: 0 }
+            ? read.WaitAsync()
+            : ValueTask.CompletedTask;
+
+        var reading = file.GetChunkBytesAsync(0, 0);
+        await read.Paused;
+        await WriteAsync(file, 2, 2, Payload(2, 100));
+
+        // External again, paused once its file is moved in; the read ends meanwhile.
+        var moveIn = new Pause();
+        file.Observe = step => step is { Step: RegionFile.Step.HeaderWriting, ChunkX: 2 }
+            ? moveIn.WaitAsync()
+            : ValueTask.CompletedTask;
+
+        var rewritten = Payload(3, 1_300_000);
+        var writing = WriteAsync(file, 2, 2, rewritten);
+        await moveIn.Paused;
+
+        read.Resume();
+        await reading;
+
+        moveIn.Resume();
+        await writing;
+
+        Assert.Equal(rewritten, (await file.GetChunkBytesAsync(2, 2))!.Value.ToArray());
+    }
+
+    // An external rewrite whose temporary fails once written and flushed: the temporary goes with the write, and the
+    // chunk keeps its previous version.
+    private static async Task FailedTemporaryGoesWithItsWriteAsync(string path)
+    {
+        var previous = Payload(1, 100);
+        await using var file = await OpenAsync(path);
+        await WriteAsync(file, 2, 2, previous);
+        file.Observe = FailAt(RegionFile.Step.TemporaryWritten);
+
+        await Assert.ThrowsAsync<IOException>(() => WriteAsync(file, 2, 2, Payload(2, 1_300_000)));
+
+        Assert.Empty(Temporaries(path));
+        Assert.Equal(previous, (await file.GetChunkBytesAsync(2, 2))!.Value.ToArray());
+    }
+
+    // Temporaries a crash left beside the region file: opening it deletes those of its own chunks' external files,
+    // and leaves other regions' and files that aren't temporaries.
+    private static async Task LeftTemporariesAreReclaimedAsync(string path)
+    {
+        string[] own = [TemporaryName(2, 2), TemporaryName(31, 0)];
+        string[] others = [TemporaryName(-1, 2), TemporaryName(32, 0), "c.2.2.mcc.notes.tmp"];
+
+        var folder = Path.GetDirectoryName(path)!;
+        foreach (var name in own.Concat(others))
+            await File.WriteAllBytesAsync(Path.Join(folder, name), [1, 2, 3]);
+
+        await (await OpenAsync(path)).DisposeAsync();
+
+        Assert.Equal(others.Order(), Temporaries(path).Order());
     }
 
     // An autosave takes the chunk's change and pauses before staging it; the chunk then unloads with nothing new to
@@ -487,25 +657,23 @@ public sealed class RegionFiles : IDisposable
         return steps;
     }
 
-    private static Func<RegionFile.Event, ValueTask> FailAt(RegionFile.Step failingAt) => step =>
-        step.Step == failingAt ? ValueTask.FromException(new IOException("Crashed.")) : ValueTask.CompletedTask;
+    private static Func<RegionFile.Event, ValueTask> FailAt(params RegionFile.Step[] failingAt) => step =>
+        failingAt.Contains(step.Step) ? ValueTask.FromException(new IOException("Crashed.")) : ValueTask.CompletedTask;
 
     // Pauses the file's writes at their first step of a kind; returns when one reached it, and how to resume.
     private static (Task Paused, Action Resume) PauseAt(RegionFile file, RegionFile.Step pausingAt)
     {
-        var paused = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var resumed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        file.Observe = step =>
-        {
-            if (step.Step != pausingAt)
-                return ValueTask.CompletedTask;
+        var pause = new Pause();
+        file.Observe = step => step.Step == pausingAt ? pause.WaitAsync() : ValueTask.CompletedTask;
 
-            paused.TrySetResult();
-            return new ValueTask(resumed.Task);
-        };
-
-        return (paused.Task, () => resumed.TrySetResult());
+        return (pause.Paused, pause.Resume);
     }
+
+    // The names of the external files' temporaries beside a region file.
+    private static IEnumerable<string> Temporaries(string path) =>
+        Directory.GetFiles(Path.GetDirectoryName(path)!, "*.tmp").Select(file => Path.GetFileName(file));
+
+    private static string TemporaryName(int chunkX, int chunkZ) => $"c.{chunkX}.{chunkZ}.mcc.{Guid.NewGuid():N}.tmp";
 
     // The task can't end while the write it waits for is paused; the bound only gives a wrong ending time to show.
     private static async Task AssertWaitsAsync(Task waiting)
@@ -522,12 +690,12 @@ public sealed class RegionFiles : IDisposable
     }
 
     // Stages uncompressed bytes as a chunk, compressed like the region's saves, for the next commit.
-    private static async Task StageAsync(RegionFile file, int x, int z, byte[] uncompressed)
+    private static async Task<RegionFile.ChunkWrite> StageAsync(RegionFile file, int x, int z, byte[] uncompressed)
     {
         var compressed = file.Compress(uncompressed);
         try
         {
-            await file.StageAsync(x, z, compressed.Written);
+            return await file.StageAsync(x, z, compressed.Written);
         }
         finally
         {
@@ -669,5 +837,23 @@ public sealed class RegionFiles : IDisposable
         }
 
         throw new FileNotFoundException("Cannot find the vanilla 26.3 fixture's region in the source tree.");
+    }
+
+    // Holds the steps that wait for it until resumed; resumed, it lets every later one through.
+    private sealed class Pause
+    {
+        private readonly TaskCompletionSource paused = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource resumed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        // Completes once a step waits for the pause.
+        public Task Paused => this.paused.Task;
+
+        public ValueTask WaitAsync()
+        {
+            this.paused.TrySetResult();
+            return new ValueTask(this.resumed.Task);
+        }
+
+        public void Resume() => this.resumed.TrySetResult();
     }
 }

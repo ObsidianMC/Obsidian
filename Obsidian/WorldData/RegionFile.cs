@@ -62,6 +62,9 @@ public sealed partial class RegionFile : IAsyncDisposable
     // The least a chunk's NBT is decompressed into at first; it grows from there.
     private const int MinDecompressedCapacity = 64 * 1024;
 
+    // Ends the name of an external file's temporary, after the external file's own name and a GUID.
+    private const string TemporarySuffix = ".tmp";
+
     private const uint MoveFileReplaceExisting = 0x1;
     private const uint MoveFileWriteThrough = 0x8;
 
@@ -162,6 +165,8 @@ public sealed partial class RegionFile : IAsyncDisposable
             throw new InvalidOperationException("Region file has already been initialized.");
 
         this.initialized = true;
+        this.ReclaimTemporaries();
+
         this.fileLength = RandomAccess.GetLength(this.handle);
 
         var header = new byte[HeaderSectors * SectorSize];
@@ -329,16 +334,20 @@ public sealed partial class RegionFile : IAsyncDisposable
                 this.headerLock.Release();
             }
         }
-        catch
+        catch (Exception exception)
         {
             // No header entry ever pointed at the sectors.
             if (start >= 0)
                 await this.FreeAsync(start, sectorsNeeded);
 
+            var cleanupFailures = new List<Exception>();
             if (externalTemporary is not null)
-                File.Delete(externalTemporary);
+                await this.DiscardTemporaryAsync(externalTemporary, tableIndex, cleanupFailures);
 
-            throw;
+            if (cleanupFailures.Count == 0)
+                throw;
+
+            throw new AggregateException([exception, .. cleanupFailures]);
         }
         finally
         {
@@ -349,7 +358,9 @@ public sealed partial class RegionFile : IAsyncDisposable
     /// <summary>
     /// Commits every staged write: flushes the file, writes their header entries, flushes again, then frees their
     /// previous versions' sectors and ends their turns. A failure ends the turns of the writes it failed, with it as
-    /// their <see cref="ChunkWrite.Failure"/>.
+    /// their <see cref="ChunkWrite.Failure"/>, and is thrown. When cleaning up after it fails too (deleting a staged
+    /// external file's temporary), every turn still ends, and an <see cref="AggregateException"/> holding the failure
+    /// first, then the cleanup's, is thrown instead.
     /// </summary>
     internal async Task CommitAsync()
     {
@@ -388,8 +399,11 @@ public sealed partial class RegionFile : IAsyncDisposable
         }
         catch (Exception exception)
         {
-            await this.AbandonAsync(batch, exception);
-            throw;
+            var cleanupFailures = await this.AbandonAsync(batch, exception);
+            if (cleanupFailures.Count == 0)
+                throw;
+
+            throw new AggregateException([exception, .. cleanupFailures]);
         }
 
         var retired = new List<RetiredRun>();
@@ -425,8 +439,11 @@ public sealed partial class RegionFile : IAsyncDisposable
 
         if (failure is not null)
         {
-            await this.FailAsync(batch, switched, failure);
-            ExceptionDispatchInfo.Throw(failure);
+            var cleanupFailures = await this.FailAsync(batch, switched, failure);
+            if (cleanupFailures.Count == 0)
+                ExceptionDispatchInfo.Throw(failure);
+
+            throw new AggregateException([failure, .. cleanupFailures]);
         }
 
         await this.headerLock.WaitAsync();
@@ -457,6 +474,8 @@ public sealed partial class RegionFile : IAsyncDisposable
         // stub names (see KeepExternalCodecAsync), and a crash after it reads the new version, which is complete.
         if (chunk.ExternalTemporary is string temporary)
         {
+            await this.BeginReplacingExternalAsync(tableIndex);
+
             MoveDurably(temporary, this.ExternalPath(chunkX, chunkZ));
             chunk.ExternalTemporary = null;
         }
@@ -505,36 +524,96 @@ public sealed partial class RegionFile : IAsyncDisposable
         }
     }
 
-    // Ends a batch whose payloads never reached the disk: no entry points at their sectors, so they're freed.
-    private async Task AbandonAsync(List<StagedChunk> batch, Exception failure)
+    // Ends a batch whose payloads never reached the disk: no entry points at their sectors, so they're freed. Every
+    // write's turn ends whatever fails cleaning up, and those failures are returned.
+    private async Task<List<Exception>> AbandonAsync(List<StagedChunk> batch, Exception failure)
     {
+        var cleanupFailures = new List<Exception>();
         foreach (var chunk in batch)
         {
-            await this.FreeAsync(chunk.Start, chunk.Count);
+            try
+            {
+                await this.FreeAsync(chunk.Start, chunk.Count);
 
-            if (chunk.ExternalTemporary is not null)
-                File.Delete(chunk.ExternalTemporary);
-
-            chunk.Write.Release(failure);
+                if (chunk.ExternalTemporary is string temporary)
+                    await this.DiscardTemporaryAsync(temporary, chunk.Write.TableIndex, cleanupFailures);
+            }
+            catch (Exception exception)
+            {
+                cleanupFailures.Add(exception);
+            }
+            finally
+            {
+                chunk.Write.Release(failure);
+            }
         }
+
+        return cleanupFailures;
     }
 
     // Ends a batch that failed while switching its entries or flushing them. The entries written, and the one being
     // written, may point at either version on the disk, so their sectors stay used this session (the sector map is
-    // rebuilt from the header when the file is opened again). Those not reached never pointed at theirs.
-    private async Task FailAsync(List<StagedChunk> batch, int switched, Exception failure)
+    // rebuilt from the header when the file is opened again). Those not reached never pointed at theirs. Every
+    // write's turn ends whatever fails cleaning up, and those failures are returned.
+    private async Task<List<Exception>> FailAsync(List<StagedChunk> batch, int switched, Exception failure)
     {
+        var cleanupFailures = new List<Exception>();
         for (var index = 0; index < batch.Count; index++)
         {
             var chunk = batch[index];
-            if (index > switched)
-                await this.FreeAsync(chunk.Start, chunk.Count);
+            try
+            {
+                if (index > switched)
+                    await this.FreeAsync(chunk.Start, chunk.Count);
 
-            // Still a temporary when it wasn't moved in.
-            if (chunk.ExternalTemporary is not null)
-                File.Delete(chunk.ExternalTemporary);
+                // Still a temporary when it wasn't moved in.
+                if (chunk.ExternalTemporary is string temporary)
+                    await this.DiscardTemporaryAsync(temporary, chunk.Write.TableIndex, cleanupFailures);
+            }
+            catch (Exception exception)
+            {
+                cleanupFailures.Add(exception);
+            }
+            finally
+            {
+                chunk.Write.Release(failure);
+            }
+        }
 
-            chunk.Write.Release(failure);
+        return cleanupFailures;
+    }
+
+    // Deletes the temporary of an external file no commit moved in, adding a failure to delete it to the cleanup
+    // failures. A temporary left behind is reclaimed when the file is opened again (see ReclaimTemporaries).
+    private async Task DiscardTemporaryAsync(string temporary, int tableIndex, List<Exception> cleanupFailures)
+    {
+        try
+        {
+            await this.ObserveAsync(Step.TemporaryDiscarding, tableIndex);
+            File.Delete(temporary);
+        }
+        catch (Exception exception)
+        {
+            cleanupFailures.Add(exception);
+        }
+    }
+
+    // Marks a chunk whose new external file is about to be moved in as neither internal nor external until its entry
+    // switches. A stale external file is deleted behind reads (see ReleaseRetiredRuns) under the header lock, and only
+    // while its chunk is internal, so it's deleted before the move or not at all: never the file moved in. Called
+    // under the commit and external locks.
+    private async Task BeginReplacingExternalAsync(int tableIndex)
+    {
+        await this.headerLock.WaitAsync();
+        try
+        {
+            ObjectDisposedException.ThrowIf(this.disposed, this);
+
+            this.storage[tableIndex] = Storage.Unknown;
+        }
+        finally
+        {
+            this.headerLock.Release();
         }
     }
 
@@ -615,6 +694,8 @@ public sealed partial class RegionFile : IAsyncDisposable
 
             try
             {
+                await this.ObserveAsync(Step.Reading, tableIndex);
+
                 if (await this.ReadChunkAsync(tableIndex, offset, size) is RentedArray<byte> chunk)
                     return chunk;
             }
@@ -667,20 +748,21 @@ public sealed partial class RegionFile : IAsyncDisposable
         {
             this.MarkFree(run.Start, run.Count);
 
-            // Unless the chunk went external again since.
+            // Unless the chunk went external again since, or a new external file of it is being moved in (see
+            // BeginReplacingExternalAsync).
             if (run.ExternalOf >= 0 && this.storage[run.ExternalOf] == Storage.Internal)
             {
                 var (x, z) = this.PositionOf(run.ExternalOf);
-                DeleteStaleExternal(this.ExternalPath(x, z));
+                DeleteStale(this.ExternalPath(x, z));
             }
         }
 
         this.retiredBehindReads.Clear();
     }
 
-    // A stale external file is harmless, since its chunk's header says it's internal, so failing to delete it doesn't
-    // fail the read or commit that released it.
-    private static void DeleteStaleExternal(string path)
+    // A stale external file is harmless, since its chunk's header says it's internal, and so is a temporary no commit
+    // moved in, so failing to delete one doesn't fail the read, commit or opening that found it.
+    private static void DeleteStale(string path)
     {
         try
         {
@@ -756,17 +838,70 @@ public sealed partial class RegionFile : IAsyncDisposable
                 + "name doesn't give the region's position for an external chunk file.");
         }
 
-        var temporary = $"{this.ExternalPath(chunkX, chunkZ)}.{Guid.NewGuid():N}.tmp";
-        await using (var file = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None,
-            bufferSize: 0, FileOptions.Asynchronous))
+        var tableIndex = this.GetChunkTableIndex(chunkX, chunkZ);
+        var temporary = $"{this.ExternalPath(chunkX, chunkZ)}.{Guid.NewGuid():N}{TemporarySuffix}";
+        try
         {
-            await file.WriteAsync(payload);
+            await using (var file = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+                bufferSize: 0, FileOptions.Asynchronous))
+            {
+                await file.WriteAsync(payload);
 
-            // On the disk before it's moved in, so the move never puts in a file a crash can empty.
-            file.Flush(flushToDisk: true);
+                // On the disk before it's moved in, so the move never puts in a file a crash can empty.
+                file.Flush(flushToDisk: true);
+            }
+
+            await this.ObserveAsync(Step.TemporaryWritten, tableIndex);
+            return temporary;
         }
+        catch (Exception exception)
+        {
+            // Not staged, so nothing else deletes it. The name is new, so whatever is there is this write's.
+            var cleanupFailures = new List<Exception>();
+            if (File.Exists(temporary))
+                await this.DiscardTemporaryAsync(temporary, tableIndex, cleanupFailures);
 
-        return temporary;
+            if (cleanupFailures.Count == 0)
+                throw;
+
+            throw new AggregateException([exception, .. cleanupFailures]);
+        }
+    }
+
+    // Deletes the external files' temporaries a crash (or a failed cleanup) left for this region's chunks. The region
+    // file is open exclusively, so no write, in this process or another, may still be using them.
+    private void ReclaimTemporaries()
+    {
+        if (this.regionPosition is null)
+            return;
+
+        var folder = Path.GetDirectoryName(Path.GetFullPath(this.filePath))!;
+        foreach (var path in Directory.EnumerateFiles(folder, $"c.*.mcc.*{TemporarySuffix}"))
+        {
+            if (this.IsOwnTemporary(Path.GetFileName(path)))
+                DeleteStale(path);
+        }
+    }
+
+    // Whether a file is the temporary of an external file of one of this region's chunks: c.x.z.mcc.<guid>.tmp.
+    private bool IsOwnTemporary(string name)
+    {
+        var parts = name.Split('.');
+        if (parts.Length != 6 || parts[0] != "c" || parts[3] != "mcc" || !Guid.TryParseExact(parts[4], "N", out _))
+            return false;
+
+        if (!int.TryParse(parts[1], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var x))
+            return false;
+
+        if (!int.TryParse(parts[2], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var z))
+            return false;
+
+        // Like ExternalPath, which names a chunk by the region's position and its own within it.
+        var (regionX, regionZ) = this.regionPosition!.Value;
+        var inRegionX = regionX * this.cubicRegionSize + (x & this.op) == x;
+        var inRegionZ = regionZ * this.cubicRegionSize + (z & this.op) == z;
+
+        return inRegionX && inRegionZ;
     }
 
     // Reads a chunk's sectors and decompresses its payload; null when it's external and switched to another version
@@ -1158,11 +1293,21 @@ public sealed partial class RegionFile : IAsyncDisposable
         HeaderWriting,
 
         // A commit freed its previous versions' sectors (or kept them for the reads still running).
-        SectorsReleased
+        SectorsReleased,
+
+        // A read is counted as running, so no sectors it may read are reused, and is about to read its chunk.
+        Reading,
+
+        // A chunk's external file was written to its temporary and flushed.
+        TemporaryWritten,
+
+        // The temporary of an external file no commit moved in is about to be deleted.
+        TemporaryDiscarding
     }
 
     private enum Storage : byte
     {
+        // Not known this session, or a new external file is being moved in (see BeginReplacingExternalAsync).
         Unknown,
         Internal,
         External

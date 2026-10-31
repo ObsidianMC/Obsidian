@@ -97,6 +97,11 @@ public partial class Region : IRegion
     internal RegionFile ChunkFile => this.regionFile;
 
     /// <summary>
+    /// The entity region file, for tests that watch or fail its writes (see <see cref="RegionFile.Observe"/>).
+    /// </summary>
+    internal RegionFile EntityFile => this.entityRegionFile;
+
+    /// <summary>
     /// Locks a chunk against generation while it's serialized (the level's generator), or <c>null</c> for no locking.
     /// </summary>
     internal Func<int, int, ValueTask<IDisposable?>>? LockChunk { get; init; }
@@ -856,6 +861,9 @@ public partial class Region : IRegion
 
     /// <summary>
     /// Waits for the save's turns, and every turn of the chunk before them, to end; throws when its writes failed.
+    /// Both files' failures are handled before throwing, so the next save retries each: a failure of one file is
+    /// rethrown as it is, and failures of both are thrown together in an <see cref="AggregateException"/>, the chunk
+    /// file's first.
     /// </summary>
     private async Task CompleteSaveAsync(ChunkSave save)
     {
@@ -865,20 +873,21 @@ public partial class Region : IRegion
         if (save.EntityWrite is { } entityWrite)
             await entityWrite.Done;
 
-        if (save.ChunkWrite?.Failure is Exception chunkFailure)
-        {
+        var chunkFailure = save.ChunkWrite?.Failure;
+        if (chunkFailure is not null)
             save.Taken?.MarkUnsaved();
-            ExceptionDispatchInfo.Throw(chunkFailure);
-        }
 
-        if (save.EntityWrite?.Failure is Exception entityFailure)
-        {
-            // The file may still list the entities its last commit wrote.
-            if (save.Chunk is Chunk unknown)
-                unknown.SavedEntityCount = -1;
+        // The file may still list the entities its last commit wrote, which the next save must overwrite even when
+        // the chunk has none left.
+        var entityFailure = save.EntityWrite?.Failure;
+        if (entityFailure is not null && save.Chunk is Chunk unknown)
+            unknown.SavedEntityCount = -1;
 
-            ExceptionDispatchInfo.Throw(entityFailure);
-        }
+        if (chunkFailure is not null && entityFailure is not null)
+            throw new AggregateException(chunkFailure, entityFailure);
+
+        if ((chunkFailure ?? entityFailure) is Exception failure)
+            ExceptionDispatchInfo.Throw(failure);
     }
 
     /// <summary>
