@@ -1,6 +1,7 @@
 using Obsidian.API;
 using Obsidian.Nbt;
 using Obsidian.Registries;
+using Obsidian.Tests.Utilities;
 using Obsidian.Utilities;
 using Obsidian.WorldData;
 using Obsidian.WorldData.BlockTicks;
@@ -36,6 +37,98 @@ public class BlockTicks
             scheduler.Tick(_ => true, due => ran.Add(scheduler.GameTime));
 
         Assert.Equal([3L], ran);
+    }
+
+    // Each row schedules work and ticks, recording what each tick ran as "x:block". Every tick runs at most once, and
+    // whatever doesn't run (over the cap, or not due) is kept for a later tick rather than lost.
+    [Fact]
+    public void SchedulerRunsEachTickOnceAndKeepsLeftoverWork()
+    {
+        SchedulerCase[] cases =
+        [
+            new("duplicates run once per block type", RunDuplicates, PerTick: null, Ran: ["1:" + Stone, "1:" + Dirt]),
+            new("work over the cap runs next tick", RunOverTheCap, PerTick: [2, 1],
+                Ran: ["1:" + Stone, "2:" + Stone, "3:" + Stone]),
+            new("a replaced block's tick is dropped", RunWithAReplacedBlock, PerTick: null, Ran: ["5:" + Stone])
+        ];
+
+        FixtureCases.AssertAll(cases, row => row.Name, AssertSchedulerRuns);
+    }
+
+    // A scheduler row: what each tick ran, how many runs each tick should have (when that matters) and every run.
+    private sealed record SchedulerCase(string Name, Func<List<List<string>>> Run, int[]? PerTick, string[] Ran);
+
+    private static void AssertSchedulerRuns(SchedulerCase row)
+    {
+        var ticks = row.Run();
+
+        var ran = ticks.SelectMany(tick => tick).Order(StringComparer.Ordinal);
+        Assert.Equal(row.Ran.Order(StringComparer.Ordinal), ran);
+        if (row.PerTick is not null)
+            Assert.Equal(row.PerTick, ticks.Select(tick => tick.Count));
+    }
+
+    private static List<List<string>> RunDuplicates()
+    {
+        var scheduler = new BlockTickScheduler();
+        var chunk = new ChunkBlockTicks();
+        var position = new Vector(1, 64, 1);
+        chunk.Schedule(position, Stone, delay: 2);
+        chunk.Schedule(position, Stone, delay: 5);
+        chunk.Schedule(position, Dirt, delay: 5);
+        chunk.StartTicking(scheduler, 0);
+
+        return RunScheduler(scheduler, ticks: 6, maxTicks: BlockTickScheduler.MaxTicksPerTick);
+    }
+
+    private static List<List<string>> RunOverTheCap()
+    {
+        var scheduler = new BlockTickScheduler();
+        var chunk = new ChunkBlockTicks();
+        for (var x = 1; x <= 3; x++)
+            chunk.Schedule(new Vector(x, 64, 1), Stone, delay: 1);
+
+        chunk.StartTicking(scheduler, 0);
+
+        return RunScheduler(scheduler, ticks: 2, maxTicks: 2);
+    }
+
+    private static List<List<string>> RunWithAReplacedBlock()
+    {
+        var level = new FakeLevel();
+        var ticks = new LevelBlockTicks(level, new Lock());
+        var runs = new List<List<string>>();
+        ticks.Register(Stone, (position, _) => runs[^1].Add($"{position.X}:{Stone}"));
+        var kept = new Vector(5, 64, 5);
+        var replaced = new Vector(6, 64, 5);
+        level.Set(kept, Stone);
+        level.Set(replaced, Stone);
+        TrackNeighborhood(ticks, level, 0, 0);
+        ticks.Schedule(kept, Stone, delay: 2);
+        ticks.Schedule(replaced, Stone, delay: 2);
+
+        // The block at one position changes before its tick is due.
+        level.Set(replaced, Dirt);
+        for (var tick = 0; tick < 3; tick++)
+        {
+            runs.Add([]);
+            ticks.Tick();
+        }
+
+        return runs;
+    }
+
+    private static List<List<string>> RunScheduler(BlockTickScheduler scheduler, int ticks, int maxTicks)
+    {
+        var runs = new List<List<string>>();
+        for (var tick = 0; tick < ticks; tick++)
+        {
+            var ran = new List<string>();
+            scheduler.Tick(_ => true, due => ran.Add($"{due.Position.X}:{due.Block}"), maxTicks);
+            runs.Add(ran);
+        }
+
+        return runs;
     }
 
     [Fact]

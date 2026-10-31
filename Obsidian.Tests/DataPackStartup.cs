@@ -92,7 +92,9 @@ public sealed class DataPackStartup : IDisposable
             [$"current/{biomePath}"] = overlayBiome,
             [$"future/{biomePath}"] = "{}"
         };
-        var packs = Path.Join(this.folder, "packs");
+        // Each case gets its own packs and plugin, so the other case's pack can't stand in for this one's.
+        var root = Path.Join(this.folder, zipped ? "zipped" : "directory");
+        var packs = Path.Join(root, "packs");
         Directory.CreateDirectory(packs);
 
         if (zipped)
@@ -120,7 +122,7 @@ public sealed class DataPackStartup : IDisposable
         {
             [biomePath] = Encoding.UTF8.GetBytes(biome.ToJsonString())
         };
-        var pluginPath = Path.Join(this.folder, "probe.obby");
+        var pluginPath = Path.Join(root, "probe.obby");
         File.WriteAllBytes(pluginPath, PluginLoading.ProbeArchive("1.0.0", pluginFiles));
         var vanilla = CodecRegistry.Biomes.Plains.Element;
         var manager = CreateManager();
@@ -147,6 +149,7 @@ public sealed class DataPackStartup : IDisposable
             await manager.DisposeAsync();
             PluginCodecs.Apply([], NullLogger.Instance, levelsCreated: false);
             PluginSpawns.Apply([], [], NullLogger.Instance);
+            Directory.Delete(root, recursive: true);
         }
 
         Assert.Same(vanilla, CodecRegistry.Biomes.Plains.Element);
