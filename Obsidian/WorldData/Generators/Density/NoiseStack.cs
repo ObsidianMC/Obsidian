@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace Obsidian.WorldData.Generators.Density;
 
 /// <summary>
@@ -34,6 +36,10 @@ internal sealed class NoiseStack(IReadOnlyList<NoiseStack.Layer> layers)
     }
 
     /// <summary>Samples selected volume positions with the volume path's scale-before-coordinate ordering.</summary>
+    /// <remarks>
+    /// Positions are decoded once, then each layer is added to every position in turn, which adds each position's
+    /// layers in the same order as sampling it alone.
+    /// </remarks>
     public void SampleSelected(
         Span<float> output,
         in DensityVolume volume,
@@ -41,20 +47,36 @@ internal sealed class NoiseStack(IReadOnlyList<NoiseStack.Layer> layers)
         double xzScale,
         double yScale)
     {
-        for (var i = 0; i < indices.Length; i++)
+        var count = indices.Length;
+        var positions = ArrayPool<int>.Shared.Rent(count * 3);
+
+        try
         {
-            volume.Position(indices[i], out var x, out var y, out var z);
-            var value = 0.0f;
+            var xs = positions.AsSpan(0, count);
+            var ys = positions.AsSpan(count, count);
+            var zs = positions.AsSpan(count * 2, count);
+
+            for (var i = 0; i < count; i++)
+                volume.Position(indices[i], out xs[i], out ys[i], out zs[i]);
+
+            var values = output[..count];
+            values.Clear();
 
             foreach (var layer in this.layers)
             {
                 // Vanilla multiplies scale by frequency first over a volume; point sampling rounds differently.
                 var layerXzScale = xzScale * layer.Frequency;
                 var layerYScale = yScale * layer.Frequency;
-                value += layer.Amplitude * layer.Noise.Get(x * layerXzScale, y * layerYScale, z * layerXzScale);
-            }
+                var amplitude = layer.Amplitude;
+                var noise = layer.Noise;
 
-            output[i] = value;
+                for (var i = 0; i < values.Length; i++)
+                    values[i] += amplitude * noise.Get(xs[i] * layerXzScale, ys[i] * layerYScale, zs[i] * layerXzScale);
+            }
+        }
+        finally
+        {
+            ArrayPool<int>.Shared.Return(positions);
         }
     }
 
@@ -70,6 +92,7 @@ internal sealed class NoiseStack(IReadOnlyList<NoiseStack.Layer> layers)
             var layerXzScale = xzScale * layer.Frequency;
             var layerYScale = yScale * layer.Frequency;
             var layerAmplitude = amplitude * layer.Amplitude;
+            var noise = layer.Noise;
 
             var index = 0;
             for (var indexZ = 0; indexZ < volume.SizeZ; indexZ++)
@@ -83,7 +106,7 @@ internal sealed class NoiseStack(IReadOnlyList<NoiseStack.Layer> layers)
                     for (var indexY = 0; indexY < volume.SizeY; indexY++)
                     {
                         var y = volume.BlockY(indexY) * layerYScale;
-                        buffer[index] += layerAmplitude * layer.Noise.Get(x, y, z);
+                        buffer[index] += layerAmplitude * noise.Get(x, y, z);
                         index++;
                     }
                 }

@@ -31,6 +31,14 @@ internal abstract class DensityFunction
     public virtual bool IsFlat => false;
 
     /// <summary>
+    /// Whether sampling every point of a volume costs little more than sampling most of them: the function samples
+    /// no noise, spline or cache per point, only constants, coordinates, interpolated cell corners and arithmetic on
+    /// them. Branching functions sample such branches at all their points rather than select each branch's points.
+    /// A function that can't tell says no.
+    /// </summary>
+    public virtual bool SamplesCheaply => false;
+
+    /// <summary>
     /// Samples sorted, distinct indices of the original volume into a compact output buffer.
     /// Selection never changes the volume's origin: vanilla's interpolation accumulates rounding from that origin.
     /// Functions without a selective implementation retain their full-volume arithmetic and gather its results.
@@ -38,9 +46,10 @@ internal abstract class DensityFunction
     public virtual void SampleSelected(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices)
     {
         using var values = DensityBuffer.Sample(this, volume);
+        var source = values.Span;
 
         for (var i = 0; i < indices.Length; i++)
-            output[i] = values.Span[indices[i]];
+            output[i] = source[indices[i]];
     }
 
     /// <summary>Uses the full volume when no selection is supplied, otherwise its selected indices.</summary>

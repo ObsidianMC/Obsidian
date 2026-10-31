@@ -8,6 +8,8 @@ internal sealed class ConstantFunction(float value) : DensityFunction
 {
     public override bool IsFlat => true;
 
+    public override bool SamplesCheaply => true;
+
     public float Value { get; } = value;
 
     public override float Sample(int x, int y, int z) => this.Value;
@@ -29,6 +31,8 @@ internal sealed class ConstantFunction(float value) : DensityFunction
 internal sealed class ContextFunction(string name, float defaultValue) : DensityFunction
 {
     public override bool IsFlat => true;
+
+    public override bool SamplesCheaply => true;
 
     public string Name { get; } = name;
 
@@ -293,6 +297,8 @@ internal sealed class GradientFunction : DensityFunction
     }
 
     public override bool IsFlat => this.axis != DensityAxis.Y;
+
+    public override bool SamplesCheaply => true;
 
     public override float Sample(int x, int y, int z)
     {

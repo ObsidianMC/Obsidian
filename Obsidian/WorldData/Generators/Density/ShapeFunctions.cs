@@ -62,16 +62,19 @@ internal sealed class LerpFunction(DensityFunction alpha, DensityFunction first,
         using (var selection = new DensitySelection(output, indices, DensitySelectionKind.NotZero))
             selection.Sample(second, ends.Span, volume);
 
+        var startValues = starts.Span;
+        var endValues = ends.Span;
+
         for (var i = 0; i < output.Length; i++)
         {
             var amount = output[i];
 
             if (amount == 0.0f)
-                output[i] = starts.Span[i];
+                output[i] = startValues[i];
             else if (amount == 1.0f)
-                output[i] = ends.Span[i];
+                output[i] = endValues[i];
             else
-                output[i] = FloatMath.Lerp(amount, starts.Span[i], ends.Span[i]);
+                output[i] = FloatMath.Lerp(amount, startValues[i], endValues[i]);
         }
     }
 }
@@ -81,22 +84,20 @@ internal sealed class ClampFunction(DensityFunction input, float min, float max)
 {
     public override bool IsFlat => input.IsFlat;
 
+    public override bool SamplesCheaply => input.SamplesCheaply;
+
     public override float Sample(int x, int y, int z) => FloatMath.Clamp(input.Sample(x, y, z), min, max);
 
     public override void SampleSelected(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices)
     {
         input.SampleSelected(output, volume, indices);
-
-        for (var i = 0; i < output.Length; i++)
-            output[i] = FloatMath.Clamp(output[i], min, max);
+        DensityLoops.Clamp(output, min, max);
     }
 
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
     {
         input.SampleVolume(output, volume);
-
-        for (var i = 0; i < output.Length; i++)
-            output[i] = FloatMath.Clamp(output[i], min, max);
+        DensityLoops.Clamp(output, min, max);
     }
 }
 
@@ -111,7 +112,11 @@ internal sealed class RangeChoiceFunction(
     DensityFunction whenInRange,
     DensityFunction whenOutOfRange) : DensityFunction
 {
+    private readonly bool cheapBranches = whenInRange.SamplesCheaply && whenOutOfRange.SamplesCheaply;
+
     public override bool IsFlat => input.IsFlat && whenInRange.IsFlat && whenOutOfRange.IsFlat;
+
+    public override bool SamplesCheaply => input.SamplesCheaply && this.cheapBranches;
 
     public override float Sample(int x, int y, int z)
     {
@@ -159,6 +164,12 @@ internal sealed class RangeChoiceFunction(
             return;
         }
 
+        if (this.cheapBranches)
+        {
+            this.SampleBothBranches(output, controls, volume, indices);
+            return;
+        }
+
         using (var selection = new DensitySelection(
             controls, indices, DensitySelectionKind.InRange, minInclusive, maxExclusive))
         {
@@ -169,6 +180,26 @@ internal sealed class RangeChoiceFunction(
             controls, indices, DensitySelectionKind.OutOfRange, minInclusive, maxExclusive))
         {
             selection.Sample(whenOutOfRange, output, volume);
+        }
+    }
+
+    // Samples both branches at every point and keeps each point's own. A branch's value at a point doesn't depend
+    // on which other points it samples, so this only saves selecting the points (the noodle caves' branches).
+    private void SampleBothBranches(
+        Span<float> output,
+        ReadOnlySpan<float> controls,
+        in DensityVolume volume,
+        ReadOnlySpan<int> indices)
+    {
+        using var outOfRange = new DensityBuffer(output.Length);
+        var outOfRangeValues = outOfRange.Span;
+        whenOutOfRange.SampleSelection(outOfRangeValues, volume, indices);
+        whenInRange.SampleSelection(output, volume, indices);
+
+        for (var i = 0; i < output.Length; i++)
+        {
+            if (!this.InRange(controls[i]))
+                output[i] = outOfRangeValues[i];
         }
     }
 
@@ -257,6 +288,9 @@ internal sealed class IntervalSelectFunction(
 /// </remarks>
 internal sealed class InterpolatedFunction(DensityFunction input, int cellSizeXz, int cellSizeY) : DensityFunction
 {
+    // Its input is sampled at cell corners only; each point costs a few float operations.
+    public override bool SamplesCheaply => true;
+
     // Vanilla multiplies by these reciprocals over a volume, but divides at a point.
     private readonly float inverseCellSizeXz = 1.0f / cellSizeXz;
     private readonly float inverseCellSizeY = 1.0f / cellSizeY;
