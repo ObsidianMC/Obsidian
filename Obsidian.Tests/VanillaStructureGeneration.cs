@@ -11,6 +11,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -26,51 +28,29 @@ namespace Obsidian.Tests;
 public class VanillaStructureGeneration(WorldgenFixture worldgen)
 {
     // SHA-256 of the piece list (one line per piece: type, box, pool element or template, position, rotation...).
-    public static TheoryData<string, long, string, int, int, int, string> PieceCases()
-    {
-        var cases = new TheoryData<string, long, string, int, int, int, string>();
-        foreach (var entry in VanillaWorldgenCaptures.Cases("structurePieces"))
-        {
-            cases.Add(entry.GetProperty("dimension").GetString()!, entry.GetProperty("seed").GetInt64(), entry.GetProperty("structure").GetString()!,
-                entry.GetProperty("chunkX").GetInt32(), entry.GetProperty("chunkZ").GetInt32(), entry.GetProperty("pieceCount").GetInt32(),
-                entry.GetProperty("pieces").GetString()!);
-        }
+    [Fact]
+    public void PiecesMatchVanilla() =>
+        FixtureCases.AssertAll(VanillaWorldgenCaptures.Cases("structurePieces"), StructureName, this.AssertPieces);
 
-        return cases;
+    private void AssertPieces(JsonElement entry)
+    {
+        var start = this.Start(entry);
+
+        Assert.Equal(entry.GetProperty("pieceCount").GetInt32(), start.Pieces.Count);
+        Assert.Equal(entry.GetProperty("pieces").GetString(), Sha256(string.Join('\n', start.Pieces.Select(Describe))));
     }
 
-    [Theory]
-    [MemberData(nameof(PieceCases))]
-    public void PiecesMatchVanilla(string dimensionName, long seed, string structure, int chunkX, int chunkZ, int pieceCount, string expected)
+    // SHA-256 of the block state ids (little-endian uint16) inside each piece box, in piece order and y, z, x order, in
+    // full chunks of a vanilla server world.
+    [Fact]
+    public void BlocksMatchVanilla() =>
+        FixtureCases.AssertAll(VanillaWorldgenCaptures.Cases("structureBlocks"), StructureName, this.AssertBlocks);
+
+    private void AssertBlocks(JsonElement entry)
     {
-        var start = worldgen.Builder(Dimension(dimensionName), seed).Structures!.GetStarts(chunkX, chunkZ)
-            .Single(start => start.Structure.Identifier == structure);
-
-        Assert.Equal(pieceCount, start.Pieces.Count);
-        Assert.Equal(expected, Sha256(string.Join('\n', start.Pieces.Select(Describe))));
-    }
-
-    // SHA-256 of the block state ids (little-endian uint16) inside each piece box, in piece order and y, z, x order, in full
-    // chunks of a vanilla server world.
-    public static TheoryData<string, long, string, int, int, string> BlockCases()
-    {
-        var cases = new TheoryData<string, long, string, int, int, string>();
-        foreach (var entry in VanillaWorldgenCaptures.Cases("structureBlocks"))
-        {
-            cases.Add(entry.GetProperty("dimension").GetString()!, entry.GetProperty("seed").GetInt64(), entry.GetProperty("structure").GetString()!,
-                entry.GetProperty("chunkX").GetInt32(), entry.GetProperty("chunkZ").GetInt32(), entry.GetProperty("blocks").GetString()!);
-        }
-
-        return cases;
-    }
-
-    [Theory]
-    [MemberData(nameof(BlockCases))]
-    public void BlocksMatchVanilla(string dimensionName, long seed, string structure, int chunkX, int chunkZ, string expected)
-    {
-        var dimension = Dimension(dimensionName);
-        var chunks = worldgen.Chunks(dimension, seed);
-        var start = worldgen.Builder(dimension, seed).Structures!.GetStarts(chunkX, chunkZ).Single(start => start.Structure.Identifier == structure);
+        var dimension = Dimension(entry.GetProperty("dimension").GetString()!);
+        var chunks = worldgen.Chunks(dimension, entry.GetProperty("seed").GetInt64());
+        var start = this.Start(entry);
         var box = start.BoundingBox;
 
         // Every chunk the structure reaches is completed before reading, since pieces are placed by each chunk they reach.
@@ -82,51 +62,78 @@ public class VanillaStructureGeneration(WorldgenFixture worldgen)
 
         var ids = new List<byte>();
         foreach (var piece in start.Pieces)
+            AddStateIds(ids, piece.BoundingBox, dimension, chunks);
+
+        Assert.Equal(entry.GetProperty("blocks").GetString(), Convert.ToHexStringLower(SHA256.HashData(ids.ToArray())));
+    }
+
+    private static void AddStateIds(List<byte> ids, BlockBox pieceBox, MojangDimension dimension, FullChunks chunks)
+    {
+        var minY = Math.Max(pieceBox.MinY, dimension.MinY);
+        var maxY = Math.Min(pieceBox.MaxY, dimension.MinY + dimension.Height - 1);
+
+        for (var y = minY; y <= maxY; y++)
         {
-            var pieceBox = piece.BoundingBox;
-            for (var y = Math.Max(pieceBox.MinY, dimension.MinY); y <= Math.Min(pieceBox.MaxY, dimension.MinY + dimension.Height - 1); y++)
+            for (var z = pieceBox.MinZ; z <= pieceBox.MaxZ; z++)
             {
-                for (var z = pieceBox.MinZ; z <= pieceBox.MaxZ; z++)
+                for (var x = pieceBox.MinX; x <= pieceBox.MaxX; x++)
                 {
-                    for (var x = pieceBox.MinX; x <= pieceBox.MaxX; x++)
-                    {
-                        var id = LegacyWorldgenBlockStates.StateId(chunks.Get(x >> 4, z >> 4).GetBlock(x, y, z));
-                        ids.Add((byte)id);
-                        ids.Add((byte)(id >> 8));
-                    }
+                    var id = LegacyWorldgenBlockStates.StateId(chunks.Get(x >> 4, z >> 4).GetBlock(x, y, z));
+                    ids.Add((byte)id);
+                    ids.Add((byte)(id >> 8));
                 }
             }
         }
-
-        Assert.Equal(expected, Convert.ToHexStringLower(SHA256.HashData(ids.ToArray())));
     }
 
     // Vanilla: /loot spawn x y z loot minecraft:chests/shipwreck_map, whose exploration_map function finds the nearest
     // structure with the tag, then the center and colors (SHA-256) of the map's saved data.
-    public static IEnumerable<object[]> TreasureMapCases() => VanillaWorldgenCaptures.Cases("treasureMaps").Select(entry => new object[]
-    {
-        entry.GetProperty("seed").GetInt64(), entry.GetProperty("tag").GetString()!, entry.GetProperty("x").GetInt32(),
-        entry.GetProperty("y").GetInt32(), entry.GetProperty("z").GetInt32(), entry.GetProperty("radius").GetInt32(),
-        entry.GetProperty("skipKnown").GetBoolean(), entry.GetProperty("zoom").GetByte(), entry.GetProperty("targetX").GetInt32(),
-        entry.GetProperty("targetY").GetInt32(), entry.GetProperty("targetZ").GetInt32(), entry.GetProperty("centerX").GetInt32(),
-        entry.GetProperty("centerZ").GetInt32(), entry.GetProperty("colors").GetString()!
-    });
+    [Fact]
+    public void TreasureMapsMatchVanilla() =>
+        FixtureCases.AssertAll(VanillaWorldgenCaptures.Cases("treasureMaps"), MapName, this.AssertTreasureMap);
 
-    [Theory]
-    [MemberData(nameof(TreasureMapCases))]
-    public void TreasureMapMatchesVanilla(long seed, string tag, int x, int y, int z, int radius, bool skipKnown, byte zoom,
-        int targetX, int targetY, int targetZ, int centerX, int centerZ, string expectedColors)
+    private void AssertTreasureMap(JsonElement entry)
     {
-        var builder = worldgen.Builder(MojangDimension.Overworld, seed);
-        var target = new StructureLocator(builder.Structures!).FindNearest(tag, new Vector(x, y, z), radius, skipKnown);
-        Assert.Equal(new Vector(targetX, targetY, targetZ), target);
+        var builder = worldgen.Builder(MojangDimension.Overworld, entry.GetProperty("seed").GetInt64());
+        var origin = Position(entry, "x", "y", "z");
+        var radius = entry.GetProperty("radius").GetInt32();
+        var skipKnown = entry.GetProperty("skipKnown").GetBoolean();
 
+        var target = new StructureLocator(builder.Structures!).FindNearest(Tag(entry), origin, radius, skipKnown);
+
+        Assert.Equal(Position(entry, "targetX", "targetY", "targetZ"), target);
+
+        var zoom = entry.GetProperty("zoom").GetByte();
         var map = MapData.CreateFresh(target!.Value.X, target.Value.Z, zoom, true, true, "minecraft:overworld");
         MapRenderer.RenderBiomePreview(map, (x, z) => builder.GetBiome(x, 0, z));
 
-        Assert.Equal((centerX, centerZ), (map.CenterX, map.CenterZ));
-        Assert.Equal(expectedColors, Convert.ToHexStringLower(SHA256.HashData(map.Colors)));
+        var center = (entry.GetProperty("centerX").GetInt32(), entry.GetProperty("centerZ").GetInt32());
+        Assert.Equal(center, (map.CenterX, map.CenterZ));
+        Assert.Equal(entry.GetProperty("colors").GetString(), Convert.ToHexStringLower(SHA256.HashData(map.Colors)));
     }
+
+    private StructureStart Start(JsonElement entry)
+    {
+        var dimension = Dimension(entry.GetProperty("dimension").GetString()!);
+        var builder = worldgen.Builder(dimension, entry.GetProperty("seed").GetInt64());
+        var structure = entry.GetProperty("structure").GetString()!;
+        var chunkX = entry.GetProperty("chunkX").GetInt32();
+        var chunkZ = entry.GetProperty("chunkZ").GetInt32();
+        var starts = builder.Structures!.GetStarts(chunkX, chunkZ);
+
+        return starts.Single(start => start.Structure.Identifier == structure);
+    }
+
+    private static string Tag(JsonElement entry) => entry.GetProperty("tag").GetString()!;
+
+    private static Vector Position(JsonElement entry, string x, string y, string z) =>
+        new(entry.GetProperty(x).GetInt32(), entry.GetProperty(y).GetInt32(), entry.GetProperty(z).GetInt32());
+
+    private static string StructureName(JsonElement entry) =>
+        $"{entry.GetProperty("structure").GetString()} in the {entry.GetProperty("dimension").GetString()} "
+        + $"of seed {entry.GetProperty("seed")}";
+
+    private static string MapName(JsonElement entry) => $"{Tag(entry)} map of seed {entry.GetProperty("seed")}";
 
     private static MojangDimension Dimension(string name) => name switch
     {

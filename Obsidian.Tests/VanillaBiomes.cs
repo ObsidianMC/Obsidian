@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using Obsidian.Tests.Utilities;
 using Obsidian.API.Registries;
 using Obsidian.Registries;
 using Obsidian.Registries.Codecs;
@@ -22,48 +23,38 @@ namespace Obsidian.Tests;
 /// <summary>Small replays of vanilla's 26.3 climate search and natural-spawn attribute composition.</summary>
 public sealed class VanillaBiomes
 {
-    public sealed record CaptureCase(string Name, JsonElement Entry)
-    {
-        public override string ToString() => this.Name;
-    }
+    [Fact]
+    public void ParameterSearchesMatchVanilla() =>
+        FixtureCases.AssertAll(Cases("biome_search"), Name, testCase => AssertSearch(testCase.Entry));
 
-    public static TheoryData<CaptureCase> SearchCases() => Cases("biome_search");
+    [Fact]
+    public void ClimateAndPointBiomesMatchVanilla() =>
+        FixtureCases.AssertAll(Cases("biome_points"), Name, testCase => AssertPointBiome(testCase.Entry));
 
-    public static TheoryData<CaptureCase> SpawnCases() => Cases("spawn_attributes");
+    [Fact]
+    public void SpawnAttributesMatchVanilla() =>
+        FixtureCases.AssertAll(Cases("spawn_attributes"), Name, testCase => AssertSpawnAttributes(testCase.Entry));
 
-    public static TheoryData<CaptureCase> PointCases() => Cases("biome_points");
+    private static IEnumerable<(string Section, int Index, JsonElement Entry)> Cases(string section) =>
+        VanillaWorldgenCaptures.CurrentCases(section).Select((entry, index) => (section, index, entry));
 
-    private static TheoryData<CaptureCase> Cases(string section)
-    {
-        var cases = new TheoryData<CaptureCase>();
-        var index = 0;
-
-        foreach (var entry in VanillaWorldgenCaptures.CurrentCases(section))
-        {
-            var name = entry.TryGetProperty("name", out var label) ? label.GetString()! : section;
-
-            if (entry.TryGetProperty("preset", out var preset))
-            {
-                name = preset.GetString()!;
-            }
-
-            if (entry.TryGetProperty("biome", out var biome))
-            {
-                name += "-" + biome.GetString();
-            }
-
-            cases.Add(new CaptureCase($"{index}-{name}", entry));
-            index++;
-        }
-
-        return cases;
-    }
-
-    [Theory]
-    [MemberData(nameof(SearchCases))]
-    public void ParameterSearchMatchesVanilla(CaptureCase testCase)
+    // The case's index, then its label, preset or section, and biome.
+    private static string Name((string Section, int Index, JsonElement Entry) testCase)
     {
         var entry = testCase.Entry;
+        var name = entry.TryGetProperty("name", out var label) ? label.GetString()! : testCase.Section;
+
+        if (entry.TryGetProperty("preset", out var preset))
+            name = preset.GetString()!;
+
+        if (entry.TryGetProperty("biome", out var biome))
+            name += "-" + biome.GetString();
+
+        return $"{testCase.Index}-{name}";
+    }
+
+    private static void AssertSearch(JsonElement entry)
+    {
         IReadOnlyList<(ParameterPoint Point, int Value)> entries;
 
         if (entry.TryGetProperty("preset", out var preset))
@@ -96,11 +87,8 @@ public sealed class VanillaBiomes
         Assert.Equal(expected, actual);
     }
 
-    [Theory]
-    [MemberData(nameof(PointCases))]
-    public void ClimateAndPointBiomesMatchVanilla(CaptureCase testCase)
+    private static void AssertPointBiome(JsonElement entry)
     {
-        var entry = testCase.Entry;
         var dimension = entry.GetProperty("dimension").GetString()!;
         var preset = dimension == "minecraft:the_nether" ? "minecraft:nether" : dimension;
         var settingsId = dimension switch
@@ -134,11 +122,8 @@ public sealed class VanillaBiomes
         Assert.Equal(entry.GetProperty("biome").GetString(), biome.Name);
     }
 
-    [Theory]
-    [MemberData(nameof(SpawnCases))]
-    public void SpawnAttributesMatchVanilla(CaptureCase testCase)
+    private static void AssertSpawnAttributes(JsonElement entry)
     {
-        var entry = testCase.Entry;
         var dimensionName = entry.GetProperty("dimension").GetString()!;
         var biomeName = entry.GetProperty("biome").GetString()!;
         var dimension = CodecRegistry.Dimensions.All[dimensionName];

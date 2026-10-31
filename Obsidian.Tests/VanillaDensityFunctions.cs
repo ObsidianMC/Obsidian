@@ -1,3 +1,4 @@
+using Obsidian.Tests.Utilities;
 using Obsidian.WorldData.Generators.Density;
 using System;
 using System.Collections.Concurrent;
@@ -22,83 +23,48 @@ public class VanillaDensityFunctions
     // Building a world's routers reads and seeds every noise they use, so each is built once.
     private static readonly ConcurrentDictionary<(long Seed, string Settings), DensityRouter> routers = new();
 
-    public sealed record NoiseCase(long Seed, string Noise, double X, double Y, double Z, float Expected)
-    {
-        public override string ToString() => $"{this.Noise} at {this.X}, {this.Y}, {this.Z} (seed {this.Seed})";
-    }
-
-    public sealed record RouterCase(long Seed, string Settings, int X, int Y, int Z, string ExpectedJson)
-    {
-        public override string ToString() => $"{this.Settings} at {this.X}, {this.Y}, {this.Z} (seed {this.Seed})";
-    }
-
-    public sealed record FunctionCase(long Seed, string FunctionJson, int X, int Y, int Z, int ExpectedBits)
-    {
-        public override string ToString() => $"{this.FunctionJson} at {this.X}, {this.Y}, {this.Z} (seed {this.Seed})";
-    }
-
     // Vanilla: RandomState.create(noises, seed, overworld).getOrCreateNoise(noise).get(x, y, z).
-    public static TheoryData<NoiseCase> NoiseCases()
+    [Fact]
+    public void NoisesMatchVanilla()
     {
-        var cases = new TheoryData<NoiseCase>();
+        var cases = VanillaWorldgenCaptures.CurrentCases("noises");
 
-        foreach (var entry in VanillaWorldgenCaptures.CurrentCases("noises"))
-        {
-            cases.Add(new NoiseCase(
-                entry.GetProperty("seed").GetInt64(),
-                entry.GetProperty("noise").GetString()!,
-                entry.GetProperty("x").GetDouble(),
-                entry.GetProperty("y").GetDouble(),
-                entry.GetProperty("z").GetDouble(),
-                entry.GetProperty("value").GetSingle()));
-        }
-
-        return cases;
+        FixtureCases.AssertAll(cases, NoiseName, AssertNoise);
     }
 
-    [Theory]
-    [MemberData(nameof(NoiseCases))]
-    public void NoiseMatchesVanilla(NoiseCase noiseCase)
+    private static void AssertNoise(JsonElement entry)
     {
-        var compiler = new DensityCompiler(WorldgenData.Vanilla, noiseCase.Seed, legacyRandomSource: false);
-        var noise = compiler.Noise(noiseCase.Noise);
+        var compiler = new DensityCompiler(WorldgenData.Vanilla, Seed(entry), legacyRandomSource: false);
+        var noise = compiler.Noise(entry.GetProperty("noise").GetString()!);
 
-        var value = noise.Get(noiseCase.X, noiseCase.Y, noiseCase.Z);
+        var value = noise.Get(
+            entry.GetProperty("x").GetDouble(),
+            entry.GetProperty("y").GetDouble(),
+            entry.GetProperty("z").GetDouble());
 
-        AssertSameFloat(noiseCase.Expected, value);
+        AssertSameFloat(entry.GetProperty("value").GetSingle(), value);
     }
 
     // Vanilla: RandomState.sampleBlockValueUncached(function, x, y, z) for each router and aquifer function of a
     // dimension's noise settings.
-    public static TheoryData<RouterCase> RouterCases()
+    [Fact]
+    public void RoutersMatchVanilla()
     {
-        var cases = new TheoryData<RouterCase>();
+        var cases = VanillaWorldgenCaptures.CurrentCases("router");
 
-        foreach (var entry in VanillaWorldgenCaptures.CurrentCases("router"))
-        {
-            cases.Add(new RouterCase(
-                entry.GetProperty("seed").GetInt64(),
-                entry.GetProperty("settings").GetString()!,
-                entry.GetProperty("x").GetInt32(),
-                entry.GetProperty("y").GetInt32(),
-                entry.GetProperty("z").GetInt32(),
-                entry.GetProperty("values").GetRawText()));
-        }
-
-        return cases;
+        FixtureCases.AssertAll(cases, RouterName, AssertRouter);
     }
 
-    [Theory]
-    [MemberData(nameof(RouterCases))]
-    public void RouterMatchesVanilla(RouterCase routerCase)
+    private static void AssertRouter(JsonElement entry)
     {
-        var router = Router(routerCase.Seed, routerCase.Settings);
-        var expected = JsonSerializer.Deserialize<Dictionary<string, float>>(routerCase.ExpectedJson)!;
+        var router = Router(Seed(entry), entry.GetProperty("settings").GetString()!);
+        var expected = JsonSerializer.Deserialize<Dictionary<string, float>>(entry.GetProperty("values"))!;
+        var (x, y, z) = (Int(entry, "x"), Int(entry, "y"), Int(entry, "z"));
 
         var mismatches = new List<string>();
         foreach (var (field, value) in expected)
         {
-            var actual = RouterFunction(router, field).Sample(routerCase.X, routerCase.Y, routerCase.Z);
+            var actual = RouterFunction(router, field).Sample(x, y, z);
 
             if (!SameFloat(value, actual))
                 mismatches.Add(Mismatch(field, value, actual));
@@ -110,39 +76,40 @@ public class VanillaDensityFunctions
     // Vanilla: DensityFunction.CODEC parses the case's inline function, then
     // RandomState.sampleBlockValueUncached(function, x, y, z) samples it with the overworld's random. The cases cover
     // what no router reaches: nested interpolations and pow, near the world border and with Java's special cases.
-    public static TheoryData<FunctionCase> FunctionCases()
+    [Fact]
+    public void FunctionsMatchVanilla()
     {
-        var cases = new TheoryData<FunctionCase>();
+        var cases = VanillaWorldgenCaptures.CurrentCases("functions");
 
-        foreach (var entry in VanillaWorldgenCaptures.CurrentCases("functions"))
-        {
-            // Hex, since the bits of NaN and the infinities have no JSON number.
-            var bits = Convert.ToInt32(entry.GetProperty("bits").GetString(), 16);
-
-            cases.Add(new FunctionCase(
-                entry.GetProperty("seed").GetInt64(),
-                JsonSerializer.Serialize(entry.GetProperty("function")),
-                entry.GetProperty("x").GetInt32(),
-                entry.GetProperty("y").GetInt32(),
-                entry.GetProperty("z").GetInt32(),
-                bits));
-        }
-
-        return cases;
+        FixtureCases.AssertAll(cases, FunctionName, AssertFunction);
     }
 
-    [Theory]
-    [MemberData(nameof(FunctionCases))]
-    public void FunctionMatchesVanilla(FunctionCase functionCase)
+    private static void AssertFunction(JsonElement entry)
     {
-        var compiler = new DensityCompiler(WorldgenData.Vanilla, functionCase.Seed, legacyRandomSource: false);
-        using var document = JsonDocument.Parse(functionCase.FunctionJson);
-        var function = compiler.Compile(document.RootElement, "function");
+        // Hex, since the bits of NaN and the infinities have no JSON number.
+        var bits = Convert.ToInt32(entry.GetProperty("bits").GetString(), 16);
+        var compiler = new DensityCompiler(WorldgenData.Vanilla, Seed(entry), legacyRandomSource: false);
+        var function = compiler.Compile(entry.GetProperty("function"), "function");
 
-        var value = function.Sample(functionCase.X, functionCase.Y, functionCase.Z);
+        var value = function.Sample(Int(entry, "x"), Int(entry, "y"), Int(entry, "z"));
 
-        AssertSameFloat(BitConverter.Int32BitsToSingle(functionCase.ExpectedBits), value);
+        AssertSameFloat(BitConverter.Int32BitsToSingle(bits), value);
     }
+
+    private static long Seed(JsonElement entry) => entry.GetProperty("seed").GetInt64();
+
+    private static int Int(JsonElement entry, string name) => entry.GetProperty(name).GetInt32();
+
+    private static string NoiseName(JsonElement entry) => PointName(entry.GetProperty("noise").GetString()!, entry);
+
+    private static string RouterName(JsonElement entry) => PointName(entry.GetProperty("settings").GetString()!, entry);
+
+    private static string FunctionName(JsonElement entry) =>
+        PointName(entry.GetProperty("function").GetRawText(), entry);
+
+    private static string PointName(string subject, JsonElement entry) =>
+        $"{subject} at {entry.GetProperty("x")}, {entry.GetProperty("y")}, {entry.GetProperty("z")} "
+        + $"(seed {entry.GetProperty("seed")})";
 
     // Obsidian-only: the reader handles every registered function vanilla ships, including those no router reaches.
     [Fact]

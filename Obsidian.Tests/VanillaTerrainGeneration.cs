@@ -3,6 +3,7 @@ using Obsidian.Registries;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Generators.Terrain;
+using Obsidian.Tests.Utilities;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
@@ -19,37 +20,70 @@ namespace Obsidian.Tests;
 /// VanillaBiomeGeneration also replays the complete pipeline with the new biome source selecting those inputs.
 /// </summary>
 [Trait("Category", TestCategory.Worldgen)]
-[Collection(WorldgenCollection.Name)]
 public class VanillaTerrainGeneration
 {
-    private static readonly Dictionary<(long Seed, string Settings), TerrainGenerator> aquiferGenerators = [];
-
-    public sealed record TerrainCase(JsonElement Entry)
+    // Each terrain case replays every stage it captured, each stage on a fresh chunk.
+    [Fact]
+    public void TerrainMatchesVanilla()
     {
-        public override string ToString() =>
-            $"{this.Entry.GetProperty("seed")} {this.Entry.GetProperty("dimension").GetString()} "
-            + $"({this.Entry.GetProperty("chunkX")}, {this.Entry.GetProperty("chunkZ")})";
+        var pipelines = new WorldgenPipelines();
+        var stages = VanillaWorldgenCaptures.CurrentCases("terrain").SelectMany(entry => Stages(entry, pipelines));
+
+        FixtureCases.AssertAll(stages, stage => stage.Name, stage => stage.Check());
     }
 
-    public static TheoryData<TerrainCase> TerrainCases()
+    // Mask-only cases, for carver boundaries that need no whole terrain chunk.
+    [Fact]
+    public void CarvingMasksMatchVanilla()
     {
-        var cases = new TheoryData<TerrainCase>();
+        var pipelines = new WorldgenPipelines();
+        var cases = VanillaWorldgenCaptures.CurrentCases("carvers");
 
-        foreach (var entry in VanillaWorldgenCaptures.CurrentCases("terrain"))
+        FixtureCases.AssertAll(cases, CaseName, entry => AssertCarvingMask(new Replay(entry, pipelines)));
+    }
+
+    // Standalone aquifer positions, each its own fluid sample.
+    [Fact]
+    public void AquifersMatchVanilla()
+    {
+        var pipelines = new WorldgenPipelines();
+        var cases = VanillaWorldgenCaptures.CurrentCases("aquifers");
+
+        FixtureCases.AssertAll(cases, AquiferName, entry => AssertAquifer(entry, pipelines));
+    }
+
+    private sealed record Stage(string Name, Action Check);
+
+    private static IEnumerable<Stage> Stages(JsonElement entry, WorldgenPipelines pipelines)
+    {
+        var name = CaseName(entry);
+
+        yield return new Stage($"{name} density", () => AssertDensity(entry, new Replay(entry, pipelines)));
+        yield return new Stage($"{name} base fill", () => AssertBaseFill(entry, new Replay(entry, pipelines)));
+        yield return new Stage($"{name} materials", () => AssertMaterials(entry, new Replay(entry, pipelines)));
+        yield return new Stage($"{name} carving mask", () => AssertCarvingMask(new Replay(entry, pipelines)));
+
+        if (entry.TryGetProperty("aquiferFluids", out var samples))
         {
-            cases.Add(new TerrainCase(entry));
+            yield return new Stage(
+                $"{name} aquifer fluids",
+                () => AssertFluids(AquiferContext(entry, pipelines).Aquifer, samples.EnumerateArray()));
         }
 
-        return cases;
+        yield return new Stage($"{name} terrain", () => AssertTerrain(entry, new Replay(entry, pipelines)));
     }
 
-    [Theory]
-    [MemberData(nameof(TerrainCases))]
-    public void ChunkDensityMatchesVanilla(TerrainCase testCase)
+    internal static string CaseName(JsonElement entry) =>
+        $"{entry.GetProperty("seed")} {entry.GetProperty("dimension").GetString()} "
+        + $"({entry.GetProperty("chunkX")}, {entry.GetProperty("chunkZ")})";
+
+    private static string AquiferName(JsonElement entry) =>
+        entry.TryGetProperty("name", out var name) ? name.GetString()! : CaseName(entry);
+
+    private static void AssertDensity(JsonElement entry, Replay replay)
     {
-        var replay = new Replay(testCase.Entry);
         var volume = replay.Context.Volume;
-        var expected = Decode(testCase.Entry.GetProperty("densityData").GetString()!);
+        var expected = Decode(entry.GetProperty("densityData").GetString()!);
         var values = new float[volume.Size];
 
         replay.Generator.Router.FinalDensity.SampleVolume(values, volume);
@@ -64,50 +98,28 @@ public class VanillaTerrainGeneration
         }
     }
 
-    [Theory]
-    [MemberData(nameof(TerrainCases))]
-    public void BaseFillMatchesVanilla(TerrainCase testCase)
+    private static void AssertBaseFill(JsonElement entry, Replay replay)
     {
-        var replay = new Replay(testCase.Entry);
-
         replay.Generator.Fill(replay.Context);
 
-        AssertBlocks(testCase.Entry.GetProperty("base"), replay.Chunk);
-        AssertHeightmaps(testCase.Entry.GetProperty("baseHeightmaps"), replay.Chunk);
+        AssertBlocks(entry.GetProperty("base"), replay.Chunk);
+        AssertHeightmaps(entry.GetProperty("baseHeightmaps"), replay.Chunk);
     }
 
-    [Theory]
-    [MemberData(nameof(TerrainCases))]
-    public void MaterialsMatchVanilla(TerrainCase testCase)
+    // The material rules over vanilla's base fill.
+    private static void AssertMaterials(JsonElement entry, Replay replay)
     {
-        var replay = new Replay(testCase.Entry);
-        RestoreBlocks(testCase.Entry.GetProperty("base"), replay.Chunk);
-        RestoreHeightmaps(testCase.Entry.GetProperty("baseHeightmaps"), replay.Chunk);
+        RestoreBlocks(entry.GetProperty("base"), replay.Chunk);
+        RestoreHeightmaps(entry.GetProperty("baseHeightmaps"), replay.Chunk);
 
         replay.Generator.Materials.Apply(replay.Context);
 
-        AssertBlocks(testCase.Entry.GetProperty("materials"), replay.Chunk);
+        AssertBlocks(entry.GetProperty("materials"), replay.Chunk);
     }
 
-    public static TheoryData<TerrainCase> CarverCases()
+    private static void AssertCarvingMask(Replay replay)
     {
-        var cases = TerrainCases();
-
-        // Mask-only cases, for carver boundaries that need no whole terrain chunk.
-        foreach (var entry in VanillaWorldgenCaptures.CurrentCases("carvers"))
-        {
-            cases.Add(new TerrainCase(entry));
-        }
-
-        return cases;
-    }
-
-    [Theory]
-    [MemberData(nameof(CarverCases))]
-    public void CarvingMaskMatchesVanilla(TerrainCase testCase)
-    {
-        var replay = new Replay(testCase.Entry);
-        var expected = Decode(testCase.Entry.GetProperty("carvingMask").GetString()!);
+        var expected = Decode(replay.Entry.GetProperty("carvingMask").GetString()!);
 
         var mask = TerrainCarvers.GenerateMask(replay.Context, replay.CarversAt).Mask;
 
@@ -128,55 +140,9 @@ public class VanillaTerrainGeneration
         }
     }
 
-    public sealed record AquiferCase(JsonElement Entry, JsonElement[] Samples)
+    private static void AssertFluids(TerrainAquifer aquifer, IEnumerable<JsonElement> samples)
     {
-        public override string ToString() => this.Entry.TryGetProperty("name", out var name)
-            ? name.GetString()!
-            : new TerrainCase(this.Entry).ToString();
-    }
-
-    public static TheoryData<AquiferCase> AquiferCases()
-    {
-        var cases = new TheoryData<AquiferCase>();
-
-        foreach (var entry in VanillaWorldgenCaptures.CurrentCases("terrain"))
-        {
-            if (entry.TryGetProperty("aquiferFluids", out var samples))
-            {
-                cases.Add(new AquiferCase(entry, [.. samples.EnumerateArray()]));
-            }
-        }
-
-        // A standalone aquifer position is its own sample.
-        foreach (var entry in AquiferPositions())
-        {
-            cases.Add(new AquiferCase(entry, [entry]));
-        }
-
-        return cases;
-    }
-
-    public static TheoryData<AquiferCase> AquiferPositionCases()
-    {
-        var cases = new TheoryData<AquiferCase>();
-
-        foreach (var entry in AquiferPositions())
-        {
-            cases.Add(new AquiferCase(entry, [entry]));
-        }
-
-        return cases;
-    }
-
-    private static IEnumerable<JsonElement> AquiferPositions() => VanillaWorldgenCaptures.CurrentCases("aquifers");
-
-    [Theory]
-    [MemberData(nameof(AquiferCases))]
-    public void AquiferFluidLevelsMatchVanilla(AquiferCase testCase)
-    {
-        var aquifer = AquiferContext(testCase.Entry).Aquifer;
-
-        foreach (var sample in testCase.Samples)
+        foreach (var sample in samples)
         {
             var fluid = aquifer.FluidAt(
                 sample.GetProperty("x").GetInt32(),
@@ -188,12 +154,12 @@ public class VanillaTerrainGeneration
         }
     }
 
-    [Theory]
-    [MemberData(nameof(AquiferPositionCases))]
-    public void AquiferSubstanceMatchesVanilla(AquiferCase testCase)
+    // A standalone position's fluid, and the block its density computes.
+    private static void AssertAquifer(JsonElement entry, WorldgenPipelines pipelines)
     {
-        var entry = testCase.Entry;
-        var aquifer = AquiferContext(entry).Aquifer;
+        AssertFluids(AquiferContext(entry, pipelines).Aquifer, [entry]);
+
+        var aquifer = AquiferContext(entry, pipelines).Aquifer;
 
         var block = aquifer.ComputeSubstance(
             entry.GetProperty("x").GetInt32(),
@@ -219,7 +185,7 @@ public class VanillaTerrainGeneration
     /// The terrain context of an aquifer case's chunk. A terrain case names its chunk, and a standalone position uses
     /// the chunk containing it, like the probe. Aquifers never look up biomes.
     /// </summary>
-    private static TerrainContext AquiferContext(JsonElement entry)
+    private static TerrainContext AquiferContext(JsonElement entry, WorldgenPipelines pipelines)
     {
         var seed = entry.GetProperty("seed").GetInt64();
         var settings = entry.GetProperty("settings").GetString()!;
@@ -227,13 +193,7 @@ public class VanillaTerrainGeneration
         var height = entry.GetProperty("height").GetInt32();
         var chunkX = entry.TryGetProperty("chunkX", out var x) ? x.GetInt32() : entry.GetProperty("x").GetInt32() >> 4;
         var chunkZ = entry.TryGetProperty("chunkZ", out var z) ? z.GetInt32() : entry.GetProperty("z").GetInt32() >> 4;
-
-        if (!aquiferGenerators.TryGetValue((seed, settings), out var generator))
-        {
-            generator = new TerrainGenerator(WorldgenData.Vanilla, seed, settings);
-            aquiferGenerators.Add((seed, settings), generator);
-        }
-
+        var generator = pipelines.Terrain(seed, settings);
         var chunk = new Chunk(chunkX, chunkZ, minY, height);
 
         return generator.CreateContext(
@@ -241,25 +201,27 @@ public class VanillaTerrainGeneration
             (_, _, _) => throw new InvalidOperationException("Aquifers use no biome."));
     }
 
-    [Theory]
-    [MemberData(nameof(TerrainCases))]
-    public void TerrainStatusMatchesVanilla(TerrainCase testCase)
+    // The whole terrain status: biomes and carvers supplied, the blocks, heightmaps and post-processing marks.
+    private static void AssertTerrain(JsonElement entry, Replay replay)
     {
-        var replay = new Replay(testCase.Entry);
         var updates = new List<Vector>();
 
         replay.Generator.Generate(replay.Chunk, replay.BiomeAt, replay.CarversAt, updates);
 
-        AssertBlocks(testCase.Entry.GetProperty("blocks"), replay.Chunk);
-        AssertHeightmaps(testCase.Entry.GetProperty("heightmaps"), replay.Chunk);
-        var expectedUpdates = testCase.Entry.GetProperty("postProcessing").EnumerateArray()
+        AssertBlocks(entry.GetProperty("blocks"), replay.Chunk);
+        AssertHeightmaps(entry.GetProperty("heightmaps"), replay.Chunk);
+
+        var expectedUpdates = entry.GetProperty("postProcessing").EnumerateArray()
             .Select(value => value.GetInt32())
             .ToArray();
-        var actualUpdates = updates.OrderBy(position => (position.Y - replay.Chunk.MinY) >> 4)
-            .Select(position => (position.Y - replay.Chunk.MinY) * 256 + (position.Z & 15) * 16 + (position.X & 15))
-            .ToArray();
-        Assert.Equal(expectedUpdates, actualUpdates);
+        Assert.Equal(expectedUpdates, PostProcessingIndices(updates, replay.Chunk));
     }
+
+    // Post-processing marks by section, as their block indices in the chunk, like vanilla saves them.
+    internal static int[] PostProcessingIndices(List<Vector> updates, Chunk chunk) => updates
+        .OrderBy(position => (position.Y - chunk.MinY) >> 4)
+        .Select(position => (position.Y - chunk.MinY) * 256 + (position.Z & 15) * 16 + (position.X & 15))
+        .ToArray();
 
     private sealed class Replay
     {
@@ -268,7 +230,7 @@ public class VanillaTerrainGeneration
         private readonly int[]? biomeIndices;
         private readonly string[][] carvers;
 
-        public Replay(JsonElement entry)
+        public Replay(JsonElement entry, WorldgenPipelines pipelines)
         {
             var seed = entry.GetProperty("seed").GetInt64();
             var x = entry.GetProperty("chunkX").GetInt32();
@@ -276,7 +238,8 @@ public class VanillaTerrainGeneration
             var minY = entry.GetProperty("minY").GetInt32();
             var height = entry.GetProperty("height").GetInt32();
             var settings = entry.GetProperty("settings").GetString()!;
-            this.Generator = new TerrainGenerator(WorldgenData.Vanilla, seed, settings);
+            this.Entry = entry;
+            this.Generator = pipelines.Terrain(seed, settings);
             this.Chunk = new Chunk(x, z, minY, height);
 
             if (entry.TryGetProperty("materialBiomes", out var biomes))
@@ -290,6 +253,8 @@ public class VanillaTerrainGeneration
                 .Select(names => names.EnumerateArray().Select(name => name.GetString()!).ToArray())
                 .ToArray();
         }
+
+        public JsonElement Entry { get; }
 
         public TerrainGenerator Generator { get; }
 
