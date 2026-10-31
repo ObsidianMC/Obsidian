@@ -15,6 +15,7 @@ internal sealed class BiomeTerrain
 {
     private readonly TerrainGenerator terrain;
     private readonly BiomeManager manager;
+    private readonly long zoomSeed;
     private readonly FeatureRegistry? features;
     private readonly int unlitBrightness;
     private readonly TerrainColumns columns;
@@ -39,6 +40,7 @@ internal sealed class BiomeTerrain
         // Point lookups must revisit the tree: memoizing a quart changes later exact ties' previous-leaf input.
         this.manager = new BiomeManager(this.Source, terrain.Seed, terrain.Settings.MinY,
             terrain.Settings.Height, cacheNoiseBiomes: false, clampToHeight: false);
+        this.zoomSeed = BiomeManager.ObfuscateSeed(terrain.Seed);
         this.columns = new TerrainColumns(terrain);
         this.MinY = dimensionType.GetProperty("min_y").GetInt32();
         this.Height = dimensionType.GetProperty("height").GetInt32();
@@ -207,6 +209,13 @@ internal sealed class BiomeTerrain
 
     public string BiomeAt(int x, int y, int z) => this.manager.GetBiome(x, y, z).Name;
 
+    /// <summary>
+    /// <see cref="BiomeAt"/> for the blocks of one chunk's terrain status, which asks for nearly every block's biome.
+    /// Use it on one thread.
+    /// </summary>
+    public Func<int, int, int, string> ChunkBiomes(IChunk chunk) =>
+        new ChunkBiomeLookup(this.Source, this.zoomSeed, chunk).BiomeAt;
+
     public string[] CarversAt(int chunkX, int chunkZ)
     {
         var biome = this.Source.GetNoiseBiome(chunkX << 2, 0, chunkZ << 2);
@@ -225,7 +234,12 @@ internal sealed class BiomeTerrain
     {
         this.Source.FillBiomes(chunk);
         fluidUpdates ??= (chunk as Chunk)?.PostProcessing;
-        this.terrain.Generate(chunk, this.BiomeAt, this.CarversAt, fluidUpdates, this.BeardifierFor(chunk.X, chunk.Z));
+        this.terrain.Generate(
+            chunk,
+            this.ChunkBiomes(chunk),
+            this.CarversAt,
+            fluidUpdates,
+            this.BeardifierFor(chunk.X, chunk.Z));
 
         // Chunk storage keeps the legacy enum until the live pipeline switches; carvers saves as 26.3 terrain.
         chunk.SetChunkStatus(ChunkGenStage.carvers);

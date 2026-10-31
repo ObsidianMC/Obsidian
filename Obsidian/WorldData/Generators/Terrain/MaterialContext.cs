@@ -224,9 +224,8 @@ internal sealed partial class MaterialRules
                 return;
             }
 
+            // The chunk keeps its heightmaps, including the worldgen ones later columns read, up to date.
             chunk.SetBlock(this.localX, y, this.localZ, block);
-            UpdateHeight(chunk, HeightmapType.WorldSurfaceWG, this.localX, y, this.localZ, block);
-            UpdateHeight(chunk, HeightmapType.OceanFloorWG, this.localX, y, this.localZ, block);
 
             // Vanilla's material column marks every state with a fluid for post-processing, such as the water of
             // swamp rules. Unlike density fill, it doesn't consult the aquifer's scheduling decision.

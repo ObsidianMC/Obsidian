@@ -107,7 +107,7 @@ internal abstract class BenchGenerator
             timer.Time(SerialStage.Biomes, () => this.pipeline.Source.FillBiomes(chunk));
             timer.Time(SerialStage.Noise, () =>
             {
-                context = this.terrain.CreateContext(chunk, this.pipeline.BiomeAt, chunk.PostProcessing);
+                context = this.terrain.CreateContext(chunk, this.pipeline.ChunkBiomes(chunk), chunk.PostProcessing);
                 this.terrain.Fill(context, this.pipeline.BeardifierFor(x, z));
             });
             timer.Time(SerialStage.Surface, () => this.terrain.Materials.Apply(context!));
