@@ -40,10 +40,10 @@ internal sealed class CarvingMask(int minY, int maxY)
         this.words[bit >> 6] |= 1UL << (bit & 63);
     }
 
-    /// <summary>The lowest carved y of the column from <paramref name="fromY"/> up, or past <see cref="MaxY"/>.</summary>
+    /// <summary>The lowest carved y of the column from <paramref name="fromY"/> up, or MaxY + 1.</summary>
     public int NextCarved(int x, int z, int fromY) => this.Next(x, z, fromY, carved: true);
 
-    /// <summary>The lowest uncarved y of the column from <paramref name="fromY"/> up, or past <see cref="MaxY"/>.</summary>
+    /// <summary>The lowest uncarved y of the column from <paramref name="fromY"/> up, or MaxY + 1.</summary>
     public int NextUncarved(int x, int z, int fromY) => this.Next(x, z, fromY, carved: false);
 
     // A column's bits are consecutive, so a run is found a word at a time.

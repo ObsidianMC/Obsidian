@@ -86,7 +86,7 @@ internal sealed class TerrainGenerator
     /// <summary>Fills a chunk volume using vanilla's volume path and z, x, descending-y write order.</summary>
     /// <param name="beardifier">The structures' density around the chunk, added to the final density.</param>
     public void Fill(TerrainContext context, Beardifier? beardifier = null) =>
-        TerrainFill.Run(this, context, beardifier);
+        TerrainFill.Run(context, beardifier);
 }
 
 /// <summary>The block biomes one chunk's terrain status reads, by block coordinates.</summary>

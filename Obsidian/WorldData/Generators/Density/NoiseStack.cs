@@ -106,6 +106,9 @@ internal sealed class NoiseStack(IReadOnlyList<NoiseStack.Layer> layers)
     /// </summary>
     public void AddToVolume(Span<float> buffer, in DensityVolume volume, double xzScale, double yScale, float amplitude)
     {
+        // The offsets of eight consecutive y from the first.
+        var steps = Vector256.Create(0, 1, 2, 3, 4, 5, 6, 7) * volume.StepY;
+
         foreach (var layer in this.layers)
         {
             var layerXzScale = xzScale * layer.Frequency;
@@ -131,8 +134,7 @@ internal sealed class NoiseStack(IReadOnlyList<NoiseStack.Layer> layers)
 
                         for (; indexY + 8 <= volume.SizeY; indexY += 8)
                         {
-                            var firstY = volume.BlockY(indexY);
-                            var blockYs = Vector256.Create(firstY) + Vector256.Create(0, 1, 2, 3, 4, 5, 6, 7) * volume.StepY;
+                            var blockYs = Vector256.Create(volume.BlockY(indexY)) + steps;
                             var sampled = noise.Get8(
                                 xs,
                                 xs,

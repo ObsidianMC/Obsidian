@@ -165,7 +165,11 @@ internal partial class PerlinNoise
         Avx2.GatherVector256(permutations, value & Vector256.Create(0xFF), 4);
 
     // Dot's sum, in its order, with each hash's gradient picked from the eight low or the eight high ones.
-    private static Vector256<float> Dot8(Vector256<int> hash, Vector256<float> x, Vector256<float> y, Vector256<float> z)
+    private static Vector256<float> Dot8(
+        Vector256<int> hash,
+        Vector256<float> x,
+        Vector256<float> y,
+        Vector256<float> z)
     {
         var index = hash & Vector256.Create(15);
         var high = Avx2.ShiftLeftLogical(index, 28).AsSingle();

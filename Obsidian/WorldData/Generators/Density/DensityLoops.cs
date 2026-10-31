@@ -109,7 +109,10 @@ internal static class DensityLoops
                 break;
             case BinaryOperation.Min:
                 for (var i = 0; i < vectors.Length; i++)
-                    vectors[i] = Vector.ConditionalSelect(Vector.LessThan(constants, vectors[i]), constants, vectors[i]);
+                {
+                    var smaller = Vector.LessThan(constants, vectors[i]);
+                    vectors[i] = Vector.ConditionalSelect(smaller, constants, vectors[i]);
+                }
 
                 for (var i = tail; i < values.Length; i++)
                     values[i] = constant < values[i] ? constant : values[i];

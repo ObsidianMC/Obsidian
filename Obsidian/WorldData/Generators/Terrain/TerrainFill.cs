@@ -40,22 +40,23 @@ internal sealed class TerrainFill
     // The code of the global fluid at each y of the volume, or -1 until a position there needs it.
     private short[] globalCodes = [];
 
-    /// <summary>Fills the context's chunk from the final density, adding <paramref name="beardifier"/>'s density.</summary>
+    /// <summary>Fills the context's chunk from the final density plus <paramref name="beardifier"/>'s.</summary>
     /// <remarks>
     /// Every 26.3 noise setting ends its final density with <c>add(..., beardifier)</c>, which the router compiles
     /// to 0, so the structures' density is added here, in float like vanilla's addition.
     /// </remarks>
-    public static void Run(TerrainGenerator generator, TerrainContext context, Beardifier? beardifier)
+    public static void Run(TerrainContext context, Beardifier? beardifier)
     {
         var fill = free ?? new TerrainFill();
         free = null;
 
-        fill.Fill(generator, context, beardifier);
+        fill.Fill(context, beardifier);
         free = fill;
     }
 
-    private void Fill(TerrainGenerator generator, TerrainContext context, Beardifier? beardifier)
+    private void Fill(TerrainContext context, Beardifier? beardifier)
     {
+        var generator = context.Generator;
         var volume = context.Volume;
         using var density = DensityBuffer.Sample(generator.Router.FinalDensity, volume);
 
@@ -158,16 +159,16 @@ internal sealed class TerrainFill
                     var value = density[columnStart + y];
                     var code = FillPalette.DefaultCode;
 
-                    // Aquifers leave positive densities to the default block, which no fluid update follows. Above their
-                    // sampling range they give the rest the global fluid at that y, which no update follows either.
+                    // Aquifers leave positive densities to the default block, which no fluid update follows. Above
+                    // their sampling range they give the rest the global fluid at that y, with no update either.
                     if (!(value > 0.0f) && blockY > globalFluidAboveY)
                     {
                         code = this.GlobalCode(aquifer, blockX, y, blockZ, volume);
                     }
                     else if (!(value > 0.0f))
                     {
-                        var block = aquifer.ComputeSubstance(blockX, blockY, blockZ, value) ?? this.palette.DefaultBlock;
-                        code = this.palette.CodeOf(block);
+                        var substance = aquifer.ComputeSubstance(blockX, blockY, blockZ, value);
+                        code = this.palette.CodeOf(substance ?? this.palette.DefaultBlock);
 
                         if (this.palette.IsLiquid(code) && aquifer.ShouldScheduleFluidUpdate)
                             context.MarkForPostProcessing(blockX, blockY, blockZ);
