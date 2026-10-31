@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.ObjectPool;
 using Obsidian.API;
 using Obsidian.API.Networking;
 using Obsidian.API.Plugins;
@@ -14,6 +15,7 @@ using Obsidian.Tests.Fakes;
 using Obsidian.Utilities;
 using Obsidian.Utilities.Collections;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
@@ -168,6 +170,24 @@ public class ModdedNetworking
             context.EventDispatcher, context.Server, NullLoggerFactory.Instance,
             new FakeUserCache(), serverMetrics, context.Provider, pool);
 
+        // CI builds without line numbers: identify the wait and queue state rather than losing the failing phase.
+        async Task WaitAsync(Task pending, Client client, string phase)
+        {
+            try
+            {
+                await pending.WaitAsync(timeout);
+            }
+            catch (TimeoutException error)
+            {
+                var queued = (int)unsent.GetValue(client)!;
+                var status = ((Task)consumer.GetValue(client)!).Status;
+                throw new TimeoutException(
+                    $"Outgoing lifecycle timed out at {phase} (state: {client.State}, unsent: {queued}, "
+                        + $"consumer: {status}, connected: {client.Connected}).",
+                    error);
+            }
+        }
+
         // Every protocol's refusal follows the earlier handler; login also crosses the compression boundary.
         foreach (var state in new[] { ClientState.Login, ClientState.Configuration, ClientState.Play })
         {
@@ -210,7 +230,7 @@ public class ModdedNetworking
             try
             {
                 await client.QueuePacketAsync(first);
-                await stalled.Task.WaitAsync(timeout);
+                await WaitAsync(stalled.Task, client, $"{state}: first queue handler");
                 using var expected = new NetworkBuffer();
                 expected.WritePacket(first);
                 if (state == ClientState.Login)
@@ -241,11 +261,15 @@ public class ModdedNetworking
 
                 resume.TrySetResult();
                 var received = new byte[expected.Size];
-                await peer.GetStream().ReadExactlyAsync(received).AsTask().WaitAsync(timeout);
+                await WaitAsync(peer.GetStream().ReadExactlyAsync(received).AsTask(), client, $"{state}: ordered bytes");
                 Assert.Equal(expected.AsSpan(0, expected.Size).ToArray(), received);
-                Assert.Equal(0, await peer.GetStream().ReadAsync(new byte[1]).AsTask().WaitAsync(timeout));
-                await flush.WaitAsync(timeout);
-                await ((Task)consumer.GetValue(client)!).WaitAsync(timeout);
+
+                var eof = peer.GetStream().ReadAsync(new byte[1]).AsTask();
+                await WaitAsync(eof, client, $"{state}: peer EOF");
+                Assert.Equal(0, await eof);
+
+                await WaitAsync(flush, client, $"{state}: flush marker");
+                await WaitAsync((Task)consumer.GetValue(client)!, client, $"{state}: queue consumer");
                 Assert.Equal(0, (int)unsent.GetValue(client)!);
             }
             finally
@@ -280,7 +304,7 @@ public class ModdedNetworking
             {
                 var packet = new LoginCompressionPacket(256);
                 await client.QueuePacketAsync(packet);
-                await stalled.Task.WaitAsync(timeout);
+                await WaitAsync(stalled.Task, client, $"{ending}: first queue handler");
                 var flush = client.FlushAsync();
                 for (var i = 0; i < 20_000; i++)
                     Assert.True(client.QueuePacketAsync(packet).IsCompletedSuccessfully);
@@ -300,10 +324,13 @@ public class ModdedNetworking
                     Assert.True(client.DisconnectAsync("Deadline goodbye").IsCompletedSuccessfully);
                 }
 
-                await ((Task)consumer.GetValue(client)!).WaitAsync(timeout);
-                await flush.WaitAsync(timeout);
+                await WaitAsync((Task)consumer.GetValue(client)!, client, $"{ending}: queue consumer");
+                await WaitAsync(flush, client, $"{ending}: flush marker");
                 Assert.Equal(0, (int)unsent.GetValue(client)!);
-                Assert.Equal(0, await peer.GetStream().ReadAsync(new byte[1]).AsTask().WaitAsync(timeout));
+
+                var eof = peer.GetStream().ReadAsync(new byte[1]).AsTask();
+                await WaitAsync(eof, client, $"{ending}: peer EOF");
+                Assert.Equal(0, await eof);
             }
             finally
             {
@@ -316,7 +343,108 @@ public class ModdedNetworking
         {
             using var client = CreateClient();
             client.Dispose();
-            await ((Task)consumer.GetValue(client)!).WaitAsync(timeout);
+            await WaitAsync((Task)consumer.GetValue(client)!, client, $"constructor disposal {i}: queue consumer");
+        }
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task APreviousSocketsCompletionCannotCloseTheNextClient()
+    {
+        await using var context = TestServerFactory.CreateServer($"socket-reuse-{Guid.NewGuid():N}");
+        using var metrics = new ServiceCollection().AddMetrics().BuildServiceProvider();
+        var serverMetrics = new ServerMetrics(metrics.GetRequiredService<IMeterFactory>());
+        var pool = new PausedSocketEventPool();
+        var timeout = TimeSpan.FromSeconds(10);
+
+        Client CreateClient() => new(
+            context.EventDispatcher, context.Server, NullLoggerFactory.Instance,
+            new FakeUserCache(), serverMetrics, context.Provider, pool);
+
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        using var previousPeer = new TcpClient();
+        await previousPeer.ConnectAsync((IPEndPoint)listener.LocalEndpoint);
+        using var previous = CreateClient();
+        await previous.ConnectAsync(await listener.AcceptSocketAsync());
+
+        try
+        {
+            previous.Disconnect();
+
+            // The runtime has finished the old receive, but has not read its Completed subscribers yet.
+            // Rent the next client's args in that window, as a delayed socket callback can do on a busy runner.
+            await pool.Paused.Entered.Task.WaitAsync(timeout);
+
+            using var peer = new TcpClient();
+            await peer.ConnectAsync((IPEndPoint)listener.LocalEndpoint);
+            using var client = CreateClient();
+            client.SetState(ClientState.Login);
+            await client.ConnectAsync(await listener.AcceptSocketAsync());
+
+            pool.Paused.Resume.TrySetResult();
+            await pool.Paused.Finished.Task.WaitAsync(timeout);
+
+            var delivered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            context.EventDispatcher.RegisterEvent(null, (Func<QueuePacketEventArgs, ValueTask>)(args =>
+            {
+                if (ReferenceEquals(args.Client, client))
+                    delivered.TrySetResult();
+
+                return ValueTask.CompletedTask;
+            }));
+
+            var packet = new LoginCompressionPacket(256);
+            await client.QueuePacketAsync(packet);
+            await delivered.Task.WaitAsync(timeout);
+            Assert.True(client.Connected);
+
+            using var expected = new NetworkBuffer();
+            expected.WritePacket(packet);
+            var received = new byte[expected.Size];
+            await peer.GetStream().ReadExactlyAsync(received).AsTask().WaitAsync(timeout);
+            Assert.Equal(expected.AsSpan(0, expected.Size).ToArray(), received);
+        }
+        finally
+        {
+            pool.Paused.Resume.TrySetResult();
+        }
+    }
+
+    private sealed class PausedSocketEventPool : ObjectPool<SocketAsyncEventArgs>
+    {
+        private readonly ConcurrentQueue<SocketAsyncEventArgs> available = new();
+
+        public PausedSocketEventArgs Paused { get; } = new();
+
+        public PausedSocketEventPool()
+        {
+            this.available.Enqueue(this.Paused);
+            this.available.Enqueue(new SocketAsyncEventArgs());
+        }
+
+        public override SocketAsyncEventArgs Get() =>
+            this.available.TryDequeue(out var args) ? args : new SocketAsyncEventArgs();
+
+        public override void Return(SocketAsyncEventArgs args) => this.available.Enqueue(args);
+    }
+
+    private sealed class PausedSocketEventArgs : SocketAsyncEventArgs
+    {
+        public TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Resume { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Finished { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        protected override void OnCompleted(SocketAsyncEventArgs args)
+        {
+            if (this.Entered.TrySetResult())
+            {
+                this.Resume.Task.GetAwaiter().GetResult();
+                base.OnCompleted(args);
+                this.Finished.TrySetResult();
+                return;
+            }
+
+            base.OnCompleted(args);
         }
     }
 

@@ -601,6 +601,12 @@ public sealed partial class Client : IClient
         catch (ObjectDisposedException) { }
 
         this.Socket?.Dispose();
+        lock (this.sendLock)
+        {
+            this.receiveEvent?.Retire();
+            this.sendEvent?.Retire();
+        }
+
         this.ObserveOutgoingTask(this.packetQueueTask);
 
         GC.SuppressFinalize(this);
@@ -646,21 +652,8 @@ public sealed partial class Client : IClient
 
         this.receiving = false;
 
-        // Under the lock sends are submitted under, so none sets up the send event once it's returned (see TrySend).
         lock (this.sendLock)
         {
-            if (this.receiveEvent is not null)
-            {
-                this.receiveEvent.Completed -= this.OnAsyncCompleted;
-                this.pool.Return(this.receiveEvent);
-            }
-
-            if (this.sendEvent is not null)
-            {
-                this.sendEvent.Completed -= this.OnAsyncCompleted;
-                this.pool.Return(this.sendEvent);
-            }
-
             this.sending = false;
             this.pendingFrames.Clear();
             this.sendBufferMain.Clear();

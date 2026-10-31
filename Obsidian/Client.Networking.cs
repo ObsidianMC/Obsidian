@@ -11,8 +11,8 @@ using static Obsidian.API.Registries.CodecRegistry;
 namespace Obsidian;
 public partial class Client
 {
-    private SocketAsyncEventArgs receiveEvent;
-    private SocketAsyncEventArgs sendEvent;
+    private SocketEventLease receiveEvent;
+    private SocketEventLease sendEvent;
 
     private int sendBufferFlushOffset;
 
@@ -52,17 +52,20 @@ public partial class Client
 
     internal async ValueTask ConnectAsync(Socket socket)
     {
-        this.Socket = socket;
+        lock (this.sendLock)
+        {
+            if (this.IsClosing)
+            {
+                socket.Dispose();
+                return;
+            }
 
-        this.receiveBuffer = new();
-
-        this.receiveEvent = this.pool.Get();
-        this.receiveEvent.Completed += OnAsyncCompleted;
-
-        this.sendEvent = this.pool.Get();
-        this.sendEvent.Completed += OnAsyncCompleted;
-
-        this.receiveBuffer.Reserve(MaxBufferSize);
+            this.Socket = socket;
+            this.receiveBuffer = new();
+            this.receiveEvent = new SocketEventLease(this, this.pool);
+            this.sendEvent = new SocketEventLease(this, this.pool);
+            this.receiveBuffer.Reserve(MaxBufferSize);
+        }
 
         await this.TryReceiveAsync();
     }
@@ -235,16 +238,27 @@ public partial class Client
                 continue;
 
             process = false;
+            var lease = this.receiveEvent;
+            if (!lease.TryStart())
+                return;
+
+            var pending = false;
             try
             {
                 this.receiving = true;
-                this.receiveEvent.SetBuffer(this.receiveBuffer.GetBuffer(), this.receiveBuffer.Offset, this.receiveBuffer.Capacity);
+                var args = lease.Arguments;
+                args.SetBuffer(this.receiveBuffer.GetBuffer(), this.receiveBuffer.Offset, this.receiveBuffer.Capacity);
 
-                var willRaiseEvent = this.Socket.ReceiveAsync(this.receiveEvent);
-                if (!willRaiseEvent)
-                    process = await this.ProcessReceiveAsync(this.receiveEvent);
+                pending = this.Socket.ReceiveAsync(args);
+                if (!pending)
+                    process = await this.ProcessReceiveAsync(args);
             }
             catch (ObjectDisposedException) { }
+            finally
+            {
+                if (!pending)
+                    lease.Complete();
+            }
         }
 
         if (this.receiving)
@@ -257,9 +271,9 @@ public partial class Client
         while (process)
         {
             bool completedSynchronously;
+            SocketEventLease lease;
 
-            // Submitted under the lock, which Disconnect returns the send event to the pool under, so a closing client
-            // never sets up an event another connection already took.
+            // Admission shares the send lock with teardown; the lease also covers a completion still in flight.
             lock (this.sendLock)
             {
                 if (this.IsClosing || !this.Connected)
@@ -284,22 +298,43 @@ public partial class Client
                     }
                 }
 
+                lease = this.sendEvent;
+                if (!lease.TryStart())
+                    return;
+
                 try
                 {
-                    this.sendEvent.SetBuffer(
+                    lease.Arguments.SetBuffer(
                         this.sendBufferFlush.GetBuffer(),
                         this.sendBufferFlushOffset,
                         this.sendBufferFlush.Offset - this.sendBufferFlushOffset);
 
-                    completedSynchronously = !this.Socket.SendAsync(this.sendEvent);
+                    completedSynchronously = !this.Socket.SendAsync(lease.Arguments);
                 }
                 catch (ObjectDisposedException)
                 {
+                    lease.Complete();
                     return;
+                }
+                catch
+                {
+                    lease.Complete();
+                    throw;
                 }
             }
 
-            process = completedSynchronously && this.ProcessSend(this.sendEvent);
+            process = false;
+            if (completedSynchronously)
+            {
+                try
+                {
+                    process = this.ProcessSend(lease.Arguments);
+                }
+                finally
+                {
+                    lease.Complete();
+                }
+            }
         }
     }
 
@@ -496,7 +531,7 @@ public partial class Client
 
         return false;
     }
-    private async void OnAsyncCompleted(object? sender, SocketAsyncEventArgs e)
+    private async ValueTask OnSocketCompletedAsync(SocketAsyncEventArgs e)
     {
         if (!this.Connected || this.disposed)
             return;
