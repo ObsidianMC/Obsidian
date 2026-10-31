@@ -68,17 +68,16 @@ internal sealed record BenchOptions(IReadOnlyList<BenchDimension> Dimensions, in
 internal sealed record BenchDimension(string Name, MojangDimension Dimension, int CenterX, int CenterZ, string ExpectedHash,
     string ExpectedNbtHash, string CurrentPreset, string CurrentHash, string CurrentNbtHash)
 {
-    // Recorded at the start of the overworld performance work (origin/1.21.x e2c0e005), and again after the mod system
-    // (#553) changed one overworld block and the saved chunk format (see docs/worldgen-overworld-performance-plan.md).
-    // Optimizations must not change them. The 26.3 pipeline's were recorded when its performance work started
-    // (origin/26.3.x 80555196).
+    // Optimizations must not change them. The live generator's were recorded on origin/26.3.x 80555196, whose block
+    // states and saved chunks differ from 1.21.x's (on 1.21.x they were c73225baaf86c6fe and 0525f8628623dc64 for the
+    // overworld); the 26.3 pipeline's were recorded there too, when its performance work started.
     public static IReadOnlyList<BenchDimension> All { get; } =
     [
-        new("overworld", MojangDimension.Overworld, 6, -2, "c73225baaf86c6fe", "0525f8628623dc64",
+        new("overworld", MojangDimension.Overworld, 6, -2, "6f824c2e873bca90", "869a5df6644e5d41",
             "minecraft:overworld", "c41960463b5b0d88", "c2f3c20883d6d150"),
-        new("nether", MojangDimension.Nether, 0, 0, "af7e0c06757df39c", "badbc176a6e2a3fd",
+        new("nether", MojangDimension.Nether, 0, 0, "2880fa86ca3c5e6c", "fec88678179d32d9",
             "minecraft:nether", "4771e394196351ed", "0796eaa405cabb9b"),
-        new("end", MojangDimension.End, 6, 0, "e2618139ae48a1ca", "9fbd717769bfb03a",
+        new("end", MojangDimension.End, 6, 0, "5c34c3f5867f27ac", "d940fd5e665d6164",
             "minecraft:the_end", "d28d968cb752b41a", "b75171a96e6db01e"),
     ];
 }
