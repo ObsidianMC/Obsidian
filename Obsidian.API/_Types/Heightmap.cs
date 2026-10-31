@@ -11,6 +11,12 @@ public sealed class Heightmap
 
     private readonly IChunk chunk;
 
+    private readonly Lock dataLock = new();
+
+    // Bound by the host's block registry, which owns the captured block physics tables.
+    internal static Func<HeightmapType, IBlock, bool> Matches { get; set; } =
+        (_, _) => throw new InvalidOperationException("The block registry has not initialized heightmap predicates.");
+
     public Predicate<IBlock> Predicate;
 
     // 1 while the heights changed since the chunk's last save took the mark (see TakeUnsaved). A new one is unsaved.
@@ -34,7 +40,7 @@ public sealed class Heightmap
         // Like vanilla, entries hold 0 to the chunk height inclusive: ceil(log2(height + 1)) bits.
         data = new DataArray(32 - BitOperations.LeadingZeroCount((uint)chunk.Height), 256);
 
-        Predicate = type == HeightmapType.MotionBlocking ? ((block) => !block.IsAir || !block.IsLiquid) : (_ => false);
+        Predicate = block => Matches(type, block);
     }
 
     private Heightmap(HeightmapType type, IChunk chunk, DataArray data)
@@ -43,10 +49,18 @@ public sealed class Heightmap
         this.chunk = chunk;
         this.data = data;
 
-        Predicate = type == HeightmapType.MotionBlocking ? ((block) => !block.IsAir || !block.IsLiquid) : (_ => false);
+        Predicate = block => Matches(type, block);
     }
 
     public bool Update(int x, int y, int z, IBlock blockState)
+    {
+        lock (this.dataLock)
+        {
+            return this.UpdateCore(x, y, z, blockState);
+        }
+    }
+
+    private bool UpdateCore(int x, int y, int z, IBlock blockState)
     {
         int height = this.GetHeight(x, z);
 
@@ -88,23 +102,63 @@ public sealed class Heightmap
 
     public void Set(int x, int z, int value)
     {
-        this.data[GetIndex(x, z)] = value - this.chunk.MinY;
-        Volatile.Write(ref this.unsaved, 1);
+        lock (this.dataLock)
+        {
+            this.data[GetIndex(x, z)] = value - this.chunk.MinY;
+            Volatile.Write(ref this.unsaved, 1);
+        }
     }
 
-    public int GetHeight(int x, int z) => this.GetHeight(GetIndex(x, z));
+    public int GetHeight(int x, int z)
+    {
+        lock (this.dataLock)
+        {
+            return this.GetHeight(GetIndex(x, z));
+        }
+    }
 
     private int GetHeight(int value) => this.data[value] + this.chunk.MinY;
 
-    private static int GetIndex(int x, int z) => x + z * 16;
+    private static int GetIndex(int x, int z) => (x & 15) + (z & 15) * 16;
+
+    /// <summary>Rebuilds an absent saved heightmap, or explicitly refreshes one from its chunk's blocks.</summary>
+    internal void Recalculate()
+    {
+        lock (this.dataLock)
+        {
+            for (var z = 0; z < 16; z++)
+            {
+                for (var x = 0; x < 16; x++)
+                {
+                    var y = this.chunk.MinY + this.chunk.Height - 1;
+                    while (y >= this.chunk.MinY && !this.Predicate(this.chunk.GetBlock(x, y, z)))
+                        y--;
+
+                    this.Set(x, z, y + 1);
+                }
+            }
+        }
+    }
 
     /// <summary>
     /// A copy of the packed heights, as chunk packets send them. Change heights with <see cref="Set"/>.
     /// </summary>
-    public long[] GetDataArray() => (long[])this.data.storage.Clone();
+    public long[] GetDataArray()
+    {
+        lock (this.dataLock)
+        {
+            return (long[])this.data.storage.Clone();
+        }
+    }
 
     public Heightmap Clone() => Clone(chunk);
 
-    public Heightmap Clone(IChunk chunk) => new Heightmap(HeightmapType, chunk, data.Clone());
+    public Heightmap Clone(IChunk chunk)
+    {
+        lock (this.dataLock)
+        {
+            return new Heightmap(HeightmapType, chunk, data.Clone()) { Predicate = this.Predicate };
+        }
+    }
 }
 

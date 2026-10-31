@@ -28,6 +28,7 @@
 		<EmbeddedResource Include="Assets\sulfur_scenarios.json" />
 		<EmbeddedResource Include="Assets\sulfur_fixtures.json" />
 		<EmbeddedResource Include="Assets\more_blocks.json" />
+		<EmbeddedResource Include="Assets\heightmaps.json" />
 		<EmbeddedResource Include="Assets\structure_pieces.json" />
 		<EmbeddedResource Include="Assets\redstone_scenarios.json" />
 		<EmbeddedResource Include="Assets\vanilla_worldgen.json" />

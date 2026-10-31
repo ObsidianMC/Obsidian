@@ -12,6 +12,10 @@ namespace Obsidian.WorldData;
 
 public sealed class Chunk : IChunk
 {
+    // Lock order: generation's chunk lock, the level tick lock, this lock, then section/heightmap storage locks.
+    // Also used for unattached chunks, whose callers do not share a level tick lock.
+    internal Lock BlockLock { get; } = new();
+
     private volatile RuntimeLightEngine? runtimeLight;
 
     internal RuntimeLightEngine? RuntimeLight => this.runtimeLight;
@@ -246,8 +250,6 @@ public sealed class Chunk : IChunk
     public bool IsGenerated => ChunkStatus == ChunkGenStage.full;
 
     public ChunkGenStage ChunkStatus { get; private set; } = ChunkGenStage.empty;
-
-    private const int width = 16;
 
     /// <summary>
     /// The lowest block Y of the chunk (a multiple of 16).
@@ -511,6 +513,14 @@ public sealed class Chunk : IChunk
 
     private void SetBlockCore(int x, int y, int z, IBlock block)
     {
+        lock (this.BlockLock)
+        {
+            this.SetBlockLocked(x, y, z, block);
+        }
+    }
+
+    private void SetBlockLocked(int x, int y, int z, IBlock block)
+    {
         // The claim belongs to this block, so even two replacements between portal ticks release it.
         Portals.PortalOwnership.Release(
             this, new Vector((this.X << 4) + (x & 15), y, (this.Z << 4) + (z & 15)), block);
@@ -522,10 +532,12 @@ public sealed class Chunk : IChunk
         int i = SectionIndex(y);
 
         x = (x & 15);
-        y = (y & 15);
         z = (z & 15);
 
-        ((ChunkSection)this.sections[i]).SetBlockUntracked(x, y, z, block);
+        ((ChunkSection)this.sections[i]).SetBlockUntracked(x, y & 15, z, block);
+
+        foreach (var heightmap in this.Heightmaps.Values)
+            heightmap.Update(x, y, z, block);
     }
 
     public BlockMeta GetBlockMeta(int x, int y, int z)
@@ -568,23 +580,10 @@ public sealed class Chunk : IChunk
 
     public void CalculateHeightmap()
     {
-        this.MarkUnsaved();
-
-        Heightmap target = Heightmaps[HeightmapType.MotionBlocking];
-        for (int x = 0; x < width; x++)
+        lock (this.BlockLock)
         {
-            for (int z = 0; z < width; z++)
-            {
-                for (int y = this.MinY + this.Height - 1; y >= this.MinY; y--)
-                {
-                    var block = GetBlock(x, y, z);
-                    if (block.Is(BlockIds.Air))
-                        continue;
-
-                    target.Set(x, z, value: y);
-                    break;
-                }
-            }
+            foreach (var heightmap in this.Heightmaps.Values)
+                heightmap.Recalculate();
         }
     }
 
@@ -658,6 +657,14 @@ public sealed class Chunk : IChunk
 
     public IChunk Clone(int x, int z)
     {
+        lock (this.BlockLock)
+        {
+            return this.CloneCore(x, z);
+        }
+    }
+
+    private IChunk CloneCore(int x, int z)
+    {
         var sections = new IChunkSection[this.sections.Length];
         for (int i = 0; i < sections.Length; i++)
         {
@@ -695,16 +702,22 @@ public sealed class Chunk : IChunk
     /// </summary>
     internal void SetChunkStatusCore(ChunkGenStage status)
     {
+        lock (this.BlockLock)
+        {
+            this.SetChunkStatusLocked(status);
+        }
+    }
+
+    private void SetChunkStatusLocked(ChunkGenStage status)
+    {
         this.ChunkStatus = status;
         this.MarkUnsaved();
 
         if (this.ChunkStatus == ChunkGenStage.full)
         {
-            // Free memory safely by removing optional maps
+            // Full chunks keep all four runtime maps; only generation's temporary maps are released.
             this.Heightmaps.Remove(HeightmapType.WorldSurfaceWG);
-            this.Heightmaps.Remove(HeightmapType.OceanFloor);
-            this.Heightmaps.Remove(HeightmapType.OceanFloorWG); // no-op if absent
-            this.Heightmaps.Remove(HeightmapType.MotionBlockingNoLeaves);
+            this.Heightmaps.Remove(HeightmapType.OceanFloorWG);
         }
     }
 

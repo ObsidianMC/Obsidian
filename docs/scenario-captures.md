@@ -105,6 +105,17 @@ replaces only what vanilla produced.
   The cases are one start of each structure type, 28 in all, which reach every piece type Obsidian generates except
   the ocean monument's rooms, which vanilla doesn't save (it saves the building and regenerates its rooms).
 
+- `heightmaps.json` (`RuntimeHeightmaps.ReplayVanillaRuntimeHeightmapReference`) records native 26.3
+  `LevelChunk.setBlockState` edits on empty chunks, with overworld and nether dimension types from a dedicated
+  server. Each checkpoint records the edited column's first free Y (`getHeight + 1`) and all packed longs for
+  the four runtime maps. Cases place, replace and remove solids, plants, snow, fluids and wet/dry leaves, cross
+  section and packed-word boundaries, and touch both build-height limits. The same reference calls every
+  `Heightmap.Types.isOpaque` predicate on every vanilla block state, including the two generation types.
+  The replay checks heights, exact packed storage and the chunk packet's client subset in one test through
+  `FixtureCases.AssertAll`. Separate Obsidian tests cover persistence, restoring absent maps from older saves,
+  and concurrent column writes and snapshots. The probe edits isolated native chunks on the server thread;
+  neighboring-block notifications and world generation do not alter these inputs.
+
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.
 
@@ -124,6 +135,8 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=more_blocks
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=structure_pieces
+
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=heightmaps
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur -p:CaptureCases=spike_shatters_after_falling+review_spike_pending_fall_keeps_frustum
 ```

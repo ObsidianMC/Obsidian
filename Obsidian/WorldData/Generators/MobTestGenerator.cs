@@ -74,7 +74,6 @@ public sealed class MobTestGenerator : ILevelGenerator
                 }
                 result.SetBlock(bx, Roof, bz, BlocksRegistry.Barrier);
                 for (var y = Floor + 1; y <= Roof; y++) result.SetLightLevel(bx, y, bz, LightType.Sky, 15);
-                result.Heightmaps[HeightmapType.MotionBlocking].Set(bx, bz, Roof);
             }
         }
 

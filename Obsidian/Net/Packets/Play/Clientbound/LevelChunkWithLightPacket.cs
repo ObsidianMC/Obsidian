@@ -35,6 +35,21 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
 
     public override void Serialize(INetStreamWriter writer)
     {
+        if (this.Chunk is Chunk concrete)
+        {
+            lock (concrete.BlockLock)
+            {
+                this.SerializeCore(writer);
+            }
+
+            return;
+        }
+
+        this.SerializeCore(writer);
+    }
+
+    private void SerializeCore(INetStreamWriter writer)
+    {
         var sections = sectionScratch ??= new NetworkBuffer();
         sections.Clear();
 
