@@ -5,6 +5,11 @@ internal static class FixtureDumper
 {
     private static string Source(string name) => Path.Combine(AppContext.BaseDirectory, "Java", name);
 
+    // An on-request gameplay probe: it does not regenerate unrelated assets or fixtures.
+    internal static Task DumpSulfurAsync(VanillaServer server, string fixture) =>
+        VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
+            Source("SulfurFixtures.java"), fixture);
+
     public static async Task DumpServerAsync(VanillaServer server, string output)
     {
         var classpath = string.Join(Path.PathSeparator, server.ClassPath);

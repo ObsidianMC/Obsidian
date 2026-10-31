@@ -230,8 +230,9 @@ internal sealed class FluidLevel
     {
         var block = this.GetBlock(position);
         var neighborPosition = position.Offset(direction);
+        this.ScheduleFluidShapeTick(position, block, neighbor);
         var updated = this.access.Reactions?.UpdateShape(position, block, direction, neighborPosition, neighbor)
-            ?? this.UpdateVanillaShape(block, position, direction, neighbor, shapes);
+            ?? this.UpdateVanillaShape(block, position, direction, neighbor, shapes, scheduleFluidTick: false);
 
         if (updated.IsSameState(block))
             return;
@@ -315,15 +316,21 @@ internal sealed class FluidLevel
         Vector position,
         BlockFace direction,
         IBlock neighbor,
-        VanillaShapes shapes)
+        VanillaShapes shapes,
+        bool scheduleFluidTick = true)
     {
         if (shapes == VanillaShapes.All)
         {
             var brightness = block.BlockClass() == "MushroomBlock" ? this.access.GetRawBrightness(position) : 15;
-            return ShapeUpdater.UpdateShape(this.ShapeView, block, position, direction, neighbor, brightness);
+            return ShapeUpdater.UpdateShape(this.ShapeView, block, position, direction, neighbor, brightness,
+                scheduleFluidTick);
         }
 
-        this.ScheduleFluidShapeTick(position, block, neighbor);
+        if (scheduleFluidTick)
+        {
+            this.ScheduleFluidShapeTick(position, block, neighbor);
+        }
+
         return block;
     }
 

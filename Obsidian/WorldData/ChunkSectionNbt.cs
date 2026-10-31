@@ -3,6 +3,7 @@ using Obsidian.API.Utilities;
 using Obsidian.ChunkData;
 using Obsidian.Nbt;
 using Obsidian.Registries;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 
 namespace Obsidian.WorldData;
@@ -196,9 +197,15 @@ internal static class ChunkSectionNbt
 /// </summary>
 internal static class BlockStateNbt
 {
-    public static IBlock Read(INbtTag tag)
+    public static IBlock Read(INbtTag tag) => TryRead(tag, true, out var block) ? block : BlocksRegistry.Air;
+
+    // Vanilla's current codec keeps an unknown or malformed state absent instead of replacing it with air.
+    public static bool TryRead(INbtTag tag, [NotNullWhen(true)] out IBlock? block) => TryRead(tag, false, out block);
+
+    private static bool TryRead(INbtTag tag, bool allowLegacy, [NotNullWhen(true)] out IBlock? block)
     {
-        if (tag is NbtCompound compound && compound.Count == 1 && compound.TryGetTag("", out var wrapped))
+        if (allowLegacy && tag is NbtCompound compound && compound.Count == 1
+            && compound.TryGetTag("", out var wrapped))
             tag = wrapped;
 
         string? name = null;
@@ -209,18 +216,37 @@ internal static class BlockStateNbt
         }
         else if (tag is NbtCompound state)
         {
-            name = state.TryGetTagValue<string>("id", out var id) ? id
-                : state.TryGetTagValue<string>("Name", out var legacy) ? legacy : null;
+            if (state.TryGetTagValue<string>("id", out var id))
+            {
+                name = id;
+            }
+            else if (allowLegacy && state.TryGetTagValue<string>("Name", out var legacy))
+            {
+                name = legacy;
+            }
+
             if (state.TryGetTag<NbtCompound>("properties", out var values)
-                || state.TryGetTag<NbtCompound>("Properties", out values))
+                || allowLegacy && state.TryGetTag<NbtCompound>("Properties", out values))
             {
                 properties = values.Where(entry => entry.Value is NbtTag<string>)
                     .ToDictionary(entry => entry.Key, entry => ((NbtTag<string>)entry.Value).Value!);
             }
         }
 
-        return name is not null && BlockStateProperties.TryGetState(name, properties, out var block)
-            ? block : BlocksRegistry.Air;
+        block = null;
+        if (name is null || !BlockStateProperties.TryGetState(name, allowLegacy ? properties : null, out block))
+            return false;
+
+        if (!allowLegacy && properties is not null)
+        {
+            // Vanilla keeps the valid properties when another property's value cannot be decoded.
+            foreach (var (key, value) in properties)
+            {
+                block = block.WithProperty(key, value);
+            }
+        }
+
+        return true;
     }
 
     public static INbtTag Write(IBlock block, string name = "")

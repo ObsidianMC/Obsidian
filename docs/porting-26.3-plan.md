@@ -397,7 +397,9 @@ pistons.
 
 1. **New blocks and their behaviour:**
    - golden dandelion and note block trumpets;
-   - the sulfur family, potent sulfur gas and geysers, and sulfur spikes;
+   - the sulfur family, potent sulfur gas and geysers, and sulfur spikes — implemented with the limits in
+     [known gaps](known-gaps.md#263-blocks). `VanillaSulfurBlocks` replays the RCON sulfur scenarios and Java sulfur
+     probes, recorded together with `CaptureFixtures=sulfur`;
    - poplar wood, wool and concrete stairs/slabs, colored leaves, and the straw bed with its own sleep rules.
 2. **New entities:**
    - the Sulfur Cube, with archetypes, absorbing blocks, shearing, splitting, buckets and dispensers;

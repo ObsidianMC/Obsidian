@@ -54,6 +54,8 @@ internal static class PlacementBehaviors
     internal static IBlockBehavior LecternBlock => HorizontalOpposite;
     internal static IBlockBehavior ObserverBlock => Observer;
     internal static IBlockBehavior PistonBaseBlock => Piston;
+    internal static IBlockBehavior PotentSulfurBlock { get; } = new PotentSulfurBlockBehavior();
+    internal static IBlockBehavior SpeleothemBlock { get; } = new SulfurSpikeBehavior();
     internal static IBlockBehavior RedstoneLampBlock => Lamp;
     internal static IBlockBehavior RepeaterBlock => Repeater;
     internal static IBlockBehavior LeavesBlock => Leaves;

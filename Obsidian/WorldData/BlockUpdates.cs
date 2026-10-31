@@ -225,7 +225,13 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
             return vanilla;
         // A vanilla class's updateShape override, found from the class that declares it.
         if (BlocksRegistry.GetShapeUpdateBehavior(state.RegistryId) is IShapeUpdateBehavior owner)
+        {
+            // The shared declaration also owns dripstone, whose shape rules still use the generic pass.
+            if (owner is SulfurSpikeBehavior && !state.Is(BlockIds.SulfurSpike))
+                return null;
+
             return owner.UpdateShape(this, position, state, direction, neighborPosition, neighbor) ?? state;
+        }
 
         if (!BlockBehaviors.TryEnter(state, out var behavior, out var call))
             return null;

@@ -21,6 +21,7 @@ internal static class ScenarioCaptures
     public const string Redstone = "redstone";
     public const string Fluids = "fluids";
     public const string Daylight = "daylight";
+    public const string Sulfur = "sulfur";
 
     private const string Symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -44,7 +45,7 @@ internal static class ScenarioCaptures
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
-    public static readonly string[] All = [Redstone, Fluids, Daylight];
+    public static readonly string[] All = [Redstone, Fluids, Daylight, Sulfur];
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -78,10 +79,26 @@ internal static class ScenarioCaptures
         """;
 
     public static async Task RunAsync(VanillaServer server, string assetsDirectory,
-        IReadOnlyCollection<string> fixtures)
+        IReadOnlyCollection<string> fixtures, IReadOnlyCollection<string>? cases = null)
     {
-        await using var vanilla = await ScenarioServer.StartAsync(server);
+        if (cases is not null && (fixtures.Count != 1 || !fixtures.Contains(Sulfur)))
+            throw new ArgumentException("Scenario case selection currently requires CaptureFixtures=sulfur.");
+
+        if (fixtures.Contains(Sulfur) && cases is null)
+        {
+            await FixtureDumper.DumpSulfurAsync(server, Path.Combine(assetsDirectory, "sulfur_fixtures.json"));
+        }
+
+        await using var vanilla = await ScenarioServer.StartAsync(server,
+            fixtures.Contains(Sulfur) ? "test-seed" : null);
         await PrepareAsync(vanilla);
+
+        if (fixtures.Contains(Sulfur))
+        {
+            var path = Path.Combine(assetsDirectory, "sulfur_scenarios.json");
+            await CaptureFileAsync(path, server.Version, ScenarioSulfurCaptures.Notes,
+                root => ScenarioSulfurCaptures.CaptureAsync(vanilla, root, cases));
+        }
 
         if (fixtures.Contains(Redstone))
         {

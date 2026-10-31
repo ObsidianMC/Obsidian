@@ -530,6 +530,40 @@ Offers come from the 26.3 trade sets in vanilla's draw order (see `TradeFixtures
 - Plugins can't add trades or trade sets yet.
 - Gossip and Hero of the Village discounts (an offer's special price) aren't applied.
 
+## 26.3 blocks
+
+**Status:** Phase 6 step 1's sulfur slice is implemented. The remaining block groups need their own captures and
+implementation PRs:
+
+- Golden dandelion interactions and persisted age locking, including stopping aging.
+- Note block trumpet instrument selection and playback.
+- Poplar wood behavior, wool and concrete stairs/slabs, colored leaves and the straw bed's sleep rules. Some of
+  these already inherit generic block-family behavior; that is not a completed parity audit. Poplar sapling growth
+  is tracked separately below.
+
+Sulfur, chiseled/polished sulfur and sulfur bricks use the generated properties, sounds, shapes and loot. Their
+stairs, slabs and walls share the existing placement and waterlogging APIs. Potent sulfur validates its water and
+heat source, saves its countdown, times periodic eruptions with positional random, applies gas nausea and launches
+entities. Block events start the vanilla client's geyser particles and sound loop; ambient bubbles and gas particles
+are client behavior. Sulfur spikes support placement, shaping, delayed support loss, random growth, falling,
+shattering and fast-trident breakage. `VanillaSulfurBlocks` replays `sulfur_scenarios.json` and `sulfur_fixtures.json`;
+the latter is recorded by `SulfurFixtures.java` through `CaptureFixtures=sulfur`.
+
+Remaining sulfur limits:
+
+- Falling spikes use the shared simplified falling-block flight and collision implementation. Captures cover
+  support-loss timing, shattering, raw impact damage and vertical sand contacts with full/partial floors and a
+  moving piston. General horizontal flight and per-tick spike trajectories remain unaudited. Falling
+  entities do not yet persist the spike's damage multiplier. Helmet-specific damage reduction and durability loss
+  for `damages_helmet` damage sources are not implemented in the shared combat path.
+- Tridents respect the projectile-breaking and mob-griefing game rules and reject adventure/spectator owners.
+  Adventure-mode projectile `can_break` predicates are not evaluated yet.
+- Gas uses the existing entity eye-height implementations; remaining species/pose eye-height differences belong
+  to the entity behavior work.
+
+**Where to start:** add cases to the two sulfur captures before extending these behaviors. The remaining block
+groups need separate scenario references. Sulfur cubes and cushions remain Phase 6 step 2 work.
+
 ## Entity behavior beyond 26.3 metadata
 
 **Status:** metadata layouts match the 26.3 fixture; the following behavior remains open.

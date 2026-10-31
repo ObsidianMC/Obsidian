@@ -1,6 +1,6 @@
 # Vanilla scenario captures
 
-The redstone, fluid and daylight detector parity tests replay scenarios recorded tick by tick on a headless vanilla
+The redstone, fluid, daylight detector and sulfur parity tests replay scenarios recorded on a headless vanilla
 server. Each fixture in `Obsidian.Tests/Assets` is its own input: it holds every scenario's definition, and a capture
 replaces only what vanilla produced.
 
@@ -10,24 +10,79 @@ replaces only what vanilla produced.
   capture records the checkpoints.
 - `daylight_detector.json` (`DaylightDetectorTests`) defines the clock times to sample; the capture records the
   readings.
+- `sulfur_scenarios.json` (`VanillaSulfurBlocks`) defines setup, actions, watched positions and sampling intervals.
+  It records full block states and potent sulfur countdowns at absolute game times, including elapsed ticks across
+  save/restart actions. Its world seed is `test-seed`. Cases with `recordEntities` also sample live falling blocks,
+  damaging falling blocks and total item counts (`item` selects the item; sulfur spikes by default).
+  Extra `sampleTicks` check the interval before landing
+  as well as the completed fall, so immediate disappearance, missing drops and endlessly falling entities fail.
+  `recordProjectile` samples embedded projectiles; projectile actions exercise collision handling through the live
+  entity tick. RCON samples do not record sound effects.
+  Projectile actions can supply `inBlockState` to load an embedded projectile in vanilla's format. The `*_release_*`
+  references cover release into short grass, retention near a solid replacement, and the saved-state equality guard
+  when the current block has no collision. Each case covers arrows, spectral arrows and tridents.
+  `noGravity: false` enables gravity for a projectile action. With `recordProjectileMotion`, checkpoints record all
+  three position and velocity components plus the saved `life` counter. The `*_release_gravity` references compare
+  these values exactly on the release tick and subsequent flight ticks.
+  `spawnFalling` supplies a block, position and motion; `recordFallingMotion` records its height, vertical velocity
+  and grounded flag. The sand references cover a full floor, a partial floor and waiting for a moving piston to
+  clear. `withoutBlockEntity` validates the absence of a block entity after vanilla's bare moving-piston placement;
+  the replay removes Obsidian's automatically created default entity to reproduce that fixture's block view.
+  The dripstone column references cover shape changes on adding and removing tips in both vertical directions.
+- `sulfur_fixtures.json` (also `VanillaSulfurBlocks`) holds bounded Java probes for sulfur placement, growth and
+  subsequent random draws, gas source/visibility, geyser force and fall-distance handling, trident thresholds and
+  raw falling-spike damage. `Java/SulfurFixtures.java`, registered in `FixtureDumper.cs`, invokes vanilla's routines
+  against each case's block view. Growth writes are recorded without neighbor notifications; the RCON scenarios
+  separately cover the live update path. The impact target records the raw damage passed by vanilla's falling
+  entity, before armor and other victim-specific mitigation.
+  The `review_landing_*` probes instead supply a resolved ground contact and invoke vanilla's falling entity tick;
+  they record removal, item drops and level events for every combination of `entity_drops`, `DropItem`, `CancelDrop`
+  and `Silent`. The replay checks both item totals and the clients' landing-effect packets.
+  The `shape_*` probes record vanilla's returned shape and scheduled water ticks for wet and dry panes, bars,
+  leaves, sulfur spikes and pointed dripstone. Each reference is replayed through both the notification pipeline
+  and the fluid shape-update path, including cases where a registered behavior returns an unchanged state.
+  The `arrow_saved_state_*` probes record the `BlockState.CODEC` NBT representation used by vanilla's arrow saves.
+  `ProjectilePersistence.VanillaBlockStateSurvivesRoundTripAndReleases` checks that the captured `inBlockState`
+  survives loading and saving before the block changes. Default states are strings in 26.3; non-default states are
+  `id`/`properties` compounds. These checks require the saved field, independently of collision-based release.
+  The `arrow_release_*` Java probes load through vanilla's `TagValueInput` and run `AbstractArrow.tick` with gravity
+  enabled in an empty block view. They record decoded states (including decode failure versus valid air), position,
+  velocity, embedded state and `life`. The entity's random is seeded after construction/loading; its first three
+  floats and next integer are captured. `ProjectilePersistence.ReplayVanillaReleaseTransition` supplies the same
+  seed and checks exact vectors and the next draw for all three projectile types. The probe suppresses weather and
+  unrelated block-inside effects; it retains vanilla's release transition and nearby collision query.
 
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.
+
+`VanillaSulfurBlocks.ReplayCapturedScenarioFixture` and `ReplayCapturedProbeFixture` each report one test for
+their entire fixture. The probe replay includes projectile state and seeded release cases for all three projectile
+types, plus both shape-update paths. Each replay collects case-labelled failures and asserts once after all cases
+have run. Obsidian-only countdown, packet and projectile save/load checks use three small tables, each in one test.
 
 ## Re-recording
 
 ```sh
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=redstone+daylight
+
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur
+
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur -p:CaptureCases=spike_shatters_after_falling+review_spike_pending_fall_keeps_frustum
 ```
 
 This uses the server of the Minecraft version `Obsidian.csproj` targets, from the shared vanilla cache (see
-[vanilla captures](vanilla-captures.md#the-vanilla-cache)), and needs Java 25. All three fixtures take under a minute.
+[vanilla captures](vanilla-captures.md#the-vanilla-cache)), and needs Java 25. The sulfur capture takes about 30 seconds.
 To add a scenario, add its definition with placeholder checkpoints (the redstone capture records as many ticks as the
 scenario has checkpoints) and capture again; the tests pick it up.
 
+For sulfur, `CaptureCases` accepts exact scenario names separated by `+`. It replaces only those cases' checkpoints
+and skips the Java probes. Other scenarios retain their stored absolute times and are replayed independently.
+`SulfurFixtures.java` also accepts an optional second argument of exact `+`-separated probe names, when run directly
+with the vanilla server and libraries on the classpath, to re-record only new or changed Java cases.
+
 The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory>
-<scratch directory> <test assets directory> [redstone+fluids+daylight]`.
+<scratch directory> <test assets directory> [redstone+fluids+daylight+sulfur] [sulfur case names]`.
 
 ## How it captures
 

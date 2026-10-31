@@ -48,6 +48,12 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateW
 
     int IBlockChangeWorld.GetRawBrightness(Vector position) => this.Fluids.GetRawBrightness(position);
 
+    IBlock? IBlockChangeWorld.UpdateShape(
+        Vector position, IBlock state, BlockFace face, Vector neighborPosition, IBlock neighbor) =>
+        BlocksRegistry.GetShapeUpdateBehavior(state.RegistryId) is not null
+            ? this.BlockUpdates.UpdateShape(position, state, face, neighborPosition, neighbor)
+            : null;
+
     ValueTask IBlockChangeWorld.SetBlockAsync(Vector position, IBlock block) => this.WriteAsync(position, block, BlockUpdateFlags.All);
 
     void IBlockChangeWorld.DropAndRemove(Vector position, IBlock block, bool playEffect)

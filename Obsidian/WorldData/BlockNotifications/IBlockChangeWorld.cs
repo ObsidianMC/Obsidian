@@ -17,6 +17,10 @@ internal interface IBlockChangeWorld
     /// <summary>The raw light at a position, used by vanilla MushroomBlock survival checks.</summary>
     int GetRawBrightness(Vector position);
 
+    /// <summary>Runs a live registered shape behavior; null leaves the generic shape pass responsible.</summary>
+    IBlock? UpdateShape(
+        Vector position, IBlock state, BlockFace face, Vector neighborPosition, IBlock neighbor) => null;
+
     /// <summary>
     /// Commits a block and queues its notifications. Used for the state changes shape updates produce.
     /// </summary>

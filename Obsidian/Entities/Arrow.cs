@@ -6,6 +6,8 @@ using Obsidian.WorldData;
 using Obsidian.Nbt;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
+using Obsidian.API.Blocks;
+using Obsidian.API.World.Generator.RandomSources;
 
 [MinecraftEntity("minecraft:arrow")]
 public partial class Arrow : Entity
@@ -25,6 +27,9 @@ public partial class Arrow : Entity
     private readonly HashSet<int> piercedEntities = [];
     private Guid ownerUuid;
     protected int age;
+    private int inGroundLife;
+
+    internal IRandomSource ReleaseRandom { get; set; } = new LegacyRandomSource(System.Random.Shared.NextInt64());
 
     /// <summary>
     /// The block an arrow entered when it stopped at <paramref name="stop"/> (on a block boundary, moving by
@@ -74,6 +79,7 @@ public partial class Arrow : Entity
     }
 
     protected bool embedded;
+    private IBlock? embeddedBlockState;
 
     public override void Write(INetStreamWriter writer)
     {
@@ -131,7 +137,8 @@ public partial class Arrow : Entity
         if (Level is not AbstractLevel level || !level.IsMobTicking(Position))
             return;
 
-        if (++age >= 1200 || Position.Y < -128)
+        ++age;
+        if (Position.Y < -128)
         {
             await RemoveAsync();
             return;
@@ -142,12 +149,43 @@ public partial class Arrow : Entity
 
         if (embedded)
         {
-            await PickupAsync();
+            // Vanilla compares the saved hit state with the arrow's current cell, then checks nearby collisions.
+            var clearance = new BoundingBox(this.Position - new VectorD(0.06), this.Position + new VectorD(0.06));
+            var current = level.BlockUpdates.GetBlock((Vector)this.Position.Floor());
+            var anchored = this.embeddedBlockState?.IsSameState(current) == true
+                || new MobTerrain(level).GetCollisions(clearance).Any(shape =>
+                    shape.Max.X > clearance.Min.X && shape.Min.X < clearance.Max.X
+                    && shape.Max.Y > clearance.Min.Y && shape.Min.Y < clearance.Max.Y
+                    && shape.Max.Z > clearance.Min.Z && shape.Min.Z < clearance.Max.Z);
+            if (anchored)
+            {
+                if (++this.inGroundLife >= 1200)
+                {
+                    await this.RemoveAsync();
+                }
+                else
+                {
+                    await PickupAsync();
+                }
+
+                return;
+            }
+
+            // Vanilla startFalling consumes one float per axis, resets ground life and ends this tick.
+            this.embedded = false;
+            this.Motion = new VectorD(
+                this.Motion.X * (this.ReleaseRandom.NextFloat() * 0.2f),
+                this.Motion.Y * (this.ReleaseRandom.NextFloat() * 0.2f),
+                this.Motion.Z * (this.ReleaseRandom.NextFloat() * 0.2f));
+            this.inGroundLife = 0;
+            this.PacketBroadcaster.QueuePacketToLevelInRange(this.Level, this.Position,
+                new SetEntityDataPacket { EntityId = this.EntityId, Entity = this });
             return;
         }
 
         var terrain = new MobTerrain(Level);
-        var blockFraction = FindBlockHitFraction(terrain);
+        var blockHit = this.FindBlockHit(terrain);
+        var blockFraction = blockHit?.Fraction ?? 1;
         var (target, fraction) = FindEntityHit(blockFraction);
         var next = Position + Motion * fraction;
         if (!level.TryMoveEntity(this, Position, next))
@@ -163,35 +201,40 @@ public partial class Arrow : Entity
             return;
         }
 
-        if (fraction < 1)
+        if (blockHit is { } collision)
         {
-            await HitBlockAsync(level);
+            await this.HitBlockAsync(level, collision.Hit);
             return;
         }
 
         var water = terrain.GetBlock((Vector)Position.Floor())?.RegistryId == BlockIds.Water;
+        // Vanilla flight applies float inertia before double-precision gravity.
         Motion *= GetDrag(water);
         if (!NoGravity)
-            Motion -= new VectorD(0, 0.05f, 0);
+            Motion -= new VectorD(0, 0.05, 0);
     }
 
     /// <summary>
-    /// The fraction of this tick's motion the arrow travels before it meets a block (1 when it meets none).
+    /// The nearest collision, retaining the block and face even when a shape ends inside its block's cell.
     /// </summary>
-    private double FindBlockHitFraction(MobTerrain terrain)
+    private (double Fraction, BlockShapeHit Hit)? FindBlockHit(MobTerrain terrain)
     {
         var end = Position + Motion;
         var min = VectorD.Min(Position, end) - new VectorD(0.3f);
         var max = VectorD.Max(Position, end) + new VectorD(0.3f);
         var bounds = new BoundingBox(min, max);
-        var fraction = 1d;
-        foreach (var shape in terrain.GetCollisions(bounds))
+        (double Fraction, BlockShapeHit Hit)? nearest = null;
+        foreach (var (shape, block) in terrain.GetBlockCollisions(bounds))
         {
-            if (MobTerrain.RayIntersection(shape, Position, Motion) is double hit)
-                fraction = Math.Min(fraction, hit);
+            var local = shape.OffsetBy(-(VectorD)block);
+            var hit = BlockShapeRaycast.Clip([local], block, VectorD.Zero, this.Position, this.Motion);
+            if (hit is { } collision && (nearest is null || collision.Distance < nearest.Value.Fraction))
+            {
+                nearest = (collision.Distance, collision.Hit);
+            }
         }
 
-        return fraction;
+        return nearest;
     }
 
     /// <summary>
@@ -399,7 +442,7 @@ public partial class Arrow : Entity
         }
     }
 
-    private async ValueTask HitBlockAsync(AbstractLevel level)
+    private async ValueTask HitBlockAsync(AbstractLevel level, BlockShapeHit collision)
     {
         level.EmitGameEvent(MobGameEvent.ProjectileLand, Position, this, Owner);
         if (Type is EntityType.ShulkerBullet or EntityType.WitherSkull)
@@ -408,14 +451,36 @@ public partial class Arrow : Entity
             return;
         }
 
+        this.embeddedBlockState = level.BlockUpdates.GetBlock(collision.Position);
+
         // Like vanilla's onHitBlock, a block the arrow hits reacts before the arrow embeds.
         if (Level is AbstractLevel hitLevel)
         {
-            var (hitBlock, hitFace) = EnteredBlockFace(Position, Motion);
+            var hitBlock = collision.Position;
+            var hitFace = collision.Face;
             await hitLevel.OnProjectileHitBlockAsync(hitBlock, Position, hitFace);
+            if (this.Type == EntityType.Trident
+                && hitLevel.BlockUpdates.GetBlock(hitBlock).Is(BlockIds.SulfurSpike))
+            {
+                var allowed = hitLevel.LevelData.GetBooleanRule("projectiles_can_break_blocks")
+                    && this.Owner is not IPlayer { GameMode: GameMode.Adventure or GameMode.Spectator }
+                    && (this.Owner is null or IPlayer || hitLevel.LevelData.GetBooleanRule("mob_griefing"));
+                if (WorldData.SulfurSpikeBehavior.BreaksFromTrident(this.Motion.Magnitude, allowed))
+                {
+                    hitLevel.DestroyBlock(hitBlock, dropItems: true, this.Owner);
+                }
+            }
         }
 
         embedded = true;
+        // Vanilla retreats by 0.05 along each moving axis before applying its nearby collision release check.
+        var embeddedPosition = this.Position
+            - new VectorD(Math.Sign(Motion.X), Math.Sign(Motion.Y), Math.Sign(Motion.Z)) * 0.05f;
+        if (level.TryMoveEntity(this, this.Position, embeddedPosition))
+        {
+            this.Position = embeddedPosition;
+        }
+
         Crit = false;
         Motion = VectorD.Zero;
         var packet = new SetEntityDataPacket { EntityId = EntityId, Entity = this };
@@ -424,7 +489,7 @@ public partial class Arrow : Entity
 
     protected virtual ValueTask OnImpactAsync(IEntity? target, bool damaged) => RemoveAsync();
 
-    protected virtual double GetDrag(bool water) => water ? 0.6 : 0.99;
+    protected virtual double GetDrag(bool water) => water ? 0.6f : 0.99f;
 
     private void DropBlockedArrowItem()
     {
@@ -500,7 +565,11 @@ public partial class Arrow : Entity
         var ownerTag = uuid == Guid.Empty ? null : new NbtArray<int>("Owner", EntityNbt.UuidToInts(uuid));
         tag.SetOrRemove("Owner", ownerTag);
         tag.Set(new NbtTag<int>("ObsidianLife", age));
+        tag.Set(new NbtTag<short>("life", (short)this.inGroundLife));
         tag.Set(new NbtTag<bool>("inGround", embedded));
+        tag.Remove("ObsidianEmbeddedBlock");
+        tag.SetOrRemove("inBlockState", this.embeddedBlockState is { } state
+            ? BlockStateNbt.Write(state, "inBlockState") : null);
         tag.Set(new NbtTag<double>("damage", Damage));
         tag.Set(new NbtTag<int>("ObsidianEffect", Effect));
         tag.Set(new NbtTag<int>("ObsidianEffectDuration", EffectDuration));
@@ -523,6 +592,9 @@ public partial class Arrow : Entity
             age = Math.Clamp(life, 0, 1200);
 
         embedded = tag.TryGetBool("inGround", out var ground) && ground;
+        this.embeddedBlockState = tag.TryGetTag("inBlockState", out var state)
+            && BlockStateNbt.TryRead(state, out var decoded) ? decoded : null;
+        this.inGroundLife = tag.TryGetNumber<short>("life", out var groundLife) ? groundLife : 0;
 
         if (tag.TryGetNumber<double>("damage", out var damage) && double.IsFinite(damage))
             Damage = (float)Math.Clamp(damage, 0, float.MaxValue);
