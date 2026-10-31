@@ -42,6 +42,8 @@ public sealed class VanillaMoreBlocks(ITestOutputHelper output)
         await BlockUpdates.AddChunksAsync(world);
         foreach (var placement in probe.GetProperty("setup").EnumerateArray())
         {
+            var position = Position(placement.GetProperty("pos"));
+            await EnsureChunk(context, position.X >> 4, position.Z >> 4);
             world.BlockUpdates.SetBlock(Position(placement.GetProperty("pos")),
                 Parse(placement.GetProperty("state").GetString()!),
                 BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);
@@ -49,6 +51,12 @@ public sealed class VanillaMoreBlocks(ITestOutputHelper output)
 
         var origin = Position(probe.GetProperty("origin"));
         var kind = probe.GetProperty("kind").GetString();
+        if (kind == "block_event_range")
+        {
+            await ReplayBlockEventRange(probe, context);
+            return;
+        }
+
         if (kind == "placement")
         {
             var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Placer");
@@ -262,9 +270,80 @@ public sealed class VanillaMoreBlocks(ITestOutputHelper output)
         Assert.Equal(probe.GetProperty("nextRandom").GetInt32(), world.GrowthRandom.NextInt());
     }
 
+    private static async Task EnsureChunk(RealServerContext context, int x, int z)
+    {
+        if (context.World.GetLoadedChunk(x, z) is not null)
+            return;
+
+        var chunk = new Chunk(x, z);
+        chunk.SetChunkStatus(ChunkGenStage.full);
+        context.World.LoadRegionByChunk(x, z).SetChunk(chunk);
+        await context.World.GetChunkAsync(x, z, scheduleGeneration: false);
+    }
+
+    private static void AddRangeSources(JsonElement probe, RealServerContext context)
+    {
+        foreach (var source in probe.GetProperty("sources").EnumerateArray())
+        {
+            var x = source.GetProperty("chunk")[0].GetInt32();
+            var z = source.GetProperty("chunk")[1].GetInt32();
+            var radius = source.GetProperty("radius").GetInt32();
+            var kind = source.GetProperty("type").GetString();
+            if (kind == "player")
+            {
+                context.Server.Configuration.SimulationDistance = checked((byte)radius);
+                var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World,
+                    $"Range-{x}-{z}", new VectorD(x * 16 + 8, 80, z * 16 + 8));
+                context.World.Players.TryAdd(player.Uuid, player);
+            }
+            else
+            {
+                context.World.AddChunkTicket(x, z, radius, ticking: kind != "loaded");
+            }
+        }
+    }
+
+    private static async Task ReplayBlockEventRange(JsonElement probe, RealServerContext context)
+    {
+        AddRangeSources(probe, context);
+        var world = context.World;
+        var chunks = probe.GetProperty("chunks").EnumerateArray().ToArray();
+        var samples = probe.GetProperty("samples").EnumerateArray().ToArray();
+        var dispatched = new bool[chunks.Length];
+        for (var index = 0; index < chunks.Length; index++)
+        {
+            var x = chunks[index][0].GetInt32();
+            var z = chunks[index][1].GetInt32();
+            await EnsureChunk(context, x, z);
+            var position = new Vector(x * 16, 72, z * 16);
+            world.BlockUpdates.SetBlock(position, BlocksRegistry.Chest,
+                BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);
+            Assert.Equal(samples[index].GetProperty("blockTicking").GetBoolean(), world.IsBlockTicking(position));
+            Assert.Equal(samples[index].GetProperty("entityTicking").GetBoolean(),
+                world.IsMobTicking((VectorD)position));
+            var capturedIndex = index;
+            world.QueueBlockEvent(position, BlockIds.Chest, 1, 0, () =>
+            {
+                dispatched[capturedIndex] = true;
+                return ValueTask.FromResult(true);
+            });
+        }
+
+        // The actual tick also checks the predicate through its player simulation snapshot.
+        await world.DoWorldTickAsync();
+        Assert.Equal(samples.Select(sample => sample.GetProperty("blockTicking").GetBoolean()), dispatched);
+        Assert.Equal(samples.Count(sample => !sample.GetProperty("blockTicking").GetBoolean()),
+            world.PendingBlockEvents);
+    }
+
     private static async Task ReplayBlockEvents(JsonElement probe, RealServerContext context, Vector origin)
     {
         var world = context.World;
+        if (probe.TryGetProperty("sources", out _))
+        {
+            AddRangeSources(probe, context);
+        }
+
         var listener = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Listener",
             new VectorD(8, 80, 8));
         world.Players.TryAdd(listener.Uuid, listener);

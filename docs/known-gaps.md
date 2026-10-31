@@ -576,7 +576,11 @@ remains unsupported; a head without a custom sound is silent as in vanilla.
 
 Block events now share one insertion-ordered queue, deduplicated by position, block type, event ID and parameter.
 The phase runs after chunk/random ticks and before entities; it consumes events added while draining, validates
-the block type at dispatch, and retries events in inactive chunks on a later tick. Notes, normal/sticky pistons,
+the block type at dispatch, and retries events in inactive chunks on a later tick. Block-event eligibility includes
+vanilla's block-ticking fringe around players and ticking tickets, beyond entity ticking; loaded-only tickets do
+not activate it. Event packets and note sounds send immediately, in order with piston block updates. Container lid
+events carry the number of viewers of each physical block, including separate ender inventories and both double-
+chest halves. Notes, normal/sticky pistons,
 chest/trapped/copper chest lids (both halves), ender chest and shulker lids, sulfur geysers, gateway cooldowns and
 block-spawner resets use this phase. Native captures cover both note/piston orders, mixed duplicates, notification-
 queued playback during draining, every key field, replacement and inactive-chunk retry, plus the client event

@@ -114,7 +114,7 @@ public abstract partial class AbstractLevel
                 return false;
 
             var note = int.TryParse(block.GetProperty("note"), out var number) ? number : 0;
-            PacketBroadcaster.QueuePacketToLevelInRange(this, (VectorD)point, new SoundPacket
+            PacketBroadcaster.BroadcastToLevelInRange(this, (VectorD)point, new SoundPacket
             {
                 SoundLocation = instrument.Sound,
                 Category = SoundCategory.Records,

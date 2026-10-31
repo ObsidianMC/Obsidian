@@ -1,6 +1,6 @@
 {
   "version": "26.3",
-  "_notes": "MoreBlockFixtures.java records vanilla 26.3 routines against an explicit bounded block view. Placement calls getStateForPlacement and canSurvive on an already chosen block/sign variant. Shape outputs include scheduled block/fluid ticks; scheduled leaf distance and axe-provider outputs include the next seeded random draw. Door/trapdoor/gate use records sound IDs (their replay checks IDs and state, not pitch); placed_by records door upper halves. Note playback invokes playNote and triggerEvent and records trigger success, events, exact sound volume/pitch/seed and next random draw. Writes do not recursively notify neighbors in the probe; shape cases replay through Obsidian live notifications. One test replays the entire reference and reports all differing cases. Review lifecycle cases call the real ServerLevel.blockEvent and runBlockEvents routines with an initialized native event set, recording queue size, pre-phase output, final sound/event packets, exact seeds and next draw. Use-item cases call ServerPlayerGameMode.useItemOn with a survival player, empty advancement listeners, no entities obstructing placement, and the bounded write-backed level; they record the note counter, placed target state and remaining item count. Their neighbor notification effects are covered separately by shape probes. Shared block-event cases capture the native event set/drain, mixed note/piston ordering, all key fields, stale-block cancellation, inactive-chunk retry, and notifications that queue playback during draining. They record ordered sounds, full event keys and watched states. Gateway cooldown and spawner reset cases invoke their native producers; client-only lid/bell/gateway/spawner/geyser event forms use native block entity handlers. Only the opt-in mixed notification probe calls native note neighbor reactions on piston writes; unrelated updates remain suppressed. Mixed replay compares sound IDs/order and block movement, leaving existing exact note assertions unchanged.",
+  "_notes": "MoreBlockFixtures.java records vanilla 26.3 routines against an explicit bounded block view. Placement calls getStateForPlacement and canSurvive on an already chosen block/sign variant. Shape outputs include scheduled block/fluid ticks; scheduled leaf distance and axe-provider outputs include the next seeded random draw. Door/trapdoor/gate use records sound IDs (their replay checks IDs and state, not pitch); placed_by records door upper halves. Note playback invokes playNote and triggerEvent and records trigger success, events, exact sound volume/pitch/seed and next random draw. Writes do not recursively notify neighbors in the probe; shape cases replay through Obsidian live notifications. One test replays the entire reference and reports all differing cases. Review lifecycle cases call the real ServerLevel.blockEvent and runBlockEvents routines with an initialized native event set, recording queue size, pre-phase output, final sound/event packets, exact seeds and next draw. Use-item cases call ServerPlayerGameMode.useItemOn with a survival player, empty advancement listeners, no entities obstructing placement, and the bounded write-backed level; they record the note counter, placed target state and remaining item count. Their neighbor notification effects are covered separately by shape probes. Shared block-event cases capture the native event set/drain, mixed note/piston ordering, all key fields, stale-block cancellation, inactive-chunk retry, and notifications that queue playback during draining. They record ordered sounds, full event keys and watched states. Gateway cooldown and spawner reset cases invoke their native producers; client-only lid/bell/gateway/spawner/geyser event forms use native block entity handlers. Only the opt-in mixed notification probe calls native note neighbor reactions on piston writes; unrelated updates remain suppressed. Mixed replay compares sound IDs/order and block movement, leaving existing exact note assertions unchanged. Review range cases record native SimulationChunkTracker/ChunkLevel results, using DistanceManager player ticket levels, and run piston events at and beyond the block-ticking fringe. The replay checks loaded player/ticket borders outside and during the real world tick.",
   "cases": [
     {
       "name": "note_trumpet_0_air",
@@ -29701,6 +29701,336 @@
           ],
           "states": [
             "minecraft:note_block[instrument=harp,note=0,powered=false]"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "review_block_event_ticking_ranges",
+      "kind": "block_event_range",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [],
+      "sources": [
+        {
+          "type": "player",
+          "chunk": [
+            0,
+            0
+          ],
+          "radius": 5
+        },
+        {
+          "type": "ticking",
+          "chunk": [
+            20,
+            20
+          ],
+          "radius": 0
+        },
+        {
+          "type": "ticking",
+          "chunk": [
+            30,
+            30
+          ],
+          "radius": 2
+        },
+        {
+          "type": "loaded",
+          "chunk": [
+            40,
+            40
+          ],
+          "radius": 1
+        }
+      ],
+      "chunks": [
+        [
+          0,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          6,
+          0
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          -6,
+          -6
+        ],
+        [
+          7,
+          0
+        ],
+        [
+          20,
+          20
+        ],
+        [
+          21,
+          20
+        ],
+        [
+          21,
+          21
+        ],
+        [
+          22,
+          20
+        ],
+        [
+          32,
+          30
+        ],
+        [
+          33,
+          33
+        ],
+        [
+          34,
+          30
+        ],
+        [
+          40,
+          40
+        ],
+        [
+          41,
+          40
+        ]
+      ],
+      "samples": [
+        {
+          "level": 26,
+          "blockTicking": true,
+          "entityTicking": true
+        },
+        {
+          "level": 31,
+          "blockTicking": true,
+          "entityTicking": true
+        },
+        {
+          "level": 32,
+          "blockTicking": true,
+          "entityTicking": false
+        },
+        {
+          "level": 32,
+          "blockTicking": true,
+          "entityTicking": false
+        },
+        {
+          "level": 32,
+          "blockTicking": true,
+          "entityTicking": false
+        },
+        {
+          "level": 33,
+          "blockTicking": false,
+          "entityTicking": false
+        },
+        {
+          "level": 31,
+          "blockTicking": true,
+          "entityTicking": true
+        },
+        {
+          "level": 32,
+          "blockTicking": true,
+          "entityTicking": false
+        },
+        {
+          "level": 32,
+          "blockTicking": true,
+          "entityTicking": false
+        },
+        {
+          "level": 33,
+          "blockTicking": false,
+          "entityTicking": false
+        },
+        {
+          "level": 31,
+          "blockTicking": true,
+          "entityTicking": true
+        },
+        {
+          "level": 32,
+          "blockTicking": true,
+          "entityTicking": false
+        },
+        {
+          "level": 33,
+          "blockTicking": false,
+          "entityTicking": false
+        },
+        {
+          "level": 33,
+          "blockTicking": false,
+          "entityTicking": false
+        },
+        {
+          "level": 33,
+          "blockTicking": false,
+          "entityTicking": false
+        }
+      ]
+    },
+    {
+      "name": "review_piston_block_ticking_fringe",
+      "kind": "block_events",
+      "origin": [
+        96,
+        72,
+        0
+      ],
+      "sources": [
+        {
+          "type": "player",
+          "chunk": [
+            0,
+            0
+          ],
+          "radius": 5
+        }
+      ],
+      "setup": [
+        {
+          "pos": [
+            96,
+            72,
+            0
+          ],
+          "state": "minecraft:piston[facing=east,extended=false]"
+        },
+        {
+          "pos": [
+            95,
+            72,
+            0
+          ],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "watch": [
+        [
+          96,
+          72,
+          0
+        ]
+      ],
+      "actions": [
+        {
+          "action": "piston"
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 1,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.piston.extend",
+              "volume": 0.5,
+              "pitch": 0.78079355
+            }
+          ],
+          "events": [
+            {
+              "block": "minecraft:piston",
+              "id": 0,
+              "parameter": 5,
+              "pos": [
+                96,
+                72,
+                0
+              ]
+            }
+          ],
+          "states": [
+            "minecraft:piston[extended=true,facing=east]"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "review_piston_outside_block_ticking",
+      "kind": "block_events",
+      "origin": [
+        112,
+        72,
+        0
+      ],
+      "sources": [
+        {
+          "type": "player",
+          "chunk": [
+            0,
+            0
+          ],
+          "radius": 5
+        }
+      ],
+      "setup": [
+        {
+          "pos": [
+            112,
+            72,
+            0
+          ],
+          "state": "minecraft:piston[facing=east,extended=false]"
+        },
+        {
+          "pos": [
+            111,
+            72,
+            0
+          ],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "watch": [
+        [
+          112,
+          72,
+          0
+        ]
+      ],
+      "actions": [
+        {
+          "action": "piston"
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 1,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 1,
+          "sounds": [],
+          "events": [],
+          "states": [
+            "minecraft:piston[extended=false,facing=east]"
           ]
         }
       ]

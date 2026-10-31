@@ -76,7 +76,16 @@ replaces only what vanilla produced.
   colored shulkers), bells, gateways, spawners and geysers. Gateway cooldown and spawner delay-reset cases also
   invoke their native producers. Mixed cases check sound IDs/order and movement; exact piston pitch/random draws
   are outside this queue change, while the existing note cases retain their exact seed/pitch assertions. The bounded
-  level suppresses advancement/stat delivery and unrelated neighbor updates. These are native routine captures, rather than an RCON interaction or sleep lifecycle capture.
+  level suppresses advancement/stat delivery and unrelated neighbor updates. These are native routine captures,
+  rather than an RCON interaction or sleep lifecycle capture.
+
+  The `review_block_event_ticking_ranges` case records `SimulationChunkTracker` and `ChunkLevel` results for player,
+  ticking-ticket and loaded-only sources, including the block/entity boundary and diagonal corners. Player ticket
+  levels come from `DistanceManager.getPlayerTicketLevel`. Its replay checks the predicate outside the tick and
+  dispatches real events through the tick's player snapshot. `review_piston_block_ticking_fringe` and
+  `review_piston_outside_block_ticking` run the native event drain against that tracker: the first extends a piston
+  in chunk (6,0) powered from (5,0), while (7,0) retains its pending event. All three remain in the same reference
+  and `VanillaMoreBlocks.ReplayConstructionAndMusicReference` test.
 
 - `structure_pieces.json` (`VanillaStructureSaves.StartsSaveLikeVanilla`) holds what vanilla 26.3 saves of
   structure starts (`StructureStart.createTag`), from `Java/StructurePieceFixtures.java`, which runs a dedicated

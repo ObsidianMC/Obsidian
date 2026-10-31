@@ -85,7 +85,22 @@ internal sealed class TestClient(IServer server, bool connected = true) : IClien
 
 internal sealed class RecordingPacketBroadcaster : IPacketBroadcaster
 {
+    private readonly List<Action> queuedRangePackets = [];
+
     public IServer? Server { get; set; }
+
+    // Opt in when checking ordering against immediate block updates, without a timer or background service.
+    public bool DeferRangePackets { get; set; }
+
+    public void FlushRangePackets()
+    {
+        var pending = this.queuedRangePackets.ToArray();
+        this.queuedRangePackets.Clear();
+        foreach (var send in pending)
+        {
+            send();
+        }
+    }
 
     public void Broadcast(IClientboundPacket packet, params int[] excludedIds) =>
         this.Deliver(this.Server?.OnlinePlayers.Values.OfType<IClientPlayer>() ?? [], packet, excludedIds: excludedIds);
@@ -112,12 +127,23 @@ internal sealed class RecordingPacketBroadcaster : IPacketBroadcaster
     public void QueuePacketToLevel(ILevel toLevel, IClientboundPacket packet, params int[] excludedIds) =>
         this.Deliver(toLevel.Players.Values.OfType<IClientPlayer>(), packet, excludedIds: excludedIds);
 
-    public void QueuePacketToLevelInRange(ILevel level, VectorD location, IClientboundPacket packet, params int[] excludedIds)
+    public void QueuePacketToLevelInRange(ILevel level, VectorD location, IClientboundPacket packet,
+        params int[] excludedIds)
     {
         if (level is not AbstractLevel concrete)
             return;
 
-        this.Deliver(concrete.GetPlayersInRange(location, concrete.Configuration.EntityBroadcastRangePercentage).OfType<IClientPlayer>(), packet, excludedIds: excludedIds);
+        // Production selects recipients at enqueue time, then sends this batch after immediate broadcasts.
+        var players = concrete.GetPlayersInRange(location, concrete.Configuration.EntityBroadcastRangePercentage)
+            .OfType<IClientPlayer>().ToArray();
+        if (this.DeferRangePackets)
+        {
+            this.queuedRangePackets.Add(() => this.Deliver(
+                players.Where(player => player.Level == level), packet, excludedIds: excludedIds));
+            return;
+        }
+
+        this.Deliver(players, packet, excludedIds: excludedIds);
     }
 
     public void QueuePacket(IClientboundPacket packet, params int[] excludedIds) =>
