@@ -1,5 +1,8 @@
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Generators.Terrain.Carvers;
+using System.Collections.Concurrent;
+using System.Collections.Frozen;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 
 namespace Obsidian.WorldData.Generators.Terrain;
@@ -7,6 +10,9 @@ namespace Obsidian.WorldData.Generators.Terrain;
 /// <summary>26.3's terrain-local mask generation and fluid-aware mask application.</summary>
 internal static class TerrainCarvers
 {
+    // What every chunk of a generator reads alike, read once per generator.
+    private static readonly ConditionalWeakTable<TerrainGenerator, CarverData> data = new();
+
     public static void Apply(TerrainContext terrain, Func<int, int, IReadOnlyList<string>> carversAt)
     {
         var context = GenerateMask(terrain, carversAt);
@@ -16,7 +22,7 @@ internal static class TerrainCarvers
     public static CarvingContext GenerateMask(TerrainContext terrain, Func<int, int, IReadOnlyList<string>> carversAt)
     {
         var context = new CarvingContext(terrain);
-        var configurations = new Dictionary<string, CarverConfiguration>();
+        var shared = data.GetValue(terrain.Generator, static generator => new CarverData(generator));
         var cave = new CaveWorldCarver();
         var canyon = new CanyonWorldCarver();
         var random = new WorldgenRandom(new LegacyRandomSource(0L));
@@ -30,13 +36,7 @@ internal static class TerrainCarvers
 
                 for (var index = 0; index < sources.Count; index++)
                 {
-                    var id = sources[index];
-
-                    if (!configurations.TryGetValue(id, out var configuration))
-                    {
-                        configuration = CarverConfiguration.Read(terrain.Generator.Data.Read("carver", id));
-                        configurations.Add(id, configuration);
-                    }
+                    var configuration = shared.Configuration(sources[index]);
 
                     // Every carver starts a fresh large-feature sequence, offset by its biome-list index.
                     random.SetLargeFeatureSeed(unchecked(terrain.Generator.Seed + index), sourceX, sourceZ);
@@ -64,37 +64,32 @@ internal static class TerrainCarvers
 
     public static void ApplyMask(TerrainContext terrain, CarvingMask mask)
     {
-        var uncarvable = new HashSet<int>();
-        ReadBlockTag(terrain.Generator.Data, "minecraft:uncarvable", uncarvable);
+        var uncarvable = data.GetValue(terrain.Generator, static generator => new CarverData(generator)).Uncarvable;
 
+        // Each column's carved runs, from the bottom up.
         for (var x = 0; x < 16; x++)
         {
             for (var z = 0; z < 16; z++)
             {
-                var y = mask.MinY;
+                var bottom = mask.NextCarved(x, z, mask.MinY);
 
-                while (y <= mask.MaxY)
+                while (bottom <= mask.MaxY)
                 {
-                    if (!mask.Get(x, y, z))
-                    {
-                        y++;
-                        continue;
-                    }
-
-                    var bottom = y;
-
-                    while (y <= mask.MaxY && mask.Get(x, y, z))
-                    {
-                        y++;
-                    }
-
-                    ApplySegment(terrain, uncarvable, x, z, bottom, y - 1);
+                    var top = mask.NextUncarved(x, z, bottom) - 1;
+                    ApplySegment(terrain, uncarvable, x, z, bottom, top);
+                    bottom = mask.NextCarved(x, z, top + 1);
                 }
             }
         }
     }
 
-    private static void ApplySegment(TerrainContext terrain, HashSet<int> uncarvable, int x, int z, int minY, int maxY)
+    private static void ApplySegment(
+        TerrainContext terrain,
+        FrozenSet<int> uncarvable,
+        int x,
+        int z,
+        int minY,
+        int maxY)
     {
         var chunk = terrain.Chunk;
         var blockX = terrain.Volume.BlockX(x);
@@ -144,6 +139,28 @@ internal static class TerrainCarvers
                     terrain.MarkForPostProcessing(blockX, y - 1, blockZ);
                 }
             }
+        }
+    }
+
+    /// <summary>A generator's carver configurations and the blocks carvers leave alone.</summary>
+    private sealed class CarverData(TerrainGenerator generator)
+    {
+        private readonly ConcurrentDictionary<string, CarverConfiguration> configurations = new();
+
+        public FrozenSet<int> Uncarvable { get; } = ReadUncarvable(generator.Data);
+
+        public CarverConfiguration Configuration(string id) =>
+            this.configurations.GetOrAdd(id, Read, generator);
+
+        private static CarverConfiguration Read(string id, TerrainGenerator generator) =>
+            CarverConfiguration.Read(generator.Data.Read("carver", id));
+
+        private static FrozenSet<int> ReadUncarvable(Density.WorldgenData data)
+        {
+            var blocks = new HashSet<int>();
+            ReadBlockTag(data, "minecraft:uncarvable", blocks);
+
+            return blocks.ToFrozenSet();
         }
     }
 
