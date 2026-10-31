@@ -225,17 +225,20 @@ internal sealed class BiomeTerrain
     {
         this.Source.FillBiomes(chunk);
         fluidUpdates ??= (chunk as Chunk)?.PostProcessing;
-        // Contributions add up in registry order of the structures; vanilla walks a hash map, so float sums of
-        // overlapping structures of different types could round differently (no capture shows it).
-        var beardifier = this.Structures is null
-            ? null
-            : Beardifier.ForStructuresInChunk(
-                this.Structures.GetTerrainAdaptingStarts(chunk.X, chunk.Z),
-                chunk.X,
-                chunk.Z);
-        this.terrain.Generate(chunk, this.BiomeAt, this.CarversAt, fluidUpdates, beardifier);
+        this.terrain.Generate(chunk, this.BiomeAt, this.CarversAt, fluidUpdates, this.BeardifierFor(chunk.X, chunk.Z));
 
         // Chunk storage keeps the legacy enum until the live pipeline switches; carvers saves as 26.3 terrain.
         chunk.SetChunkStatus(ChunkGenStage.carvers);
+    }
+
+    /// <summary>The density of the structures around a chunk, or <c>null</c> when structures are off.</summary>
+    public Beardifier? BeardifierFor(int chunkX, int chunkZ)
+    {
+        if (this.Structures is null)
+            return null;
+
+        // Contributions add up in registry order of the structures; vanilla walks a hash map, so float sums of
+        // overlapping structures of different types could round differently (no capture shows it).
+        return Beardifier.ForStructuresInChunk(this.Structures.GetTerrainAdaptingStarts(chunkX, chunkZ), chunkX, chunkZ);
     }
 }

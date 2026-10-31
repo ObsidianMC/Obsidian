@@ -15,26 +15,24 @@ namespace WorldgenBench;
 /// </summary>
 internal static class SerialRun
 {
-    private enum Stage { Biomes, Noise, Surface, Carvers, StructureStarts, Features, PostProcess, Light }
-
     /// <returns>Whether the hashes match the recorded ones, or there are none for this run.</returns>
     public static bool Run(BenchDimension bench, BenchOptions options)
     {
         if (!options.Cold)
-            Warm(bench.Dimension, options.Seed + 1);
+            Warm(bench, options);
 
-        var builder = new ChunkBuilder(bench.Dimension, options.Seed);
+        var builder = BenchGenerator.Create(options.Generator, bench, options.Seed);
 
         // Stronghold rings are placed on first use, in parallel; placing them first keeps them out of the stages.
         var setup = Stopwatch.StartNew();
-        if (builder.Structures is StructureManager structures)
-            _ = structures.GetStartsReaching(bench.CenterX, bench.CenterZ).Count();
+        builder.PrepareStructures(bench.CenterX, bench.CenterZ);
         setup.Stop();
 
         var generator = new SerialGenerator(builder, bench.Dimension);
         var order = new List<(int X, int Z)>();
         var gcCounts = (GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2));
         var gcPause = GC.GetTotalPauseDuration();
+        var allocated = GC.GetAllocatedBytesForCurrentThread();
         var total = Stopwatch.StartNew();
         for (var x = bench.CenterX - options.Radius; x < bench.CenterX + options.Radius; x++)
         {
@@ -47,11 +45,13 @@ internal static class SerialRun
 
         total.Stop();
         gcPause = GC.GetTotalPauseDuration() - gcPause;
+        allocated = GC.GetAllocatedBytesForCurrentThread() - allocated;
 
         var full = order.Count;
-        Console.WriteLine($"== {bench.Name} serial, seed {options.Seed}, {full} chunks around ({bench.CenterX}, {bench.CenterZ}): " +
+        Console.WriteLine($"== {bench.Name} {GeneratorName(options.Generator)} serial, seed {options.Seed}, {full} chunks around ({bench.CenterX}, {bench.CenterZ}): " +
             $"{generator.CarvedCount} carved, {generator.DecoratedCount} decorated");
-        Console.WriteLine($"generation {total.Elapsed.TotalSeconds:F2} s = {total.Elapsed.TotalMilliseconds / full:F2} ms per chunk; " +
+        Console.WriteLine($"generation {total.Elapsed.TotalSeconds:F2} s = {total.Elapsed.TotalMilliseconds / full:F2} ms per chunk " +
+            $"({full / total.Elapsed.TotalSeconds:F0} chunks/s), allocated {allocated / 1024.0 / full:F0} KB per chunk; " +
             $"structure setup {setup.Elapsed.TotalMilliseconds:F0} ms; GCs {GC.CollectionCount(0) - gcCounts.Item1}/" +
             $"{GC.CollectionCount(1) - gcCounts.Item2}/{GC.CollectionCount(2) - gcCounts.Item3}, paused {gcPause.TotalMilliseconds:F0} ms");
         generator.Timer.Print(full);
@@ -66,18 +66,24 @@ internal static class SerialRun
             return true;
         }
 
-        var matches = hasher.Hash == bench.ExpectedHash && hasher.NbtHash == bench.ExpectedNbtHash;
+        var (expectedHash, expectedNbtHash) = options.Generator == BenchGeneratorKind.Current
+            ? (bench.CurrentHash, bench.CurrentNbtHash)
+            : (bench.ExpectedHash, bench.ExpectedNbtHash);
+        var matches = hasher.Hash == expectedHash && hasher.NbtHash == expectedNbtHash;
         Console.WriteLine($"hash {hasher.Hash} nbt {hasher.NbtHash}: " +
-            (matches ? "match" : $"MISMATCH, expected hash {bench.ExpectedHash} nbt {bench.ExpectedNbtHash}"));
+            (matches ? "match" : $"MISMATCH, expected hash {expectedHash} nbt {expectedNbtHash}"));
         return matches;
     }
+
+    private static string GeneratorName(BenchGeneratorKind generator) =>
+        generator == BenchGeneratorKind.Current ? "26.3" : "1.21.11";
 
     /// <summary>
     /// Runs every stage on a few chunks of another world, so the measured run starts with optimized code.
     /// </summary>
-    private static void Warm(MojangDimension dimension, long seed)
+    private static void Warm(BenchDimension bench, BenchOptions options)
     {
-        var generator = new SerialGenerator(new ChunkBuilder(dimension, seed), dimension);
+        var generator = new SerialGenerator(BenchGenerator.Create(options.Generator, bench, options.Seed + 1), bench.Dimension);
         for (var x = 500; x < 503; x++)
         {
             for (var z = 500; z < 503; z++)
@@ -89,13 +95,13 @@ internal static class SerialRun
     /// Completes chunks the way a server does: a chunk's neighbors are decorated once their own neighbors are carved, then
     /// the chunk is post-processed and lit, with the light of its neighbors lit before it.
     /// </summary>
-    private sealed class SerialGenerator(ChunkBuilder builder, MojangDimension dimension)
+    private sealed class SerialGenerator(BenchGenerator builder, MojangDimension dimension)
     {
         private readonly Dictionary<(int X, int Z), IChunk> carved = [];
         private readonly HashSet<(int X, int Z)> decorated = [];
         private readonly HashSet<(int X, int Z)> lit = [];
 
-        public StageTimer<Stage> Timer { get; } = new();
+        public StageTimer<SerialStage> Timer { get; } = new();
 
         public int CarvedCount => this.carved.Count;
 
@@ -113,14 +119,10 @@ internal static class SerialRun
 
             var chunk = this.carved[(x, z)];
             var area = this.Area(x, z);
-            this.Timer.Time(Stage.PostProcess, () =>
-            {
-                builder.PostProcess(area, x, z);
-                builder.UpdateFinalHeightmaps(chunk);
-            });
+            builder.PostProcess(area, x, z, this.Timer);
 
             var neighbors = area.Where(entry => entry.Key != (x, z) && this.lit.Contains(entry.Key)).Select(entry => entry.Value).ToList();
-            this.Timer.Time(Stage.Light, () => LightEngine.LightChunk(chunk, neighbors, dimension.HasSkyLight));
+            this.Timer.Time(SerialStage.Light, () => LightEngine.LightChunk(chunk, neighbors, dimension.HasSkyLight));
             this.lit.Add((x, z));
         }
 
@@ -133,9 +135,9 @@ internal static class SerialRun
 
             // Starts are made on first use; asking for them first separates making them from placing them.
             if (builder.Structures is StructureManager structures)
-                this.Timer.Time(Stage.StructureStarts, () => _ = structures.GetStartsReaching(x, z).Count());
+                this.Timer.Time(SerialStage.StructureStarts, () => _ = structures.GetStartsReaching(x, z).Count());
 
-            this.Timer.Time(Stage.Features, () => builder.Decorate(area, x, z));
+            this.Timer.Time(SerialStage.Features, () => builder.Decorate(area, x, z));
         }
 
         private Dictionary<(int X, int Z), IChunk> Area(int x, int z)
@@ -155,12 +157,7 @@ internal static class SerialRun
             if (this.carved.TryGetValue((x, z), out var chunk))
                 return chunk;
 
-            chunk = new Chunk(x, z, dimension.MinY, dimension.Height);
-            this.Timer.Time(Stage.Biomes, () => builder.PopulateBiomes(chunk));
-            this.Timer.Time(Stage.Noise, () => builder.Generate3DTerrain(chunk));
-            this.Timer.Time(Stage.Surface, () => builder.ApplySurfaceRules(chunk));
-            this.Timer.Time(Stage.Carvers, () => builder.ApplyCarvers(chunk));
-            return this.carved[(x, z)] = chunk;
+            return this.carved[(x, z)] = builder.Carve(x, z, this.Timer);
         }
     }
 }
