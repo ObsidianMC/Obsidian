@@ -10,13 +10,17 @@ internal sealed class BiomeParameterTree<T>
 {
     private const int Dimensions = 7;
 
-    // Searches remembered per thread; a power of two.
-    private const int RememberedSearches = 1024;
+    // Searches remembered per thread; a power of two, with room for the quarts around a chunk.
+    private const int RememberedSearches = 4096;
 
     private readonly Node root;
 
     // Vanilla starts each search from the previous result on the same thread; it only matters for exact ties.
-    private readonly ThreadLocal<SearchState> searches = new(() => new SearchState());
+    private readonly ThreadLocal<SearchState> searches;
+
+    // The state of the tree this thread searched last, which spares most searches the slower ThreadLocal lookup.
+    [ThreadStatic]
+    private static SearchState? lastSearched;
 
     /// <param name="childrenPerNode">6 for the live legacy pipeline, 19 for 26.3.</param>
     public BiomeParameterTree(IReadOnlyList<(ParameterPoint Point, T Value)> values, int childrenPerNode = 6)
@@ -26,6 +30,7 @@ internal sealed class BiomeParameterTree<T>
 
         var leaves = values.Select(value => (Node)new Leaf(value.Point.ParameterSpace(), value.Value)).ToList();
         this.root = Build(leaves, childrenPerNode);
+        this.searches = new ThreadLocal<SearchState>(() => new SearchState(this));
     }
 
     /// <remarks>
@@ -42,7 +47,10 @@ internal sealed class BiomeParameterTree<T>
     public T Search(TargetPoint target)
     {
         ReadOnlySpan<long> point = [target.Temperature, target.Humidity, target.Continentalness, target.Erosion, target.Depth, target.Weirdness, 0L];
-        var state = this.searches.Value!;
+        var state = lastSearched;
+        if (state is null || state.Tree != this)
+            lastSearched = state = this.searches.Value!;
+
         var last = state.Last;
 
         // The previous result is at the smallest distance from its own target, so asking again returns it.
@@ -195,8 +203,10 @@ internal sealed class BiomeParameterTree<T>
         return distance;
     }
 
-    private sealed class SearchState
+    private sealed class SearchState(BiomeParameterTree<T> tree)
     {
+        public BiomeParameterTree<T> Tree { get; } = tree;
+
         public Leaf? Last { get; set; }
 
         /// <summary>The target <see cref="Last"/> was returned for.</summary>

@@ -20,6 +20,10 @@ internal sealed partial class MaterialRules
         private float[]? surfaceLevels;
         private string? biome;
         private int? biomeId;
+
+        // The last biome numbered, by reference: neighboring blocks mostly share their biome's name instance.
+        private string? lastNumberedBiome;
+        private int lastBiomeId;
         private int localX;
         private int localZ;
 
@@ -72,7 +76,7 @@ internal sealed partial class MaterialRules
         public string Biome => this.biome ??= this.Terrain.BiomeAt(this.X, this.Y, this.Z);
 
         /// <summary>The <see cref="Biome"/>'s number among those biome conditions name, or -1.</summary>
-        public int BiomeId => this.biomeId ??= this.owner.FindBiomeId(this.Biome);
+        public int BiomeId => this.biomeId ??= this.NumberBiome(this.Biome);
 
         public double Secondary
         {
@@ -108,6 +112,17 @@ internal sealed partial class MaterialRules
 
                 return level + this.SurfaceDepth - 8;
             }
+        }
+
+        private int NumberBiome(string name)
+        {
+            if (!ReferenceEquals(name, this.lastNumberedBiome))
+            {
+                this.lastBiomeId = this.owner.FindBiomeId(name);
+                this.lastNumberedBiome = name;
+            }
+
+            return this.lastBiomeId;
         }
 
         public void UpdateColumn(int x, int z)
