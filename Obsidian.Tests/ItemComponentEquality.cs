@@ -5,6 +5,7 @@ using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
 using Obsidian.Nbt;
 using Obsidian.Net;
+using Obsidian.Tests.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -15,8 +16,9 @@ namespace Obsidian.Tests;
 
 public sealed class ItemComponentEquality
 {
-    public static TheoryData<DataComponentType> CollectionComponents => new()
-    {
+    // Components whose records hold collections, which C# compares by reference unless Obsidian compares them itself.
+    private static readonly DataComponentType[] CollectionComponents =
+    [
         DataComponentType.PotionContents,
         DataComponentType.CustomModelData,
         DataComponentType.Fireworks,
@@ -35,11 +37,22 @@ public sealed class ItemComponentEquality
         DataComponentType.BucketEntityData,
         DataComponentType.EntityData,
         DataComponentType.DeathProtection
-    };
+    ];
 
-    [Theory]
-    [MemberData(nameof(CollectionComponents))]
-    public void EqualComponentsHaveEqualHashesAndMerge(DataComponentType type)
+    // Stacks merge only when their components are equal, so a wrong equality either merges different items (losing
+    // one's components) or splits equal ones.
+    [Fact]
+    public void CollectionComponentsMergeByValue()
+    {
+        FixtureCases.AssertAll(CollectionComponents, type => type.ToString(), type =>
+        {
+            AssertEqualComponentsMerge(type);
+            AssertDifferentComponentsDoNotMerge(type);
+            AssertDecodedComponentsKeepValueEquality(type);
+        });
+    }
+
+    private static void AssertEqualComponentsMerge(DataComponentType type)
     {
         var first = CreateComponent(type, 1);
         var second = CreateComponent(type, 1);
@@ -65,9 +78,7 @@ public sealed class ItemComponentEquality
         Assert.Null(inventory.GetItem(37));
     }
 
-    [Theory]
-    [MemberData(nameof(CollectionComponents))]
-    public void DifferentComponentsDoNotMerge(DataComponentType type)
+    private static void AssertDifferentComponentsDoNotMerge(DataComponentType type)
     {
         var first = CreateComponent(type, 1);
         var second = CreateComponent(type, 2);
@@ -87,9 +98,7 @@ public sealed class ItemComponentEquality
         Assert.Equal(0, incoming.Count);
     }
 
-    [Theory]
-    [MemberData(nameof(CollectionComponents))]
-    public void DecodedComponentsKeepValueEqualityAfterHashing(DataComponentType type)
+    private static void AssertDecodedComponentsKeepValueEquality(DataComponentType type)
     {
         var component = CreateComponent(type, 1);
         var originalHash = component.GetHashCode();
@@ -103,179 +112,6 @@ public sealed class ItemComponentEquality
         Assert.Equal(component, decoded);
         Assert.Equal(originalHash, decoded.GetHashCode());
         Assert.Equal(component, component with { });
-    }
-
-    [Theory]
-    [InlineData(false, 1)]
-    [InlineData(false, 16)]
-    [InlineData(true, 64)]
-    public void CustomPotionsAndTippedArrowsRespectStackLimits(bool tippedArrow, int maxStackSize)
-    {
-        var item = tippedArrow ? ItemsRegistry.TippedArrow : ItemsRegistry.Potion;
-        var first = CreatePotion(1);
-        var second = CreatePotion(1);
-        var stackSize = ComponentBuilder.MaxStackSize with { Value = maxStackSize };
-        var stored = new ItemStack(item, 1, first, stackSize);
-        var incoming = new ItemStack(item, 1, second, stackSize);
-        var inventory = new Container(46);
-        inventory.SetItem(36, stored);
-
-        var equal = stored.Equals(incoming);
-        var changed = PlayerEntity.AddToInventory(inventory, 36, incoming);
-
-        Assert.True(first == second);
-        Assert.Equal(first.GetHashCode(), second.GetHashCode());
-        Assert.True(equal);
-        Assert.True(stored == incoming);
-        Assert.Equal(stored.GetHashCode(), incoming.GetHashCode());
-        Assert.Equal(0, incoming.Count);
-
-        if (maxStackSize == 1)
-        {
-            Assert.Equal([37], changed);
-            Assert.Equal(1, inventory.GetItem(36)!.Count);
-            Assert.Equal(1, inventory.GetItem(37)!.Count);
-        }
-        else
-        {
-            Assert.Equal([36], changed);
-            Assert.Equal(2, inventory.GetItem(36)!.Count);
-            Assert.Null(inventory.GetItem(37));
-        }
-    }
-
-    [Theory]
-    [InlineData("potion")]
-    [InlineData("color")]
-    [InlineData("name")]
-    [InlineData("effect")]
-    [InlineData("hidden effect")]
-    [InlineData("order")]
-    [InlineData("length")]
-    public void PotionEqualityIncludesEveryFieldAndEffectOrder(string field)
-    {
-        var original = CreatePotion(1);
-        var firstEffect = original.CustomEffects[0];
-        var changed = field switch
-        {
-            "potion" => original with { Potion = Potion.Water },
-            "color" => original with { CustomColor = 42 },
-            "name" => original with { CustomName = "different" },
-            "effect" => original with { CustomEffects = [firstEffect with { Duration = 42 }, Effect(2)] },
-            "hidden effect" => original with
-            {
-                CustomEffects = [firstEffect with { HiddenEffect = Effect(42) }, Effect(2)]
-            },
-            "order" => original with { CustomEffects = [Effect(2), firstEffect] },
-            "length" => original with { CustomEffects = [firstEffect] },
-            _ => throw new ArgumentOutOfRangeException(nameof(field))
-        };
-
-        var equal = original == changed;
-
-        Assert.False(equal);
-        Assert.False(original.Equals((object)changed));
-        Assert.False(original.Equals(null));
-    }
-
-    [Fact]
-    public void MapDecorationEqualityIgnoresInsertionOrder()
-    {
-        var first = new MapDecorationDataComponent
-        {
-            Decorations = new Dictionary<string, MapDecoration>
-            {
-                ["first"] = Decoration(1),
-                ["second"] = Decoration(2)
-            }
-        };
-        var second = new MapDecorationDataComponent
-        {
-            Decorations = new Dictionary<string, MapDecoration>
-            {
-                ["second"] = Decoration(2),
-                ["first"] = Decoration(1)
-            }
-        };
-
-        var equal = first == second;
-
-        Assert.True(equal);
-        Assert.Equal(first.GetHashCode(), second.GetHashCode());
-    }
-
-    [Fact]
-    public void EmptyCollectionsAndOptionalCollectionsHaveConsistentEquality()
-    {
-        var empty = new PotionContentsDataComponent { CustomEffects = [] };
-        var anotherEmpty = new PotionContentsDataComponent { CustomEffects = ImmutableArray<PotionEffectData>.Empty };
-        var defaultEffects = empty with { CustomEffects = default };
-        var missingEntities = ComponentBuilder.Equippable;
-        var emptyEntities = missingEntities with { AllowedEntities = [] };
-
-        var equal = empty == anotherEmpty;
-
-        Assert.True(equal);
-        Assert.Equal(empty.GetHashCode(), anotherEmpty.GetHashCode());
-        Assert.Equal(empty, defaultEffects);
-        Assert.Equal(empty.GetHashCode(), defaultEffects.GetHashCode());
-        Assert.NotEqual(empty, CreatePotion(1));
-        Assert.NotEqual(missingEntities, emptyEntities);
-        Assert.NotEqual<DataComponent>(new CanBreakDataComponent(), new CanPlaceOnDataComponent());
-    }
-
-    [Theory]
-    [InlineData("ids")]
-    [InlineData("blocks")]
-    [InlineData("partial component")]
-    [InlineData("consume effect")]
-    public void NestedCollectionRecordsCompareByValue(string record)
-    {
-        object CreateValue(int value) => record switch
-        {
-            "ids" => Ids(value),
-            "blocks" => Predicate(value),
-            "partial component" => new ComponentPredicate
-            {
-                IsPredicateType = true,
-                TypeId = 1,
-                Value = new NbtCompound { new NbtTag<int>("value", value) }
-            },
-            "consume effect" => Consume(value),
-            _ => throw new ArgumentOutOfRangeException(nameof(record))
-        };
-
-        var first = CreateValue(1);
-        var second = CreateValue(1);
-        var different = CreateValue(2);
-
-        var equal = first.Equals(second);
-
-        Assert.True(equal);
-        Assert.Equal(first.GetHashCode(), second.GetHashCode());
-        Assert.False(first.Equals(different));
-    }
-
-    [Theory]
-    [InlineData("floats")]
-    [InlineData("flags")]
-    [InlineData("strings")]
-    [InlineData("colors")]
-    public void CustomModelEqualityIncludesEveryCollection(string field)
-    {
-        var original = (CustomModelDataComponent)CreateComponent(DataComponentType.CustomModelData, 1);
-        var changed = field switch
-        {
-            "floats" => original with { Floats = [2, 3] },
-            "flags" => original with { Flags = [false, false] },
-            "strings" => original with { Strings = ["changed", "1"] },
-            "colors" => original with { Colors = [2, 0x123456] },
-            _ => throw new ArgumentOutOfRangeException(nameof(field))
-        };
-
-        var equal = original == changed;
-
-        Assert.False(equal);
     }
 
     private static DataComponent CreateComponent(DataComponentType type, int value) => type switch
