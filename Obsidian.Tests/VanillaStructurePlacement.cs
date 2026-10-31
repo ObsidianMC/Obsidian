@@ -1,4 +1,6 @@
 using Obsidian.API;
+using Obsidian.Nbt;
+using Obsidian.WorldData.Structures.Templates;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators.Biomes;
 using Obsidian.WorldData.Generators.Density;
@@ -82,6 +84,7 @@ public class VanillaStructurePlacement
 
         Assert.Equal(start.Pieces.Count, bounds.Length);
 
+        // In the capture's order, one at a time: the first chunk a shipwreck reaches picks its height.
         foreach (var (chunkX, chunkZ) in sampled)
         {
             // Like the capture, each chunk places into fresh terrain, without its neighbors' writes.
@@ -117,6 +120,37 @@ public class VanillaStructurePlacement
         Assert.True(comparison.StructureBlocks > 0, "The captured bounds hold no structure blocks.");
         Assert.True(mismatches.Count == 0, $"{mismatches.Count} blocks differ, first: "
             + string.Join("; ", mismatches.Take(12)));
+    }
+
+    // A shipwreck continues at the height vanilla saved (height_adjusted and the template position's TPY), and
+    // reads the height Obsidian saved before it wrote those.
+    [Theory]
+    [InlineData("vanilla", 58)]
+    [InlineData("obsidian", 57)]
+    public void ShipwreckKeepsSavedHeight(string format, int height)
+    {
+        using var templates = Registries.StructureRegistry.Use(VanillaFeatureTemplates.Get);
+        var pieces = new StructurePiecesBuilder();
+        var random = new API.World.Generator.RandomSources.LegacyRandomSource(0L);
+        var piece = ShipwreckPiece.AddRandomPiece(new Vector(0, 90, 0), StructureRotation.None, pieces, random, true);
+        var saved = new NbtCompound();
+
+        if (format == "vanilla")
+        {
+            saved.Add(new NbtTag<bool>("height_adjusted", true));
+            saved.Add(new NbtTag<int>("TPY", height));
+        }
+        else
+        {
+            saved.Add(new NbtTag<int>("adjusted_y", height));
+        }
+
+        piece.LoadState(saved);
+        var resaved = new NbtCompound();
+        piece.SaveState(resaved);
+
+        Assert.True(resaved.TryGetTag<NbtTag<bool>>("height_adjusted", out var adjusted) && adjusted.Value);
+        Assert.Equal(height, resaved.GetInt("TPY"));
     }
 
     // The captured blocks, in order, against the bounds' blocks inside each chunk in y, z, x order.

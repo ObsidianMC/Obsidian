@@ -1388,6 +1388,8 @@ class WorldgenCaptures {
         var sampled = reached.subList(0, Math.min(maxChunks, reached.size()));
         var placed = new ArrayList<ProtoChunk>();
 
+        // One at a time in chunkList order, which the replay follows: the first chunk a shipwreck reaches picks its
+        // height.
         for (var sampledChunk : sampled) {
             int chunkX = sampledChunk.x();
             int chunkZ = sampledChunk.z();

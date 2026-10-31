@@ -264,7 +264,10 @@ public sealed class FeaturePoolElement : StructurePoolElement
 
     public override Vector GetSize(StructureRotation rotation) => Vector.Zero;
 
-    public override List<JigsawBlockInfo> GetShuffledJigsawBlocks(Vector position, StructureRotation rotation, IRandomSource random)
+    public override List<JigsawBlockInfo> GetShuffledJigsawBlocks(
+        Vector position,
+        StructureRotation rotation,
+        IRandomSource random)
     {
         var info = JigsawBlockInfo.Of(new StructureBlockInfo(position, jigsaw, jigsawData));
 

@@ -1201,8 +1201,14 @@ public enum JigsawJointType
 /// <param name="Target">The name of the jigsaw this one connects to.</param>
 /// <param name="PlacementPriority">Pieces attached here are expanded before lower priorities.</param>
 /// <param name="SelectionPriority">Jigsaws with higher priorities are tried first.</param>
-public sealed record JigsawBlockInfo(StructureBlockInfo Info, JigsawJointType JointType, string? Name, string Pool, string Target,
-    int PlacementPriority, int SelectionPriority)
+public sealed record JigsawBlockInfo(
+    StructureBlockInfo Info,
+    JigsawJointType JointType,
+    string? Name,
+    string Pool,
+    string Target,
+    int PlacementPriority,
+    int SelectionPriority)
 {
     public const string EmptyId = "minecraft:empty";
 

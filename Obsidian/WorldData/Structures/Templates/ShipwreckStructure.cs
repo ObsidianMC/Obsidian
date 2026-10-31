@@ -70,7 +70,9 @@ public sealed class ShipwreckPiece : TemplateStructurePiece
     private readonly bool isBeached;
 
     // Vanilla's heightAdjusted: the first placement picks the height (and draws a beached ship's offset), and every
-    // later chunk reuses it. Chunks place in parallel, so it's taken under the lock.
+    // later chunk reuses it. Like vanilla's, the height depends on which chunk decorates first: it samples the
+    // footprint in that chunk's region with that chunk's random. Chunks place in parallel, so it's taken under the
+    // lock.
     private readonly Lock heightLock = new();
     private int? adjustedHeight;
 
@@ -123,14 +125,11 @@ public sealed class ShipwreckPiece : TemplateStructurePiece
     {
         base.SaveState(tag);
 
+        // Vanilla saves the adjusted template position's Y.
         lock (this.heightLock)
         {
             tag.Add(new NbtTag<bool>("height_adjusted", this.adjustedHeight is not null));
-
-            if (this.adjustedHeight is int height)
-            {
-                tag.Add(new NbtTag<int>("adjusted_y", height));
-            }
+            tag.Add(new NbtTag<int>("TPY", this.adjustedHeight ?? this.TemplatePosition.Y));
         }
     }
 
@@ -140,8 +139,13 @@ public sealed class ShipwreckPiece : TemplateStructurePiece
 
         lock (this.heightLock)
         {
-            if (tag.TryGetTag<NbtTag<int>>("adjusted_y", out var height))
+            if (tag.TryGetBool("height_adjusted", out var adjusted) && tag.TryGetTag<NbtTag<int>>("TPY", out var y))
             {
+                this.adjustedHeight = adjusted ? y.Value : null;
+            }
+            else if (tag.TryGetTag<NbtTag<int>>("adjusted_y", out var height))
+            {
+                // Saved before Obsidian wrote vanilla's fields.
                 this.adjustedHeight = height.Value;
             }
         }
