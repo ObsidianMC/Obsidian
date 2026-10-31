@@ -10,6 +10,7 @@ internal static class ScenarioSulfurCaptures
         saved countdown. Reload actions save and restart vanilla; their elapsed game ticks are retained. Other
         actions run before the next tick. Optional entity samples count live falling blocks, damaging falling blocks
         and total items (sulfur spikes unless item is supplied). Projectile samples count embedded projectiles.
+        Projectile-motion samples retain position, velocity and life; noGravity=false enables gravity for an action.
         Falling-motion samples retain height, vertical velocity and OnGround for explicitly summoned falling blocks.
         withoutBlockEntity validates a bare moving_piston's absent block entity before stepping. These samples do not
         record sound effects. CaptureCases selects individual scenarios without re-recording the Java probes.
@@ -124,9 +125,10 @@ internal static class ScenarioSulfurCaptures
         var type = projectile["type"]!.GetValue<string>();
         var savedState = projectile["inBlockState"] is { } state
             ? $",inGround:1b,inBlockState:{state.ToJsonString()}" : "";
+        var noGravity = projectile["noGravity"]?.GetValue<bool>() != false ? 1 : 0;
         return vanilla.RunInAsync(ScenarioServer.Overworld,
             $"summon minecraft:{type} {position} "
-            + $"{{Tags:[\"sulfur_projectile\"],NoGravity:1b,Motion:[{motion}]{savedState}}}");
+            + $"{{Tags:[\"sulfur_projectile\"],NoGravity:{noGravity}b,Motion:[{motion}]{savedState}}}");
     }
 
     private static Task<string> PlaceAsync(ScenarioServer vanilla, JsonNode placement) =>
@@ -205,6 +207,31 @@ internal static class ScenarioSulfurCaptures
         {
             checkpoint["embedded"] = await CountAsync(vanilla,
                 "@e[tag=sulfur_projectile,nbt={inGround:1b}]");
+        }
+
+        if (scenario["recordProjectileMotion"]?.GetValue<bool>() == true)
+        {
+            const string selector = "@e[tag=sulfur_projectile,limit=1]";
+            if (await CountAsync(vanilla, selector) == 0)
+            {
+                checkpoint["projectileMotion"] = null;
+            }
+            else
+            {
+                var values = new JsonArray();
+                foreach (var path in new[]
+                {
+                    "Pos[0]", "Pos[1]", "Pos[2]", "Motion[0]", "Motion[1]", "Motion[2]", "life"
+                })
+                {
+                    var feedback = await vanilla.RunInAsync(ScenarioServer.Overworld,
+                        $"data get entity {selector} {path}");
+                    var number = feedback[(feedback.LastIndexOf(' ') + 1)..].TrimEnd('d', 'f', 's');
+                    values.Add(double.Parse(number, System.Globalization.CultureInfo.InvariantCulture));
+                }
+
+                checkpoint["projectileMotion"] = values;
+            }
         }
 
         return checkpoint;

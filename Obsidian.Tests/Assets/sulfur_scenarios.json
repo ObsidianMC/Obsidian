@@ -8750,7 +8750,394 @@
      "embedded": 0
     }
    ]
+  },
+  {
+   "name": "arrow_release_gravity",
+   "setup": [],
+   "actions": [
+    {
+     "tick": 1,
+     "projectile": {
+      "type": "arrow",
+      "pos": [
+       1.5,
+       72.5,
+       1.5
+      ],
+      "motion": [
+       0,
+       0,
+       0
+      ],
+      "inBlockState": "minecraft:stone",
+      "noGravity": false
+     }
+    }
+   ],
+   "watch": [
+    [
+     1,
+     72,
+     1
+    ]
+   ],
+   "ticks": 4,
+   "interval": 1,
+   "recordProjectile": true,
+   "recordProjectileMotion": true,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 41,
+     "states": [
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0,
+     "projectileMotion": null
+    },
+    {
+     "tick": 1,
+     "gameTime": 42,
+     "states": [
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0,
+     "projectileMotion": [
+      1.5,
+      72.5,
+      1.5,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "tick": 2,
+     "gameTime": 43,
+     "states": [
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0,
+     "projectileMotion": [
+      1.5,
+      72.5,
+      1.5,
+      0,
+      -0.05,
+      0,
+      0
+     ]
+    },
+    {
+     "tick": 3,
+     "gameTime": 44,
+     "states": [
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0,
+     "projectileMotion": [
+      1.5,
+      72.45,
+      1.5,
+      0,
+      -0.09950000047683716,
+      0,
+      0
+     ]
+    },
+    {
+     "tick": 4,
+     "gameTime": 45,
+     "states": [
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0,
+     "projectileMotion": [
+      1.5,
+      72.35049999952317,
+      1.5,
+      0,
+      -0.14850500142097472,
+      0,
+      0
+     ]
+    }
+   ]
+  },
+  {
+   "name": "spectral_arrow_release_gravity",
+   "setup": [],
+   "actions": [
+    {
+     "tick": 1,
+     "projectile": {
+      "type": "spectral_arrow",
+      "pos": [
+       1.5,
+       72.5,
+       1.5
+      ],
+      "motion": [
+       0,
+       0,
+       0
+      ],
+      "inBlockState": "minecraft:stone",
+      "noGravity": false
+     }
+    }
+   ],
+   "watch": [
+    [
+     1,
+     72,
+     1
+    ]
+   ],
+   "ticks": 4,
+   "interval": 1,
+   "recordProjectile": true,
+   "recordProjectileMotion": true,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 85,
+     "states": [
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0,
+     "projectileMotion": null
+    },
+    {
+     "tick": 1,
+     "gameTime": 86,
+     "states": [
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0,
+     "projectileMotion": [
+      1.5,
+      72.5,
+      1.5,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "tick": 2,
+     "gameTime": 87,
+     "states": [
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0,
+     "projectileMotion": [
+      1.5,
+      72.5,
+      1.5,
+      0,
+      -0.05,
+      0,
+      0
+     ]
+    },
+    {
+     "tick": 3,
+     "gameTime": 88,
+     "states": [
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0,
+     "projectileMotion": [
+      1.5,
+      72.45,
+      1.5,
+      0,
+      -0.09950000047683716,
+      0,
+      0
+     ]
+    },
+    {
+     "tick": 4,
+     "gameTime": 89,
+     "states": [
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0,
+     "projectileMotion": [
+      1.5,
+      72.35049999952317,
+      1.5,
+      0,
+      -0.14850500142097472,
+      0,
+      0
+     ]
+    }
+   ]
+  },
+  {
+   "name": "trident_release_gravity",
+   "setup": [],
+   "actions": [
+    {
+     "tick": 1,
+     "projectile": {
+      "type": "trident",
+      "pos": [
+       1.5,
+       72.5,
+       1.5
+      ],
+      "motion": [
+       0,
+       0,
+       0
+      ],
+      "inBlockState": "minecraft:stone",
+      "noGravity": false
+     }
+    }
+   ],
+   "watch": [
+    [
+     1,
+     72,
+     1
+    ]
+   ],
+   "ticks": 4,
+   "interval": 1,
+   "recordProjectile": true,
+   "recordProjectileMotion": true,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "gameTime": 129,
+     "states": [
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0,
+     "projectileMotion": null
+    },
+    {
+     "tick": 1,
+     "gameTime": 130,
+     "states": [
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0,
+     "projectileMotion": [
+      1.5,
+      72.5,
+      1.5,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "tick": 2,
+     "gameTime": 131,
+     "states": [
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0,
+     "projectileMotion": [
+      1.5,
+      72.5,
+      1.5,
+      0,
+      -0.05,
+      0,
+      0
+     ]
+    },
+    {
+     "tick": 3,
+     "gameTime": 132,
+     "states": [
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0,
+     "projectileMotion": [
+      1.5,
+      72.45,
+      1.5,
+      0,
+      -0.09950000047683716,
+      0,
+      0
+     ]
+    },
+    {
+     "tick": 4,
+     "gameTime": 133,
+     "states": [
+      "minecraft:air"
+     ],
+     "countdowns": [
+      null
+     ],
+     "embedded": 0,
+     "projectileMotion": [
+      1.5,
+      72.35049999952317,
+      1.5,
+      0,
+      -0.14850500142097472,
+      0,
+      0
+     ]
+    }
+   ]
   }
  ],
- "_notes": "Recorded from a frozen vanilla 26.3 server over RCON, seed test-seed. Setup and actions use setblock with updates. Each checkpoint records absolute game time, full states at watched positions and potent sulfur's saved countdown. Reload actions save and restart vanilla; their elapsed game ticks are retained. Other actions run before the next tick. Optional entity samples count live falling blocks, damaging falling blocks and total items (sulfur spikes unless item is supplied). Projectile samples count embedded projectiles. Falling-motion samples retain height, vertical velocity and OnGround for explicitly summoned falling blocks. withoutBlockEntity validates a bare moving_piston's absent block entity before stepping. These samples do not record sound effects. CaptureCases selects individual scenarios without re-recording the Java probes."
+ "_notes": "Recorded from a frozen vanilla 26.3 server over RCON, seed test-seed. Setup and actions use setblock with updates. Each checkpoint records absolute game time, full states at watched positions and potent sulfur's saved countdown. Reload actions save and restart vanilla; their elapsed game ticks are retained. Other actions run before the next tick. Optional entity samples count live falling blocks, damaging falling blocks and total items (sulfur spikes unless item is supplied). Projectile samples count embedded projectiles. Projectile-motion samples retain position, velocity and life; noGravity=false enables gravity for an action. Falling-motion samples retain height, vertical velocity and OnGround for explicitly summoned falling blocks. withoutBlockEntity validates a bare moving_piston's absent block entity before stepping. These samples do not record sound effects. CaptureCases selects individual scenarios without re-recording the Java probes."
 }

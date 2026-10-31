@@ -21,40 +21,53 @@ using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Obsidian.Tests;
 
-public sealed class VanillaSulfurBlocks
+public sealed class VanillaSulfurBlocks(ITestOutputHelper output)
 {
     private static readonly JsonElement fixture = LoadFixture();
     private static readonly JsonElement probes = LoadFixture("sulfur_fixtures");
 
-    public static IEnumerable<object[]> Scenarios() => fixture.GetProperty("scenarios").EnumerateArray()
-        .Select(scenario => new object[] { scenario.GetProperty("name").GetString()! });
-
-    public static IEnumerable<object[]> Probes()
+    [Fact]
+    public async Task ReplayCapturedProbeFixture()
     {
+        var failures = new List<string>();
+        var cases = 0;
         foreach (var probe in probes.GetProperty("cases").EnumerateArray())
         {
-            if (probe.GetProperty("kind").GetString() == "arrow_saved_state")
-                continue;
-
             var name = probe.GetProperty("name").GetString()!;
-            yield return [name, false];
-            if (probe.GetProperty("kind").GetString() == "shape_update")
+            var kind = probe.GetProperty("kind").GetString();
+            if (kind is "arrow_saved_state" or "arrow_release")
             {
-                yield return [name, true];
+                foreach (var type in new[] { EntityType.Arrow, EntityType.SpectralArrow, EntityType.Trident })
+                {
+                    cases++;
+                    await CollectFailureAsync(failures, $"{name}/{type}", () => kind == "arrow_release"
+                        ? ProjectilePersistence.ReplayVanillaReleaseTransition(probe, type)
+                        : ProjectilePersistence.VanillaBlockStateSurvivesRoundTripAndReleases(probe, type));
+                }
+            }
+            else
+            {
+                cases++;
+                await CollectFailureAsync(failures, $"{name}/notifications", () => ReplayCapturedProbe(probe, false));
+                if (kind == "shape_update")
+                {
+                    cases++;
+                    await CollectFailureAsync(failures, $"{name}/fluids", () => ReplayCapturedProbe(probe, true));
+                }
             }
         }
+
+        output.WriteLine($"Replayed {cases} probe cases.");
+        Assert.True(cases > 0 && failures.Count == 0, $"{cases} probe cases:\n{string.Join("\n", failures)}");
     }
 
-    [Theory]
-    [MemberData(nameof(Probes))]
-    public async Task ReplayCapturedProbe(string name, bool fluidPath)
+    private static async Task ReplayCapturedProbe(JsonElement probe, bool fluidPath)
     {
         Assert.Equal(ServerConstants.ProtocolDescription, probes.GetProperty("version").GetString());
-        var probe = probes.GetProperty("cases").EnumerateArray()
-            .Single(value => value.GetProperty("name").GetString() == name);
         await using var context = TestServerFactory.CreateServer($"sulfur-probe-{Guid.NewGuid():N}");
         var world = context.World;
         world.LevelData.GameRules["spawn_mobs"] = "false";
@@ -282,13 +295,25 @@ public sealed class VanillaSulfurBlocks
         }
     }
 
-    [Theory]
-    [MemberData(nameof(Scenarios))]
-    public async Task ReplayCapturedScenario(string name)
+    [Fact]
+    public async Task ReplayCapturedScenarioFixture()
+    {
+        var failures = new List<string>();
+        var cases = 0;
+        foreach (var scenario in fixture.GetProperty("scenarios").EnumerateArray())
+        {
+            cases++;
+            var name = scenario.GetProperty("name").GetString()!;
+            await CollectFailureAsync(failures, name, () => ReplayCapturedScenario(scenario));
+        }
+
+        output.WriteLine($"Replayed {cases} scenario cases.");
+        Assert.True(cases > 0 && failures.Count == 0, $"{cases} scenario cases:\n{string.Join("\n", failures)}");
+    }
+
+    private static async Task ReplayCapturedScenario(JsonElement scenario)
     {
         Assert.Equal(ServerConstants.ProtocolDescription, fixture.GetProperty("version").GetString());
-        var scenario = fixture.GetProperty("scenarios").EnumerateArray()
-            .Single(value => value.GetProperty("name").GetString() == name);
         await using var context = TestServerFactory.CreateServer($"sulfur-{Guid.NewGuid():N}");
         var world = context.World;
         world.LevelData.GameRules["spawn_mobs"] = "false";
@@ -366,7 +391,8 @@ public sealed class VanillaSulfurBlocks
                         });
                     }
 
-                    arrow.NoGravity = true;
+                    arrow.NoGravity = !projectile.TryGetProperty("noGravity", out var noGravity)
+                        || noGravity.GetBoolean();
                     Assert.True(world.TryAddEntity(arrow));
                 }
                 else if (action.TryGetProperty("fallingFlags", out var flags))
@@ -413,11 +439,26 @@ public sealed class VanillaSulfurBlocks
     }
 
     // A focused Obsidian persistence risk: retained data must be copied and countdowns must remain signed ints.
-    [Theory]
-    [InlineData(-1)]
-    [InlineData(0)]
-    [InlineData(300)]
-    public void SavedStateOwnsItsDataAndPreservesCountdown(int countdown)
+    [Fact]
+    public async Task SavedStateOwnsItsDataAndPreservesCountdown()
+    {
+        var failures = new List<string>();
+        var cases = 0;
+        foreach (var countdown in new[] { -1, 0, 300 })
+        {
+            cases++;
+            await CollectFailureAsync(failures, $"countdown={countdown}", () =>
+            {
+                CheckSavedCountdown(countdown);
+                return Task.CompletedTask;
+            });
+        }
+
+        output.WriteLine($"Replayed {cases} countdown cases.");
+        Assert.True(failures.Count == 0, string.Join("\n", failures));
+    }
+
+    private static void CheckSavedCountdown(int countdown)
     {
         var source = new NbtCompound
         {
@@ -439,10 +480,25 @@ public sealed class VanillaSulfurBlocks
         Assert.Null(loaded.GetUpdateData());
     }
 
-    [Theory]
-    [InlineData("continuous", "minecraft:block.potent_sulfur.geyser_continuous_eruption")]
-    [InlineData("erupting", "minecraft:block.potent_sulfur.geyser_eruption")]
-    public async Task GeyserPacketsUseTheBlockRegistryAndStartClientAnimation(string mode, string sound)
+    [Fact]
+    public async Task GeyserPacketsUseTheBlockRegistryAndStartClientAnimation()
+    {
+        var failures = new List<string>();
+        var cases = new[]
+        {
+            (Mode: "continuous", Sound: "minecraft:block.potent_sulfur.geyser_continuous_eruption"),
+            (Mode: "erupting", Sound: "minecraft:block.potent_sulfur.geyser_eruption")
+        };
+        foreach (var (mode, sound) in cases)
+        {
+            await CollectFailureAsync(failures, mode, () => CheckGeyserPackets(mode, sound));
+        }
+
+        output.WriteLine($"Replayed {cases.Length} packet cases.");
+        Assert.True(failures.Count == 0, string.Join("\n", failures));
+    }
+
+    private static async Task CheckGeyserPackets(string mode, string sound)
     {
         await using var context = TestServerFactory.CreateServer($"geyser-packets-{Guid.NewGuid():N}");
         await BlockUpdates.AddChunksAsync(context.World);
@@ -467,6 +523,18 @@ public sealed class VanillaSulfurBlocks
     private static async Task AdvanceAsync(World world)
     {
         await world.DoWorldTickAsync();
+    }
+
+    internal static async Task CollectFailureAsync(List<string> failures, string name, Func<Task> replay)
+    {
+        try
+        {
+            await replay();
+        }
+        catch (Exception exception)
+        {
+            failures.Add($"{name}: {exception.Message}");
+        }
     }
 
     private static async Task PlaceAsync(World world, JsonElement action)
@@ -543,6 +611,25 @@ public sealed class VanillaSulfurBlocks
                 arrow.WriteNbt(data);
                 return data.TryGetTagValue<bool>("inGround", out var value) && value;
             }));
+        }
+
+        if (checkpoint.TryGetProperty("projectileMotion", out var projectileMotion))
+        {
+            var arrows = entities.OfType<Arrow>().ToArray();
+            if (projectileMotion.ValueKind == JsonValueKind.Null)
+            {
+                Assert.Empty(arrows);
+            }
+            else
+            {
+                var arrow = Assert.Single(arrows);
+                Assert.Equal(new VectorD(projectileMotion[0].GetDouble(), projectileMotion[1].GetDouble(),
+                    projectileMotion[2].GetDouble()), arrow.Position);
+                Assert.Equal(new VectorD(projectileMotion[3].GetDouble(), projectileMotion[4].GetDouble(),
+                    projectileMotion[5].GetDouble()), arrow.Motion);
+                var saved = EntityNbt.Save(arrow)!;
+                Assert.Equal((short)projectileMotion[6].GetDouble(), saved.GetShort("life"));
+            }
         }
     }
 

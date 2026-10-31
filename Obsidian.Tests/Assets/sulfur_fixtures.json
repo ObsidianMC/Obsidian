@@ -5649,6 +5649,756 @@
         }
       ],
       "savedState": "minecraft:short_grass"
+    },
+    {
+      "name": "arrow_release_unknown_string",
+      "kind": "arrow_release",
+      "origin": [
+        1,
+        72,
+        1
+      ],
+      "setup": [],
+      "position": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "motion": [
+        1.25,
+        -0.75,
+        2.5
+      ],
+      "seed": 0,
+      "life": 937,
+      "savedState": "missing:no_such_block",
+      "decodedState": null,
+      "draws": [
+        0.73096776,
+        0.831441,
+        0.24053639
+      ],
+      "releasedPosition": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "releasedMotion": [
+        0.1827419362962246,
+        -0.1247161477804184,
+        0.1202681940048933
+      ],
+      "inGround": false,
+      "releasedLife": 0,
+      "nextRandom": -1690734402
+    },
+    {
+      "name": "arrow_release_unknown_compound",
+      "kind": "arrow_release",
+      "origin": [
+        1,
+        72,
+        1
+      ],
+      "setup": [],
+      "position": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "motion": [
+        1.25,
+        -0.75,
+        2.5
+      ],
+      "seed": 123456789,
+      "life": 937,
+      "savedState": {
+        "id": "missing:no_such_block"
+      },
+      "decodedState": null,
+      "draws": [
+        0.66403806,
+        0.76331645,
+        0.45695174
+      ],
+      "releasedPosition": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "releasedMotion": [
+        0.16600951552391052,
+        -0.11449746787548065,
+        0.2284758724272251
+      ],
+      "inGround": false,
+      "releasedLife": 0,
+      "nextRandom": 1094656688
+    },
+    {
+      "name": "arrow_release_empty_compound",
+      "kind": "arrow_release",
+      "origin": [
+        1,
+        72,
+        1
+      ],
+      "setup": [],
+      "position": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "motion": [
+        1.25,
+        -0.75,
+        2.5
+      ],
+      "seed": -42,
+      "life": 937,
+      "savedState": {},
+      "decodedState": null,
+      "draws": [
+        0.27261543,
+        0.40924108,
+        0.060949683
+      ],
+      "releasedPosition": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "releasedMotion": [
+        0.0681538600474596,
+        -0.06138616427779198,
+        0.030474842060357332
+      ],
+      "inGround": false,
+      "releasedLife": 0,
+      "nextRandom": -1274931783
+    },
+    {
+      "name": "arrow_release_wrong_id_type",
+      "kind": "arrow_release",
+      "origin": [
+        1,
+        72,
+        1
+      ],
+      "setup": [],
+      "position": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "motion": [
+        1.25,
+        -0.75,
+        2.5
+      ],
+      "seed": 0,
+      "life": 937,
+      "savedState": {
+        "id": 7
+      },
+      "decodedState": null,
+      "draws": [
+        0.73096776,
+        0.831441,
+        0.24053639
+      ],
+      "releasedPosition": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "releasedMotion": [
+        0.1827419362962246,
+        -0.1247161477804184,
+        0.1202681940048933
+      ],
+      "inGround": false,
+      "releasedLife": 0,
+      "nextRandom": -1690734402
+    },
+    {
+      "name": "arrow_release_wrong_root_type",
+      "kind": "arrow_release",
+      "origin": [
+        1,
+        72,
+        1
+      ],
+      "setup": [],
+      "position": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "motion": [
+        1.25,
+        -0.75,
+        2.5
+      ],
+      "seed": 123456789,
+      "life": 937,
+      "savedState": 7,
+      "decodedState": null,
+      "draws": [
+        0.66403806,
+        0.76331645,
+        0.45695174
+      ],
+      "releasedPosition": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "releasedMotion": [
+        0.16600951552391052,
+        -0.11449746787548065,
+        0.2284758724272251
+      ],
+      "inGround": false,
+      "releasedLife": 0,
+      "nextRandom": 1094656688
+    },
+    {
+      "name": "arrow_release_wrong_root_list",
+      "kind": "arrow_release",
+      "origin": [
+        1,
+        72,
+        1
+      ],
+      "setup": [],
+      "position": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "motion": [
+        1.25,
+        -0.75,
+        2.5
+      ],
+      "seed": -42,
+      "life": 937,
+      "savedState": [],
+      "decodedState": null,
+      "draws": [
+        0.27261543,
+        0.40924108,
+        0.060949683
+      ],
+      "releasedPosition": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "releasedMotion": [
+        0.0681538600474596,
+        -0.06138616427779198,
+        0.030474842060357332
+      ],
+      "inGround": false,
+      "releasedLife": 0,
+      "nextRandom": -1274931783
+    },
+    {
+      "name": "arrow_release_wrong_properties",
+      "kind": "arrow_release",
+      "origin": [
+        1,
+        72,
+        1
+      ],
+      "setup": [],
+      "position": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "motion": [
+        1.25,
+        -0.75,
+        2.5
+      ],
+      "seed": 0,
+      "life": 937,
+      "savedState": {
+        "id": "minecraft:oak_log",
+        "properties": "bad"
+      },
+      "decodedState": "minecraft:oak_log",
+      "draws": [
+        0.73096776,
+        0.831441,
+        0.24053639
+      ],
+      "releasedPosition": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "releasedMotion": [
+        0.1827419362962246,
+        -0.1247161477804184,
+        0.1202681940048933
+      ],
+      "inGround": false,
+      "releasedLife": 0,
+      "nextRandom": -1690734402
+    },
+    {
+      "name": "arrow_release_wrong_property_value_type",
+      "kind": "arrow_release",
+      "origin": [
+        1,
+        72,
+        1
+      ],
+      "setup": [],
+      "position": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "motion": [
+        1.25,
+        -0.75,
+        2.5
+      ],
+      "seed": 123456789,
+      "life": 937,
+      "savedState": {
+        "id": "minecraft:oak_log",
+        "properties": {
+          "axis": 7
+        }
+      },
+      "decodedState": "minecraft:oak_log",
+      "draws": [
+        0.66403806,
+        0.76331645,
+        0.45695174
+      ],
+      "releasedPosition": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "releasedMotion": [
+        0.16600951552391052,
+        -0.11449746787548065,
+        0.2284758724272251
+      ],
+      "inGround": false,
+      "releasedLife": 0,
+      "nextRandom": 1094656688
+    },
+    {
+      "name": "arrow_release_invalid_property_value",
+      "kind": "arrow_release",
+      "origin": [
+        1,
+        72,
+        1
+      ],
+      "setup": [],
+      "position": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "motion": [
+        1.25,
+        -0.75,
+        2.5
+      ],
+      "seed": -42,
+      "life": 937,
+      "savedState": {
+        "id": "minecraft:oak_log",
+        "properties": {
+          "axis": "invalid"
+        }
+      },
+      "decodedState": "minecraft:oak_log",
+      "draws": [
+        0.27261543,
+        0.40924108,
+        0.060949683
+      ],
+      "releasedPosition": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "releasedMotion": [
+        0.0681538600474596,
+        -0.06138616427779198,
+        0.030474842060357332
+      ],
+      "inGround": false,
+      "releasedLife": 0,
+      "nextRandom": -1274931783
+    },
+    {
+      "name": "arrow_release_air",
+      "kind": "arrow_release",
+      "origin": [
+        1,
+        72,
+        1
+      ],
+      "setup": [],
+      "position": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "motion": [
+        1.25,
+        -0.75,
+        2.5
+      ],
+      "seed": 0,
+      "life": 937,
+      "savedState": "minecraft:air",
+      "decodedState": "minecraft:air",
+      "draws": [
+        0.73096776,
+        0.831441,
+        0.24053639
+      ],
+      "releasedPosition": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "releasedMotion": [
+        1.25,
+        -0.75,
+        2.5
+      ],
+      "inGround": true,
+      "releasedLife": 938,
+      "nextRandom": -1155484576
+    },
+    {
+      "name": "arrow_release_air_compound",
+      "kind": "arrow_release",
+      "origin": [
+        1,
+        72,
+        1
+      ],
+      "setup": [],
+      "position": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "motion": [
+        1.25,
+        -0.75,
+        2.5
+      ],
+      "seed": 123456789,
+      "life": 937,
+      "savedState": {
+        "id": "minecraft:air"
+      },
+      "decodedState": "minecraft:air",
+      "draws": [
+        0.66403806,
+        0.76331645,
+        0.45695174
+      ],
+      "releasedPosition": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "releasedMotion": [
+        1.25,
+        -0.75,
+        2.5
+      ],
+      "inGround": true,
+      "releasedLife": 938,
+      "nextRandom": -1442945365
+    },
+    {
+      "name": "arrow_release_missing",
+      "kind": "arrow_release",
+      "origin": [
+        1,
+        72,
+        1
+      ],
+      "setup": [],
+      "position": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "motion": [
+        1.25,
+        -0.75,
+        2.5
+      ],
+      "seed": -42,
+      "life": 937,
+      "decodedState": null,
+      "draws": [
+        0.27261543,
+        0.40924108,
+        0.060949683
+      ],
+      "releasedPosition": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "releasedMotion": [
+        0.0681538600474596,
+        -0.06138616427779198,
+        0.030474842060357332
+      ],
+      "inGround": false,
+      "releasedLife": 0,
+      "nextRandom": -1274931783
+    },
+    {
+      "name": "arrow_release_stone_zero",
+      "kind": "arrow_release",
+      "origin": [
+        1,
+        72,
+        1
+      ],
+      "setup": [],
+      "position": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "motion": [
+        0,
+        0,
+        0
+      ],
+      "seed": 0,
+      "life": 937,
+      "savedState": "minecraft:stone",
+      "decodedState": "minecraft:stone",
+      "draws": [
+        0.73096776,
+        0.831441,
+        0.24053639
+      ],
+      "releasedPosition": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "releasedMotion": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "inGround": false,
+      "releasedLife": 0,
+      "nextRandom": -1690734402
+    },
+    {
+      "name": "arrow_release_stone_motion",
+      "kind": "arrow_release",
+      "origin": [
+        1,
+        72,
+        1
+      ],
+      "setup": [],
+      "position": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "motion": [
+        1.25,
+        -0.75,
+        2.5
+      ],
+      "seed": 123456789,
+      "life": 1199,
+      "savedState": "minecraft:stone",
+      "decodedState": "minecraft:stone",
+      "draws": [
+        0.66403806,
+        0.76331645,
+        0.45695174
+      ],
+      "releasedPosition": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "releasedMotion": [
+        0.16600951552391052,
+        -0.11449746787548065,
+        0.2284758724272251
+      ],
+      "inGround": false,
+      "releasedLife": 0,
+      "nextRandom": 1094656688
+    },
+    {
+      "name": "arrow_release_legacy_name",
+      "kind": "arrow_release",
+      "origin": [
+        1,
+        72,
+        1
+      ],
+      "setup": [],
+      "position": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "motion": [
+        1.25,
+        -0.75,
+        2.5
+      ],
+      "seed": 123456789,
+      "life": 937,
+      "savedState": {
+        "Name": "minecraft:air"
+      },
+      "decodedState": null,
+      "draws": [
+        0.66403806,
+        0.76331645,
+        0.45695174
+      ],
+      "releasedPosition": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "releasedMotion": [
+        0.16600951552391052,
+        -0.11449746787548065,
+        0.2284758724272251
+      ],
+      "inGround": false,
+      "releasedLife": 0,
+      "nextRandom": 1094656688
+    },
+    {
+      "name": "arrow_release_wrapped_state",
+      "kind": "arrow_release",
+      "origin": [
+        1,
+        72,
+        1
+      ],
+      "setup": [],
+      "position": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "motion": [
+        1.25,
+        -0.75,
+        2.5
+      ],
+      "seed": 123456789,
+      "life": 937,
+      "savedState": {
+        "": "minecraft:air"
+      },
+      "decodedState": null,
+      "draws": [
+        0.66403806,
+        0.76331645,
+        0.45695174
+      ],
+      "releasedPosition": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "releasedMotion": [
+        0.16600951552391052,
+        -0.11449746787548065,
+        0.2284758724272251
+      ],
+      "inGround": false,
+      "releasedLife": 0,
+      "nextRandom": 1094656688
+    },
+    {
+      "name": "arrow_release_partial_properties",
+      "kind": "arrow_release",
+      "origin": [
+        1,
+        72,
+        1
+      ],
+      "setup": [],
+      "position": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "motion": [
+        1.25,
+        -0.75,
+        2.5
+      ],
+      "seed": 123456789,
+      "life": 937,
+      "savedState": {
+        "id": "minecraft:oak_stairs",
+        "properties": {
+          "facing": "east",
+          "half": "invalid"
+        }
+      },
+      "decodedState": {
+        "properties": {
+          "waterlogged": "false",
+          "shape": "straight",
+          "half": "bottom",
+          "facing": "east"
+        },
+        "id": "minecraft:oak_stairs"
+      },
+      "draws": [
+        0.66403806,
+        0.76331645,
+        0.45695174
+      ],
+      "releasedPosition": [
+        1.5,
+        72.5,
+        1.5
+      ],
+      "releasedMotion": [
+        0.16600951552391052,
+        -0.11449746787548065,
+        0.2284758724272251
+      ],
+      "inGround": false,
+      "releasedLife": 0,
+      "nextRandom": 1094656688
     }
   ]
 }

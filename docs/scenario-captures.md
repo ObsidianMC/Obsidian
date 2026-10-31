@@ -21,6 +21,9 @@ replaces only what vanilla produced.
   Projectile actions can supply `inBlockState` to load an embedded projectile in vanilla's format. The `*_release_*`
   references cover release into short grass, retention near a solid replacement, and the saved-state equality guard
   when the current block has no collision. Each case covers arrows, spectral arrows and tridents.
+  `noGravity: false` enables gravity for a projectile action. With `recordProjectileMotion`, checkpoints record all
+  three position and velocity components plus the saved `life` counter. The `*_release_gravity` references compare
+  these values exactly on the release tick and subsequent flight ticks.
   `spawnFalling` supplies a block, position and motion; `recordFallingMotion` records its height, vertical velocity
   and grounded flag. The sand references cover a full floor, a partial floor and waiting for a moving piston to
   clear. `withoutBlockEntity` validates the absence of a block entity after vanilla's bare moving-piston placement;
@@ -42,9 +45,20 @@ replaces only what vanilla produced.
   `ProjectilePersistence.VanillaBlockStateSurvivesRoundTripAndReleases` checks that the captured `inBlockState`
   survives loading and saving before the block changes. Default states are strings in 26.3; non-default states are
   `id`/`properties` compounds. These checks require the saved field, independently of collision-based release.
+  The `arrow_release_*` Java probes load through vanilla's `TagValueInput` and run `AbstractArrow.tick` with gravity
+  enabled in an empty block view. They record decoded states (including decode failure versus valid air), position,
+  velocity, embedded state and `life`. The entity's random is seeded after construction/loading; its first three
+  floats and next integer are captured. `ProjectilePersistence.ReplayVanillaReleaseTransition` supplies the same
+  seed and checks exact vectors and the next draw for all three projectile types. The probe suppresses weather and
+  unrelated block-inside effects; it retains vanilla's release transition and nearby collision query.
 
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.
+
+`VanillaSulfurBlocks.ReplayCapturedScenarioFixture` and `ReplayCapturedProbeFixture` each report one test for
+their entire fixture. The probe replay includes projectile state and seeded release cases for all three projectile
+types, plus both shape-update paths. Each replay collects case-labelled failures and asserts once after all cases
+have run. Obsidian-only countdown, packet and projectile save/load checks use three small tables, each in one test.
 
 ## Re-recording
 

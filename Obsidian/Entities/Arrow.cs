@@ -7,6 +7,7 @@ using Obsidian.Nbt;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Blocks;
+using Obsidian.API.World.Generator.RandomSources;
 
 [MinecraftEntity("minecraft:arrow")]
 public partial class Arrow : Entity
@@ -26,6 +27,9 @@ public partial class Arrow : Entity
     private readonly HashSet<int> piercedEntities = [];
     private Guid ownerUuid;
     protected int age;
+    private int inGroundLife;
+
+    internal IRandomSource ReleaseRandom { get; set; } = new LegacyRandomSource(System.Random.Shared.NextInt64());
 
     /// <summary>
     /// The block an arrow entered when it stopped at <paramref name="stop"/> (on a block boundary, moving by
@@ -133,7 +137,8 @@ public partial class Arrow : Entity
         if (Level is not AbstractLevel level || !level.IsMobTicking(Position))
             return;
 
-        if (++age >= 1200 || Position.Y < -128)
+        ++age;
+        if (Position.Y < -128)
         {
             await RemoveAsync();
             return;
@@ -154,13 +159,28 @@ public partial class Arrow : Entity
                     && shape.Max.Z > clearance.Min.Z && shape.Min.Z < clearance.Max.Z);
             if (anchored)
             {
-                await PickupAsync();
+                if (++this.inGroundLife >= 1200)
+                {
+                    await this.RemoveAsync();
+                }
+                else
+                {
+                    await PickupAsync();
+                }
+
                 return;
             }
 
+            // Vanilla startFalling consumes one float per axis, resets ground life and ends this tick.
             this.embedded = false;
+            this.Motion = new VectorD(
+                this.Motion.X * (this.ReleaseRandom.NextFloat() * 0.2f),
+                this.Motion.Y * (this.ReleaseRandom.NextFloat() * 0.2f),
+                this.Motion.Z * (this.ReleaseRandom.NextFloat() * 0.2f));
+            this.inGroundLife = 0;
             this.PacketBroadcaster.QueuePacketToLevelInRange(this.Level, this.Position,
                 new SetEntityDataPacket { EntityId = this.EntityId, Entity = this });
+            return;
         }
 
         var terrain = new MobTerrain(Level);
@@ -188,9 +208,10 @@ public partial class Arrow : Entity
         }
 
         var water = terrain.GetBlock((Vector)Position.Floor())?.RegistryId == BlockIds.Water;
+        // Vanilla flight applies float inertia before double-precision gravity.
         Motion *= GetDrag(water);
         if (!NoGravity)
-            Motion -= new VectorD(0, 0.05f, 0);
+            Motion -= new VectorD(0, 0.05, 0);
     }
 
     /// <summary>
@@ -468,7 +489,7 @@ public partial class Arrow : Entity
 
     protected virtual ValueTask OnImpactAsync(IEntity? target, bool damaged) => RemoveAsync();
 
-    protected virtual double GetDrag(bool water) => water ? 0.6 : 0.99;
+    protected virtual double GetDrag(bool water) => water ? 0.6f : 0.99f;
 
     private void DropBlockedArrowItem()
     {
@@ -544,6 +565,7 @@ public partial class Arrow : Entity
         var ownerTag = uuid == Guid.Empty ? null : new NbtArray<int>("Owner", EntityNbt.UuidToInts(uuid));
         tag.SetOrRemove("Owner", ownerTag);
         tag.Set(new NbtTag<int>("ObsidianLife", age));
+        tag.Set(new NbtTag<short>("life", (short)this.inGroundLife));
         tag.Set(new NbtTag<bool>("inGround", embedded));
         tag.Remove("ObsidianEmbeddedBlock");
         tag.SetOrRemove("inBlockState", this.embeddedBlockState is { } state
@@ -570,7 +592,9 @@ public partial class Arrow : Entity
             age = Math.Clamp(life, 0, 1200);
 
         embedded = tag.TryGetBool("inGround", out var ground) && ground;
-        this.embeddedBlockState = tag.TryGetTag("inBlockState", out var state) ? BlockStateNbt.Read(state) : null;
+        this.embeddedBlockState = tag.TryGetTag("inBlockState", out var state)
+            && BlockStateNbt.TryRead(state, out var decoded) ? decoded : null;
+        this.inGroundLife = tag.TryGetNumber<short>("life", out var groundLife) ? groundLife : 0;
 
         if (tag.TryGetNumber<double>("damage", out var damage) && double.IsFinite(damage))
             Damage = (float)Math.Clamp(damage, 0, float.MaxValue);

@@ -1,45 +1,107 @@
 using Obsidian.API;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Commands;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Tests.Fakes;
 using Obsidian.Utilities.Converters;
+using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Obsidian.Tests;
 
-public sealed class ProjectilePersistence
+public sealed class ProjectilePersistence(ITestOutputHelper output)
 {
-    private static readonly JsonElement savedStates = LoadSavedStates();
-
-    public static IEnumerable<object[]> VanillaSavedStates()
+    internal static async Task ReplayVanillaReleaseTransition(JsonElement probe, EntityType type)
     {
-        foreach (var probe in savedStates.EnumerateArray()
-            .Where(probe => probe.GetProperty("kind").GetString() == "arrow_saved_state"))
+        await using var context = TestServerFactory.CreateServer($"arrow-release-{Guid.NewGuid():N}");
+        var world = context.World;
+        await BlockUpdates.AddChunksAsync(world);
+        using var simulation = world.AddChunkTicket(0, 0);
+        var id = type switch
         {
-            foreach (var type in new[] { EntityType.Arrow, EntityType.SpectralArrow, EntityType.Trident })
+            EntityType.Trident => "minecraft:trident",
+            EntityType.SpectralArrow => "minecraft:spectral_arrow",
+            _ => "minecraft:arrow"
+        };
+        var saved = new NbtCompound
+        {
+            new NbtTag<string>("id", id),
+            EntityNbt.DoubleList("Pos", Location(probe.GetProperty("position"))),
+            EntityNbt.DoubleList("Motion", Location(probe.GetProperty("motion"))),
+            new NbtTag<bool>("inGround", true),
+            new NbtTag<short>("life", probe.GetProperty("life").GetInt16())
+        };
+        if (probe.TryGetProperty("savedState", out var state))
+        {
+            if (state.ValueKind == JsonValueKind.Object && state.TryGetProperty("", out var wrapped))
             {
-                yield return [probe.GetProperty("name").GetString()!, type];
+                var tag = BlockStateNbt.WrapPaletteEntry(JsonNbt.ToNbt("", wrapped));
+                tag.Name = "inBlockState";
+                saved.Set(tag);
+            }
+            else
+            {
+                saved.Set(JsonNbt.ToNbt("inBlockState", state));
             }
         }
+
+        var arrow = Assert.IsAssignableFrom<Arrow>(EntityNbt.Load(saved, world));
+        var before = EntityNbt.Save(arrow)!;
+        var decoded = probe.GetProperty("decodedState");
+        if (decoded.ValueKind == JsonValueKind.Null)
+        {
+            Assert.False(before.HasTag("inBlockState"));
+        }
+        else
+        {
+            Assert.Equal(Snbt.Write(JsonNbt.ToNbt("inBlockState", decoded)), Snbt.Write(before["inBlockState"]));
+        }
+
+        var seed = probe.GetProperty("seed").GetInt64();
+        var drawSource = new LegacyRandomSource(seed);
+        foreach (var draw in probe.GetProperty("draws").EnumerateArray())
+        {
+            Assert.Equal(draw.GetSingle(), drawSource.NextFloat());
+        }
+
+        arrow.ReleaseRandom = new LegacyRandomSource(seed);
+        await arrow.TickAsync();
+        var after = EntityNbt.Save(arrow)!;
+        Assert.False(arrow.NoGravity);
+        Assert.Equal(Location(probe.GetProperty("releasedPosition")), arrow.Position);
+        Assert.Equal(Location(probe.GetProperty("releasedMotion")), arrow.Motion);
+        Assert.True(after.TryGetTagValue<bool>("inGround", out var embedded));
+        Assert.Equal(probe.GetProperty("inGround").GetBoolean(), embedded);
+        Assert.Equal(probe.GetProperty("releasedLife").GetInt32(), after.GetShort("life"));
+        Assert.Equal(probe.GetProperty("nextRandom").GetInt32(), arrow.ReleaseRandom.NextInt());
     }
 
-    [Theory]
-    [InlineData(EntityType.Arrow, "vanilla")]
-    [InlineData(EntityType.SpectralArrow, "vanilla")]
-    [InlineData(EntityType.Trident, "vanilla")]
-    [InlineData(EntityType.Arrow, "missing")]
-    [InlineData(EntityType.SpectralArrow, "missing")]
-    [InlineData(EntityType.Trident, "missing")]
-    [InlineData(EntityType.Arrow, "custom")]
-    [InlineData(EntityType.SpectralArrow, "custom")]
-    [InlineData(EntityType.Trident, "custom")]
-    public async Task EmbeddedProjectileKeepsItsReleaseBehaviorAfterRoundTrip(EntityType type, string format)
+    [Fact]
+    public async Task EmbeddedProjectileKeepsItsReleaseBehaviorAfterRoundTrip()
+    {
+        var failures = new List<string>();
+        var cases = 0;
+        foreach (var type in new[] { EntityType.Arrow, EntityType.SpectralArrow, EntityType.Trident })
+        {
+            foreach (var format in new[] { "vanilla", "missing", "custom" })
+            {
+                cases++;
+                await VanillaSulfurBlocks.CollectFailureAsync(failures, $"{type}/{format}",
+                    () => CheckSavedProjectile(type, format));
+            }
+        }
+
+        output.WriteLine($"Replayed {cases} projectile save/load cases.");
+        Assert.True(failures.Count == 0, string.Join("\n", failures));
+    }
+
+    private static async Task CheckSavedProjectile(EntityType type, string format)
     {
         await using var context = TestServerFactory.CreateServer($"projectile-save-{Guid.NewGuid():N}");
         var world = context.World;
@@ -102,11 +164,8 @@ public sealed class ProjectilePersistence
         Assert.Null(world.FindEntity(original.Uuid));
     }
 
-    [Theory]
-    [MemberData(nameof(VanillaSavedStates))]
-    public async Task VanillaBlockStateSurvivesRoundTripAndReleases(string name, EntityType type)
+    internal static async Task VanillaBlockStateSurvivesRoundTripAndReleases(JsonElement probe, EntityType type)
     {
-        var probe = savedStates.EnumerateArray().Single(probe => probe.GetProperty("name").GetString() == name);
         var state = probe.GetProperty("savedState");
         var expected = JsonNbt.ToNbt("inBlockState", state);
         await using var context = TestServerFactory.CreateServer($"vanilla-arrow-save-{Guid.NewGuid():N}");
@@ -156,11 +215,6 @@ public sealed class ProjectilePersistence
         }
     }
 
-    private static JsonElement LoadSavedStates()
-    {
-        using var stream = typeof(ProjectilePersistence).Assembly
-            .GetManifestResourceStream("Obsidian.Tests.Assets.sulfur_fixtures.json")!;
-        using var document = JsonDocument.Parse(stream);
-        return document.RootElement.GetProperty("cases").Clone();
-    }
+    private static VectorD Location(JsonElement values) =>
+        new(values[0].GetDouble(), values[1].GetDouble(), values[2].GetDouble());
 }

@@ -65,7 +65,53 @@ public final class SulfurFixtures {
             }
 
             var origin = position(input.getAsJsonArray("origin"));
-            if (input.get("kind").getAsString().equals("arrow_saved_state")) {
+            if (input.get("kind").getAsString().equals("arrow_release")) {
+                var arrow = new ReleaseProbe(level);
+                var tag = new net.minecraft.nbt.CompoundTag();
+                tag.putBoolean("inGround", true);
+                tag.putShort("life", input.get("life").getAsShort());
+                if (input.has("savedState")) {
+                    tag.put("inBlockState", com.mojang.serialization.JsonOps.INSTANCE.convertTo(
+                        net.minecraft.nbt.NbtOps.INSTANCE, input.get("savedState")));
+                }
+
+                var reader = net.minecraft.world.entity.projectile.arrow.AbstractArrow.class.getDeclaredMethod(
+                    "readAdditionalSaveData", net.minecraft.world.level.storage.ValueInput.class);
+                reader.setAccessible(true);
+                reader.invoke(arrow, net.minecraft.world.level.storage.TagValueInput.create(
+                    net.minecraft.util.ProblemReporter.DISCARDING, net.minecraft.core.RegistryAccess.EMPTY, tag));
+                var pos = input.getAsJsonArray("position");
+                arrow.setPos(pos.get(0).getAsDouble(), pos.get(1).getAsDouble(), pos.get(2).getAsDouble());
+                var motion = input.getAsJsonArray("motion");
+                arrow.setDeltaMovement(motion.get(0).getAsDouble(), motion.get(1).getAsDouble(),
+                    motion.get(2).getAsDouble());
+                arrow.setNoGravity(false);
+                arrow.getRandom().setSeed(input.get("seed").getAsLong());
+                var lastState = net.minecraft.world.entity.projectile.arrow.AbstractArrow.class
+                    .getDeclaredField("lastState");
+                lastState.setAccessible(true);
+                var decoded = (BlockState)lastState.get(arrow);
+                input.add("decodedState", decoded == null ? null : BlockState.CODEC.encodeStart(
+                    com.mojang.serialization.JsonOps.INSTANCE, decoded).getOrThrow());
+                var draws = new JsonArray();
+                var random = RandomSource.create(input.get("seed").getAsLong());
+                for (int i = 0; i < 3; i++) {
+                    draws.add(random.nextFloat());
+                }
+
+                input.add("draws", draws);
+                arrow.tick();
+                input.add("releasedPosition", vector(arrow.position()));
+                input.add("releasedMotion", vector(arrow.getDeltaMovement()));
+                var ground = net.minecraft.world.entity.projectile.arrow.AbstractArrow.class
+                    .getDeclaredMethod("isInGround");
+                ground.setAccessible(true);
+                input.addProperty("inGround", (boolean)ground.invoke(arrow));
+                var life = net.minecraft.world.entity.projectile.arrow.AbstractArrow.class.getDeclaredField("life");
+                life.setAccessible(true);
+                input.addProperty("releasedLife", life.getInt(arrow));
+                input.addProperty("nextRandom", arrow.getRandom().nextInt());
+            } else if (input.get("kind").getAsString().equals("arrow_saved_state")) {
                 var encoded = BlockState.CODEC.encodeStart(net.minecraft.nbt.NbtOps.INSTANCE,
                     level.getBlockState(origin)).getOrThrow();
                 input.add("savedState", net.minecraft.nbt.NbtOps.INSTANCE.convertTo(
@@ -238,6 +284,14 @@ public final class SulfurFixtures {
         return result;
     }
 
+    private static JsonArray vector(Vec3 value) {
+        var result = new JsonArray();
+        result.add(value.x);
+        result.add(value.y);
+        result.add(value.z);
+        return result;
+    }
+
     private static BlockState state(String text) {
         var bracket = text.indexOf('[');
         var name = bracket < 0 ? text : text.substring(0, bracket);
@@ -321,6 +375,18 @@ public final class SulfurFixtures {
 
         @Override public FluidState getFluidState(BlockPos pos) {
             return getBlockState(pos).getFluidState();
+        }
+
+        @Override public boolean noCollision(AABB bounds) {
+            for (var entry : blocks.entrySet()) {
+                for (var shape : entry.getValue().getCollisionShape(this, entry.getKey()).toAabbs()) {
+                    if (shape.move(entry.getKey()).intersects(bounds)) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
         }
 
         @Override public int getMinY() {
@@ -418,6 +484,23 @@ public final class SulfurFixtures {
 
         @Override public boolean isSecondaryUseActive() {
             return secondary;
+        }
+    }
+
+    private static final class ReleaseProbe extends net.minecraft.world.entity.projectile.arrow.AbstractArrow {
+        ReleaseProbe(ProbeLevel level) {
+            super(EntityTypes.ARROW, level);
+        }
+
+        @Override protected ItemStack getDefaultPickupItem() {
+            return new ItemStack(net.minecraft.world.item.Items.ARROW);
+        }
+
+        @Override public boolean isInWaterOrRain() {
+            return false;
+        }
+
+        @Override protected void applyEffectsFromBlocks() {
         }
     }
 
