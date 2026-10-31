@@ -870,16 +870,23 @@ public sealed partial class RegionFile : IAsyncDisposable
 
     // Deletes the external files' temporaries a crash (or a failed cleanup) left for this region's chunks. The region
     // file is open exclusively, so no write, in this process or another, may still be using them.
+    // Best effort: a folder that can't be listed still opens its regions, and leftover temporaries are harmless.
     private void ReclaimTemporaries()
     {
         if (this.regionPosition is null)
             return;
 
         var folder = Path.GetDirectoryName(Path.GetFullPath(this.filePath))!;
-        foreach (var path in Directory.EnumerateFiles(folder, $"c.*.mcc.*{TemporarySuffix}"))
+        try
         {
-            if (this.IsOwnTemporary(Path.GetFileName(path)))
-                DeleteStale(path);
+            foreach (var path in Directory.EnumerateFiles(folder, $"c.*.mcc.*{TemporarySuffix}"))
+            {
+                if (this.IsOwnTemporary(Path.GetFileName(path)))
+                    DeleteStale(path);
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
         }
     }
 
