@@ -31,12 +31,19 @@ public abstract class ScatteredFeaturePiece : StructurePiece
     /// </summary>
     protected int HeightPosition { get; private set; } = -1;
 
+    private protected override bool BoxMovesWhenPlaced => true;
+
+    private protected override bool IsPlacementState(string field) => field == "HPos" || base.IsPlacementState(field);
+
     // The box moves with the height, so both are taken under the height lock.
     internal override void SaveState(NbtCompound tag)
     {
         lock (this.heightLock)
         {
             base.SaveState(tag);
+            tag.Add(new NbtTag<int>("Width", this.Width));
+            tag.Add(new NbtTag<int>("Height", this.Height));
+            tag.Add(new NbtTag<int>("Depth", this.Depth));
             tag.Add(new NbtTag<int>("HPos", this.HeightPosition));
         }
     }

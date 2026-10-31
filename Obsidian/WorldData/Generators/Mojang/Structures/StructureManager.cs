@@ -287,7 +287,10 @@ internal sealed class StructureManager : IStructurePlacementState
         foreach (var structure in reaching.Layout.TerrainAdapting)
         {
             foreach (var start in reaching.Of(structure))
-                yield return start;
+            {
+                if (!start.IsRejected)
+                    yield return start;
+            }
         }
     }
 

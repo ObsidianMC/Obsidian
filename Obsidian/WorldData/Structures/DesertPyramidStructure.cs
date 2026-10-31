@@ -94,6 +94,12 @@ public sealed class DesertPyramidPiece : ScatteredFeaturePiece
     {
     }
 
+    internal override string TypeId => "minecraft:tedp";
+
+    private protected override bool IsPlacementState(string field) =>
+        field is "hasPlacedChest0" or "hasPlacedChest1" or "hasPlacedChest2" or "hasPlacedChest3"
+        || base.IsPlacementState(field);
+
     internal override void SaveState(NbtCompound tag)
     {
         base.SaveState(tag);

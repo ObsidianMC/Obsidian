@@ -71,6 +71,20 @@ replaces only what vanilla produced.
   through Obsidian's `UseItemOnPacket`. The bounded level suppresses advancement/stat delivery and unrelated
   neighbor updates. These are native routine captures, rather than an RCON interaction or sleep lifecycle capture.
 
+- `structure_pieces.json` (`VanillaStructureSaves.StartsSaveLikeVanilla`) holds what vanilla 26.3 saves of
+  structure starts (`StructureStart.createTag`), from `Java/StructurePieceFixtures.java`, which runs a dedicated
+  server of its own in a new world (the file's `seed`, structures on) under the scratch directory. A case names a
+  start of the worldgen `structures` capture (structure, dimension, start chunk) and records `fresh`, its save as
+  generated, and with `place`, `placed`, its save once every chunk its box reaches is decorated, in x then z order:
+  what placing moved and flagged (heights, chests, spawners, a spider's spawner). When vanilla loading its last save
+  and saving it again changes it (it recomputes igloo and terrain matching jigsaw boxes), that is `reloaded`. Each
+  save is compact SNBT, the start without `Children`, then one string per piece. The replay generates each start
+  through the 26.3 pipeline and checks that Obsidian saves it as vanilla did, accepts each of vanilla's saves of it,
+  and restores vanilla's last save and saves that back. For placed starts it also decorates every chunk the start
+  reaches in the capture's order, in one world, and checks that Obsidian then saves what vanilla saved.
+  The cases are one start of each structure type, 28 in all, which reach every piece type Obsidian generates except
+  the ocean monument's rooms, which vanilla doesn't save (it saves the building and regenerates its rooms).
+
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.
 
@@ -89,6 +103,8 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=more_blocks
 
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=structure_pieces
+
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur -p:CaptureCases=spike_shatters_after_falling+review_spike_pending_fall_keeps_frustum
 ```
 
@@ -106,8 +122,13 @@ For `more_blocks`, `CaptureCases` accepts exact `+`-separated names in `more_blo
 Java probes. No RCON server is started and no other fixture is changed. Its source and the reusable runtime
 instrument dumper are separate so editing these probes does not regenerate unrelated assets.
 
+For `structure_pieces`, `CaptureCases` accepts exact `+`-separated case names and re-records only those starts. The
+capture takes about 15 seconds after the server starts. `StructurePieceFixtures.java` is an asset input like the
+other dumpers, so editing it regenerates the assets once.
+
 The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory>
-<scratch directory> <test assets directory> [redstone+fluids+daylight+sulfur+more_blocks] [case names]`.
+<scratch directory> <test assets directory> [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces]
+[case names]`.
 
 ## How it captures
 

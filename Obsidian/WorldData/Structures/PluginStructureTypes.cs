@@ -58,12 +58,15 @@ internal sealed class PluginStructure : Structure
 }
 
 /// <summary>
-/// A <see cref="CustomStructurePiece"/> among a structure's pieces. Only its box is saved, as for every piece.
+/// A <see cref="CustomStructurePiece"/> among a structure's pieces. Only the fields every piece has are saved; vanilla
+/// has no type for it.
 /// </summary>
 internal sealed class PluginStructurePiece(CustomStructurePiece piece)
     : StructurePiece(0, BlockBox.FromCorners(piece.Bounds.Min, piece.Bounds.Max))
 {
     public CustomStructurePiece Piece { get; } = piece;
+
+    internal override string TypeId => "obsidian:plugin_piece";
 
     public override void PostProcess(StructurePieceContext context)
     {

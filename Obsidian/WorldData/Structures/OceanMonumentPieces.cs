@@ -359,6 +359,8 @@ public static class OceanMonumentPieces
             this.childPieces.Add(new OceanMonumentPenthouse(orientation, penthouse));
         }
 
+        internal override string TypeId => "minecraft:omb";
+
         /// <summary>
         /// Vanilla <c>generateRoomGraph</c>: links the grid rooms, picks the core room and closes random openings while every
         /// room stays reachable from the entrance.
@@ -870,6 +872,8 @@ public static class OceanMonumentPieces
         {
         }
 
+        internal override string TypeId => "minecraft:omcr";
+
         public override void PostProcess(StructurePieceContext context)
         {
             this.GenerateBoxOnFillOnly(context, 1, 8, 0, 14, 8, 14, baseGray);
@@ -946,6 +950,8 @@ public static class OceanMonumentPieces
         {
         }
 
+        internal override string TypeId => "minecraft:omdxr";
+
         public override void PostProcess(StructurePieceContext context)
         {
             var east = this.Room.Connections[East]!;
@@ -1008,6 +1014,8 @@ public static class OceanMonumentPieces
         internal OceanMonumentDoubleXYRoom(BlockFace orientation, RoomDefinition room) : base(1, orientation, room, 2, 2, 1)
         {
         }
+
+        internal override string TypeId => "minecraft:omdxyr";
 
         public override void PostProcess(StructurePieceContext context)
         {
@@ -1107,6 +1115,8 @@ public static class OceanMonumentPieces
         {
         }
 
+        internal override string TypeId => "minecraft:omdyr";
+
         public override void PostProcess(StructurePieceContext context)
         {
             if (this.Room.Index / 25 > 0)
@@ -1194,6 +1204,8 @@ public static class OceanMonumentPieces
         internal OceanMonumentDoubleYZRoom(BlockFace orientation, RoomDefinition room) : base(1, orientation, room, 1, 2, 2)
         {
         }
+
+        internal override string TypeId => "minecraft:omdyzr";
 
         public override void PostProcess(StructurePieceContext context)
         {
@@ -1292,6 +1304,8 @@ public static class OceanMonumentPieces
         {
         }
 
+        internal override string TypeId => "minecraft:omdzr";
+
         public override void PostProcess(StructurePieceContext context)
         {
             var north = this.Room.Connections[North]!;
@@ -1374,6 +1388,8 @@ public static class OceanMonumentPieces
         {
         }
 
+        internal override string TypeId => "minecraft:omentry";
+
         public override void PostProcess(StructurePieceContext context)
         {
             this.Fill(context, 0, 3, 0, 2, 3, 7, baseLight);
@@ -1405,6 +1421,8 @@ public static class OceanMonumentPieces
         internal OceanMonumentPenthouse(BlockFace orientation, BlockBox boundingBox) : base(orientation, 1, boundingBox)
         {
         }
+
+        internal override string TypeId => "minecraft:ompenthouse";
 
         public override void PostProcess(StructurePieceContext context)
         {
@@ -1461,6 +1479,8 @@ public static class OceanMonumentPieces
         {
             this.mainDesign = random.NextInt(3);
         }
+
+        internal override string TypeId => "minecraft:omsimple";
 
         public override void PostProcess(StructurePieceContext context)
         {
@@ -1665,6 +1685,8 @@ public static class OceanMonumentPieces
         {
         }
 
+        internal override string TypeId => "minecraft:omsimplet";
+
         public override void PostProcess(StructurePieceContext context)
         {
             if (this.Room.Index / 25 > 0)
@@ -1719,6 +1741,8 @@ public static class OceanMonumentPieces
         {
             this.mainDesign = randomValue & 1;
         }
+
+        internal override string TypeId => "minecraft:omwr";
 
         public override void PostProcess(StructurePieceContext context)
         {

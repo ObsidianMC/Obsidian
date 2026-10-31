@@ -59,9 +59,35 @@ public sealed class OceanRuinPiece : TemplateStructurePiece
     private static readonly BlockSet ice = LegacyWorldgenTags.Blocks("ice");
 
     private readonly bool isLarge;
+    private readonly float integrity;
+    private readonly OceanRuinType biomeType;
 
     private OceanRuinPiece(string templateId, Vector position, StructureRotation rotation, float integrity, OceanRuinType biomeType, bool isLarge)
-        : base(0, templateId, MakeSettings(rotation, integrity, biomeType), position) => this.isLarge = isLarge;
+        : base(0, templateId, MakeSettings(rotation, integrity, biomeType), position)
+    {
+        this.isLarge = isLarge;
+        this.integrity = integrity;
+        this.biomeType = biomeType;
+    }
+
+    internal override string TypeId => "minecraft:orp";
+
+    private protected override bool BoxMovesWhenPlaced => true;
+
+    private protected override bool IsPlacementState(string field) => field == "TPY" || base.IsPlacementState(field);
+
+    // Vanilla moves the template to the sea floor where it places it, and saves it there.
+    private protected override Vector SavedTemplatePosition => this.LastPlacement ?? this.TemplatePosition;
+
+    internal override void SaveState(NbtCompound tag)
+    {
+        base.SaveState(tag);
+
+        this.SaveRotation(tag);
+        tag.Add(new NbtTag<float>("Integrity", this.integrity));
+        tag.Add(new NbtTag<string>("BiomeType", this.biomeType == OceanRuinType.Cold ? "COLD" : "WARM"));
+        tag.Add(new NbtTag<bool>("IsLarge", this.isLarge));
+    }
 
     /// <summary>Vanilla <c>OceanRuinPieces.addPieces</c>.</summary>
     internal static void AddPieces(Vector position, StructureRotation rotation, IStructurePieceAccessor pieces, IRandomSource random,

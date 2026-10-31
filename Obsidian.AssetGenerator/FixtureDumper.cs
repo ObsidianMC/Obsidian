@@ -25,6 +25,28 @@ internal static class FixtureDumper
         VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
             Source("SulfurFixtures.java"), fixture);
 
+    // An on-request probe: a dedicated server of its own, in a new world under the scratch directory.
+    internal static Task DumpStructurePiecesAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null)
+    {
+        var world = Path.Combine(server.ScratchDirectory, "structure-pieces");
+        if (Directory.Exists(world))
+            Directory.Delete(world, recursive: true);
+
+        Directory.CreateDirectory(world);
+
+        var arguments = new List<string>
+        {
+            // The probe finds the server in the shutdown hook vanilla's Main registers.
+            "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+            "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("StructurePieceFixtures.java"), fixture
+        };
+        if (cases is not null)
+            arguments.Add(string.Join('+', cases));
+
+        return VanillaServer.RunJavaAsync(world, arguments.ToArray());
+    }
+
     public static async Task DumpServerAsync(VanillaServer server, string output)
     {
         var classpath = string.Join(Path.PathSeparator, server.ClassPath);

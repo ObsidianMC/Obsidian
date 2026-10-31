@@ -1,3 +1,4 @@
+using Obsidian.Nbt;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Structures.Processors;
 
@@ -46,6 +47,17 @@ public sealed class IglooPiece : TemplateStructurePiece
     private IglooPiece(string templateId, Vector position, StructureRotation rotation, int down)
         : base(0, templateId, MakeSettings(rotation, templateId), position + offsets[templateId] + (0, -down, 0))
     {
+    }
+
+    internal override string TypeId => "minecraft:iglu";
+
+    private protected override bool BoxMovesWhenPlaced => true;
+
+    internal override void SaveState(NbtCompound tag)
+    {
+        base.SaveState(tag);
+
+        this.SaveRotation(tag);
     }
 
     /// <summary>

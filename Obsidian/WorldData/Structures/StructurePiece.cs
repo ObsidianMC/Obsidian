@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.Commands;
 using Obsidian.Nbt;
 using Obsidian.WorldData.Features;
 
@@ -73,30 +74,155 @@ public abstract class StructurePiece
     public virtual void Move(int x, int y, int z) => this.BoundingBox = this.BoundingBox.Move(x, y, z);
 
     /// <summary>
-    /// Saves what changes as the piece is placed, with vanilla's field names: the bounding box (<c>BB</c>), which some
-    /// pieces move when first placed, and overrides add their flags (chest placed, spawner placed...).
+    /// The piece's type in saves, an identifier of vanilla's <c>StructurePieceType</c> registry
+    /// (<c>minecraft:mscorridor</c>...).
+    /// </summary>
+    internal abstract string TypeId { get; }
+
+    /// <summary>
+    /// Saves the piece like vanilla 26.3's <c>StructurePiece.createTag</c>: its type (<c>id</c>), bounding box
+    /// (<c>BB</c>), orientation (<c>O</c>) and depth (<c>GD</c>), and overrides add their type's fields, with what
+    /// changes as the piece is placed (the box some pieces move, chest placed, spawner placed...).
     /// </summary>
     /// <remarks>
-    /// Pieces are recomputed from the seed, so only this state needs saving for a restart to place the rest of the piece
-    /// the same way. Called under the start's lock (see <see cref="StructureStart.SaveState"/>).
+    /// Obsidian recomputes pieces from the seed, so only what placing changes is read back (see
+    /// <see cref="LoadState"/>); the rest is saved for vanilla, which reads the pieces from the save. Called under the
+    /// start's lock (see <see cref="StructureStart.SaveState"/>).
     /// </remarks>
     internal virtual void SaveState(NbtCompound tag)
     {
-        var box = this.BoundingBox;
-        tag.Add(new NbtArray<int>("BB", [box.MinX, box.MinY, box.MinZ, box.MaxX, box.MaxY, box.MaxZ]));
+        tag.Add(new NbtTag<string>("id", this.TypeId));
+        tag.Add(SaveBox("BB", this.SavedBoundingBox));
+        tag.Add(new NbtTag<int>("O", HorizontalIndex(this.Orientation)));
+        tag.Add(new NbtTag<int>("GD", this.GenDepth));
     }
 
     /// <summary>
-    /// Restores what <see cref="SaveState"/> saved, before the piece is placed again.
+    /// Restores what placing the piece changed from what <see cref="SaveState"/> (or vanilla) saved, before the piece
+    /// is placed again.
     /// </summary>
     internal virtual void LoadState(NbtCompound tag)
     {
-        if (tag.TryGetTag<NbtArray<int>>("BB", out var bounds) && bounds.Count == 6)
-        {
-            var box = bounds.GetArray();
-            this.BoundingBox = new BlockBox(new Vector(box[0], box[1], box[2]), new Vector(box[3], box[4], box[5]));
-        }
+        if (TryLoadBox(tag, "BB", out var box))
+            this.BoundingBox = box;
     }
+
+    /// <summary>
+    /// Whether <paramref name="saved"/>, a save with the piece's type's fields (vanilla's, or Obsidian's since it
+    /// writes them), is of this piece as generated: every field but those placing changes holds the same value, so
+    /// its state can be restored into this piece. Only meaningful before the piece is placed.
+    /// </summary>
+    internal bool IsSavedAs(NbtCompound saved)
+    {
+        var generated = new NbtCompound();
+        this.SaveState(generated);
+
+        var fields = generated.Select(field => field.Key).Union(saved.Select(field => field.Key));
+        foreach (var field in fields)
+        {
+            if (this.IsPlacementState(field))
+                continue;
+
+            if (!generated.TryGetTag(field, out var mine) || !saved.TryGetTag(field, out var theirs))
+                return false;
+
+            if (!this.IsSameField(field, mine, theirs))
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Whether a saved field is one that placing the piece changes (a chest placed, a height found...), which
+    /// <see cref="IsSavedAs"/> doesn't compare.
+    /// </summary>
+    private protected virtual bool IsPlacementState(string field) => false;
+
+    /// <summary>
+    /// Whether placing the piece moves its box up or down, so that a save may hold it moved.
+    /// </summary>
+    private protected virtual bool BoxMovesWhenPlaced => false;
+
+    /// <summary>
+    /// The box vanilla saves, where its piece last placed itself: pieces that place themselves elsewhere than their
+    /// box without moving it, since they're shared between chunks, give the box moved there.
+    /// </summary>
+    private protected virtual BlockBox SavedBoundingBox => this.BoundingBox;
+
+    /// <summary>
+    /// Whether a saved field holds the value the generated piece saves; its box may be moved (see
+    /// <see cref="BoxMovesWhenPlaced"/>).
+    /// </summary>
+    private protected virtual bool IsSameField(string field, INbtTag generated, INbtTag saved) =>
+        field == "BB" ? this.IsSameBox(generated, saved) : IsSameValue(generated, saved);
+
+    private bool IsSameBox(INbtTag generated, INbtTag saved)
+    {
+        if (!this.BoxMovesWhenPlaced)
+            return IsSameValue(generated, saved);
+
+        if (generated is not NbtArray<int> mine || saved is not NbtArray<int> theirs)
+            return false;
+
+        if (!TryLoadBox(mine, out var box) || !TryLoadBox(theirs, out var other))
+            return false;
+
+        return box.Move(0, other.MinY - box.MinY, 0) == other;
+    }
+
+    // Values compare by their SNBT, which tells types and values apart (but not how an empty list is typed).
+    private protected static bool IsSameValue(INbtTag generated, INbtTag saved) =>
+        Snbt.Write(generated) == Snbt.Write(saved);
+
+    /// <summary>
+    /// Vanilla's <c>BoundingBox</c> codec: <c>[minX, minY, minZ, maxX, maxY, maxZ]</c>.
+    /// </summary>
+    private protected static NbtArray<int> SaveBox(string? name, BlockBox box) =>
+        new(name, [box.MinX, box.MinY, box.MinZ, box.MaxX, box.MaxY, box.MaxZ]);
+
+    private protected static bool TryLoadBox(NbtCompound tag, string name, out BlockBox box)
+    {
+        box = default;
+        if (!tag.TryGetTag<NbtArray<int>>(name, out var bounds))
+            return false;
+
+        return TryLoadBox(bounds, out box);
+    }
+
+    private protected static bool TryLoadBox(NbtArray<int> bounds, out BlockBox box)
+    {
+        box = default;
+        if (bounds.Count != 6)
+            return false;
+
+        var values = bounds.GetArray();
+        box = new BlockBox(new Vector(values[0], values[1], values[2]), new Vector(values[3], values[4], values[5]));
+        return true;
+    }
+
+    /// <summary>
+    /// Vanilla's <c>Direction.get2DDataValue</c>: south 0, west 1, north 2, east 3, and -1 for none.
+    /// </summary>
+    private protected static int HorizontalIndex(BlockFace? face) => face switch
+    {
+        BlockFace.South => 0,
+        BlockFace.West => 1,
+        BlockFace.North => 2,
+        BlockFace.East => 3,
+        _ => -1
+    };
+
+    /// <summary>
+    /// Vanilla's <c>Rotation</c> names.
+    /// </summary>
+    private protected static string RotationName(StructureRotation rotation) => rotation switch
+    {
+        StructureRotation.Clockwise90 => "CLOCKWISE_90",
+        StructureRotation.Clockwise180 => "CLOCKWISE_180",
+        StructureRotation.CounterClockwise90 => "COUNTERCLOCKWISE_90",
+        _ => "NONE"
+    };
 
     /// <summary>
     /// Vanilla <c>isCloseToChunk</c>: whether the box reaches within <paramref name="distance"/> blocks of the chunk.

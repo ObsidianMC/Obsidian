@@ -31,6 +31,12 @@ public sealed class SwampHutPiece : ScatteredFeaturePiece
     {
     }
 
+    internal override string TypeId => "minecraft:tesh";
+
+    private protected override bool IsPlacementState(string field) =>
+        field is "Witch" or "Cat"
+        || base.IsPlacementState(field);
+
     internal override void SaveState(NbtCompound tag)
     {
         base.SaveState(tag);

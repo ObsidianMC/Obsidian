@@ -170,6 +170,10 @@ terrain alone.
 Record this section alone with
 `dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen -p:CaptureSections=structures`.
 
+How vanilla saves these starts (`StructureStart.createTag`) is recorded separately, for one start of each structure
+type, in `Assets/structure_pieces.json`, by an on-request scenario capture (`CaptureFixtures=structure_pieces`; see
+[scenario captures](scenario-captures.md)), so that it doesn't re-run the worldgen captures.
+
 ## Decoration references
 
 `decoration/` captures the 26.3 `features` status with structures disabled. The 71 cases cover 66 of 67 biomes (all

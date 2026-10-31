@@ -69,6 +69,16 @@ public sealed class WoodlandMansionPiece : TemplateStructurePiece
     {
     }
 
+    internal override string TypeId => "minecraft:wmp";
+
+    internal override void SaveState(NbtCompound tag)
+    {
+        base.SaveState(tag);
+
+        this.SaveRotation(tag);
+        tag.Add(new NbtTag<string>("Mi", MirrorName(this.PlaceSettings.Mirror)));
+    }
+
     protected override void HandleDataMarker(string metadata, Vector position, StructurePieceContext context, BlockBox box)
     {
         var level = context.Level;

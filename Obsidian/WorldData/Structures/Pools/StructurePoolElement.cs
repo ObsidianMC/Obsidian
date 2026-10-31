@@ -3,6 +3,7 @@ using Obsidian.API.World.Structures;
 using Obsidian.Nbt;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Structures.Processors;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Obsidian.WorldData.Structures.Pools;
@@ -28,6 +29,51 @@ public abstract class StructurePoolElement
     public virtual int GroundLevelDelta => 1;
 
     public abstract Vector GetSize(StructureRotation rotation);
+
+    /// <summary>
+    /// Saves the element in the format of vanilla 26.3's <c>StructurePoolElement</c> codec (as jigsaw pieces save
+    /// their <c>pool_element</c>): its <c>element_type</c> and its type's fields.
+    /// </summary>
+    internal NbtCompound Save(string? name)
+    {
+        var tag = new NbtCompound(name) { new NbtTag<string>("element_type", this.Type) };
+        this.SaveFields(tag);
+        return tag;
+    }
+
+    /// <summary>
+    /// A saved element (see <see cref="Save"/>) with each placed feature defined inline replaced by a marker, for
+    /// comparing saves: Obsidian saves the definition it read, which vanilla's codecs write normalised (defaults left
+    /// out, numbers typed), so the same element may be saved differently. Everything else is kept.
+    /// </summary>
+    internal static NbtCompound WithoutInlineFeatures(NbtCompound element)
+    {
+        if (element.TryGetTag<NbtCompound>("feature", out _))
+        {
+            var copy = NbtCopy.Copy(element, "feature");
+            copy.Add(new NbtTag<string>("feature", "<inline>"));
+            return copy;
+        }
+
+        if (element.TryGetTag<NbtList>("elements", out var elements))
+        {
+            var copy = NbtCopy.Copy(element, "elements");
+            var list = new NbtList(NbtTagType.Compound, "elements");
+            foreach (var child in elements)
+                list.Add(child is NbtCompound compound ? WithoutInlineFeatures(compound) : child);
+
+            copy.Add(list);
+            return copy;
+        }
+
+        return element;
+    }
+
+    /// <summary>
+    /// Adds the element's fields; by default its projection.
+    /// </summary>
+    private protected virtual void SaveFields(NbtCompound tag) =>
+        tag.Add(new NbtTag<string>("projection", this.Projection == Projection.Rigid ? "rigid" : "terrain_matching"));
 
     /// <summary>
     /// Vanilla <c>getShuffledJigsawBlocks</c>: the element's jigsaws placed at <paramref name="position"/>, in a random
@@ -108,6 +154,26 @@ public class SinglePoolElement : StructurePoolElement
 
     public override Vector GetSize(StructureRotation rotation) => this.Template.GetSize(rotation);
 
+    // A list defined inline is saved without its processors: Obsidian doesn't keep them in vanilla's format. Vanilla's
+    // own pools only define empty lists inline.
+    private protected override void SaveFields(NbtCompound tag)
+    {
+        tag.Add(new NbtTag<string>("location", this.Location));
+
+        if (this.Processors.Identifier.Length > 0)
+            tag.Add(new NbtTag<string>("processors", this.Processors.Identifier));
+        else
+            tag.Add(new NbtCompound("processors") { new NbtList(NbtTagType.End, "processors") });
+
+        base.SaveFields(tag);
+
+        if (this.OverrideLiquidSettings is LiquidSettings liquid)
+        {
+            var name = PoolElementStructurePiece.LiquidSettingsName(liquid);
+            tag.Add(new NbtTag<string>("override_liquid_settings", name));
+        }
+    }
+
     public override List<JigsawBlockInfo> GetShuffledJigsawBlocks(Vector position, StructureRotation rotation, IRandomSource random)
     {
         var jigsaws = new List<JigsawBlockInfo>();
@@ -186,6 +252,16 @@ public sealed class ListPoolElement : StructurePoolElement
         }
     }
 
+    private protected override void SaveFields(NbtCompound tag)
+    {
+        var elements = new NbtList(NbtTagType.Compound, "elements");
+        foreach (var element in this.Elements)
+            elements.Add(element.Save(null));
+
+        tag.Add(elements);
+        base.SaveFields(tag);
+    }
+
     internal override void SetProjection(Projection value)
     {
         base.SetProjection(value);
@@ -257,10 +333,33 @@ public sealed class FeaturePoolElement : StructurePoolElement
     public required PlacedFeature Feature { get; init; }
 
     /// <summary>
+    /// The JSON the placed features defined inline were read from, which a feature element saves in place of an
+    /// identifier.
+    /// </summary>
+    internal static ConditionalWeakTable<PlacedFeature, string> InlineDefinitions { get; } = [];
+
+    /// <summary>
     /// Whether the jigsaw has no name, like 26.3's, which attaches to any target; 1.21.11's is
     /// <c>minecraft:bottom</c>.
     /// </summary>
     internal bool UnnamedJigsaw { get; set; }
+
+    // A feature defined inline is saved as its definition, which vanilla's codec reads like its own.
+    private protected override void SaveFields(NbtCompound tag)
+    {
+        if (InlineDefinitions.TryGetValue(this.Feature, out var definition))
+        {
+            var feature = JsonNbt.ToCompound(definition);
+            feature.Name = "feature";
+            tag.Add(feature);
+        }
+        else
+        {
+            tag.Add(new NbtTag<string>("feature", this.Feature.Identifier));
+        }
+
+        base.SaveFields(tag);
+    }
 
     public override Vector GetSize(StructureRotation rotation) => Vector.Zero;
 
@@ -290,6 +389,11 @@ public sealed class EmptyPoolElement : StructurePoolElement
     public static EmptyPoolElement Instance { get; } = new() { Type = "minecraft:empty_pool_element" };
 
     public EmptyPoolElement() => this.SetProjection(Projection.TerrainMatching);
+
+    // Vanilla's empty element has no fields.
+    private protected override void SaveFields(NbtCompound tag)
+    {
+    }
 
     public override Vector GetSize(StructureRotation rotation) => Vector.Zero;
 

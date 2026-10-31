@@ -381,6 +381,8 @@ public static class NetherFortressPieces
         {
         }
 
+        internal override string TypeId => "minecraft:nebcr";
+
         /// <summary>
         /// The crossing at the fortress's start.
         /// </summary>
@@ -485,6 +487,15 @@ public static class NetherFortressPieces
             this.selfSeed = random.NextInt();
         }
 
+        internal override string TypeId => "minecraft:nebef";
+
+        internal override void SaveState(NbtCompound tag)
+        {
+            base.SaveState(tag);
+
+            tag.Add(new NbtTag<int>("Seed", this.selfSeed));
+        }
+
         internal static NetherBridgePiece? Create(IStructurePieceAccessor pieces, IRandomSource random, int x, int y, int z, BlockFace direction,
             int genDepth)
         {
@@ -525,6 +536,8 @@ public static class NetherFortressPieces
         private BridgeStraight(int genDepth, BlockBox boundingBox, BlockFace orientation) : base(genDepth, boundingBox, orientation)
         {
         }
+
+        internal override string TypeId => "minecraft:nebs";
 
         internal static NetherBridgePiece? Create(IStructurePieceAccessor pieces, IRandomSource random, int x, int y, int z, BlockFace direction,
             int genDepth)
@@ -576,6 +589,8 @@ public static class NetherFortressPieces
         {
         }
 
+        internal override string TypeId => "minecraft:neccs";
+
         internal static NetherBridgePiece? Create(IStructurePieceAccessor pieces, IRandomSource random, int x, int y, int z, BlockFace direction,
             int genDepth)
         {
@@ -626,6 +641,8 @@ public static class NetherFortressPieces
         private CastleCorridorTBalconyPiece(int genDepth, BlockBox boundingBox, BlockFace orientation) : base(genDepth, boundingBox, orientation)
         {
         }
+
+        internal override string TypeId => "minecraft:nectb";
 
         internal static NetherBridgePiece? Create(IStructurePieceAccessor pieces, IRandomSource random, int x, int y, int z, BlockFace direction,
             int genDepth)
@@ -683,6 +700,8 @@ public static class NetherFortressPieces
         {
         }
 
+        internal override string TypeId => "minecraft:nece";
+
         internal static NetherBridgePiece? Create(IStructurePieceAccessor pieces, IRandomSource random, int x, int y, int z, BlockFace direction,
             int genDepth)
         {
@@ -726,6 +745,8 @@ public static class NetherFortressPieces
         {
         }
 
+        internal override string TypeId => "minecraft:nescsc";
+
         internal static NetherBridgePiece? Create(IStructurePieceAccessor pieces, IRandomSource random, int x, int y, int z, BlockFace direction,
             int genDepth)
         {
@@ -765,6 +786,11 @@ public static class NetherFortressPieces
         {
             this.isNeedingChest = random.NextInt(3) == 0;
         }
+
+        internal override string TypeId => "minecraft:nesclt";
+
+        private protected override bool IsPlacementState(string field) =>
+            field == "Chest" || base.IsPlacementState(field);
 
         internal override void SaveState(NbtCompound tag)
         {
@@ -821,6 +847,8 @@ public static class NetherFortressPieces
         {
         }
 
+        internal override string TypeId => "minecraft:nesc";
+
         internal static NetherBridgePiece? Create(IStructurePieceAccessor pieces, IRandomSource random, int x, int y, int z, BlockFace direction,
             int genDepth)
         {
@@ -857,6 +885,11 @@ public static class NetherFortressPieces
         {
             this.isNeedingChest = random.NextInt(3) == 0;
         }
+
+        internal override string TypeId => "minecraft:nescrt";
+
+        private protected override bool IsPlacementState(string field) =>
+            field == "Chest" || base.IsPlacementState(field);
 
         internal override void SaveState(NbtCompound tag)
         {
@@ -912,6 +945,8 @@ public static class NetherFortressPieces
         private CastleStalkRoom(int genDepth, BlockBox boundingBox, BlockFace orientation) : base(genDepth, boundingBox, orientation)
         {
         }
+
+        internal override string TypeId => "minecraft:necsr";
 
         internal static NetherBridgePiece? Create(IStructurePieceAccessor pieces, IRandomSource random, int x, int y, int z, BlockFace direction,
             int genDepth)
@@ -1000,6 +1035,11 @@ public static class NetherFortressPieces
         {
         }
 
+        internal override string TypeId => "minecraft:nemt";
+
+        private protected override bool IsPlacementState(string field) =>
+            field == "Mob" || base.IsPlacementState(field);
+
         internal override void SaveState(NbtCompound tag)
         {
             base.SaveState(tag);
@@ -1080,6 +1120,8 @@ public static class NetherFortressPieces
         {
         }
 
+        internal override string TypeId => "minecraft:nerc";
+
         internal static NetherBridgePiece? Create(IStructurePieceAccessor pieces, IRandomSource random, int x, int y, int z, BlockFace direction,
             int genDepth)
         {
@@ -1132,6 +1174,8 @@ public static class NetherFortressPieces
         private StairsRoom(int genDepth, BlockBox boundingBox, BlockFace orientation) : base(genDepth, boundingBox, orientation)
         {
         }
+
+        internal override string TypeId => "minecraft:nesr";
 
         internal static NetherBridgePiece? Create(IStructurePieceAccessor pieces, IRandomSource random, int x, int y, int z, BlockFace direction,
             int genDepth)

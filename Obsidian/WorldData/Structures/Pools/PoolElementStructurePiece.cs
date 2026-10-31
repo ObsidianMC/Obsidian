@@ -1,3 +1,5 @@
+using Obsidian.Nbt;
+
 namespace Obsidian.WorldData.Structures.Pools;
 
 /// <summary>
@@ -38,6 +40,67 @@ public sealed class PoolElementStructurePiece : StructurePiece, IJigsawPiece
     public IReadOnlyList<JigsawJunction> Junctions => this.junctions;
 
     public void AddJunction(JigsawJunction junction) => this.junctions.Add(junction);
+
+    internal override string TypeId => "minecraft:jigsaw";
+
+    /// <summary>
+    /// Adds vanilla 26.3's <c>PoolElementStructurePiece</c> fields: where the element is placed, its ground level,
+    /// the element itself, its rotation and its junctions, and the liquid settings when they aren't the default.
+    /// </summary>
+    internal override void SaveState(NbtCompound tag)
+    {
+        base.SaveState(tag);
+
+        var position = this.Position;
+        tag.Add(new NbtTag<int>("PosX", position.X));
+        tag.Add(new NbtTag<int>("PosY", position.Y));
+        tag.Add(new NbtTag<int>("PosZ", position.Z));
+        tag.Add(new NbtTag<int>("ground_level_delta", this.GroundLevelDelta));
+        tag.Add(this.Element.Save("pool_element"));
+        tag.Add(new NbtTag<string>("rotation", RotationName(this.ElementRotation)));
+
+        var junctions = new NbtList(NbtTagType.Compound, "junctions");
+        foreach (var junction in this.junctions)
+        {
+            junctions.Add(new NbtCompound
+            {
+                new NbtTag<int>("source_x", junction.SourceX),
+                new NbtTag<int>("source_ground_y", junction.SourceGroundY),
+                new NbtTag<int>("source_z", junction.SourceZ),
+                new NbtTag<int>("delta_y", junction.DeltaY),
+                new NbtTag<string>("dest_proj", junction.DestinationRigid ? "rigid" : "terrain_matching")
+            });
+        }
+
+        tag.Add(junctions);
+
+        if (this.LiquidSettings != LiquidSettings.ApplyWaterlogging)
+            tag.Add(new NbtTag<string>("liquid_settings", LiquidSettingsName(this.LiquidSettings)));
+    }
+
+    // Vanilla recomputes the box of a terrain matching piece it loads, and saves that box, so a save may hold either.
+    private protected override bool IsPlacementState(string field) => field == "BB";
+
+    // Inline placed features are compared by where they are, not their definitions (see
+    // StructurePoolElement.WithoutInlineFeatures).
+    private protected override bool IsSameField(string field, INbtTag generated, INbtTag saved)
+    {
+        if (field != "pool_element" || generated is not NbtCompound mine || saved is not NbtCompound theirs)
+            return base.IsSameField(field, generated, saved);
+
+        var withoutMine = StructurePoolElement.WithoutInlineFeatures(mine);
+        var withoutTheirs = StructurePoolElement.WithoutInlineFeatures(theirs);
+
+        return IsSameValue(withoutMine, withoutTheirs);
+    }
+
+    // Placing changes nothing; and a box vanilla recomputed would move the position, which is kept from the box.
+    internal override void LoadState(NbtCompound tag)
+    {
+    }
+
+    internal static string LiquidSettingsName(LiquidSettings settings) =>
+        settings == LiquidSettings.IgnoreWaterlogging ? "ignore_waterlogging" : "apply_waterlogging";
 
     public override void PostProcess(StructurePieceContext context) =>
         this.Element.Place(context, this.Position, context.Pivot, this.ElementRotation, context.Box, context.Random, this.LiquidSettings, false);

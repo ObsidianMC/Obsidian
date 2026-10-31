@@ -94,8 +94,18 @@ public sealed class ShipwreckPiece : TemplateStructurePiece
     /// <summary>Vanilla <c>calculateBeachedPosition</c>: half the ship's height below the surface, plus 0 to 2.</summary>
     internal int CalculateBeachedPosition(int surface, IRandomSource random) => surface - this.Template.Size.Y / 2 - random.NextInt(3);
 
-    /// <summary>Vanilla <c>adjustPositionHeight</c>: moves the template, but not the bounding box.</summary>
-    internal void AdjustPositionHeight(int y) => this.SetTemplatePosition(this.TemplatePosition with { Y = y });
+    /// <summary>
+    /// Vanilla <c>adjustPositionHeight</c>, for ships too big to fit in a decoration region: moves the template, but
+    /// not the bounding box, and the height counts as adjusted.
+    /// </summary>
+    internal void AdjustPositionHeight(int y)
+    {
+        lock (this.heightLock)
+        {
+            this.SetTemplatePosition(this.TemplatePosition with { Y = y });
+            this.adjustedHeight = y;
+        }
+    }
 
     /// <summary>
     /// Vanilla <c>postProcess</c>: ships that fit in the region sit at the mean (or, beached, lowest) height of their
@@ -121,24 +131,40 @@ public sealed class ShipwreckPiece : TemplateStructurePiece
         this.PlaceTemplate(context, context.Box, this.TemplatePosition with { Y = y });
     }
 
+    internal override string TypeId => "minecraft:shipwreck";
+
+    private protected override bool BoxMovesWhenPlaced => true;
+
+    private protected override bool IsPlacementState(string field) =>
+        field is "TPY" or "height_adjusted" || base.IsPlacementState(field);
+
+    // Vanilla moves the template, and its box, to where it placed it, the adjusted height. Obsidian's older saves
+    // hold only that height.
+    private protected override Vector SavedTemplatePosition =>
+        this.LastPlacement ?? this.TemplatePosition with { Y = this.adjustedHeight ?? this.TemplatePosition.Y };
+
+    private protected override BlockBox SavedBoundingBox => this.LastPlacement is null
+        ? this.BoundingBox.Move(0, this.SavedTemplatePosition.Y - this.TemplatePosition.Y, 0)
+        : base.SavedBoundingBox;
+
     internal override void SaveState(NbtCompound tag)
     {
-        base.SaveState(tag);
-
-        // Vanilla saves the adjusted template position's Y.
         lock (this.heightLock)
         {
+            base.SaveState(tag);
+
+            this.SaveRotation(tag);
+            tag.Add(new NbtTag<bool>("isBeached", this.isBeached));
             tag.Add(new NbtTag<bool>("height_adjusted", this.adjustedHeight is not null));
-            tag.Add(new NbtTag<int>("TPY", this.adjustedHeight ?? this.TemplatePosition.Y));
         }
     }
 
     internal override void LoadState(NbtCompound tag)
     {
-        base.LoadState(tag);
-
         lock (this.heightLock)
         {
+            base.LoadState(tag);
+
             if (tag.TryGetBool("height_adjusted", out var adjusted) && tag.TryGetTag<NbtTag<int>>("TPY", out var y))
             {
                 this.adjustedHeight = adjusted ? y.Value : null;

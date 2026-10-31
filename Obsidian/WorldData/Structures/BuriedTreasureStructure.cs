@@ -25,6 +25,11 @@ public sealed class BuriedTreasurePiece(Vector position) : StructurePiece(0, new
         BlocksRegistry.Granite, BlocksRegistry.Diorite
     ];
 
+    internal override string TypeId => "minecraft:btp";
+
+    // The box shrinks to the chest when placed.
+    private protected override bool BoxMovesWhenPlaced => true;
+
     public override void PostProcess(StructurePieceContext context)
     {
         var level = context.Level;
