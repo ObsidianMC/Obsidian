@@ -1309,7 +1309,7 @@ class WorldgenCaptures {
         entry.addProperty("pieces", hexHash(String.join("\n", lines).getBytes(StandardCharsets.UTF_8)));
 
         if (entry.has("blocks")) {
-            entry.add("blocks", structureBlocks(level, start));
+            entry.add("blocks", structureBlocks(entry, level, start));
             entry.add("structureOrder", structureOrder(registry));
         }
     }
@@ -1328,11 +1328,11 @@ class WorldgenCaptures {
         return steps;
     }
 
-    // The states inside the start's piece boxes, chunk by chunk (x, then z) over the chunks its box reaches, then
-    // piece by piece in y, z, x order. Each chunk is fresh terrain (with its beardifier) whose structures alone are
-    // placed, step by step with decoration's seeds, as applyBiomeDecoration places them before features. The boxes
-    // are the generated ones: template pieces move theirs to where they're placed.
+    // The states inside the recorded bounds, chunk by chunk over the sampled chunks, then piece by piece in y, z, x
+    // order. Each chunk is fresh terrain (with its beardifier) whose structures alone are placed, step by step with
+    // decoration's seeds, as applyBiomeDecoration places them before features.
     static JsonObject structureBlocks(
+        JsonObject entry,
         ServerLevel level,
         net.minecraft.world.level.levelgen.structure.StructureStart start) throws Exception {
         var generator = (NoiseBasedChunkGenerator) level.getChunkSource().getGenerator();
@@ -1362,77 +1362,132 @@ class WorldgenCaptures {
         var output = new DataOutputStream(bytes);
         int chunkCount = 0;
 
+        // The chunks the pieces reach nearest the start chunk (by Chebyshev distance, then x, then z), at most
+        // "maxChunks" (9 by default), so that large structures keep a compact sample.
+        var startChunk = start.getChunkPos();
+        var reached = new ArrayList<ChunkPos>();
         for (int chunkX = box.minX() >> 4; chunkX <= box.maxX() >> 4; chunkX++) {
             for (int chunkZ = box.minZ() >> 4; chunkZ <= box.maxZ() >> 4; chunkZ++) {
-                var chunks = new HashMap<Long, ProtoChunk>();
-                // Each chunk keeps the world's starts and references, which placing reads through the region.
-                StaticCache2D<ChunkAccess> cache = StaticCache2D.create(chunkX, chunkZ,
-                    step.accumulatedDependencies().getRadius(), (x, z) -> {
-                        var chunk = new ProtoChunk(new ChunkPos(x, z), UpgradeData.EMPTY, level,
-                            PalettedContainerFactory.create(server.registryAccess()), null);
-                        var world = level.getChunk(x, z, ChunkStatus.STRUCTURE_REFERENCES, true);
-                        chunk.setAllStarts(world.getAllStarts());
-                        chunk.setAllReferences(world.getAllReferences());
-                        chunks.put(ChunkPos.pack(x, z), chunk);
-                        return chunk;
-                    });
-                var center = chunks.get(ChunkPos.pack(chunkX, chunkZ));
-                var region = region(level, cache, step, center);
-                var structureManager = level.structureManager().forWorldGenRegion(region);
-
-                for (int z = chunkZ - 1; z <= chunkZ + 1; z++) {
-                    for (int x = chunkX - 1; x <= chunkX + 1; x++) {
-                        var chunk = chunks.get(ChunkPos.pack(x, z));
-                        generator.createBiomes(randomState, Blender.empty(), level.structureManager(), chunk).join();
-                        var volume = new DensityVolume(16, settings.noiseSettings().height(), 16,
-                            x * 16, settings.noiseSettings().minY(), z * 16);
-                        var beardifier = Beardifier.forStructuresInChunk(level.structureManager(), new ChunkPos(x, z));
-                        try (var noise = new NoiseChunk(randomState, beardifier, settings,
-                            fluidPicker(settings), Blender.empty(), volume)) {
-                            invokeStage(generator, "doFill", noise, chunk);
-                            invokeStage(generator, "buildSurface", chunk, noise, randomState, manager,
-                                source.possibleBiomes(), settings.materialRule().value());
-                            invokeStage(generator, "generateCarvers", chunk, Blender.empty(), noise,
-                                randomState, manager, null, settings.materialRule().value());
-                        }
-                        chunk.setPersistedStatus(ChunkStatus.TERRAIN);
-                        Heightmap.primeHeightmaps(chunk, ChunkStatus.FEATURES.heightmapsAfter());
-                    }
+                var chunkBox = new net.minecraft.world.level.levelgen.structure.BoundingBox(
+                    chunkX << 4,
+                    level.getMinY(),
+                    chunkZ << 4,
+                    (chunkX << 4) + 15,
+                    level.getMaxY(),
+                    (chunkZ << 4) + 15);
+                if (pieceBoxes.stream().anyMatch(pieceBox -> pieceBox.intersects(chunkBox))) {
+                    reached.add(new ChunkPos(chunkX, chunkZ));
                 }
+            }
+        }
+        Comparator<ChunkPos> distance = Comparator.comparingInt(chunk -> Math.max(
+            Math.abs(chunk.x() - startChunk.x()),
+            Math.abs(chunk.z() - startChunk.z())));
+        reached.sort(distance.thenComparingInt(ChunkPos::x).thenComparingInt(ChunkPos::z));
+        int maxChunks = entry.has("maxChunks") ? entry.get("maxChunks").getAsInt() : 9;
+        var sampled = reached.subList(0, Math.min(maxChunks, reached.size()));
+        var placed = new ArrayList<ProtoChunk>();
 
-                var centerPos = center.getPos();
-                var area = (net.minecraft.world.level.levelgen.structure.BoundingBox) writableArea.invoke(null, center);
-                var random = new WorldgenRandom(new XoroshiroRandomSource(0L));
-                long decorationSeed = random.setDecorationSeed(level.getSeed(), centerPos.getMinBlockX(),
-                    centerPos.getMinBlockZ());
-                for (var decorationStep : GenerationStep.Decoration.values()) {
-                    int index = 0;
-                    var stepStructures = registry.stream()
-                        .filter(value -> value.step() == decorationStep)
-                        .toList();
-                    for (var structure : stepStructures) {
-                        random.setFeatureSeed(decorationSeed, index, decorationStep.ordinal());
-                        for (var reaching : structureManager.startsForStructure(chunkX, chunkZ, structure)) {
-                            reaching.placeInChunk(region, structureManager, generator, random, area, centerPos);
-                        }
-                        index++;
+        for (var sampledChunk : sampled) {
+            int chunkX = sampledChunk.x();
+            int chunkZ = sampledChunk.z();
+            var chunks = new HashMap<Long, ProtoChunk>();
+            // Each chunk keeps the world's starts and references, which placing reads through the region.
+            StaticCache2D<ChunkAccess> cache = StaticCache2D.create(chunkX, chunkZ,
+                step.accumulatedDependencies().getRadius(), (x, z) -> {
+                    var chunk = new ProtoChunk(new ChunkPos(x, z), UpgradeData.EMPTY, level,
+                        PalettedContainerFactory.create(server.registryAccess()), null);
+                    var world = level.getChunk(x, z, ChunkStatus.STRUCTURE_REFERENCES, true);
+                    chunk.setAllStarts(world.getAllStarts());
+                    chunk.setAllReferences(world.getAllReferences());
+                    chunks.put(ChunkPos.pack(x, z), chunk);
+                    return chunk;
+                });
+            var center = chunks.get(ChunkPos.pack(chunkX, chunkZ));
+            var region = region(level, cache, step, center);
+            var structureManager = level.structureManager().forWorldGenRegion(region);
+
+            for (int z = chunkZ - 1; z <= chunkZ + 1; z++) {
+                for (int x = chunkX - 1; x <= chunkX + 1; x++) {
+                    var chunk = chunks.get(ChunkPos.pack(x, z));
+                    generator.createBiomes(randomState, Blender.empty(), level.structureManager(), chunk).join();
+                    var volume = new DensityVolume(16, settings.noiseSettings().height(), 16,
+                        x * 16, settings.noiseSettings().minY(), z * 16);
+                    var beardifier = Beardifier.forStructuresInChunk(level.structureManager(), new ChunkPos(x, z));
+                    try (var noise = new NoiseChunk(randomState, beardifier, settings,
+                        fluidPicker(settings), Blender.empty(), volume)) {
+                        invokeStage(generator, "doFill", noise, chunk);
+                        invokeStage(generator, "buildSurface", chunk, noise, randomState, manager,
+                            source.possibleBiomes(), settings.materialRule().value());
+                        invokeStage(generator, "generateCarvers", chunk, Blender.empty(), noise,
+                            randomState, manager, null, settings.materialRule().value());
                     }
+                    chunk.setPersistedStatus(ChunkStatus.TERRAIN);
+                    Heightmap.primeHeightmaps(chunk, ChunkStatus.FEATURES.heightmapsAfter());
                 }
+            }
 
-                chunkCount++;
-                for (var pieceBox : pieceBoxes) {
-                    int minY = Math.max(pieceBox.minY(), level.getMinY());
-                    int maxY = Math.min(pieceBox.maxY(), level.getMaxY());
-                    int minX = Math.max(pieceBox.minX(), centerPos.getMinBlockX());
-                    int maxX = Math.min(pieceBox.maxX(), centerPos.getMaxBlockX());
-                    int minZ = Math.max(pieceBox.minZ(), centerPos.getMinBlockZ());
-                    int maxZ = Math.min(pieceBox.maxZ(), centerPos.getMaxBlockZ());
-                    for (int y = minY; y <= maxY; y++) {
-                        for (int z = minZ; z <= maxZ; z++) {
-                            for (int x = minX; x <= maxX; x++) {
-                                var name = stateName(center.getBlockState(new BlockPos(x, y, z)));
-                                output.writeInt(states.computeIfAbsent(name, value -> states.size()));
-                            }
+            var centerPos = center.getPos();
+            var area = (net.minecraft.world.level.levelgen.structure.BoundingBox) writableArea.invoke(null, center);
+            var random = new WorldgenRandom(new XoroshiroRandomSource(0L));
+            long decorationSeed = random.setDecorationSeed(level.getSeed(), centerPos.getMinBlockX(),
+                centerPos.getMinBlockZ());
+            for (var decorationStep : GenerationStep.Decoration.values()) {
+                int index = 0;
+                var stepStructures = registry.stream()
+                    .filter(value -> value.step() == decorationStep)
+                    .toList();
+                for (var structure : stepStructures) {
+                    random.setFeatureSeed(decorationSeed, index, decorationStep.ordinal());
+                    for (var reaching : structureManager.startsForStructure(chunkX, chunkZ, structure)) {
+                        reaching.placeInChunk(region, structureManager, generator, random, area, centerPos);
+                    }
+                    index++;
+                }
+            }
+
+            placed.add(center);
+        }
+
+        // Each piece's generated box joined with where placing moved it, so moved pieces are sampled where they sit.
+        var bounds = new ArrayList<net.minecraft.world.level.levelgen.structure.BoundingBox>();
+        var boundsJson = new JsonArray();
+        for (int index = 0; index < pieceBoxes.size(); index++) {
+            var placedBox = start.getPieces().get(index).getBoundingBox();
+            var joined = net.minecraft.world.level.levelgen.structure.BoundingBox.encapsulating(
+                pieceBoxes.get(index),
+                placedBox);
+            bounds.add(joined);
+            var values = new JsonArray();
+            values.add(joined.minX());
+            values.add(joined.minY());
+            values.add(joined.minZ());
+            values.add(joined.maxX());
+            values.add(joined.maxY());
+            values.add(joined.maxZ());
+            boundsJson.add(values);
+        }
+
+        var chunkList = new JsonArray();
+        for (var center : placed) {
+            var centerPos = center.getPos();
+            var coordinates = new JsonArray();
+            coordinates.add(centerPos.x());
+            coordinates.add(centerPos.z());
+            chunkList.add(coordinates);
+            chunkCount++;
+            for (var pieceBox : bounds) {
+                int minY = Math.max(pieceBox.minY(), level.getMinY());
+                int maxY = Math.min(pieceBox.maxY(), level.getMaxY());
+                int minX = Math.max(pieceBox.minX(), centerPos.getMinBlockX());
+                int maxX = Math.min(pieceBox.maxX(), centerPos.getMaxBlockX());
+                int minZ = Math.max(pieceBox.minZ(), centerPos.getMinBlockZ());
+                int maxZ = Math.min(pieceBox.maxZ(), centerPos.getMaxBlockZ());
+                for (int y = minY; y <= maxY; y++) {
+                    for (int z = minZ; z <= maxZ; z++) {
+                        for (int x = minX; x <= maxX; x++) {
+                            var name = stateName(center.getBlockState(new BlockPos(x, y, z)));
+                            output.writeInt(states.computeIfAbsent(name, value -> states.size()));
                         }
                     }
                 }
@@ -1443,6 +1498,8 @@ class WorldgenCaptures {
         var palette = new JsonArray();
         states.keySet().forEach(palette::add);
         result.addProperty("chunks", chunkCount);
+        result.add("chunkList", chunkList);
+        result.add("bounds", boundsJson);
         result.add("palette", palette);
         result.addProperty("data", compressed(bytes.toByteArray()));
         var canonical = new ByteArrayOutputStream();

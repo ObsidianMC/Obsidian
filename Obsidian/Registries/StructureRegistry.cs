@@ -30,7 +30,11 @@ internal static class StructureRegistry
     // The current version's templates, for the 26.3 generator (see GetCurrent).
     private static readonly ConcurrentDictionary<string, Lazy<StructureTemplate>> currentTemplates = new();
 
-    private static string? currentDirectory;
+    // Extracts the current version's templates and gives their directory; see InitializeCurrent.
+    private static Func<Task<string>>? extractCurrent;
+
+    // The extraction every template load waits on, replaced once it fails so that the next load tries again.
+    private static Lazy<Task<string>>? currentExtraction;
 
     // See Use: the templates a structure on this thread starts and places with, instead of the legacy ones.
     [ThreadStatic]
@@ -45,17 +49,55 @@ internal static class StructureRegistry
     public static void Initialize(string structureDirectory) => directory = structureDirectory;
 
     /// <summary>
-    /// Sets the directory the current version's templates are read from (see <see cref="GetCurrent"/>).
+    /// Sets how the current version's templates are extracted (see <see cref="GetCurrent"/>): only when the first
+    /// one is needed, since the live generator places the legacy ones.
     /// </summary>
-    public static void InitializeCurrent(string structureDirectory) => currentDirectory = structureDirectory;
+    /// <param name="extract">Extracts the templates and gives their directory, like
+    /// <see cref="VanillaServerJar.ExtractStructuresAsync"/>.</param>
+    public static void InitializeCurrent(Func<Task<string>> extract)
+    {
+        extractCurrent = extract;
+        Volatile.Write(ref currentExtraction, new Lazy<Task<string>>(extract));
+    }
 
     /// <summary>
     /// Gets one of the current version's vanilla templates by id, loaded on first use; unknown ids get an empty
     /// template. The 26.3 generator's structures and features read these, beside the legacy ones of <see cref="Get"/>.
     /// </summary>
-    public static StructureTemplate GetCurrent(string id) =>
-        currentTemplates.GetOrAdd(Qualify(id), static key => new Lazy<StructureTemplate>(() =>
-            Load(key, currentDirectory, nameof(InitializeCurrent)))).Value;
+    /// <remarks>
+    /// The first load waits for the templates to be extracted. A failed extraction fails the loads waiting on it,
+    /// and isn't kept: the next load extracts again.
+    /// </remarks>
+    public static StructureTemplate GetCurrent(string id)
+    {
+        var template = currentTemplates.GetOrAdd(
+            Qualify(id),
+            static key => new Lazy<StructureTemplate>(
+                () => Load(key, CurrentDirectory(), nameof(InitializeCurrent)),
+                LazyThreadSafetyMode.PublicationOnly));
+
+        return template.Value;
+    }
+
+    private static string CurrentDirectory()
+    {
+        var extraction = Volatile.Read(ref currentExtraction)
+            ?? throw new InvalidOperationException(
+                "Structure templates are used before StructureRegistry.InitializeCurrent.");
+
+        try
+        {
+            return extraction.Value.GetAwaiter().GetResult();
+        }
+        catch
+        {
+            Interlocked.CompareExchange(
+                ref currentExtraction,
+                new Lazy<Task<string>>(extractCurrent!),
+                extraction);
+            throw;
+        }
+    }
 
     /// <summary>
     /// Makes <see cref="Get"/> return <paramref name="templates"/>' templates on this thread until the scope is
@@ -126,7 +168,8 @@ internal static class StructureRegistry
             return StructureTemplate.CreateEmpty();
 
         var root = directory
-            ?? throw new InvalidOperationException($"Structure templates are used before StructureRegistry.{initializer}.");
+            ?? throw new InvalidOperationException(
+                $"Structure templates are used before StructureRegistry.{initializer}.");
         var path = id[Vanilla.Length..];
         var file = Path.Combine(root, path + FileSuffix);
 

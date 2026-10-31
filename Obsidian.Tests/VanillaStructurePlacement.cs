@@ -69,89 +69,102 @@ public class VanillaStructurePlacement
         }
 
         var terrain = new Dictionary<(int X, int Z), Chunk>();
-        var box = start.BoundingBox;
-        var index = 0;
-        var mismatches = new List<string>();
-        var chunkCount = 0;
+        var bounds = expected.GetProperty("bounds").EnumerateArray()
+            .Select(values => values.EnumerateArray().Select(value => value.GetInt32()).ToArray())
+            .Select(values => new BlockBox(
+                new Vector(values[0], values[1], values[2]),
+                new Vector(values[3], values[4], values[5])))
+            .ToArray();
+        var sampled = expected.GetProperty("chunkList").EnumerateArray()
+            .Select(values => (X: values[0].GetInt32(), Z: values[1].GetInt32()))
+            .ToArray();
+        var comparison = new Comparison(palette, indices);
 
-        for (var chunkX = box.MinX >> 4; chunkX <= box.MaxX >> 4; chunkX++)
+        Assert.Equal(start.Pieces.Count, bounds.Length);
+
+        foreach (var (chunkX, chunkZ) in sampled)
         {
-            for (var chunkZ = box.MinZ >> 4; chunkZ <= box.MaxZ >> 4; chunkZ++)
+            // Like the capture, each chunk places into fresh terrain, without its neighbors' writes.
+            var chunks = new Dictionary<(int X, int Z), IChunk>();
+
+            for (var z = chunkZ - 1; z <= chunkZ + 1; z++)
             {
-                // Like the capture, each chunk places into fresh terrain, without its neighbors' writes.
-                var chunks = new Dictionary<(int X, int Z), IChunk>();
-
-                for (var z = chunkZ - 1; z <= chunkZ + 1; z++)
+                for (var x = chunkX - 1; x <= chunkX + 1; x++)
                 {
-                    for (var x = chunkX - 1; x <= chunkX + 1; x++)
+                    if (!terrain.TryGetValue((x, z), out var generated))
                     {
-                        if (!terrain.TryGetValue((x, z), out var generated))
-                        {
-                            generated = Terrain(pipeline, x, z);
-                            terrain.Add((x, z), generated);
-                        }
-
-                        chunks.Add((x, z), generated.Clone(x, z));
+                        generated = Terrain(pipeline, x, z);
+                        terrain.Add((x, z), generated);
                     }
-                }
 
-                pipeline.PlaceStructures(chunks, chunkX, chunkZ);
-                chunkCount++;
-                var chunk = chunks[(chunkX, chunkZ)];
-
-                // The capture's boxes are those vanilla generated, which Obsidian's template pieces keep; its
-                // scattered pieces settle on the terrain as they're placed, where vanilla's already are.
-                foreach (var piece in start.Pieces)
-                {
-                    index = Compare(piece.BoundingBox, chunk, palette, indices, index, mismatches);
+                    chunks.Add((x, z), generated.Clone(x, z));
                 }
+            }
+
+            pipeline.PlaceStructures(chunks, chunkX, chunkZ);
+
+            foreach (var pieceBounds in bounds)
+            {
+                comparison.Compare(pieceBounds, chunks[(chunkX, chunkZ)], terrain[(chunkX, chunkZ)]);
             }
         }
 
-        Assert.Equal(expected.GetProperty("chunks").GetInt32(), chunkCount);
-        Assert.Equal(indices.Length, index);
+        var mismatches = comparison.Mismatches;
+
+        Assert.Equal(expected.GetProperty("chunks").GetInt32(), sampled.Length);
+        Assert.Equal(indices.Length, comparison.Index);
+        // Bounds of terrain alone would prove nothing: vanilla's blocks there have to show the structure.
+        Assert.True(comparison.StructureBlocks > 0, "The captured bounds hold no structure blocks.");
         Assert.True(mismatches.Count == 0, $"{mismatches.Count} blocks differ, first: "
             + string.Join("; ", mismatches.Take(12)));
     }
 
-    // The piece box's blocks inside the chunk, in y, z, x order, against the next of the captured indices.
-    private static int Compare(
-        BlockBox pieceBox,
-        IChunk chunk,
-        IBlock[] palette,
-        int[] indices,
-        int index,
-        List<string> mismatches)
+    // The captured blocks, in order, against the bounds' blocks inside each chunk in y, z, x order.
+    private sealed class Comparison(IBlock[] palette, int[] indices)
     {
-        var minX = Math.Max(pieceBox.MinX, chunk.X << 4);
-        var maxX = Math.Min(pieceBox.MaxX, (chunk.X << 4) + 15);
-        var minZ = Math.Max(pieceBox.MinZ, chunk.Z << 4);
-        var maxZ = Math.Min(pieceBox.MaxZ, (chunk.Z << 4) + 15);
-        var minY = Math.Max(pieceBox.MinY, chunk.MinY);
-        var maxY = Math.Min(pieceBox.MaxY, chunk.MinY + chunk.Height - 1);
+        public int Index { get; private set; }
 
-        for (var y = minY; y <= maxY; y++)
+        public List<string> Mismatches { get; } = [];
+
+        // Captured blocks that differ from Obsidian's terrain alone: those the structure placed.
+        public int StructureBlocks { get; private set; }
+
+        public void Compare(BlockBox bounds, IChunk chunk, IChunk terrain)
         {
-            for (var z = minZ; z <= maxZ; z++)
-            {
-                for (var x = minX; x <= maxX; x++)
-                {
-                    var expected = index < indices.Length ? palette[indices[index]] : null;
-                    var actual = chunk.GetBlock(x, y, z);
-                    index++;
+            var minX = Math.Max(bounds.MinX, chunk.X << 4);
+            var maxX = Math.Min(bounds.MaxX, (chunk.X << 4) + 15);
+            var minZ = Math.Max(bounds.MinZ, chunk.Z << 4);
+            var maxZ = Math.Min(bounds.MaxZ, (chunk.Z << 4) + 15);
+            var minY = Math.Max(bounds.MinY, chunk.MinY);
+            var maxY = Math.Min(bounds.MaxY, chunk.MinY + chunk.Height - 1);
 
-                    if (expected is null
-                        || actual.RegistryId != expected.RegistryId
-                        || actual.State?.Id != expected.State?.Id)
+            for (var y = minY; y <= maxY; y++)
+            {
+                for (var z = minZ; z <= maxZ; z++)
+                {
+                    for (var x = minX; x <= maxX; x++)
                     {
-                        mismatches.Add($"({x}, {y}, {z}): expected {expected?.UnlocalizedName}, "
-                            + $"actual {actual.UnlocalizedName}");
+                        var expected = this.Index < indices.Length ? palette[indices[this.Index]] : null;
+                        var actual = chunk.GetBlock(x, y, z);
+                        this.Index++;
+
+                        if (expected is not null && !Same(expected, terrain.GetBlock(x, y, z)))
+                        {
+                            this.StructureBlocks++;
+                        }
+
+                        if (expected is null || !Same(expected, actual))
+                        {
+                            this.Mismatches.Add($"({x}, {y}, {z}): expected {expected?.UnlocalizedName}, "
+                                + $"actual {actual.UnlocalizedName}");
+                        }
                     }
                 }
             }
         }
 
-        return index;
+        private static bool Same(IBlock expected, IBlock actual) =>
+            actual.RegistryId == expected.RegistryId && actual.State?.Id == expected.State?.Id;
     }
 
     private static Chunk Terrain(BiomeTerrain pipeline, int chunkX, int chunkZ)
@@ -189,7 +202,8 @@ public class VanillaStructurePlacement
     }
 
     private static JsonElement Case(string name) =>
-        VanillaWorldgenCaptures.CurrentCases("structures").Single(entry => entry.GetProperty("name").GetString() == name);
+        VanillaWorldgenCaptures.CurrentCases("structures")
+            .Single(entry => entry.GetProperty("name").GetString() == name);
 
     private static TheoryData<string> Names(Func<JsonElement, bool> filter)
     {

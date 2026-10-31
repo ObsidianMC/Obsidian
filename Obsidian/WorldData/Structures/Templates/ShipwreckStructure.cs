@@ -1,4 +1,6 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.Nbt;
+using System.Threading;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Structures.Processors;
 
@@ -67,6 +69,11 @@ public sealed class ShipwreckPiece : TemplateStructurePiece
 
     private readonly bool isBeached;
 
+    // Vanilla's heightAdjusted: the first placement picks the height (and draws a beached ship's offset), and every
+    // later chunk reuses it. Chunks place in parallel, so it's taken under the lock.
+    private readonly Lock heightLock = new();
+    private int? adjustedHeight;
+
     private ShipwreckPiece(string templateId, Vector position, StructureRotation rotation, bool isBeached)
         : base(0, templateId, MakeSettings(rotation), position) => this.isBeached = isBeached;
 
@@ -101,6 +108,48 @@ public sealed class ShipwreckPiece : TemplateStructurePiece
             return;
         }
 
+        int y;
+
+        lock (this.heightLock)
+        {
+            this.adjustedHeight ??= this.CalculateHeight(context);
+            y = this.adjustedHeight.Value;
+        }
+
+        this.PlaceTemplate(context, context.Box, this.TemplatePosition with { Y = y });
+    }
+
+    internal override void SaveState(NbtCompound tag)
+    {
+        base.SaveState(tag);
+
+        lock (this.heightLock)
+        {
+            tag.Add(new NbtTag<bool>("height_adjusted", this.adjustedHeight is not null));
+
+            if (this.adjustedHeight is int height)
+            {
+                tag.Add(new NbtTag<int>("adjusted_y", height));
+            }
+        }
+    }
+
+    internal override void LoadState(NbtCompound tag)
+    {
+        base.LoadState(tag);
+
+        lock (this.heightLock)
+        {
+            if (tag.TryGetTag<NbtTag<int>>("adjusted_y", out var height))
+            {
+                this.adjustedHeight = height.Value;
+            }
+        }
+    }
+
+    // The mean (or, beached, lowest) height of the footprint, measured in the region being decorated.
+    private int CalculateHeight(StructurePieceContext context)
+    {
         var level = context.Level;
         var size = this.Template.Size;
         var heightmap = this.isBeached ? HeightmapType.WorldSurfaceWG : HeightmapType.OceanFloorWG;
@@ -125,8 +174,7 @@ public sealed class ShipwreckPiece : TemplateStructurePiece
             mean /= area;
         }
 
-        var y = this.isBeached ? this.CalculateBeachedPosition(lowest, context.Random) : mean;
-        this.PlaceTemplate(context, context.Box, position with { Y = y });
+        return this.isBeached ? this.CalculateBeachedPosition(lowest, context.Random) : mean;
     }
 
     protected override void HandleDataMarker(string metadata, Vector position, StructurePieceContext context, BlockBox box)

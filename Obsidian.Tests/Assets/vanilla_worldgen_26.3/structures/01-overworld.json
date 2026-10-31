@@ -9,37 +9,928 @@
       "searchX": 0,
       "searchZ": 0,
       "blocks": {
-        "chunks": 72,
+        "chunks": 9,
+        "chunkList": [
+          [
+            10,
+            55
+          ],
+          [
+            9,
+            54
+          ],
+          [
+            9,
+            55
+          ],
+          [
+            9,
+            56
+          ],
+          [
+            10,
+            54
+          ],
+          [
+            10,
+            56
+          ],
+          [
+            11,
+            54
+          ],
+          [
+            11,
+            55
+          ],
+          [
+            8,
+            54
+          ]
+        ],
+        "bounds": [
+          [
+            160,
+            98,
+            880,
+            168,
+            101,
+            888
+          ],
+          [
+            157,
+            96,
+            889,
+            172,
+            101,
+            904
+          ],
+          [
+            160,
+            99,
+            886,
+            160,
+            101,
+            886
+          ],
+          [
+            167,
+            99,
+            887,
+            167,
+            101,
+            887
+          ],
+          [
+            169,
+            100,
+            873,
+            179,
+            113,
+            885
+          ],
+          [
+            162,
+            98,
+            876,
+            165,
+            99,
+            879
+          ],
+          [
+            161,
+            99,
+            882,
+            161,
+            101,
+            882
+          ],
+          [
+            162,
+            99,
+            881,
+            162,
+            101,
+            881
+          ],
+          [
+            143,
+            97,
+            866,
+            159,
+            110,
+            885
+          ],
+          [
+            167,
+            99,
+            882,
+            167,
+            101,
+            882
+          ],
+          [
+            168,
+            101,
+            895,
+            168,
+            101,
+            895
+          ],
+          [
+            155,
+            94,
+            905,
+            165,
+            107,
+            913
+          ],
+          [
+            168,
+            98,
+            902,
+            168,
+            98,
+            902
+          ],
+          [
+            169,
+            101,
+            893,
+            169,
+            101,
+            893
+          ],
+          [
+            172,
+            103,
+            876,
+            178,
+            109,
+            882
+          ],
+          [
+            180,
+            105,
+            875,
+            188,
+            118,
+            885
+          ],
+          [
+            160,
+            98,
+            876,
+            161,
+            99,
+            878
+          ],
+          [
+            160,
+            96,
+            882,
+            163,
+            97,
+            885
+          ],
+          [
+            127,
+            89,
+            877,
+            142,
+            94,
+            892
+          ],
+          [
+            162,
+            93,
+            900,
+            166,
+            94,
+            904
+          ],
+          [
+            157,
+            93,
+            914,
+            172,
+            106,
+            929
+          ],
+          [
+            175,
+            104,
+            879,
+            175,
+            106,
+            879
+          ],
+          [
+            181,
+            108,
+            876,
+            187,
+            114,
+            882
+          ],
+          [
+            189,
+            111,
+            873,
+            199,
+            124,
+            885
+          ],
+          [
+            143,
+            88,
+            883,
+            146,
+            89,
+            886
+          ],
+          [
+            111,
+            83,
+            876,
+            126,
+            88,
+            891
+          ],
+          [
+            157,
+            94,
+            900,
+            161,
+            95,
+            904
+          ],
+          [
+            160,
+            93,
+            918,
+            160,
+            93,
+            918
+          ],
+          [
+            160,
+            96,
+            927,
+            160,
+            96,
+            927
+          ],
+          [
+            166,
+            95,
+            916,
+            172,
+            101,
+            923
+          ],
+          [
+            152,
+            93,
+            920,
+            156,
+            94,
+            923
+          ],
+          [
+            184,
+            109,
+            879,
+            184,
+            111,
+            879
+          ],
+          [
+            190,
+            114,
+            876,
+            198,
+            119,
+            882
+          ],
+          [
+            200,
+            115,
+            875,
+            208,
+            128,
+            885
+          ],
+          [
+            144,
+            90,
+            887,
+            156,
+            103,
+            897
+          ],
+          [
+            127,
+            83,
+            882,
+            130,
+            84,
+            885
+          ],
+          [
+            102,
+            77,
+            875,
+            110,
+            90,
+            885
+          ],
+          [
+            157,
+            92,
+            905,
+            161,
+            93,
+            908
+          ],
+          [
+            157,
+            93,
+            895,
+            161,
+            94,
+            899
+          ],
+          [
+            153,
+            92,
+            901,
+            156,
+            93,
+            904
+          ],
+          [
+            169,
+            96,
+            920,
+            169,
+            98,
+            920
+          ],
+          [
+            153,
+            92,
+            916,
+            156,
+            93,
+            919
+          ],
+          [
+            136,
+            92,
+            908,
+            151,
+            105,
+            923
+          ],
+          [
+            200,
+            118,
+            876,
+            208,
+            123,
+            882
+          ],
+          [
+            209,
+            120,
+            877,
+            224,
+            133,
+            892
+          ],
+          [
+            143,
+            90,
+            883,
+            147,
+            91,
+            886
+          ],
+          [
+            147,
+            90,
+            889,
+            156,
+            101,
+            895
+          ],
+          [
+            143,
+            88,
+            898,
+            147,
+            89,
+            902
+          ],
+          [
+            127,
+            84,
+            878,
+            130,
+            85,
+            881
+          ],
+          [
+            91,
+            74,
+            883,
+            101,
+            87,
+            895
+          ],
+          [
+            111,
+            77,
+            882,
+            115,
+            78,
+            886
+          ],
+          [
+            153,
+            91,
+            905,
+            156,
+            92,
+            908
+          ],
+          [
+            162,
+            92,
+            905,
+            165,
+            93,
+            909
+          ],
+          [
+            157,
+            92,
+            900,
+            161,
+            93,
+            904
+          ],
+          [
+            162,
+            94,
+            895,
+            165,
+            95,
+            898
+          ],
+          [
+            158,
+            93,
+            891,
+            161,
+            94,
+            894
+          ],
+          [
+            152,
+            91,
+            920,
+            156,
+            92,
+            924
+          ],
+          [
+            157,
+            91,
+            915,
+            161,
+            92,
+            919
+          ],
+          [
+            132,
+            88,
+            920,
+            135,
+            89,
+            924
+          ],
+          [
+            212,
+            120,
+            868,
+            222,
+            133,
+            876
+          ],
+          [
+            219,
+            124,
+            893,
+            234,
+            137,
+            908
+          ],
+          [
+            210,
+            122,
+            886,
+            215,
+            129,
+            890
+          ],
+          [
+            216,
+            123,
+            881,
+            216,
+            123,
+            881
+          ],
+          [
+            221,
+            122,
+            879,
+            221,
+            122,
+            879
+          ],
+          [
+            225,
+            122,
+            882,
+            229,
+            127,
+            886
+          ],
+          [
+            148,
+            92,
+            882,
+            152,
+            93,
+            886
+          ],
+          [
+            139,
+            88,
+            899,
+            142,
+            89,
+            902
+          ],
+          [
+            148,
+            89,
+            898,
+            152,
+            90,
+            902
+          ],
+          [
+            144,
+            88,
+            903,
+            147,
+            89,
+            906
+          ],
+          [
+            143,
+            88,
+            893,
+            147,
+            89,
+            897
+          ],
+          [
+            92,
+            75,
+            886,
+            99,
+            81,
+            892
+          ],
+          [
+            102,
+            73,
+            882,
+            106,
+            74,
+            886
+          ],
+          [
+            87,
+            70,
+            882,
+            90,
+            71,
+            885
+          ],
+          [
+            116,
+            78,
+            882,
+            119,
+            79,
+            886
+          ],
+          [
+            111,
+            78,
+            887,
+            115,
+            79,
+            891
+          ],
+          [
+            112,
+            78,
+            878,
+            115,
+            79,
+            881
+          ],
+          [
+            153,
+            90,
+            902,
+            155,
+            91,
+            904
+          ],
+          [
+            162,
+            94,
+            891,
+            163,
+            95,
+            893
+          ],
+          [
+            154,
+            94,
+            925,
+            154,
+            95,
+            925
+          ],
+          [
+            159,
+            91,
+            914,
+            159,
+            92,
+            914
+          ],
+          [
+            133,
+            87,
+            925,
+            133,
+            88,
+            925
+          ],
+          [
+            131,
+            88,
+            916,
+            134,
+            89,
+            919
+          ],
+          [
+            136,
+            88,
+            921,
+            138,
+            89,
+            923
+          ],
+          [
+            211,
+            116,
+            864,
+            214,
+            117,
+            867
+          ],
+          [
+            219,
+            121,
+            909,
+            221,
+            122,
+            910
+          ],
+          [
+            226,
+            124,
+            887,
+            228,
+            125,
+            888
+          ],
+          [
+            226,
+            124,
+            879,
+            228,
+            125,
+            881
+          ],
+          [
+            230,
+            125,
+            884,
+            230,
+            126,
+            884
+          ],
+          [
+            148,
+            93,
+            878,
+            151,
+            94,
+            881
+          ],
+          [
+            147,
+            92,
+            884,
+            147,
+            93,
+            884
+          ],
+          [
+            153,
+            93,
+            883,
+            155,
+            94,
+            885
+          ],
+          [
+            140,
+            87,
+            903,
+            140,
+            88,
+            903
+          ],
+          [
+            149,
+            89,
+            903,
+            152,
+            90,
+            906
+          ],
+          [
+            153,
+            90,
+            898,
+            156,
+            91,
+            901
+          ],
+          [
+            148,
+            89,
+            905,
+            148,
+            90,
+            905
+          ],
+          [
+            141,
+            87,
+            894,
+            142,
+            88,
+            896
+          ],
+          [
+            144,
+            88,
+            891,
+            146,
+            89,
+            892
+          ],
+          [
+            102,
+            75,
+            878,
+            105,
+            76,
+            881
+          ],
+          [
+            104,
+            77,
+            887,
+            104,
+            78,
+            887
+          ],
+          [
+            87,
+            69,
+            879,
+            89,
+            70,
+            881
+          ],
+          [
+            91,
+            70,
+            882,
+            94,
+            71,
+            885
+          ],
+          [
+            118,
+            80,
+            887,
+            118,
+            81,
+            887
+          ],
+          [
+            117,
+            80,
+            880,
+            119,
+            81,
+            881
+          ],
+          [
+            112,
+            79,
+            892,
+            114,
+            80,
+            893
+          ],
+          [
+            116,
+            80,
+            888,
+            117,
+            81,
+            890
+          ],
+          [
+            107,
+            78,
+            888,
+            110,
+            79,
+            891
+          ],
+          [
+            116,
+            79,
+            879,
+            116,
+            80,
+            879
+          ]
+        ],
         "palette": [
           "minecraft:grass_block{snowy=false}",
           "minecraft:dirt_path",
-          "minecraft:air",
-          "minecraft:dirt",
-          "minecraft:cobblestone_stairs{facing=east, half=bottom, shape=outer_right, waterlogged=false}",
-          "minecraft:cobblestone_stairs{facing=south, half=bottom, shape=straight, waterlogged=false}",
-          "minecraft:oak_log{axis=y}",
           "minecraft:cobblestone",
           "minecraft:mossy_cobblestone",
-          "minecraft:oak_planks",
-          "minecraft:oak_door{facing=south, half=lower, hinge=right, open=false, powered=false}",
-          "minecraft:chest{facing=east, type=single, waterlogged=false}",
-          "minecraft:wall_torch{facing=north}",
-          "minecraft:oak_log{axis=x}",
-          "minecraft:oak_door{facing=south, half=upper, hinge=right, open=false, powered=false}",
-          "minecraft:oak_log{axis=z}",
-          "minecraft:glass_pane{east=false, north=true, south=true, waterlogged=false, west=false}",
-          "minecraft:glass_pane{east=true, north=false, south=false, waterlogged=false, west=true}",
-          "minecraft:oak_stairs{facing=east, half=bottom, shape=straight, waterlogged=false}",
-          "minecraft:oak_stairs{facing=west, half=top, shape=straight, waterlogged=false}",
-          "minecraft:wall_torch{facing=south}",
+          "minecraft:air",
+          "minecraft:torch",
+          "minecraft:water{level=1}",
+          "minecraft:water{level=8}",
+          "minecraft:bell{attachment=floor, facing=south, powered=false}",
+          "minecraft:water{level=0}",
+          "minecraft:dirt",
           "minecraft:stone",
-          "minecraft:cobblestone_stairs{facing=west, half=bottom, shape=outer_left, waterlogged=false}",
-          "minecraft:oak_door{facing=south, half=lower, hinge=left, open=false, powered=false}",
-          "minecraft:yellow_bed{facing=north, occupied=false, part=head}",
-          "minecraft:yellow_bed{facing=north, occupied=false, part=foot}",
-          "minecraft:oak_door{facing=south, half=upper, hinge=left, open=false, powered=false}",
-          "minecraft:oak_stairs{facing=east, half=top, shape=straight, waterlogged=false}",
-          "minecraft:oak_stairs{facing=west, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:hay_block{axis=x}",
+          "minecraft:hay_block{axis=y}",
+          "minecraft:hay_block{axis=z}",
+          "minecraft:oak_log{axis=y}",
+          "minecraft:oak_planks",
+          "minecraft:stripped_oak_log{axis=y}",
+          "minecraft:oak_stairs{facing=north, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:white_terracotta",
+          "minecraft:oak_stairs{facing=south, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:oak_door{facing=north, half=lower, hinge=right, open=false, powered=false}",
+          "minecraft:oak_door{facing=north, half=upper, hinge=right, open=false, powered=false}",
+          "minecraft:wall_torch{facing=south}",
           "minecraft:oak_door{facing=east, half=lower, hinge=left, open=false, powered=false}",
           "minecraft:cobblestone_stairs{facing=east, half=bottom, shape=straight, waterlogged=false}",
           "minecraft:cobblestone_wall{east=low, north=none, south=none, up=true, waterlogged=false, west=none}",
@@ -47,65 +938,38 @@
           "minecraft:brewing_stand{has_bottle_0=false, has_bottle_1=false, has_bottle_2=false}",
           "minecraft:oak_door{facing=east, half=upper, hinge=left, open=false, powered=false}",
           "minecraft:ladder{facing=north, waterlogged=false}",
+          "minecraft:cobblestone_stairs{facing=south, half=bottom, shape=straight, waterlogged=false}",
           "minecraft:yellow_stained_glass_pane{east=true, north=false, south=false, waterlogged=false, west=true}",
-          "minecraft:torch",
           "minecraft:wall_torch{facing=east}",
           "minecraft:yellow_stained_glass_pane{east=false, north=true, south=true, waterlogged=false, west=false}",
           "minecraft:white_stained_glass_pane{east=true, north=false, south=false, waterlogged=false, west=true}",
           "minecraft:white_stained_glass_pane{east=false, north=true, south=true, waterlogged=false, west=false}",
           "minecraft:cobblestone_stairs{facing=west, half=bottom, shape=straight, waterlogged=false}",
           "minecraft:wall_torch{facing=west}",
+          "minecraft:wall_torch{facing=north}",
           "minecraft:cobblestone_slab{type=bottom, waterlogged=false}",
           "minecraft:cobblestone_stairs{facing=south, half=top, shape=straight, waterlogged=false}",
           "minecraft:cobblestone_stairs{facing=north, half=top, shape=straight, waterlogged=false}",
-          "minecraft:stripped_oak_log{axis=y}",
-          "minecraft:white_terracotta",
-          "minecraft:oak_stairs{facing=north, half=bottom, shape=straight, waterlogged=false}",
-          "minecraft:water{level=1}",
-          "minecraft:water{level=8}",
-          "minecraft:bell{attachment=floor, facing=south, powered=false}",
-          "minecraft:water{level=0}",
-          "minecraft:hay_block{axis=x}",
-          "minecraft:hay_block{axis=y}",
-          "minecraft:hay_block{axis=z}",
-          "minecraft:oak_stairs{facing=south, half=bottom, shape=straight, waterlogged=false}",
-          "minecraft:oak_door{facing=north, half=lower, hinge=right, open=false, powered=false}",
-          "minecraft:oak_door{facing=north, half=upper, hinge=right, open=false, powered=false}",
-          "minecraft:dandelion",
-          "minecraft:cobblestone_stairs{facing=south, half=bottom, shape=outer_left, waterlogged=false}",
-          "minecraft:cobblestone_stairs{facing=north, half=bottom, shape=outer_right, waterlogged=false}",
-          "minecraft:yellow_bed{facing=west, occupied=false, part=head}",
-          "minecraft:yellow_bed{facing=west, occupied=false, part=foot}",
-          "minecraft:oak_door{facing=east, half=lower, hinge=right, open=false, powered=false}",
-          "minecraft:chest{facing=north, type=single, waterlogged=false}",
-          "minecraft:poppy",
-          "minecraft:oak_door{facing=east, half=upper, hinge=right, open=false, powered=false}",
-          "minecraft:oak_stairs{facing=north, half=top, shape=straight, waterlogged=false}",
-          "minecraft:oak_stairs{facing=south, half=top, shape=straight, waterlogged=false}",
+          "minecraft:glass_pane{east=true, north=false, south=false, waterlogged=false, west=true}",
+          "minecraft:glass_pane{east=false, north=true, south=true, waterlogged=false, west=false}",
+          "minecraft:yellow_bed{facing=north, occupied=false, part=head}",
+          "minecraft:yellow_bed{facing=north, occupied=false, part=foot}",
           "minecraft:white_bed{facing=north, occupied=false, part=head}",
           "minecraft:white_bed{facing=north, occupied=false, part=foot}",
+          "minecraft:oak_log{axis=z}",
+          "minecraft:oak_stairs{facing=east, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:oak_stairs{facing=west, half=top, shape=straight, waterlogged=false}",
+          "minecraft:oak_stairs{facing=east, half=top, shape=straight, waterlogged=false}",
+          "minecraft:oak_stairs{facing=west, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:oak_log{axis=x}",
           "minecraft:farmland{moisture=7}",
           "minecraft:potatoes{age=0}",
           "minecraft:carrots{age=0}",
           "minecraft:snow_block",
-          "minecraft:wheat{age=1}",
-          "minecraft:wheat{age=0}",
-          "minecraft:wheat{age=2}",
-          "minecraft:composter{level=0}",
-          "minecraft:beetroots{age=0}",
-          "minecraft:oak_fence{east=true, north=false, south=true, waterlogged=false, west=false}",
-          "minecraft:oak_fence{east=true, north=false, south=false, waterlogged=false, west=true}",
-          "minecraft:oak_fence_gate{facing=south, in_wall=false, open=false, powered=false}",
-          "minecraft:oak_fence{east=false, north=false, south=true, waterlogged=false, west=true}",
-          "minecraft:oak_fence{east=false, north=true, south=true, waterlogged=false, west=false}",
-          "minecraft:oak_fence_gate{facing=west, in_wall=false, open=false, powered=false}",
-          "minecraft:short_grass",
-          "minecraft:oak_fence_gate{facing=east, in_wall=false, open=false, powered=false}",
-          "minecraft:oak_fence{east=true, north=true, south=false, waterlogged=false, west=false}",
-          "minecraft:oak_fence{east=false, north=true, south=false, waterlogged=false, west=true}"
+          "minecraft:wheat{age=1}"
         ],
-        "data": "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",
-        "hash": "952e662ecbeba963dc875b2b8cf77fa63cd489bbb0006bf0ebd0daa3970da021"
+        "data": "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",
+        "hash": "1a5b6b85d87d0e28c2f466ca1638e958e2924a19425aa58367fc41484161ecb8"
       },
       "chunkX": 10,
       "chunkZ": 55,
@@ -237,17 +1101,129 @@
       "searchX": 0,
       "searchZ": 0,
       "blocks": {
-        "chunks": 25,
+        "chunks": 7,
+        "chunkList": [
+          [
+            17,
+            -60
+          ],
+          [
+            16,
+            -60
+          ],
+          [
+            16,
+            -59
+          ],
+          [
+            17,
+            -59
+          ],
+          [
+            18,
+            -61
+          ],
+          [
+            18,
+            -60
+          ],
+          [
+            18,
+            -59
+          ]
+        ],
+        "bounds": [
+          [
+            272,
+            70,
+            -960,
+            287,
+            99,
+            -945
+          ],
+          [
+            272,
+            71,
+            -944,
+            303,
+            76,
+            -929
+          ],
+          [
+            288,
+            71,
+            -976,
+            303,
+            76,
+            -945
+          ],
+          [
+            272,
+            70,
+            -960,
+            286,
+            92,
+            -946
+          ],
+          [
+            256,
+            73,
+            -960,
+            271,
+            78,
+            -929
+          ],
+          [
+            294,
+            74,
+            -966,
+            300,
+            76,
+            -964
+          ],
+          [
+            297,
+            72,
+            -975,
+            303,
+            75,
+            -969
+          ],
+          [
+            291,
+            74,
+            -974,
+            296,
+            76,
+            -968
+          ],
+          [
+            288,
+            72,
+            -974,
+            290,
+            74,
+            -968
+          ],
+          [
+            297,
+            74,
+            -962,
+            302,
+            76,
+            -956
+          ],
+          [
+            257,
+            73,
+            -937,
+            263,
+            76,
+            -932
+          ]
+        ],
         "palette": [
-          "minecraft:stone",
           "minecraft:grass_block{snowy=false}",
-          "minecraft:air",
-          "minecraft:dirt",
-          "minecraft:dark_oak_fence{east=false, north=false, south=false, waterlogged=false, west=false}",
-          "minecraft:pumpkin",
-          "minecraft:crafting_table",
-          "minecraft:white_wool",
-          "minecraft:dark_oak_fence{east=true, north=false, south=false, waterlogged=false, west=true}",
           "minecraft:dark_oak_log{axis=y}",
           "minecraft:vine{east=false, north=false, south=true, up=false, west=false}",
           "minecraft:cobblestone",
@@ -255,6 +1231,7 @@
           "minecraft:birch_planks",
           "minecraft:vine{east=true, north=false, south=false, up=false, west=false}",
           "minecraft:vine{east=false, north=false, south=false, up=false, west=true}",
+          "minecraft:air",
           "minecraft:cobblestone_stairs{facing=east, half=bottom, shape=straight, waterlogged=false}",
           "minecraft:dark_oak_slab{type=top, waterlogged=false}",
           "minecraft:cobblestone_stairs{facing=south, half=bottom, shape=straight, waterlogged=false}",
@@ -283,6 +1260,7 @@
           "minecraft:white_wall_banner{facing=west}",
           "minecraft:white_wall_banner{facing=east}",
           "minecraft:white_wall_banner{facing=south}",
+          "minecraft:dark_oak_fence{east=true, north=false, south=false, waterlogged=false, west=true}",
           "minecraft:dark_oak_fence{east=false, north=false, south=false, waterlogged=false, west=true}",
           "minecraft:dark_oak_fence{east=true, north=false, south=false, waterlogged=false, west=false}",
           "minecraft:cobblestone_wall{east=none, north=none, south=none, up=true, waterlogged=false, west=none}",
@@ -291,6 +1269,12 @@
           "minecraft:dark_oak_fence{east=false, north=false, south=true, waterlogged=false, west=false}",
           "minecraft:chest{facing=west, type=single, waterlogged=false}",
           "minecraft:torch",
+          "minecraft:stone",
+          "minecraft:dirt",
+          "minecraft:dark_oak_fence{east=false, north=false, south=false, waterlogged=false, west=false}",
+          "minecraft:pumpkin",
+          "minecraft:crafting_table",
+          "minecraft:white_wool",
           "minecraft:hay_block{axis=y}",
           "minecraft:carved_pumpkin{facing=west}",
           "minecraft:dark_oak_stairs{facing=south, half=bottom, shape=straight, waterlogged=false}",
@@ -299,8 +1283,8 @@
           "minecraft:dark_oak_stairs{facing=north, half=bottom, shape=straight, waterlogged=false}",
           "minecraft:carved_pumpkin{facing=north}"
         ],
-        "data": "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",
-        "hash": "b0340a6dbab0f97a4c0ff72eecee2839ab1570f5ce88cd5ed7059fbbc488abd6"
+        "data": "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",
+        "hash": "a33f0dde7d92601e7e64666ac42d9aea3b913c3a20c07d98da64deef3b181adc"
       },
       "chunkX": 17,
       "chunkZ": -60,
@@ -485,33 +1469,81 @@
       "searchZ": 0,
       "searchRadius": 400,
       "blocks": {
-        "chunks": 12,
+        "chunks": 3,
+        "chunkList": [
+          [
+            2,
+            -71
+          ],
+          [
+            1,
+            -71
+          ],
+          [
+            2,
+            -72
+          ]
+        ],
+        "bounds": [
+          [
+            32,
+            107,
+            -1143,
+            39,
+            114,
+            -1136
+          ],
+          [
+            31,
+            107,
+            -1135,
+            40,
+            116,
+            -1126
+          ],
+          [
+            32,
+            108,
+            -1133,
+            32,
+            108,
+            -1133
+          ],
+          [
+            35,
+            109,
+            -1129,
+            35,
+            109,
+            -1129
+          ]
+        ],
         "palette": [
-          "minecraft:dirt_path",
-          "minecraft:air",
           "minecraft:dirt",
+          "minecraft:dirt_path",
           "minecraft:white_wool_stairs{facing=east, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:air",
           "minecraft:oak_fence{east=false, north=false, south=false, waterlogged=false, west=false}",
-          "minecraft:white_wool_stairs{facing=west, half=bottom, shape=straight, waterlogged=false}",
-          "minecraft:oak_leaves{distance=2, persistent=false, waterlogged=false}",
-          "minecraft:oak_leaves{distance=1, persistent=false, waterlogged=false}",
-          "minecraft:chest{facing=north, type=single, waterlogged=false}",
           "minecraft:oak_log{axis=z}",
-          "minecraft:straw_bed{facing=west, occupied=false, part=head}",
-          "minecraft:straw_bed{facing=west, occupied=false, part=foot}",
           "minecraft:oak_fence{east=false, north=false, south=false, waterlogged=false, west=true}",
+          "minecraft:white_wool_stairs{facing=west, half=bottom, shape=straight, waterlogged=false}",
           "minecraft:oak_fence{east=true, north=false, south=false, waterlogged=false, west=false}",
           "minecraft:grass_block{snowy=false}",
           "minecraft:oxidized_copper_chest{facing=south, type=single, waterlogged=false}",
           "minecraft:oak_log{axis=y}",
           "minecraft:cobweb",
           "minecraft:campfire{facing=west, lit=false, signal_fire=false, waterlogged=false}",
+          "minecraft:chest{facing=north, type=single, waterlogged=false}",
           "minecraft:oak_leaves{distance=3, persistent=false, waterlogged=false}",
           "minecraft:oak_leaves{distance=4, persistent=false, waterlogged=false}",
-          "minecraft:oak_leaves{distance=5, persistent=false, waterlogged=false}"
+          "minecraft:oak_leaves{distance=5, persistent=false, waterlogged=false}",
+          "minecraft:oak_leaves{distance=1, persistent=false, waterlogged=false}",
+          "minecraft:oak_leaves{distance=2, persistent=false, waterlogged=false}",
+          "minecraft:straw_bed{facing=west, occupied=false, part=head}",
+          "minecraft:straw_bed{facing=west, occupied=false, part=foot}"
         ],
-        "data": "H4sIAAAAAAAA/+1Wa2/CMAxMAqQURlcG+/9/dS3Em3VKbNM2Gh9S6ZTHXc+PogTnHo9veBuE5yf5HR3s8f2cLrfOvR8EaH5a/FzuNN+5Z51791czzQ+MzwH5OKFLI/LHxPVpLPn3gn+JP004F3ifNB9s/8I4n4nhBT4KPK9/qf8SHjXIvcrXgOZvib8r5G7lGxoaXgPef3hn4f0xn7901lrPX+/qnz9LIT1DQmnN9/CeHtgY0liKKWkkn8DmpPtkGv7/YGC6IeMTwA9jYTweV+uxRWPFCOsrm/fKu1dB8yX45PLvgafvc4Sc0Ad7j/Vs3a+t+lwDpT69Q24abhPuE74FTcd0Ui2kW+NzS7ncldyIlzyJl3Kz+HCd1iutz5ImJp3UwzHpouITFZ+Y6bNUt5Qb8VJu3KeUG8aq9Zu3+FMta32W5Kbx1txq9W+rWmZ0Bl2NWiwx/yu3hoaGhjWY74jxB50QxXSoFwAA",
-        "hash": "f7be1c1f259536a5c25a3cec0211aedb3f6c5c8eb35b18066cffcd455eb83c5e"
+        "data": "H4sIAAAAAAAA/+1Y2W7DMAxTknldlq6Xt///1bmDjLGCJbk50Dw4AGHHZClKLVDARH9PR48r7vuEIeGN15DwzvsDrz2c3fEB3ACaYYfoDIwM7R3PqHDeATcaNS2N5UOwz7pP0OAzgm4s+OQHz1Aj62Fdb8Y1mlpM4v0I++B89mhovgyfUv4g+Pz9nEQm6SNnL/tZe15rzXkLaHPaQzYP54RLwtXQ3EBn9ZJ1S3zOnOXiZMu85Zl5K1uND+q8WXlztjSRddYMJ9ZFxyc6PrEwZ6tvK1vmrWzoo2WTtbb6zdf4516W+szJ5vG12baa31q93HF7US81NV+VraGhoWEJJka3gywN/yB6vKfQ7iwkV+JJnJX2pcfz8+qXsmv3LLg/kH1/Inn5H4z8ibnAq+YfDH+N/074UfiB/HuiUo8aHw0e+5/rP4eXGsk9y28Bz7+mfq9kr+UbGhqewC9q8lmKqBcAAA==",
+        "hash": "05db2f9f054057897774e5c094a00353bf0e664f6019c9b5ad84e0dcd4ee7b41"
       },
       "chunkX": 2,
       "chunkZ": -71,
@@ -712,31 +1744,63 @@
       "searchZ": 0,
       "searchRadius": 400,
       "blocks": {
-        "chunks": 12,
+        "chunks": 3,
+        "chunkList": [
+          [
+            39,
+            -28
+          ],
+          [
+            38,
+            -28
+          ],
+          [
+            39,
+            -29
+          ]
+        ],
+        "bounds": [
+          [
+            624,
+            93,
+            -455,
+            631,
+            100,
+            -448
+          ],
+          [
+            623,
+            93,
+            -447,
+            632,
+            95,
+            -438
+          ]
+        ],
         "palette": [
-          "minecraft:grass_block{snowy=false}",
-          "minecraft:air",
           "minecraft:dirt",
           "minecraft:dirt_path",
-          "minecraft:fern",
+          "minecraft:white_wool_stairs{facing=east, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:air",
           "minecraft:spruce_fence{east=false, north=false, south=false, waterlogged=false, west=false}",
           "minecraft:white_wool_stairs{facing=west, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:spruce_fence{east=false, north=false, south=false, waterlogged=false, west=true}",
+          "minecraft:spruce_fence{east=true, north=false, south=false, waterlogged=false, west=false}",
+          "minecraft:grass_block{snowy=false}",
+          "minecraft:campfire{facing=west, lit=false, signal_fire=false, waterlogged=false}",
+          "minecraft:barrel{facing=north, open=false}",
+          "minecraft:fern",
           "minecraft:sweet_berry_bush{age=3}",
           "minecraft:large_fern{half=lower}",
           "minecraft:chest{facing=west, type=single, waterlogged=false}",
           "minecraft:straw_bed{facing=east, occupied=false, part=foot}",
           "minecraft:straw_bed{facing=east, occupied=false, part=head}",
-          "minecraft:white_wool_stairs{facing=east, half=bottom, shape=straight, waterlogged=false}",
           "minecraft:straw_bed{facing=south, occupied=false, part=foot}",
           "minecraft:straw_bed{facing=south, occupied=false, part=head}",
-          "minecraft:spruce_fence{east=false, north=false, south=false, waterlogged=false, west=true}",
-          "minecraft:spruce_fence{east=true, north=false, south=false, waterlogged=false, west=false}",
-          "minecraft:large_fern{half=upper}",
-          "minecraft:campfire{facing=west, lit=false, signal_fire=false, waterlogged=false}",
-          "minecraft:barrel{facing=north, open=false}"
+          "minecraft:large_fern{half=upper}"
         ],
-        "data": "H4sIAAAAAAAA/+2V2w7DIAiGtW7tDu78/u86TCQhRMAldnohyZcqP1Bsa3Wu2nxjFiCQa2A+TmBxJU3KtzSpNtdKulTjkNd5JGvG8QpswCnPN/ZsVpLPNdQ9iUmcgQtwJfWlZ5/0mMc34qf5qN+V+6eYB/E/iZZ4Kblab7V63FnnMS17b6Vb/f3S/169x876ZDIa1vmH+1Y6P7yz/7/e1e3/HvsHjZ6bJSudwVKMNHeFuebj74XbYtSo0f5lvb9zi7eifQbobzIQX+CM6wawDAAA",
-        "hash": "dcf657d90c4377f4765490657ba495384970ca34d24478e290110d733942ee86"
+        "data": "H4sIAAAAAAAA/+2W7Q7CIAxFCzhFnc6P939XQSHWhrbTjMkPmpwAu23pGIEBPM3Au8X9aDbgApvU4v6Q2uizRfoOaQ75OBJHsYJWC58wCF/AFOB8uLEX4rhcIMwHSo452lqs+U1/YS9ohwbq67TFv/Z9NOm8pmaIX0nj4jWNy106K7m81OcIr/fk7psxcErjET7XZkDxVMu6Qz6Rc2AKXFB+bu2jnu+xK3qO47N+E+bX7su7ECvVNle3lXXqs2TtS+lafd/UX6t27X+ott7pNMUD9DacArAMAAA=",
+        "hash": "5868cf93fd6273f8cf83e3f5c39eb92d4110e034e6b4d95b86a9ff538563cb9a"
       },
       "chunkX": 39,
       "chunkZ": -28,
@@ -847,7 +1911,101 @@
       "chunkX": 47,
       "chunkZ": 25,
       "pieceCount": 1,
-      "pieces": "d7b663c6ecb5a27bed4a037caada283eaaf24997394f61d493107f64dea1735a"
+      "pieces": "d7b663c6ecb5a27bed4a037caada283eaaf24997394f61d493107f64dea1735a",
+      "blocks": {
+        "chunks": 1,
+        "chunkList": [
+          [
+            47,
+            25
+          ]
+        ],
+        "bounds": [
+          [
+            761,
+            65,
+            409,
+            761,
+            90,
+            409
+          ]
+        ],
+        "palette": [
+          "minecraft:chest{facing=east, type=single, waterlogged=false}",
+          "minecraft:sand",
+          "minecraft:air"
+        ],
+        "data": "H4sIAAAAAAAA/2NgAANGKGaiFQYA8dY5XmgAAAA=",
+        "hash": "9a534b2628736f5ab22b57bab8c6a972d8bd2d3bc7f82b9d7259921e3c494cf1"
+      },
+      "structureOrder": [
+        [],
+        [],
+        [],
+        [
+          "minecraft:buried_treasure",
+          "minecraft:mineshaft",
+          "minecraft:mineshaft_mesa",
+          "minecraft:trail_ruins",
+          "minecraft:trial_chambers"
+        ],
+        [
+          "minecraft:abandoned_camp_bamboo_jungle",
+          "minecraft:abandoned_camp_birch_forest",
+          "minecraft:abandoned_camp_cherry_grove",
+          "minecraft:abandoned_camp_dappled_forest",
+          "minecraft:abandoned_camp_flower_forest",
+          "minecraft:abandoned_camp_forest",
+          "minecraft:abandoned_camp_meadow",
+          "minecraft:abandoned_camp_old_growth_birch_forest",
+          "minecraft:abandoned_camp_old_growth_pine_taiga",
+          "minecraft:abandoned_camp_old_growth_spruce_taiga",
+          "minecraft:abandoned_camp_pale_garden",
+          "minecraft:abandoned_camp_savanna",
+          "minecraft:abandoned_camp_snowy_taiga",
+          "minecraft:abandoned_camp_sparse_jungle",
+          "minecraft:abandoned_camp_swamp",
+          "minecraft:abandoned_camp_taiga",
+          "minecraft:abandoned_camp_windswept_forest",
+          "minecraft:abandoned_camp_wooded_badlands",
+          "minecraft:bastion_remnant",
+          "minecraft:desert_pyramid",
+          "minecraft:end_city",
+          "minecraft:igloo",
+          "minecraft:jungle_pyramid",
+          "minecraft:mansion",
+          "minecraft:monument",
+          "minecraft:ocean_ruin_cold",
+          "minecraft:ocean_ruin_warm",
+          "minecraft:pillager_outpost",
+          "minecraft:ruined_portal",
+          "minecraft:ruined_portal_desert",
+          "minecraft:ruined_portal_jungle",
+          "minecraft:ruined_portal_mountain",
+          "minecraft:ruined_portal_nether",
+          "minecraft:ruined_portal_ocean",
+          "minecraft:ruined_portal_swamp",
+          "minecraft:shipwreck",
+          "minecraft:shipwreck_beached",
+          "minecraft:stronghold",
+          "minecraft:swamp_hut",
+          "minecraft:village_desert",
+          "minecraft:village_plains",
+          "minecraft:village_savanna",
+          "minecraft:village_snowy",
+          "minecraft:village_taiga"
+        ],
+        [],
+        [],
+        [
+          "minecraft:ancient_city",
+          "minecraft:fortress",
+          "minecraft:nether_fossil"
+        ],
+        [],
+        [],
+        []
+      ]
     },
     {
       "name": "desert_pyramid",
@@ -859,7 +2017,123 @@
       "chunkX": -320,
       "chunkZ": -304,
       "pieceCount": 1,
-      "pieces": "f078f20d85e9f44fdbdc434e8f0ca56b85b2f5a86a87d46f7e5d433187221a6c"
+      "pieces": "f078f20d85e9f44fdbdc434e8f0ca56b85b2f5a86a87d46f7e5d433187221a6c",
+      "blocks": {
+        "chunks": 4,
+        "chunkList": [
+          [
+            -320,
+            -304
+          ],
+          [
+            -320,
+            -303
+          ],
+          [
+            -319,
+            -304
+          ],
+          [
+            -319,
+            -303
+          ]
+        ],
+        "bounds": [
+          [
+            -5120,
+            64,
+            -4864,
+            -5100,
+            85,
+            -4844
+          ]
+        ],
+        "palette": [
+          "minecraft:sandstone",
+          "minecraft:sand",
+          "minecraft:air",
+          "minecraft:orange_terracotta",
+          "minecraft:cut_sandstone",
+          "minecraft:suspicious_sand{dusted=0}",
+          "minecraft:chiseled_sandstone",
+          "minecraft:blue_terracotta",
+          "minecraft:sandstone_stairs{facing=north, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:sandstone_slab{type=bottom, waterlogged=false}",
+          "minecraft:sandstone_stairs{facing=east, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:sandstone_stairs{facing=south, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:sandstone_stairs{facing=west, half=bottom, shape=straight, waterlogged=false}"
+        ],
+        "data": "H4sIAAAAAAAA/+1di47jIAykTbe3t3v//72nSEVlvSbxq5g0M9IoCc1gMDihSaGliHF5sN2/9E/varnjPe11J78tXImeHku0lFatBlFaC6K10vL0zpPot87Z00f5y6LPtK0BjTdtDFqx1aYW/cg45OyP0s6E7D4+KkYAAPiN7PhF/ANAHrLjd7b4XxL1C9kCwKuRHb/R8X8zaiovzb5G/1F+PnuTfv+O0AOAFdnxGx3/d6Om8qPZ1+hrzLZxPEoPAFZkx+8M4/9bhxo9vXdr7/8ePXBsHPE759Jo/jBpr7bP5ZGlX2F9h071dMudJ+UK73V11X8qzqXX863jPbb5Vtwex5It9YHG9nUCPVf/9vPbznEvbSQ99r31z26/iPZf67SU53hkK957vv9bZKB5LKQsWtD2KEwZte1/fxxLttnth/hH/Hv0pfTj3+L7PVD9Qo6/lHqt/WhQm54+mKHv1Una/3tpGmbqI+rf0x6l/dcYvJfndxSNnsbvHqj+zqRtXQOi7XvhzS9bb3mXpdVvle8IemneR2z/FfT+r4l/7/ibxq+WUeP/Fp7y9PpYLavElrQMEfre/Uyq59pPo+eu/yPte+uf3X7e/rci+v6v0XPtP9I+B095ONLnhpZy9dK0fSP6816djqKf+fMW2vaX9r8VS/n5XkWa77X44y9bz0Gjl/q/0qK3lm0LUr0mHfpY/3vbX9L/Cvlca8M7/s7Wc7D4+F3p9Q89/4h6T/1np7d+Z9eDOh9b9Ven3mP/DPx2aD3+pc/6/w22X/k5QRuAIAiCIAiCIAiCIAiC4KtoRba+5pGpB4DZ0ZtLbcnHqqV5ZOm16K2dMHL9pYj1HzzrT9G8NGjXnrGWv5eHVV/bQqOvvBT9+j00Ly2y1/+I7H+W9U8iYP3/glbf9h+L/VnXX2nHQJr1D6pWOo7jxp3r9ltRTk4fCe36F7QMmvnjkfNnLdDO3+f875k/5IV3/u/o+cez+e8d5m965q9IbGzxHea/Rfc/T/21+hnmD2X2v+z5E1H+s84/8fov+/fnUfFr/f2+139n11fi95N2LQiC4BkJAAAAnBfce5BemnSd5DOBe5+2plFfteu1Ak9w/apd27pNA/g+ZE2r48Ctd4J0LdZS+HFk3b8Jz3u3NOk4ey+vu/C8d0qzsDB5cWmz1XUG32359ExpIAiCIAiCIAiCowjIMWLeDfcMTPN8XGqDovcMWZLGQfr81FOPwtiIxhoj1ueJXF69/5aSPHOjeVnifC/Ney3Jvp6BIHhw/gfPqaGWmJcAAA==",
+        "hash": "8aa94ab66056559a2e8c2f62fdc1418eba77b703be893812187575555663f097"
+      },
+      "structureOrder": [
+        [],
+        [],
+        [],
+        [
+          "minecraft:buried_treasure",
+          "minecraft:mineshaft",
+          "minecraft:mineshaft_mesa",
+          "minecraft:trail_ruins",
+          "minecraft:trial_chambers"
+        ],
+        [
+          "minecraft:abandoned_camp_bamboo_jungle",
+          "minecraft:abandoned_camp_birch_forest",
+          "minecraft:abandoned_camp_cherry_grove",
+          "minecraft:abandoned_camp_dappled_forest",
+          "minecraft:abandoned_camp_flower_forest",
+          "minecraft:abandoned_camp_forest",
+          "minecraft:abandoned_camp_meadow",
+          "minecraft:abandoned_camp_old_growth_birch_forest",
+          "minecraft:abandoned_camp_old_growth_pine_taiga",
+          "minecraft:abandoned_camp_old_growth_spruce_taiga",
+          "minecraft:abandoned_camp_pale_garden",
+          "minecraft:abandoned_camp_savanna",
+          "minecraft:abandoned_camp_snowy_taiga",
+          "minecraft:abandoned_camp_sparse_jungle",
+          "minecraft:abandoned_camp_swamp",
+          "minecraft:abandoned_camp_taiga",
+          "minecraft:abandoned_camp_windswept_forest",
+          "minecraft:abandoned_camp_wooded_badlands",
+          "minecraft:bastion_remnant",
+          "minecraft:desert_pyramid",
+          "minecraft:end_city",
+          "minecraft:igloo",
+          "minecraft:jungle_pyramid",
+          "minecraft:mansion",
+          "minecraft:monument",
+          "minecraft:ocean_ruin_cold",
+          "minecraft:ocean_ruin_warm",
+          "minecraft:pillager_outpost",
+          "minecraft:ruined_portal",
+          "minecraft:ruined_portal_desert",
+          "minecraft:ruined_portal_jungle",
+          "minecraft:ruined_portal_mountain",
+          "minecraft:ruined_portal_nether",
+          "minecraft:ruined_portal_ocean",
+          "minecraft:ruined_portal_swamp",
+          "minecraft:shipwreck",
+          "minecraft:shipwreck_beached",
+          "minecraft:stronghold",
+          "minecraft:swamp_hut",
+          "minecraft:village_desert",
+          "minecraft:village_plains",
+          "minecraft:village_savanna",
+          "minecraft:village_snowy",
+          "minecraft:village_taiga"
+        ],
+        [],
+        [],
+        [
+          "minecraft:ancient_city",
+          "minecraft:fortress",
+          "minecraft:nether_fossil"
+        ],
+        [],
+        [],
+        []
+      ]
     },
     {
       "name": "igloo",
@@ -871,11 +2145,39 @@
       "searchRadius": 400,
       "blocks": {
         "chunks": 1,
-        "palette": [
-          "minecraft:air"
+        "chunkList": [
+          [
+            36,
+            41
+          ]
         ],
-        "data": "H4sIAAAAAAAA/2NgGAWjYBSMAtoAAJ6NLZJgBAAA",
-        "hash": "6ed6426377d0a33302e3a2b1ccd4f0439be627cefcaeb4aeb9dde4b9bd9ba494"
+        "bounds": [
+          [
+            576,
+            85,
+            656,
+            582,
+            94,
+            663
+          ]
+        ],
+        "palette": [
+          "minecraft:dirt",
+          "minecraft:snow_block",
+          "minecraft:grass_block{snowy=false}",
+          "minecraft:stone",
+          "minecraft:air",
+          "minecraft:furnace{facing=east, lit=false}",
+          "minecraft:white_carpet",
+          "minecraft:ice",
+          "minecraft:redstone_torch{lit=true}",
+          "minecraft:red_bed{facing=south, occupied=false, part=foot}",
+          "minecraft:crafting_table",
+          "minecraft:red_bed{facing=south, occupied=false, part=head}",
+          "minecraft:light_gray_carpet"
+        ],
+        "data": "H4sIAAAAAAAA/+2Q7QqAIAxFddl37/+8FWhcbrrUIPphcAh3hrvTmOuzgHg011Edfaz+Fs6B8552CJkc/F2Gw7Ojvv5gAEJ9PJjIzb5++oXcSvttQJiHOa255+RsuU7bz0Xg2SVOlHlCd2CfRPpLXOpOLUuN43dIvcWXaFlqXaPRaPyCHTuMZIDACAAA",
+        "hash": "833caf712b79d5414cc919696a5bf0243717e51ad49231e01b2673c4c423f81b"
       },
       "chunkX": 36,
       "chunkZ": 41,
@@ -961,7 +2263,130 @@
       "chunkX": -95,
       "chunkZ": 2,
       "pieceCount": 1,
-      "pieces": "d5d5968d6d601b078295795c17982ed3f5f785b73cee7f26e5c0297d0693880e"
+      "pieces": "d5d5968d6d601b078295795c17982ed3f5f785b73cee7f26e5c0297d0693880e",
+      "blocks": {
+        "chunks": 1,
+        "chunkList": [
+          [
+            -95,
+            2
+          ]
+        ],
+        "bounds": [
+          [
+            -1520,
+            64,
+            32,
+            -1506,
+            77,
+            43
+          ]
+        ],
+        "palette": [
+          "minecraft:cobblestone",
+          "minecraft:mossy_cobblestone",
+          "minecraft:air",
+          "minecraft:tripwire_hook{attached=true, facing=south, powered=false}",
+          "minecraft:tripwire{attached=true, disarmed=false, east=false, north=true, powered=false, south=true, west=false}",
+          "minecraft:redstone_wire{east=none, north=side, power=0, south=side, west=none}",
+          "minecraft:tripwire_hook{attached=true, facing=north, powered=false}",
+          "minecraft:redstone_wire{east=side, north=side, power=0, south=none, west=none}",
+          "minecraft:redstone_wire{east=side, north=none, power=0, south=none, west=side}",
+          "minecraft:cobblestone_stairs{facing=west, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:tripwire_hook{attached=true, facing=east, powered=false}",
+          "minecraft:tripwire{attached=true, disarmed=false, east=true, north=false, powered=false, south=false, west=true}",
+          "minecraft:tripwire_hook{attached=true, facing=west, powered=false}",
+          "minecraft:chest{facing=north, type=single, waterlogged=false}",
+          "minecraft:redstone_wire{east=side, north=none, power=0, south=none, west=up}",
+          "minecraft:redstone_wire{east=none, north=side, power=0, south=none, west=side}",
+          "minecraft:chest{facing=west, type=single, waterlogged=false}",
+          "minecraft:dispenser{facing=east, triggered=false}",
+          "minecraft:vine{east=false, north=false, south=false, up=false, west=true}",
+          "minecraft:vine{east=false, north=false, south=true, up=false, west=false}",
+          "minecraft:chiseled_stone_bricks",
+          "minecraft:lever{face=wall, facing=east, powered=false}",
+          "minecraft:dispenser{facing=north, triggered=false}",
+          "minecraft:sticky_piston{extended=false, facing=up}",
+          "minecraft:sticky_piston{extended=false, facing=north}",
+          "minecraft:repeater{delay=1, facing=east, locked=false, powered=false}",
+          "minecraft:redstone_wire{east=side, north=side, power=0, south=side, west=side}",
+          "minecraft:cobblestone_stairs{facing=east, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:grass_block{snowy=false}",
+          "minecraft:dirt",
+          "minecraft:cobblestone_stairs{facing=south, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:cobblestone_stairs{facing=north, half=bottom, shape=straight, waterlogged=false}"
+        ],
+        "data": "H4sIAAAAAAAA/+VZCW4bMQyk3ab3laZ33Ob/v+wuYAbMdGZ0LNxFWgGEVsfwGFISYEfct0M8bIfSowSssX2oi2FRh9KjfGA6sGf2nG/MltrjbLe4acWi+EKbzgdmpzXHfGjtZ2Pll7LvdLZ4dTqdblzP/kj6tT0R64k9Gnkq5qvfo9j098rofAaxVuzani/yQsiKe2nsYsyYA4Vd26tFXhd5Ezq3VX+ureO3Zf4K7CO2xl9z926R97D3A7Hr7h/2jT5jTBXTe84YN053rauMR43rfG9Nu3q+XuTjJJadBRZXiHWlk9XjUeAwfwqrfHZ5R7uJvSHxrN95Hj8t8lnY/XLeU21/LfoQi74hr9/O398Bq2KKMmY61V3t9qEdVqtsjPMHgu3BYG20emdX1RXygXXVW48Mq/AOGwYXwf1WPt8QfMtukO9seGbZOWLYdbzW84+GXVd3bIw2VAwsFsSqs6F0uXXmb88ety/Ht8Y/d96jYHE/1iPqTCyLW2GrDuazi1HNq3gD1ti60u1y38Ov830Em/tOZxl5t1NOG/CJq3Ew3+tcYn+esXXOyQj2FuwxbK+9IPFuwfb6zLAhsI6rU9GXeaj5YLmaqaN/SVhTbwXyPFPPPdi8SxV2xN6oOGzLZ1bPoz4xbM2Bu5MZ9rFJbb1vSuUYm+OqYut+7Ft3B9qra1jTymfmE9uDWLWm9lSf0baqadTNsIwDxpXiNcy8ikXZclzOCr6vrd7Fi/4GfFfcqI8VP3rulN1fG+y2/MB6nsGy2r/rwKqcjdTCDDa5ivizDgLm3f2uag9zgbg6h3tb9Zy+BeiIeGivxrCFq71ztIfM2K/5mOUqJrGIR18wj1H2unoO6F09Mz1qjLyp90fNYewBe50utKvOedWFNdx6t5F3zA/OO07wHDF/WnYZVy1sGGwPX4orjIHNq1hCfLf4ZDWoONhbes+/qx3W1BvGsO5cOH8Sy2q5lRuG7c2rqkOmU8WLXDns1hz9T7I3V5lH9lb0YLP13J8Yj7rzRrEjdi+Zo0vZf0zSy8HfztXI+cnfFdR/1i1sDGIVF5fiqFfv7vfzb0A3bBRgJwAA",
+        "hash": "bc6667dc502e87b31386874596e92df96f2940a70a06ec98637f0c3d5d9de000"
+      },
+      "structureOrder": [
+        [],
+        [],
+        [],
+        [
+          "minecraft:buried_treasure",
+          "minecraft:mineshaft",
+          "minecraft:mineshaft_mesa",
+          "minecraft:trail_ruins",
+          "minecraft:trial_chambers"
+        ],
+        [
+          "minecraft:abandoned_camp_bamboo_jungle",
+          "minecraft:abandoned_camp_birch_forest",
+          "minecraft:abandoned_camp_cherry_grove",
+          "minecraft:abandoned_camp_dappled_forest",
+          "minecraft:abandoned_camp_flower_forest",
+          "minecraft:abandoned_camp_forest",
+          "minecraft:abandoned_camp_meadow",
+          "minecraft:abandoned_camp_old_growth_birch_forest",
+          "minecraft:abandoned_camp_old_growth_pine_taiga",
+          "minecraft:abandoned_camp_old_growth_spruce_taiga",
+          "minecraft:abandoned_camp_pale_garden",
+          "minecraft:abandoned_camp_savanna",
+          "minecraft:abandoned_camp_snowy_taiga",
+          "minecraft:abandoned_camp_sparse_jungle",
+          "minecraft:abandoned_camp_swamp",
+          "minecraft:abandoned_camp_taiga",
+          "minecraft:abandoned_camp_windswept_forest",
+          "minecraft:abandoned_camp_wooded_badlands",
+          "minecraft:bastion_remnant",
+          "minecraft:desert_pyramid",
+          "minecraft:end_city",
+          "minecraft:igloo",
+          "minecraft:jungle_pyramid",
+          "minecraft:mansion",
+          "minecraft:monument",
+          "minecraft:ocean_ruin_cold",
+          "minecraft:ocean_ruin_warm",
+          "minecraft:pillager_outpost",
+          "minecraft:ruined_portal",
+          "minecraft:ruined_portal_desert",
+          "minecraft:ruined_portal_jungle",
+          "minecraft:ruined_portal_mountain",
+          "minecraft:ruined_portal_nether",
+          "minecraft:ruined_portal_ocean",
+          "minecraft:ruined_portal_swamp",
+          "minecraft:shipwreck",
+          "minecraft:shipwreck_beached",
+          "minecraft:stronghold",
+          "minecraft:swamp_hut",
+          "minecraft:village_desert",
+          "minecraft:village_plains",
+          "minecraft:village_savanna",
+          "minecraft:village_snowy",
+          "minecraft:village_taiga"
+        ],
+        [],
+        [],
+        [
+          "minecraft:ancient_city",
+          "minecraft:fortress",
+          "minecraft:nether_fossil"
+        ],
+        [],
+        [],
+        []
+      ]
     },
     {
       "name": "mineshaft",
@@ -1021,11 +2446,39 @@
       "searchZ": 0,
       "blocks": {
         "chunks": 2,
-        "palette": [
-          "minecraft:air"
+        "chunkList": [
+          [
+            -109,
+            91
+          ],
+          [
+            -109,
+            90
+          ]
         ],
-        "data": "H4sIAAAAAAAA/2NgGAWjYBSMgsEFAF5wh5qYBAAA",
-        "hash": "7fb1c22fb77f1a8161596402cb31b7e4a7752491bfb6adf46c2f2a8e79e8a3fb"
+        "bounds": [
+          [
+            -1744,
+            46,
+            1451,
+            -1738,
+            96,
+            1456
+          ]
+        ],
+        "palette": [
+          "minecraft:water{level=0}",
+          "minecraft:sand",
+          "minecraft:suspicious_sand{dusted=0}",
+          "minecraft:air",
+          "minecraft:magma_block",
+          "minecraft:chest{facing=north, type=single, waterlogged=false}",
+          "minecraft:cut_sandstone",
+          "minecraft:sandstone_stairs{facing=east, half=bottom, shape=straight, waterlogged=true}",
+          "minecraft:sandstone_stairs{facing=west, half=bottom, shape=straight, waterlogged=true}"
+        ],
+        "data": "H4sIAAAAAAAA/+3W3QqAIAyG4Wll3f8V90MHc0wJgob0fvAwI9TRgSZyJR3yXZPUsc9knEwAhmPP45ZZjbOZszyYY8ci9Xnv3QXeHeG9L52q19br5c66b1JU9Xr5MqVRI7Le++sezvEW007VT+R3IYQQMn6i/+UAAAAAAADwQzvdTZ4PeCEAAA==",
+        "hash": "3cae5e3caaecff5bc2b8d8abaa2714394973e213ba04c03e33e14fd45ad5b47d"
       },
       "chunkX": -109,
       "chunkZ": 91,
@@ -1109,23 +2562,43 @@
       "searchZ": 0,
       "blocks": {
         "chunks": 2,
+        "chunkList": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "bounds": [
+          [
+            15,
+            12,
+            1,
+            21,
+            18,
+            5
+          ]
+        ],
         "palette": [
-          "minecraft:water{level=0}",
-          "minecraft:stone",
           "minecraft:netherrack",
           "minecraft:magma_block",
           "minecraft:air",
+          "minecraft:stone",
           "minecraft:chest{facing=north, type=single, waterlogged=true}",
           "minecraft:stone_brick_slab{type=bottom, waterlogged=true}",
           "minecraft:obsidian",
           "minecraft:crying_obsidian",
+          "minecraft:water{level=0}",
           "minecraft:stone_brick_stairs{facing=east, half=bottom, shape=straight, waterlogged=false}",
           "minecraft:gold_block",
           "minecraft:mossy_stone_brick_stairs{facing=west, half=bottom, shape=straight, waterlogged=false}",
           "minecraft:stone_brick_slab{type=bottom, waterlogged=false}"
         ],
-        "data": "H4sIAAAAAAAA/2NgwACMmEJ0E2MiETNTSR0LFswIpVmBmA0Jw9zJjoY58JjLhKQHZjYjAXtxYXYsfEJ+IcV8UuxlgYYtOeZRai+lmJhwZsfCJsV8BixixMQ7JxBzATE3EPPgUY9uFlgMABl6hinUAwAA",
-        "hash": "a332b75076e9730d8ae4ab090be15972889d8e10faae117d999cce6f2ed99c02"
+        "data": "H4sIAAAAAAAA/2NgIBkwUkkdExbMDKVZgJgVCTND9bChYXY85jIg6YGZzcyA315cmA0Ln5BfSDGfFHtBNCOZ5lFqL6WYmHBmw8ImxXwOLGLExDsnEHMBMTcQ8+BRj24WM5K9yHjAxAArNfFz1AMAAA==",
+        "hash": "517c57f36c6b9e38312b55fc7be0eafa555e4b7807686fc9e14aec5f2b8045f4"
       },
       "chunkX": 1,
       "chunkZ": 0,
@@ -1269,11 +2742,59 @@
       "searchZ": 0,
       "blocks": {
         "chunks": 2,
-        "palette": [
-          "minecraft:air"
+        "chunkList": [
+          [
+            11,
+            10
+          ],
+          [
+            11,
+            11
+          ]
         ],
-        "data": "H4sIAAAAAAAA/+3BgQAAAADDoPlTH+ECVQEAAAAAAADAN083ew9gHgAA",
-        "hash": "4a4fb62810af0804c174703a2d9ea7da700de2d68761225cb6958cf014027fd9"
+        "bounds": [
+          [
+            176,
+            44,
+            160,
+            184,
+            98,
+            183
+          ]
+        ],
+        "palette": [
+          "minecraft:stone",
+          "minecraft:water{level=0}",
+          "minecraft:dark_oak_planks",
+          "minecraft:dark_oak_stairs{facing=south, half=top, shape=straight, waterlogged=false}",
+          "minecraft:dark_oak_stairs{facing=north, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:dark_oak_stairs{facing=west, half=top, shape=straight, waterlogged=true}",
+          "minecraft:gravel",
+          "minecraft:dark_oak_stairs{facing=west, half=top, shape=straight, waterlogged=false}",
+          "minecraft:jungle_planks",
+          "minecraft:dark_oak_stairs{facing=east, half=bottom, shape=straight, waterlogged=true}",
+          "minecraft:jungle_fence{east=true, north=true, south=true, waterlogged=true, west=true}",
+          "minecraft:jungle_fence{east=false, north=true, south=false, waterlogged=true, west=true}",
+          "minecraft:jungle_fence{east=false, north=true, south=true, waterlogged=true, west=true}",
+          "minecraft:dark_oak_stairs{facing=south, half=top, shape=straight, waterlogged=true}",
+          "minecraft:jungle_stairs{facing=north, half=bottom, shape=straight, waterlogged=true}",
+          "minecraft:chest{facing=south, type=single, waterlogged=true}",
+          "minecraft:dark_oak_trapdoor{facing=east, half=bottom, open=true, powered=false, waterlogged=true}",
+          "minecraft:jungle_stairs{facing=south, half=top, shape=straight, waterlogged=true}",
+          "minecraft:dark_oak_log{axis=x}",
+          "minecraft:jungle_fence{east=true, north=false, south=true, waterlogged=true, west=false}",
+          "minecraft:jungle_fence{east=false, north=false, south=false, waterlogged=true, west=true}",
+          "minecraft:jungle_fence{east=false, north=true, south=true, waterlogged=true, west=false}",
+          "minecraft:dark_oak_stairs{facing=south, half=bottom, shape=straight, waterlogged=true}",
+          "minecraft:jungle_fence{east=true, north=true, south=false, waterlogged=true, west=false}",
+          "minecraft:dark_oak_stairs{facing=west, half=bottom, shape=straight, waterlogged=true}",
+          "minecraft:jungle_stairs{facing=north, half=top, shape=straight, waterlogged=true}",
+          "minecraft:dark_oak_trapdoor{facing=east, half=top, open=true, powered=false, waterlogged=true}",
+          "minecraft:air",
+          "minecraft:dark_oak_stairs{facing=north, half=top, shape=outer_left, waterlogged=false}"
+        ],
+        "data": "H4sIAAAAAAAA/+3d204bMRRA0UlKA73Rlt4v//+dTaRYck9tH08SiIqWpSWQZuNJxiYPPOBl+WtsOrLr12pmXvOoa41es917kTQ3x+5lcq+ZZrlCE9/bKc3Mc94dZWsRf+YpRmvdbxvXY5Ot6c2gi+Ou0T1ms3mie5XRa8oaj/ZP3De9Jppp4h7LmrKet4Pm8P1daOJrLk1vb9Tzjp5zbOpuTRNfU9Ycvr7qNEtjnt7v8m6iWcK94hq3zDav994kzdu9d0ejecr7bXXZetbNZrK573TxPR+a96GLz+ZD9f32hKZ+3VmTzbObbHaTzS40HwfrXdxPdncTXVmnrJ3typqPuvr3r9c9HNVdb67NxD03oVvbPAS9eeLeOOVeo/d5brPGp73PSfNl7+tRr/lWreOoq/fG9zObHyvm2iTdz7Bepzatz59sb1xyPZ+7ssdG613WIWuyPbGmqz/vsvlm7znTcHmz67PGJfeifQEAAAAAAHBZvwAAAAAAAAAAAAAAAAAAAAAAAAAAHlkc5azi+n8krm22K5vljOZ2+XfMNPE+v5Mm9tk5xeeeZXwYs2cil2YZNPE5tubInlN2vZ7rMFrnJtejd7ZyfX10LnD5+d75wq2mdS5wvN5rdpPNrLKm2fVeE/+XaXY9a3rn3tZN69zkU+4FAAAA8Fxc+++7AAAAAAAAAAAAwH/mD5PK5qWguQAA",
+        "hash": "273df2fed9087250a9f02fd7ec4e735c7360183a837729282d2bb32ddcff7013"
       },
       "chunkX": 11,
       "chunkZ": 10,
@@ -1358,7 +2879,149 @@
       "chunkX": -143,
       "chunkZ": 91,
       "pieceCount": 1,
-      "pieces": "ba69c7cbe365c19db03ef6ddb9b90597581f7a3d5903fdbfbdd9c4217b423dae"
+      "pieces": "ba69c7cbe365c19db03ef6ddb9b90597581f7a3d5903fdbfbdd9c4217b423dae",
+      "blocks": {
+        "chunks": 4,
+        "chunkList": [
+          [
+            -143,
+            91
+          ],
+          [
+            -144,
+            91
+          ],
+          [
+            -144,
+            92
+          ],
+          [
+            -143,
+            92
+          ]
+        ],
+        "bounds": [
+          [
+            -2299,
+            58,
+            1467,
+            -2284,
+            98,
+            1475
+          ]
+        ],
+        "palette": [
+          "minecraft:stone",
+          "minecraft:sandstone",
+          "minecraft:spruce_planks",
+          "minecraft:spruce_stairs{facing=south, half=top, shape=straight, waterlogged=false}",
+          "minecraft:jungle_planks",
+          "minecraft:jungle_stairs{facing=west, half=top, shape=straight, waterlogged=false}",
+          "minecraft:sand",
+          "minecraft:spruce_stairs{facing=south, half=top, shape=outer_right, waterlogged=false}",
+          "minecraft:spruce_stairs{facing=west, half=top, shape=straight, waterlogged=false}",
+          "minecraft:jungle_fence{east=true, north=true, south=true, waterlogged=false, west=true}",
+          "minecraft:dirt",
+          "minecraft:jungle_fence{east=true, north=false, south=true, waterlogged=false, west=true}",
+          "minecraft:chest{facing=west, type=single, waterlogged=false}",
+          "minecraft:spruce_stairs{facing=north, half=top, shape=straight, waterlogged=false}",
+          "minecraft:spruce_slab{type=bottom, waterlogged=false}",
+          "minecraft:spruce_stairs{facing=east, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:air",
+          "minecraft:spruce_fence{east=true, north=true, south=true, waterlogged=false, west=true}",
+          "minecraft:spruce_fence{east=false, north=true, south=true, waterlogged=false, west=true}",
+          "minecraft:jungle_slab{type=bottom, waterlogged=false}",
+          "minecraft:jungle_stairs{facing=east, half=top, shape=straight, waterlogged=false}",
+          "minecraft:spruce_stairs{facing=south, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:jungle_fence{east=false, north=false, south=false, waterlogged=false, west=true}",
+          "minecraft:jungle_fence{east=true, north=false, south=false, waterlogged=false, west=false}",
+          "minecraft:jungle_fence{east=false, north=false, south=true, waterlogged=false, west=true}",
+          "minecraft:jungle_fence{east=false, north=true, south=false, waterlogged=false, west=false}",
+          "minecraft:spruce_stairs{facing=north, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:chest{facing=south, type=single, waterlogged=false}",
+          "minecraft:spruce_log{axis=y}",
+          "minecraft:spruce_stairs{facing=east, half=top, shape=straight, waterlogged=false}",
+          "minecraft:spruce_trapdoor{facing=west, half=top, open=false, powered=false, waterlogged=false}",
+          "minecraft:jungle_stairs{facing=west, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:jungle_stairs{facing=east, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:grass_block{snowy=false}",
+          "minecraft:spruce_door{facing=north, half=lower, hinge=left, open=false, powered=false}",
+          "minecraft:spruce_door{facing=north, half=upper, hinge=left, open=false, powered=false}",
+          "minecraft:spruce_stairs{facing=north, half=top, shape=outer_left, waterlogged=false}",
+          "minecraft:jungle_fence{east=true, north=false, south=true, waterlogged=false, west=false}",
+          "minecraft:jungle_fence{east=true, north=false, south=false, waterlogged=false, west=true}"
+        ],
+        "data": "H4sIAAAAAAAA/+2ci27bMAxFFcf1Um/tnHXZw+vaeq///8RFqIiwN5RFbc6QDJfAAWT6iqJiAQFkWiG8sFUCr+d8q4yvSdTGQ9/aGKPdc1UYowNfl4jxXoEvxtgYvjjOdWr3kIOOt1bXXerXppge32vlW0EsyaUx/G/Af6P04ruFOXaQA46h7/VGPOGt0vbK12T6DHu2apwhIX3fKR/mhT6J18D1kH5PHT9yl7B879W8tU/i7KBfJK6JD+DrDJ32fdzzydB9NvoRQgghhBBCyKm4NGsdXJ04h7UDtGYG3WdOJ7QnyNvKdcy05+YY7YsxF7T7zJiWtsZ0DE++qJU1ZGnFvoaX6w3tvkKbexYr0OkY1ppAQ/2Y/L2hDaANGe1DeJ5b1D2G5/2SnDbadTjsoZWehdgT6McZbQiH/Tnhb7S4JnsHsu+l9+nm9HF+8ffbOmLHeHfOPETr1ddo9Ry9ubRO7VOF1hP3VuXrjbtLeHOYnNq+UltaO3+inZw5iG44E+3kYHBqhzPTEkIIIYQQQgghhBBCCCGEkPPkEq1UW3JTwb+2b3Bt1T/IdxuN0ca8Tz2376pdqgOprUVBbU3e8r5V20M4rhnR+pzpb2WsuKgr1a1Ew2cxF1dsyTqQEA61CTrXXUaHNS6Yd66OwFuDUVMHIpTqS7BupSZ2TZ1CTd41dSA1OdfUSni03poG0Y2JpeMOM9pc7YFXN4Tl6h88cXP/sayjIIQQQgghhBBCCCGEXAJLWvw+eMl3cHJu30b5+jTGj9QOcK+HNu65l87CE63nfYmctyf7//qcOvGJrvb9AJ5nl4u3Ub5NOM5P76nLOXTi26ox9Fl4kxpjUteRuXPq9Fl3+t2arDXdtvgZjs+xa9S9XxBjLMQjhBBCCCH/Ob8BWDaHCkBcAAA=",
+        "hash": "a61fc43680ad39a855eeb35ecf0a20005184447a6a247fb83fe203d42eeb708e"
+      },
+      "structureOrder": [
+        [],
+        [],
+        [],
+        [
+          "minecraft:buried_treasure",
+          "minecraft:mineshaft",
+          "minecraft:mineshaft_mesa",
+          "minecraft:trail_ruins",
+          "minecraft:trial_chambers"
+        ],
+        [
+          "minecraft:abandoned_camp_bamboo_jungle",
+          "minecraft:abandoned_camp_birch_forest",
+          "minecraft:abandoned_camp_cherry_grove",
+          "minecraft:abandoned_camp_dappled_forest",
+          "minecraft:abandoned_camp_flower_forest",
+          "minecraft:abandoned_camp_forest",
+          "minecraft:abandoned_camp_meadow",
+          "minecraft:abandoned_camp_old_growth_birch_forest",
+          "minecraft:abandoned_camp_old_growth_pine_taiga",
+          "minecraft:abandoned_camp_old_growth_spruce_taiga",
+          "minecraft:abandoned_camp_pale_garden",
+          "minecraft:abandoned_camp_savanna",
+          "minecraft:abandoned_camp_snowy_taiga",
+          "minecraft:abandoned_camp_sparse_jungle",
+          "minecraft:abandoned_camp_swamp",
+          "minecraft:abandoned_camp_taiga",
+          "minecraft:abandoned_camp_windswept_forest",
+          "minecraft:abandoned_camp_wooded_badlands",
+          "minecraft:bastion_remnant",
+          "minecraft:desert_pyramid",
+          "minecraft:end_city",
+          "minecraft:igloo",
+          "minecraft:jungle_pyramid",
+          "minecraft:mansion",
+          "minecraft:monument",
+          "minecraft:ocean_ruin_cold",
+          "minecraft:ocean_ruin_warm",
+          "minecraft:pillager_outpost",
+          "minecraft:ruined_portal",
+          "minecraft:ruined_portal_desert",
+          "minecraft:ruined_portal_jungle",
+          "minecraft:ruined_portal_mountain",
+          "minecraft:ruined_portal_nether",
+          "minecraft:ruined_portal_ocean",
+          "minecraft:ruined_portal_swamp",
+          "minecraft:shipwreck",
+          "minecraft:shipwreck_beached",
+          "minecraft:stronghold",
+          "minecraft:swamp_hut",
+          "minecraft:village_desert",
+          "minecraft:village_plains",
+          "minecraft:village_savanna",
+          "minecraft:village_snowy",
+          "minecraft:village_taiga"
+        ],
+        [],
+        [],
+        [
+          "minecraft:ancient_city",
+          "minecraft:fortress",
+          "minecraft:nether_fossil"
+        ],
+        [],
+        [],
+        []
+      ]
     },
     {
       "name": "stronghold",
@@ -1382,7 +3045,113 @@
       "chunkX": -126,
       "chunkZ": -106,
       "pieceCount": 1,
-      "pieces": "9ea46191032e4ff18b94366a2a0ba30f656de922ad98a00d696084848b62c6ce"
+      "pieces": "9ea46191032e4ff18b94366a2a0ba30f656de922ad98a00d696084848b62c6ce",
+      "blocks": {
+        "chunks": 1,
+        "chunkList": [
+          [
+            -126,
+            -106
+          ]
+        ],
+        "bounds": [
+          [
+            -2016,
+            63,
+            -1696,
+            -2010,
+            70,
+            -1688
+          ]
+        ],
+        "palette": [
+          "minecraft:air",
+          "minecraft:oak_log{axis=y}",
+          "minecraft:spruce_planks",
+          "minecraft:crafting_table",
+          "minecraft:cauldron",
+          "minecraft:oak_fence{east=false, north=false, south=false, waterlogged=false, west=false}",
+          "minecraft:potted_red_mushroom",
+          "minecraft:spruce_stairs{facing=south, half=bottom, shape=outer_left, waterlogged=false}",
+          "minecraft:spruce_stairs{facing=south, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:spruce_stairs{facing=south, half=bottom, shape=outer_right, waterlogged=false}",
+          "minecraft:spruce_stairs{facing=east, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:spruce_stairs{facing=west, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:spruce_stairs{facing=north, half=bottom, shape=outer_right, waterlogged=false}",
+          "minecraft:spruce_stairs{facing=north, half=bottom, shape=straight, waterlogged=false}",
+          "minecraft:spruce_stairs{facing=north, half=bottom, shape=outer_left, waterlogged=false}"
+        ],
+        "data": "H4sIAAAAAAAA/+2S2wqAMAxD63Te9f8/1+6hMEqk0uEQ2YE8lLClGSMy6Yy5JrV3SfeHTHleAHrT8+6i/adYeYmeNYAOOrvUy3eRWYjqnJ49SF6k++5oHp15VvdIuLuHiTUDLayV8F/aPubtrAPoLHybRuNXXH9SRLXgBwAA",
+        "hash": "a9da544a7c1adbe455b4904af8abd4065b13946b0776a0de7994a8d54bd42953"
+      },
+      "structureOrder": [
+        [],
+        [],
+        [],
+        [
+          "minecraft:buried_treasure",
+          "minecraft:mineshaft",
+          "minecraft:mineshaft_mesa",
+          "minecraft:trail_ruins",
+          "minecraft:trial_chambers"
+        ],
+        [
+          "minecraft:abandoned_camp_bamboo_jungle",
+          "minecraft:abandoned_camp_birch_forest",
+          "minecraft:abandoned_camp_cherry_grove",
+          "minecraft:abandoned_camp_dappled_forest",
+          "minecraft:abandoned_camp_flower_forest",
+          "minecraft:abandoned_camp_forest",
+          "minecraft:abandoned_camp_meadow",
+          "minecraft:abandoned_camp_old_growth_birch_forest",
+          "minecraft:abandoned_camp_old_growth_pine_taiga",
+          "minecraft:abandoned_camp_old_growth_spruce_taiga",
+          "minecraft:abandoned_camp_pale_garden",
+          "minecraft:abandoned_camp_savanna",
+          "minecraft:abandoned_camp_snowy_taiga",
+          "minecraft:abandoned_camp_sparse_jungle",
+          "minecraft:abandoned_camp_swamp",
+          "minecraft:abandoned_camp_taiga",
+          "minecraft:abandoned_camp_windswept_forest",
+          "minecraft:abandoned_camp_wooded_badlands",
+          "minecraft:bastion_remnant",
+          "minecraft:desert_pyramid",
+          "minecraft:end_city",
+          "minecraft:igloo",
+          "minecraft:jungle_pyramid",
+          "minecraft:mansion",
+          "minecraft:monument",
+          "minecraft:ocean_ruin_cold",
+          "minecraft:ocean_ruin_warm",
+          "minecraft:pillager_outpost",
+          "minecraft:ruined_portal",
+          "minecraft:ruined_portal_desert",
+          "minecraft:ruined_portal_jungle",
+          "minecraft:ruined_portal_mountain",
+          "minecraft:ruined_portal_nether",
+          "minecraft:ruined_portal_ocean",
+          "minecraft:ruined_portal_swamp",
+          "minecraft:shipwreck",
+          "minecraft:shipwreck_beached",
+          "minecraft:stronghold",
+          "minecraft:swamp_hut",
+          "minecraft:village_desert",
+          "minecraft:village_plains",
+          "minecraft:village_savanna",
+          "minecraft:village_snowy",
+          "minecraft:village_taiga"
+        ],
+        [],
+        [],
+        [
+          "minecraft:ancient_city",
+          "minecraft:fortress",
+          "minecraft:nether_fossil"
+        ],
+        [],
+        [],
+        []
+      ]
     },
     {
       "name": "mansion",

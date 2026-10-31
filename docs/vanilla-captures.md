@@ -158,14 +158,14 @@ later captures keep. Each case records `pieceCount` and `pieces`, the SHA-256 of
 `VanillaStructureGeneration.Describe` writes (piece types map to Obsidian's class names; a generated fortress start
 keeps `BridgeCrossing`'s type, as vanilla's does).
 
-Cases with `blocks` also record the blocks inside the start's piece boxes (as generated), chunk by chunk over the
-chunks its box reaches. Each chunk is a fresh 3x3 region at the terrain status, bearded by the world's starts, that
-keeps the world's starts and references; only structures are placed in it, step by step with decoration's seeds, as
-`applyBiomeDecoration` places them before features. `structureOrder` records each step's structures in registry
-order. `VanillaStructurePlacement` replays both through the 26.3 pipeline (`BiomeTerrain` with structures on), placing
-each chunk into fresh copies of the terrain like the capture. The scattered pieces (desert and jungle pyramids, swamp
-huts and buried treasure) have no block cases yet: in the capture vanilla places them at their generated height,
-where Obsidian's settle on the terrain, and the cause isn't found.
+Cases with `blocks` also record blocks: in `chunkList`, the chunks the pieces reach nearest the start chunk (at most
+`maxChunks`, 9 by default), and in `bounds`, each piece's generated box joined with where placing moved it. Each
+chunk is a fresh 3x3 region at the terrain status, bearded by the world's starts, that keeps the world's starts and
+references; only structures are placed in it, step by step with decoration's seeds, as `applyBiomeDecoration` places
+them before features. `structureOrder` records each step's structures in registry order. `VanillaStructurePlacement`
+replays both through the 26.3 pipeline (`BiomeTerrain` with structures on), placing each chunk into fresh copies of
+the terrain like the capture, and fails a case whose bounds hold no captured block that differs from Obsidian's
+terrain alone.
 
 Record this section alone with
 `dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen -p:CaptureSections=structures`.

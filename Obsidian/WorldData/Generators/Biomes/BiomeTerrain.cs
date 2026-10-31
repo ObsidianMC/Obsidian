@@ -225,6 +225,8 @@ internal sealed class BiomeTerrain
     {
         this.Source.FillBiomes(chunk);
         fluidUpdates ??= (chunk as Chunk)?.PostProcessing;
+        // Contributions add up in registry order of the structures; vanilla walks a hash map, so float sums of
+        // overlapping structures of different types could round differently (no capture shows it).
         var beardifier = this.Structures is null
             ? null
             : Beardifier.ForStructuresInChunk(

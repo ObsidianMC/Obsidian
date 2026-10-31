@@ -10,6 +10,11 @@ internal sealed class ClimateSource : IBiomeSource
     private static readonly string[] climateFields =
         ["temperature", "vegetation", "continents", "erosion", "depth", "ridges"];
 
+    private const int ClimateCacheSize = 4096;
+
+    [ThreadStatic]
+    private static CachedClimate[]? climateCache;
+
     private readonly DensityFunction[] functions;
     private readonly BiomeParameters? parameters;
 
@@ -35,6 +40,25 @@ internal sealed class ClimateSource : IBiomeSource
             Climate.Quantize(this.functions[5].Sample(x, y, z)));
     }
 
+    // Material rules look a biome up for each block, mostly in quarts just sampled. Each thread keeps the last
+    // climate samples by quart; the tree search still runs for each lookup (see BiomeTerrain).
+    private TargetPoint CachedSample(int quartX, int quartY, int quartZ)
+    {
+        var cache = climateCache ??= new CachedClimate[ClimateCacheSize];
+        var slot = (int)((uint)HashCode.Combine(quartX, quartY, quartZ) & (ClimateCacheSize - 1));
+        ref var entry = ref cache[slot];
+
+        if (entry.Source == this && entry.X == quartX && entry.Y == quartY && entry.Z == quartZ)
+        {
+            return entry.Point;
+        }
+
+        var point = this.Sample(quartX, quartY, quartZ);
+        entry = new CachedClimate(this, quartX, quartY, quartZ, point);
+
+        return point;
+    }
+
     /// <summary>Source encounter order, which also determines decoration's feature identities.</summary>
     public IEnumerable<string> PossibleBiomes => this.parameters is null
         ? ["minecraft:the_end", "minecraft:end_highlands", "minecraft:end_midlands",
@@ -45,7 +69,7 @@ internal sealed class ClimateSource : IBiomeSource
     {
         var name = this.parameters is null
             ? this.EndBiome(quartX, quartY, quartZ)
-            : this.parameters.Tree.Search(this.Sample(quartX, quartY, quartZ));
+            : this.parameters.Tree.Search(this.CachedSample(quartX, quartY, quartZ));
 
         return GetBiome(name);
     }
@@ -133,6 +157,8 @@ internal sealed class ClimateSource : IBiomeSource
 
         return erosion < -0.21875f ? "minecraft:small_end_islands" : "minecraft:end_barrens";
     }
+
+    private readonly record struct CachedClimate(ClimateSource? Source, int X, int Y, int Z, TargetPoint Point);
 
     private static BiomeCodec GetBiome(string name) => CodecRegistry.TryGetBiome(name, out var biome)
         ? biome!
