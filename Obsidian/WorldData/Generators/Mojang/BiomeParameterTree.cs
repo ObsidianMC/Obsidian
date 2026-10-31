@@ -301,7 +301,9 @@ internal sealed class BiomeParameterTree<T>
         public RememberedSearch[] Remembered { get; } = new RememberedSearch[RememberedSearches];
     }
 
-    /// <summary>A target with the smallest distance to it and the first leaf at that distance (see <see cref="Prepare"/>).</summary>
+    /// <summary>
+    /// A target with the smallest distance to it and the first leaf at that distance (see <see cref="Prepare"/>).
+    /// </summary>
     public readonly struct Prepared
     {
         internal Prepared(TargetPoint target, long distance, object first)
