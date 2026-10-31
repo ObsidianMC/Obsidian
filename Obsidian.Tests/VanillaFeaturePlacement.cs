@@ -473,6 +473,69 @@ public class VanillaFeaturePlacement
             .ToList();
     }
 
+    internal static string ExpectedEntity(JsonElement record)
+    {
+        var position = new VectorD(record[0].GetDouble(), record[1].GetDouble(), record[2].GetDouble());
+        var data = CanonicalJson(record[6]);
+
+        return EntityRecord(position, record[3].GetSingle(), record[4].GetSingle(), record[5].GetString()!, data);
+    }
+
+    /// <summary>
+    /// The entities generation added to the region's chunks, by chunk in z, x order and in each chunk in the order they
+    /// were added, with the fields the capture keeps: an end crystal's beam target, invulnerability and bottom.
+    /// </summary>
+    internal static List<string> Entities(Dictionary<(int X, int Z), IChunk> chunks, int centerX, int centerZ)
+    {
+        var records = new List<string>();
+
+        for (var z = centerZ - 1; z <= centerZ + 1; z++)
+        {
+            for (var x = centerX - 1; x <= centerX + 1; x++)
+            {
+                foreach (var entity in ((Chunk)chunks[(x, z)]).PendingEntities)
+                {
+                    var data = CanonicalJson(JsonSerializer.SerializeToElement(EntityFields(entity)));
+
+                    records.Add(EntityRecord(entity.Position, entity.Yaw, entity.Pitch, entity.Type, data));
+                }
+            }
+        }
+
+        return records;
+    }
+
+    // Generated data leaves out what the entity loads by default: not invulnerable, and a crystal shows its bottom.
+    private static JsonObject EntityFields(API.World.Features.GeneratedEntity entity)
+    {
+        var fields = new JsonObject();
+
+        if (entity.Data.TryGetTag<NbtArray<int>>("beam_target", out var beam))
+        {
+            fields["beam_target"] = NbtJson(beam);
+        }
+
+        var invulnerable = entity.Data.TryGetTag<NbtTag<bool>>("Invulnerable", out var flag) && flag.Value;
+        fields["Invulnerable"] = invulnerable ? 1 : 0;
+
+        if (entity.Type == "minecraft:end_crystal")
+        {
+            var bottom = !entity.Data.TryGetTag<NbtTag<bool>>("ShowBottom", out var shown) || shown.Value;
+            fields["ShowBottom"] = bottom ? 1 : 0;
+        }
+
+        return fields;
+    }
+
+    private static string EntityRecord(VectorD position, float yaw, float pitch, string type, string data)
+    {
+        var values = new[] { position.X, position.Y, position.Z }
+            .Select(value => value.ToString("R", CultureInfo.InvariantCulture));
+        var rotation = new[] { yaw, pitch }.Select(value => value.ToString("R", CultureInfo.InvariantCulture));
+
+        return $"{string.Join(' ', values)} {string.Join(' ', rotation)} {type} {data}";
+    }
+
     // Vanilla's NbtOps-to-JsonOps form of a tag: compounds as objects, lists and arrays as arrays, booleans as bytes.
     private static JsonNode NbtJson(INbtTag tag) => tag switch
     {

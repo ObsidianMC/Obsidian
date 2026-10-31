@@ -176,12 +176,21 @@ type, in `Assets/structure_pieces.json`, by an on-request scenario capture (`Cap
 
 ## Decoration references
 
-`decoration/` captures the 26.3 `features` status with structures disabled. The 71 cases cover 66 of 67 biomes (all
+`decoration/` captures the 26.3 `features` status with structures disabled. The 80 cases cover 66 of 67 biomes (all
 except `the_void`), using seed 12345 across all 56 Overworld biomes, all five Nether biomes, and the End's main and
-outer islands. A smaller group repeats forests, deserts, warm oceans, warped forests and outer End islands with
-seed 987654321. The cases also exercise dungeon chest/spawner NBT, sculk block entities, snow on tree canopies, and
-pale moss joining a later tree. `targetBiome` and `searchY` are used only to find initial chunk coordinates;
+outer islands. A smaller group repeats forests, deserts, warm oceans, warped forests and a decorated outer End island
+with seed 987654321. The cases also exercise dungeon chest/spawner NBT, sculk block entities, snow on tree canopies,
+and pale moss joining a later tree. `targetBiome` and `searchY` are used only to find initial chunk coordinates;
 subsequent captures retain the recorded `chunkX` and `chunkZ`.
+
+`05-the-end-and-nether` holds the End's own features, at chunks where vanilla places them: an open and a caged
+spike on each seed with their crystals, the main island's obsidian platform at `(100, 49, 0)` (chunk `(6, 0)`), and a
+return gateway with its block entity and chorus plants in the highlands on each seed. It also repeats the soul sand
+valley, basalt deltas and crimson forest with seed 987654321. Cases with `recordEntities` record `entities`, the
+entities decoration added to the nine chunks, by chunk in z, x order and in each chunk in insertion order, as
+`[x, y, z, yaw, pitch, type, data]`. `data` keeps only an end crystal's `beam_target`, `Invulnerable` and
+`ShowBottom`; the rest of a fresh entity's tag is its random UUID and defaults. The replay compares Obsidian's
+generated entities, filling in the values they load by default.
 
 The probe builds fresh terrain and biome chunks for the writable 3x3 region, invokes vanilla's
 `ChunkGenerator.applyBiomeDecoration`, and records all nine chunks' blocks and six heightmaps, ordered
@@ -194,7 +203,7 @@ fluid ticks, lighting and neighboring chunks' own decoration. Tree edge shape up
 `possibleBiomes` preserves the source's encounter order. `featureOrder` records vanilla's complete `FeatureSorter`
 result for each generation step, including features absent from this particular region.
 `VanillaBiomeDecoration.BiomesTerrainAndDecorationMatchVanilla` checks that order and replays biomes, terrain and
-decoration, comparing blocks, heightmaps, marks and block-entity NBT. Every case has `Category=Worldgen`. The 26.3
+decoration, comparing blocks, heightmaps, marks, block-entity NBT and recorded entities. Every case has `Category=Worldgen`. The 26.3
 pipeline remains separate from the live generator. Structures place through the per-step hook before placed
 features (see "Structure references").
 

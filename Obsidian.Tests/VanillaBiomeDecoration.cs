@@ -61,6 +61,13 @@ public class VanillaBiomeDecoration
 
         Assert.Equal(marks, VanillaFeaturePlacement.FeatureMarks(chunks, chunkX, chunkZ, minY));
         Assert.Equal(entities, VanillaFeaturePlacement.BlockEntities(chunks, chunkX, chunkZ));
+
+        if (entry.TryGetProperty("entities", out var expectedEntities))
+        {
+            var generated = expectedEntities.EnumerateArray().Select(VanillaFeaturePlacement.ExpectedEntity);
+
+            Assert.Equal(generated, VanillaFeaturePlacement.Entities(chunks, chunkX, chunkZ));
+        }
     }
 
     private static string Name(JsonElement entry) => entry.GetProperty("name").GetString()!;
