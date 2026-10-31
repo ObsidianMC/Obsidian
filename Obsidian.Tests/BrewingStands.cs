@@ -22,6 +22,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -196,6 +197,46 @@ public sealed class BrewingStands : IDisposable
         Assert.False(Brewing.IsIngredient(unloadedGem, RecipesRegistry.Current));
         Assert.Null(Brewing.Mix(awkward, unloadedGem, RecipesRegistry.Current));
         Assert.DoesNotContain(PluginPotionMixes.PotionMixes, mix => mix.Ingredient == gem);
+    }
+
+    // Burning one fuel leaves exactly one crafting remainder, in the fuel slot once the stack is used up and dropped
+    // otherwise, and never replaces fuel still left.
+    [Fact(DisplayName = "A brewing stand keeps one remainder of the fuel it burns without losing the rest")]
+    public void FuelLeavesOneRemainderWithoutLosingFuel()
+    {
+        (string Name, Item Fuel, int Count, Item InSlot, Item? Dropped)[] cases =
+        [
+            ("milk bucket", ItemsRegistry.MilkBucket, 1, ItemsRegistry.Bucket, null),
+            ("honey bottles", ItemsRegistry.HoneyBottle, 2, ItemsRegistry.HoneyBottle, ItemsRegistry.GlassBottle)
+        ];
+
+        FixtureCases.AssertAll(
+            cases,
+            row => row.Name,
+            row => AssertFuelLeavesOneRemainder(row.Fuel, row.Count, row.InSlot, row.Dropped));
+    }
+
+    private static void AssertFuelLeavesOneRemainder(Item fuel, int count, Item inSlot, Item? dropped)
+    {
+        var stand = new BrewingStand();
+        stand.SetItem(BrewingStand.FuelSlot, BrewingFuel(fuel, count));
+
+        var step = Tick(stand);
+
+        var left = stand.GetItem(BrewingStand.FuelSlot);
+        Assert.True(stand.Fuel > 0, "The stand burned no fuel.");
+        Assert.True(left?.Is(inSlot), $"The fuel slot holds {left?.Holder.UnlocalizedName ?? "nothing"}.");
+        Assert.Equal(1, left?.Count);
+        if (dropped is Item item)
+        {
+            var remainder = Assert.Single(step.Remainders);
+            Assert.True(remainder.Is(item));
+            Assert.Equal(1, remainder.Count);
+        }
+        else
+        {
+            Assert.Empty(step.Remainders);
+        }
     }
 
     private static Brewing.Step Tick(BrewingStand stand) => Brewing.Tick(stand, RecipesRegistry.Current);

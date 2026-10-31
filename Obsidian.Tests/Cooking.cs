@@ -157,6 +157,52 @@ public sealed class Cooking
     }
 
     // A stack given its own minecraft:cooking_fuel, burning for the given time at normal speed.
+    // Burning one fuel leaves exactly one crafting remainder, in the fuel slot once the stack is used up and dropped
+    // otherwise, and never replaces fuel still left. Fuel that burns for no time isn't used at all.
+    [Fact(DisplayName = "A furnace keeps the fuel it doesn't burn and one remainder of what it does",
+        Timeout = TestServerFactory.TestTimeout)]
+    public async Task FuelLeavesOneRemainderWithoutLosingFuel()
+    {
+        FuelRemainder[] cases =
+        [
+            new("milk bucket", ItemsRegistry.MilkBucket, Count: 1, BurnTime: 1600, ItemsRegistry.Bucket, 1, null),
+            new("honey bottles", ItemsRegistry.HoneyBottle, Count: 2, BurnTime: 1600, ItemsRegistry.HoneyBottle, 1,
+                ItemsRegistry.GlassBottle),
+            new("fuel without burn time", ItemsRegistry.Dirt, Count: 1, BurnTime: -1, ItemsRegistry.Dirt, 1, null)
+        ];
+
+        await FixtureCases.AssertAllAsync(cases, fuel => fuel.Name, AssertFuelLeavesOneRemainder);
+    }
+
+    private static async Task AssertFuelLeavesOneRemainder(FuelRemainder fuel)
+    {
+        await using var kitchen = await Kitchen.OpenAsync("fuel remainder");
+        var furnace = await kitchen.PlaceAsync<FurnaceBlockEntity>(BlocksRegistry.Furnace);
+        furnace.Inventory[0] = new ItemStack(ItemsRegistry.RawIron, 1);
+        furnace.Inventory[1] = CookingFuel(fuel.Item, fuel.Count, fuel.BurnTime);
+
+        await kitchen.TickAsync(furnace, 1);
+
+        var inSlot = furnace.Inventory[1];
+        var dropped = kitchen.Entities()
+            .OfType<ItemEntity>()
+            .Select(entity => entity.Item)
+            .ToArray();
+        Assert.True(inSlot?.Is(fuel.InSlot), $"The fuel slot holds {inSlot?.Holder.UnlocalizedName ?? "nothing"}.");
+        Assert.Equal(fuel.InSlotCount, inSlot?.Count);
+        Assert.Equal(1, furnace.Inventory[0]?.Count);
+        if (fuel.Dropped is Item item)
+        {
+            var remainder = Assert.Single(dropped);
+            Assert.True(remainder.Is(item));
+            Assert.Equal(1, remainder.Count);
+        }
+        else
+        {
+            Assert.Empty(dropped);
+        }
+    }
+
     private static ItemStack CookingFuel(Item item, int count, int burnTime)
     {
         var fuel = new FuelComponentData(new ComponentIntValue(burnTime), new ComponentFloatValue(1f));
@@ -205,6 +251,18 @@ public sealed class Cooking
         int CookTime,
         int BurnTime,
         float Speed);
+
+    /// <summary>
+    /// A fuel row: the fuel and how much, how long one burns, and what's in the fuel slot and dropped after a tick.
+    /// </summary>
+    private sealed record FuelRemainder(
+        string Name,
+        Item Item,
+        int Count,
+        int BurnTime,
+        Item InSlot,
+        int InSlotCount,
+        Item? Dropped);
 
     /// <summary>
     /// A server with an empty chunk and a joined player, cooking at <see cref="position"/>.

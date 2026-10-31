@@ -32,7 +32,7 @@ namespace Obsidian.Tests;
 /// Clicks in menus, which number their own slots then the player's inventory like vanilla's: a plugin's, a furnace's
 /// and the player's own inventory; and opening and closing them.
 /// </summary>
-public sealed class MenuClicks
+public sealed partial class MenuClicks
 {
     private static readonly FakeServer server = new();
 
