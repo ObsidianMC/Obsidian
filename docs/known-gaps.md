@@ -574,11 +574,23 @@ Door-hinge captures include mixed wood/iron/copper doors and distinguish full co
 Custom player-head sound lookup from skull block entities
 remains unsupported; a head without a custom sound is silent as in vanilla.
 
-Note block events have their own queue, drained after the piston actions. Vanilla drains every block event from
-one insertion-ordered, deduplicated set, so a note activated before a piston that moves the note block in the same
-tick plays in vanilla, while Obsidian moves the block first and cancels the note. Fixing it means one shared
-block-event queue (keyed by position, block, event and parameter, and taking events added while it drains) for
-notes, pistons and the other block-event users, with a captured note-then-piston scenario.
+Block events now share one insertion-ordered queue, deduplicated by position, block type, event ID and parameter.
+The phase runs after chunk/random ticks and before entities; it consumes events added while draining, validates
+the block type at dispatch, and retries events in inactive chunks on a later tick. Block-event eligibility includes
+vanilla's block-ticking fringe around players and ticking tickets, beyond entity ticking; loaded-only tickets do
+not activate it. Event packets and note sounds send immediately, in order with piston block updates. Container lid
+events carry the number of viewers of each physical block, including separate ender inventories and both double-
+chest halves. Window lifecycle changes mark physical containers dirty, including direct opens, replacement,
+disconnect, death and dimension changes; the level counts and enqueues on its simulation path. Lid event payloads
+also re-read the current viewer count at dispatch, so coalescing earlier open/close requests cannot publish a stale
+final count. Per-container
+five-tick opener rechecks repair missed cleanup. Scheduled block ticks use the same block-ticking predicate while
+retaining their complete-neighbor readiness checks. Notes, normal/sticky pistons,
+chest/trapped/copper chest lids (both halves), ender chest and shulker lids, sulfur geysers, gateway cooldowns and
+block-spawner resets use this phase. Native captures cover both note/piston orders, mixed duplicates, notification-
+queued playback during draining, every key field, replacement and inactive-chunk retry, plus the client event
+forms for lids, bells, gateways, spawners and geysers. Bell events can use the same queue, but bell activation and
+server-side ringing behavior remain unimplemented; there was no separate bell-event producer to migrate.
 
 Remaining block work needs separate interaction/lifecycle captures:
 

@@ -77,7 +77,39 @@ public final class MoreBlockFixtures {
             level.random = random;
             level.powered = input.has("powered") && input.get("powered").getAsBoolean();
             var kind = input.get("kind").getAsString();
-            if (kind.equals("placement")) {
+            if (kind.equals("container_recheck")) {
+                initializeEvents(level);
+                field(Level.class, "soundSeedGenerator").set(level, RandomSource.create(123));
+                var chest = new net.minecraft.world.level.block.entity.ChestBlockEntity(
+                    origin, level.getBlockState(origin));
+                level.setBlockEntity(chest);
+                var counter = (net.minecraft.world.level.block.entity.ContainerOpenersCounter)
+                    field(net.minecraft.world.level.block.entity.ChestBlockEntity.class, "openersCounter").get(chest);
+                var counterType = net.minecraft.world.level.block.entity.ContainerOpenersCounter.class;
+                field(counterType, "openCount").setInt(counter, input.get("initialCount").getAsInt());
+                counter.recheckOpeners(level, origin, level.getBlockState(origin));
+                runBlockEvents(level);
+                input.addProperty("recheckDelay", field(counterType, "CHECK_TICK_DELAY").getInt(null));
+                input.add("events", level.events);
+            } else if (kind.equals("block_event_range")) {
+                var tracker = simulationTracker(input.getAsJsonArray("sources"));
+                var samples = new JsonArray();
+                for (var value : input.getAsJsonArray("chunks")) {
+                    var coordinates = value.getAsJsonArray();
+                    var chunk = new net.minecraft.world.level.ChunkPos(
+                        coordinates.get(0).getAsInt(), coordinates.get(1).getAsInt());
+                    var ticketLevel = tracker.getLevel(chunk);
+                    var sample = new JsonObject();
+                    sample.addProperty("level", ticketLevel);
+                    sample.addProperty("blockTicking",
+                        net.minecraft.server.level.ChunkLevel.isBlockTicking(ticketLevel));
+                    sample.addProperty("entityTicking",
+                        net.minecraft.server.level.ChunkLevel.isEntityTicking(ticketLevel));
+                    samples.add(sample);
+                }
+
+                input.add("samples", samples);
+            } else if (kind.equals("placement")) {
                 var block = state(input.get("block").getAsString()).getBlock();
                 var context = new PlacementContext(level, origin,
                     direction(input.get("look").getAsString()), new ItemStack(block),
@@ -136,6 +168,66 @@ public final class MoreBlockFixtures {
                 var placed = level.getBlockState(origin);
                 placed.getBlock().setPlacedBy(level, origin, placed, null, new ItemStack(placed.getBlock()));
                 input.addProperty("upper", text(level.getBlockState(origin.above())));
+            } else if (kind.equals("block_events")) {
+                initializeEvents(level);
+                if (input.has("sources")) {
+                    level.simulationTracker = simulationTracker(input.getAsJsonArray("sources"));
+                }
+
+                field(Level.class, "random").set(level, random);
+                for (var placement : level.blocks.entrySet()) {
+                    if (placement.getValue().getBlock() instanceof net.minecraft.world.level.block.EntityBlock block) {
+                        level.setBlockEntity(block.newBlockEntity(placement.getKey(), placement.getValue()));
+                    }
+                }
+
+                level.notifyNotes = input.has("notifyNotes") && input.get("notifyNotes").getAsBoolean();
+                var phases = new JsonArray();
+                for (var value : input.getAsJsonArray("actions")) {
+                    var action = value.getAsJsonObject();
+                    var pos = action.has("pos") ? position(action.getAsJsonArray("pos")) : origin;
+                    switch (action.get("action").getAsString()) {
+                        case "set" -> level.blocks.put(pos, state(action.get("state").getAsString()));
+                        case "play" -> playNote(level, pos);
+                        case "ticking" -> level.ticking = action.get("value").getAsBoolean();
+                        case "piston" -> level.blockEvent(pos, level.getBlockState(pos).getBlock(), 0, 5);
+                        case "gateway_cooldown" ->
+                            net.minecraft.world.level.block.entity.TheEndGatewayBlockEntity.triggerCooldown(
+                                level, pos, level.getBlockState(pos),
+                                (net.minecraft.world.level.block.entity.TheEndGatewayBlockEntity)
+                                    level.getBlockEntity(pos));
+                        case "spawner_reset" -> {
+                            var spawner = ((net.minecraft.world.level.block.entity.SpawnerBlockEntity)
+                                level.getBlockEntity(pos)).getSpawner();
+                            var delay = net.minecraft.world.level.BaseSpawner.class
+                                .getDeclaredMethod("delay", Level.class, BlockPos.class);
+                            delay.setAccessible(true);
+                            delay.invoke(spawner, level, pos);
+                        }
+                        case "event" -> level.blockEvent(pos, level.getBlockState(pos).getBlock(),
+                            action.get("id").getAsInt(), action.get("parameter").getAsInt());
+                        case "phase" -> {
+                            var phase = new JsonObject();
+                            phase.addProperty("queued", queuedEvents(level));
+                            phase.addProperty("soundsBefore", level.sounds.size());
+                            phase.addProperty("eventsBefore", level.events.size());
+                            runBlockEvents(level);
+                            phase.addProperty("pendingAfter", queuedEvents(level));
+                            phase.add("sounds", level.sounds.deepCopy());
+                            phase.add("events", level.events.deepCopy());
+                            var states = new JsonArray();
+                            for (var watched : input.getAsJsonArray("watch")) {
+                                states.add(text(level.getBlockState(position(watched.getAsJsonArray()))));
+                            }
+
+                            phase.add("states", states);
+                            phases.add(phase);
+                        }
+                        default -> throw new IllegalArgumentException("Unknown block-event action: " + action);
+                    }
+                }
+
+                input.add("phases", phases);
             } else if (kind.equals("note_lifecycle")) {
                 initializeEvents(level);
                 var phases = new JsonArray();
@@ -212,6 +304,42 @@ public final class MoreBlockFixtures {
         }
     }
 
+    private static net.minecraft.server.level.SimulationChunkTracker simulationTracker(JsonArray sources)
+        throws Exception {
+        var tickets = new net.minecraft.world.level.TicketStorage();
+        var tracker = new net.minecraft.server.level.SimulationChunkTracker(tickets);
+        for (var value : sources) {
+            var source = value.getAsJsonObject();
+            var center = source.getAsJsonArray("chunk");
+            var chunk = new net.minecraft.world.level.ChunkPos(
+                center.get(0).getAsInt(), center.get(1).getAsInt());
+            var radius = source.get("radius").getAsInt();
+            var type = net.minecraft.server.level.TicketType.FORCED;
+            int ticketLevel;
+            if (source.get("type").getAsString().equals("player")) {
+                var manager = (ProbeDistanceManager)allocate(ProbeDistanceManager.class);
+                field(net.minecraft.server.level.DistanceManager.class, "simulationDistance").setInt(manager, radius);
+                var playerLevel = net.minecraft.server.level.DistanceManager.class
+                    .getDeclaredMethod("getPlayerTicketLevel");
+                playerLevel.setAccessible(true);
+                ticketLevel = (int)playerLevel.invoke(manager);
+                type = net.minecraft.server.level.TicketType.PLAYER_SIMULATION;
+            } else if (source.get("type").getAsString().equals("loaded")) {
+                type = net.minecraft.server.level.TicketType.UNKNOWN;
+                ticketLevel = net.minecraft.server.level.ChunkLevel.byStatus(
+                    net.minecraft.server.level.FullChunkStatus.FULL) - radius;
+            } else {
+                ticketLevel = net.minecraft.server.level.ChunkLevel.byStatus(
+                    net.minecraft.server.level.FullChunkStatus.ENTITY_TICKING) - radius;
+            }
+
+            tickets.addTicket(new net.minecraft.server.level.Ticket(type, ticketLevel), chunk);
+        }
+
+        tracker.runAllUpdates();
+        return tracker;
+    }
+
     private static void playNote(ProbeLevel level, BlockPos pos) throws Exception {
         var play = NoteBlock.class.getDeclaredMethod("playNote", Entity.class, BlockState.class,
             Level.class, BlockPos.class);
@@ -249,9 +377,11 @@ public final class MoreBlockFixtures {
     private static ProbeLevel createLevel() throws Exception {
         var level = (ProbeLevel)allocate(ProbeLevel.class);
         level.blocks = new HashMap<>();
+        level.blockEntities = new HashMap<>();
         level.ticks = new JsonArray();
         level.events = new JsonArray();
         level.sounds = new JsonArray();
+        level.ticking = true;
         return level;
     }
 
@@ -357,6 +487,26 @@ public final class MoreBlockFixtures {
         }
     }
 
+    private static final class ProbeDistanceManager extends net.minecraft.server.level.DistanceManager {
+        private ProbeDistanceManager() {
+            super(null, null, null);
+            throw new UnsupportedOperationException();
+        }
+
+        @Override protected boolean isChunkToRemove(long chunk) {
+            return false;
+        }
+
+        @Override protected net.minecraft.server.level.ChunkHolder getChunk(long chunk) {
+            return null;
+        }
+
+        @Override protected net.minecraft.server.level.ChunkHolder updateChunkScheduling(long chunk, int level,
+            net.minecraft.server.level.ChunkHolder holder, int oldLevel) {
+            return null;
+        }
+    }
+
     private static final class ProbeServer extends DedicatedServer {
         private ProbeServer() {
             super(null, null, null, null, null, null, null, null, null, null);
@@ -380,6 +530,7 @@ public final class MoreBlockFixtures {
             ResourceKey<Level> dimension, Packet<?> packet) {
             if (packet instanceof ClientboundBlockEventPacket event) {
                 var value = new JsonObject();
+                value.addProperty("block", BuiltInRegistries.BLOCK.getKey(event.getBlock()).toString());
                 value.addProperty("id", event.getB0());
                 value.addProperty("parameter", event.getB1());
                 var pos = new JsonArray();
@@ -394,6 +545,10 @@ public final class MoreBlockFixtures {
 
     private static final class ProbeLevel extends ServerLevel {
         Map<BlockPos, BlockState> blocks;
+        Map<BlockPos, net.minecraft.world.level.block.entity.BlockEntity> blockEntities;
+        boolean notifyNotes;
+        boolean ticking;
+        net.minecraft.server.level.SimulationChunkTracker simulationTracker;
         JsonArray ticks;
         JsonArray events;
         JsonArray sounds;
@@ -415,11 +570,83 @@ public final class MoreBlockFixtures {
         }
 
         @Override public net.minecraft.world.level.block.entity.BlockEntity getBlockEntity(BlockPos pos) {
-            return null;
+            return blockEntities.get(pos);
+        }
+
+        @Override public void setBlockEntity(net.minecraft.world.level.block.entity.BlockEntity entity) {
+            if (!(entity instanceof net.minecraft.world.level.block.piston.PistonMovingBlockEntity)) {
+                entity.setLevel(this);
+            }
+
+            blockEntities.put(entity.getBlockPos(), entity);
+        }
+
+        @Override public void removeBlockEntity(BlockPos pos) {
+            blockEntities.remove(pos);
+        }
+
+        @Override public net.minecraft.world.level.border.WorldBorder getWorldBorder() {
+            return new net.minecraft.world.level.border.WorldBorder();
+        }
+
+        @Override public int getSignal(BlockPos pos, Direction direction) {
+            return getBlockState(pos).is(Blocks.REDSTONE_BLOCK) ? 15 : 0;
+        }
+
+        @Override public int getDirectSignal(BlockPos pos, Direction direction) {
+            return getSignal(pos, direction);
+        }
+
+        @Override public void updateNeighborsAt(BlockPos pos, Block source) {
+            notifyNotes(pos, source);
+        }
+
+        @Override public void updateNeighborsAt(BlockPos pos, Block source,
+            net.minecraft.world.level.redstone.Orientation orientation) {
+            notifyNotes(pos, source);
+        }
+
+        private void notifyNotes(BlockPos source, Block block) {
+            if (!notifyNotes) {
+                return;
+            }
+
+            for (var side : Direction.values()) {
+                var pos = source.relative(side);
+                var state = getBlockState(pos);
+                if (state.is(Blocks.NOTE_BLOCK)) {
+                    state.handleNeighborChanged(this, pos, block, null, false);
+                }
+            }
+        }
+
+        @Override public void blockEntityChanged(BlockPos pos) {
+        }
+
+        @Override public void updateNeighbourForOutputSignal(BlockPos pos, Block block) {
+        }
+
+        @Override public void sendBlockUpdated(BlockPos pos, BlockState before, BlockState after, int flags) {
+        }
+
+        @Override public long getGameTime() {
+            return 0;
+        }
+
+        @Override public List<Entity> getEntities(Entity ignored, net.minecraft.world.phys.AABB bounds,
+            java.util.function.Predicate<? super Entity> filter) {
+            return List.of();
+        }
+
+        @Override public <T extends Entity> List<T> getEntities(
+            net.minecraft.world.level.entity.EntityTypeTest<Entity, T> type,
+            net.minecraft.world.phys.AABB bounds, java.util.function.Predicate<? super T> filter) {
+            return List.of();
         }
 
         @Override public boolean shouldTickBlocksAt(long chunk) {
-            return true;
+            return ticking && (simulationTracker == null || net.minecraft.server.level.ChunkLevel.isBlockTicking(
+                simulationTracker.getLevel(net.minecraft.world.level.ChunkPos.unpack(chunk))));
         }
 
         @Override public FeatureFlagSet enabledFeatures() {
@@ -444,11 +671,25 @@ public final class MoreBlockFixtures {
         }
 
         @Override public boolean hasNeighborSignal(BlockPos pos) {
-            return powered;
+            if (powered) {
+                return true;
+            }
+
+            for (var side : Direction.values()) {
+                if (getSignal(pos.relative(side), side) > 0) {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         @Override public boolean setBlock(BlockPos pos, BlockState state, int flags, int limit) {
             blocks.put(pos.immutable(), state);
+            if (notifyNotes && (flags & 1) != 0) {
+                notifyNotes(pos, state.getBlock());
+            }
+
             return true;
         }
 

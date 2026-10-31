@@ -68,8 +68,28 @@ replaces only what vanilla produced.
   Their replay advances the real Obsidian world tick, checking the block-event phase is connected. The use-item
   cases call `ServerPlayerGameMode.useItemOn` with all seven top-instrument heads and stone controls on upward and
   side faces, plus a sneaking control; they check note counters, target block states/rotations and consumption
-  through Obsidian's `UseItemOnPacket`. The bounded level suppresses advancement/stat delivery and unrelated
-  neighbor updates. These are native routine captures, rather than an RCON interaction or sleep lifecycle capture.
+  through Obsidian's `UseItemOnPacket`. The `shared_*` block-event cases use the native insertion-ordered event
+  set and drain with piston movement and note playback together. They record pre/post queue sizes, ordered sound
+  and event packets (including block types), and watched block states. Opt-in piston notifications invoke native
+  note neighbor reactions, so a note queued during the drain must run in that phase. They cover both note/piston
+  orders, duplicates, every key component, replacement, inactive-chunk retry, lids (including copper chests and
+  colored shulkers), bells, gateways, spawners and geysers. Gateway cooldown and spawner delay-reset cases also
+  invoke their native producers. Mixed cases check sound IDs/order and movement; exact piston pitch/random draws
+  are outside this queue change, while the existing note cases retain their exact seed/pitch assertions. The bounded
+  level suppresses advancement/stat delivery and unrelated neighbor updates. These are native routine captures,
+  rather than an RCON interaction or sleep lifecycle capture.
+
+  The `review_block_event_ticking_ranges` case records `SimulationChunkTracker` and `ChunkLevel` results for player,
+  ticking-ticket and loaded-only sources, including the block/entity boundary and diagonal corners. Player ticket
+  levels come from `DistanceManager.getPlayerTicketLevel`. Its replay checks the predicate outside the tick and
+  dispatches real events through the tick's player snapshot. `review_piston_block_ticking_fringe` and
+  `review_piston_outside_block_ticking` run the native event drain against that tracker: the first extends a piston
+  in chunk (6,0) powered from (5,0), while (7,0) retains its pending event. All three remain in the same reference
+  and `VanillaMoreBlocks.ReplayConstructionAndMusicReference` test. The same range replay now schedules block ticks
+  with all eight neighbors ready and checks their dispatch against the captured block-ticking results.
+  `review_container_periodic_opener_recheck` invokes the native chest's `ContainerOpenersCounter.recheckOpeners`
+  with a stale count and no viewers, recording its closing event and five-tick interval. The replay loses a viewer
+  without notifying the window lifecycle, then checks silence before the per-container deadline and repair at it.
 
 - `structure_pieces.json` (`VanillaStructureSaves.StartsSaveLikeVanilla`) holds what vanilla 26.3 saves of
   structure starts (`StructureStart.createTag`), from `Java/StructurePieceFixtures.java`, which runs a dedicated

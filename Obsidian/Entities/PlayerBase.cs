@@ -92,6 +92,20 @@ public abstract partial class PlayerBase : Avatar, IPlayer
     public Container Inventory { get; }
     public Container EnderInventory { get; }
 
+    private AbstractLevel? containerWindowLevel;
+    private bool reconcilingInvalidWindow;
+
+    internal (BaseContainer? Container, AbstractLevel? Level) ContainerWindow
+    {
+        get
+        {
+            lock (this.menuStateGate)
+            {
+                return (this.OpenedContainer, this.containerWindowLevel);
+            }
+        }
+    }
+
     /// <summary>
     /// The container the player has open. Setting it moves the player between the containers'
     /// <see cref="BaseContainer.Viewers"/> and ends any drag across slots, which vanilla keeps per menu.
@@ -113,9 +127,17 @@ public abstract partial class PlayerBase : Avatar, IPlayer
                 if (field is MenuContainer closing)
                     this.RecordMenuClosed(closing);
 
+                // Only mark positions here: never count players or take world locks under menuStateGate.
+                if (!this.reconcilingInvalidWindow)
+                {
+                    this.containerWindowLevel?.ContainerWindowChanged(field);
+                }
+
                 field?.RemoveViewer(this);
                 value?.AddViewer(this);
                 field = value;
+                this.containerWindowLevel = this.Level as AbstractLevel;
+                this.containerWindowLevel?.ContainerWindowChanged(value);
                 this.menuSync = null;
 
                 this.IsDragging = false;
@@ -416,8 +438,9 @@ public abstract partial class PlayerBase : Avatar, IPlayer
     /// <returns>The window's id, or null when the menu doesn't open.</returns>
     private byte? TryShow(BaseContainer container)
     {
-        // A container whose block entity is gone doesn't open again.
-        if (container.ShowsRetired)
+        // A container whose block entity is gone doesn't open again, including ownerless ender windows.
+        if (container.ShowsRetired
+            || this.Level is AbstractLevel level && !level.IsContainerWindowValid(container))
             return null;
 
         if (container is not MenuContainer menu)
@@ -436,6 +459,30 @@ public abstract partial class PlayerBase : Avatar, IPlayer
 
             return this.GetNextContainerId();
         }
+    }
+
+    internal void CloseInvalidContainerWindow(BaseContainer expected)
+    {
+        byte id;
+        lock (this.menuStateGate)
+        {
+            if (!ReferenceEquals(this.OpenedContainer, expected))
+                return;
+
+            id = this.CurrentContainerId;
+            // The level is already reconciling this window; avoid scheduling the same close a second time.
+            this.reconcilingInvalidWindow = true;
+            try
+            {
+                this.OpenedContainer = null;
+            }
+            finally
+            {
+                this.reconcilingInvalidWindow = false;
+            }
+        }
+
+        this.SendPacket(new ContainerClosePacket { ContainerId = id });
     }
 
     /// <summary>

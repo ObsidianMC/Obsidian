@@ -406,7 +406,11 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     /// <summary>
     /// Whether the window shows a retired container: this one, or one it's made of.
     /// </summary>
-    internal virtual bool ShowsRetired => this.IsRetired;
+    // Ownerless windows, such as ender chests, still belong to one physical block entity instance.
+    internal WeakReference<BlockEntity>? WindowBlockEntity { get; set; }
+
+    internal virtual bool ShowsRetired => this.IsRetired
+        || this.WindowBlockEntity is { } binding && (!binding.TryGetTarget(out var owner) || owner.IsRemoved);
 
     /// <summary>
     /// Retires the container (see <see cref="IsRetired"/>). Call it holding the container's lock (see

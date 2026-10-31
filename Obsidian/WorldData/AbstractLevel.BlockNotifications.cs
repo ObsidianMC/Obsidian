@@ -81,8 +81,8 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateW
 
     void IRedstoneLevel.BroadcastLevelEvent(int type, Vector position, int data) => this.BroadcastLevelEvent(type, position, data);
 
-    void IRedstoneLevel.BroadcastBlockEvent(Vector position, int blockId, int type, int data) =>
-        this.BroadcastBlockEvent(position, blockId, type, data);
+    void IRedstoneLevel.QueueBlockEvent(Vector position, int blockId, int type, int data,
+        Func<ValueTask<bool>> trigger) => this.QueueBlockEvent(position, blockId, type, data, trigger);
 
     // Vanilla dropResources/removeBlock for a piston-destroyed block. The drops are captured here, on the simulation path,
     // so the caller can overwrite the cell afterwards; the queued path would run after the move had replaced the block.
@@ -231,7 +231,7 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateW
     bool IBlockTickLevel.IsChunkSimulated(long key)
     {
         NumericsHelper.LongToInts(key, out var chunkX, out var chunkZ);
-        return this.IsMobTicking(new VectorD(chunkX * 16 + 8, 0, chunkZ * 16 + 8));
+        return this.IsBlockTicking(new Vector(chunkX * 16 + 8, 0, chunkZ * 16 + 8));
     }
 
     // A write into an unloaded chunk is dropped: the engine never loads chunks.

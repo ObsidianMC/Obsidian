@@ -507,8 +507,12 @@ public sealed class VanillaSulfurBlocks(ITestOutputHelper output)
         context.World.Players.TryAdd(player.Uuid, player);
         var client = Assert.IsType<TestClient>(player.Client);
         var position = new Vector(0, 72, 0);
-        context.World.StartGeyser(position,
-            ParseState($"minecraft:potent_sulfur[potent_sulfur_state={mode}]"));
+        var state = ParseState($"minecraft:potent_sulfur[potent_sulfur_state={mode}]");
+        context.World.BlockUpdates.SetBlock(position, state,
+            BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);
+        context.World.StartGeyser(position, state);
+        Assert.Empty(client.SentPackets.OfType<BlockEventPacket>());
+        await context.World.ProcessBlockEventsAsync();
 
         var blockEvent = Assert.Single(client.SentPackets.OfType<BlockEventPacket>());
         Assert.Equal(position, blockEvent.Position);

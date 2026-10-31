@@ -38,7 +38,15 @@ public abstract partial class AbstractLevel
     /// Starts the gateway's cooldown and returns true, or returns false while it's still cooling down from the last
     /// entity it sent.
     /// </summary>
-    internal bool TryUseEndGateway(Vector gateway) => gatewayCooldowns.TryAdd(gateway, GatewayCooldown);
+    internal bool TryUseEndGateway(Vector gateway)
+    {
+        if (!gatewayCooldowns.TryAdd(gateway, GatewayCooldown))
+            return false;
+
+        this.QueueBlockEvent(gateway, BlockIds.EndGateway, 1, 0);
+        return true;
+    }
+
     private bool HasEndFight => DimensionName == "minecraft:the_end" && Generator is not MobTestGenerator;
 
     internal async ValueTask TickEndFightAsync()
@@ -310,6 +318,7 @@ public abstract partial class AbstractLevel
                 if (await FindEndGatewayExitAsync(position) is not Vector destination)
                     continue;
 
+                this.QueueBlockEvent(position, BlockIds.EndGateway, 1, 0);
                 endPortalCooldowns[player.Uuid] = 100;
                 await player.TeleportAsync(new VectorD(destination.X + 0.5, destination.Y, destination.Z + 0.5));
             }
