@@ -1,4 +1,5 @@
 using Obsidian.API.Containers;
+using Obsidian.API.BlockEntities;
 using Obsidian.Entities;
 
 namespace Obsidian.WorldData;
@@ -10,7 +11,34 @@ public abstract partial class AbstractLevel
 
     private readonly ConcurrentDictionary<Vector, byte> changedContainerLids = [];
     private readonly Dictionary<Vector, (int Block, int Count, long RecheckAt)> openContainerLids = [];
-    private long nextContainerLidRecheck;
+    private readonly PriorityQueue<Vector, long> containerLidDeadlines = new();
+    private readonly HashSet<Vector> inactiveContainerLids = [];
+    private long nextInactiveContainerLidCheck = long.MaxValue;
+
+    internal long ContainerLidViewerScans { get; private set; }
+
+    internal bool IsContainerWindowValid(BaseContainer container)
+    {
+        if (container is not Container { Id: "ender_chest" } ender)
+            return true;
+
+        BlockEntity? owner;
+        if (container.WindowBlockEntity is { } binding)
+        {
+            if (!binding.TryGetTarget(out owner))
+                return false;
+        }
+        else
+        {
+            owner = this.GetResidentBlockEntity(ender.BlockPosition) as BlockEntity;
+            if (owner?.Id != "minecraft:ender_chest")
+                return false;
+
+            container.WindowBlockEntity = new(owner);
+        }
+
+        return !owner.IsRemoved && ReferenceEquals(owner, this.GetResidentBlockEntity(ender.BlockPosition));
+    }
 
     internal void ContainerWindowChanged(BaseContainer? container)
     {
@@ -38,6 +66,7 @@ public abstract partial class AbstractLevel
 
     private IEnumerable<Vector> ViewedContainerPositions()
     {
+        this.ContainerLidViewerScans++;
         foreach (var (_, viewer) in this.Players)
         {
             if (!viewer.Alive || viewer is PlayerBase { Connected: false }
@@ -46,12 +75,26 @@ public abstract partial class AbstractLevel
 
             var window = viewer is PlayerBase player
                 ? player.ContainerWindow : (viewer.OpenedContainer, this);
-            if (window.Item2 != this || window.Item1?.ShowsRetired == true)
+            if (window.Item2 != this)
                 continue;
+
+            if (window.Item1 is not null
+                && (window.Item1.ShowsRetired || !this.IsContainerWindowValid(window.Item1)))
+            {
+                if (viewer is PlayerBase invalid)
+                {
+                    invalid.CloseInvalidContainerWindow(window.Item1);
+                }
+
+                continue;
+            }
 
             foreach (var position in ContainerLidPositions(window.Item1).Distinct())
             {
-                yield return position;
+                if (!this.inactiveContainerLids.Contains(position))
+                {
+                    yield return position;
+                }
             }
         }
     }
@@ -61,8 +104,9 @@ public abstract partial class AbstractLevel
     private void ReconcileContainerLids()
     {
         var now = this.LevelData.GameTime;
-        if (this.changedContainerLids.IsEmpty && now < this.nextContainerLidRecheck
-            && !this.openContainerLids.Values.Any(opened => now >= opened.RecheckAt))
+        var checkInactive = this.inactiveContainerLids.Count > 0 && now >= this.nextInactiveContainerLidCheck;
+        if (this.changedContainerLids.IsEmpty && !checkInactive
+            && (!this.containerLidDeadlines.TryPeek(out _, out var deadline) || now < deadline))
         {
             return;
         }
@@ -76,35 +120,55 @@ public abstract partial class AbstractLevel
             }
         }
 
+        if (checkInactive)
+        {
+            foreach (var position in this.inactiveContainerLids.ToArray())
+            {
+                if (this.IsBlockTicking(position))
+                {
+                    this.inactiveContainerLids.Remove(position);
+                    changed.Add(position);
+                }
+            }
+
+            this.nextInactiveContainerLidCheck = now + ContainerLidRecheckDelay;
+        }
+
+        while (this.containerLidDeadlines.TryPeek(out var position, out var due) && now >= due)
+        {
+            this.containerLidDeadlines.Dequeue();
+            if (this.openContainerLids.TryGetValue(position, out var opened) && opened.RecheckAt == due)
+            {
+                changed.Add(position);
+            }
+        }
+
+        if (changed.Count == 0)
+            return;
+
+        foreach (var position in changed)
+        {
+            this.inactiveContainerLids.Remove(position);
+        }
+
         var counts = new Dictionary<Vector, int>();
         foreach (var position in this.ViewedContainerPositions())
         {
             counts[position] = counts.GetValueOrDefault(position) + 1;
         }
 
-        foreach (var (position, opened) in this.openContainerLids)
-        {
-            if (now >= opened.RecheckAt)
-            {
-                changed.Add(position);
-            }
-        }
-
-        // Discover windows from custom IPlayer implementations that do not use PlayerBase's setter.
-        if (now >= this.nextContainerLidRecheck)
-        {
-            changed.UnionWith(counts.Keys.Where(position => !this.openContainerLids.ContainsKey(position)));
-            this.nextContainerLidRecheck = now + ContainerLidRecheckDelay;
-        }
-
         foreach (var position in changed)
         {
             if (!this.IsBlockTicking(position))
             {
-                this.changedContainerLids.TryAdd(position, 0);
+                this.openContainerLids.Remove(position);
+                this.inactiveContainerLids.Add(position);
+                this.nextInactiveContainerLidCheck = Math.Min(this.nextInactiveContainerLidCheck,
+                    now + ContainerLidRecheckDelay);
                 continue;
             }
 
+            this.inactiveContainerLids.Remove(position);
             var block = this.GameEventBlock(position);
             if (block is null || !HasContainerOpeners(block))
             {
@@ -133,6 +197,10 @@ public abstract partial class AbstractLevel
                 var next = wasOpen && previous.RecheckAt > now
                     ? previous.RecheckAt : now + ContainerLidRecheckDelay;
                 this.openContainerLids[position] = (block.RegistryId, count, next);
+                if (!wasOpen || previous.RecheckAt != next)
+                {
+                    this.containerLidDeadlines.Enqueue(position, next);
+                }
             }
             else
             {

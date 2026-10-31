@@ -93,6 +93,7 @@ public abstract partial class PlayerBase : Avatar, IPlayer
     public Container EnderInventory { get; }
 
     private AbstractLevel? containerWindowLevel;
+    private bool reconcilingInvalidWindow;
 
     internal (BaseContainer? Container, AbstractLevel? Level) ContainerWindow
     {
@@ -127,7 +128,11 @@ public abstract partial class PlayerBase : Avatar, IPlayer
                     this.RecordMenuClosed(closing);
 
                 // Only mark positions here: never count players or take world locks under menuStateGate.
-                this.containerWindowLevel?.ContainerWindowChanged(field);
+                if (!this.reconcilingInvalidWindow)
+                {
+                    this.containerWindowLevel?.ContainerWindowChanged(field);
+                }
+
                 field?.RemoveViewer(this);
                 value?.AddViewer(this);
                 field = value;
@@ -433,8 +438,9 @@ public abstract partial class PlayerBase : Avatar, IPlayer
     /// <returns>The window's id, or null when the menu doesn't open.</returns>
     private byte? TryShow(BaseContainer container)
     {
-        // A container whose block entity is gone doesn't open again.
-        if (container.ShowsRetired)
+        // A container whose block entity is gone doesn't open again, including ownerless ender windows.
+        if (container.ShowsRetired
+            || this.Level is AbstractLevel level && !level.IsContainerWindowValid(container))
             return null;
 
         if (container is not MenuContainer menu)
@@ -453,6 +459,30 @@ public abstract partial class PlayerBase : Avatar, IPlayer
 
             return this.GetNextContainerId();
         }
+    }
+
+    internal void CloseInvalidContainerWindow(BaseContainer expected)
+    {
+        byte id;
+        lock (this.menuStateGate)
+        {
+            if (!ReferenceEquals(this.OpenedContainer, expected))
+                return;
+
+            id = this.CurrentContainerId;
+            // The level is already reconciling this window; avoid scheduling the same close a second time.
+            this.reconcilingInvalidWindow = true;
+            try
+            {
+                this.OpenedContainer = null;
+            }
+            finally
+            {
+                this.reconcilingInvalidWindow = false;
+            }
+        }
+
+        this.SendPacket(new ContainerClosePacket { ContainerId = id });
     }
 
     /// <summary>

@@ -320,6 +320,40 @@ public sealed class BlockEvents
                 Assert.Null(dying.OpenedContainer);
                 await Check(0);
 
+                if (item.Block.RegistryId == BlockIds.EnderChest)
+                {
+                    var enderViewer = TestServerFactory.CreateConnectedPlayer(context.Server, world, "EnderViewer");
+                    world.Players.TryAdd(enderViewer.Uuid, enderViewer);
+                    await enderViewer.OpenInventoryAsync(aliceWindow);
+                    await Check(1);
+                    await world.SetBlockAsync(position, BlocksRegistry.Air);
+                    Assert.True(aliceWindow.ShowsRetired);
+                    await world.SetBlockAsync(position, BlocksRegistry.Chest);
+                    world.LevelData.GameTime += 5;
+                    await Check(0);
+                    Assert.Null(enderViewer.OpenedContainer);
+                    await enderViewer.OpenInventoryAsync(aliceWindow);
+                    Assert.Null(enderViewer.OpenedContainer);
+
+                    await world.SetBlockAsync(position, BlocksRegistry.EnderChest);
+                    await OpenBlock(enderViewer);
+                    var unloadedWindow = enderViewer.OpenedContainer!;
+                    await Check(1);
+                    var region = Assert.IsType<Obsidian.WorldData.Region>(world.LoadRegionByChunk(0, 0));
+                    await region.UnloadChunk(0, 0);
+                    Assert.True(unloadedWindow.ShowsRetired);
+                    world.LevelData.GameTime += 5;
+                    await world.ProcessBlockEventsAsync();
+                    Assert.Null(enderViewer.OpenedContainer);
+                    await enderViewer.OpenInventoryAsync(unloadedWindow);
+                    Assert.Null(enderViewer.OpenedContainer);
+
+                    await BlockUpdates.AddChunksAsync(world);
+                    await world.SetBlockAsync(position, BlocksRegistry.Chest);
+                    world.LevelData.GameTime += 5;
+                    await Check(0);
+                }
+
                 async Task OpenBlock(Obsidian.Entities.Player player)
                 {
                     await context.EventDispatcher.ExecuteEventAsync(new PlayerInteractEventArgs(player, context.Server)
@@ -353,6 +387,49 @@ public sealed class BlockEvents
                     client.ClearPackets();
                 }
             });
+    }
+
+    [Fact]
+    public async Task InactiveContainerLidsStopScanningViewers()
+    {
+        await using var context = TestServerFactory.CreateServer($"lid-inactive-{Guid.NewGuid():N}");
+        var world = context.World;
+        await BlockUpdates.AddChunksAsync(world);
+        var viewer = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Viewer");
+        world.Players.TryAdd(viewer.Uuid, viewer);
+        var position = new Vector(0, 72, 0);
+        await world.SetBlockAsync(position, BlocksRegistry.Chest);
+        var chest = Assert.IsAssignableFrom<Obsidian.API.BlockEntities.ContainerBlockEntity>(
+            await world.GetBlockEntityAsync(position));
+        await viewer.OpenInventoryAsync(chest.Inventory);
+        await world.ProcessBlockEventsAsync();
+        var region = Assert.IsType<Obsidian.WorldData.Region>(world.LoadRegionByChunk(0, 0));
+        await region.UnloadChunk(0, 0);
+        await world.ProcessBlockEventsAsync();
+        var scans = world.ContainerLidViewerScans;
+
+        // Hundreds of unrelated event callbacks and idle deadlines must not rescan players for the unloaded lid.
+        var other = new Vector(16, 72, 0);
+        await world.SetBlockAsync(other, BlocksRegistry.Chest);
+        for (var tick = 1; tick <= 20; tick++)
+        {
+            world.LevelData.GameTime++;
+            for (var id = 0; id < 20; id++)
+            {
+                world.QueueBlockEvent(other, BlockIds.Chest, 1, id);
+            }
+
+            await world.ProcessBlockEventsAsync();
+        }
+
+        Assert.Equal(scans, world.ContainerLidViewerScans);
+
+        // Reloading and activating its chunk wakes the parked position at the bounded activity check.
+        await BlockUpdates.AddChunksAsync(world);
+        await world.SetBlockAsync(position, BlocksRegistry.Chest);
+        world.LevelData.GameTime += 5;
+        await world.ProcessBlockEventsAsync();
+        Assert.True(world.ContainerLidViewerScans > scans);
     }
 
 }
