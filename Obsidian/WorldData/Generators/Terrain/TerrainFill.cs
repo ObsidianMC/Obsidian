@@ -34,7 +34,7 @@ internal sealed class TerrainFill
     private readonly FillPalette palette = new();
     private readonly int[] worldSurface = new int[256];
     private readonly int[] oceanFloor = new int[256];
-    private readonly byte[] layer = new byte[256];
+    private readonly byte[] sectionCodes = new byte[16 * 256];
     private byte[] codes = [];
 
     // The code of the global fluid at each y of the volume, or -1 until a position there needs it.
@@ -221,60 +221,54 @@ internal sealed class TerrainFill
             var toY = Math.Min(sectionMinY + 15, maxY);
 
             if (chunk.Sections[sectionIndex] is ChunkSection section)
-            {
-                this.PrimePalette(section, volume, fromY, toY);
-                this.WriteLayers(section, volume, fromY, toY);
-            }
+                this.WriteSection(section, volume, fromY, toY);
             else
-            {
                 this.WriteBlocks(chunk, volume, fromY, toY);
-            }
         }
     }
 
-    // Writes the first block of each kind where per-block writes in z, x, descending-y order would first have met
-    // it, so the section's palette lists them in that order.
-    private void PrimePalette(ChunkSection section, in DensityVolume volume, int fromY, int toY)
+    // Writes a section a layer at a time. Gathering its codes in per-block write order (z, x, descending y) also finds
+    // where each block was first written; writing those first lists them in the section's palette in that order. A
+    // section of air alone needs no writes. Chunk volumes are 16 blocks wide, a layer's width.
+    private void WriteSection(ChunkSection section, in DensityVolume volume, int fromY, int toY)
     {
         Span<bool> seen = stackalloc bool[FillPalette.Capacity];
-        var remaining = this.palette.Count;
+        var sectionCodes = this.sectionCodes;
+        var hasBlocks = false;
 
-        for (var z = 0; z < volume.SizeZ && remaining > 0; z++)
+        for (var z = 0; z < volume.SizeZ; z++)
         {
-            for (var x = 0; x < volume.SizeX && remaining > 0; x++)
+            for (var x = 0; x < volume.SizeX; x++)
             {
+                // The column's codes are consecutive: its block y's code is at column + y.
+                var column = volume.Index(x, 0, z) - volume.MinBlockY;
+
                 for (var blockY = toY; blockY >= fromY; blockY--)
                 {
-                    var code = this.codes[volume.Index(x, blockY - volume.MinBlockY, z)];
+                    var code = this.codes[column + blockY];
+                    sectionCodes[(blockY & 15) << 8 | z << 4 | x] = code;
+
                     if (seen[code])
                         continue;
 
                     seen[code] = true;
-                    remaining--;
 
                     if (this.palette.Block(code) is IBlock block)
+                    {
                         section.SetBlockUntracked(x, blockY & 15, z, block);
+                        hasBlocks = true;
+                    }
                 }
             }
         }
-    }
 
-    private void WriteLayers(ChunkSection section, in DensityVolume volume, int fromY, int toY)
-    {
+        if (!hasBlocks)
+            return;
+
         var blocks = this.palette.Blocks;
 
         for (var blockY = toY; blockY >= fromY; blockY--)
-        {
-            var y = blockY - volume.MinBlockY;
-
-            for (var z = 0; z < volume.SizeZ; z++)
-            {
-                for (var x = 0; x < volume.SizeX; x++)
-                    this.layer[z * 16 + x] = this.codes[volume.Index(x, y, z)];
-            }
-
-            section.SetBlockLayer(blockY & 15, this.layer, blocks);
-        }
+            section.SetBlockLayer(blockY & 15, sectionCodes.AsSpan((blockY & 15) << 8, 256), blocks);
     }
 
     // Sections without direct storage take each block in write order.
