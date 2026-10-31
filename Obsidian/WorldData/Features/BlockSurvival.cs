@@ -187,14 +187,15 @@ internal static class BlockSurvival
     /// <summary>Vanilla <c>SugarCaneBlock.canSurvive</c>, reading blocks through <paramref name="blockAt"/> (worldgen or a live level).</summary>
     internal static bool SugarCaneMayStay(Func<Vector, IBlock> blockAt, Vector position)
     {
-        var below = blockAt(position + Vector.Down);
+        Vector belowPosition = position + Vector.Down;
+
+        var below = blockAt(belowPosition);
         if (below.Is(BlockIds.SugarCane))
             return true;
 
         if (!dirt.Contains(below) && !sand.Contains(below))
             return false;
 
-        var belowPosition = position + Vector.Down;
         foreach (var face in FeatureHelpers.Horizontal)
         {
             var neighbor = blockAt(belowPosition.Offset(face));
