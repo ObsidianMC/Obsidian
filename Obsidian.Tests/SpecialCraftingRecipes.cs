@@ -4,6 +4,7 @@ using Obsidian.API.Utilities;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
+using Obsidian.Tests.Utilities;
 using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
@@ -27,47 +28,32 @@ public sealed class SpecialCraftingRecipes
         "minecraft:crafting_transmute"
     ];
 
-    public static TheoryData<string> Crafts => [.. Capture().GetProperty("crafts").EnumerateArray().Select(Name)];
-
-    public static TheoryData<int> BookRecipes =>
-        [.. Enumerable.Range(0, Capture().GetProperty("book").GetArrayLength())];
-
-    public static TheoryData<int> PackRecipes =>
-        [.. Enumerable.Range(0, Capture().GetProperty("recipes").GetArrayLength())];
-
-    public static TheoryData<int, string> PackCrafts
+    [Fact(DisplayName = "Crafting grids craft what vanilla 26.3's crafting recipes craft")]
+    public void CraftsLikeVanilla()
     {
-        get
-        {
-            var rows = new TheoryData<int, string>();
-            var recipes = Capture().GetProperty("recipes").EnumerateArray().ToList();
+        var crafts = Capture().GetProperty("crafts").EnumerateArray();
 
-            for (int index = 0; index < recipes.Count; index++)
-            {
-                foreach (var craft in recipes[index].GetProperty("crafts").EnumerateArray())
-                    rows.Add(index, Name(craft));
-            }
-
-            return rows;
-        }
+        FixtureCases.AssertAll(crafts, Name, AssertCraftLikeVanilla);
     }
 
-    [Theory(DisplayName = "Crafting grids craft what vanilla 26.3's crafting recipes craft")]
-    [MemberData(nameof(Crafts))]
-    public void CraftsLikeVanilla(string name)
+    private static void AssertCraftLikeVanilla(JsonElement row)
     {
-        var row = Capture().GetProperty("crafts").EnumerateArray().Single(craft => Name(craft) == name);
         var recipe = row.GetProperty("recipe").GetString();
         var identifier = recipe?.TrimResourceTag(keepUnderscores: true);
 
         AssertCraftsLikeVanilla(RecipesRegistry.Current, row, identifier);
     }
 
-    [Theory(DisplayName = "Data pack special recipes load like vanilla 26.3's")]
-    [MemberData(nameof(PackRecipes))]
-    public void PackRecipesLoadLikeVanilla(int index)
+    [Fact(DisplayName = "Data pack special recipes load like vanilla 26.3's")]
+    public void PackRecipesLoadLikeVanilla()
     {
-        var row = Capture().GetProperty("recipes")[index];
+        var rows = Capture().GetProperty("recipes").EnumerateArray().Select((row, index) => (Row: row, Index: index));
+
+        FixtureCases.AssertAll(rows, row => $"recipes[{row.Index}]", row => AssertPackRecipeLoadsLikeVanilla(row.Row));
+    }
+
+    private static void AssertPackRecipeLoadsLikeVanilla(JsonElement row)
+    {
         var json = row.GetProperty("recipe");
 
         if (row.GetProperty("loads").GetBoolean())
@@ -76,13 +62,21 @@ public sealed class SpecialCraftingRecipes
             Assert.Throws<JsonException>(() => ReadRecipe(json));
     }
 
-    [Theory(DisplayName = "Data pack special recipes craft what vanilla 26.3's craft")]
-    [MemberData(nameof(PackCrafts))]
-    public void PackRecipesCraftLikeVanilla(int index, string name)
+    [Fact(DisplayName = "Data pack special recipes craft what vanilla 26.3's craft")]
+    public void PackRecipesCraftLikeVanilla()
     {
-        var row = Capture().GetProperty("recipes")[index];
+        var crafts = Capture().GetProperty("recipes").EnumerateArray()
+            .Select((row, index) => (Row: row, Index: index))
+            .SelectMany(row => row.Row.GetProperty("crafts").EnumerateArray()
+                .Select(craft => (row.Row, row.Index, Craft: craft)));
+
+        FixtureCases.AssertAll(crafts, row => $"recipes[{row.Index}] {Name(row.Craft)}",
+            row => AssertPackRecipeCraftsLikeVanilla(row.Row, row.Craft));
+    }
+
+    private static void AssertPackRecipeCraftsLikeVanilla(JsonElement row, JsonElement craft)
+    {
         var recipe = ReadRecipe(row.GetProperty("recipe"));
-        var craft = row.GetProperty("crafts").EnumerateArray().Single(craft => Name(craft) == name);
         var recipes = new RecipeSet(
             new Dictionary<string, IRecipe> { [recipe.Identifier] = recipe }.ToFrozenDictionary(),
             [new RecipeBookEntry(0, recipe, null)]);
@@ -90,11 +84,16 @@ public sealed class SpecialCraftingRecipes
         AssertCraftsLikeVanilla(recipes, craft, recipe.Identifier);
     }
 
-    [Theory(DisplayName = "The recipe book shows special crafting recipes like vanilla 26.3")]
-    [MemberData(nameof(BookRecipes))]
-    public void BookEntriesMatchVanilla(int index)
+    [Fact(DisplayName = "The recipe book shows special crafting recipes like vanilla 26.3")]
+    public void BookEntriesMatchVanilla()
     {
-        var row = Capture().GetProperty("book")[index];
+        var rows = Capture().GetProperty("book").EnumerateArray().Select((row, index) => (Row: row, Index: index));
+
+        FixtureCases.AssertAll(rows, row => $"book[{row.Index}]", row => AssertBookEntryMatchesVanilla(row.Row));
+    }
+
+    private static void AssertBookEntryMatchesVanilla(JsonElement row)
+    {
         var recipe = ReadRecipe(row.GetProperty("recipe"));
         int? group = string.IsNullOrEmpty(recipe.Group) ? null : 0;
         var entries = Enumerable.Range(0, RecipesRegistry.DisplayCount(recipe))

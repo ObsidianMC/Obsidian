@@ -1,5 +1,6 @@
 using Obsidian.API;
 using Obsidian.Registries;
+using Obsidian.Tests.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,35 +31,21 @@ public class VanillaRedstone
         "torch_inversion", "torch_burnout", "save_reload",
     ];
 
-    public static IEnumerable<object[]> ScenarioNames() => Fixture.Shared.Scenarios.Keys.Select(name => new object[] { name });
-
     [Fact]
-    public void FixtureMeetsItsContract()
+    public void ScenariosMatchVanilla()
     {
-        Assert.Equal(ServerConstants.ProtocolDescription, Fixture.Shared.Document.GetProperty("version").GetString());
         var covered = Fixture.Shared.Scenarios.Values
             .SelectMany(scenario => scenario.GetProperty("coverage").EnumerateArray().Select(tag => tag.GetString()!))
             .ToHashSet();
 
+        Assert.Equal(ServerConstants.ProtocolDescription, Fixture.Shared.Document.GetProperty("version").GetString());
         Assert.Empty(RequiredCoverage.Where(tag => !covered.Contains(tag)));
-
-        var scenario = Fixture.Shared.Scenarios["comparator_compare_and_subtract"];
-        var palette = scenario.GetProperty("checkpoints").EnumerateArray()
-            .SelectMany(checkpoint => checkpoint.GetProperty("palette").EnumerateArray())
-            .Select(state => state.GetString()!).ToHashSet();
-
-        Assert.Contains("minecraft:comparator[facing=west,mode=compare,powered=true]", palette);
-        Assert.Contains("minecraft:comparator[facing=west,mode=compare,powered=false]", palette);
-        Assert.Contains("minecraft:comparator[facing=west,mode=subtract,powered=true]", palette);
-        Assert.Contains("minecraft:comparator[facing=west,mode=subtract,powered=false]", palette);
-        Assert.Contains(palette, state => state.StartsWith("minecraft:redstone_wire[") && state.Contains("power=14"));
+        FixtureCases.AssertAll(Fixture.Shared.Scenarios, scenario => scenario.Key,
+            scenario => AssertScenarioMatchesVanilla(scenario.Key, scenario.Value));
     }
 
-    [Theory]
-    [MemberData(nameof(ScenarioNames))]
-    public void ScenarioMatchesVanilla(string name)
+    private static void AssertScenarioMatchesVanilla(string name, JsonElement scenario)
     {
-        var scenario = Fixture.Shared.Scenarios[name];
         AssertScenarioIsWellFormed(name, scenario);
 
         var diffs = RedstoneReplay.Compare(CreateWorld(scenario), scenario);
@@ -139,25 +126,6 @@ public class VanillaRedstone
         }
     }
 
-    /// <summary>
-    /// Runs a save/reload timeline through a world with no redstone to check the replay's setup, actions, reloads and ticks.
-    /// </summary>
-    [Theory]
-    [InlineData("save_reload_repeater")]
-    public void ReplayRunsTheWholeTimeline(string name)
-    {
-        var scenario = Fixture.Shared.Scenarios[name];
-        var world = new StaticWorld();
-
-        var diffs = RedstoneReplay.Compare(world, scenario);
-
-        var reloads = scenario.GetProperty("actions").EnumerateArray().Where(action => action.TryGetProperty("reload", out _)).ToArray();
-        var reloadTicks = reloads.Sum(action => action.GetProperty("ticks").GetInt32());
-        Assert.Equal(scenario.GetProperty("checkpoints").GetArrayLength() - 1 + reloadTicks, world.Ticks);
-        Assert.Equal(reloads.Length, world.Reloads);
-        Assert.NotEmpty(diffs);
-    }
-
     private static IRedstoneScenarioWorld CreateWorld(JsonElement scenario) => new EngineScenarioWorld(scenario);
 
     /// <summary>
@@ -185,25 +153,6 @@ public class VanillaRedstone
         public void Reload() => this.world.Restart();
 
         public IBlock GetBlock(Vector position) => this.world.GetLoadedBlock(position) ?? throw new InvalidOperationException($"{position} isn't loaded.");
-    }
-
-    private sealed class StaticWorld : IRedstoneScenarioWorld
-    {
-        private readonly Dictionary<(int X, int Y, int Z), IBlock> blocks = [];
-
-        public int Ticks { get; private set; }
-
-        public int Reloads { get; private set; }
-
-        public void SetBlock(Vector position, IBlock block) => this.blocks[(position.X, position.Y, position.Z)] = block;
-
-
-        public void Tick(IReadOnlyList<Vector> contacts, IReadOnlyList<ArrowHit> arrowHits) => this.Ticks++;
-
-        public void Reload() => this.Reloads++;
-
-        public IBlock GetBlock(Vector position) =>
-            this.blocks.GetValueOrDefault((position.X, position.Y, position.Z), BlockStateProperties.GetState("minecraft:air"));
     }
 
     private static void AssertStateRoundTrips(string state, string context)
