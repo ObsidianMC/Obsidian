@@ -12,6 +12,9 @@ internal sealed class ConstantFunction(float value) : DensityFunction
 
     public override float Sample(int x, int y, int z) => this.Value;
 
+    public override void SampleSelected(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices) =>
+        output.Fill(this.Value);
+
     public override void SampleVolume(Span<float> output, in DensityVolume volume) => output.Fill(this.Value);
 }
 
@@ -30,6 +33,9 @@ internal sealed class ContextFunction(string name, float defaultValue) : Density
     public string Name { get; } = name;
 
     public override float Sample(int x, int y, int z) => defaultValue;
+
+    public override void SampleSelected(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices) =>
+        output.Fill(defaultValue);
 
     public override void SampleVolume(Span<float> output, in DensityVolume volume) => output.Fill(defaultValue);
 }
@@ -73,6 +79,43 @@ internal sealed class NoiseFunction(
         var noiseZ = z * xzScale + Shift(shiftZ, x, y, z);
 
         return noise.Get(noiseX, noiseY, noiseZ);
+    }
+
+    public override void SampleSelected(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices)
+    {
+        if (!this.Shifted)
+        {
+            noise.SampleSelected(output, volume, indices, xzScale, yScale);
+            return;
+        }
+
+        using var shiftsX = new DensityBuffer(indices.Length);
+        using var shiftsY = new DensityBuffer(indices.Length);
+        using var shiftsZ = new DensityBuffer(indices.Length);
+        SampleSelectedShift(shiftX, shiftsX.Span, volume, indices);
+        SampleSelectedShift(shiftY, shiftsY.Span, volume, indices);
+        SampleSelectedShift(shiftZ, shiftsZ.Span, volume, indices);
+
+        for (var i = 0; i < indices.Length; i++)
+        {
+            volume.Position(indices[i], out var x, out var y, out var z);
+            output[i] = noise.Get(
+                x * xzScale + shiftsX.Span[i],
+                y * yScale + shiftsY.Span[i],
+                z * xzScale + shiftsZ.Span[i]);
+        }
+    }
+
+    private static void SampleSelectedShift(
+        DensityFunction? shift,
+        Span<float> output,
+        in DensityVolume volume,
+        ReadOnlySpan<int> indices)
+    {
+        if (shift is null)
+            output.Clear();
+        else
+            shift.SampleSelected(output, volume, indices);
     }
 
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
@@ -278,6 +321,9 @@ internal sealed class GradientFunction : DensityFunction
             }
         }
     }
+
+    public override void SampleSelected(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices) =>
+        this.SampleSelectedPoints(output, volume, indices);
 
     // Each value as Sample computes it, without a call per point: terrain samples y gradients at every block.
     public override void SampleVolume(Span<float> output, in DensityVolume volume)

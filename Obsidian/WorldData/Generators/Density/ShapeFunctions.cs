@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace Obsidian.WorldData.Generators.Density;
 
 /// <summary>
@@ -28,35 +30,48 @@ internal sealed class LerpFunction(DensityFunction alpha, DensityFunction first,
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
     {
         alpha.SampleVolume(output, volume);
+        this.SampleBranches(output, volume, []);
+    }
 
-        // An alpha of 0 or 1 everywhere takes one side, so the other isn't sampled (the terrain's y gradients, say).
+    public override void SampleSelected(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices)
+    {
+        alpha.SampleSelected(output, volume, indices);
+        this.SampleBranches(output, volume, indices);
+    }
+
+    private void SampleBranches(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices)
+    {
         if (!output.ContainsAnyExcept(0.0f))
         {
-            first.SampleVolume(output, volume);
+            first.SampleSelection(output, volume, indices);
             return;
         }
 
         if (!output.ContainsAnyExcept(1.0f))
         {
-            second.SampleVolume(output, volume);
+            second.SampleSelection(output, volume, indices);
             return;
         }
 
-        using var starts = DensityBuffer.Sample(first, volume);
-        using var ends = DensityBuffer.Sample(second, volume);
-        var startValues = starts.Span;
-        var endValues = ends.Span;
+        using var starts = new DensityBuffer(output.Length);
+        using var ends = new DensityBuffer(output.Length);
+
+        using (var selection = new DensitySelection(output, indices, DensitySelectionKind.NotOne))
+            selection.Sample(first, starts.Span, volume);
+
+        using (var selection = new DensitySelection(output, indices, DensitySelectionKind.NotZero))
+            selection.Sample(second, ends.Span, volume);
 
         for (var i = 0; i < output.Length; i++)
         {
             var amount = output[i];
 
             if (amount == 0.0f)
-                output[i] = startValues[i];
+                output[i] = starts.Span[i];
             else if (amount == 1.0f)
-                output[i] = endValues[i];
+                output[i] = ends.Span[i];
             else
-                output[i] = FloatMath.Lerp(amount, startValues[i], endValues[i]);
+                output[i] = FloatMath.Lerp(amount, starts.Span[i], ends.Span[i]);
         }
     }
 }
@@ -67,6 +82,14 @@ internal sealed class ClampFunction(DensityFunction input, float min, float max)
     public override bool IsFlat => input.IsFlat;
 
     public override float Sample(int x, int y, int z) => FloatMath.Clamp(input.Sample(x, y, z), min, max);
+
+    public override void SampleSelected(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices)
+    {
+        input.SampleSelected(output, volume, indices);
+
+        for (var i = 0; i < output.Length; i++)
+            output[i] = FloatMath.Clamp(output[i], min, max);
+    }
 
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
     {
@@ -98,64 +121,54 @@ internal sealed class RangeChoiceFunction(
         return chosen.Sample(x, y, z);
     }
 
-    // Each point takes its value from the branch it chooses, so a branch no point chooses isn't sampled, and a
-    // constant one is written without sampling it into a buffer. Ore veins nest these over a chunk's every block.
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
     {
         using var inputs = DensityBuffer.Sample(input, volume);
-        var values = inputs.Span;
-        var inRange = 0;
+        this.SampleBranches(output, inputs.Span, volume, []);
+    }
 
-        for (var i = 0; i < values.Length; i++)
+    public override void SampleSelected(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices)
+    {
+        using var inputs = new DensityBuffer(indices.Length);
+        input.SampleSelected(inputs.Span, volume, indices);
+        this.SampleBranches(output, inputs.Span, volume, indices);
+    }
+
+    private void SampleBranches(
+        Span<float> output,
+        ReadOnlySpan<float> controls,
+        in DensityVolume volume,
+        ReadOnlySpan<int> indices)
+    {
+        var inRange = 0;
+        foreach (var value in controls)
         {
-            if (this.InRange(values[i]))
+            if (this.InRange(value))
                 inRange++;
         }
 
-        if (inRange == values.Length)
+        if (inRange == controls.Length)
         {
-            whenInRange.SampleVolume(output, volume);
+            whenInRange.SampleSelection(output, volume, indices);
             return;
         }
 
         if (inRange == 0)
         {
-            whenOutOfRange.SampleVolume(output, volume);
+            whenOutOfRange.SampleSelection(output, volume, indices);
             return;
         }
 
-        if (whenInRange is ConstantFunction inside)
+        using (var selection = new DensitySelection(
+            controls, indices, DensitySelectionKind.InRange, minInclusive, maxExclusive))
         {
-            whenOutOfRange.SampleVolume(output, volume);
-            this.Choose(output, values, inside.Value, chooseInRange: true);
-            return;
+            selection.Sample(whenInRange, output, volume);
         }
 
-        whenInRange.SampleVolume(output, volume);
-
-        if (whenOutOfRange is ConstantFunction outside)
+        using (var selection = new DensitySelection(
+            controls, indices, DensitySelectionKind.OutOfRange, minInclusive, maxExclusive))
         {
-            this.Choose(output, values, outside.Value, chooseInRange: false);
-            return;
-        }
-
-        using var outsideValues = DensityBuffer.Sample(whenOutOfRange, volume);
-        var outsides = outsideValues.Span;
-
-        for (var i = 0; i < output.Length; i++)
-        {
-            if (!this.InRange(values[i]))
-                output[i] = outsides[i];
-        }
-    }
-
-    // Writes value to the points whose input is in range, or to those whose input isn't.
-    private void Choose(Span<float> output, ReadOnlySpan<float> inputs, float value, bool chooseInRange)
-    {
-        for (var i = 0; i < output.Length; i++)
-        {
-            if (this.InRange(inputs[i]) == chooseInRange)
-                output[i] = value;
+            selection.Sample(whenOutOfRange, output, volume);
         }
     }
 
@@ -181,24 +194,36 @@ internal sealed class IntervalSelectFunction(
 
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
     {
-        input.SampleVolume(output, volume);
+        using var controls = DensityBuffer.Sample(input, volume);
+        this.SampleBranches(output, controls.Span, volume, []);
+    }
 
-        var buffers = new DensityBuffer[functions.Length];
-        try
-        {
-            for (var i = 0; i < functions.Length; i++)
-                buffers[i] = DensityBuffer.Sample(functions[i], volume);
+    public override void SampleSelected(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices)
+    {
+        using var controls = new DensityBuffer(indices.Length);
+        input.SampleSelected(controls.Span, volume, indices);
+        this.SampleBranches(output, controls.Span, volume, indices);
+    }
 
-            for (var i = 0; i < output.Length; i++)
-            {
-                var selected = this.Select(output[i]);
-                output[i] = buffers[selected].Span[i];
-            }
-        }
-        finally
+    private void SampleBranches(
+        Span<float> output,
+        ReadOnlySpan<float> controls,
+        in DensityVolume volume,
+        ReadOnlySpan<int> indices)
+    {
+        for (var i = 0; i < functions.Length; i++)
         {
-            foreach (var buffer in buffers)
-                buffer.Dispose();
+            var kind = DensitySelectionKind.InRange;
+            var min = i == 0 ? 0.0f : thresholds[i - 1];
+            var max = i == thresholds.Length ? 0.0f : thresholds[i];
+
+            if (i == 0)
+                kind = DensitySelectionKind.Below;
+            else if (i == thresholds.Length)
+                kind = DensitySelectionKind.NotBelow;
+
+            using var selection = new DensitySelection(controls, indices, kind, min, max);
+            selection.Sample(functions[i], output, volume);
         }
     }
 
@@ -289,6 +314,148 @@ internal sealed class InterpolatedFunction(DensityFunction input, int cellSizeXz
             this.SampleSteppedVolume(output, volume);
     }
 
+    public override void SampleSelected(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices)
+    {
+        if (this.IsAligned(volume))
+        {
+            input.SampleSelected(output, volume, indices);
+            return;
+        }
+
+        // The full fill shares corner blends across columns; sparse coordinate decoding only pays for small subsets.
+        if (indices.Length > volume.Size / 8)
+        {
+            base.SampleSelected(output, volume, indices);
+            return;
+        }
+
+        var blocks = BlockVolume(volume);
+        var corners = this.CornerVolume(blocks);
+        using var values = new DensityBuffer(corners.Size);
+        this.SampleSelectedCorners(values.Span, volume, corners, indices);
+        var previousX = int.MinValue;
+        var previousZ = int.MinValue;
+        var previousCellY = int.MinValue;
+        var previousY = 0;
+        var value = 0.0f;
+        var slope = 0.0f;
+
+        for (var i = 0; i < indices.Length; i++)
+        {
+            volume.Position(indices[i], out var x, out var y, out var z);
+            var cellY = (y - corners.MinBlockY) / cellSizeY;
+            var localY = y - corners.BlockY(cellY);
+
+            if (x != previousX || z != previousZ || cellY != previousCellY)
+            {
+                var cellX = (x - corners.MinBlockX) / cellSizeXz;
+                var cellZ = (z - corners.MinBlockZ) / cellSizeXz;
+                var nextX = Math.Min(cellX + 1, corners.SizeX - 1);
+                var nextY = Math.Min(cellY + 1, corners.SizeY - 1);
+                var nextZ = Math.Min(cellZ + 1, corners.SizeZ - 1);
+                var alphaZ = (z - corners.BlockZ(cellZ)) * this.inverseCellSizeXz;
+                var alphaX = (x - corners.BlockX(cellX)) * this.inverseCellSizeXz;
+                var samples = values.Span;
+                var x0y0 = FloatMath.Lerp(alphaZ,
+                    samples[corners.Index(cellX, cellY, cellZ)], samples[corners.Index(cellX, cellY, nextZ)]);
+                var x0y1 = FloatMath.Lerp(alphaZ,
+                    samples[corners.Index(cellX, nextY, cellZ)], samples[corners.Index(cellX, nextY, nextZ)]);
+                var x1y0 = FloatMath.Lerp(alphaZ,
+                    samples[corners.Index(nextX, cellY, cellZ)], samples[corners.Index(nextX, cellY, nextZ)]);
+                var x1y1 = FloatMath.Lerp(alphaZ,
+                    samples[corners.Index(nextX, nextY, cellZ)], samples[corners.Index(nextX, nextY, nextZ)]);
+                var bottom = FloatMath.Lerp(alphaX, x0y0, x1y0);
+                var top = FloatMath.Lerp(alphaX, x0y1, x1y1);
+
+                // Vanilla starts at the original volume's first block in this cell and adds the slope once per y.
+                // Starting at the selected block, or multiplying across skipped blocks, changes the rounded value.
+                slope = (top - bottom) * this.inverseCellSizeY;
+                previousY = Math.Max(0, blocks.MinBlockY - corners.BlockY(cellY));
+                value = bottom + slope * previousY;
+                previousX = x;
+                previousZ = z;
+                previousCellY = cellY;
+            }
+
+            while (previousY < localY)
+            {
+                value += slope;
+                previousY++;
+            }
+
+            output[i] = value;
+        }
+    }
+
+    // A sparse ore mask may touch only a few cells. Keep the original corner volume for rounding, but sample
+    // only corners those cells use, rather than evaluating their noises over the chunk's whole height.
+    private void SampleSelectedCorners(
+        Span<float> output,
+        in DensityVolume volume,
+        in DensityVolume corners,
+        ReadOnlySpan<int> indices)
+    {
+        var marked = ArrayPool<byte>.Shared.Rent(corners.Size);
+        var selected = ArrayPool<int>.Shared.Rent(corners.Size);
+
+        try
+        {
+            marked.AsSpan(0, corners.Size).Clear();
+
+            foreach (var index in indices)
+            {
+                volume.Position(index, out var x, out var y, out var z);
+                var cellX = (x - corners.MinBlockX) / cellSizeXz;
+                var cellY = (y - corners.MinBlockY) / cellSizeY;
+                var cellZ = (z - corners.MinBlockZ) / cellSizeXz;
+                var nextX = Math.Min(cellX + 1, corners.SizeX - 1);
+                var nextY = Math.Min(cellY + 1, corners.SizeY - 1);
+                var nextZ = Math.Min(cellZ + 1, corners.SizeZ - 1);
+
+                marked[corners.Index(cellX, cellY, cellZ)] = 1;
+                marked[corners.Index(cellX, nextY, cellZ)] = 1;
+                marked[corners.Index(nextX, cellY, cellZ)] = 1;
+                marked[corners.Index(nextX, nextY, cellZ)] = 1;
+                marked[corners.Index(cellX, cellY, nextZ)] = 1;
+                marked[corners.Index(cellX, nextY, nextZ)] = 1;
+                marked[corners.Index(nextX, cellY, nextZ)] = 1;
+                marked[corners.Index(nextX, nextY, nextZ)] = 1;
+            }
+
+            var count = 0;
+            for (var i = 0; i < corners.Size; i++)
+            {
+                if (marked[i] != 0)
+                    selected[count++] = i;
+            }
+
+            if (count == corners.Size)
+            {
+                input.SampleVolume(output, corners);
+                return;
+            }
+
+            using var values = new DensityBuffer(count);
+            input.SampleSelected(values.Span, corners, selected.AsSpan(0, count));
+
+            for (var i = 0; i < count; i++)
+                output[selected[i]] = values.Span[i];
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(marked);
+            ArrayPool<int>.Shared.Return(selected);
+        }
+    }
+
+    private static DensityVolume BlockVolume(in DensityVolume volume) => new(
+        volume.SizeX * volume.StepX,
+        volume.SizeY * volume.StepY,
+        volume.SizeZ * volume.StepZ,
+        volume.MinBlockX,
+        volume.MinBlockY,
+        volume.MinBlockZ);
+
     private bool IsAligned(in DensityVolume volume)
     {
         var stepsMatch = (volume.StepX == cellSizeXz || volume.SizeX == 1)
@@ -305,13 +472,7 @@ internal sealed class InterpolatedFunction(DensityFunction input, int cellSizeXz
     // points the volume steps on.
     private void SampleSteppedVolume(Span<float> output, in DensityVolume volume)
     {
-        var blocks = new DensityVolume(
-            volume.SizeX * volume.StepX,
-            volume.SizeY * volume.StepY,
-            volume.SizeZ * volume.StepZ,
-            volume.MinBlockX,
-            volume.MinBlockY,
-            volume.MinBlockZ);
+        var blocks = BlockVolume(volume);
 
         using var values = new DensityBuffer(blocks.Size);
         this.SampleBlocks(values.Span, blocks);
@@ -329,8 +490,8 @@ internal sealed class InterpolatedFunction(DensityFunction input, int cellSizeXz
         }
     }
 
-    // Samples the corners of every cell a volume of adjacent blocks touches as one volume, then fills each cell.
-    private void SampleBlocks(Span<float> output, in DensityVolume volume)
+    // The original corner grid, including the shorter last cell when a volume ends exactly on a cell boundary.
+    private DensityVolume CornerVolume(in DensityVolume volume)
     {
         var maxBlockX = volume.MinBlockX + volume.SizeX - 1;
         var maxBlockY = volume.MinBlockY + volume.SizeY - 1;
@@ -349,7 +510,7 @@ internal sealed class InterpolatedFunction(DensityFunction input, int cellSizeXz
         var cornersY = FloatMath.FloorMod(maxBlockY, cellSizeY) == 0 ? cellsY : cellsY + 1;
         var cornersZ = FloatMath.FloorMod(maxBlockZ, cellSizeXz) == 0 ? cellsZ : cellsZ + 1;
 
-        var corners = new DensityVolume(
+        return new DensityVolume(
             cornersX,
             cornersY,
             cornersZ,
@@ -359,6 +520,15 @@ internal sealed class InterpolatedFunction(DensityFunction input, int cellSizeXz
             cellSizeXz,
             cellSizeY,
             cellSizeXz);
+    }
+
+    // Samples the cell corners together, then fills each cell's intersection with the volume.
+    private void SampleBlocks(Span<float> output, in DensityVolume volume)
+    {
+        var corners = this.CornerVolume(volume);
+        var cellsX = (volume.MinBlockX + volume.SizeX - 1 - corners.MinBlockX) / cellSizeXz + 1;
+        var cellsY = (volume.MinBlockY + volume.SizeY - 1 - corners.MinBlockY) / cellSizeY + 1;
+        var cellsZ = (volume.MinBlockZ + volume.SizeZ - 1 - corners.MinBlockZ) / cellSizeXz + 1;
 
         using var cornerValues = DensityBuffer.Sample(input, corners);
 

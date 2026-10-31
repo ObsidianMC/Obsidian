@@ -23,6 +23,14 @@ internal sealed class UnaryFunction(UnaryOperation operation, DensityFunction in
 
     public override float Sample(int x, int y, int z) => this.Apply(input.Sample(x, y, z));
 
+    public override void SampleSelected(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices)
+    {
+        input.SampleSelected(output, volume, indices);
+
+        for (var i = 0; i < output.Length; i++)
+            output[i] = this.Apply(output[i]);
+    }
+
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
     {
         input.SampleVolume(output, volume);
@@ -88,6 +96,16 @@ internal sealed class RoundFunction(RoundingMode mode, DensityFunction input, De
         var step = multiple.Sample(x, y, z);
 
         return this.Apply(value, step);
+    }
+
+    public override void SampleSelected(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices)
+    {
+        input.SampleSelected(output, volume, indices);
+        using var steps = new DensityBuffer(indices.Length);
+        multiple.SampleSelected(steps.Span, volume, indices);
+
+        for (var i = 0; i < output.Length; i++)
+            output[i] = this.Apply(output[i], steps.Span[i]);
     }
 
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
@@ -198,6 +216,16 @@ internal abstract class BinaryFunction : DensityFunction
             }
         }
 
+        public override void SampleSelected(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices)
+        {
+            left.SampleSelected(output, volume, indices);
+            using var rights = new DensityBuffer(indices.Length);
+            right.SampleSelected(rights.Span, volume, indices);
+
+            for (var i = 0; i < output.Length; i++)
+                output[i] = Combine(operation, output[i], rights.Span[i]);
+        }
+
         public override void SampleVolume(Span<float> output, in DensityVolume volume)
         {
             left.SampleVolume(output, volume);
@@ -228,6 +256,14 @@ internal abstract class BinaryFunction : DensityFunction
             };
         }
 
+        public override void SampleSelected(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices)
+        {
+            input.SampleSelected(output, volume, indices);
+
+            for (var i = 0; i < output.Length; i++)
+                output[i] = Combine(operation, output[i], constant);
+        }
+
         public override void SampleVolume(Span<float> output, in DensityVolume volume)
         {
             input.SampleVolume(output, volume);
@@ -244,6 +280,14 @@ internal abstract class BinaryFunction : DensityFunction
         public override bool IsFlat => input.IsFlat;
 
         public override float Sample(int x, int y, int z) => this.Apply(input.Sample(x, y, z));
+
+        public override void SampleSelected(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices)
+        {
+            input.SampleSelected(output, volume, indices);
+
+            for (var i = 0; i < output.Length; i++)
+                output[i] = this.Apply(output[i]);
+        }
 
         public override void SampleVolume(Span<float> output, in DensityVolume volume)
         {
@@ -297,6 +341,16 @@ internal sealed class PowFunction(DensityFunction baseFunction, DensityFunction 
         var power = exponent.Sample(x, y, z);
 
         return Pow(value, power);
+    }
+
+    public override void SampleSelected(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices)
+    {
+        baseFunction.SampleSelected(output, volume, indices);
+        using var powers = new DensityBuffer(indices.Length);
+        exponent.SampleSelected(powers.Span, volume, indices);
+
+        for (var i = 0; i < output.Length; i++)
+            output[i] = Pow(output[i], powers.Span[i]);
     }
 
     public override void SampleVolume(Span<float> output, in DensityVolume volume)

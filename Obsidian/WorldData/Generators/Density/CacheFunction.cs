@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Threading;
 
 namespace Obsidian.WorldData.Generators.Density;
@@ -11,7 +12,8 @@ namespace Obsidian.WorldData.Generators.Density;
 /// (points and volumes can round differently). Each thread remembers the last point and the last volume it sampled:
 /// a router samples the same function several times over the same cell corners, the ore veins sample their toggle
 /// over a chunk's material volume for each vein and for richness, and a spline samples its coordinates at the point
-/// its caller just sampled them.
+/// its caller just sampled them. Selected samples keep their original volume and remember which indices are filled,
+/// so branches can share overlapping selections without confusing them with point samples or another volume.
 /// </para>
 /// <para>
 /// A flat input (see <see cref="DensityFunction.IsFlat"/>) is sampled over one layer of a volume and copied down each
@@ -40,6 +42,50 @@ internal sealed class CacheFunction(DensityFunction input) : DensityFunction
         last.RememberPoint(x, pointY, z, value);
 
         return value;
+    }
+
+    public override void SampleSelected(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices)
+    {
+        if (this.flat || input is InterpolatedFunction && indices.Length > volume.Size / 8)
+        {
+            // Flat inputs share one layer. Dense interpolation selections are cheaper to fill together, and
+            // retaining the whole result also shares it between the two ore veins and their richness function.
+            base.SampleSelected(output, volume, indices);
+            return;
+        }
+
+        var last = this.remembered.Value!;
+        last.PrepareVolume(volume);
+        var missing = ArrayPool<int>.Shared.Rent(indices.Length);
+
+        try
+        {
+            var count = 0;
+            foreach (var index in indices)
+            {
+                if (!last.HasVolume && !last.Filled[index])
+                    missing[count++] = index;
+            }
+
+            if (count > 0)
+            {
+                using var values = new DensityBuffer(count);
+                input.SampleSelected(values.Span, volume, missing.AsSpan(0, count));
+
+                for (var i = 0; i < count; i++)
+                {
+                    last.Values[missing[i]] = values.Span[i];
+                    last.Filled[missing[i]] = true;
+                }
+            }
+
+            for (var i = 0; i < indices.Length; i++)
+                output[i] = last.Values[indices[i]];
+        }
+        finally
+        {
+            ArrayPool<int>.Shared.Return(missing);
+        }
     }
 
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
@@ -80,6 +126,8 @@ internal sealed class CacheFunction(DensityFunction input) : DensityFunction
 
     private sealed class Remembered
     {
+        private bool hasSelection;
+
         public bool HasPoint { get; private set; }
 
         public int PointX { get; private set; }
@@ -96,6 +144,28 @@ internal sealed class CacheFunction(DensityFunction input) : DensityFunction
 
         public float[] Values { get; private set; } = [];
 
+        public bool[] Filled { get; private set; } = [];
+
+        public void PrepareVolume(in DensityVolume volume)
+        {
+            if (this.hasSelection && this.Volume == volume)
+                return;
+
+            if (this.Values.Length < volume.Size)
+            {
+                this.Values = new float[volume.Size];
+                this.Filled = new bool[volume.Size];
+            }
+            else
+            {
+                this.Filled.AsSpan().Clear();
+            }
+
+            this.Volume = volume;
+            this.HasVolume = false;
+            this.hasSelection = true;
+        }
+
         public void RememberPoint(int x, int y, int z, float value)
         {
             this.HasPoint = true;
@@ -107,11 +177,8 @@ internal sealed class CacheFunction(DensityFunction input) : DensityFunction
 
         public void RememberVolume(in DensityVolume volume, ReadOnlySpan<float> values)
         {
-            if (this.Values.Length < values.Length)
-                this.Values = new float[values.Length];
-
+            this.PrepareVolume(volume);
             values.CopyTo(this.Values);
-            this.Volume = volume;
             this.HasVolume = true;
         }
     }
