@@ -606,7 +606,10 @@ public sealed class VanillaCommands26
             ("swing @s offhand", InteractionHand.OffHand)
         ];
 
-        await FixtureCases.AssertAllAsync(cases, row => row.Command, row => AssertSwingReachesThePlayer(row.Command, row.Hand));
+        await FixtureCases.AssertAllAsync(
+            cases,
+            row => row.Command,
+            row => AssertSwingReachesThePlayer(row.Command, row.Hand));
     }
 
     private static async Task AssertSwingReachesThePlayer(string command, InteractionHand hand)

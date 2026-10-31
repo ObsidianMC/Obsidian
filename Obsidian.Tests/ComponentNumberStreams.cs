@@ -1,16 +1,29 @@
 using Obsidian.API.World.Generator.RandomSources;
 using System;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
 
 public class ComponentNumberStreams
 {
-    [Theory]
-    [InlineData(1, 1)]
-    [InlineData(42, 100)]
-    [InlineData(-7, 64)]
-    public void AdapterPreservesTheSuppliedRandomStream(int seed, int bound)
+    [Fact]
+    public void AdapterPreservesTheSuppliedRandomStream()
+    {
+        (int Seed, int Bound)[] cases =
+        [
+            (1, 1),
+            (42, 100),
+            (-7, 64)
+        ];
+
+        FixtureCases.AssertAll(
+            cases,
+            row => $"seed={row.Seed}, bound={row.Bound}",
+            row => AssertAdapterPreservesTheSuppliedRandomStream(row.Seed, row.Bound));
+    }
+
+    private static void AssertAdapterPreservesTheSuppliedRandomStream(int seed, int bound)
     {
         var expected = new Random(seed);
         var caller = new Random(seed);

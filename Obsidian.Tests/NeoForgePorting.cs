@@ -300,7 +300,9 @@ public sealed class NeoForgePorting
     [Fact]
     public void BiomeModifier_ConvertsToObsidiansFormat()
     {
-        FixtureCases.AssertAll(Modifiers, row => (string)row[0],
+        FixtureCases.AssertAll(
+            Modifiers,
+            row => (string)row[0],
             row => AssertModifierConverts((string)row[0], (string)row[1], (string)row[2], (string)row[3]));
     }
 

@@ -70,7 +70,9 @@ public sealed class SpecialCraftingRecipes
             .SelectMany(row => row.Row.GetProperty("crafts").EnumerateArray()
                 .Select(craft => (row.Row, row.Index, Craft: craft)));
 
-        FixtureCases.AssertAll(crafts, row => $"recipes[{row.Index}] {Name(row.Craft)}",
+        FixtureCases.AssertAll(
+            crafts,
+            row => $"recipes[{row.Index}] {Name(row.Craft)}",
             row => AssertPackRecipeCraftsLikeVanilla(row.Row, row.Craft));
     }
 

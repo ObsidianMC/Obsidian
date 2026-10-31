@@ -4,16 +4,29 @@ using Obsidian.API.Registries;
 using Obsidian.Events;
 using Obsidian.Tests.Fakes;
 using System.Linq;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
 
 public sealed class Player
 {
-    [Theory]
-    [InlineData(0, 1, 4)]
-    [InlineData(1, 5, 0)]
-    public void Throw_PreservesDroppedCountAndComponents(int button, int droppedCount, int remainingCount)
+    [Fact]
+    public void Throw_PreservesDroppedCountAndComponents()
+    {
+        (int Button, int DroppedCount, int RemainingCount)[] cases =
+        [
+            (0, 1, 4),
+            (1, 5, 0)
+        ];
+
+        FixtureCases.AssertAll(
+            cases,
+            row => $"button={row.Button}, droppedCount={row.DroppedCount}, remainingCount={row.RemainingCount}",
+            row => AssertThrow_PreservesDroppedCountAndComponents(row.Button, row.DroppedCount, row.RemainingCount));
+    }
+
+    private static void AssertThrow_PreservesDroppedCountAndComponents(int button, int droppedCount, int remainingCount)
     {
         var player = new FakePlayer();
         var container = new Container(9);
@@ -32,10 +45,23 @@ public sealed class Player
         Assert.Equal(remainingCount, container.GetItem(0)?.Count ?? 0);
     }
 
-    [Theory]
-    [InlineData(0, 5, 0)]
-    [InlineData(1, 1, 4)]
-    public void Throw_OutsideClickUsesVanillaButtonCounts(int button, int droppedCount, int remainingCount)
+    [Fact]
+    public void Throw_OutsideClickUsesVanillaButtonCounts()
+    {
+        (int Button, int DroppedCount, int RemainingCount)[] cases =
+        [
+            (0, 5, 0),
+            (1, 1, 4)
+        ];
+
+        FixtureCases.AssertAll(
+            cases,
+            row => $"button={row.Button}, droppedCount={row.DroppedCount}, remainingCount={row.RemainingCount}",
+            row => AssertThrow_OutsideClickUsesVanillaButtonCounts(row.Button, row.DroppedCount, row.RemainingCount));
+    }
+
+    private static void AssertThrow_OutsideClickUsesVanillaButtonCounts(
+        int button, int droppedCount, int remainingCount)
     {
         var player = new FakePlayer { CarriedItem = new ItemStack(ItemsRegistry.Stone, 5) };
 

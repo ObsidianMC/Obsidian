@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -24,22 +25,17 @@ public class VanillaFluids(VanillaFluids.ScenarioFixture fixture) : IClassFixtur
     private const string Symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     [Fact]
-    public void FixtureIsFromTheImplementedVersion()
+    public void ScenariosMatchVanilla()
     {
         Assert.Equal(ServerConstants.ProtocolDescription, fixture.Version);
+        FixtureCases.AssertAll(
+            fixture.Scenarios,
+            scenario => scenario.Key,
+            scenario => AssertScenarioMatchesVanilla(scenario.Value));
     }
 
-    [Theory]
-    [InlineData("water_flat")]
-    [InlineData("water_slope_to_hole")]
-    [InlineData("waterfall_and_decay")]
-    [InlineData("water_source_conversion")]
-    [InlineData("lava_and_water")]
-    [InlineData("nether_fast_lava_and_basalt")]
-    [InlineData("waterlogged_and_obstacles")]
-    public void ScenarioMatchesVanilla(string name)
+    private static void AssertScenarioMatchesVanilla(JsonElement scenario)
     {
-        var scenario = fixture.Scenarios[name];
         var world = new ScenarioWorld(new FluidRules(scenario.GetProperty("fastLava").GetBoolean(),
             scenario.GetProperty("waterSourceConversion").GetBoolean(), scenario.GetProperty("lavaSourceConversion").GetBoolean()));
 

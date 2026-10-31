@@ -252,7 +252,10 @@ public sealed class DataSystems
             "east"
         ];
 
-        await FixtureCases.AssertAllAsync(cases, row => $"{row}", AssertTransformerUseCommitsCapturedStateAndDamage);
+        await FixtureCases.AssertAllAsync(
+            cases,
+            row => $"faceName={row}",
+            AssertTransformerUseCommitsCapturedStateAndDamage);
     }
 
     private static async Task AssertTransformerUseCommitsCapturedStateAndDamage(string faceName)
@@ -324,7 +327,10 @@ public sealed class DataSystems
             true
         ];
 
-        await FixtureCases.AssertAllAsync(cases, row => $"{row}", AssertCopperChestUsePreservesMenuAndToolState);
+        await FixtureCases.AssertAllAsync(
+            cases,
+            row => $"sneaking={row}",
+            AssertCopperChestUsePreservesMenuAndToolState);
     }
 
     private static async Task AssertCopperChestUsePreservesMenuAndToolState(bool sneaking)
@@ -378,7 +384,9 @@ public sealed class DataSystems
             ("minecraft:overworld", false)
         ];
 
-        await FixtureCases.AssertAllAsync(cases, row => $"{row.DefaultClock}, {row.AdvanceTime}",
+        await FixtureCases.AssertAllAsync(
+            cases,
+            row => $"defaultClock={row.DefaultClock}, advanceTime={row.AdvanceTime}",
             row => AssertCompletedSleepUsesDimensionClock(row.DefaultClock, row.AdvanceTime));
     }
 

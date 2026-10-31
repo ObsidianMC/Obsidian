@@ -2,15 +2,20 @@
 
 using System.Collections.Generic;
 
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
 
 public class String
 {
-    [MemberData(nameof(StringData))]
-    [Theory(DisplayName = "Equal strings")]
-    public void Same(string expectedValue)
+    [Fact(DisplayName = "Equal strings")]
+    public void Same()
+    {
+        FixtureCases.AssertAll(StringData, row => (string)row[0], row => AssertRoundTrips((string)row[0]));
+    }
+
+    private static void AssertRoundTrips(string expectedValue)
     {
         using var stream = new NetworkBuffer();
 
@@ -32,7 +37,7 @@ public class String
     }
 
     // Keep five deterministic cases: empty, short ASCII, spaces, multibyte UTF-8 and a two-byte length prefix.
-    public static IEnumerable<object[]> StringData =>
+    private static IEnumerable<object[]> StringData =>
     [
         [string.Empty],
         ["a"],

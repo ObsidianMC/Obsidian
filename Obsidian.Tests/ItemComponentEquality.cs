@@ -44,9 +44,10 @@ public sealed class ItemComponentEquality
     [Fact]
     public void CollectionComponentsMergeByValue()
     {
-        FixtureCases.AssertAll(CollectionComponents, type => type.ToString(), type =>
-        {
-            AssertEqualComponentsMerge(type);
+        FixtureCases.AssertAll(
+            CollectionComponents,
+            type => type.ToString(),
+            type => { AssertEqualComponentsMerge(type);
             AssertDifferentComponentsDoNotMerge(type);
             AssertDecodedComponentsKeepValueEquality(type);
         });

@@ -122,7 +122,10 @@ public class EntityMetadataParity
     [Fact]
     public void MetadataMatchesVanilla()
     {
-        FixtureCases.AssertAll(Cases(), row => $"{row.Kind} {row.Name}", row => AssertMatchesVanilla(row.Kind, row.Name));
+        FixtureCases.AssertAll(
+            Cases(),
+            row => $"{row.Kind} {row.Name}",
+            row => AssertMatchesVanilla(row.Kind, row.Name));
     }
 
     private static void AssertMatchesVanilla(string kind, string name)

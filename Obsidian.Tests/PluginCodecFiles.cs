@@ -14,6 +14,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -284,15 +285,24 @@ public partial class PluginCodecFiles
         Assert.Equal(nextDraw, random.NextInt(100));
     }
 
-    [Theory]
-    [InlineData("""{"type":"minecraft:trapezoid","min":5,"max":1,"plateau":0}""")]
-    [InlineData("""{"type":"minecraft:trapezoid","min":1,"max":5,"plateau":5}""")]
-    [InlineData("""{"type":"minecraft:trapezoid","max":5,"plateau":1}""")]
-    [InlineData("""{"type":"minecraft:trapezoid","min":1,"plateau":1}""")]
-    [InlineData("""{"type":"minecraft:trapezoid","min":1,"max":5}""")]
-    [InlineData("""{"type":"minecraft:very_biased_to_bottom","min_inclusive":5,"max_inclusive":1}""")]
-    [InlineData("""{"type":"minecraft:very_biased_to_bottom","max_inclusive":5}""")]
-    public void RejectsInvalid26_3IntProviders(string json)
+    [Fact]
+    public void RejectsInvalid26_3IntProviders()
+    {
+        string[] cases =
+        [
+            """{"type":"minecraft:trapezoid","min":5,"max":1,"plateau":0}""",
+            """{"type":"minecraft:trapezoid","min":1,"max":5,"plateau":5}""",
+            """{"type":"minecraft:trapezoid","max":5,"plateau":1}""",
+            """{"type":"minecraft:trapezoid","min":1,"plateau":1}""",
+            """{"type":"minecraft:trapezoid","min":1,"max":5}""",
+            """{"type":"minecraft:very_biased_to_bottom","min_inclusive":5,"max_inclusive":1}""",
+            """{"type":"minecraft:very_biased_to_bottom","max_inclusive":5}"""
+        ];
+
+        FixtureCases.AssertAll(cases, row => $"json={row}", AssertRejectsInvalid26_3IntProviders);
+    }
+
+    private static void AssertRejectsInvalid26_3IntProviders(string json)
     {
         using var document = JsonDocument.Parse(json);
 

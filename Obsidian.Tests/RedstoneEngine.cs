@@ -6,7 +6,7 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// The directional power engine at an unloaded chunk edge. Vanilla behavior is replayed by <see cref="VanillaRedstone"/>;
+/// The directional power engine at an unloaded chunk edge. <see cref="VanillaRedstone"/> replays vanilla's behavior;
 /// this covers what the captures can't: a block update beside an unloaded chunk must not load it.
 /// </summary>
 public class RedstoneEngineTests

@@ -91,7 +91,9 @@ public sealed class VillagerTrades
         var cases = Enumerable.Range(0, captured.RootElement.GetArrayLength())
             .SelectMany(index => new[] { (Index: index, MobDrops: false), (Index: index, MobDrops: true) });
 
-        await FixtureCases.AssertAllAsync(cases, row => $"{row.Index}, {row.MobDrops}",
+        await FixtureCases.AssertAllAsync(
+            cases,
+            row => $"index={row.Index}, mobDrops={row.MobDrops}",
             row => AssertPlayerTradeExperienceMatchesVanillaRegardlessOfMobDrops(row.Index, row.MobDrops));
     }
 
@@ -246,7 +248,9 @@ public sealed class VillagerTrades
             true
         ];
 
-        await FixtureCases.AssertAllAsync(cases, row => $"{row}",
+        await FixtureCases.AssertAllAsync(
+            cases,
+            row => $"empty={row}",
             AssertVanillaSavedOffersSurviveLoadingAndFirstInteraction);
     }
 
@@ -327,7 +331,7 @@ public sealed class VillagerTrades
             "replacement"
         ];
 
-        await FixtureCases.AssertAllAsync(cases, row => $"{row}", AssertMerchantInputsSurviveEveryWindowExit);
+        await FixtureCases.AssertAllAsync(cases, row => $"exit={row}", AssertMerchantInputsSurviveEveryWindowExit);
     }
 
     private static async Task AssertMerchantInputsSurviveEveryWindowExit(string exit)

@@ -274,7 +274,9 @@ public sealed class BlockDrops
             ("oak_door", "half", "upper", "lower", "oak_door", true)
         ];
 
-        await FixtureCases.AssertAllAsync(cases, row => $"{row.Name}, {row.Property}, {row.SelectedPart}, {row.PartnerPart}, {row.Item}, {row.Creative}",
+        await FixtureCases.AssertAllAsync(
+            cases,
+            row => $"{row.Name} {row.SelectedPart}, creative={row.Creative}",
             row => AssertTwoPartPlayerBreakRemovesBothAndDropsOnce(
                 row.Name, row.Property, row.SelectedPart, row.PartnerPart, row.Item, row.Creative));
     }
@@ -469,7 +471,9 @@ public sealed class BlockDrops
             ("number", ", \"value\": 1")
         ];
 
-        FixtureCases.AssertAll(cases, row => $"{row.CaseId}, {row.Value}",
+        FixtureCases.AssertAll(
+            cases,
+            row => $"caseId={row.CaseId}, value={row.Value}",
             row => AssertMalformedTableReferenceIsRejectedAndLoaderSkipsIt(row.CaseId, row.Value));
     }
 
@@ -565,11 +569,14 @@ public sealed class BlockDrops
             ("red_bed", "part", "foot")
         ];
 
-        await FixtureCases.AssertAllAsync(cases, row => $"{row.Name}, {row.Property}, {row.SelectedPart}",
+        await FixtureCases.AssertAllAsync(
+            cases,
+            row => $"name={row.Name}, property={row.Property}, selectedPart={row.SelectedPart}",
             row => AssertExplosionDestroysTwoPartBlocksAndDropsOnce(row.Name, row.Property, row.SelectedPart));
     }
 
-    private static async Task AssertExplosionDestroysTwoPartBlocksAndDropsOnce(string name, string property, string selectedPart)
+    private static async Task AssertExplosionDestroysTwoPartBlocksAndDropsOnce(
+        string name, string property, string selectedPart)
     {
         await using var context = TestServerFactory.CreateServer($"two-part-explosion-{Guid.NewGuid():N}");
         var chunk = AddChunk(context.World);

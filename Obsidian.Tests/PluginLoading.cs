@@ -59,7 +59,7 @@ public sealed class PluginLoading : IDisposable
 
     public void Dispose() => Directory.Delete(this.folder, recursive: true);
 
-    public static TheoryData<string, string[], string[], string[], string[]> Resolutions => new()
+    private static TheoryData<string, string[], string[], string[], string[]> Resolutions => new()
     {
         // Name, plugins as "id version [dependency type range ordering side]*", plugins already loaded, expected load
         // order, rejected ids.
@@ -80,9 +80,17 @@ public sealed class PluginLoading : IDisposable
         { "duplicate id", ["a 1.0", "a 2.0"], [], ["a"], ["a"] }
     };
 
-    [Theory]
-    [MemberData(nameof(Resolutions))]
-    public void Resolve_FollowsNeoForgeDependencyRules(string name, string[] plugins, string[] loaded, string[] order,
+    [Fact]
+    public void Resolve_FollowsNeoForgeDependencyRules()
+    {
+        FixtureCases.AssertAll(
+            Resolutions,
+            row => (string)row[0],
+            row => AssertResolves(
+                (string)row[0], (string[])row[1], (string[])row[2], (string[])row[3], (string[])row[4]));
+    }
+
+    private static void AssertResolves(string name, string[] plugins, string[] loaded, string[] order,
         string[] rejected)
     {
         var resolution = PluginDependencyResolver.Resolve(

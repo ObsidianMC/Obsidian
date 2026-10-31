@@ -40,7 +40,9 @@ public class VanillaRedstone
 
         Assert.Equal(ServerConstants.ProtocolDescription, Fixture.Shared.Document.GetProperty("version").GetString());
         Assert.Empty(RequiredCoverage.Where(tag => !covered.Contains(tag)));
-        FixtureCases.AssertAll(Fixture.Shared.Scenarios, scenario => scenario.Key,
+        FixtureCases.AssertAll(
+            Fixture.Shared.Scenarios,
+            scenario => scenario.Key,
             scenario => AssertScenarioMatchesVanilla(scenario.Key, scenario.Value));
     }
 

@@ -22,6 +22,7 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -33,12 +34,24 @@ public class ModdedNetworking
 {
     // Each side's channels: "id=version", then ">" for clientbound or "<" for serverbound, then "?" when optional.
     // The expected outcome lists the agreed channels as "id=version", or the refused ones as "!id".
-    [Theory(DisplayName = "Channels are negotiated with NeoForge's rules")]
-    [InlineData("mod:a=2", "mod:a=1", "!mod:a")]
-    [InlineData("mod:a=1>", "mod:a=1<", "!mod:a")]
-    [InlineData("", "mod:a=1", "!mod:a")]
-    [InlineData("mod:a=1 mod:b=1?", "mod:a=1 mod:c=1?", "mod:a=1")]
-    public void NegotiatesChannels(string server, string client, string expected)
+    [Fact(DisplayName = "Channels are negotiated with NeoForge's rules")]
+    public void NegotiatesChannels()
+    {
+        (string Server, string Client, string Expected)[] cases =
+        [
+            ("mod:a=2", "mod:a=1", "!mod:a"),
+            ("mod:a=1>", "mod:a=1<", "!mod:a"),
+            ("", "mod:a=1", "!mod:a"),
+            ("mod:a=1 mod:b=1?", "mod:a=1 mod:c=1?", "mod:a=1")
+        ];
+
+        FixtureCases.AssertAll(
+            cases,
+            row => $"server={row.Server}, client={row.Client}, expected={row.Expected}",
+            row => AssertNegotiatesChannels(row.Server, row.Client, row.Expected));
+    }
+
+    private static void AssertNegotiatesChannels(string server, string client, string expected)
     {
         var result = NetworkComponentNegotiator.Negotiate(ParseComponents(server), ParseComponents(client));
 

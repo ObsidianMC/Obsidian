@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -45,12 +46,14 @@ public sealed class Cooking
             Count: 3, CookTime: 100, BurnTime: 800, Speed: 2f)
     };
 
-    public static TheoryData<string> Machines => [.. machines.Keys];
-
-    [Theory(DisplayName = "Cooking machines cook across a save and automation and award experience",
+    [Fact(DisplayName = "Cooking machines cook across a save and automation and award experience",
         Timeout = TestServerFactory.TestTimeout)]
-    [MemberData(nameof(Machines))]
-    public async Task MachinesCookAcrossSaveAndAutomationAndAwardExperience(string name)
+    public async Task MachinesCookAcrossSaveAndAutomationAndAwardExperience()
+    {
+        await FixtureCases.AssertAllAsync(machines.Keys, name => name, AssertMachineCooksAcrossSaveAndAutomation);
+    }
+
+    private static async Task AssertMachineCooksAcrossSaveAndAutomation(string name)
     {
         var machine = machines[name];
         await using var kitchen = await Kitchen.OpenAsync(name);

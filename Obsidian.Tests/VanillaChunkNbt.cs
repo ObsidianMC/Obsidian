@@ -14,6 +14,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -109,12 +110,21 @@ public sealed class VanillaChunkNbt
         }
     }
 
-    [Theory]
-    [InlineData("noise")]
-    [InlineData("minecraft:surface")]
-    [InlineData("minecraft:carvers")]
-    [InlineData("minecraft:terrain")]
-    public void LegacyNbtUpgradesWithoutLosingState(string status)
+    [Fact]
+    public void LegacyNbtUpgradesWithoutLosingState()
+    {
+        string[] cases =
+        [
+            "noise",
+            "minecraft:surface",
+            "minecraft:carvers",
+            "minecraft:terrain"
+        ];
+
+        FixtureCases.AssertAll(cases, row => $"status={row}", AssertLegacyNbtUpgradesWithoutLosingState);
+    }
+
+    private static void AssertLegacyNbtUpgradesWithoutLosingState(string status)
     {
         var pistonState = BlockStateProperties.GetState("minecraft:oak_stairs").WithProperty("facing", "east").WithProperty("half", "top");
         var palette = new NbtList(NbtTagType.Compound, "palette")
@@ -246,11 +256,20 @@ public sealed class VanillaChunkNbt
         }
     }
 
-    [Theory]
-    [InlineData("legacy")]
-    [InlineData("mixed")]
-    [InlineData("bare")]
-    public void TemplateReadersAcceptBothVersions(string shape)
+    [Fact]
+    public void TemplateReadersAcceptBothVersions()
+    {
+        string[] cases =
+        [
+            "legacy",
+            "mixed",
+            "bare"
+        ];
+
+        FixtureCases.AssertAll(cases, row => $"shape={row}", AssertTemplateReadersAcceptBothVersions);
+    }
+
+    private static void AssertTemplateReadersAcceptBothVersions(string shape)
     {
         var block = shape == "bare" ? BlockStateProperties.GetState("minecraft:furnace") : BlocksRegistry.OakStairs.WithProperty("facing", "east").WithProperty("half", "top");
         var palette = new NbtList(shape == "bare" ? NbtTagType.String : NbtTagType.Compound, "palette");
@@ -356,7 +375,8 @@ public sealed class VanillaChunkNbt
         return stream.ToArray();
     }
 
-    private static void AssertNbt(INbtTag expected, INbtTag actual, bool allowExtraFields = false, bool unorderedList = false)
+    private static void AssertNbt(
+        INbtTag expected, INbtTag actual, bool allowExtraFields = false, bool unorderedList = false)
     {
         Assert.Equal(expected.Type, actual.Type);
         if (expected is NbtCompound compound)

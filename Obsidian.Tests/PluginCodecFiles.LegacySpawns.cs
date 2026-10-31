@@ -5,18 +5,31 @@ using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
 
 public partial class PluginCodecFiles
 {
-    [Theory]
-    [InlineData(true, false, false)]
-    [InlineData(false, true, false)]
-    [InlineData(false, false, true)]
-    [InlineData(true, true, true)]
-    public void MigratesLegacyBiomeSpawns(bool hasSpawners, bool hasCosts, bool hasProbability)
+    [Fact]
+    public void MigratesLegacyBiomeSpawns()
+    {
+        (bool HasSpawners, bool HasCosts, bool HasProbability)[] cases =
+        [
+            (true, false, false),
+            (false, true, false),
+            (false, false, true),
+            (true, true, true)
+        ];
+
+        FixtureCases.AssertAll(
+            cases,
+            row => $"hasSpawners={row.HasSpawners}, hasCosts={row.HasCosts}, hasProbability={row.HasProbability}",
+            row => AssertMigratesLegacyBiomeSpawns(row.HasSpawners, row.HasCosts, row.HasProbability));
+    }
+
+    private static void AssertMigratesLegacyBiomeSpawns(bool hasSpawners, bool hasCosts, bool hasProbability)
     {
         var patch = new JsonObject
         {

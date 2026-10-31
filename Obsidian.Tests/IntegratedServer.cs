@@ -17,6 +17,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -106,11 +107,23 @@ public class VanillaLevelDataTests
     /// stem overrides the overworld, read the way vanilla's codecs saved it (floats, climate pairs, short ids), and is
     /// refused with where it differs otherwise.
     /// </summary>
-    [Theory]
-    [InlineData(null, "isn't vanilla's default")]
-    [InlineData("plains", null)]
-    [InlineData("minecraft:desert", "differs at generator.biome_source.biomes[0].biome")]
-    public void DataPackOverworldsOpenWithTheirStem(string? biome, string? error)
+    [Fact]
+    public void DataPackOverworldsOpenWithTheirStem()
+    {
+        (string? Biome, string? Error)[] cases =
+        [
+            (null, "isn't vanilla's default"),
+            ("plains", null),
+            ("minecraft:desert", "differs at generator.biome_source.biomes[0].biome")
+        ];
+
+        FixtureCases.AssertAll(
+            cases,
+            row => $"biome={row.Biome}, error={row.Error}",
+            row => AssertDataPackOverworldsOpenWithTheirStem(row.Biome, row.Error));
+    }
+
+    private static void AssertDataPackOverworldsOpenWithTheirStem(string? biome, string? error)
     {
         var parameters = new NbtCompound("parameters")
         {

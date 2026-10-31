@@ -16,6 +16,7 @@ using System.IO.Compression;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -46,10 +47,22 @@ public sealed class DataPackStartup : IDisposable
             Directory.Delete(this.folder, recursive: true);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task Format121PacksOverridePluginsAndSurviveTheirUnload(bool zipped)
+    [Fact]
+    public async Task Format121PacksOverridePluginsAndSurviveTheirUnload()
+    {
+        bool[] cases =
+        [
+            false,
+            true
+        ];
+
+        await FixtureCases.AssertAllAsync(
+            cases,
+            row => $"zipped={row}",
+            AssertFormat121PacksOverridePluginsAndSurviveTheirUnload);
+    }
+
+    private async Task AssertFormat121PacksOverridePluginsAndSurviveTheirUnload(bool zipped)
     {
         using var biomes = Format121Data.Read("biome");
         using var metadata = Format121Data.Read("pack");
@@ -139,12 +152,24 @@ public sealed class DataPackStartup : IDisposable
         Assert.Same(vanilla, CodecRegistry.Biomes.Plains.Element);
     }
 
-    [Theory]
-    [InlineData("121", "121", true)]
-    [InlineData("[121, 0]", "[121, 0]", true)]
-    [InlineData("[120, 9]", "[120, 9]", false)]
-    [InlineData("[121, 1]", "[121, 1]", false)]
-    public void Format121OverlayRangesSelectCurrentMinor(string min, string max, bool applies)
+    [Fact]
+    public void Format121OverlayRangesSelectCurrentMinor()
+    {
+        (string Min, string Max, bool Applies)[] cases =
+        [
+            ("121", "121", true),
+            ("[121, 0]", "[121, 0]", true),
+            ("[120, 9]", "[120, 9]", false),
+            ("[121, 1]", "[121, 1]", false)
+        ];
+
+        FixtureCases.AssertAll(
+            cases,
+            row => $"min={row.Min}, max={row.Max}, applies={row.Applies}",
+            row => AssertFormat121OverlayRangesSelectCurrentMinor(row.Min, row.Max, row.Applies));
+    }
+
+    private static void AssertFormat121OverlayRangesSelectCurrentMinor(string min, string max, bool applies)
     {
         using var vanilla = Format121Data.Read("pack");
         var metadata = JsonNode.Parse(vanilla.RootElement.GetRawText())!.AsObject();

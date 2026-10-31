@@ -2,6 +2,7 @@ using Obsidian.API.Containers;
 using Obsidian.API.Crafting;
 using Obsidian.Registries;
 using System;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -13,33 +14,45 @@ namespace Obsidian.Tests;
 /// </summary>
 public sealed class RecipeApiCompatibility
 {
-    [Theory(DisplayName = "Crafting types keep the values plugins were compiled against")]
-    [InlineData(CraftingType.CraftingShaped, 0)]
-    [InlineData(CraftingType.CraftingShapeless, 1)]
-    [InlineData(CraftingType.CraftingSpecialArmordye, 2)]
-    [InlineData(CraftingType.CraftingSpecialBookcloning, 3)]
-    [InlineData(CraftingType.CraftingSpecialMapcloning, 4)]
-    [InlineData(CraftingType.CraftingSpecialMapextending, 5)]
-    [InlineData(CraftingType.CraftingSpecialFireworkRocket, 6)]
-    [InlineData(CraftingType.CraftingSpecialFireworkStar, 7)]
-    [InlineData(CraftingType.CraftingSpecialFireworkStarFade, 8)]
-    [InlineData(CraftingType.CraftingSpecialTippedarrow, 9)]
-    [InlineData(CraftingType.CraftingSpecialBannerduplicate, 10)]
-    [InlineData(CraftingType.CraftingSpecialShielddecoration, 11)]
-    [InlineData(CraftingType.CraftingSpecialShulkerboxcoloring, 12)]
-    [InlineData(CraftingType.CraftingSpecialSuspiciousstew, 13)]
-    [InlineData(CraftingType.CraftingSpecialRepairitem, 14)]
-    [InlineData(CraftingType.CraftingDecoratedPot, 15)]
-    [InlineData(CraftingType.Smelting, 16)]
-    [InlineData(CraftingType.Blasting, 17)]
-    [InlineData(CraftingType.Smoking, 18)]
-    [InlineData(CraftingType.CampfireCooking, 19)]
-    [InlineData(CraftingType.Stonecutting, 20)]
-    [InlineData(CraftingType.SmithingTransform, 21)]
-    [InlineData(CraftingType.SmithingTrim, 22)]
-    [InlineData(CraftingType.CraftingTransmute, 23)]
-    [InlineData(CraftingType.Brewing, 24)]
-    public void CraftingTypesKeepTheirValues(CraftingType type, int value)
+    [Fact(DisplayName = "Crafting types keep the values plugins were compiled against")]
+    public void CraftingTypesKeepTheirValues()
+    {
+        (CraftingType Type, int Value)[] cases =
+        [
+            (CraftingType.CraftingShaped, 0),
+            (CraftingType.CraftingShapeless, 1),
+            (CraftingType.CraftingSpecialArmordye, 2),
+            (CraftingType.CraftingSpecialBookcloning, 3),
+            (CraftingType.CraftingSpecialMapcloning, 4),
+            (CraftingType.CraftingSpecialMapextending, 5),
+            (CraftingType.CraftingSpecialFireworkRocket, 6),
+            (CraftingType.CraftingSpecialFireworkStar, 7),
+            (CraftingType.CraftingSpecialFireworkStarFade, 8),
+            (CraftingType.CraftingSpecialTippedarrow, 9),
+            (CraftingType.CraftingSpecialBannerduplicate, 10),
+            (CraftingType.CraftingSpecialShielddecoration, 11),
+            (CraftingType.CraftingSpecialShulkerboxcoloring, 12),
+            (CraftingType.CraftingSpecialSuspiciousstew, 13),
+            (CraftingType.CraftingSpecialRepairitem, 14),
+            (CraftingType.CraftingDecoratedPot, 15),
+            (CraftingType.Smelting, 16),
+            (CraftingType.Blasting, 17),
+            (CraftingType.Smoking, 18),
+            (CraftingType.CampfireCooking, 19),
+            (CraftingType.Stonecutting, 20),
+            (CraftingType.SmithingTransform, 21),
+            (CraftingType.SmithingTrim, 22),
+            (CraftingType.CraftingTransmute, 23),
+            (CraftingType.Brewing, 24)
+        ];
+
+        FixtureCases.AssertAll(
+            cases,
+            row => $"type={row.Type}, value={row.Value}",
+            row => AssertCraftingTypesKeepTheirValues(row.Type, row.Value));
+    }
+
+    private static void AssertCraftingTypesKeepTheirValues(CraftingType type, int value)
     {
         Assert.Equal(value, (int)type);
     }

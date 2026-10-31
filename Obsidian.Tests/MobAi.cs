@@ -41,7 +41,7 @@ public sealed class MobAi
             EntityType.Wolf
         ];
 
-        FixtureCases.AssertAll(cases, row => $"{row}", AssertMobSavesRoundTripIdentityPositionHealthAndNoAi);
+        FixtureCases.AssertAll(cases, row => $"type={row}", AssertMobSavesRoundTripIdentityPositionHealthAndNoAi);
     }
 
     private static void AssertMobSavesRoundTripIdentityPositionHealthAndNoAi(EntityType type)

@@ -54,11 +54,14 @@ public sealed class TradeHolderSets
             ("enchant_with_levels", "enchantment", "minecraft:sharpness", "minecraft:smite")
         ];
 
-        FixtureCases.AssertAll(cases, row => $"{row.Function}, {row.Registry}, {row.First}, {row.Second}",
+        FixtureCases.AssertAll(
+            cases,
+            row => $"function={row.Function}, registry={row.Registry}, first={row.First}, second={row.Second}",
             row => AssertRuntimeHolderSetsFollowTagReloads(row.Function, row.Registry, row.First, row.Second));
     }
 
-    private static void AssertRuntimeHolderSetsFollowTagReloads(string function, string registry, string first, string second)
+    private static void AssertRuntimeHolderSetsFollowTagReloads(
+        string function, string registry, string first, string second)
     {
         // Parse before tags load, as runtime data packs can do, and retain the modifier across both reloads.
         var modifier = LootTableJson.ReadModifier($$"""
