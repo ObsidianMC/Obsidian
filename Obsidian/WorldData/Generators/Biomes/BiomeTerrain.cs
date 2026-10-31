@@ -1,3 +1,4 @@
+using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Features;
@@ -15,7 +16,6 @@ internal sealed class BiomeTerrain
 {
     private readonly TerrainGenerator terrain;
     private readonly BiomeManager manager;
-    private readonly long zoomSeed;
     private readonly FeatureRegistry? features;
     private readonly int unlitBrightness;
     private readonly TerrainColumns columns;
@@ -40,7 +40,6 @@ internal sealed class BiomeTerrain
         // Point lookups must revisit the tree: memoizing a quart changes later exact ties' previous-leaf input.
         this.manager = new BiomeManager(this.Source, terrain.Seed, terrain.Settings.MinY,
             terrain.Settings.Height, cacheNoiseBiomes: false, clampToHeight: false);
-        this.zoomSeed = BiomeManager.ObfuscateSeed(terrain.Seed);
         this.columns = new TerrainColumns(terrain);
         this.MinY = dimensionType.GetProperty("min_y").GetInt32();
         this.Height = dimensionType.GetProperty("height").GetInt32();
@@ -218,14 +217,32 @@ internal sealed class BiomeTerrain
         };
     }
 
+    /// <summary>A block's biome over uncached climate searches, as carving's top materials read it.</summary>
     public string BiomeAt(int x, int y, int z) => this.manager.GetBiome(x, y, z).Name;
 
     /// <summary>
-    /// <see cref="BiomeAt"/> for the blocks of one chunk's terrain status, which asks for nearly every block's biome.
-    /// Use it on one thread.
+    /// The biomes one chunk's terrain status reads. Its surface reads the biomes stored in the chunk, which must be
+    /// filled (<see cref="ClimateSource.FillBiomes"/>), and in its neighbors, as vanilla's terrain reads them through
+    /// its region's biome manager. Carving reads <see cref="BiomeAt"/>. Use them on one thread.
     /// </summary>
-    public Func<int, int, int, string> ChunkBiomes(IChunk chunk) =>
-        new ChunkBiomeLookup(this.Source, this.zoomSeed, chunk).BiomeAt;
+    /// <param name="neighbors">
+    /// The loaded chunk at a chunk position, or <c>null</c>. A neighbor loaded at the biomes status or later is read
+    /// from its own storage, whatever filled it; the biomes of any other neighbor are filled as its biomes status would
+    /// fill them (<see cref="ClimateSource.Stored"/>).
+    /// </param>
+    public TerrainBiomes ChunkBiomes(IChunk chunk, Func<int, int, IChunk?>? neighbors = null)
+    {
+        var stored = new BiomeManager(
+            new SurfaceBiomeSource(this.Source, chunk, neighbors),
+            this.terrain.Seed,
+            chunk.MinY,
+            chunk.Height,
+            cacheNoiseBiomes: false,
+            readsNeighbors: true);
+        stored.FocusOn(chunk.X, chunk.Z);
+
+        return new TerrainBiomes(Surface: (x, y, z) => stored.GetBiome(x, y, z).Name, Carving: this.BiomeAt);
+    }
 
     public string[] CarversAt(int chunkX, int chunkZ)
     {
@@ -241,14 +258,20 @@ internal sealed class BiomeTerrain
         return carvers.EnumerateArray().Select(value => value.GetString()!).ToArray();
     }
 
-    public void Generate(IChunk chunk, ICollection<Vector>? fluidUpdates = null)
+    /// <param name="neighbors">
+    /// The loaded chunks whose stored biomes the surface reads (see <see cref="ChunkBiomes"/>).
+    /// </param>
+    public void Generate(
+        IChunk chunk,
+        ICollection<Vector>? fluidUpdates = null,
+        Func<int, int, IChunk?>? neighbors = null)
     {
         using var writes = (chunk as Chunk)?.BeginTerrainWrites();
         this.Source.FillBiomes(chunk);
         fluidUpdates ??= (chunk as Chunk)?.PostProcessing;
         this.terrain.Generate(
             chunk,
-            this.ChunkBiomes(chunk),
+            this.ChunkBiomes(chunk, neighbors),
             this.CarversAt,
             fluidUpdates,
             this.BeardifierFor(chunk.X, chunk.Z));
@@ -268,5 +291,51 @@ internal sealed class BiomeTerrain
         var starts = this.Structures.GetTerrainAdaptingStarts(chunkX, chunkZ);
 
         return Beardifier.ForStructuresInChunk(starts, chunkX, chunkZ);
+    }
+
+    /// <summary>
+    /// The biomes stored in a chunk and its neighbors, by quart, as a region reads them. A block's zoomed lookup
+    /// reaches one quart past the chunk, so only the eight neighbors are asked for.
+    /// </summary>
+    private sealed class SurfaceBiomeSource(ClimateSource source, IChunk chunk, Func<int, int, IChunk?>? neighbors)
+        : IBiomeSource
+    {
+        // The neighbor read last, as its loaded chunk or else its filled biomes: a column's blocks read one neighbor's
+        // quarts after another.
+        private bool hasNeighbor;
+        private int neighborX;
+        private int neighborZ;
+        private IChunk? loadedNeighbor;
+        private StoredBiomes? filledNeighbor;
+
+        /// <param name="quartY">A quart y within the chunk's build range.</param>
+        public BiomeCodec GetNoiseBiome(int quartX, int quartY, int quartZ)
+        {
+            var chunkX = quartX >> 2;
+            var chunkZ = quartZ >> 2;
+
+            if (chunkX == chunk.X && chunkZ == chunk.Z)
+                return chunk.GetBiome((quartX & 3) << 2, quartY << 2, (quartZ & 3) << 2);
+
+            if (!this.hasNeighbor || this.neighborX != chunkX || this.neighborZ != chunkZ)
+                this.MoveTo(chunkX, chunkZ);
+
+            if (this.loadedNeighbor is IChunk loaded)
+                return loaded.GetBiome((quartX & 3) << 2, quartY << 2, (quartZ & 3) << 2);
+
+            return this.filledNeighbor!.Get(quartX & 3, quartY - (chunk.MinY >> 2), quartZ & 3);
+        }
+
+        private void MoveTo(int chunkX, int chunkZ)
+        {
+            var loaded = neighbors?.Invoke(chunkX, chunkZ);
+            var hasBiomes = loaded is not null && loaded.ChunkStatus >= ChunkGenStage.biomes;
+
+            this.loadedNeighbor = hasBiomes ? loaded : null;
+            this.filledNeighbor = hasBiomes ? null : source.Stored(chunkX, chunkZ, chunk.MinY, chunk.Height);
+            this.neighborX = chunkX;
+            this.neighborZ = chunkZ;
+            this.hasNeighbor = true;
+        }
     }
 }

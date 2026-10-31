@@ -6,11 +6,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.security.MessageDigest;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.*;
 import java.util.zip.GZIPOutputStream;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderGetter;
+import net.minecraft.core.QuartPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -468,15 +470,25 @@ class WorldgenCaptures {
         int chunkX = entry.get("chunkX").getAsInt();
         int chunkZ = entry.get("chunkZ").getAsInt();
         var position = new ChunkPos(chunkX, chunkZ);
-        var chunk = new ProtoChunk(
-            position,
-            UpgradeData.EMPTY,
-            level,
-            PalettedContainerFactory.create(server.registryAccess()),
-            null);
+        // The chunk and its neighbors, whose stored biomes the surface reads.
+        var chunks = new HashMap<Long, ProtoChunk>();
+        for (int z = chunkZ - 1; z <= chunkZ + 1; z++) {
+            for (int x = chunkX - 1; x <= chunkX + 1; x++) {
+                var protoChunk = new ProtoChunk(
+                    new ChunkPos(x, z),
+                    UpgradeData.EMPTY,
+                    level,
+                    PalettedContainerFactory.create(server.registryAccess()),
+                    null);
+                chunks.put(ChunkPos.pack(x, z), protoChunk);
+            }
+        }
+        var chunk = chunks.get(ChunkPos.pack(chunkX, chunkZ));
+        fillBiomes(level, chunks, chunkX, chunkZ, 1);
+
         var biomeSource = generator.getBiomeSource();
         var resolver = biomeSource.createUncachedResolver(random);
-        var manager = new BiomeManager(resolver, BiomeManager.obfuscateSeed(entry.get("seed").getAsLong()));
+        var manager = storedBiomes(level, chunks);
         var fluidPicker = fluidPicker(settings);
         int minY = settings.noiseSettings().minY();
         int height = settings.noiseSettings().height();
@@ -510,7 +522,7 @@ class WorldgenCaptures {
             entry.add("base", blocks(chunk, buildMinY, buildHeight));
             entry.add("baseHeightmaps", heights(chunk));
             invokeStage(generator, "buildSurface", chunk, noiseChunk, random, manager,
-                biomeSource.possibleBiomes(), settings.materialRule().value());
+                storedBiomesAround(chunks, chunkX, chunkZ), settings.materialRule().value());
             entry.add("materials", blocks(chunk, buildMinY, buildHeight));
             var seed = entry.get("seed").getAsLong();
             entry.addProperty("carvingMask", carvingMask(seed, chunk, generator, resolver, volume));
@@ -565,28 +577,38 @@ class WorldgenCaptures {
         }
         entry.add("postProcessing", postProcessing);
 
-        // Biome selection belongs to the next Phase 5 step. These are captured inputs to material rules, not an
-        // alternative biome implementation: replay provides the same block biome lookup through an explicit hook.
-        var biomeNames = new LinkedHashMap<String, Integer>();
-        var biomeBytes = new ByteArrayOutputStream();
-        var biomeOutput = new DataOutputStream(biomeBytes);
+        // The block biomes material rules read: the surface's zoom over the stored biomes, and the zoom over uncached
+        // searches that carving's top materials read (as generateCarvers swaps in). The terrain replay supplies them
+        // through explicit hooks.
+        entry.add("materialBiomes", blockBiomes(manager, chunkX, chunkZ, buildMinY, buildHeight));
+        var carvingManager = manager.withDifferentSource(resolver);
+        entry.add("carvingBiomes", blockBiomes(carvingManager, chunkX, chunkZ, buildMinY, buildHeight));
+
+        entry.add("carverSources", carverSources(resolver, chunkX, chunkZ));
+    }
+
+    // A chunk's block biomes in z, x, y order, with one extra y at the top (surface building looks up the biome above
+    // the highest block).
+    static JsonObject blockBiomes(BiomeManager manager, int chunkX, int chunkZ, int minY, int height) throws Exception {
+        var names = new LinkedHashMap<String, Integer>();
+        var bytes = new ByteArrayOutputStream();
+        var output = new DataOutputStream(bytes);
         for (int z = 0; z < 16; z++) {
             for (int x = 0; x < 16; x++) {
-                for (int y = buildMinY; y <= buildMinY + buildHeight; y++) {
+                for (int y = minY; y <= minY + height; y++) {
                     var biome = manager.getBiome(chunkX * 16 + x, y, chunkZ * 16 + z);
                     var name = biome.unwrapKey().orElseThrow().identifier().toString();
-                    biomeOutput.writeInt(biomeNames.computeIfAbsent(name, key -> biomeNames.size()));
+                    output.writeInt(names.computeIfAbsent(name, key -> names.size()));
                 }
             }
         }
+
         var biomes = new JsonObject();
         var palette = new JsonArray();
-        biomeNames.keySet().forEach(palette::add);
+        names.keySet().forEach(palette::add);
         biomes.add("palette", palette);
-        biomes.addProperty("data", compressed(biomeBytes.toByteArray()));
-        entry.add("materialBiomes", biomes);
-
-        entry.add("carverSources", carverSources(resolver, chunkX, chunkZ));
+        biomes.addProperty("data", compressed(bytes.toByteArray()));
+        return biomes;
     }
 
     // Captures actual BIOMES status storage, independent of the later terrain/material stage.
@@ -1081,8 +1103,6 @@ class WorldgenCaptures {
         entry.addProperty("seaLevel", generator.getSeaLevel());
         var step = ChunkPyramid.GENERATION_PYRAMID.getStepTo(ChunkStatus.FEATURES);
         var chunks = new HashMap<Long, ProtoChunk>();
-        var resolver = source.createUncachedResolver(randomState);
-        var manager = new BiomeManager(resolver, BiomeManager.obfuscateSeed(level.getSeed()));
         StaticCache2D<ChunkAccess> cache = StaticCache2D.create(chunkX, chunkZ,
             step.accumulatedDependencies().getRadius(), (x, z) -> {
                 var chunk = new ProtoChunk(new ChunkPos(x, z), UpgradeData.EMPTY, level,
@@ -1092,10 +1112,13 @@ class WorldgenCaptures {
             });
         var center = chunks.get(ChunkPos.pack(chunkX, chunkZ));
         var region = region(level, cache, step, center);
+
+        // The 3 by 3 terrain chunks read the stored biomes of their neighbors too.
+        fillBiomes(level, chunks, chunkX, chunkZ, 2);
+        var manager = storedBiomes(level, chunks);
         for (int z = chunkZ - 1; z <= chunkZ + 1; z++) {
             for (int x = chunkX - 1; x <= chunkX + 1; x++) {
                 var chunk = chunks.get(ChunkPos.pack(x, z));
-                generator.createBiomes(randomState, Blender.empty(), level.structureManager(), chunk).join();
                 var settings = generator.generatorSettings().value();
                 var volume = new DensityVolume(16, settings.noiseSettings().height(), 16,
                     x * 16, settings.noiseSettings().minY(), z * 16);
@@ -1103,7 +1126,7 @@ class WorldgenCaptures {
                     fluidPicker(settings), Blender.empty(), volume)) {
                     invokeStage(generator, "doFill", noise, chunk);
                     invokeStage(generator, "buildSurface", chunk, noise, randomState, manager,
-                        source.possibleBiomes(), settings.materialRule().value());
+                        storedBiomesAround(chunks, x, z), settings.materialRule().value());
                     invokeStage(generator, "generateCarvers", chunk, Blender.empty(), noise,
                         randomState, manager, null, settings.materialRule().value());
                 }
@@ -1195,6 +1218,77 @@ class WorldgenCaptures {
                     + center.getPos() + ": " + differences + " differences: " + first);
             }
         }
+    }
+
+    // ---------------------------------------------------------------- stored biomes
+
+    // Gives the chunks within radius of a center their stored biomes, as the BIOMES status does before terrain, whose
+    // surface reads the biomes stored in the chunk and its neighbors.
+    static void fillBiomes(ServerLevel level, Map<Long, ProtoChunk> chunks, int centerX, int centerZ, int radius)
+        throws Exception {
+        for (int z = centerZ - radius; z <= centerZ + radius; z++) {
+            for (int x = centerX - radius; x <= centerX + radius; x++) {
+                fillBiomes(level, chunks.get(ChunkPos.pack(x, z)));
+            }
+        }
+    }
+
+    // Each chunk is filled on a new thread. The climate search starts from its thread's previous result, which decides
+    // exact ties, so a fresh thread fills a chunk the same way in every capture and in any order, as a worker thread
+    // would fill its first chunk.
+    static void fillBiomes(ServerLevel level, ProtoChunk chunk) throws Exception {
+        var generator = level.getChunkSource().getGenerator();
+        var randomState = level.getChunkSource().randomState();
+        var fill = ChunkGenerator.class.getDeclaredMethod(
+            "doCreateBiomes",
+            Blender.class,
+            RandomState.class,
+            ChunkAccess.class);
+        fill.setAccessible(true);
+
+        var failure = new AtomicReference<Throwable>();
+        var thread = new Thread(() -> {
+            try {
+                fill.invoke(generator, Blender.empty(), randomState, chunk);
+            } catch (Throwable exception) {
+                failure.set(exception);
+            }
+        }, "capture biomes");
+        thread.start();
+        thread.join();
+
+        if (failure.get() != null) {
+            throw new RuntimeException("Filling the biomes of " + chunk.getPos() + " failed", failure.get());
+        }
+
+        chunk.setPersistedStatus(ChunkStatus.BIOMES);
+    }
+
+    // The biome manager terrain's WorldGenRegion gives its surface: a zoom over the stored biomes of the chunk, and of
+    // its neighbors where a block's lookup crosses the chunk's border.
+    static BiomeManager storedBiomes(ServerLevel level, Map<Long, ProtoChunk> chunks) {
+        BiomeResolver stored = (x, y, z) -> {
+            var chunk = chunks.get(ChunkPos.pack(QuartPos.toSection(x), QuartPos.toSection(z)));
+            if (chunk == null || !chunk.getPersistedStatus().isOrAfter(ChunkStatus.BIOMES)) {
+                throw new IllegalStateException("No stored biomes at quart " + x + ", " + y + ", " + z);
+            }
+
+            return chunk.getNoiseBiome(x, y, z);
+        };
+
+        return new BiomeManager(stored, BiomeManager.obfuscateSeed(level.getSeed()));
+    }
+
+    // The biomes stored in a terrain chunk and its neighbors, which terrain gives its surface as the possible biomes.
+    static Set<Holder<Biome>> storedBiomesAround(Map<Long, ProtoChunk> chunks, int chunkX, int chunkZ) {
+        var biomes = new HashSet<Holder<Biome>>();
+        for (int z = chunkZ - 1; z <= chunkZ + 1; z++) {
+            for (int x = chunkX - 1; x <= chunkX + 1; x++) {
+                chunks.get(ChunkPos.pack(x, z)).collectBiomesInPalette(biomes);
+            }
+        }
+
+        return biomes;
     }
 
     // ---------------------------------------------------------------- structures
@@ -1340,12 +1434,9 @@ class WorldgenCaptures {
         net.minecraft.world.level.levelgen.structure.StructureStart start) throws Exception {
         var generator = (NoiseBasedChunkGenerator) level.getChunkSource().getGenerator();
         var randomState = level.getChunkSource().randomState();
-        var source = generator.getBiomeSource();
         var settings = generator.generatorSettings().value();
         var registry = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
         var step = ChunkPyramid.GENERATION_PYRAMID.getStepTo(ChunkStatus.FEATURES);
-        var manager = new BiomeManager(source.createUncachedResolver(randomState),
-            BiomeManager.obfuscateSeed(level.getSeed()));
         var writableArea = ChunkGenerator.class.getDeclaredMethod("getWritableArea", ChunkAccess.class);
         writableArea.setAccessible(true);
         var box = start.getBoundingBox();
@@ -1412,10 +1503,12 @@ class WorldgenCaptures {
             var region = region(level, cache, step, center);
             var structureManager = level.structureManager().forWorldGenRegion(region);
 
+            // The 3 by 3 terrain chunks read the stored biomes of their neighbors too.
+            fillBiomes(level, chunks, chunkX, chunkZ, 2);
+            var manager = storedBiomes(level, chunks);
             for (int z = chunkZ - 1; z <= chunkZ + 1; z++) {
                 for (int x = chunkX - 1; x <= chunkX + 1; x++) {
                     var chunk = chunks.get(ChunkPos.pack(x, z));
-                    generator.createBiomes(randomState, Blender.empty(), level.structureManager(), chunk).join();
                     var volume = new DensityVolume(16, settings.noiseSettings().height(), 16,
                         x * 16, settings.noiseSettings().minY(), z * 16);
                     var beardifier = Beardifier.forStructuresInChunk(level.structureManager(), new ChunkPos(x, z));
@@ -1423,7 +1516,7 @@ class WorldgenCaptures {
                         fluidPicker(settings), Blender.empty(), volume)) {
                         invokeStage(generator, "doFill", noise, chunk);
                         invokeStage(generator, "buildSurface", chunk, noise, randomState, manager,
-                            source.possibleBiomes(), settings.materialRule().value());
+                            storedBiomesAround(chunks, x, z), settings.materialRule().value());
                         invokeStage(generator, "generateCarvers", chunk, Blender.empty(), noise,
                             randomState, manager, null, settings.materialRule().value());
                     }

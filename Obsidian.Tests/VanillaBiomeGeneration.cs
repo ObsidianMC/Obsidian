@@ -1,4 +1,6 @@
 using Obsidian.API;
+using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.API.Registries;
 using Obsidian.Tests.Utilities;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators.Biomes;
@@ -38,6 +40,43 @@ public sealed class VanillaBiomeGeneration
             .SelectMany(entry => TerrainStages(entry, pipelines));
 
         FixtureCases.AssertAll(stages, stage => stage.Name, stage => stage.Check());
+    }
+
+    // A surface reads a loaded neighbor's own stored biomes, whatever stored them (an imported world's tie, an edit),
+    // as vanilla's region does, rather than filling the neighbor's biomes again.
+    [Fact]
+    public void SurfacesReadLoadedNeighborBiomes()
+    {
+        var pipeline = new WorldgenPipelines().Biomes("minecraft:overworld", 12345);
+        var chunk = new Chunk(0, 0, -64, 384);
+        var neighbor = new Chunk(-1, 0, -64, 384);
+        Assert.True(CodecRegistry.TryGetBiome("minecraft:mushroom_fields", out var mushroomFields));
+
+        pipeline.Source.FillBiomes(chunk);
+        pipeline.Source.FillBiomes(neighbor);
+        SetAllBiomes(neighbor, mushroomFields!);
+
+        var loaded = pipeline.ChunkBiomes(chunk, (x, z) => (x, z) == (-1, 0) ? neighbor : null).Surface;
+        var filled = pipeline.ChunkBiomes(chunk).Surface;
+
+        // The lookups of the chunk's western column pick quarts of the neighbor about half the time.
+        var western = Enumerable.Range(0, 16).Select(z => (X: 0, Y: 64, Z: z)).ToArray();
+        Assert.Contains(western, block => loaded(block.X, block.Y, block.Z) == "minecraft:mushroom_fields");
+        Assert.DoesNotContain(western, block => filled(block.X, block.Y, block.Z) == "minecraft:mushroom_fields");
+    }
+
+    private static void SetAllBiomes(Chunk chunk, BiomeCodec biome)
+    {
+        for (var y = chunk.MinY; y < chunk.MinY + chunk.Height; y += 4)
+        {
+            for (var z = 0; z < 16; z += 4)
+            {
+                for (var x = 0; x < 16; x += 4)
+                {
+                    chunk.SetBiome(x, y, z, biome);
+                }
+            }
+        }
     }
 
     private sealed record Stage(string Name, Action Check);
@@ -89,8 +128,8 @@ public sealed class VanillaBiomeGeneration
         Assert.Equal(expected.Length, index);
     }
 
-    // Spawning reads stored sections, independently of materialBiomes, whose uncached point climate path can round
-    // differently at cave borders. The positions include chunk and vertical storage boundaries.
+    // Spawning reads stored sections, like materialBiomes, through the same zoom. The positions include chunk and
+    // vertical storage boundaries.
     private static void AssertSpawnBiomes(JsonElement entry, BiomeTerrain pipeline)
     {
         var chunk = CreateChunk(entry);
@@ -139,6 +178,7 @@ public sealed class VanillaBiomeGeneration
 
         pipeline.Source.FillBiomes(chunk);
 
+        var biomeAt = pipeline.ChunkBiomes(chunk).Surface;
         var index = 0;
 
         for (var z = 0; z < 16; z++)
@@ -147,7 +187,7 @@ public sealed class VanillaBiomeGeneration
             {
                 for (var y = chunk.MinY; y <= chunk.MinY + chunk.Height; y++)
                 {
-                    var actual = pipeline.BiomeAt(chunk.X * 16 + x, y, chunk.Z * 16 + z);
+                    var actual = biomeAt(chunk.X * 16 + x, y, chunk.Z * 16 + z);
                     Assert.True(palette[expected[index]] == actual,
                         $"Material biome at ({x}, {y}, {z}): expected {palette[expected[index]]}, actual {actual}");
                     index++;
