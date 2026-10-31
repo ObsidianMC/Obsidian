@@ -55,7 +55,7 @@ import net.minecraft.world.level.levelgen.synth.NormalNoise;
  * thread. Only the fixture's cases for this world are recaptured, and the fixture json is rewritten in place.
  *
  * <p>Phase 5 of docs/porting-26.3-plan.md adds sections step by step. Terrain, materials, single features,
- * biome sources, biome decoration and spawn attributes are captured here. Structures and lighting follow later.
+ * biome sources, biome decoration, spawn attributes and structures are captured here. Lighting follows later.
  */
 class WorldgenCaptures {
     // Which world (structures on or off) each section's cases are captured in.
@@ -74,6 +74,7 @@ class WorldgenCaptures {
         SECTIONS.put("biome_search", false);
         SECTIONS.put("biome_points", false);
         SECTIONS.put("spawn_attributes", false);
+        SECTIONS.put("structures", true);
     }
 
     static MinecraftServer server;
@@ -292,6 +293,7 @@ class WorldgenCaptures {
                     case "biome_search" -> biomeSearch(entry);
                     case "biome_points" -> biomePoint(entry);
                     case "spawn_attributes" -> spawnAttributes(entry);
+                    case "structures" -> structures(entry);
                     default -> throw new IllegalArgumentException(section);
                 }
                 return null;
@@ -1190,6 +1192,405 @@ class WorldgenCaptures {
                     + center.getPos() + ": " + differences + " differences: " + first);
             }
         }
+    }
+
+    // ---------------------------------------------------------------- structures
+
+    // Obsidian's class for each structure piece type, by registry id: both sides' piece lines start with it.
+    static final Map<String, String> PIECE_CLASSES = new HashMap<>();
+    static {
+        String[][] pieces = {
+            {"jigsaw", "PoolElementStructurePiece"},
+            {"mscorridor", "MineshaftCorridor"},
+            {"mscrossing", "MineshaftCrossing"},
+            {"msroom", "MineshaftRoom"},
+            {"msstairs", "MineshaftStairs"},
+            {"shcc", "ChestCorridor"},
+            {"shfc", "FillerCorridor"},
+            {"sh5c", "FiveCrossing"},
+            {"shlt", "LeftTurn"},
+            {"shli", "Library"},
+            {"shpr", "PortalRoom"},
+            {"shph", "PrisonHall"},
+            {"shrt", "RightTurn"},
+            {"shrc", "RoomCrossing"},
+            {"shsd", "StairsDown"},
+            {"shstart", "StartPiece"},
+            {"shs", "Straight"},
+            {"shssd", "StraightStairsDown"},
+            {"nebcr", "BridgeCrossing"},
+            {"nebef", "BridgeEndFiller"},
+            {"nebs", "BridgeStraight"},
+            {"neccs", "CastleCorridorStairsPiece"},
+            {"nectb", "CastleCorridorTBalconyPiece"},
+            {"nece", "CastleEntrance"},
+            {"nescsc", "CastleSmallCorridorCrossingPiece"},
+            {"nesclt", "CastleSmallCorridorLeftTurnPiece"},
+            {"nesc", "CastleSmallCorridorPiece"},
+            {"nescrt", "CastleSmallCorridorRightTurnPiece"},
+            {"necsr", "CastleStalkRoom"},
+            {"nemt", "MonsterThrone"},
+            {"nerc", "RoomCrossing"},
+            {"nesr", "StairsRoom"},
+            {"nestart", "StartPiece"},
+            {"tejp", "JungleTemplePiece"},
+            {"tesh", "SwampHutPiece"},
+            {"tedp", "DesertPyramidPiece"},
+            {"omb", "MonumentBuilding"},
+            {"omcr", "OceanMonumentCoreRoom"},
+            {"omdxr", "OceanMonumentDoubleXRoom"},
+            {"omdxyr", "OceanMonumentDoubleXYRoom"},
+            {"omdyr", "OceanMonumentDoubleYRoom"},
+            {"omdyzr", "OceanMonumentDoubleYZRoom"},
+            {"omdzr", "OceanMonumentDoubleZRoom"},
+            {"omentry", "OceanMonumentEntryRoom"},
+            {"ompenthouse", "OceanMonumentPenthouse"},
+            {"omsimple", "OceanMonumentSimpleRoom"},
+            {"omsimplet", "OceanMonumentSimpleTopRoom"},
+            {"omwr", "OceanMonumentWingRoom"},
+            {"btp", "BuriedTreasurePiece"},
+            {"orp", "OceanRuinPiece"},
+            {"iglu", "IglooPiece"},
+            {"ecp", "EndCityPiece"},
+            {"wmp", "WoodlandMansionPiece"},
+            {"shipwreck", "ShipwreckPiece"},
+            {"nefos", "NetherFossilPiece"},
+            {"rupo", "RuinedPortalPiece"},
+        };
+        for (var piece : pieces) {
+            PIECE_CLASSES.put(piece[0], piece[1]);
+        }
+    }
+
+    static void structures(JsonObject entry) {
+        try {
+            structuresChecked(entry);
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    // A structure's start, found near the case's search origin unless the case names its chunk: its piece list,
+    // then, for cases with "blocks", the blocks its pieces hold once structures alone are placed in each chunk.
+    static void structuresChecked(JsonObject entry) throws Exception {
+        System.out.println("Structure " + entry.get("name"));
+        var level = level(entry.get("dimension").getAsString());
+        var registry = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+        var key = ResourceKey.create(Registries.STRUCTURE, Identifier.parse(entry.get("structure").getAsString()));
+        var holder = registry.getOrThrow(key);
+        if (!entry.has("chunkX")) {
+            var origin = new BlockPos(entry.get("searchX").getAsInt(), 64, entry.get("searchZ").getAsInt());
+            var found = level.getChunkSource().getGenerator().findNearestMapStructure(
+                level,
+                net.minecraft.core.HolderSet.direct(holder),
+                origin,
+                entry.has("searchRadius") ? entry.get("searchRadius").getAsInt() : 100,
+                false);
+            if (found == null) {
+                throw new IllegalStateException("No " + key + " near " + origin);
+            }
+            entry.addProperty("chunkX", found.getFirst().getX() >> 4);
+            entry.addProperty("chunkZ", found.getFirst().getZ() >> 4);
+        }
+
+        int chunkX = entry.get("chunkX").getAsInt();
+        int chunkZ = entry.get("chunkZ").getAsInt();
+        var start = level.getChunk(chunkX, chunkZ, ChunkStatus.STRUCTURE_STARTS, true)
+            .getStartForStructure(holder.value());
+        if (start == null || !start.isValid()) {
+            throw new IllegalStateException("No " + key + " starts in chunk " + chunkX + ", " + chunkZ);
+        }
+
+        var lines = new ArrayList<String>();
+        for (var piece : start.getPieces()) {
+            lines.add(describePiece(piece));
+        }
+        entry.addProperty("pieceCount", lines.size());
+        entry.addProperty("pieces", hexHash(String.join("\n", lines).getBytes(StandardCharsets.UTF_8)));
+
+        if (entry.has("blocks")) {
+            entry.add("blocks", structureBlocks(entry, level, start));
+            entry.add("structureOrder", structureOrder(registry));
+        }
+    }
+
+    // Every structure, by decoration step, in the registry order that seeds its placement.
+    static JsonArray structureOrder(
+        net.minecraft.core.Registry<net.minecraft.world.level.levelgen.structure.Structure> registry) {
+        var steps = new JsonArray();
+        for (var step : GenerationStep.Decoration.values()) {
+            var ids = new JsonArray();
+            registry.stream()
+                .filter(structure -> structure.step() == step)
+                .forEach(structure -> ids.add(registry.getKey(structure).toString()));
+            steps.add(ids);
+        }
+        return steps;
+    }
+
+    // The states inside the recorded bounds, chunk by chunk over the sampled chunks, then piece by piece in y, z, x
+    // order. Each chunk is fresh terrain (with its beardifier) whose structures alone are placed, step by step with
+    // decoration's seeds, as applyBiomeDecoration places them before features.
+    static JsonObject structureBlocks(
+        JsonObject entry,
+        ServerLevel level,
+        net.minecraft.world.level.levelgen.structure.StructureStart start) throws Exception {
+        var generator = (NoiseBasedChunkGenerator) level.getChunkSource().getGenerator();
+        var randomState = level.getChunkSource().randomState();
+        var source = generator.getBiomeSource();
+        var settings = generator.generatorSettings().value();
+        var registry = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+        var step = ChunkPyramid.GENERATION_PYRAMID.getStepTo(ChunkStatus.FEATURES);
+        var manager = new BiomeManager(source.createUncachedResolver(randomState),
+            BiomeManager.obfuscateSeed(level.getSeed()));
+        var writableArea = ChunkGenerator.class.getDeclaredMethod("getWritableArea", ChunkAccess.class);
+        writableArea.setAccessible(true);
+        var box = start.getBoundingBox();
+        var pieceBoxes = new ArrayList<net.minecraft.world.level.levelgen.structure.BoundingBox>();
+        for (var piece : start.getPieces()) {
+            var generated = piece.getBoundingBox();
+            pieceBoxes.add(new net.minecraft.world.level.levelgen.structure.BoundingBox(
+                generated.minX(),
+                generated.minY(),
+                generated.minZ(),
+                generated.maxX(),
+                generated.maxY(),
+                generated.maxZ()));
+        }
+        var states = new LinkedHashMap<String, Integer>();
+        var bytes = new ByteArrayOutputStream();
+        var output = new DataOutputStream(bytes);
+        int chunkCount = 0;
+
+        // The chunks the pieces reach nearest the start chunk (by Chebyshev distance, then x, then z), at most
+        // "maxChunks" (9 by default), so that large structures keep a compact sample.
+        var startChunk = start.getChunkPos();
+        var reached = new ArrayList<ChunkPos>();
+        for (int chunkX = box.minX() >> 4; chunkX <= box.maxX() >> 4; chunkX++) {
+            for (int chunkZ = box.minZ() >> 4; chunkZ <= box.maxZ() >> 4; chunkZ++) {
+                var chunkBox = new net.minecraft.world.level.levelgen.structure.BoundingBox(
+                    chunkX << 4,
+                    level.getMinY(),
+                    chunkZ << 4,
+                    (chunkX << 4) + 15,
+                    level.getMaxY(),
+                    (chunkZ << 4) + 15);
+                if (pieceBoxes.stream().anyMatch(pieceBox -> pieceBox.intersects(chunkBox))) {
+                    reached.add(new ChunkPos(chunkX, chunkZ));
+                }
+            }
+        }
+        Comparator<ChunkPos> distance = Comparator.comparingInt(chunk -> Math.max(
+            Math.abs(chunk.x() - startChunk.x()),
+            Math.abs(chunk.z() - startChunk.z())));
+        reached.sort(distance.thenComparingInt(ChunkPos::x).thenComparingInt(ChunkPos::z));
+        int maxChunks = entry.has("maxChunks") ? entry.get("maxChunks").getAsInt() : 9;
+        var sampled = reached.subList(0, Math.min(maxChunks, reached.size()));
+        var placed = new ArrayList<ProtoChunk>();
+
+        // One at a time in chunkList order, which the replay follows: the first chunk a shipwreck reaches picks its
+        // height.
+        for (var sampledChunk : sampled) {
+            int chunkX = sampledChunk.x();
+            int chunkZ = sampledChunk.z();
+            var chunks = new HashMap<Long, ProtoChunk>();
+            // Each chunk keeps the world's starts and references, which placing reads through the region.
+            StaticCache2D<ChunkAccess> cache = StaticCache2D.create(chunkX, chunkZ,
+                step.accumulatedDependencies().getRadius(), (x, z) -> {
+                    var chunk = new ProtoChunk(new ChunkPos(x, z), UpgradeData.EMPTY, level,
+                        PalettedContainerFactory.create(server.registryAccess()), null);
+                    var world = level.getChunk(x, z, ChunkStatus.STRUCTURE_REFERENCES, true);
+                    chunk.setAllStarts(world.getAllStarts());
+                    chunk.setAllReferences(world.getAllReferences());
+                    chunks.put(ChunkPos.pack(x, z), chunk);
+                    return chunk;
+                });
+            var center = chunks.get(ChunkPos.pack(chunkX, chunkZ));
+            var region = region(level, cache, step, center);
+            var structureManager = level.structureManager().forWorldGenRegion(region);
+
+            for (int z = chunkZ - 1; z <= chunkZ + 1; z++) {
+                for (int x = chunkX - 1; x <= chunkX + 1; x++) {
+                    var chunk = chunks.get(ChunkPos.pack(x, z));
+                    generator.createBiomes(randomState, Blender.empty(), level.structureManager(), chunk).join();
+                    var volume = new DensityVolume(16, settings.noiseSettings().height(), 16,
+                        x * 16, settings.noiseSettings().minY(), z * 16);
+                    var beardifier = Beardifier.forStructuresInChunk(level.structureManager(), new ChunkPos(x, z));
+                    try (var noise = new NoiseChunk(randomState, beardifier, settings,
+                        fluidPicker(settings), Blender.empty(), volume)) {
+                        invokeStage(generator, "doFill", noise, chunk);
+                        invokeStage(generator, "buildSurface", chunk, noise, randomState, manager,
+                            source.possibleBiomes(), settings.materialRule().value());
+                        invokeStage(generator, "generateCarvers", chunk, Blender.empty(), noise,
+                            randomState, manager, null, settings.materialRule().value());
+                    }
+                    chunk.setPersistedStatus(ChunkStatus.TERRAIN);
+                    Heightmap.primeHeightmaps(chunk, ChunkStatus.FEATURES.heightmapsAfter());
+                }
+            }
+
+            var centerPos = center.getPos();
+            var area = (net.minecraft.world.level.levelgen.structure.BoundingBox) writableArea.invoke(null, center);
+            var random = new WorldgenRandom(new XoroshiroRandomSource(0L));
+            long decorationSeed = random.setDecorationSeed(level.getSeed(), centerPos.getMinBlockX(),
+                centerPos.getMinBlockZ());
+            for (var decorationStep : GenerationStep.Decoration.values()) {
+                int index = 0;
+                var stepStructures = registry.stream()
+                    .filter(value -> value.step() == decorationStep)
+                    .toList();
+                for (var structure : stepStructures) {
+                    random.setFeatureSeed(decorationSeed, index, decorationStep.ordinal());
+                    for (var reaching : structureManager.startsForStructure(chunkX, chunkZ, structure)) {
+                        reaching.placeInChunk(region, structureManager, generator, random, area, centerPos);
+                    }
+                    index++;
+                }
+            }
+
+            placed.add(center);
+        }
+
+        // Each piece's generated box joined with where placing moved it, so moved pieces are sampled where they sit.
+        var bounds = new ArrayList<net.minecraft.world.level.levelgen.structure.BoundingBox>();
+        var boundsJson = new JsonArray();
+        for (int index = 0; index < pieceBoxes.size(); index++) {
+            var placedBox = start.getPieces().get(index).getBoundingBox();
+            var joined = net.minecraft.world.level.levelgen.structure.BoundingBox.encapsulating(
+                pieceBoxes.get(index),
+                placedBox);
+            bounds.add(joined);
+            var values = new JsonArray();
+            values.add(joined.minX());
+            values.add(joined.minY());
+            values.add(joined.minZ());
+            values.add(joined.maxX());
+            values.add(joined.maxY());
+            values.add(joined.maxZ());
+            boundsJson.add(values);
+        }
+
+        var chunkList = new JsonArray();
+        for (var center : placed) {
+            var centerPos = center.getPos();
+            var coordinates = new JsonArray();
+            coordinates.add(centerPos.x());
+            coordinates.add(centerPos.z());
+            chunkList.add(coordinates);
+            chunkCount++;
+            for (var pieceBox : bounds) {
+                int minY = Math.max(pieceBox.minY(), level.getMinY());
+                int maxY = Math.min(pieceBox.maxY(), level.getMaxY());
+                int minX = Math.max(pieceBox.minX(), centerPos.getMinBlockX());
+                int maxX = Math.min(pieceBox.maxX(), centerPos.getMaxBlockX());
+                int minZ = Math.max(pieceBox.minZ(), centerPos.getMinBlockZ());
+                int maxZ = Math.min(pieceBox.maxZ(), centerPos.getMaxBlockZ());
+                for (int y = minY; y <= maxY; y++) {
+                    for (int z = minZ; z <= maxZ; z++) {
+                        for (int x = minX; x <= maxX; x++) {
+                            var name = stateName(center.getBlockState(new BlockPos(x, y, z)));
+                            output.writeInt(states.computeIfAbsent(name, value -> states.size()));
+                        }
+                    }
+                }
+            }
+        }
+
+        var result = new JsonObject();
+        var palette = new JsonArray();
+        states.keySet().forEach(palette::add);
+        result.addProperty("chunks", chunkCount);
+        result.add("chunkList", chunkList);
+        result.add("bounds", boundsJson);
+        result.add("palette", palette);
+        result.addProperty("data", compressed(bytes.toByteArray()));
+        var canonical = new ByteArrayOutputStream();
+        canonical.write(palette.toString().getBytes(StandardCharsets.UTF_8));
+        canonical.write(bytes.toByteArray());
+        result.addProperty("hash", hexHash(canonical.toByteArray()));
+        return result;
+    }
+
+    // One line per piece, as Obsidian's VanillaStructurePieces test describes its own pieces.
+    static String describePiece(net.minecraft.world.level.levelgen.structure.StructurePiece piece) throws Exception {
+        var type = BuiltInRegistries.STRUCTURE_PIECE.getKey(piece.getType()).getPath();
+        var className = PIECE_CLASSES.get(type);
+        if (className == null) {
+            throw new IllegalStateException("Add Obsidian's class for structure piece type " + type);
+        }
+
+        var parts = new ArrayList<String>(List.of(className, "box " + box(piece.getBoundingBox())));
+        if (piece instanceof net.minecraft.world.level.levelgen.structure.PoolElementStructurePiece pool) {
+            parts.add(poolElement(pool.getElement()));
+            parts.add(pool.getElement().getProjection().name().equals("RIGID") ? "rigid" : "terrain_matching");
+            parts.add("pos " + blockPosition(pool.getPosition()));
+            parts.add(pool.getRotation().name());
+            parts.add("ground " + pool.getGroundLevelDelta());
+            var junctions = new ArrayList<String>();
+            for (var junction : pool.getJunctions()) {
+                var rigid = junction.getDestProjection().name().equals("RIGID") ? 1 : 0;
+                junctions.add(junction.getSourceX() + "," + junction.getSourceGroundY() + ","
+                    + junction.getSourceZ() + "," + junction.getDeltaY() + "," + rigid);
+            }
+            parts.add("junctions " + String.join(";", junctions));
+        } else if (piece instanceof net.minecraft.world.level.levelgen.structure.TemplateStructurePiece template) {
+            var owner = net.minecraft.world.level.levelgen.structure.TemplateStructurePiece.class;
+            parts.add((String) declaredField(owner, "templateName").get(template));
+            parts.add("pos " + blockPosition(template.templatePosition()));
+            var settings = template.placeSettings();
+            parts.add(settings.getRotation().name());
+            parts.add(settings.getMirror().name());
+            parts.add("pivot " + blockPosition(settings.getRotationPivot()));
+        } else {
+            var orientation = piece.getOrientation();
+            parts.add(orientation == null ? "none" : orientation.getSerializedName());
+            parts.add("depth " + piece.getGenDepth());
+        }
+
+        return String.join(" | ", parts);
+    }
+
+    static String poolElement(net.minecraft.world.level.levelgen.structure.pools.StructurePoolElement element)
+        throws Exception {
+        var single = net.minecraft.world.level.levelgen.structure.pools.SinglePoolElement.class;
+        if (single.isInstance(element)) {
+            var template = (com.mojang.datafixers.util.Either<?, ?>) declaredField(single, "template").get(element);
+            var location = template.left().orElseThrow();
+            var legacy = element instanceof net.minecraft.world.level.levelgen.structure.pools.LegacySinglePoolElement;
+            return (legacy ? "legacy:" : "single:") + location;
+        }
+
+        var list = net.minecraft.world.level.levelgen.structure.pools.ListPoolElement.class;
+        if (list.isInstance(element)) {
+            var parts = new ArrayList<String>();
+            for (var child : (List<?>) declaredField(list, "elements").get(element)) {
+                var childElement = (net.minecraft.world.level.levelgen.structure.pools.StructurePoolElement) child;
+                parts.add(poolElement(childElement));
+            }
+            return "list:[" + String.join(",", parts) + "]";
+        }
+
+        var feature = net.minecraft.world.level.levelgen.structure.pools.FeaturePoolElement.class;
+        if (feature.isInstance(element)) {
+            return "feature:" + ((Holder<?>) declaredField(feature, "feature").get(element)).getRegisteredName();
+        }
+
+        return "empty";
+    }
+
+    static Field declaredField(Class<?> owner, String name) throws NoSuchFieldException {
+        var field = owner.getDeclaredField(name);
+        field.setAccessible(true);
+        return field;
+    }
+
+    static String box(net.minecraft.world.level.levelgen.structure.BoundingBox box) {
+        return box.minX() + "," + box.minY() + "," + box.minZ() + ","
+            + box.maxX() + "," + box.maxY() + "," + box.maxZ();
+    }
+
+    static String blockPosition(BlockPos position) {
+        return position.getX() + "," + position.getY() + "," + position.getZ();
     }
 
     // ---------------------------------------------------------------- features

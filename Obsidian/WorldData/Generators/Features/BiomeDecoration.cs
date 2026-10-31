@@ -5,7 +5,7 @@ namespace Obsidian.WorldData.Generators.Features;
 
 /// <summary>
 /// The 26.3 features status, beside the live generator. The caller supplies terrain-status chunks and keeps
-/// their writes when decorating adjacent chunks. Structures will join each step before its placed features.
+/// their writes when decorating adjacent chunks. Structures place each step before its placed features.
 /// </summary>
 internal sealed class BiomeDecoration
 {
@@ -94,8 +94,8 @@ internal sealed class BiomeDecoration
         var random = new WorldgenRandom(new XoroshiroRandomSource(0L));
         var seed = random.SetDecorationSeed(region.Seed, origin.X, origin.Z);
 
-        // Phase 5 step 6: structure pieces run here, before features, with their own per-step registry indices.
-        // Feature seeds remain independent of the number of structures (including when there are no pieces).
+        // Structure pieces run here, before features, with their own per-step registry indices. Feature seeds
+        // remain independent of the number of structures (including when there are no pieces).
         for (var step = 0; step < Math.Max(VanillaStepCount, this.Steps.Count); step++)
         {
             placeStructures?.Invoke(step, seed, random);

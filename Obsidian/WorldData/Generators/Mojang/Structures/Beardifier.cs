@@ -164,6 +164,73 @@ internal sealed class Beardifier
         return density;
     }
 
+    /// <summary>
+    /// The density 26.3 adds at a block: <see cref="Compute"/>'s shape in vanilla 26.3's single precision.
+    /// </summary>
+    public float Sample(int x, int y, int z)
+    {
+        if (this.affectedBox is null || !this.affectedBox.Value.IsInside(x, y, z))
+            return 0.0f;
+
+        var density = 0.0f;
+
+        foreach (var piece in this.pieces)
+        {
+            var box = piece.Box;
+            var distanceX = Math.Max(0, Math.Max(box.MinX - x, x - box.MaxX));
+            var distanceZ = Math.Max(0, Math.Max(box.MinZ - z, z - box.MaxZ));
+            var groundY = box.MinY + piece.GroundLevelDelta;
+            var aboveGround = y - groundY;
+            var distanceY = piece.Adjustment switch
+            {
+                TerrainAdjustment.Bury or TerrainAdjustment.BeardThin => aboveGround,
+                TerrainAdjustment.BeardBox => Math.Max(0, Math.Max(groundY - y, y - box.MaxY)),
+                TerrainAdjustment.Encapsulate => Math.Max(0, Math.Max(box.MinY - y, y - box.MaxY)),
+                _ => 0
+            };
+
+            density += piece.Adjustment switch
+            {
+                TerrainAdjustment.Bury => FloatBury(distanceX, distanceY / 2.0f, distanceZ),
+                TerrainAdjustment.BeardThin or TerrainAdjustment.BeardBox =>
+                    FloatBeard(distanceX, distanceY, distanceZ, aboveGround) * 0.8f,
+                TerrainAdjustment.Encapsulate =>
+                    FloatBury(distanceX / 2.0f, distanceY / 2.0f, distanceZ / 2.0f) * 0.8f,
+                _ => 0.0f
+            };
+        }
+
+        foreach (var junction in this.junctions)
+        {
+            var dy = y - junction.SourceGroundY;
+            density += FloatBeard(x - junction.SourceX, dy, z - junction.SourceZ, dy) * 0.4f;
+        }
+
+        return density;
+    }
+
+    // 26.3's getBuryContribution, in float.
+    private static float FloatBury(float x, float y, float z)
+    {
+        var lengthSquared = x * x + y * y + z * z;
+        return lengthSquared >= 36.0f ? 0.0f : 1.0f - MathF.Sqrt(lengthSquared) / 6.0f;
+    }
+
+    // 26.3's getBeardContribution: float around the double fastInvSqrt.
+    private static float FloatBeard(int x, int y, int z, float aboveGround)
+    {
+        var kernelX = x + KernelRadius;
+        var kernelY = y + KernelRadius;
+        var kernelZ = z + KernelRadius;
+        if (!IsInKernelRange(kernelX) || !IsInKernelRange(kernelY) || !IsInKernelRange(kernelZ))
+            return 0.0f;
+
+        var dy = aboveGround + 0.5f;
+        var lengthSquared = (float)x * x + dy * dy + (float)z * z;
+        var value = -dy * (float)FastInvSqrt(lengthSquared / 2.0f) / 2.0f;
+        return value * kernel[kernelZ * KernelSize * KernelSize + kernelX * KernelSize + kernelY];
+    }
+
     private static double BuryContribution(double x, double y, double z)
     {
         var length = Math.Sqrt(x * x + y * y + z * z);

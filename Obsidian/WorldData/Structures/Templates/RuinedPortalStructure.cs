@@ -47,7 +47,7 @@ public sealed class RuinedPortalStructure : Structure
         {
             if (setup.CanBeCold)
             {
-                var biome = context.BiomeSource.GetNoiseBiome(context.Sampler, position.X >> 2, position.Y >> 2, position.Z >> 2);
+                var biome = context.BiomeSource.GetNoiseBiome(position.X >> 2, position.Y >> 2, position.Z >> 2);
                 properties.Cold = BiomeTemperature.ColdEnoughToSnow(biome, position.X, position.Y, position.Z, context.Terrain.SeaLevel);
             }
 

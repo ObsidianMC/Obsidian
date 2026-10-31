@@ -75,7 +75,7 @@ public abstract class Structure
     private static bool IsValidBiome(StructureStub stub, StructureGenerationContext context)
     {
         var position = stub.Position;
-        var biome = context.BiomeSource.GetNoiseBiome(context.Sampler, position.X >> 2, position.Y >> 2, position.Z >> 2);
+        var biome = context.BiomeSource.GetNoiseBiome(position.X >> 2, position.Y >> 2, position.Z >> 2);
         return context.ValidBiome(biome);
     }
 
@@ -166,9 +166,7 @@ internal sealed class StructureGenerationContext
 
     public required IStructureTerrain Terrain { get; init; }
 
-    public required IClimateBiomeSource BiomeSource { get; init; }
-
-    public required ClimateSampler Sampler { get; init; }
+    public required IBiomeSource BiomeSource { get; init; }
 
     /// <summary>
     /// Whether the structure may start in a biome (its biomes, as checked by vanilla's structure set code).

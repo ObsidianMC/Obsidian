@@ -1,3 +1,4 @@
+using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Nbt;
 using Obsidian.Registries;
@@ -34,8 +35,7 @@ internal sealed class StructureManager : IStructurePlacementState
     // Vanilla's createReferences radius: starts within 8 chunks can reach a chunk.
     private const int ReferenceRadius = 8;
 
-    private readonly RandomState randomState;
-    private readonly IClimateBiomeSource biomeSource;
+    private readonly StructureWorld world;
     private readonly IStructureTerrain terrain;
     private readonly int minY;
     private readonly int height;
@@ -89,7 +89,7 @@ internal sealed class StructureManager : IStructurePlacementState
             {
                 // A slower thread mustn't put back structures older than another's.
                 if (this.layout.Version < source.Version)
-                    Volatile.Write(ref this.layout, new StructureLayout(source, this.biomeSource.PossibleBiomes));
+                    Volatile.Write(ref this.layout, new StructureLayout(source, this.world.PossibleBiomes));
 
                 return this.layout;
             }
@@ -108,19 +108,39 @@ internal sealed class StructureManager : IStructurePlacementState
         int height,
         StructureStartCache? startCache = null,
         Func<WorldgenStructures>? structures = null)
+        : this(StructureWorld.Of(randomState, biomeSource), terrain, minY, height, startCache, structures)
+    {
+    }
+
+    /// <param name="world">The seed, biomes and noise range structures start against.</param>
+    /// <param name="templates">The templates the structures start and place with, for structures of another
+    /// version's data (see <see cref="StructureRegistry.Use"/>); the legacy ones by default.</param>
+    public StructureManager(
+        StructureWorld world,
+        IStructureTerrain terrain,
+        int minY,
+        int height,
+        StructureStartCache? startCache = null,
+        Func<WorldgenStructures>? structures = null,
+        Func<string, StructureTemplate>? templates = null)
     {
         this.StartCache = startCache ?? new();
         this.createStart = this.CreateStart;
-        this.randomState = randomState;
-        this.biomeSource = biomeSource;
+        this.world = world;
         this.terrain = terrain;
         this.minY = minY;
         this.height = height;
-        this.Seed = randomState.Seed;
+        this.Seed = world.Seed;
+        this.Templates = templates;
 
         this.structures = structures ?? (static () => PluginStructures.Current);
-        this.layout = new StructureLayout(this.structures(), biomeSource.PossibleBiomes);
+        this.layout = new StructureLayout(this.structures(), world.PossibleBiomes);
     }
+
+    /// <summary>
+    /// The templates the structures start and place with, or <c>null</c> for the legacy ones.
+    /// </summary>
+    public Func<string, StructureTemplate>? Templates { get; }
 
     /// <summary>
     /// The structures that start in a chunk (vanilla's structure starts status), at most one per structure set.
@@ -390,8 +410,10 @@ internal sealed class StructureManager : IStructurePlacementState
         random.SetLargeFeatureSeed(this.Seed, chunkX, chunkZ);
 
         var generation = new WorldGenerationContext(
-            Math.Max(this.minY, this.randomState.Settings.Noise.MinY),
-            Math.Min(this.height, this.randomState.Settings.Noise.Height));
+            Math.Max(this.minY, this.world.NoiseMinY),
+            Math.Min(this.height, this.world.NoiseHeight));
+
+        using var templates = StructureRegistry.Use(this.Templates);
 
         return structure.Generate(new StructureGenerationContext
         {
@@ -400,8 +422,7 @@ internal sealed class StructureManager : IStructurePlacementState
             Seed = this.Seed,
             Random = random,
             Terrain = this.terrain,
-            BiomeSource = this.biomeSource,
-            Sampler = this.randomState.ClimateSampler,
+            BiomeSource = this.world.Biomes,
             ValidBiome = structure.Biomes.Contains,
             MinY = this.minY,
             Height = this.height,
@@ -464,7 +485,6 @@ internal sealed class StructureManager : IStructurePlacementState
     /// </summary>
     private Vector? FindBiomeHorizontal(int x, int y, int z, int radius, BiomeSet biomes, IRandomSource random)
     {
-        var sampler = this.randomState.ClimateSampler;
         var quartX = x >> 2;
         var quartZ = z >> 2;
         var quartY = y >> 2;
@@ -476,7 +496,7 @@ internal sealed class StructureManager : IStructurePlacementState
         {
             for (var dx = -quartRadius; dx <= quartRadius; dx++)
             {
-                var biome = this.biomeSource.GetNoiseBiome(sampler, quartX + dx, quartY, quartZ + dz);
+                var biome = this.world.Biomes.GetNoiseBiome(quartX + dx, quartY, quartZ + dz);
                 if (!biomes.Contains(biome))
                     continue;
 
@@ -492,4 +512,33 @@ internal sealed class StructureManager : IStructurePlacementState
 
     /// <summary>Vanilla <c>ChunkPos.asLong</c>.</summary>
     private static long ChunkKey(int chunkX, int chunkZ) => (chunkX & 0xFFFFFFFFL) | (chunkZ & 0xFFFFFFFFL) << 32;
+}
+
+/// <summary>
+/// What structures start against: the world's seed, its biome source and the generator's noise range.
+/// </summary>
+/// <param name="Biomes">The biome at quart coordinates; called from several threads at once.</param>
+/// <param name="PossibleBiomes">Every biome the source gives, which decides the structure sets that generate.</param>
+internal sealed record StructureWorld(
+    long Seed,
+    IBiomeSource Biomes,
+    IReadOnlyCollection<BiomeCodec> PossibleBiomes,
+    int NoiseMinY,
+    int NoiseHeight)
+{
+    /// <summary>
+    /// The legacy generator's: its biome source over the random state's climate sampler.
+    /// </summary>
+    public static StructureWorld Of(RandomState randomState, IClimateBiomeSource biomeSource) => new(
+        randomState.Seed,
+        new SampledBiomes(biomeSource, randomState.ClimateSampler),
+        biomeSource.PossibleBiomes,
+        randomState.Settings.Noise.MinY,
+        randomState.Settings.Noise.Height);
+
+    private sealed class SampledBiomes(IClimateBiomeSource source, ClimateSampler sampler) : IBiomeSource
+    {
+        public BiomeCodec GetNoiseBiome(int quartX, int quartY, int quartZ) =>
+            source.GetNoiseBiome(sampler, quartX, quartY, quartZ);
+    }
 }

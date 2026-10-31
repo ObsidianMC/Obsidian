@@ -1201,8 +1201,14 @@ public enum JigsawJointType
 /// <param name="Target">The name of the jigsaw this one connects to.</param>
 /// <param name="PlacementPriority">Pieces attached here are expanded before lower priorities.</param>
 /// <param name="SelectionPriority">Jigsaws with higher priorities are tried first.</param>
-public sealed record JigsawBlockInfo(StructureBlockInfo Info, JigsawJointType JointType, string Name, string Pool, string Target,
-    int PlacementPriority, int SelectionPriority)
+public sealed record JigsawBlockInfo(
+    StructureBlockInfo Info,
+    JigsawJointType JointType,
+    string? Name,
+    string Pool,
+    string Target,
+    int PlacementPriority,
+    int SelectionPriority)
 {
     public const string EmptyId = "minecraft:empty";
 
@@ -1224,7 +1230,8 @@ public sealed record JigsawBlockInfo(StructureBlockInfo Info, JigsawJointType Jo
     public bool CanAttach(JigsawBlockInfo other) =>
         this.FrontFacing == Opposite(other.FrontFacing)
         && (this.JointType == JigsawJointType.Rollable || this.TopFacing == other.TopFacing)
-        && this.Target == other.Name;
+        // 26.3's canAttach: a jigsaw without a name (a 26.3 feature element's) takes any target.
+        && (other.Name is null || this.Target == other.Name);
 
     /// <summary>Vanilla <c>JigsawBlockInfo.of</c>: reads the jigsaw's settings from its block entity data.</summary>
     internal static JigsawBlockInfo Of(StructureBlockInfo info)

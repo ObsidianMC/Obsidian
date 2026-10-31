@@ -7,11 +7,10 @@ namespace Obsidian.WorldData.Generators.Features;
 internal sealed partial class FeatureRegistry
 {
     /// <summary>
-    /// The generator's 26.3 template lookup. Kept explicit while the live structure registry still loads 1.21.11.
-    /// Callers can supply data pack templates without putting copyrighted NBT in Obsidian's assets.
+    /// The generator's 26.3 template lookup: the templates the server extracts from the 26.3 jar by default (see
+    /// <see cref="Registries.StructureRegistry.GetCurrent"/>). Callers can supply others, such as a data pack's.
     /// </summary>
-    public Func<string, StructureTemplate> Template { get; init; } = _ =>
-        throw new InvalidOperationException("The 26.3 feature registry needs a 26.3 structure template lookup.");
+    public Func<string, StructureTemplate> Template { get; init; } = Registries.StructureRegistry.GetCurrent;
 
     private Feature TemplateFeature(JsonElement json)
     {

@@ -78,6 +78,15 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
             StructureRegistry.Initialize(await VanillaServerJar.ExtractStructuresAsync(httpClientFactory.CreateClient(),
                 ServerConstants.VanillaCachePath, ServerConstants.LegacyVersion, this.logger, stoppingToken));
 
+            // The 26.3 generator's structures and template features place the current version's templates, which
+            // are extracted once one is first needed: the live generator doesn't.
+            StructureRegistry.InitializeCurrent(() => VanillaServerJar.ExtractStructuresAsync(
+                httpClientFactory.CreateClient(),
+                ServerConstants.VanillaCachePath,
+                ServerConstants.ProtocolDescription,
+                this.logger,
+                stoppingToken));
+
             await this.LoadWorldsAsync(stoppingToken);
 
             while (await timer.WaitForNextTickAsync())

@@ -256,10 +256,23 @@ public sealed class FeaturePoolElement : StructurePoolElement
 
     public required PlacedFeature Feature { get; init; }
 
+    /// <summary>
+    /// Whether the jigsaw has no name, like 26.3's, which attaches to any target; 1.21.11's is
+    /// <c>minecraft:bottom</c>.
+    /// </summary>
+    internal bool UnnamedJigsaw { get; set; }
+
     public override Vector GetSize(StructureRotation rotation) => Vector.Zero;
 
-    public override List<JigsawBlockInfo> GetShuffledJigsawBlocks(Vector position, StructureRotation rotation, IRandomSource random) =>
-        [JigsawBlockInfo.Of(new StructureBlockInfo(position, jigsaw, jigsawData))];
+    public override List<JigsawBlockInfo> GetShuffledJigsawBlocks(
+        Vector position,
+        StructureRotation rotation,
+        IRandomSource random)
+    {
+        var info = JigsawBlockInfo.Of(new StructureBlockInfo(position, jigsaw, jigsawData));
+
+        return [this.UnnamedJigsaw ? info with { Name = null } : info];
+    }
 
     public override BlockBox GetBoundingBox(Vector position, StructureRotation rotation) => new(position, position);
 

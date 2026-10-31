@@ -5,7 +5,10 @@ namespace Obsidian.WorldData.Generators.Features;
 
 internal sealed partial class FeatureRegistry
 {
-    private static JsonElement TemplateProcessorStates(JsonElement json)
+    /// <summary>
+    /// The JSON with 26.3's processor block states in the shape the shared processor reader reads.
+    /// </summary>
+    internal static JsonElement TemplateProcessorStates(JsonElement json)
     {
         var processors = JsonNode.Parse(json.GetRawText())!;
         NormalizeProcessorStates(processors);

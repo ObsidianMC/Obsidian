@@ -135,12 +135,14 @@ public class VanillaStructureGeneration(WorldgenFixture worldgen)
         _ => MojangDimension.Overworld
     };
 
-    private static string Describe(StructurePiece piece)
+    internal static string Describe(StructurePiece piece)
     {
         static string Box(BlockBox box) => $"{box.MinX},{box.MinY},{box.MinZ},{box.MaxX},{box.MaxY},{box.MaxZ}";
         static string Position(Vector position) => $"{position.X},{position.Y},{position.Z}";
 
-        var parts = new List<string> { piece.GetType().Name, "box " + Box(piece.BoundingBox) };
+        // Vanilla's generated fortress start keeps BridgeCrossing's piece type (NeBCr), which the references name.
+        var type = piece is NetherFortressPieces.StartPiece ? "BridgeCrossing" : piece.GetType().Name;
+        var parts = new List<string> { type, "box " + Box(piece.BoundingBox) };
         switch (piece)
         {
             case PoolElementStructurePiece pool:

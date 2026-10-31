@@ -1,6 +1,7 @@
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Generators.Mojang.Structures;
 
 namespace Obsidian.WorldData.Generators.Terrain;
 
@@ -46,15 +47,17 @@ internal sealed class TerrainGenerator
     /// Runs the entire terrain status. The biome lookup uses block coordinates; the carver lookup uses source chunk
     /// coordinates and returns the biome's ordered carver identifiers. Neither lookup may generate terrain recursively.
     /// </summary>
+    /// <param name="beardifier">The structures' density around the chunk, added to the final density.</param>
     public void Generate(
         IChunk chunk,
         Func<int, int, int, string> biomeAt,
         Func<int, int, IReadOnlyList<string>> carversAt,
-        ICollection<Vector>? fluidUpdates = null)
+        ICollection<Vector>? fluidUpdates = null,
+        Beardifier? beardifier = null)
     {
         var context = this.CreateContext(chunk, biomeAt, fluidUpdates);
 
-        this.Fill(context);
+        this.Fill(context, beardifier);
         this.Materials.Apply(context);
         TerrainCarvers.Apply(context, carversAt);
     }
@@ -65,7 +68,11 @@ internal sealed class TerrainGenerator
         ICollection<Vector>? fluidUpdates = null) => new(this, chunk, biomeAt, fluidUpdates);
 
     /// <summary>Fills a chunk volume using vanilla's volume path and z, x, descending-y write order.</summary>
-    public void Fill(TerrainContext context)
+    /// <remarks>
+    /// Every 26.3 noise setting ends its final density with <c>add(..., beardifier)</c>, which the router compiles
+    /// to 0, so the structures' density is added here, in float like vanilla's addition.
+    /// </remarks>
+    public void Fill(TerrainContext context, Beardifier? beardifier = null)
     {
         var chunk = context.Chunk;
         var volume = context.Volume;
@@ -81,6 +88,12 @@ internal sealed class TerrainGenerator
                     var blockY = volume.BlockY(y);
                     var blockZ = volume.BlockZ(z);
                     var value = density.Span[volume.Index(x, y, z)];
+
+                    if (beardifier is not null)
+                    {
+                        value += beardifier.Sample(blockX, blockY, blockZ);
+                    }
+
                     var block = context.Aquifer.ComputeSubstance(blockX, blockY, blockZ, value) ?? this.DefaultBlock;
 
                     if (block.IsAir)

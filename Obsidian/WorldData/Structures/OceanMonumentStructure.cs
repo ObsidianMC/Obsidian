@@ -37,7 +37,7 @@ public sealed class OceanMonumentStructure : Structure
             {
                 for (var quartY = (y - radius) >> 2; quartY <= (y + radius) >> 2; quartY++)
                 {
-                    if (!requiredSurrounding.Contains(context.BiomeSource.GetNoiseBiome(context.Sampler, quartX, quartY, quartZ)))
+                    if (!requiredSurrounding.Contains(context.BiomeSource.GetNoiseBiome(quartX, quartY, quartZ)))
                         return false;
                 }
             }

@@ -91,7 +91,8 @@ internal static class WorldgenAssets
         foreach (var registry in new[]
         {
             "density_function", "noise", "noise_settings", "material_rule", "material_condition", "carver", "biome",
-            "feature", "placed_feature", "block_state_provider", "processor_list"
+            "feature", "placed_feature", "block_state_provider", "processor_list", "structure", "structure_set",
+            "template_pool"
         })
         {
             CopyDirectory(Path.Combine(worldgen, registry), Path.Combine(outputDirectory, registry));
