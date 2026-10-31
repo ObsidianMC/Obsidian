@@ -7,6 +7,8 @@ namespace Obsidian.WorldData.Generators.Density;
 internal sealed class LerpFunction(DensityFunction alpha, DensityFunction first, DensityFunction second)
     : DensityFunction
 {
+    public override bool IsFlat => alpha.IsFlat && first.IsFlat && second.IsFlat;
+
     public override float Sample(int x, int y, int z)
     {
         var amount = alpha.Sample(x, y, z);
@@ -26,19 +28,35 @@ internal sealed class LerpFunction(DensityFunction alpha, DensityFunction first,
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
     {
         alpha.SampleVolume(output, volume);
+
+        // An alpha of 0 or 1 everywhere takes one side, so the other isn't sampled (the terrain's y gradients, say).
+        if (!output.ContainsAnyExcept(0.0f))
+        {
+            first.SampleVolume(output, volume);
+            return;
+        }
+
+        if (!output.ContainsAnyExcept(1.0f))
+        {
+            second.SampleVolume(output, volume);
+            return;
+        }
+
         using var starts = DensityBuffer.Sample(first, volume);
         using var ends = DensityBuffer.Sample(second, volume);
+        var startValues = starts.Span;
+        var endValues = ends.Span;
 
         for (var i = 0; i < output.Length; i++)
         {
             var amount = output[i];
 
             if (amount == 0.0f)
-                output[i] = starts.Span[i];
+                output[i] = startValues[i];
             else if (amount == 1.0f)
-                output[i] = ends.Span[i];
+                output[i] = endValues[i];
             else
-                output[i] = FloatMath.Lerp(amount, starts.Span[i], ends.Span[i]);
+                output[i] = FloatMath.Lerp(amount, startValues[i], endValues[i]);
         }
     }
 }
@@ -46,6 +64,8 @@ internal sealed class LerpFunction(DensityFunction alpha, DensityFunction first,
 /// <summary><c>clamp</c>: <c>input</c> clamped to <c>min</c> and <c>max</c>.</summary>
 internal sealed class ClampFunction(DensityFunction input, float min, float max) : DensityFunction
 {
+    public override bool IsFlat => input.IsFlat;
+
     public override float Sample(int x, int y, int z) => FloatMath.Clamp(input.Sample(x, y, z), min, max);
 
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
@@ -68,6 +88,8 @@ internal sealed class RangeChoiceFunction(
     DensityFunction whenInRange,
     DensityFunction whenOutOfRange) : DensityFunction
 {
+    public override bool IsFlat => input.IsFlat && whenInRange.IsFlat && whenOutOfRange.IsFlat;
+
     public override float Sample(int x, int y, int z)
     {
         var value = input.Sample(x, y, z);
@@ -76,16 +98,64 @@ internal sealed class RangeChoiceFunction(
         return chosen.Sample(x, y, z);
     }
 
+    // Each point takes its value from the branch it chooses, so a branch no point chooses isn't sampled, and a
+    // constant one is written without sampling it into a buffer. Ore veins nest these over a chunk's every block.
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
     {
-        whenInRange.SampleVolume(output, volume);
         using var inputs = DensityBuffer.Sample(input, volume);
-        using var outside = DensityBuffer.Sample(whenOutOfRange, volume);
+        var values = inputs.Span;
+        var inRange = 0;
+
+        for (var i = 0; i < values.Length; i++)
+        {
+            if (this.InRange(values[i]))
+                inRange++;
+        }
+
+        if (inRange == values.Length)
+        {
+            whenInRange.SampleVolume(output, volume);
+            return;
+        }
+
+        if (inRange == 0)
+        {
+            whenOutOfRange.SampleVolume(output, volume);
+            return;
+        }
+
+        if (whenInRange is ConstantFunction inside)
+        {
+            whenOutOfRange.SampleVolume(output, volume);
+            this.Choose(output, values, inside.Value, chooseInRange: true);
+            return;
+        }
+
+        whenInRange.SampleVolume(output, volume);
+
+        if (whenOutOfRange is ConstantFunction outside)
+        {
+            this.Choose(output, values, outside.Value, chooseInRange: false);
+            return;
+        }
+
+        using var outsideValues = DensityBuffer.Sample(whenOutOfRange, volume);
+        var outsides = outsideValues.Span;
 
         for (var i = 0; i < output.Length; i++)
         {
-            if (!this.InRange(inputs.Span[i]))
-                output[i] = outside.Span[i];
+            if (!this.InRange(values[i]))
+                output[i] = outsides[i];
+        }
+    }
+
+    // Writes value to the points whose input is in range, or to those whose input isn't.
+    private void Choose(Span<float> output, ReadOnlySpan<float> inputs, float value, bool chooseInRange)
+    {
+        for (var i = 0; i < output.Length; i++)
+        {
+            if (this.InRange(inputs[i]) == chooseInRange)
+                output[i] = value;
         }
     }
 
@@ -101,6 +171,8 @@ internal sealed class IntervalSelectFunction(
     ImmutableArray<float> thresholds,
     ImmutableArray<DensityFunction> functions) : DensityFunction
 {
+    public override bool IsFlat => input.IsFlat && functions.All(function => function.IsFlat);
+
     public override float Sample(int x, int y, int z)
     {
         var value = input.Sample(x, y, z);
@@ -383,6 +455,8 @@ internal sealed class SliceFunction(DensityFunction input, int? fixedX, int? fix
         };
     }
 
+    public override bool IsFlat => fixedY is not null || input.IsFlat;
+
     public override float Sample(int x, int y, int z) => input.Sample(fixedX ?? x, fixedY ?? y, fixedZ ?? z);
 
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
@@ -435,6 +509,9 @@ internal sealed class FindTopSurfaceFunction(
     int lowerBound,
     int cellHeight) : DensityFunction
 {
+    // Both paths find one surface per column.
+    public override bool IsFlat => true;
+
     public override float Sample(int x, int y, int z) => this.FindSurface(x, z, upperBound.Sample(x, 0, z));
 
     // Over a volume vanilla samples the bounds as a volume too, which can round differently from a point.

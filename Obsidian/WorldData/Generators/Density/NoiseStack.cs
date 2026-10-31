@@ -10,9 +10,12 @@ namespace Obsidian.WorldData.Generators.Density;
 /// </remarks>
 internal sealed class NoiseStack(IReadOnlyList<NoiseStack.Layer> layers)
 {
+    // An array, so that sampling enumerates the layers without allocating an enumerator.
+    private readonly Layer[] layers = [.. layers];
+
     public readonly record struct Layer(PerlinNoise Noise, double Frequency, float Amplitude);
 
-    public IReadOnlyList<Layer> Layers { get; } = layers;
+    public IReadOnlyList<Layer> Layers => this.layers;
 
     /// <summary>
     /// The noise at a point, as a density function samples one: each layer at the point times its frequency.
@@ -21,7 +24,7 @@ internal sealed class NoiseStack(IReadOnlyList<NoiseStack.Layer> layers)
     {
         var value = 0.0f;
 
-        foreach (var layer in this.Layers)
+        foreach (var layer in this.layers)
         {
             var frequency = layer.Frequency;
             value += layer.Amplitude * layer.Noise.Get(x * frequency, y * frequency, z * frequency);
@@ -37,7 +40,7 @@ internal sealed class NoiseStack(IReadOnlyList<NoiseStack.Layer> layers)
     /// </summary>
     public void AddToVolume(Span<float> buffer, in DensityVolume volume, double xzScale, double yScale, float amplitude)
     {
-        foreach (var layer in this.Layers)
+        foreach (var layer in this.layers)
         {
             var layerXzScale = xzScale * layer.Frequency;
             var layerYScale = yScale * layer.Frequency;

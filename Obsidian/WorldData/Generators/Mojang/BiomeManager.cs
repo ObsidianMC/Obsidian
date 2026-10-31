@@ -167,13 +167,28 @@ internal sealed class BiomeManager
             jitters.Reset(zoomSeed);
         }
 
+        // The blocks of a cell share its corners' jitter, and a column's blocks come one cell after another.
+        var cell = jitters.Cell;
+        if (!jitters.HasCell || jitters.CellX != quartX || jitters.CellY != quartY || jitters.CellZ != quartZ)
+        {
+            for (var corner = 0; corner < 8; corner++)
+            {
+                var cornerX = (corner & 4) == 0 ? quartX : quartX + 1;
+                var cornerY = (corner & 2) == 0 ? quartY : quartY + 1;
+                var cornerZ = (corner & 1) == 0 ? quartZ : quartZ + 1;
+                cell[corner] = GetJitter(jitters, cornerX, cornerY, cornerZ);
+            }
+
+            jitters.SetCell(quartX, quartY, quartZ);
+        }
+
         for (var corner = 0; corner < 8; corner++)
         {
             var lowX = (corner & 4) == 0;
             var lowY = (corner & 2) == 0;
             var lowZ = (corner & 1) == 0;
 
-            var jitter = GetJitter(jitters, lowX ? quartX : quartX + 1, lowY ? quartY : quartY + 1, lowZ ? quartZ : quartZ + 1);
+            var jitter = cell[corner];
             var distance = Square((lowZ ? fractionZ : fractionZ - 1.0) + jitter.Z) + Square((lowY ? fractionY : fractionY - 1.0) + jitter.Y)
                 + Square((lowX ? fractionX : fractionX - 1.0) + jitter.X);
 
@@ -287,12 +302,32 @@ internal sealed class BiomeManager
         // Two corners along X and Z by 128 along Y: the corners a column of blocks measures.
         public CornerJitter[] Entries { get; } = new CornerJitter[512];
 
+        // The jitter of the 8 corners of the cell last measured, in QuartAtBlock's corner order.
+        public (double X, double Y, double Z)[] Cell { get; } = new (double X, double Y, double Z)[8];
+
+        public bool HasCell { get; private set; }
+
+        public int CellX { get; private set; }
+
+        public int CellY { get; private set; }
+
+        public int CellZ { get; private set; }
+
         public JitterTable() => this.Reset(0L);
 
         public void Reset(long seed)
         {
             this.Seed = seed;
+            this.HasCell = false;
             Array.Clear(this.Entries);
+        }
+
+        public void SetCell(int x, int y, int z)
+        {
+            this.CellX = x;
+            this.CellY = y;
+            this.CellZ = z;
+            this.HasCell = true;
         }
     }
 }

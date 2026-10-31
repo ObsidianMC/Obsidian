@@ -78,6 +78,8 @@ internal sealed class EndOuterIslandsFunction : DensityFunction
         this.islandNoise = new SimplexNoise(random);
     }
 
+    public override bool IsFlat => true;
+
     public override float Sample(int x, int y, int z)
     {
         var height = this.HeightValue(x / 8, z / 8);

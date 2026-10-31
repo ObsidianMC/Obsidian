@@ -258,7 +258,7 @@ internal sealed class WorldGenRegion : IWorldGenLevel
             DataBlockEntity.ApplyBlockChange(chunk, position, block ?? BlocksRegistry.Get(stateId));
             this.blockEntityAreas |= 1 << index;
         }
-        else if (this.MayHaveBlockEntities(index, chunk))
+        else if (this.MayHaveBlockEntities(index, chunk) && HasBlockEntity(chunk, position))
         {
             chunk.RemoveBlockEntity(position.X, position.Y, position.Z);
         }
@@ -422,6 +422,10 @@ internal sealed class WorldGenRegion : IWorldGenLevel
 
         return this.FindChunk(quartX >> 2, quartZ >> 2)?.GetBiome((quartX & 3) << 2, quartY << 2, (quartZ & 3) << 2);
     }
+
+    // Removing takes a lock even when there's nothing to remove; looking doesn't, and most writes find nothing.
+    private static bool HasBlockEntity(IChunk chunk, Vector position) =>
+        chunk is not Chunk generated || generated.GetBlockEntity(position.X, position.Y, position.Z) is not null;
 
     private bool MayHaveBlockEntities(int index, IChunk chunk)
     {

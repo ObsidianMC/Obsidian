@@ -4,6 +4,7 @@ using Obsidian.Registries;
 using System;
 using System.IO;
 using System.Net.Http;
+using System.Threading.Tasks;
 using WorldgenBench;
 
 // Usage: Obsidian.WorldgenBench [serial|pipeline] [options]
@@ -18,6 +19,8 @@ using WorldgenBench;
 //   --radius N                            (default 16: 1,024 chunks)
 //   --seed N                              (default 12345)
 //   --cold                                serial: skip the warmup; pipeline: time the first pass rather than a second one
+//   --generator 1.21.11|26.3              serial: the live generator (default) or the 26.3 pipeline (BiomeTerrain),
+//                                         with its structures and 26.3 templates; it has no post-processing stage
 //
 // Each dimension is centred where a server pregenerates it for seed 12345: the overworld on its spawn chunk (6, -2), the
 // nether on (0, 0) and the end on its spawn platform's chunk (6, 0). Run a Release build.
@@ -36,13 +39,22 @@ if (mode is not ("serial" or "pipeline"))
 }
 
 var options = BenchOptions.Parse(optionArgs);
+if (mode == "pipeline" && options.Generator != BenchGeneratorKind.Legacy)
+{
+    // The 26.3 biome search keeps state per pipeline, which generating on several threads at once would share.
+    Console.Error.WriteLine("The pipeline mode runs the live generator only.");
+    return 2;
+}
 
 // Shares the tests' template cache, so neither downloads the server jar again.
 using (var httpClient = new HttpClient())
 {
     var cache = Path.Combine(Path.GetTempPath(), "obsidian-tests", ServerConstants.VanillaCachePath);
-    StructureRegistry.Initialize(await VanillaServerJar.ExtractStructuresAsync(httpClient, cache, ServerConstants.ProtocolDescription,
-        NullLogger.Instance));
+    StructureRegistry.Initialize(await VanillaServerJar.ExtractStructuresAsync(httpClient, cache,
+        ServerConstants.LegacyVersion, NullLogger.Instance));
+    var current = await VanillaServerJar.ExtractStructuresAsync(httpClient, cache, ServerConstants.ProtocolDescription,
+        NullLogger.Instance);
+    StructureRegistry.InitializeCurrent(() => Task.FromResult(current));
 }
 
 var failed = false;

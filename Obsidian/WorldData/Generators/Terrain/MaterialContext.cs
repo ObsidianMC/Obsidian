@@ -1,12 +1,16 @@
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Generators.Density;
+using System.Buffers;
 
 namespace Obsidian.WorldData.Generators.Terrain;
 
 internal sealed partial class MaterialRules
 {
-    /// <summary>The column depths and cached samples visible to a material rule evaluation.</summary>
-    internal sealed class MaterialContext
+    /// <summary>
+    /// The column depths and cached samples visible to a material rule evaluation. Disposing it returns its density
+    /// buffers to the pool.
+    /// </summary>
+    internal sealed class MaterialContext : IDisposable
     {
         private readonly MaterialRules owner;
         private readonly DensityVolume volume;
@@ -15,6 +19,11 @@ internal sealed partial class MaterialRules
         private readonly Dictionary<NoiseStack, float> blockNoises = new(ReferenceEqualityComparer.Instance);
         private float[]? surfaceLevels;
         private string? biome;
+        private int? biomeId;
+
+        // The last biome numbered, by reference: neighboring blocks mostly share their biome's name instance.
+        private string? lastNumberedBiome;
+        private int lastBiomeId;
         private int localX;
         private int localZ;
 
@@ -66,6 +75,9 @@ internal sealed partial class MaterialRules
 
         public string Biome => this.biome ??= this.Terrain.BiomeAt(this.X, this.Y, this.Z);
 
+        /// <summary>The <see cref="Biome"/>'s number among those biome conditions name, or -1.</summary>
+        public int BiomeId => this.biomeId ??= this.NumberBiome(this.Biome);
+
         public double Secondary
         {
             get
@@ -102,6 +114,17 @@ internal sealed partial class MaterialRules
             }
         }
 
+        private int NumberBiome(string name)
+        {
+            if (!ReferenceEquals(name, this.lastNumberedBiome))
+            {
+                this.lastBiomeId = this.owner.FindBiomeId(name);
+                this.lastNumberedBiome = name;
+            }
+
+            return this.lastBiomeId;
+        }
+
         public void UpdateColumn(int x, int z)
         {
             this.localX = x;
@@ -128,6 +151,7 @@ internal sealed partial class MaterialRules
             this.Below = below;
             this.Water = water;
             this.biome = null;
+            this.biomeId = null;
             this.blockNoises.Clear();
         }
 
@@ -163,12 +187,20 @@ internal sealed partial class MaterialRules
 
             if (!this.densities.TryGetValue(function, out var values))
             {
-                values = new float[this.volume.Size];
-                function.SampleVolume(values, this.volume);
+                values = ArrayPool<float>.Shared.Rent(this.volume.Size);
+                function.SampleVolume(values.AsSpan(0, this.volume.Size), this.volume);
                 this.densities.Add(function, values);
             }
 
             return values[this.volume.Index(x, y, z)];
+        }
+
+        public void Dispose()
+        {
+            foreach (var values in this.densities.Values)
+                ArrayPool<float>.Shared.Return(values);
+
+            this.densities.Clear();
         }
 
         public IBlock GetBlock(int y)

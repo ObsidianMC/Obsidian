@@ -18,6 +18,10 @@ internal sealed partial class MaterialRules
     private readonly Func<MaterialContext, IBlock?> root;
     private readonly IBlock[] bands;
 
+    // The biomes biome conditions name, numbered, so that a block looks its biome's name up once rather than once
+    // per condition (see MaterialContext.BiomeId).
+    private readonly ConcurrentDictionary<string, int> biomeIds = new();
+
     public MaterialRules(TerrainGenerator generator)
     {
         this.generator = generator;
@@ -27,7 +31,7 @@ internal sealed partial class MaterialRules
 
     public void Apply(TerrainContext terrain)
     {
-        var context = new MaterialContext(this, terrain);
+        using var context = new MaterialContext(this, terrain);
         var chunk = terrain.Chunk;
 
         // Each column sees the heightmaps updated by earlier columns, including badlands and iceberg extensions.
@@ -113,7 +117,7 @@ internal sealed partial class MaterialRules
     /// <summary>A freshly exposed surface during carving uses depth one and a one-block density volume.</summary>
     public IBlock? TopMaterial(TerrainContext terrain, int x, int y, int z, bool underwater)
     {
-        var context = new MaterialContext(this, terrain, new DensityVolume(1, 1, 1, x, y, z));
+        using var context = new MaterialContext(this, terrain, new DensityVolume(1, 1, 1, x, y, z));
         context.UpdateColumn(x & 15, z & 15);
         context.UpdateBlock(y, 1, 1, underwater ? y + 1 : int.MinValue);
 
@@ -238,9 +242,10 @@ internal sealed partial class MaterialRules
             case "minecraft:biome":
                 var names = json.GetProperty("biome_is");
                 var biomes = names.ValueKind == JsonValueKind.String
-                    ? new HashSet<string> { WorldgenData.Qualify(names.GetString()!) }
-                    : names.EnumerateArray().Select(name => WorldgenData.Qualify(name.GetString()!)).ToHashSet();
-                return context => biomes.Contains(context.Biome);
+                    ? [WorldgenData.Qualify(names.GetString()!)]
+                    : names.EnumerateArray().Select(name => WorldgenData.Qualify(name.GetString()!)).ToArray();
+                var ids = biomes.Select(this.BiomeId).ToArray();
+                return context => ids.AsSpan().Contains(context.BiomeId);
             case "minecraft:not":
                 var inverted = this.CompileCondition(json.GetProperty("invert"));
                 return context => !inverted(context);
@@ -284,6 +289,11 @@ internal sealed partial class MaterialRules
                 throw new InvalidDataException($"Unknown 26.3 material condition {json.GetProperty("type")}.");
         }
     }
+
+    private int BiomeId(string biome) => this.biomeIds.GetOrAdd(biome, static (_, ids) => ids.Count, this.biomeIds);
+
+    /// <summary>The number biome conditions know a biome by, or -1 for a biome none of them names.</summary>
+    private int FindBiomeId(string biome) => this.biomeIds.TryGetValue(biome, out var id) ? id : -1;
 
     private Func<MaterialContext, bool> CompileGradient(JsonElement json)
     {

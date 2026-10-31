@@ -1,4 +1,6 @@
 using Obsidian.API.World.Generator.RandomSources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Obsidian.WorldData.Generators.Density;
 
@@ -44,7 +46,17 @@ internal abstract class GradientNoise
 
     protected double OffsetZ { get; }
 
-    protected int Permute(int value) => this.permutations[value & 0xFF];
+    protected int Permute(int value) => Permute(ref this.Permutations, value);
+
+    /// <summary>
+    /// The first of the 256 permuted values, for lookups without bounds checks (see
+    /// <see cref="Permute(ref byte, int)"/>).
+    /// </summary>
+    protected ref byte Permutations => ref MemoryMarshal.GetArrayDataReference(this.permutations);
+
+    // Masking keeps the index inside the 256 values, so the lookup skips the bounds check: noise samples look up
+    // the permutation 14 times per octave.
+    protected static int Permute(ref byte permutations, int value) => Unsafe.Add(ref permutations, value & 0xFF);
 }
 
 /// <summary>
@@ -98,21 +110,22 @@ internal class PerlinNoise(IRandomSource random) : GradientNoise(random, 256.0)
     /// </summary>
     protected float SampleAndLerp(int x, int y, int z, float relativeX, float relativeY, float relativeZ, float fadeY)
     {
-        var x0 = this.Permute(x);
-        var x1 = this.Permute(x + 1);
-        var xy00 = this.Permute(x0 + y);
-        var xy01 = this.Permute(x0 + y + 1);
-        var xy10 = this.Permute(x1 + y);
-        var xy11 = this.Permute(x1 + y + 1);
+        ref var permutations = ref this.Permutations;
+        var x0 = Permute(ref permutations, x);
+        var x1 = Permute(ref permutations, x + 1);
+        var xy00 = Permute(ref permutations, x0 + y);
+        var xy01 = Permute(ref permutations, x0 + y + 1);
+        var xy10 = Permute(ref permutations, x1 + y);
+        var xy11 = Permute(ref permutations, x1 + y + 1);
 
-        var d000 = Dot(this.Permute(xy00 + z), relativeX, relativeY, relativeZ);
-        var d100 = Dot(this.Permute(xy10 + z), relativeX - 1.0f, relativeY, relativeZ);
-        var d010 = Dot(this.Permute(xy01 + z), relativeX, relativeY - 1.0f, relativeZ);
-        var d110 = Dot(this.Permute(xy11 + z), relativeX - 1.0f, relativeY - 1.0f, relativeZ);
-        var d001 = Dot(this.Permute(xy00 + z + 1), relativeX, relativeY, relativeZ - 1.0f);
-        var d101 = Dot(this.Permute(xy10 + z + 1), relativeX - 1.0f, relativeY, relativeZ - 1.0f);
-        var d011 = Dot(this.Permute(xy01 + z + 1), relativeX, relativeY - 1.0f, relativeZ - 1.0f);
-        var d111 = Dot(this.Permute(xy11 + z + 1), relativeX - 1.0f, relativeY - 1.0f, relativeZ - 1.0f);
+        var d000 = Dot(Permute(ref permutations, xy00 + z), relativeX, relativeY, relativeZ);
+        var d100 = Dot(Permute(ref permutations, xy10 + z), relativeX - 1.0f, relativeY, relativeZ);
+        var d010 = Dot(Permute(ref permutations, xy01 + z), relativeX, relativeY - 1.0f, relativeZ);
+        var d110 = Dot(Permute(ref permutations, xy11 + z), relativeX - 1.0f, relativeY - 1.0f, relativeZ);
+        var d001 = Dot(Permute(ref permutations, xy00 + z + 1), relativeX, relativeY, relativeZ - 1.0f);
+        var d101 = Dot(Permute(ref permutations, xy10 + z + 1), relativeX - 1.0f, relativeY, relativeZ - 1.0f);
+        var d011 = Dot(Permute(ref permutations, xy01 + z + 1), relativeX, relativeY - 1.0f, relativeZ - 1.0f);
+        var d111 = Dot(Permute(ref permutations, xy11 + z + 1), relativeX - 1.0f, relativeY - 1.0f, relativeZ - 1.0f);
 
         var alphaX = FloatMath.Smoothstep(relativeX);
         var alphaY = FloatMath.Smoothstep(fadeY);
@@ -127,7 +140,8 @@ internal class PerlinNoise(IRandomSource random) : GradientNoise(random, 256.0)
     // The int gradient components widen to float before multiplying, as in vanilla; the sum order is vanilla's.
     private static float Dot(int hash, float x, float y, float z)
     {
-        var gradient = gradients[hash & 15];
+        // Masked like Permute, so without a bounds check.
+        ref var gradient = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(gradients), hash & 15);
         return gradient.X * x + gradient.Y * y + gradient.Z * z;
     }
 

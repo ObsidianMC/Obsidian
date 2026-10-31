@@ -8,7 +8,7 @@ namespace Obsidian.WorldData.Generators.Density;
 
 /// <summary>
 /// Builds 26.3 density functions from JSON for one world, like vanilla's RandomState and DensityFunctionCompiler:
-/// noises are seeded from their identifiers, references are inlined and caches are transparent.
+/// noises are seeded from their identifiers, references are inlined and caches only remember values.
 /// </summary>
 /// <remarks>
 /// It checks what vanilla's codecs check where it's cheap (required fields, ranges, ordered thresholds). It doesn't
@@ -147,9 +147,9 @@ internal sealed partial class DensityCompiler
             "range_choice" => this.CompileRangeChoice(json, path),
             "interval_select" => this.CompileIntervalSelect(json, path),
 
-            // Caches don't change values, and without a blender (bound to chunks later in Phase 5) blending doesn't
-            // either.
-            "cache" or "blend_density" => this.Input(json, path, "input"),
+            "cache" => Cache(this.Input(json, path, "input")),
+            // Without a blender (bound to chunks later in Phase 5) blending doesn't change values.
+            "blend_density" => this.Input(json, path, "input"),
             "interpolated" => this.CompileInterpolated(json, path),
             "slice" => this.CompileSlice(json, path),
             "find_top_surface" => this.CompileFindTopSurface(json, path),
@@ -157,6 +157,10 @@ internal sealed partial class DensityCompiler
             _ => throw Error(Field(path, "type"), $"{type} isn't a density function type")
         };
     }
+
+    // Caches don't change values; a constant stays one, so that operators still specialise on it.
+    private static DensityFunction Cache(DensityFunction input) =>
+        input is ConstantFunction ? input : new CacheFunction(input);
 
     private DensityFunction Input(JsonElement json, string path, string field) =>
         this.Compile(Required(json, path, field), Field(path, field));
