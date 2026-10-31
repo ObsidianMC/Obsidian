@@ -560,6 +560,12 @@ Door-hinge captures include mixed wood/iron/copper doors and distinguish full co
 Custom player-head sound lookup from skull block entities
 remains unsupported; a head without a custom sound is silent as in vanilla.
 
+Note block events have their own queue, drained after the piston actions. Vanilla drains every block event from
+one insertion-ordered, deduplicated set, so a note activated before a piston that moves the note block in the same
+tick plays in vanilla, while Obsidian moves the block first and cancels the note. Fixing it means one shared
+block-event queue (keyed by position, block, event and parameter, and taking events added while it drains) for
+notes, pistons and the other block-event users, with a captured note-then-piston scenario.
+
 Remaining block work needs separate interaction/lifecycle captures:
 
 - Golden dandelion interactions and persisted age locking, including stopping aging, cooldown and particles.
