@@ -156,18 +156,14 @@ public abstract partial class AbstractLevel
     /// <returns>The found fountain's origin, or null.</returns>
     private Vector? LocateExitPortal(Vector[] portals)
     {
-        // The centre column's heights from its blocks: a running chunk's stored heightmaps keep generation's.
         var terrain = new MobTerrain(this);
-        var blocking = ExitPortalSearch.Surface(terrain.GetBlock, HeightmapType.MotionBlocking, MinY, Height);
+        var center = this.GetLoadedChunk(0, 0);
+        var blocking = center?.GetHeight(HeightmapType.MotionBlocking, 0, 0) ?? this.MinY;
         var found = ExitPortalSearch.Find(terrain.GetBlock, portals, blocking, MinY);
 
         if (!exitPortalKnown)
         {
-            var surface = ExitPortalSearch.Surface(
-                terrain.GetBlock,
-                HeightmapType.MotionBlockingNoLeaves,
-                MinY,
-                Height);
+            var surface = center?.GetHeight(HeightmapType.MotionBlockingNoLeaves, 0, 0) ?? this.MinY;
             exitPortal = found ?? ExitPortalSearch.SpawnOrigin(terrain.GetBlock, surface, MinY);
             exitPortalKnown = true;
         }

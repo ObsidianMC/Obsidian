@@ -35,6 +35,7 @@ internal static partial class BlocksRegistry
 
         SimpleBlockStateExtensions.SetConverter(GetFromSimpleState);
         TreeBlockRules.States = new BlockStateAccess();
+        Heightmap.Matches = WorldData.Generators.Mojang.WorldgenHeightmaps.Matches;
     }
 
     /// <summary>

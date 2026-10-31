@@ -60,7 +60,7 @@ if (args.Length != 5)
     Console.Error.WriteLine("           [--sections <patterns>] [--cases <patterns>]");
     Console.Error.WriteLine("       Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory>");
     Console.Error.WriteLine("           <scratch directory> <test assets directory>");
-    Console.Error.WriteLine("           [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces] [case names]");
+    Console.Error.WriteLine("           [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+heightmaps] [case names]");
     return 1;
 }
 

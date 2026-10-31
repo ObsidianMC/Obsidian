@@ -940,6 +940,19 @@ public class Region : IRegion
                 if (Enum.TryParse<HeightmapType>(name.Replace("_", ""), true, out var type) && chunk.Heightmaps.TryGetValue(type, out var target))
                     target.data.storage = ((NbtArray<long>)heightmap).GetArray();
             }
+
+            // Older Obsidian saves omitted runtime maps that full vanilla chunks keep.
+            var full = chunkCompound.TryGetTagValue<string>("Status", out var heightmapStatus)
+                && heightmapStatus is "minecraft:full" or "full";
+            foreach (var (type, target) in chunk.Heightmaps)
+            {
+                var generationOnly = type is HeightmapType.WorldSurfaceWG or HeightmapType.OceanFloorWG;
+                if (generationOnly && full)
+                    continue;
+
+                if (!heightmaps!.HasTag(HeightmapName(type)))
+                    target.Recalculate();
+            }
         }
         else
         {
@@ -1001,8 +1014,7 @@ public class Region : IRegion
 
         chunk.SetChunkStatus(ParseStatus(chunkCompound.TryGetTag<NbtTag<string>>("Status", out var status) ? status.Value : null));
 
-        // Completing generation releases optional maps. A loaded vanilla chunk still owns the maps it saved,
-        // including OCEAN_FLOOR and MOTION_BLOCKING_NO_LEAVES, so retain those through subsequent saves.
+        // A loaded chunk retains even temporary maps that its save explicitly included.
         if (heightmapsMatch)
         {
             foreach (var (name, heightmap) in heightmaps!)
@@ -1221,7 +1233,7 @@ public class Region : IRegion
         // which later generation steps read.
         writer.WriteCompoundStart("Heightmaps");
         foreach (var (type, heightmap) in chunk.Heightmaps)
-            writer.WriteArray(HeightmapName(type), heightmap.data.storage);
+            writer.WriteArray(HeightmapName(type), heightmap.GetDataArray());
         writer.EndCompound();
     }
 

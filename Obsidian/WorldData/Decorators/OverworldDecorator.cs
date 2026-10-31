@@ -236,14 +236,7 @@ public static class OverworldDecorator
 
         private bool IsOutsideBuildHeight(int y) => y < this.MinY || y >= this.MinY + this.Height;
 
-        // Vanilla heightmap predicates, approximated with the block physics data.
-        private static bool MatchesHeightmap(HeightmapType type, IBlock block) => type switch
-        {
-            HeightmapType.WorldSurface or HeightmapType.WorldSurfaceWG => !block.IsAir,
-            HeightmapType.OceanFloor or HeightmapType.OceanFloorWG => block.BlocksMotion(),
-            HeightmapType.MotionBlocking => block.BlocksMotion() || block.HasFluid(),
-            _ => (block.BlocksMotion() || block.HasFluid()) && block.BlockClass() is not ("TintedParticleLeavesBlock"
-                or "UntintedParticleLeavesBlock" or "MangroveLeavesBlock" or "LeavesBlock")
-        };
+        private static bool MatchesHeightmap(HeightmapType type, IBlock block) =>
+            Generators.Mojang.WorldgenHeightmaps.Matches(type, block);
     }
 }

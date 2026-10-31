@@ -30,11 +30,12 @@
 		     assets. -->
 		<VanillaGeneratorInput Include="@(Compile)" Exclude="WorldgenCaptures.cs;WorldgenFixtureFiles.cs;Scenario*.cs" />
 		<VanillaDumperInput Include="Java\**\*.java;Java\**\*.json"
-		                    Exclude="Java\SulfurFixtures.java;Java\MoreBlockFixtures.java" />
+		                    Exclude="Java\SulfurFixtures.java;Java\MoreBlockFixtures.java;Java\HeightmapFixtures.java" />
 		<None Update="@(VanillaDumperInput)" CopyToOutputDirectory="PreserveNewest" />
 		<!-- Gameplay probes run only through their requested CaptureFixtures entry. -->
 		<None Update="Java\MoreBlockFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\SulfurFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\HeightmapFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<!-- On-request captures (CaptureVanillaWorldgen); not asset inputs, so editing them doesn't regenerate the assets. -->
 		<None Update="Captures\**\*.java" CopyToOutputDirectory="PreserveNewest" />
 		<UpToDateCheckOutput Include="$(VanillaAssetsDirectory)collision_shapes.json" />
