@@ -9,7 +9,8 @@ namespace Obsidian.Registries;
 /// <summary>Resolves official Minecraft downloads and verifies the SHA-1 published by Mojang.</summary>
 internal static class MojangDownloads
 {
-    private const string ManifestUrl = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
+    // The current manifest host, which the asset generator uses too.
+    private const string ManifestUrl = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
 
     // Waits before each retry. A dropped connection or a truncated download is usually gone a few seconds later.
     private static readonly TimeSpan[] RetryDelays = [TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5)];
