@@ -1,3 +1,4 @@
+using Obsidian.Nbt;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Structures.Processors;
 
@@ -48,6 +49,15 @@ public sealed class NetherFossilPiece : TemplateStructurePiece
     private NetherFossilPiece(string templateId, Vector position, StructureRotation rotation)
         : base(0, templateId, MakeSettings(rotation), position)
     {
+    }
+
+    internal override string TypeId => "minecraft:nefos";
+
+    internal override void SaveState(NbtCompound tag)
+    {
+        base.SaveState(tag);
+
+        this.SaveRotation(tag);
     }
 
     internal static void AddPieces(IStructurePieceAccessor pieces, IRandomSource random, Vector position)

@@ -73,30 +73,87 @@ public abstract class StructurePiece
     public virtual void Move(int x, int y, int z) => this.BoundingBox = this.BoundingBox.Move(x, y, z);
 
     /// <summary>
-    /// Saves what changes as the piece is placed, with vanilla's field names: the bounding box (<c>BB</c>), which some
-    /// pieces move when first placed, and overrides add their flags (chest placed, spawner placed...).
+    /// The piece's type in saves, an identifier of vanilla's <c>StructurePieceType</c> registry
+    /// (<c>minecraft:mscorridor</c>...).
+    /// </summary>
+    internal abstract string TypeId { get; }
+
+    /// <summary>
+    /// Saves the piece like vanilla 26.3's <c>StructurePiece.createTag</c>: its type (<c>id</c>), bounding box
+    /// (<c>BB</c>), orientation (<c>O</c>) and depth (<c>GD</c>), and overrides add their type's fields, with what
+    /// changes as the piece is placed (the box some pieces move, chest placed, spawner placed...).
     /// </summary>
     /// <remarks>
-    /// Pieces are recomputed from the seed, so only this state needs saving for a restart to place the rest of the piece
-    /// the same way. Called under the start's lock (see <see cref="StructureStart.SaveState"/>).
+    /// Obsidian recomputes pieces from the seed, so only what placing changes is read back (see
+    /// <see cref="LoadState"/>); the rest is saved for vanilla, which reads the pieces from the save. Called under the
+    /// start's lock (see <see cref="StructureStart.SaveState"/>).
     /// </remarks>
     internal virtual void SaveState(NbtCompound tag)
     {
-        var box = this.BoundingBox;
-        tag.Add(new NbtArray<int>("BB", [box.MinX, box.MinY, box.MinZ, box.MaxX, box.MaxY, box.MaxZ]));
+        tag.Add(new NbtTag<string>("id", this.TypeId));
+        tag.Add(SaveBox("BB", this.BoundingBox));
+        tag.Add(new NbtTag<int>("O", HorizontalIndex(this.Orientation)));
+        tag.Add(new NbtTag<int>("GD", this.GenDepth));
     }
 
     /// <summary>
-    /// Restores what <see cref="SaveState"/> saved, before the piece is placed again.
+    /// Restores what placing the piece changed from what <see cref="SaveState"/> (or vanilla) saved, before the piece
+    /// is placed again.
     /// </summary>
     internal virtual void LoadState(NbtCompound tag)
     {
-        if (tag.TryGetTag<NbtArray<int>>("BB", out var bounds) && bounds.Count == 6)
-        {
-            var box = bounds.GetArray();
-            this.BoundingBox = new BlockBox(new Vector(box[0], box[1], box[2]), new Vector(box[3], box[4], box[5]));
-        }
+        if (TryLoadBox(tag, "BB", out var box))
+            this.BoundingBox = box;
     }
+
+    /// <summary>
+    /// Vanilla's <c>BoundingBox</c> codec: <c>[minX, minY, minZ, maxX, maxY, maxZ]</c>.
+    /// </summary>
+    private protected static NbtArray<int> SaveBox(string? name, BlockBox box) =>
+        new(name, [box.MinX, box.MinY, box.MinZ, box.MaxX, box.MaxY, box.MaxZ]);
+
+    private protected static bool TryLoadBox(NbtCompound tag, string name, out BlockBox box)
+    {
+        box = default;
+        if (!tag.TryGetTag<NbtArray<int>>(name, out var bounds))
+            return false;
+
+        return TryLoadBox(bounds, out box);
+    }
+
+    private protected static bool TryLoadBox(NbtArray<int> bounds, out BlockBox box)
+    {
+        box = default;
+        if (bounds.Count != 6)
+            return false;
+
+        var values = bounds.GetArray();
+        box = new BlockBox(new Vector(values[0], values[1], values[2]), new Vector(values[3], values[4], values[5]));
+        return true;
+    }
+
+    /// <summary>
+    /// Vanilla's <c>Direction.get2DDataValue</c>: south 0, west 1, north 2, east 3, and -1 for none.
+    /// </summary>
+    private protected static int HorizontalIndex(BlockFace? face) => face switch
+    {
+        BlockFace.South => 0,
+        BlockFace.West => 1,
+        BlockFace.North => 2,
+        BlockFace.East => 3,
+        _ => -1
+    };
+
+    /// <summary>
+    /// Vanilla's <c>Rotation</c> names.
+    /// </summary>
+    private protected static string RotationName(StructureRotation rotation) => rotation switch
+    {
+        StructureRotation.Clockwise90 => "CLOCKWISE_90",
+        StructureRotation.Clockwise180 => "CLOCKWISE_180",
+        StructureRotation.CounterClockwise90 => "COUNTERCLOCKWISE_90",
+        _ => "NONE"
+    };
 
     /// <summary>
     /// Vanilla <c>isCloseToChunk</c>: whether the box reaches within <paramref name="distance"/> blocks of the chunk.

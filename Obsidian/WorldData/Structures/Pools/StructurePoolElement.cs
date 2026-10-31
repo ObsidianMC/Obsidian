@@ -30,6 +30,23 @@ public abstract class StructurePoolElement
     public abstract Vector GetSize(StructureRotation rotation);
 
     /// <summary>
+    /// Saves the element in the format of vanilla 26.3's <c>StructurePoolElement</c> codec (as jigsaw pieces save
+    /// their <c>pool_element</c>): its <c>element_type</c> and its type's fields.
+    /// </summary>
+    internal NbtCompound Save(string? name)
+    {
+        var tag = new NbtCompound(name) { new NbtTag<string>("element_type", this.Type) };
+        this.SaveFields(tag);
+        return tag;
+    }
+
+    /// <summary>
+    /// Adds the element's fields; by default its projection.
+    /// </summary>
+    private protected virtual void SaveFields(NbtCompound tag) =>
+        tag.Add(new NbtTag<string>("projection", this.Projection == Projection.Rigid ? "rigid" : "terrain_matching"));
+
+    /// <summary>
     /// Vanilla <c>getShuffledJigsawBlocks</c>: the element's jigsaws placed at <paramref name="position"/>, in a random
     /// order, highest selection priority first.
     /// </summary>
@@ -107,6 +124,26 @@ public class SinglePoolElement : StructurePoolElement
     public StructureTemplate Template => StructureRegistry.Get(this.Location);
 
     public override Vector GetSize(StructureRotation rotation) => this.Template.GetSize(rotation);
+
+    // A list defined inline is saved without its processors: Obsidian doesn't keep them in vanilla's format. Vanilla's
+    // own pools only define empty lists inline.
+    private protected override void SaveFields(NbtCompound tag)
+    {
+        tag.Add(new NbtTag<string>("location", this.Location));
+
+        if (this.Processors.Identifier.Length > 0)
+            tag.Add(new NbtTag<string>("processors", this.Processors.Identifier));
+        else
+            tag.Add(new NbtCompound("processors") { new NbtList(NbtTagType.End, "processors") });
+
+        base.SaveFields(tag);
+
+        if (this.OverrideLiquidSettings is LiquidSettings liquid)
+        {
+            var name = PoolElementStructurePiece.LiquidSettingsName(liquid);
+            tag.Add(new NbtTag<string>("override_liquid_settings", name));
+        }
+    }
 
     public override List<JigsawBlockInfo> GetShuffledJigsawBlocks(Vector position, StructureRotation rotation, IRandomSource random)
     {
@@ -186,6 +223,16 @@ public sealed class ListPoolElement : StructurePoolElement
         }
     }
 
+    private protected override void SaveFields(NbtCompound tag)
+    {
+        var elements = new NbtList(NbtTagType.Compound, "elements");
+        foreach (var element in this.Elements)
+            elements.Add(element.Save(null));
+
+        tag.Add(elements);
+        base.SaveFields(tag);
+    }
+
     internal override void SetProjection(Projection value)
     {
         base.SetProjection(value);
@@ -262,6 +309,12 @@ public sealed class FeaturePoolElement : StructurePoolElement
     /// </summary>
     internal bool UnnamedJigsaw { get; set; }
 
+    private protected override void SaveFields(NbtCompound tag)
+    {
+        tag.Add(new NbtTag<string>("feature", this.Feature.Identifier));
+        base.SaveFields(tag);
+    }
+
     public override Vector GetSize(StructureRotation rotation) => Vector.Zero;
 
     public override List<JigsawBlockInfo> GetShuffledJigsawBlocks(
@@ -290,6 +343,11 @@ public sealed class EmptyPoolElement : StructurePoolElement
     public static EmptyPoolElement Instance { get; } = new() { Type = "minecraft:empty_pool_element" };
 
     public EmptyPoolElement() => this.SetProjection(Projection.TerrainMatching);
+
+    // Vanilla's empty element has no fields.
+    private protected override void SaveFields(NbtCompound tag)
+    {
+    }
 
     public override Vector GetSize(StructureRotation rotation) => Vector.Zero;
 

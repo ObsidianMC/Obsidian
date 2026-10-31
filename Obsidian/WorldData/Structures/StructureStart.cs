@@ -139,9 +139,9 @@ public sealed class StructureStart
     }
 
     /// <summary>
-    /// Saves the start like vanilla's <c>StructureStart.createTag</c> (<c>id</c>, <c>ChunkX</c>, <c>ChunkZ</c>,
-    /// <c>Children</c>), with each piece's placement state (see <see cref="StructurePiece.SaveState"/>) rather than the whole
-    /// piece.
+    /// Saves the start in the format of vanilla 26.3's <c>StructureStart.createTag</c> (<c>id</c>, <c>ChunkX</c>,
+    /// <c>ChunkZ</c>, <c>references</c>, and the pieces in <c>Children</c>; see
+    /// <see cref="StructurePiece.SaveState"/>).
     /// </summary>
     internal NbtCompound SaveState()
     {
@@ -205,7 +205,9 @@ public sealed class StructureStart
     /// Only the first call does anything; it must happen before the start is first placed.
     /// </summary>
     /// <remarks>
-    /// Saved state for a different set of pieces (from another version of the structure) is ignored.
+    /// Saved state for a different set of pieces (from another version of the structure, or another generator) is
+    /// ignored: the pieces have to match in number and, where the save has them (Obsidian's older saves don't), in
+    /// type.
     /// </remarks>
     internal void RestoreState(NbtCompound? saved)
     {
@@ -223,7 +225,7 @@ public sealed class StructureStart
         if (saved.TryGetTag<NbtTag<int>>("references", out var references))
             InterlockedMax(ref this.references, references.Value);
 
-        if (!saved.TryGetTag<NbtList>("Children", out var children) || children.Count != this.Pieces.Count)
+        if (!saved.TryGetTag<NbtList>("Children", out var children) || !this.Matches(children))
             return;
 
         for (var i = 0; i < children.Count; i++)
@@ -231,6 +233,24 @@ public sealed class StructureStart
             if (children[i] is NbtCompound child)
                 this.Pieces[i].LoadState(child);
         }
+    }
+
+    private bool Matches(NbtList children)
+    {
+        if (children.Count != this.Pieces.Count)
+            return false;
+
+        for (var i = 0; i < children.Count; i++)
+        {
+            if (children[i] is NbtCompound child
+                && child.TryGetTag<NbtTag<string>>("id", out var id)
+                && id.Value != this.Pieces[i].TypeId)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
 

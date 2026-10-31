@@ -45,7 +45,60 @@ public abstract class TemplateStructurePiece : StructurePiece
 
     public Vector TemplatePosition => this.BoundingBox.Min + this.templateOffset;
 
+    /// <summary>
+    /// The template position vanilla saves (<c>TPX</c>, <c>TPY</c>, <c>TPZ</c>), where its piece last placed the
+    /// template.
+    /// </summary>
+    private protected virtual Vector SavedTemplatePosition => this.TemplatePosition;
+
     public override void PostProcess(StructurePieceContext context) => this.PlaceTemplate(context, context.Box, this.TemplatePosition);
+
+    /// <summary>
+    /// Adds vanilla's <c>TemplateStructurePiece</c> fields: the template position and name. Subclasses add how the
+    /// template is placed (<c>Rot</c>...).
+    /// </summary>
+    internal override void SaveState(NbtCompound tag)
+    {
+        base.SaveState(tag);
+
+        var position = this.SavedTemplatePosition;
+        tag.Add(new NbtTag<int>("TPX", position.X));
+        tag.Add(new NbtTag<int>("TPY", position.Y));
+        tag.Add(new NbtTag<int>("TPZ", position.Z));
+        tag.Add(new NbtTag<string>("Template", this.TemplateName));
+    }
+
+    /// <summary>
+    /// Restores the box, and the template position, which vanilla doesn't move with the box when placing moves it
+    /// (igloos). Saves without it keep the template where it was relative to the box.
+    /// </summary>
+    internal override void LoadState(NbtCompound tag)
+    {
+        base.LoadState(tag);
+
+        if (tag.TryGetTag<NbtTag<int>>("TPX", out var x)
+            && tag.TryGetTag<NbtTag<int>>("TPY", out var y)
+            && tag.TryGetTag<NbtTag<int>>("TPZ", out var z))
+        {
+            this.templateOffset = new Vector(x.Value, y.Value, z.Value) - this.BoundingBox.Min;
+        }
+    }
+
+    /// <summary>
+    /// Adds vanilla's <c>Rot</c>, the template's rotation, which most template pieces save.
+    /// </summary>
+    private protected void SaveRotation(NbtCompound tag) =>
+        tag.Add(new NbtTag<string>("Rot", RotationName(this.PlaceSettings.Rotation)));
+
+    /// <summary>
+    /// Vanilla's <c>Mirror</c> names.
+    /// </summary>
+    private protected static string MirrorName(StructureMirror mirror) => mirror switch
+    {
+        StructureMirror.LeftRight => "LEFT_RIGHT",
+        StructureMirror.FrontBack => "FRONT_BACK",
+        _ => "NONE"
+    };
 
     /// <summary>
     /// Moves the template without moving the bounding box, like vanilla pieces assigning their template position. Only

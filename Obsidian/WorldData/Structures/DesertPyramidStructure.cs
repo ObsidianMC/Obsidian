@@ -94,6 +94,8 @@ public sealed class DesertPyramidPiece : ScatteredFeaturePiece
     {
     }
 
+    internal override string TypeId => "minecraft:tedp";
+
     internal override void SaveState(NbtCompound tag)
     {
         base.SaveState(tag);

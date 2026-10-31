@@ -31,6 +31,8 @@ public sealed class SwampHutPiece : ScatteredFeaturePiece
     {
     }
 
+    internal override string TypeId => "minecraft:tesh";
+
     internal override void SaveState(NbtCompound tag)
     {
         base.SaveState(tag);

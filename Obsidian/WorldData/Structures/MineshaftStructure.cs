@@ -150,6 +150,14 @@ public abstract class MineshaftPiece : StructurePiece
 
     protected IBlock Fence { get; }
 
+    // Vanilla's MineShaftPiece saves the type's ordinal.
+    internal override void SaveState(NbtCompound tag)
+    {
+        base.SaveState(tag);
+
+        tag.Add(new NbtTag<int>("MST", (int)this.Type));
+    }
+
     // Pieces don't carve through the supports of the pieces placed before them.
     protected override bool CanBeReplaced(IWorldGenLevel level, int x, int y, int z, BlockBox box)
     {
@@ -245,6 +253,19 @@ public sealed class MineshaftRoom : MineshaftPiece
         : base(genDepth, type,
             BlockBox.Create(x, MineshaftPieces.StartY, z, x + 7 + random.NextInt(6), 54 + random.NextInt(6), z + 7 + random.NextInt(6)))
     {
+    }
+
+    internal override string TypeId => "minecraft:msroom";
+
+    internal override void SaveState(NbtCompound tag)
+    {
+        base.SaveState(tag);
+
+        var entrances = new NbtList(NbtTagType.IntArray, "Entrances");
+        foreach (var entrance in this.entrances)
+            entrances.Add(SaveBox(null, entrance));
+
+        tag.Add(entrances);
     }
 
     public override void AddChildren(StructurePiece start, IStructurePieceAccessor pieces, IRandomSource random)
@@ -355,11 +376,16 @@ public sealed class MineshaftCorridor : MineshaftPiece
     // Like vanilla, set by whichever chunk places the spawner first.
     private bool hasPlacedSpider;
 
+    internal override string TypeId => "minecraft:mscorridor";
+
     internal override void SaveState(NbtCompound tag)
     {
         base.SaveState(tag);
 
+        tag.Add(new NbtTag<bool>("hr", this.hasRails));
+        tag.Add(new NbtTag<bool>("sc", this.spiderCorridor));
         tag.Add(new NbtTag<bool>("hps", this.hasPlacedSpider));
+        tag.Add(new NbtTag<int>("Num", this.numSections));
     }
 
     internal override void LoadState(NbtCompound tag)
@@ -687,6 +713,16 @@ public sealed class MineshaftCrossing : MineshaftPiece
         this.isTwoFloored = boundingBox.YSpan > 3;
     }
 
+    internal override string TypeId => "minecraft:mscrossing";
+
+    internal override void SaveState(NbtCompound tag)
+    {
+        base.SaveState(tag);
+
+        tag.Add(new NbtTag<bool>("tf", this.isTwoFloored));
+        tag.Add(new NbtTag<byte>("D", (byte)HorizontalIndex(this.direction)));
+    }
+
     /// <summary>
     /// Vanilla <c>findCrossing</c>: a free crossing box (two floors high one time in four), or <c>null</c>.
     /// </summary>
@@ -809,6 +845,8 @@ public sealed class MineshaftStairs : MineshaftPiece
     {
         this.Orientation = direction;
     }
+
+    internal override string TypeId => "minecraft:msstairs";
 
     /// <summary>
     /// Vanilla <c>findStairs</c>: the stairs box if it's free, or <c>null</c>.

@@ -121,24 +121,30 @@ public sealed class ShipwreckPiece : TemplateStructurePiece
         this.PlaceTemplate(context, context.Box, this.TemplatePosition with { Y = y });
     }
 
+    internal override string TypeId => "minecraft:shipwreck";
+
+    // Vanilla moves the template to the adjusted height, and saves it there.
+    private protected override Vector SavedTemplatePosition =>
+        this.TemplatePosition with { Y = this.adjustedHeight ?? this.TemplatePosition.Y };
+
     internal override void SaveState(NbtCompound tag)
     {
-        base.SaveState(tag);
-
-        // Vanilla saves the adjusted template position's Y.
         lock (this.heightLock)
         {
+            base.SaveState(tag);
+
+            this.SaveRotation(tag);
+            tag.Add(new NbtTag<bool>("isBeached", this.isBeached));
             tag.Add(new NbtTag<bool>("height_adjusted", this.adjustedHeight is not null));
-            tag.Add(new NbtTag<int>("TPY", this.adjustedHeight ?? this.TemplatePosition.Y));
         }
     }
 
     internal override void LoadState(NbtCompound tag)
     {
-        base.LoadState(tag);
-
         lock (this.heightLock)
         {
+            base.LoadState(tag);
+
             if (tag.TryGetBool("height_adjusted", out var adjusted) && tag.TryGetTag<NbtTag<int>>("TPY", out var y))
             {
                 this.adjustedHeight = adjusted ? y.Value : null;

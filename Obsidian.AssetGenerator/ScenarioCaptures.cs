@@ -23,6 +23,7 @@ internal static class ScenarioCaptures
     public const string Daylight = "daylight";
     public const string Sulfur = "sulfur";
     public const string MoreBlocks = "more_blocks";
+    public const string StructurePieces = "structure_pieces";
 
     private const string Symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -46,7 +47,10 @@ internal static class ScenarioCaptures
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
-    public static readonly string[] All = [Redstone, Fluids, Daylight, Sulfur, MoreBlocks];
+    // The fixtures whose probes record only the cases asked for.
+    private static readonly string[] SelectableCases = [Sulfur, MoreBlocks, StructurePieces];
+
+    public static readonly string[] All = [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces];
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -82,8 +86,19 @@ internal static class ScenarioCaptures
     public static async Task RunAsync(VanillaServer server, string assetsDirectory,
         IReadOnlyCollection<string> fixtures, IReadOnlyCollection<string>? cases = null)
     {
-        if (cases is not null && (fixtures.Count != 1 || !fixtures.Contains(Sulfur) && !fixtures.Contains(MoreBlocks)))
-            throw new ArgumentException("Case selection requires CaptureFixtures=sulfur or more_blocks.");
+        if (cases is not null && (fixtures.Count != 1 || !SelectableCases.Any(fixtures.Contains)))
+        {
+            throw new ArgumentException(
+                "Case selection requires CaptureFixtures=sulfur, more_blocks or structure_pieces.");
+        }
+
+        if (fixtures.Contains(StructurePieces))
+        {
+            var path = Path.Combine(assetsDirectory, "structure_pieces.json");
+            await FixtureDumper.DumpStructurePiecesAsync(server, path, cases);
+            if (fixtures.Count == 1)
+                return;
+        }
 
         if (fixtures.Contains(MoreBlocks))
         {

@@ -38,6 +38,8 @@ public sealed class JungleTemplePiece : ScatteredFeaturePiece
     {
     }
 
+    internal override string TypeId => "minecraft:tejp";
+
     internal override void SaveState(NbtCompound tag)
     {
         base.SaveState(tag);

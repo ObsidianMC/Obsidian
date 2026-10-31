@@ -1,3 +1,4 @@
+using Obsidian.Nbt;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Features.RuleTests;
@@ -214,6 +215,37 @@ public sealed class RuinedPortalPiece : TemplateStructurePiece
         this.placement = placement;
         this.properties = properties;
     }
+
+    internal override string TypeId => "minecraft:rupo";
+
+    internal override void SaveState(NbtCompound tag)
+    {
+        base.SaveState(tag);
+
+        tag.Add(new NbtTag<string>("Rotation", RotationName(this.PlaceSettings.Rotation)));
+        tag.Add(new NbtTag<string>("Mirror", MirrorName(this.PlaceSettings.Mirror)));
+        tag.Add(new NbtTag<string>("VerticalPlacement", PlacementName(this.placement)));
+        tag.Add(new NbtCompound("Properties")
+        {
+            new NbtTag<bool>("cold", this.properties.Cold),
+            new NbtTag<float>("mossiness", this.properties.Mossiness),
+            new NbtTag<bool>("air_pocket", this.properties.AirPocket),
+            new NbtTag<bool>("overgrown", this.properties.Overgrown),
+            new NbtTag<bool>("vines", this.properties.Vines),
+            new NbtTag<bool>("replace_with_blackstone", this.properties.ReplaceWithBlackstone)
+        });
+    }
+
+    // Vanilla's VerticalPlacement names.
+    private static string PlacementName(RuinedPortalPlacement placement) => placement switch
+    {
+        RuinedPortalPlacement.OnLandSurface => "on_land_surface",
+        RuinedPortalPlacement.PartlyBuried => "partly_buried",
+        RuinedPortalPlacement.OnOceanFloor => "on_ocean_floor",
+        RuinedPortalPlacement.InMountain => "in_mountain",
+        RuinedPortalPlacement.Underground => "underground",
+        _ => "in_nether"
+    };
 
     internal static HeightmapType HeightmapFor(RuinedPortalPlacement placement) =>
         placement == RuinedPortalPlacement.OnOceanFloor ? HeightmapType.OceanFloorWG : HeightmapType.WorldSurfaceWG;

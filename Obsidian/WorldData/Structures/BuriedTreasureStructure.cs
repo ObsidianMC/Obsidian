@@ -25,6 +25,8 @@ public sealed class BuriedTreasurePiece(Vector position) : StructurePiece(0, new
         BlocksRegistry.Granite, BlocksRegistry.Diorite
     ];
 
+    internal override string TypeId => "minecraft:btp";
+
     public override void PostProcess(StructurePieceContext context)
     {
         var level = context.Level;

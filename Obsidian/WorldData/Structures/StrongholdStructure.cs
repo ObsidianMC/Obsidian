@@ -247,6 +247,19 @@ public static class StrongholdPieces
         {
         }
 
+        internal override void SaveState(NbtCompound tag)
+        {
+            base.SaveState(tag);
+
+            tag.Add(new NbtTag<string>("EntryDoor", this.EntryDoor switch
+            {
+                SmallDoorType.WoodDoor => "WOOD_DOOR",
+                SmallDoorType.Grates => "GRATES",
+                SmallDoorType.IronDoor => "IRON_DOOR",
+                _ => "OPENING"
+            }));
+        }
+
         /// <summary>
         /// The door at the piece's entrance.
         /// </summary>
@@ -396,6 +409,8 @@ public static class StrongholdPieces
             this.EntryDoor = RandomSmallDoor(random);
         }
 
+        internal override string TypeId => "minecraft:shcc";
+
         public override void AddChildren(StructurePiece start, IStructurePieceAccessor pieces, IRandomSource random) =>
             this.GenerateSmallDoorChildForward((StartPiece)start, pieces, random, 1, 1);
 
@@ -443,6 +458,15 @@ public static class StrongholdPieces
         {
             this.Orientation = direction;
             this.steps = direction is BlockFace.North or BlockFace.South ? boundingBox.ZSpan : boundingBox.XSpan;
+        }
+
+        internal override string TypeId => "minecraft:shfc";
+
+        internal override void SaveState(NbtCompound tag)
+        {
+            base.SaveState(tag);
+
+            tag.Add(new NbtTag<int>("Steps", this.steps));
         }
 
         /// <summary>
@@ -507,6 +531,18 @@ public static class StrongholdPieces
             this.leftHigh = random.NextBoolean();
             this.rightLow = random.NextBoolean();
             this.rightHigh = random.NextInt(3) > 0;
+        }
+
+        internal override string TypeId => "minecraft:sh5c";
+
+        internal override void SaveState(NbtCompound tag)
+        {
+            base.SaveState(tag);
+
+            tag.Add(new NbtTag<bool>("leftLow", this.leftLow));
+            tag.Add(new NbtTag<bool>("leftHigh", this.leftHigh));
+            tag.Add(new NbtTag<bool>("rightLow", this.rightLow));
+            tag.Add(new NbtTag<bool>("rightHigh", this.rightHigh));
         }
 
         public override void AddChildren(StructurePiece start, IStructurePieceAccessor pieces, IRandomSource random)
@@ -592,6 +628,8 @@ public static class StrongholdPieces
             this.EntryDoor = RandomSmallDoor(random);
         }
 
+        internal override string TypeId => "minecraft:shlt";
+
         // Pieces facing south or west are mirrored, so their left is the world's right.
         private bool TurnsRight => this.Orientation is not (BlockFace.North or BlockFace.East);
 
@@ -634,6 +672,8 @@ public static class StrongholdPieces
             this.Orientation = direction;
             this.EntryDoor = RandomSmallDoor(random);
         }
+
+        internal override string TypeId => "minecraft:shrt";
 
         // Pieces facing south or west are mirrored, so their right is the world's left.
         private bool TurnsLeft => this.Orientation is not (BlockFace.North or BlockFace.East);
@@ -679,6 +719,15 @@ public static class StrongholdPieces
             this.Orientation = direction;
             this.EntryDoor = RandomSmallDoor(random);
             this.isTall = boundingBox.YSpan > 6;
+        }
+
+        internal override string TypeId => "minecraft:shli";
+
+        internal override void SaveState(NbtCompound tag)
+        {
+            base.SaveState(tag);
+
+            tag.Add(new NbtTag<bool>("Tall", this.isTall));
         }
 
         internal static Library? CreatePiece(IStructurePieceAccessor pieces, IRandomSource random, int x, int y, int z, BlockFace direction,
@@ -830,6 +879,8 @@ public static class StrongholdPieces
             this.Orientation = direction;
         }
 
+        internal override string TypeId => "minecraft:shpr";
+
         public override void AddChildren(StructurePiece start, IStructurePieceAccessor pieces, IRandomSource random) =>
             ((StartPiece)start).PortalRoom = this;
 
@@ -937,6 +988,8 @@ public static class StrongholdPieces
             this.EntryDoor = RandomSmallDoor(random);
         }
 
+        internal override string TypeId => "minecraft:shph";
+
         public override void AddChildren(StructurePiece start, IStructurePieceAccessor pieces, IRandomSource random) =>
             this.GenerateSmallDoorChildForward((StartPiece)start, pieces, random, 1, 1);
 
@@ -996,6 +1049,15 @@ public static class StrongholdPieces
             this.Orientation = direction;
             this.EntryDoor = RandomSmallDoor(random);
             this.type = random.NextInt(5);
+        }
+
+        internal override string TypeId => "minecraft:shrc";
+
+        internal override void SaveState(NbtCompound tag)
+        {
+            base.SaveState(tag);
+
+            tag.Add(new NbtTag<int>("Type", this.type));
         }
 
         public override void AddChildren(StructurePiece start, IStructurePieceAccessor pieces, IRandomSource random)
@@ -1136,6 +1198,15 @@ public static class StrongholdPieces
             this.EntryDoor = SmallDoorType.Opening;
         }
 
+        internal override string TypeId => "minecraft:shsd";
+
+        internal override void SaveState(NbtCompound tag)
+        {
+            base.SaveState(tag);
+
+            tag.Add(new NbtTag<bool>("Source", this.isSource));
+        }
+
         public StairsDown(int genDepth, IRandomSource random, BlockBox boundingBox, BlockFace direction) : base(genDepth, boundingBox)
         {
             this.Orientation = direction;
@@ -1195,6 +1266,8 @@ public static class StrongholdPieces
         {
         }
 
+        internal override string TypeId => "minecraft:shstart";
+
         /// <summary>
         /// The portal room, once placed.
         /// </summary>
@@ -1248,6 +1321,16 @@ public static class StrongholdPieces
             this.rightChild = random.NextInt(2) == 0;
         }
 
+        internal override string TypeId => "minecraft:shs";
+
+        internal override void SaveState(NbtCompound tag)
+        {
+            base.SaveState(tag);
+
+            tag.Add(new NbtTag<bool>("Left", this.leftChild));
+            tag.Add(new NbtTag<bool>("Right", this.rightChild));
+        }
+
         public override void AddChildren(StructurePiece start, IStructurePieceAccessor pieces, IRandomSource random)
         {
             var strongholdStart = (StartPiece)start;
@@ -1299,6 +1382,8 @@ public static class StrongholdPieces
             this.Orientation = direction;
             this.EntryDoor = RandomSmallDoor(random);
         }
+
+        internal override string TypeId => "minecraft:shssd";
 
         public override void AddChildren(StructurePiece start, IStructurePieceAccessor pieces, IRandomSource random) =>
             this.GenerateSmallDoorChildForward((StartPiece)start, pieces, random, 1, 1);

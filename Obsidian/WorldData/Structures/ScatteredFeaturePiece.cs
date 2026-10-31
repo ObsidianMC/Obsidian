@@ -37,6 +37,9 @@ public abstract class ScatteredFeaturePiece : StructurePiece
         lock (this.heightLock)
         {
             base.SaveState(tag);
+            tag.Add(new NbtTag<int>("Width", this.Width));
+            tag.Add(new NbtTag<int>("Height", this.Height));
+            tag.Add(new NbtTag<int>("Depth", this.Depth));
             tag.Add(new NbtTag<int>("HPos", this.HeightPosition));
         }
     }

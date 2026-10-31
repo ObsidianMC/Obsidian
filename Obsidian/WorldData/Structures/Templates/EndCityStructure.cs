@@ -246,9 +246,22 @@ public sealed class EndCityStructure : Structure
 public sealed class EndCityPiece : TemplateStructurePiece
 {
     /// <param name="overwrite">Whether the template's air is placed too.</param>
+    private readonly bool overwrite;
+
     internal EndCityPiece(string name, Vector position, StructureRotation rotation, bool overwrite)
         : base(0, "minecraft:end_city/" + name, name, MakeSettings(overwrite, rotation), position)
     {
+        this.overwrite = overwrite;
+    }
+
+    internal override string TypeId => "minecraft:ecp";
+
+    internal override void SaveState(NbtCompound tag)
+    {
+        base.SaveState(tag);
+
+        this.SaveRotation(tag);
+        tag.Add(new NbtTag<bool>("OW", this.overwrite));
     }
 
     protected override void HandleDataMarker(string metadata, Vector position, StructurePieceContext context, BlockBox box)
