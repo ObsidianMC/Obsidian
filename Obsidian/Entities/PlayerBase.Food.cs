@@ -1,5 +1,6 @@
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
+using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
 using System.Text.Json;
 
@@ -150,6 +151,19 @@ public partial class PlayerBase
             await this.QueuePacketAsync(new SetEntityDataPacket { EntityId = EntityId, Entity = this });
     }
 
+    private async ValueTask TickEnvironmentAsync()
+    {
+        var terrain = new MobTerrain(Level);
+        var bounds = Dimension.CreateBBFromPosition(Position);
+
+        // Contact with lava
+        if (!IsFireImmune && terrain.ContainsFluid(bounds, false))
+        {
+            Ignite(15);
+            await DamageCombatAsync(this, 4, CombatDamageKind.FireContact);
+        }
+    }
+
     private async ValueTask TickPlayerAsync()
     {
         if (damageCooldown > 0) damageCooldown--;
@@ -169,6 +183,7 @@ public partial class PlayerBase
             CancelWeaponUse();
             return;
         }
+        await TickEnvironmentAsync();
         await TickInventoryItemsAsync();
         await TickAirSupplyAsync();
         if (!Alive)
