@@ -242,20 +242,40 @@ internal sealed class PlacedFeature(string? id, Feature feature, PlacementModifi
 
     private bool Modify(PlacementContext placement, IRandomSource random, Vector position, int index)
     {
-        var positions = new List<Vector>();
+        var positions = RentPositions();
         modifiers[index](placement, random, position, positions);
 
         var placed = false;
         var last = index + 1 == modifiers.Length;
 
-        foreach (var next in positions)
+        // By index: a feature can place other placed features, which rent lists of their own meanwhile.
+        for (var i = 0; i < positions.Count; i++)
         {
+            var next = positions[i];
             var result = last
                 ? this.Feature(placement.Decoration, random, next)
                 : this.Modify(placement, random, next, index + 1);
             placed |= result;
         }
 
+        ReturnPositions(positions);
         return placed;
+    }
+
+    // Position lists no placement is using, per thread: a placement makes a list for every position each of its
+    // modifiers sees, and nested placements are only a few deep.
+    [ThreadStatic]
+    private static Stack<List<Vector>>? freePositions;
+
+    private static List<Vector> RentPositions()
+    {
+        var free = freePositions ??= new Stack<List<Vector>>();
+        return free.TryPop(out var positions) ? positions : [];
+    }
+
+    private static void ReturnPositions(List<Vector> positions)
+    {
+        positions.Clear();
+        freePositions!.Push(positions);
     }
 }

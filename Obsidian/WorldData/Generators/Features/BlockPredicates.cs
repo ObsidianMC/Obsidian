@@ -68,12 +68,12 @@ internal sealed partial class FeatureRegistry
             case "minecraft:all_of":
             {
                 var predicates = json.GetProperty("predicates").EnumerateArray().Select(this.Predicate).ToArray();
-                return (level, position) => predicates.All(predicate => predicate(level, position));
+                return (level, position) => AllOf(predicates, level, position);
             }
             case "minecraft:any_of":
             {
                 var predicates = json.GetProperty("predicates").EnumerateArray().Select(this.Predicate).ToArray();
-                return (level, position) => predicates.Any(predicate => predicate(level, position));
+                return (level, position) => !NoneOf(predicates, level, position);
             }
             default:
                 throw new NotSupportedException($"The 26.3 block predicate {type} isn't implemented yet.");
@@ -180,6 +180,52 @@ internal sealed partial class FeatureRegistry
         return rawBrightness < 13 && below.IsSolid() && below.IsCollisionShapeFullBlock();
     }
 
+    // all_of and any_of test their predicates in order and stop at the first that decides, like vanilla, since some
+    // draw random numbers. Loops rather than All and Any, whose closures would be allocated for every test.
+    private static bool AllOf(BlockPredicate[] predicates, IWorldGenLevel level, Vector position)
+    {
+        foreach (var predicate in predicates)
+        {
+            if (!predicate(level, position))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static bool NoneOf(BlockPredicate[] predicates, IWorldGenLevel level, Vector position)
+    {
+        foreach (var predicate in predicates)
+        {
+            if (predicate(level, position))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static bool AllOf(RuleTest[] rules, IBlock state, Vector position, IRandomSource random)
+    {
+        foreach (var rule in rules)
+        {
+            if (!rule(state, position, random))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static bool NoneOf(RuleTest[] rules, IBlock state, Vector position, IRandomSource random)
+    {
+        foreach (var rule in rules)
+        {
+            if (rule(state, position, random))
+                return false;
+        }
+
+        return true;
+    }
+
     public RuleTest Rule(JsonElement json)
     {
         var type = json.GetProperty("predicate_type").GetString();
@@ -225,12 +271,12 @@ internal sealed partial class FeatureRegistry
             case "minecraft:all_of":
             {
                 var rules = json.GetProperty("rules").EnumerateArray().Select(this.Rule).ToArray();
-                return (state, position, random) => rules.All(rule => rule(state, position, random));
+                return (state, position, random) => AllOf(rules, state, position, random);
             }
             case "minecraft:any_of":
             {
                 var rules = json.GetProperty("rules").EnumerateArray().Select(this.Rule).ToArray();
-                return (state, position, random) => rules.Any(rule => rule(state, position, random));
+                return (state, position, random) => !NoneOf(rules, state, position, random);
             }
             default:
                 throw new NotSupportedException($"The 26.3 rule test {type} isn't implemented yet.");

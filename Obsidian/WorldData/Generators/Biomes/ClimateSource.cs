@@ -16,6 +16,9 @@ internal sealed class ClimateSource : IBiomeSource
     private static CachedClimate[]? climateCache;
 
     private readonly DensityFunction[] functions;
+
+    // Which of the functions have the same value at every y of a column (see DensityFunction.IsFlat).
+    private readonly bool[] flat;
     private readonly BiomeParameters? parameters;
 
     // The parameter list's biomes by their name instances, which the tree's searches return: comparing references
@@ -26,6 +29,7 @@ internal sealed class ClimateSource : IBiomeSource
     public ClimateSource(WorldgenData data, DensityRouter router, string preset)
     {
         this.functions = climateFields.Select(field => router.Functions[field]).ToArray();
+        this.flat = this.functions.Select(function => function.IsFlat).ToArray();
         this.parameters = preset == "minecraft:the_end" ? null : BiomeParameters.Read(data, preset);
 
         foreach (var (_, biome) in this.parameters?.Entries ?? [])
@@ -50,6 +54,49 @@ internal sealed class ClimateSource : IBiomeSource
             Climate.Quantize(this.functions[5].Sample(x, y, z)));
     }
 
+    /// <summary>
+    /// The climate fields of a quart column that are the same at every y, for <see cref="Sample(int, int, int, in
+    /// TargetPoint)"/> to reuse for each quart of the column. The other fields are 0.
+    /// </summary>
+    public TargetPoint SampleColumn(int quartX, int quartZ)
+    {
+        var x = quartX << 2;
+        var z = quartZ << 2;
+
+        return new TargetPoint(
+            this.ColumnField(0, x, z),
+            this.ColumnField(1, x, z),
+            this.ColumnField(2, x, z),
+            this.ColumnField(3, x, z),
+            this.ColumnField(4, x, z),
+            this.ColumnField(5, x, z));
+    }
+
+    /// <summary>
+    /// <see cref="Sample(int, int, int)"/>, taking the fields that are the same at every y from the quart's column
+    /// (<see cref="SampleColumn"/>).
+    /// </summary>
+    public TargetPoint Sample(int quartX, int quartY, int quartZ, in TargetPoint column)
+    {
+        var x = quartX << 2;
+        var y = quartY << 2;
+        var z = quartZ << 2;
+
+        return new TargetPoint(
+            this.QuartField(0, column.Temperature, x, y, z),
+            this.QuartField(1, column.Humidity, x, y, z),
+            this.QuartField(2, column.Continentalness, x, y, z),
+            this.QuartField(3, column.Erosion, x, y, z),
+            this.QuartField(4, column.Depth, x, y, z),
+            this.QuartField(5, column.Weirdness, x, y, z));
+    }
+
+    private long ColumnField(int field, int x, int z) =>
+        this.flat[field] ? Climate.Quantize(this.functions[field].Sample(x, 0, z)) : 0L;
+
+    private long QuartField(int field, long columnValue, int x, int y, int z) =>
+        this.flat[field] ? columnValue : Climate.Quantize(this.functions[field].Sample(x, y, z));
+
     // Material rules look a biome up for each block, mostly in quarts just sampled. Each thread keeps the last
     // climate samples by quart; the tree search still runs for each lookup (see BiomeTerrain).
     private TargetPoint CachedSample(int quartX, int quartY, int quartZ)
@@ -68,6 +115,9 @@ internal sealed class ClimateSource : IBiomeSource
 
         return point;
     }
+
+    /// <summary>The climate search over the parameter list, or <c>null</c> for the End's fixed regions.</summary>
+    public BiomeParameterTree<string>? Tree => this.parameters?.Tree;
 
     /// <summary>Source encounter order, which also determines decoration's feature identities.</summary>
     public IEnumerable<string> PossibleBiomes => this.parameters is null
