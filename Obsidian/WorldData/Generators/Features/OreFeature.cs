@@ -55,6 +55,13 @@ internal sealed partial class FeatureRegistry
 /// </summary>
 internal sealed class OreBlob((RuleTest Target, IBlock State)[] targets, int size, float discardChance)
 {
+    // A thread's buffers for the blob being placed, which DoPlace and Spheres clear before use.
+    [ThreadStatic]
+    private static bool[]? visitedBuffer;
+
+    [ThreadStatic]
+    private static (double X, double Y, double Z, double Radius)[]? sphereBuffer;
+
     public bool Place(DecorationContext context, IRandomSource random, Vector origin)
     {
         var level = context.Level;
@@ -95,7 +102,7 @@ internal sealed class OreBlob((RuleTest Target, IBlock State)[] targets, int siz
     private bool DoPlace(IWorldGenLevel level, IRandomSource random, OreLine line, Vector min, int width, int height)
     {
         var spheres = this.Spheres(random, line);
-        var visited = new bool[width * height * width];
+        var visited = Buffer(ref visitedBuffer, width * height * width);
         var placed = 0;
 
         foreach (var (centerX, centerY, centerZ, radius) in spheres)
@@ -165,9 +172,9 @@ internal sealed class OreBlob((RuleTest Target, IBlock State)[] targets, int siz
     }
 
     // The spheres along the line, with those inside a bigger neighbour dropped (radius -1).
-    private (double X, double Y, double Z, double Radius)[] Spheres(IRandomSource random, OreLine line)
+    private Span<(double X, double Y, double Z, double Radius)> Spheres(IRandomSource random, OreLine line)
     {
-        var spheres = new (double X, double Y, double Z, double Radius)[size];
+        var spheres = Buffer(ref sphereBuffer, size);
 
         for (var i = 0; i < size; i++)
         {
@@ -211,6 +218,20 @@ internal sealed class OreBlob((RuleTest Target, IBlock State)[] targets, int siz
         }
 
         return spheres;
+    }
+
+    // The first length elements of a thread's buffer, cleared.
+    private static Span<T> Buffer<T>(ref T[]? buffer, int length)
+    {
+        if (buffer is null || buffer.Length < length)
+        {
+            buffer = new T[length];
+        }
+
+        var span = buffer.AsSpan(0, length);
+        span.Clear();
+
+        return span;
     }
 
     private bool TryPlace(IWorldGenLevel level, IRandomSource random, Vector position)
