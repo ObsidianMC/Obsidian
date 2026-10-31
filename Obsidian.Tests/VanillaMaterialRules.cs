@@ -1,43 +1,32 @@
 using Obsidian.API;
+using Obsidian.Tests.Utilities;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Generators.Terrain;
 using System;
-using System.Collections.Generic;
 using System.Text.Json;
 using Xunit;
 
 namespace Obsidian.Tests;
 
 /// <summary>Fast, one-block replays of vanilla's material rules with captured column and biome inputs.</summary>
-[Collection(WorldgenCollection.Name)]
 public class VanillaMaterialRules
 {
-    private static readonly Dictionary<(long Seed, string Settings), TerrainGenerator> generators = [];
-
-    public sealed record MaterialCase(JsonElement Entry)
+    [Fact]
+    public void RulesAndContextsMatchVanilla()
     {
-        public override string ToString() => this.Entry.GetProperty("name").GetString()!;
+        var pipelines = new WorldgenPipelines();
+        var cases = VanillaWorldgenCaptures.CurrentCases("materials");
+
+        FixtureCases.AssertAll(cases, Name, entry => AssertRule(entry, pipelines));
     }
 
-    public static TheoryData<MaterialCase> MaterialCases()
+    private static string Name(JsonElement entry) => entry.GetProperty("name").GetString()!;
+
+    private static void AssertRule(JsonElement entry, WorldgenPipelines pipelines)
     {
-        var cases = new TheoryData<MaterialCase>();
-
-        foreach (var entry in VanillaWorldgenCaptures.CurrentCases("materials"))
-        {
-            cases.Add(new MaterialCase(entry));
-        }
-
-        return cases;
-    }
-
-    [Theory]
-    [MemberData(nameof(MaterialCases))]
-    public void RuleAndContextMatchVanilla(MaterialCase testCase)
-    {
-        var entry = testCase.Entry;
-        var generator = Generator(entry);
+        var seed = entry.GetProperty("seed").GetInt64();
+        var generator = pipelines.Terrain(seed, entry.GetProperty("settings").GetString()!);
         var x = entry.GetProperty("x").GetInt32();
         var y = entry.GetProperty("y").GetInt32();
         var z = entry.GetProperty("z").GetInt32();
@@ -78,18 +67,5 @@ public class VanillaMaterialRules
         Assert.NotNull(block);
         Assert.Equal(expected.RegistryId, block.RegistryId);
         Assert.Equal(expected.State?.Id ?? expected.DefaultId, block.State?.Id ?? block.DefaultId);
-    }
-
-    private static TerrainGenerator Generator(JsonElement entry)
-    {
-        var key = (entry.GetProperty("seed").GetInt64(), entry.GetProperty("settings").GetString()!);
-
-        if (!generators.TryGetValue(key, out var generator))
-        {
-            generator = new TerrainGenerator(WorldgenData.Vanilla, key.Item1, key.Item2);
-            generators.Add(key, generator);
-        }
-
-        return generator;
     }
 }

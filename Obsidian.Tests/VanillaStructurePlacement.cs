@@ -7,14 +7,12 @@ using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Generators.Features;
 using Obsidian.WorldData.Structures;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Xunit;
-using TerrainGenerator = Obsidian.WorldData.Generators.Terrain.TerrainGenerator;
 
 namespace Obsidian.Tests;
 
@@ -24,22 +22,33 @@ namespace Obsidian.Tests;
 /// chunk they reach, on terrain bearded by them.
 /// </summary>
 [Trait("Category", TestCategory.Worldgen)]
-[Collection(WorldgenCollection.Name)]
 public class VanillaStructurePlacement
 {
-    // Reading the 26.3 structures and starting them is shared by a dimension's cases.
-    private static readonly ConcurrentDictionary<(string Dimension, long Seed), Lazy<BiomeTerrain>> pipelines = new();
-
-    public static TheoryData<string> PieceCases() => Names(_ => true);
-
-    public static TheoryData<string> BlockCases() => Names(entry => entry.TryGetProperty("blocks", out _));
-
-    [Theory]
-    [MemberData(nameof(PieceCases))]
-    public void PiecesMatchVanilla(string name)
+    // Every start's pieces, and the blocks of the starts the capture recorded them for.
+    [Fact]
+    public void StructuresMatchVanilla()
     {
-        var entry = Case(name);
-        var start = Start(entry, out _);
+        var cases = VanillaWorldgenCaptures.CurrentCases("structures");
+
+        WorldgenPipelines.AssertAllInSlices(cases, Name, AssertStructure);
+    }
+
+    private static string Name(JsonElement entry) => entry.GetProperty("name").GetString()!;
+
+    private static void AssertStructure(JsonElement entry, WorldgenPipelines pipelines)
+    {
+        var dimension = entry.GetProperty("dimension").GetString()!;
+        var pipeline = pipelines.Structures(dimension, entry.GetProperty("seed").GetInt64());
+        var start = Start(entry, pipeline);
+
+        AssertPieces(entry, start);
+
+        if (entry.TryGetProperty("blocks", out var blocks))
+            AssertBlocks(entry, blocks, start, pipeline);
+    }
+
+    private static void AssertPieces(JsonElement entry, StructureStart start)
+    {
         var lines = start.Pieces.Select(VanillaStructureGeneration.Describe);
         var hash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('\n', lines))));
 
@@ -47,30 +56,13 @@ public class VanillaStructurePlacement
         Assert.Equal(entry.GetProperty("pieces").GetString(), hash);
     }
 
-    [Theory]
-    [MemberData(nameof(BlockCases))]
-    public void BlocksMatchVanilla(string name)
+    private static void AssertBlocks(
+        JsonElement entry, JsonElement expected, StructureStart start, BiomeTerrain pipeline)
     {
-        var entry = Case(name);
-        var start = Start(entry, out var pipeline);
-        var expected = entry.GetProperty("blocks");
         var palette = expected.GetProperty("palette").EnumerateArray()
             .Select(value => VanillaTerrainGeneration.ParseBlock(value.GetString()!))
             .ToArray();
         var indices = VanillaTerrainGeneration.Decode(expected.GetProperty("data").GetString()!);
-        var order = entry.GetProperty("structureOrder").EnumerateArray()
-            .Select(step => step.EnumerateArray().Select(id => id.GetString()!))
-            .ToArray();
-        var layout = pipeline.Structures!.Layout.StructuresPerStep;
-
-        Assert.Equal(order.Length, layout.Count);
-
-        for (var step = 0; step < order.Length; step++)
-        {
-            Assert.Equal(order[step], layout[step].Select(structure => structure.Identifier));
-        }
-
-        var terrain = new Dictionary<(int X, int Z), Chunk>();
         var bounds = expected.GetProperty("bounds").EnumerateArray()
             .Select(values => values.EnumerateArray().Select(value => value.GetInt32()).ToArray())
             .Select(values => new BlockBox(
@@ -82,12 +74,43 @@ public class VanillaStructurePlacement
             .ToArray();
         var comparison = new Comparison(palette, indices);
 
+        AssertStructureOrder(entry, pipeline);
         Assert.Equal(start.Pieces.Count, bounds.Length);
 
-        // In the capture's order, one at a time: the first chunk a shipwreck reaches picks its height.
+        PlaceAndCompare(pipeline, sampled, bounds, comparison);
+
+        var mismatches = comparison.Mismatches;
+
+        Assert.Equal(expected.GetProperty("chunks").GetInt32(), sampled.Length);
+        Assert.Equal(indices.Length, comparison.Index);
+        // Bounds of terrain alone would prove nothing: vanilla's blocks there have to show the structure.
+        Assert.True(comparison.StructureBlocks > 0, "The captured bounds hold no structure blocks.");
+        Assert.True(mismatches.Count == 0, $"{mismatches.Count} blocks differ, first: "
+            + string.Join("; ", mismatches.Take(12)));
+    }
+
+    private static void AssertStructureOrder(JsonElement entry, BiomeTerrain pipeline)
+    {
+        var order = entry.GetProperty("structureOrder").EnumerateArray()
+            .Select(step => step.EnumerateArray().Select(id => id.GetString()!))
+            .ToArray();
+        var layout = pipeline.Structures!.Layout.StructuresPerStep;
+
+        Assert.Equal(order.Length, layout.Count);
+
+        for (var step = 0; step < order.Length; step++)
+            Assert.Equal(order[step], layout[step].Select(structure => structure.Identifier));
+    }
+
+    // In the capture's order, one at a time: the first chunk a shipwreck reaches picks its height. Like the capture,
+    // each chunk places into fresh terrain, without its neighbors' writes; the terrain is generated once.
+    private static void PlaceAndCompare(
+        BiomeTerrain pipeline, (int X, int Z)[] sampled, BlockBox[] bounds, Comparison comparison)
+    {
+        var terrain = new Dictionary<(int X, int Z), Chunk>();
+
         foreach (var (chunkX, chunkZ) in sampled)
         {
-            // Like the capture, each chunk places into fresh terrain, without its neighbors' writes.
             var chunks = new Dictionary<(int X, int Z), IChunk>();
 
             for (var z = chunkZ - 1; z <= chunkZ + 1; z++)
@@ -107,19 +130,8 @@ public class VanillaStructurePlacement
             pipeline.PlaceStructures(chunks, chunkX, chunkZ);
 
             foreach (var pieceBounds in bounds)
-            {
                 comparison.Compare(pieceBounds, chunks[(chunkX, chunkZ)], terrain[(chunkX, chunkZ)]);
-            }
         }
-
-        var mismatches = comparison.Mismatches;
-
-        Assert.Equal(expected.GetProperty("chunks").GetInt32(), sampled.Length);
-        Assert.Equal(indices.Length, comparison.Index);
-        // Bounds of terrain alone would prove nothing: vanilla's blocks there have to show the structure.
-        Assert.True(comparison.StructureBlocks > 0, "The captured bounds hold no structure blocks.");
-        Assert.True(mismatches.Count == 0, $"{mismatches.Count} blocks differ, first: "
-            + string.Join("; ", mismatches.Take(12)));
     }
 
     // A shipwreck continues at the height vanilla saved (height_adjusted and the template position's TPY), and
@@ -208,46 +220,12 @@ public class VanillaStructurePlacement
         return chunk;
     }
 
-    private static StructureStart Start(JsonElement entry, out BiomeTerrain pipeline)
+    private static StructureStart Start(JsonElement entry, BiomeTerrain pipeline)
     {
-        var dimension = entry.GetProperty("dimension").GetString()!;
-        var seed = entry.GetProperty("seed").GetInt64();
-        pipeline = pipelines.GetOrAdd((dimension, seed), key => new Lazy<BiomeTerrain>(() => Pipeline(key))).Value;
         var structure = entry.GetProperty("structure").GetString()!;
         var chunkX = entry.GetProperty("chunkX").GetInt32();
         var chunkZ = entry.GetProperty("chunkZ").GetInt32();
 
         return pipeline.Structures!.GetStarts(chunkX, chunkZ).Single(start => start.Structure.Identifier == structure);
-    }
-
-    private static BiomeTerrain Pipeline((string Dimension, long Seed) key)
-    {
-        var settings = key.Dimension switch
-        {
-            "minecraft:the_nether" => "minecraft:nether",
-            "minecraft:the_end" => "minecraft:end",
-            _ => key.Dimension
-        };
-        var preset = key.Dimension == "minecraft:the_nether" ? "minecraft:nether" : key.Dimension;
-        var terrain = new TerrainGenerator(WorldgenData.Vanilla, key.Seed, settings);
-        var registry = new FeatureRegistry(WorldgenData.Vanilla) { Template = VanillaFeatureTemplates.Get };
-
-        return new BiomeTerrain(terrain, preset, registry, structures: true);
-    }
-
-    private static JsonElement Case(string name) =>
-        VanillaWorldgenCaptures.CurrentCases("structures")
-            .Single(entry => entry.GetProperty("name").GetString() == name);
-
-    private static TheoryData<string> Names(Func<JsonElement, bool> filter)
-    {
-        var names = new TheoryData<string>();
-
-        foreach (var entry in VanillaWorldgenCaptures.CurrentCases("structures").Where(filter))
-        {
-            names.Add(entry.GetProperty("name").GetString()!);
-        }
-
-        return names;
     }
 }

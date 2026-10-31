@@ -84,7 +84,9 @@ public sealed class SingleBiomeValuePalette : SingleValuePalette<BiomeCodec>
         this.GetOrAddId(value);
     }
 
-    public override IPalette<BiomeCodec> Clone() => new SingleBiomeValuePalette(this.Value);
+    // A palette nothing was written to yet (a section whose biomes were never filled) clones empty.
+    public override IPalette<BiomeCodec> Clone() =>
+        this.initialized ? new SingleBiomeValuePalette(this.Value) : new SingleBiomeValuePalette();
 
     protected override int GetValueId(BiomeCodec value) => value.Id;
 }

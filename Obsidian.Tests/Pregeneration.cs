@@ -20,7 +20,11 @@ namespace Obsidian.Tests;
 [Trait("Category", TestCategory.Worldgen)]
 public sealed class Pregeneration
 {
-    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    // Generating the area takes most of TestServerFactory.TestTimeout in a debug build on its own, so the parallel
+    // worldgen replays could push it past that; the timeout only has to catch a hang.
+    private const int GenerationTimeout = 4 * TestServerFactory.TestTimeout;
+
+    [Fact(Timeout = GenerationTimeout)]
     public async Task PregeneratedChunksAreSavedAndUnloaded()
     {
         const int range = 2;
