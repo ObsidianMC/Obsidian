@@ -18,6 +18,10 @@ internal sealed class BiomeParameterTree<T>
     // Vanilla starts each search from the previous result on the same thread; it only matters for exact ties.
     private readonly ThreadLocal<SearchState> searches;
 
+    // Tells this tree's search states apart. The states hold this token rather than the tree, so the state a thread
+    // searched last doesn't keep a discarded tree (and every thread's states) alive.
+    private readonly object identity = new();
+
     // The state of the tree this thread searched last, which spares most searches the slower ThreadLocal lookup.
     [ThreadStatic]
     private static SearchState? lastSearched;
@@ -30,7 +34,7 @@ internal sealed class BiomeParameterTree<T>
 
         var leaves = values.Select(value => (Node)new Leaf(value.Point.ParameterSpace(), value.Value)).ToList();
         this.root = Build(leaves, childrenPerNode);
-        this.searches = new ThreadLocal<SearchState>(() => new SearchState(this));
+        this.searches = new ThreadLocal<SearchState>(() => new SearchState(this.identity));
     }
 
     /// <remarks>
@@ -48,7 +52,7 @@ internal sealed class BiomeParameterTree<T>
     {
         ReadOnlySpan<long> point = [target.Temperature, target.Humidity, target.Continentalness, target.Erosion, target.Depth, target.Weirdness, 0L];
         var state = lastSearched;
-        if (state is null || state.Tree != this)
+        if (state is null || state.Owner != this.identity)
             lastSearched = state = this.searches.Value!;
 
         var last = state.Last;
@@ -203,9 +207,10 @@ internal sealed class BiomeParameterTree<T>
         return distance;
     }
 
-    private sealed class SearchState(BiomeParameterTree<T> tree)
+    private sealed class SearchState(object owner)
     {
-        public BiomeParameterTree<T> Tree { get; } = tree;
+        /// <summary>The identity of the tree this state belongs to.</summary>
+        public object Owner { get; } = owner;
 
         public Leaf? Last { get; set; }
 
