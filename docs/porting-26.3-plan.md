@@ -396,11 +396,17 @@ pistons.
 ### Phase 6: content and gameplay
 
 1. **New blocks and their behaviour:**
-   - golden dandelion and note block trumpets;
+   - golden dandelion interactions and age locking remain open;
+   - note block trumpets — placement/neighbor instrument selection and playback implemented, captured in
+     `more_blocks.json` (`VanillaMoreBlocks`);
    - the sulfur family, potent sulfur gas and geysers, and sulfur spikes — implemented with the limits in
      [known gaps](known-gaps.md#263-blocks). `VanillaSulfurBlocks` replays the RCON sulfur scenarios and Java sulfur
      probes, recorded together with `CaptureFixtures=sulfur`;
-   - poplar wood, wool and concrete stairs/slabs, colored leaves, and the straw bed with its own sleep rules.
+   - poplar construction blocks, wool and concrete stairs/slabs, and colored poplar leaves — implemented through
+     the shared block-family APIs, with captured placement, shaping, leaf-distance and interaction references in
+     `more_blocks.json` (`CaptureFixtures=more_blocks`). Shared shelf interactions and poplar sapling growth remain
+     gaps; see [known gaps](known-gaps.md#263-blocks);
+   - straw bed placement and its own sleep rules remain open.
 2. **New entities:**
    - the Sulfur Cube, with archetypes, absorbing blocks, shearing, splitting, buckets and dispensers;
    - the cushion (a seat entity);

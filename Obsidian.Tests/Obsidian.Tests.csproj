@@ -27,6 +27,7 @@
 		<EmbeddedResource Include="Assets\fluid_scenarios.json" />
 		<EmbeddedResource Include="Assets\sulfur_scenarios.json" />
 		<EmbeddedResource Include="Assets\sulfur_fixtures.json" />
+		<EmbeddedResource Include="Assets\more_blocks.json" />
 		<EmbeddedResource Include="Assets\redstone_scenarios.json" />
 		<EmbeddedResource Include="Assets\vanilla_worldgen.json" />
 		<!-- A folder of files, embedded by their paths in it (VanillaWorldgenCaptures). -->

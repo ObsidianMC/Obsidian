@@ -49,9 +49,11 @@ internal static class PlacementBehaviors
     internal static IBlockBehavior DriedGhastBlock => HorizontalOpposite;
     internal static IBlockBehavior EnderChestBlock => HorizontalOpposite;
     internal static IBlockBehavior FaceAttachedHorizontalDirectionalBlock => FaceAttached;
+    internal static IBlockBehavior FenceBlock { get; } = new FenceBlockBehavior();
     internal static IBlockBehavior HopperBlock => ClickedFaceOpposite;
     internal static IBlockBehavior IronBarsBlock { get; } = new IronBarsPlacementBehavior();
     internal static IBlockBehavior LecternBlock => HorizontalOpposite;
+    internal static IBlockBehavior NoteBlock { get; } = new NoteBlockBehavior();
     internal static IBlockBehavior ObserverBlock => Observer;
     internal static IBlockBehavior PistonBaseBlock => Piston;
     internal static IBlockBehavior PotentSulfurBlock { get; } = new PotentSulfurBlockBehavior();

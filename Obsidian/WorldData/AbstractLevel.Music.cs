@@ -85,20 +85,34 @@ public abstract partial class AbstractLevel
     internal void PlayNoteBlock(Vector point, IEntity? source = null)
     {
         var block = GameEventBlock(point);
-        if (block?.RegistryId != BlockIds.NoteBlock || GameEventBlock(point + new Vector(0, 1, 0))?.IsAir != true)
+        if (block?.RegistryId != BlockIds.NoteBlock)
             return;
 
+        var instrument = NoteBlockBehavior.GetInstrument(block);
+        if (!instrument.Above && GameEventBlock(point + Vector.Up)?.IsAir != true)
+            return;
+
+        EmitGameEvent(MobGameEvent.NoteBlockPlay, (VectorD)point + new VectorD(0.5, 0.5, 0.5), source);
+        if (instrument.Custom)
+            return;
+
+        // Vanilla's block event lets the client produce note particles from the block's current state.
+        PacketBroadcaster.QueuePacketToLevelInRange(this, (VectorD)point, new BlockEventPacket
+        {
+            Position = point,
+            BlockType = BlockIds.NoteBlock,
+            ActionId = 0,
+            ActionParam = 0
+        });
         var note = int.TryParse(block.GetProperty("note"), out var number) ? number : 0;
-        var instrument = block.GetProperty("instrument") ?? "harp";
         PacketBroadcaster.QueuePacketToLevelInRange(this, (VectorD)point, new SoundPacket
         {
-            SoundLocation = "minecraft:block.note_block." + instrument,
+            SoundLocation = instrument.Sound,
             Category = SoundCategory.Records,
             SoundPosition = new SoundPosition(point.X + 0.5, point.Y + 0.5, point.Z + 0.5),
             Volume = 3,
-            Pitch = (float)Math.Pow(2, (note - 12) / 12d),
-            Seed = Random.Shared.NextInt64()
+            Pitch = instrument.Tunable ? (float)Math.Pow(2, (note - 12) / 12d) : 1,
+            Seed = this.GrowthRandom.NextLong()
         });
-        EmitGameEvent(MobGameEvent.NoteBlockPlay, (VectorD)point + new VectorD(0.5, 0.5, 0.5), source);
     }
 }

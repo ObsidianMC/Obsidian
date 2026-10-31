@@ -52,6 +52,18 @@ replaces only what vanilla produced.
   seed and checks exact vectors and the next draw for all three projectile types. The probe suppresses weather and
   unrelated block-inside effects; it retains vanilla's release transition and nearby collision query.
 
+- `more_blocks.json` (`VanillaMoreBlocks.ReplayConstructionAndMusicReference`) holds bounded 26.3 construction
+  and music probes from `Java/MoreBlockFixtures.java`. Placement runs the chosen block's placement routine and
+  survival check; signs are already a standing or ceiling variant. It records full states for every wool/concrete
+  stair/slab color and poplar construction families, including powered placement, waterlogging and stair corners.
+  Shape cases record scheduled fluid/block ticks and replay through live notifications. Leaf-distance ticks and
+  axe providers also capture the next random draw; stripping checks state, sound ID and durability cost. Door,
+  trapdoor and gate uses check state and sound ID (their captured pitch is not asserted by this replay); door
+  placement checks the upper half. Note cases invoke vanilla's note and block-event routines, capture trigger
+  success, sound ID/volume/pitch/seed and the next random draw, and replay sound and block-event packets. A single
+  test loops over the entire file, collects all case-labelled failures, and asserts once. These bounded probes do
+  not claim an RCON interaction or sleep lifecycle capture.
+
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.
 
@@ -68,6 +80,8 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur
 
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=more_blocks
+
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur -p:CaptureCases=spike_shatters_after_falling+review_spike_pending_fall_keeps_frustum
 ```
 
@@ -81,8 +95,12 @@ and skips the Java probes. Other scenarios retain their stored absolute times an
 `SulfurFixtures.java` also accepts an optional second argument of exact `+`-separated probe names, when run directly
 with the vanilla server and libraries on the classpath, to re-record only new or changed Java cases.
 
+For `more_blocks`, `CaptureCases` accepts exact `+`-separated names in `more_blocks.json` and re-records only those
+Java probes. No RCON server is started and no other fixture is changed. Its source and the reusable runtime
+instrument dumper are separate so editing these probes does not regenerate unrelated assets.
+
 The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory>
-<scratch directory> <test assets directory> [redstone+fluids+daylight+sulfur] [sulfur case names]`.
+<scratch directory> <test assets directory> [redstone+fluids+daylight+sulfur+more_blocks] [case names]`.
 
 ## How it captures
 

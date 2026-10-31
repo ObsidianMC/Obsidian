@@ -22,6 +22,7 @@ internal static class ScenarioCaptures
     public const string Fluids = "fluids";
     public const string Daylight = "daylight";
     public const string Sulfur = "sulfur";
+    public const string MoreBlocks = "more_blocks";
 
     private const string Symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -45,7 +46,7 @@ internal static class ScenarioCaptures
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
-    public static readonly string[] All = [Redstone, Fluids, Daylight, Sulfur];
+    public static readonly string[] All = [Redstone, Fluids, Daylight, Sulfur, MoreBlocks];
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -81,8 +82,15 @@ internal static class ScenarioCaptures
     public static async Task RunAsync(VanillaServer server, string assetsDirectory,
         IReadOnlyCollection<string> fixtures, IReadOnlyCollection<string>? cases = null)
     {
-        if (cases is not null && (fixtures.Count != 1 || !fixtures.Contains(Sulfur)))
-            throw new ArgumentException("Scenario case selection currently requires CaptureFixtures=sulfur.");
+        if (cases is not null && (fixtures.Count != 1 || !fixtures.Contains(Sulfur) && !fixtures.Contains(MoreBlocks)))
+            throw new ArgumentException("Case selection requires CaptureFixtures=sulfur or more_blocks.");
+
+        if (fixtures.Contains(MoreBlocks))
+        {
+            await FixtureDumper.DumpMoreBlocksAsync(server, Path.Combine(assetsDirectory, "more_blocks.json"), cases);
+            if (fixtures.Count == 1)
+                return;
+        }
 
         if (fixtures.Contains(Sulfur) && cases is null)
         {

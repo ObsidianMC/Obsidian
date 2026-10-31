@@ -29,9 +29,11 @@
 		<!-- The capture driver only runs on request (CaptureVanillaWorldgen), so editing it doesn't regenerate the
 		     assets. -->
 		<VanillaGeneratorInput Include="@(Compile)" Exclude="WorldgenCaptures.cs;WorldgenFixtureFiles.cs;Scenario*.cs" />
-		<VanillaDumperInput Include="Java\**\*.java;Java\**\*.json" Exclude="Java\SulfurFixtures.java" />
+		<VanillaDumperInput Include="Java\**\*.java;Java\**\*.json"
+		                    Exclude="Java\SulfurFixtures.java;Java\MoreBlockFixtures.java" />
 		<None Update="@(VanillaDumperInput)" CopyToOutputDirectory="PreserveNewest" />
-		<!-- Sulfur's probe runs only through CaptureFixtures=sulfur. -->
+		<!-- Gameplay probes run only through their requested CaptureFixtures entry. -->
+		<None Update="Java\MoreBlockFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\SulfurFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<!-- On-request captures (CaptureVanillaWorldgen); not asset inputs, so editing them doesn't regenerate the assets. -->
 		<None Update="Captures\**\*.java" CopyToOutputDirectory="PreserveNewest" />
@@ -74,6 +76,7 @@
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)item_block_classes.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)collision_shapes.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)block_sounds.json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)note_block_instruments.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)block_loot_tables.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\blocks.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\entities.json" />

@@ -1,5 +1,7 @@
 using Obsidian.API.Blocks;
+using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.Features;
+using Obsidian.WorldData.Features.Tree;
 
 namespace Obsidian.WorldData;
 
@@ -33,14 +35,27 @@ internal static class VanillaPlacement
                     ? block.WithProperty("facing", Name(face)).WithProperty("half", upperHalf ? "top" : "bottom")
                     : block.WithProperty("facing", Name(looking.Opposite()))
                         .WithProperty("half", face == BlockFace.Up ? "bottom" : "top");
-                return Waterlog(level, block, position);
+                return Waterlog(level, WithPlacementPower(level, position, block), position);
             case "FenceGateBlock":
-                return block.WithProperty("facing", Name(looking));
+                var side = looking.ClockWise();
+                var inWall = TagsRegistry.Block.Walls.Entries.Contains(level.GetBlock(position.Offset(side)).RegistryId)
+                    || TagsRegistry.Block.Walls.Entries.Contains(
+                        level.GetBlock(position.Offset(side.Opposite())).RegistryId);
+                return WithPlacementPower(level, position, block.WithProperty("facing", Name(looking))
+                    .WithProperty("in_wall", inWall));
             case "ChestBlock" or "TrappedChestBlock" or "CopperChestBlock" or "WeatheringCopperChestBlock":
                 return Waterlog(level, ChestState(level, block, position, looking, face, player.Sneaking), position);
-            case "StairBlock":
-                return Waterlog(level, block.WithProperty("facing", Name(looking))
+            case "StairBlock" or "WeatheringCopperStairBlock":
+                block = Waterlog(level, block.WithProperty("facing", Name(looking))
                     .WithProperty("half", upperHalf ? "top" : "bottom"), position);
+                // Vanilla derives corners before placing the stair, as well as after neighbor changes.
+                return ShapeUpdater.UpdateShape(
+                    new LiveShapeView((IBlockChangeWorld)level.Level),
+                    block,
+                    position,
+                    BlockFace.North,
+                    level.GetBlock(position.Offset(BlockFace.North)),
+                    scheduleFluidTick: false);
             case "SlabBlock":
                 // Vanilla SlabBlock.getStateForPlacement: a slab of the same kind already there becomes a double slab.
                 if (SameSlab(level.GetBlock(position), block))
@@ -83,6 +98,13 @@ internal static class VanillaPlacement
             block = block.WithProperty("rotation", (int)Math.Floor((player.Yaw.Degrees + 180) * 16 / 360 + 0.5) & 15);
 
         return Waterlog(level, block, position);
+    }
+
+    private static IBlock WithPlacementPower(LevelBlockUpdates level, Vector position, IBlock block)
+    {
+        // Vanilla starts trapdoors and gates open when their placement position receives power.
+        var powered = level.HasNeighborSignal(position);
+        return block.WithProperty("powered", powered).WithProperty("open", powered);
     }
 
     /// <summary>
@@ -246,8 +268,10 @@ internal static class VanillaPlacement
         if (!level.GetBlock(position + Vector.Up).CanBeReplaced() || !level.GetBlock(position + Vector.Down).HasFullTopCollisionFace())
             return null;
 
+        var powered = level.HasNeighborSignal(position) || level.HasNeighborSignal(position + Vector.Up);
         return Waterlog(level, block.WithProperty("facing", Name(looking)).WithProperty("half", "lower")
-            .WithProperty("hinge", Hinge(level, block, position, looking, cursor)), position);
+            .WithProperty("hinge", Hinge(level, block, position, looking, cursor))
+            .WithProperty("powered", powered).WithProperty("open", powered), position);
     }
 
     // Vanilla DoorBlock.getHinge: against the wall beside it, or beside a door so the two open as a pair, or where
