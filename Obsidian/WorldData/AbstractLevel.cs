@@ -1097,6 +1097,7 @@ public abstract partial class AbstractLevel : ILevel
 
             region = new Region(regionX, regionZ, FolderPath, this.RegionFolderName, minY: this.MinY, height: this.Height)
             {
+                Logger = this.Logger,
                 LockChunk = this.Generator.LockChunkAsync,
                 FluidTickLock = this.Fluids.TickLock,
                 FlushLight = this.Lighting.Flush,
