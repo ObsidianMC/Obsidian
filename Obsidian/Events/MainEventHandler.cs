@@ -129,75 +129,6 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
         player.RunMenusClosed();
 
-        // A double chest's halves both close.
-        BaseContainer[] parts = e.Container is DoubleChestContainer chest
-            ? [chest.First, chest.Second]
-            : [e.Container];
-
-        foreach (var part in parts.OfType<Container>())
-        {
-            await AnimateCloseAsync(player, part.BlockPosition);
-        }
-    }
-
-    private static async ValueTask AnimateCloseAsync(IPlayer player, Vector position)
-    {
-        var block = await player.Level.GetBlockAsync(position);
-
-        if (block is null)
-            return;
-
-        var openCount = CountLidViewers(player.Level, position);
-        var lastOpener = openCount == 0;
-        switch (block.RegistryId)
-        {
-            case BlockIds.Chest:
-            case BlockIds.TrappedChest:
-            case var copperChest when TagsRegistry.Block.CopperChests.Entries.Contains(copperChest):
-                {
-                    (player.Level as AbstractLevel)?.QueueBlockEvent(position, block.RegistryId, 1, openCount);
-
-                    //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockChestClose)
-                    //    .WithSoundPosition(position.SoundPosition)
-                    //    .Build());
-                    if (lastOpener && player.Level is AbstractLevel level)
-                        PlayChestLidSound(level, position, "minecraft:block.chest.close");
-
-                    break;
-                }
-            case BlockIds.EnderChest:
-                {
-                    (player.Level as AbstractLevel)?.QueueBlockEvent(position, block.RegistryId, 1, openCount);
-
-                    //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockEnderChestClose)
-                    //    .WithSoundPosition(position.SoundPosition)
-                    //    .Build());
-                    break;
-                }
-            case BlockIds.Barrel://Barrels don't have a block action
-                {
-                    //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockBarrelClose)
-                    //    .WithSoundPosition(position.SoundPosition)
-                    //    .Build());
-                    if (lastOpener && player.Level is AbstractLevel barrelLevel)
-                        PlayChestLidSound(barrelLevel, position, "minecraft:block.barrel.close");
-
-                    break;
-                }
-            case var shulker when TagsRegistry.Block.ShulkerBoxes.Entries.Contains(shulker):
-                {
-                    (player.Level as AbstractLevel)?.QueueBlockEvent(position, block.RegistryId, 1, openCount);
-
-                    //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockShulkerBoxClose)
-                    //    .WithSoundPosition(position.SoundPosition)
-                    //    .Build());
-
-                    if (lastOpener && player.Level is AbstractLevel shulkerLevel)
-                        PlayChestLidSound(shulkerLevel, position, "minecraft:block.shulker_box.close");
-
-                    break;
-                }
-        }
     }
 
     [EventPriority(Priority = Priority.Internal)]
@@ -372,17 +303,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
             if (container is not null)
             {
-                var lidSound = LidOpenSound(type);
-                var lidOpening = lidSound is not null && !HasViewers(container);
                 await player.OpenInventoryAsync(container);
-                if (ReferenceEquals(player.OpenedContainer, container))
-                {
-                    await QueueOpenLidsAsync(player, container);
-                }
-
-                // Vanilla's ContainerOpenersCounter: the lid sound plays when the first opener arrives.
-                if (lidOpening && lidSound is not null && player.Level is AbstractLevel openLevel)
-                    PlayChestLidSound(openLevel, blockPosition, lidSound);
             }
         }
         else
@@ -390,71 +311,6 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             //TODO check for other
         }
     }
-
-    private static int CountLidViewers(Obsidian.API.World.ILevel level, Vector position)
-    {
-        var count = 0;
-        foreach (var (_, viewer) in level.Players)
-        {
-            if (viewer.GameMode == GameMode.Spectator)
-                continue;
-
-            var opened = viewer.OpenedContainer;
-            if (opened is DoubleChestContainer doubleChest)
-            {
-                if (AtPosition(doubleChest.First, position) || AtPosition(doubleChest.Second, position))
-                {
-                    count++;
-                }
-            }
-            else if (AtPosition(opened, position))
-            {
-                count++;
-            }
-        }
-
-        return count;
-    }
-
-    private static bool AtPosition(BaseContainer? container, Vector position) =>
-        container is Container physical && physical.BlockPosition == position;
-
-    private static async ValueTask QueueOpenLidsAsync(IPlayer player, BaseContainer container)
-    {
-        if (player.Level is not AbstractLevel level)
-            return;
-
-        BaseContainer[] parts = container is DoubleChestContainer chest
-            ? [chest.First, chest.Second] : [container];
-        foreach (var part in parts.OfType<Container>())
-        {
-            var position = part.BlockPosition;
-            var block = await level.GetBlockAsync(position);
-            if (block is null)
-                continue;
-
-            if (block.RegistryId is BlockIds.Chest or BlockIds.TrappedChest or BlockIds.EnderChest
-                || TagsRegistry.Block.CopperChests.Entries.Contains(block.RegistryId)
-                || TagsRegistry.Block.ShulkerBoxes.Entries.Contains(block.RegistryId))
-            {
-                // Count physical blocks, including ender chests whose viewers have separate inventories.
-                level.QueueBlockEvent(position, block.RegistryId, 1, CountLidViewers(level, position));
-            }
-        }
-    }
-
-    private static string? LidOpenSound(int type) => type switch
-    {
-        BlockIds.Chest or BlockIds.TrappedChest => "minecraft:block.chest.open",
-        BlockIds.Barrel => "minecraft:block.barrel.open",
-        _ when TagsRegistry.Block.ShulkerBoxes.Entries.Contains(type) => "minecraft:block.shulker_box.open",
-        _ => null
-    };
-
-    private static bool HasViewers(BaseContainer container) => container.GetViewers().Length > 0;
-
-    private static void PlayChestLidSound(AbstractLevel level, Vector position, string sound) =>
-        level.BlockUpdates.PlaySound(position, sound, 0.5f, Globals.Random.NextSingle() * 0.1f + 0.9f);
 
     private static Container NewChest(IPlayer player, Vector position) => new()
     {

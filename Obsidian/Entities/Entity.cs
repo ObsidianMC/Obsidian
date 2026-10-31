@@ -13,7 +13,20 @@ public partial class Entity : IEquatable<Entity>, IEntity
     // Retained for derived classes; built-in serializers use fixed indexes to avoid concurrent-write races.
     protected byte MetadataIndex { get; set; }
 
-    public required ILevel Level { get; set; }
+    public required ILevel Level
+    {
+        get;
+        set
+        {
+            var previous = field;
+            field = value;
+            if (previous is not null && previous != value && this is PlayerBase player)
+            {
+                // Changing dimension closes the physical window through the same lifecycle as any other close.
+                player.OpenedContainer = null;
+            }
+        }
+    }
 
     public IPacketBroadcaster PacketBroadcaster => this.Level.PacketBroadcaster;
     public IEventDispatcher EventDispatcher => this.Level.EventDispatcher;

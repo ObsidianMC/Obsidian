@@ -92,6 +92,19 @@ public abstract partial class PlayerBase : Avatar, IPlayer
     public Container Inventory { get; }
     public Container EnderInventory { get; }
 
+    private AbstractLevel? containerWindowLevel;
+
+    internal (BaseContainer? Container, AbstractLevel? Level) ContainerWindow
+    {
+        get
+        {
+            lock (this.menuStateGate)
+            {
+                return (this.OpenedContainer, this.containerWindowLevel);
+            }
+        }
+    }
+
     /// <summary>
     /// The container the player has open. Setting it moves the player between the containers'
     /// <see cref="BaseContainer.Viewers"/> and ends any drag across slots, which vanilla keeps per menu.
@@ -113,9 +126,13 @@ public abstract partial class PlayerBase : Avatar, IPlayer
                 if (field is MenuContainer closing)
                     this.RecordMenuClosed(closing);
 
+                // Only mark positions here: never count players or take world locks under menuStateGate.
+                this.containerWindowLevel?.ContainerWindowChanged(field);
                 field?.RemoveViewer(this);
                 value?.AddViewer(this);
                 field = value;
+                this.containerWindowLevel = this.Level as AbstractLevel;
+                this.containerWindowLevel?.ContainerWindowChanged(value);
                 this.menuSync = null;
 
                 this.IsDragging = false;

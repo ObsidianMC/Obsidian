@@ -77,7 +77,21 @@ public final class MoreBlockFixtures {
             level.random = random;
             level.powered = input.has("powered") && input.get("powered").getAsBoolean();
             var kind = input.get("kind").getAsString();
-            if (kind.equals("block_event_range")) {
+            if (kind.equals("container_recheck")) {
+                initializeEvents(level);
+                field(Level.class, "soundSeedGenerator").set(level, RandomSource.create(123));
+                var chest = new net.minecraft.world.level.block.entity.ChestBlockEntity(
+                    origin, level.getBlockState(origin));
+                level.setBlockEntity(chest);
+                var counter = (net.minecraft.world.level.block.entity.ContainerOpenersCounter)
+                    field(net.minecraft.world.level.block.entity.ChestBlockEntity.class, "openersCounter").get(chest);
+                var counterType = net.minecraft.world.level.block.entity.ContainerOpenersCounter.class;
+                field(counterType, "openCount").setInt(counter, input.get("initialCount").getAsInt());
+                counter.recheckOpeners(level, origin, level.getBlockState(origin));
+                runBlockEvents(level);
+                input.addProperty("recheckDelay", field(counterType, "CHECK_TICK_DELAY").getInt(null));
+                input.add("events", level.events);
+            } else if (kind.equals("block_event_range")) {
                 var tracker = simulationTracker(input.getAsJsonArray("sources"));
                 var samples = new JsonArray();
                 for (var value : input.getAsJsonArray("chunks")) {
@@ -617,6 +631,11 @@ public final class MoreBlockFixtures {
 
         @Override public long getGameTime() {
             return 0;
+        }
+
+        @Override public List<Entity> getEntities(Entity ignored, net.minecraft.world.phys.AABB bounds,
+            java.util.function.Predicate<? super Entity> filter) {
+            return List.of();
         }
 
         @Override public <T extends Entity> List<T> getEntities(

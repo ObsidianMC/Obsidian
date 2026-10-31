@@ -231,7 +231,7 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateW
     bool IBlockTickLevel.IsChunkSimulated(long key)
     {
         NumericsHelper.LongToInts(key, out var chunkX, out var chunkZ);
-        return this.IsMobTicking(new VectorD(chunkX * 16 + 8, 0, chunkZ * 16 + 8));
+        return this.IsBlockTicking(new Vector(chunkX * 16 + 8, 0, chunkZ * 16 + 8));
     }
 
     // A write into an unloaded chunk is dropped: the engine never loads chunks.

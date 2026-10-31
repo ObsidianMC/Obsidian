@@ -85,7 +85,11 @@ replaces only what vanilla produced.
   dispatches real events through the tick's player snapshot. `review_piston_block_ticking_fringe` and
   `review_piston_outside_block_ticking` run the native event drain against that tracker: the first extends a piston
   in chunk (6,0) powered from (5,0), while (7,0) retains its pending event. All three remain in the same reference
-  and `VanillaMoreBlocks.ReplayConstructionAndMusicReference` test.
+  and `VanillaMoreBlocks.ReplayConstructionAndMusicReference` test. The same range replay now schedules block ticks
+  with all eight neighbors ready and checks their dispatch against the captured block-ticking results.
+  `review_container_periodic_opener_recheck` invokes the native chest's `ContainerOpenersCounter.recheckOpeners`
+  with a stale count and no viewers, recording its closing event and five-tick interval. The replay loses a viewer
+  without notifying the window lifecycle, then checks silence before the per-container deadline and repair at it.
 
 - `structure_pieces.json` (`VanillaStructureSaves.StartsSaveLikeVanilla`) holds what vanilla 26.3 saves of
   structure starts (`StructureStart.createTag`), from `Java/StructurePieceFixtures.java`, which runs a dedicated

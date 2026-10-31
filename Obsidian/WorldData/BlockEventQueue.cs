@@ -32,7 +32,8 @@ internal sealed class BlockEventQueue
         }
     }
 
-    internal async ValueTask DrainAsync(Func<Vector, bool> ticking, Func<Vector, int?> currentBlock)
+    internal async ValueTask DrainAsync(Func<Vector, bool> ticking, Func<Vector, int?> currentBlock,
+        Action? beforeNextEvent = null)
     {
         lock (this.sync)
         {
@@ -49,6 +50,9 @@ internal sealed class BlockEventQueue
             // removing before dispatch so callbacks can queue another event in this same drain.
             while (true)
             {
+                // Reconcile window lifecycle changes even when an earlier block callback caused them.
+                // This hook, like the callbacks, runs outside the queue lock.
+                beforeNextEvent?.Invoke();
                 (BlockEventKey Key, Func<ValueTask> Run) entry;
                 lock (this.sync)
                 {

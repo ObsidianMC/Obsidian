@@ -51,6 +51,12 @@ public sealed class VanillaMoreBlocks(ITestOutputHelper output)
 
         var origin = Position(probe.GetProperty("origin"));
         var kind = probe.GetProperty("kind").GetString();
+        if (kind == "container_recheck")
+        {
+            await ReplayContainerRecheck(probe, context, origin);
+            return;
+        }
+
         if (kind == "block_event_range")
         {
             await ReplayBlockEventRange(probe, context);
@@ -270,6 +276,41 @@ public sealed class VanillaMoreBlocks(ITestOutputHelper output)
         Assert.Equal(probe.GetProperty("nextRandom").GetInt32(), world.GrowthRandom.NextInt());
     }
 
+    private static async Task ReplayContainerRecheck(JsonElement probe, RealServerContext context, Vector origin)
+    {
+        var world = context.World;
+        var viewer = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Viewer");
+        var observer = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Observer");
+        world.Players.TryAdd(viewer.Uuid, viewer);
+        world.Players.TryAdd(observer.Uuid, observer);
+        world.LevelData.GameTime = 12;
+        await world.ProcessBlockEventsAsync();
+        world.LevelData.GameTime++;
+        var chest = Assert.IsAssignableFrom<Obsidian.API.BlockEntities.ContainerBlockEntity>(
+            await world.GetOrCreateBlockEntityAsync(origin));
+        await viewer.OpenInventoryAsync(chest.Inventory);
+        await world.ProcessBlockEventsAsync();
+        var client = Assert.IsType<TestClient>(observer.Client);
+        Assert.Equal(probe.GetProperty("initialCount").GetInt32(),
+            Assert.Single(client.SentPackets.OfType<BlockEventPacket>()).ActionParam);
+        client.ClearPackets();
+
+        // Bypass the normal close notification, as a lost disconnect cleanup could: the scheduled recheck repairs it.
+        world.Players.TryRemove(viewer.Uuid, out _);
+        var delay = probe.GetProperty("recheckDelay").GetInt32();
+        world.LevelData.GameTime += delay - 1;
+        await world.ProcessBlockEventsAsync();
+        Assert.Empty(client.SentPackets.OfType<BlockEventPacket>());
+        world.LevelData.GameTime++;
+        await world.ProcessBlockEventsAsync();
+        var packet = Assert.Single(client.SentPackets.OfType<BlockEventPacket>());
+        var expected = probe.GetProperty("events")[0];
+        Assert.Equal(Position(expected.GetProperty("pos")), packet.Position);
+        Assert.Equal(expected.GetProperty("id").GetInt32(), packet.ActionId);
+        Assert.Equal(expected.GetProperty("parameter").GetInt32(), packet.ActionParam);
+        Assert.Equal(Parse(expected.GetProperty("block").GetString()!).RegistryId, packet.BlockType);
+    }
+
     private static async Task EnsureChunk(RealServerContext context, int x, int z)
     {
         if (context.World.GetLoadedChunk(x, z) is not null)
@@ -310,17 +351,32 @@ public sealed class VanillaMoreBlocks(ITestOutputHelper output)
         var chunks = probe.GetProperty("chunks").EnumerateArray().ToArray();
         var samples = probe.GetProperty("samples").EnumerateArray().ToArray();
         var dispatched = new bool[chunks.Length];
+        var scheduled = new bool[chunks.Length];
+        var positions = new Vector[chunks.Length];
+        world.BlockUpdates.Ticks.Register(BlockIds.Chest, (position, _) =>
+        {
+            scheduled[Array.IndexOf(positions, position)] = true;
+        });
         for (var index = 0; index < chunks.Length; index++)
         {
             var x = chunks[index][0].GetInt32();
             var z = chunks[index][1].GetInt32();
-            await EnsureChunk(context, x, z);
+            for (var dx = -1; dx <= 1; dx++)
+            {
+                for (var dz = -1; dz <= 1; dz++)
+                {
+                    await EnsureChunk(context, x + dx, z + dz);
+                }
+            }
+
             var position = new Vector(x * 16, 72, z * 16);
             world.BlockUpdates.SetBlock(position, BlocksRegistry.Chest,
                 BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);
             Assert.Equal(samples[index].GetProperty("blockTicking").GetBoolean(), world.IsBlockTicking(position));
             Assert.Equal(samples[index].GetProperty("entityTicking").GetBoolean(),
                 world.IsMobTicking((VectorD)position));
+            positions[index] = position;
+            world.ScheduleBlockTick(position, BlocksRegistry.Chest, 1);
             var capturedIndex = index;
             world.QueueBlockEvent(position, BlockIds.Chest, 1, 0, () =>
             {
@@ -331,7 +387,9 @@ public sealed class VanillaMoreBlocks(ITestOutputHelper output)
 
         // The actual tick also checks the predicate through its player simulation snapshot.
         await world.DoWorldTickAsync();
-        Assert.Equal(samples.Select(sample => sample.GetProperty("blockTicking").GetBoolean()), dispatched);
+        var expected = samples.Select(sample => sample.GetProperty("blockTicking").GetBoolean()).ToArray();
+        Assert.Equal(expected, dispatched);
+        Assert.Equal(expected, scheduled);
         Assert.Equal(samples.Count(sample => !sample.GetProperty("blockTicking").GetBoolean()),
             world.PendingBlockEvents);
     }

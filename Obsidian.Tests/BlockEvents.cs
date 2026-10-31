@@ -1,6 +1,7 @@
 using Obsidian.API;
 using Obsidian.API.Blocks;
 using Obsidian.API.Events;
+using Obsidian.API.Containers;
 using Obsidian.API.Registries;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
@@ -207,6 +208,149 @@ public sealed class BlockEvents
 
                         client.ClearPackets();
                     }
+                }
+            });
+    }
+
+    [Fact]
+    public async Task ContainerLidsFollowWindowLifecycle()
+    {
+        var cases = new[]
+        {
+            (Block: BlocksRegistry.Chest, Double: false),
+            (Block: BlocksRegistry.EnderChest, Double: false),
+            (Block: BlocksRegistry.ShulkerBox, Double: false),
+            (Block: BlocksRegistry.Chest, Double: true)
+        };
+        await FixtureCases.AssertAllAsync(cases, item => $"{item.Block.UnlocalizedName}/double={item.Double}",
+            async item =>
+            {
+                await using var context = TestServerFactory.CreateServer($"lid-lifecycle-{Guid.NewGuid():N}");
+                await using var other = TestServerFactory.CreateServer($"lid-dimension-{Guid.NewGuid():N}");
+                var world = context.World;
+                await BlockUpdates.AddChunksAsync(world);
+                var alice = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Alice");
+                var bob = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Bob");
+                var observer = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Observer");
+                foreach (var player in new[] { alice, bob, observer })
+                {
+                    world.Players.TryAdd(player.Uuid, player);
+                }
+
+                var position = new Vector(0, 72, 0);
+                var block = item.Double
+                    ? item.Block.WithProperty("facing", "north").WithProperty("type", "left") : item.Block;
+                world.BlockUpdates.SetBlock(position, block,
+                    BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);
+                if (item.Double)
+                {
+                    world.BlockUpdates.SetBlock(position + new Vector(1, 0, 0),
+                        item.Block.WithProperty("facing", "north").WithProperty("type", "right"),
+                        BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);
+                }
+
+                await OpenBlock(alice);
+                var aliceWindow = alice.OpenedContainer!;
+                await Check(1);
+                await ((IPlayer)alice).CloseContainerAsync(null);
+                await Check(0);
+
+                // Direct/plugin opens and replacement bypass the block interaction handler.
+                await alice.OpenInventoryAsync(aliceWindow);
+                await Check(1);
+                await alice.OpenInventoryAsync(new Container());
+                await Check(0);
+                // The pending keys 1, 0, 1 coalesce to 1, 0. Both dispatched payloads must reflect the final opener.
+                await alice.OpenInventoryAsync(aliceWindow);
+                world.QueueBlockEvent(position, item.Block.RegistryId, 0, 0, () =>
+                {
+                    alice.OpenedContainer = null;
+                    return ValueTask.FromResult(false);
+                });
+                world.QueueBlockEvent(position, item.Block.RegistryId, 0, 1, () =>
+                {
+                    alice.OpenedContainer = aliceWindow;
+                    return ValueTask.FromResult(false);
+                });
+                await Check(1, eventsPerBlock: 2);
+                alice.Level = other.World;
+                Assert.Null(alice.OpenedContainer);
+                await Check(0);
+                alice.Level = world;
+
+                await OpenBlock(bob);
+                var bobWindow = bob.OpenedContainer!;
+                await Check(1);
+                bob.OpenedContainer = null;
+                await Check(0);
+                await Task.WhenAll(
+                    Task.Run(async () => await alice.OpenInventoryAsync(aliceWindow)),
+                    Task.Run(async () => await bob.OpenInventoryAsync(bobWindow)));
+                await Check(2);
+
+                // A lifecycle change caused by an earlier event must join this same block-event phase.
+                world.QueueBlockEvent(position, item.Block.RegistryId, 0, 0, () =>
+                {
+                    bob.OpenedContainer = null;
+                    return ValueTask.FromResult(false);
+                });
+                await Check(1);
+                await bob.OpenInventoryAsync(bobWindow);
+                await Check(2);
+
+                // A close racing a replacement must publish the final authoritative count from the tick.
+                await Task.WhenAll(
+                    Task.Run(() => alice.OpenedContainer = null),
+                    Task.Run(async () => await bob.OpenInventoryAsync(new Container())));
+                await Check(0);
+                await alice.OpenInventoryAsync(aliceWindow);
+                await bob.OpenInventoryAsync(bobWindow);
+                await Check(2);
+
+                await Disconnect(alice);
+                await Check(1);
+                await Disconnect(bob);
+                await Check(0);
+
+                var dying = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Dying");
+                world.Players.TryAdd(dying.Uuid, dying);
+                await dying.OpenInventoryAsync(aliceWindow);
+                await Check(1);
+                await dying.KillAsync(observer, ChatMessage.Simple("Test death"));
+                Assert.Null(dying.OpenedContainer);
+                await Check(0);
+
+                async Task OpenBlock(Obsidian.Entities.Player player)
+                {
+                    await context.EventDispatcher.ExecuteEventAsync(new PlayerInteractEventArgs(player, context.Server)
+                    {
+                        Block = block,
+                        BlockLocation = position
+                    });
+                }
+
+                async Task Disconnect(Obsidian.Entities.Player player)
+                {
+                    await player.Client.DisconnectAsync(ChatMessage.Simple("Disconnected"));
+                    world.Players.TryRemove(player.Uuid, out _);
+                    // The same window removal used by Client.LeaveAsync's finally, without a close event.
+                    player.OpenedContainer = null;
+                }
+
+                async Task Check(int expected, int eventsPerBlock = 1)
+                {
+                    await world.ProcessBlockEventsAsync();
+                    var client = Assert.IsType<TestClient>(observer.Client);
+                    var packets = client.SentPackets.OfType<BlockEventPacket>().ToArray();
+                    Assert.Equal((item.Double ? 2 : 1) * eventsPerBlock, packets.Length);
+                    Assert.All(packets, packet => Assert.Equal(expected, packet.ActionParam));
+                    Assert.Contains(packets, packet => packet.Position == position);
+                    if (item.Double)
+                    {
+                        Assert.Contains(packets, packet => packet.Position == position + new Vector(1, 0, 0));
+                    }
+
+                    client.ClearPackets();
                 }
             });
     }

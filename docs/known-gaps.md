@@ -580,7 +580,12 @@ the block type at dispatch, and retries events in inactive chunks on a later tic
 vanilla's block-ticking fringe around players and ticking tickets, beyond entity ticking; loaded-only tickets do
 not activate it. Event packets and note sounds send immediately, in order with piston block updates. Container lid
 events carry the number of viewers of each physical block, including separate ender inventories and both double-
-chest halves. Notes, normal/sticky pistons,
+chest halves. Window lifecycle changes mark physical containers dirty, including direct opens, replacement,
+disconnect, death and dimension changes; the level counts and enqueues on its simulation path. Lid event payloads
+also re-read the current viewer count at dispatch, so coalescing earlier open/close requests cannot publish a stale
+final count. Per-container
+five-tick opener rechecks repair missed cleanup. Scheduled block ticks use the same block-ticking predicate while
+retaining their complete-neighbor readiness checks. Notes, normal/sticky pistons,
 chest/trapped/copper chest lids (both halves), ender chest and shulker lids, sulfur geysers, gateway cooldowns and
 block-spawner resets use this phase. Native captures cover both note/piston orders, mixed duplicates, notification-
 queued playback during draining, every key field, replacement and inactive-chunk retry, plus the client event

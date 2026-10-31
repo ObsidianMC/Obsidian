@@ -10,7 +10,7 @@ public abstract partial class AbstractLevel
     internal int PendingBlockEvents => this.blockEvents.Count;
 
     internal void QueueBlockEvent(Vector position, int block, int id, int parameter,
-        Func<ValueTask<bool>>? trigger = null)
+        Func<ValueTask<bool>>? trigger = null, Func<int>? parameterAtDispatch = null)
     {
         this.blockEvents.Enqueue(new(position, block, id, parameter), async () =>
         {
@@ -26,14 +26,13 @@ public abstract partial class AbstractLevel
                 Position = position,
                 BlockType = block,
                 ActionId = (byte)id,
-                ActionParam = (byte)parameter
+                ActionParam = (byte)(parameterAtDispatch?.Invoke() ?? parameter)
             });
         });
     }
 
-    internal ValueTask ProcessBlockEventsAsync() => this.blockEvents.DrainAsync(
-        this.IsBlockTicking,
-        position => this.GameEventBlock(position)?.RegistryId);
+    internal ValueTask ProcessBlockEventsAsync() => this.blockEvents.DrainAsync(this.IsBlockTicking,
+        position => this.GameEventBlock(position)?.RegistryId, this.ReconcileContainerLids);
 
     internal bool IsBlockTicking(Vector position)
     {

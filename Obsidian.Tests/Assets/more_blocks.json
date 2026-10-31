@@ -1,6 +1,6 @@
 {
   "version": "26.3",
-  "_notes": "MoreBlockFixtures.java records vanilla 26.3 routines against an explicit bounded block view. Placement calls getStateForPlacement and canSurvive on an already chosen block/sign variant. Shape outputs include scheduled block/fluid ticks; scheduled leaf distance and axe-provider outputs include the next seeded random draw. Door/trapdoor/gate use records sound IDs (their replay checks IDs and state, not pitch); placed_by records door upper halves. Note playback invokes playNote and triggerEvent and records trigger success, events, exact sound volume/pitch/seed and next random draw. Writes do not recursively notify neighbors in the probe; shape cases replay through Obsidian live notifications. One test replays the entire reference and reports all differing cases. Review lifecycle cases call the real ServerLevel.blockEvent and runBlockEvents routines with an initialized native event set, recording queue size, pre-phase output, final sound/event packets, exact seeds and next draw. Use-item cases call ServerPlayerGameMode.useItemOn with a survival player, empty advancement listeners, no entities obstructing placement, and the bounded write-backed level; they record the note counter, placed target state and remaining item count. Their neighbor notification effects are covered separately by shape probes. Shared block-event cases capture the native event set/drain, mixed note/piston ordering, all key fields, stale-block cancellation, inactive-chunk retry, and notifications that queue playback during draining. They record ordered sounds, full event keys and watched states. Gateway cooldown and spawner reset cases invoke their native producers; client-only lid/bell/gateway/spawner/geyser event forms use native block entity handlers. Only the opt-in mixed notification probe calls native note neighbor reactions on piston writes; unrelated updates remain suppressed. Mixed replay compares sound IDs/order and block movement, leaving existing exact note assertions unchanged. Review range cases record native SimulationChunkTracker/ChunkLevel results, using DistanceManager player ticket levels, and run piston events at and beyond the block-ticking fringe. The replay checks loaded player/ticket borders outside and during the real world tick.",
+  "_notes": "MoreBlockFixtures.java records vanilla 26.3 routines against an explicit bounded block view. Placement calls getStateForPlacement and canSurvive on an already chosen block/sign variant. Shape outputs include scheduled block/fluid ticks; scheduled leaf distance and axe-provider outputs include the next seeded random draw. Door/trapdoor/gate use records sound IDs (their replay checks IDs and state, not pitch); placed_by records door upper halves. Note playback invokes playNote and triggerEvent and records trigger success, events, exact sound volume/pitch/seed and next random draw. Writes do not recursively notify neighbors in the probe; shape cases replay through Obsidian live notifications. One test replays the entire reference and reports all differing cases. Review lifecycle cases call the real ServerLevel.blockEvent and runBlockEvents routines with an initialized native event set, recording queue size, pre-phase output, final sound/event packets, exact seeds and next draw. Use-item cases call ServerPlayerGameMode.useItemOn with a survival player, empty advancement listeners, no entities obstructing placement, and the bounded write-backed level; they record the note counter, placed target state and remaining item count. Their neighbor notification effects are covered separately by shape probes. Shared block-event cases capture the native event set/drain, mixed note/piston ordering, all key fields, stale-block cancellation, inactive-chunk retry, and notifications that queue playback during draining. They record ordered sounds, full event keys and watched states. Gateway cooldown and spawner reset cases invoke their native producers; client-only lid/bell/gateway/spawner/geyser event forms use native block entity handlers. Only the opt-in mixed notification probe calls native note neighbor reactions on piston writes; unrelated updates remain suppressed. Mixed replay compares sound IDs/order and block movement, leaving existing exact note assertions unchanged. Review range cases record native SimulationChunkTracker/ChunkLevel results, using DistanceManager player ticket levels, and run piston events at and beyond the block-ticking fringe. The replay checks loaded player/ticket borders outside and during the real world tick. The periodic opener case invokes the real chest ContainerOpenersCounter.recheckOpeners with a stale count and no matching viewers, capturing the closing event and CHECK_TICK_DELAY. The replay checks repair at that per-container deadline. The range replay also verifies scheduled block ticks with complete neighbor readiness.",
   "cases": [
     {
       "name": "note_trumpet_0_air",
@@ -30031,6 +30031,39 @@
           "events": [],
           "states": [
             "minecraft:piston[extended=false,facing=east]"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "review_container_periodic_opener_recheck",
+      "kind": "container_recheck",
+      "initialCount": 1,
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:chest"
+        }
+      ],
+      "recheckDelay": 5,
+      "events": [
+        {
+          "block": "minecraft:chest",
+          "id": 1,
+          "parameter": 0,
+          "pos": [
+            0,
+            72,
+            0
           ]
         }
       ]
