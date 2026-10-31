@@ -11,9 +11,42 @@ internal static class MojangDownloads
 {
     private const string ManifestUrl = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
 
+    // Waits before each retry. A dropped connection or a truncated download is usually gone a few seconds later.
+    private static readonly TimeSpan[] RetryDelays = [TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5)];
+
     /// <summary>Downloads the version's named artifact (server or client) to a caller-owned temporary path.</summary>
-    /// <remarks>The caller creates the directory and removes the file if downloading or verification fails.</remarks>
+    /// <remarks>
+    /// The caller creates the directory and removes the file if downloading or verification fails. Network errors,
+    /// timeouts and a download that doesn't match its hash are retried a couple of times before giving up.
+    /// </remarks>
     public static async Task DownloadAsync(HttpClient httpClient, string version, string download, string path, CancellationToken cancellationToken)
+    {
+        foreach (var delay in RetryDelays)
+        {
+            try
+            {
+                await DownloadOnceAsync(httpClient, version, download, path, cancellationToken);
+                return;
+            }
+            catch (Exception exception) when (IsTransient(exception, cancellationToken))
+            {
+                await Task.Delay(delay, cancellationToken);
+            }
+        }
+
+        await DownloadOnceAsync(httpClient, version, download, path, cancellationToken);
+    }
+
+    private static bool IsTransient(Exception exception, CancellationToken cancellationToken)
+    {
+        // HttpClient reports its own timeout as a cancellation; the caller's cancellation isn't retried.
+        var timedOut = exception is TaskCanceledException && !cancellationToken.IsCancellationRequested;
+
+        return timedOut || exception is HttpRequestException or IOException or InvalidDataException;
+    }
+
+    private static async Task DownloadOnceAsync(HttpClient httpClient, string version, string download, string path,
+        CancellationToken cancellationToken)
     {
         string? versionUrl = null;
         using (var manifest = await GetJsonAsync(httpClient, ManifestUrl, cancellationToken))
