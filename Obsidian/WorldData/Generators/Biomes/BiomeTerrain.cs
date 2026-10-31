@@ -129,6 +129,17 @@ internal sealed class BiomeTerrain
     }
 
     /// <summary>
+    /// Stores decoration's final heights once every neighboring decoration that can write this chunk has finished.
+    /// Call before lighting and publishing the chunk; the worldgen maps retain their terrain-stage values.
+    /// </summary>
+    public void CompleteHeightmaps(IChunk chunk)
+    {
+        WorldgenHeightmaps.UpdateFinal(chunk, chunk.MinY, chunk.Height);
+        if (chunk is Chunk generated)
+            generated.FinalHeightmaps = null;
+    }
+
+    /// <summary>
     /// Places only the structures reaching a terrain-status chunk, each step with the seeds decoration gives them,
     /// as <see cref="Decorate"/> does before each step's features. Its eight neighbors must exist.
     /// </summary>
@@ -232,6 +243,7 @@ internal sealed class BiomeTerrain
 
     public void Generate(IChunk chunk, ICollection<Vector>? fluidUpdates = null)
     {
+        using var writes = (chunk as Chunk)?.BeginTerrainWrites();
         this.Source.FillBiomes(chunk);
         fluidUpdates ??= (chunk as Chunk)?.PostProcessing;
         this.terrain.Generate(

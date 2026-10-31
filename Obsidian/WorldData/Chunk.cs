@@ -352,6 +352,83 @@ public sealed class Chunk : IChunk
     /// </summary>
     internal FinalHeightmaps? FinalHeightmaps { get; set; }
 
+    private int generationWriter;
+    private TerrainWrites? terrainWrites;
+
+    /// <summary>
+    /// Batches writes to an exclusively owned terrain chunk. Worldgen maps remain current for material rules;
+    /// the four runtime maps are stored when the stage ends. Never use after publishing the chunk to neighbors.
+    /// </summary>
+    internal IDisposable BeginTerrainWrites() => new TerrainWrites(this);
+
+    private sealed class TerrainWrites : IDisposable
+    {
+        private Chunk? chunk;
+        private readonly bool hasPortals;
+        private FinalHeightmaps? heights;
+
+        internal TerrainWrites(Chunk chunk)
+        {
+            chunk.BlockLock.Enter();
+            if (chunk.RuntimeLight is not null || chunk.ChunkStatus >= ChunkGenStage.features
+                || chunk.generationWriter != 0 || chunk.FinalHeightmaps is not null)
+            {
+                chunk.BlockLock.Exit();
+                throw new InvalidOperationException("Terrain writes require an exclusively owned terrain chunk.");
+            }
+
+            this.chunk = chunk;
+            this.hasPortals = HasAny(chunk.PortalOwners);
+            chunk.terrainWrites = this;
+            chunk.generationWriter = Environment.CurrentManagedThreadId;
+        }
+
+        internal void SetBlock(int x, int y, int z, IBlock block)
+        {
+            var chunk = this.chunk!;
+            // Noise fill precedes the first material write and computes the initial maps itself.
+            this.heights ??= new FinalHeightmaps(chunk, chunk.MinY, chunk.Height);
+            var surface = this.heights.GetHeight(HeightmapType.WorldSurface, x, z);
+            var floor = this.heights.GetHeight(HeightmapType.OceanFloor, x, z);
+
+            if (this.hasPortals)
+            {
+                Portals.PortalOwnership.Release(chunk, new Vector((chunk.X << 4) + x, y, (chunk.Z << 4) + z), block);
+            }
+
+            ((ChunkSection)chunk.sections[chunk.SectionIndex(y)]).SetBlockUntracked(x, y & 15, z, block);
+            this.heights.Update(x, y, z, Generators.Mojang.WorldgenHeightmaps.Mask(block));
+            this.StoreWorldgenHeight(chunk, HeightmapType.WorldSurfaceWG, surface, x, z);
+            this.StoreWorldgenHeight(chunk, HeightmapType.OceanFloorWG, floor, x, z);
+        }
+
+        private void StoreWorldgenHeight(Chunk chunk, HeightmapType type, int previous, int x, int z)
+        {
+            var height = this.heights!.GetHeight(type, x, z);
+            if (height != previous && chunk.Heightmaps.TryGetValue(type, out var map))
+                map.Set(x, z, height);
+        }
+
+        public void Dispose()
+        {
+            if (this.chunk is not Chunk chunk)
+                return;
+
+            try
+            {
+                if (this.heights is not null)
+                    Generators.Mojang.WorldgenHeightmaps.StoreFinal(chunk, this.heights);
+            }
+            finally
+            {
+                chunk.generationWriter = 0;
+                chunk.terrainWrites = null;
+                this.chunk = null;
+                chunk.BlockLock.Exit();
+            }
+        }
+    }
+
     private readonly IChunkSection[] sections;
 
     public ReadOnlySpan<IChunkSection> Sections => this.sections;
@@ -492,6 +569,12 @@ public sealed class Chunk : IChunk
         // rather than failing the chunk.
         if ((uint)(y - this.MinY) >= (uint)this.Height)
             return;
+
+        if (this.generationWriter != 0 && this.generationWriter == Environment.CurrentManagedThreadId)
+        {
+            this.terrainWrites!.SetBlock(x & 15, y, z & 15, block);
+            return;
+        }
 
         if (this.RuntimeLight is RuntimeLightEngine light)
         {

@@ -5,6 +5,16 @@ internal static class FixtureDumper
 {
     private static string Source(string name) => Path.Combine(AppContext.BaseDirectory, "Java", name);
 
+    internal static Task DumpSavedHeightmapsAsync(VanillaServer server, string fixture)
+    {
+        var world = Path.Combine(server.ScratchDirectory, $"saved-heightmaps-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(world);
+        var source = Path.Combine(AppContext.BaseDirectory, "Captures", "SavedHeightmapFixtures.java");
+        return VanillaServer.RunJavaAsync(world, TimeSpan.FromMinutes(5),
+            "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+            "-cp", string.Join(Path.PathSeparator, server.ClassPath), source, fixture);
+    }
+
     internal static Task DumpHeightmapsAsync(VanillaServer server, string fixture)
     {
         var world = Path.Combine(server.ScratchDirectory, $"heightmaps-{Guid.NewGuid():N}");

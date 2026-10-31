@@ -78,8 +78,8 @@ internal abstract class BenchGenerator
 
     /// <summary>
     /// The 26.3 biome, terrain and features statuses with structures and the extracted 26.3 templates, as
-    /// <see cref="BiomeTerrain.Generate"/> and <see cref="BiomeTerrain.Decorate"/> run them. It has no post-processing
-    /// stage.
+    /// <see cref="BiomeTerrain.Generate"/> and <see cref="BiomeTerrain.Decorate"/> run them, with a final heightmap
+    /// handoff after all neighboring decoration has finished.
     /// </summary>
     private sealed class CurrentGenerator : BenchGenerator
     {
@@ -110,8 +110,16 @@ internal abstract class BenchGenerator
                 context = this.terrain.CreateContext(chunk, this.pipeline.ChunkBiomes(chunk), chunk.PostProcessing);
                 this.terrain.Fill(context, this.pipeline.BeardifierFor(x, z));
             });
-            timer.Time(SerialStage.Surface, () => this.terrain.Materials.Apply(context!));
-            timer.Time(SerialStage.Carvers, () => TerrainCarvers.Apply(context!, this.pipeline.CarversAt));
+            timer.Time(SerialStage.Surface, () =>
+            {
+                using var writes = chunk.BeginTerrainWrites();
+                this.terrain.Materials.Apply(context!);
+            });
+            timer.Time(SerialStage.Carvers, () =>
+            {
+                using var writes = chunk.BeginTerrainWrites();
+                TerrainCarvers.Apply(context!, this.pipeline.CarversAt);
+            });
             chunk.SetChunkStatus(ChunkGenStage.carvers);
             return chunk;
         }
@@ -122,6 +130,7 @@ internal abstract class BenchGenerator
         public override void PostProcess(IReadOnlyDictionary<(int X, int Z), IChunk> area, int x, int z,
             StageTimer<SerialStage> timer)
         {
+            timer.Time(SerialStage.PostProcess, () => this.pipeline.CompleteHeightmaps(area[(x, z)]));
         }
     }
 }
