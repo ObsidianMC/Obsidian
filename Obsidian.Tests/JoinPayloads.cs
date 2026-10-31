@@ -14,6 +14,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -38,16 +39,20 @@ public class JoinPayloads
         return JsonNode.Parse(stream)!.AsObject();
     });
 
-    public static TheoryData<string> Packets =>
+    private static readonly string[] Packets =
     [
         "login_finished", "select_known_packs", "registry_data", "login", "respawn", "change_difficulty",
         "set_default_spawn_position", "set_time", "game_event", "player_abilities", "post_effects", "level_chunk",
         "light_masks", "chunks_biomes"
     ];
 
-    [Theory]
-    [MemberData(nameof(Packets))]
-    public void PacketsMatchVanilla(string packet)
+    [Fact]
+    public void PacketsMatchVanilla()
+    {
+        FixtureCases.AssertAll(Packets, packet => packet, AssertPacketMatchesVanilla);
+    }
+
+    private static void AssertPacketMatchesVanilla(string packet)
     {
         var expected = fixture.Value[packet] switch
         {

@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -19,10 +20,19 @@ namespace Obsidian.Tests;
 /// </summary>
 public sealed class NeoForgePorting
 {
-    [Theory]
-    [InlineData("minecraft:plains", "creature")]
-    [InlineData("minecraft:soul_sand_valley", "monster")]
-    public void PortsFormat121SpawnProviders(string biome, string category)
+    [Fact]
+    public void PortsFormat121SpawnProviders()
+    {
+        (string Biome, string Category)[] cases =
+        [
+            ("minecraft:plains", "creature"),
+            ("minecraft:soul_sand_valley", "monster")
+        ];
+
+        FixtureCases.AssertAll(cases, row => row.Biome, row => AssertPortsSpawnProviders(row.Biome, row.Category));
+    }
+
+    private static void AssertPortsSpawnProviders(string biome, string category)
     {
         using var data = Format121Data.Read("biome");
         var spawns = data.RootElement.GetProperty(biome)
@@ -71,7 +81,7 @@ public sealed class NeoForgePorting
 
     // Name, NeoForge's modifier, and Obsidian's modifier it becomes, or what the report says when it can't, or what
     // its note says when it converts with one.
-    public static TheoryData<string, string, string, string> Modifiers => new()
+    private static TheoryData<string, string, string, string> Modifiers => new()
     {
         {
             "add features",
@@ -287,9 +297,14 @@ public sealed class NeoForgePorting
         }
     };
 
-    [Theory]
-    [MemberData(nameof(Modifiers))]
-    public void BiomeModifier_ConvertsToObsidiansFormat(string name, string neoForge, string expected, string reason)
+    [Fact]
+    public void BiomeModifier_ConvertsToObsidiansFormat()
+    {
+        FixtureCases.AssertAll(Modifiers, row => (string)row[0],
+            row => AssertModifierConverts((string)row[0], (string)row[1], (string)row[2], (string)row[3]));
+    }
+
+    private static void AssertModifierConverts(string name, string neoForge, string expected, string reason)
     {
         var (output, report) = ModPorter.Port(new Dictionary<string, byte[]>
         {

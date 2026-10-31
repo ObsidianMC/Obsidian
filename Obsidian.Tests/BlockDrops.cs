@@ -31,6 +31,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -262,12 +263,23 @@ public sealed class BlockDrops
         }
     }
 
-    [Theory(Timeout = TestServerFactory.TestTimeout)]
-    [InlineData("oak_door", "half", "lower", "upper", "oak_door", false)]
-    [InlineData("red_bed", "part", "foot", "head", "red_bed", false)]
-    [InlineData("small_dripleaf", "half", "upper", "lower", "small_dripleaf", false)]
-    [InlineData("oak_door", "half", "upper", "lower", "oak_door", true)]
-    public async Task TwoPartPlayerBreakRemovesBothAndDropsOnce(
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task TwoPartPlayerBreakRemovesBothAndDropsOnce()
+    {
+        (string Name, string Property, string SelectedPart, string PartnerPart, string Item, bool Creative)[] cases =
+        [
+            ("oak_door", "half", "lower", "upper", "oak_door", false),
+            ("red_bed", "part", "foot", "head", "red_bed", false),
+            ("small_dripleaf", "half", "upper", "lower", "small_dripleaf", false),
+            ("oak_door", "half", "upper", "lower", "oak_door", true)
+        ];
+
+        await FixtureCases.AssertAllAsync(cases, row => $"{row.Name}, {row.Property}, {row.SelectedPart}, {row.PartnerPart}, {row.Item}, {row.Creative}",
+            row => AssertTwoPartPlayerBreakRemovesBothAndDropsOnce(
+                row.Name, row.Property, row.SelectedPart, row.PartnerPart, row.Item, row.Creative));
+    }
+
+    private static async Task AssertTwoPartPlayerBreakRemovesBothAndDropsOnce(
         string name, string property, string selectedPart, string partnerPart, string item, bool creative)
     {
         await using var context = TestServerFactory.CreateServer($"two-part-loot-{Guid.NewGuid():N}");
@@ -448,10 +460,20 @@ public sealed class BlockDrops
         }
     }
 
-    [Theory]
-    [InlineData("missing", "")]
-    [InlineData("number", ", \"value\": 1")]
-    public void MalformedTableReferenceIsRejectedAndLoaderSkipsIt(string caseId, string value)
+    [Fact]
+    public void MalformedTableReferenceIsRejectedAndLoaderSkipsIt()
+    {
+        (string CaseId, string Value)[] cases =
+        [
+            ("missing", ""),
+            ("number", ", \"value\": 1")
+        ];
+
+        FixtureCases.AssertAll(cases, row => $"{row.CaseId}, {row.Value}",
+            row => AssertMalformedTableReferenceIsRejectedAndLoaderSkipsIt(row.CaseId, row.Value));
+    }
+
+    private static void AssertMalformedTableReferenceIsRejectedAndLoaderSkipsIt(string caseId, string value)
     {
         var json = $$"""
             { "pools": [{ "rolls": 1, "entries": [{ "type": "minecraft:loot_table"{{value}} }] }] }
@@ -534,10 +556,20 @@ public sealed class BlockDrops
         }
     }
 
-    [Theory(Timeout = TestServerFactory.TestTimeout)]
-    [InlineData("oak_door", "half", "upper")]
-    [InlineData("red_bed", "part", "foot")]
-    public async Task ExplosionDestroysTwoPartBlocksAndDropsOnce(string name, string property, string selectedPart)
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ExplosionDestroysTwoPartBlocksAndDropsOnce()
+    {
+        (string Name, string Property, string SelectedPart)[] cases =
+        [
+            ("oak_door", "half", "upper"),
+            ("red_bed", "part", "foot")
+        ];
+
+        await FixtureCases.AssertAllAsync(cases, row => $"{row.Name}, {row.Property}, {row.SelectedPart}",
+            row => AssertExplosionDestroysTwoPartBlocksAndDropsOnce(row.Name, row.Property, row.SelectedPart));
+    }
+
+    private static async Task AssertExplosionDestroysTwoPartBlocksAndDropsOnce(string name, string property, string selectedPart)
     {
         await using var context = TestServerFactory.CreateServer($"two-part-explosion-{Guid.NewGuid():N}");
         var chunk = AddChunk(context.World);

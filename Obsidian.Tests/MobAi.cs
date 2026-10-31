@@ -2,6 +2,7 @@ using Obsidian.API;
 using Obsidian.Entities;
 using Obsidian.Registries;
 using System.Threading.Tasks;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -26,15 +27,24 @@ public sealed class MobAi
         }
     }
 
-    [Theory]
-    [InlineData(EntityType.Cow)]
-    [InlineData(EntityType.Horse)]
-    [InlineData(EntityType.Cat)]
-    [InlineData(EntityType.Camel)]
-    [InlineData(EntityType.Enderman)]
-    [InlineData(EntityType.MagmaCube)]
-    [InlineData(EntityType.Wolf)]
-    public void MobSavesRoundTripIdentityPositionHealthAndNoAi(EntityType type)
+    [Fact]
+    public void MobSavesRoundTripIdentityPositionHealthAndNoAi()
+    {
+        EntityType[] cases =
+        [
+            EntityType.Cow,
+            EntityType.Horse,
+            EntityType.Cat,
+            EntityType.Camel,
+            EntityType.Enderman,
+            EntityType.MagmaCube,
+            EntityType.Wolf
+        ];
+
+        FixtureCases.AssertAll(cases, row => $"{row}", AssertMobSavesRoundTripIdentityPositionHealthAndNoAi);
+    }
+
+    private static void AssertMobSavesRoundTripIdentityPositionHealthAndNoAi(EntityType type)
     {
         var mob = Obsidian.Entities.Factories.EntitySpawner.CreateMob(null!, type)!;
         mob.Position = new VectorF(-17.5f, 64, 31.5f);

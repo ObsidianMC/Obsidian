@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Obsidian.Tests.Utilities;
 using Xunit;
 using Trades = Obsidian.Entities.VillagerTrades;
 
@@ -81,20 +82,20 @@ public sealed class VillagerTrades
         Assert.Equal(offers.Select(Progress), restored.Select(Progress));
     }
 
-    [Theory(Timeout = TestServerFactory.TestTimeout)]
-    [InlineData(0, false)]
-    [InlineData(0, true)]
-    [InlineData(1, false)]
-    [InlineData(1, true)]
-    [InlineData(2, false)]
-    [InlineData(2, true)]
-    [InlineData(3, false)]
-    [InlineData(3, true)]
-    [InlineData(4, false)]
-    [InlineData(4, true)]
-    [InlineData(5, false)]
-    [InlineData(5, true)]
-    public async Task PlayerTradeExperienceMatchesVanillaRegardlessOfMobDrops(int index, bool mobDrops)
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task PlayerTradeExperienceMatchesVanillaRegardlessOfMobDrops()
+    {
+        // Every captured trade, with and without mob drops.
+        using var stream = typeof(Server).Assembly.GetManifestResourceStream("Obsidian.Assets.merchant-xp-26.3.json")!;
+        using var captured = JsonDocument.Parse(stream);
+        var cases = Enumerable.Range(0, captured.RootElement.GetArrayLength())
+            .SelectMany(index => new[] { (Index: index, MobDrops: false), (Index: index, MobDrops: true) });
+
+        await FixtureCases.AssertAllAsync(cases, row => $"{row.Index}, {row.MobDrops}",
+            row => AssertPlayerTradeExperienceMatchesVanillaRegardlessOfMobDrops(row.Index, row.MobDrops));
+    }
+
+    private static async Task AssertPlayerTradeExperienceMatchesVanillaRegardlessOfMobDrops(int index, bool mobDrops)
     {
         await using var context = TestServerFactory.CreateServer($"trade-xp-{Guid.NewGuid():N}");
         WorldBlockEntities.AddEmptyChunk(context.World);
@@ -236,10 +237,20 @@ public sealed class VillagerTrades
         }
     }
 
-    [Theory(Timeout = TestServerFactory.TestTimeout)]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task VanillaSavedOffersSurviveLoadingAndFirstInteraction(bool empty)
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task VanillaSavedOffersSurviveLoadingAndFirstInteraction()
+    {
+        bool[] cases =
+        [
+            false,
+            true
+        ];
+
+        await FixtureCases.AssertAllAsync(cases, row => $"{row}",
+            AssertVanillaSavedOffersSurviveLoadingAndFirstInteraction);
+    }
+
+    private static async Task AssertVanillaSavedOffersSurviveLoadingAndFirstInteraction(bool empty)
     {
         await using var context = TestServerFactory.CreateServer($"vanilla-offers-{Guid.NewGuid():N}");
         WorldBlockEntities.AddEmptyChunk(context.World);
@@ -305,12 +316,21 @@ public sealed class VillagerTrades
         Assert.Equal(actual.UsedCount >= actual.MaxCount, actual.IsDisabled);
     }
 
-    [Theory(Timeout = TestServerFactory.TestTimeout)]
-    [InlineData("disconnect")]
-    [InlineData("server_close")]
-    [InlineData("dimension_change")]
-    [InlineData("replacement")]
-    public async Task MerchantInputsSurviveEveryWindowExit(string exit)
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task MerchantInputsSurviveEveryWindowExit()
+    {
+        string[] cases =
+        [
+            "disconnect",
+            "server_close",
+            "dimension_change",
+            "replacement"
+        ];
+
+        await FixtureCases.AssertAllAsync(cases, row => $"{row}", AssertMerchantInputsSurviveEveryWindowExit);
+    }
+
+    private static async Task AssertMerchantInputsSurviveEveryWindowExit(string exit)
     {
         await using var context = TestServerFactory.CreateServer($"trade-exit-{Guid.NewGuid():N}");
         await using var destination = TestServerFactory.CreateServer($"trade-target-{Guid.NewGuid():N}");

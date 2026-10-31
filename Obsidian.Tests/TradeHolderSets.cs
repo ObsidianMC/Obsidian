@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -10,6 +11,7 @@ using Obsidian.API.Registries;
 using Obsidian.API.Utilities;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Registries;
+using Obsidian.Tests.Utilities;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -17,24 +19,19 @@ namespace Obsidian.Tests;
 [Collection(nameof(PluginTagFiles))]
 public sealed class TradeHolderSets
 {
-    [Theory]
-    [InlineData(0)]
-    [InlineData(1)]
-    [InlineData(2)]
-    [InlineData(3)]
-    [InlineData(4)]
-    [InlineData(5)]
-    [InlineData(6)]
-    [InlineData(7)]
-    [InlineData(8)]
-    [InlineData(9)]
-    [InlineData(10)]
-    public void HolderSetModifiersMatchVanilla(int index)
+    [Fact]
+    public void HolderSetModifiersMatchVanilla()
     {
         using var stream = typeof(Server).Assembly.GetManifestResourceStream(
             "Obsidian.Assets.trade-holder-sets-26.3.json")!;
         using var captured = JsonDocument.Parse(stream);
-        var row = captured.RootElement[index];
+        var rows = captured.RootElement.EnumerateArray().Select((row, index) => (Row: row, Index: index));
+
+        FixtureCases.AssertAll(rows, row => $"[{row.Index}]", row => AssertHolderSetModifierMatchesVanilla(row.Row));
+    }
+
+    private static void AssertHolderSetModifierMatchesVanilla(JsonElement row)
+    {
         var modifier = LootTableJson.ReadModifier(row.GetProperty("modifier").GetRawText());
         var input = VanillaLoot.CapturedCompound("", row.GetProperty("input")).ItemFromNbt()!;
         var expected = VanillaLoot.CapturedCompound("", row.GetProperty("output")).ItemFromNbt()!;
@@ -47,11 +44,21 @@ public sealed class TradeHolderSets
         Assert.Equal(row.GetProperty("nextInt").GetInt32(), random.NextInt());
     }
 
-    [Theory]
-    [InlineData("set_random_potion", "potion", "minecraft:water", "minecraft:awkward")]
-    [InlineData("enchant_randomly", "enchantment", "minecraft:sharpness", "minecraft:smite")]
-    [InlineData("enchant_with_levels", "enchantment", "minecraft:sharpness", "minecraft:smite")]
-    public void RuntimeHolderSetsFollowTagReloads(string function, string registry, string first, string second)
+    [Fact]
+    public void RuntimeHolderSetsFollowTagReloads()
+    {
+        (string Function, string Registry, string First, string Second)[] cases =
+        [
+            ("set_random_potion", "potion", "minecraft:water", "minecraft:awkward"),
+            ("enchant_randomly", "enchantment", "minecraft:sharpness", "minecraft:smite"),
+            ("enchant_with_levels", "enchantment", "minecraft:sharpness", "minecraft:smite")
+        ];
+
+        FixtureCases.AssertAll(cases, row => $"{row.Function}, {row.Registry}, {row.First}, {row.Second}",
+            row => AssertRuntimeHolderSetsFollowTagReloads(row.Function, row.Registry, row.First, row.Second));
+    }
+
+    private static void AssertRuntimeHolderSetsFollowTagReloads(string function, string registry, string first, string second)
     {
         // Parse before tags load, as runtime data packs can do, and retain the modifier across both reloads.
         var modifier = LootTableJson.ReadModifier($$"""
