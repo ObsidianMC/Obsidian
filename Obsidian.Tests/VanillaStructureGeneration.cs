@@ -27,19 +27,10 @@ namespace Obsidian.Tests;
 [Collection(WorldgenCollection.Name)]
 public class VanillaStructureGeneration(WorldgenFixture worldgen)
 {
-    // Starts the 26.3 structures capture also replays (VanillaStructurePlacement). Their legacy starts take half this
-    // replay's time and only add the legacy generator's biomes and heights to what the 26.3 references check.
-    private static readonly HashSet<string> thinnedPieces = ["minecraft:mansion", "minecraft:mineshaft_mesa"];
-
     // SHA-256 of the piece list (one line per piece: type, box, pool element or template, position, rotation...).
     [Fact]
-    public void PiecesMatchVanilla()
-    {
-        var cases = VanillaWorldgenCaptures.Cases("structurePieces")
-            .Where(entry => !thinnedPieces.Contains(entry.GetProperty("structure").GetString()!));
-
-        FixtureCases.AssertAll(cases, StructureName, this.AssertPieces);
-    }
+    public void PiecesMatchVanilla() =>
+        FixtureCases.AssertAll(VanillaWorldgenCaptures.Cases("structurePieces"), StructureName, this.AssertPieces);
 
     private void AssertPieces(JsonElement entry)
     {
