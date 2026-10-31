@@ -532,17 +532,6 @@ public abstract partial class AbstractLevel : ILevel
         this.PacketBroadcaster.BroadcastTo(new LevelEventPacket(type, location, data), PlayersInRange(location));
     }
 
-    internal void BroadcastBlockEvent(Vector location, int blockId, int type, int data)
-    {
-        this.PacketBroadcaster.BroadcastTo(new BlockEventPacket
-        {
-            Position = location,
-            ActionId = (byte)type,
-            ActionParam = (byte)data,
-            BlockType = blockId
-        }, PlayersInRange(location));
-    }
-
     public IEnumerable<IPlayer> PlayersInRange(Vector location) => this.PlayersWithChunk(location);
 
     // The players that have the chunk at the location loaded. It reads the players as it goes rather than copying them
@@ -871,7 +860,7 @@ public abstract partial class AbstractLevel : ILevel
         timings.Lap("random ticks");
 
         // Like ServerLevel's block-event phase, after chunk ticks and before entity ticks.
-        this.ProcessNoteBlockEvents();
+        await this.ProcessBlockEventsAsync();
         timings.Lap("block events");
 
         foreach (var entity in this.SnapshotEntities())

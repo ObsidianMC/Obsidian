@@ -151,14 +151,9 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         {
             case BlockIds.Chest:
             case BlockIds.TrappedChest:
+            case var copperChest when TagsRegistry.Block.CopperChests.Entries.Contains(copperChest):
                 {
-                    await player.QueuePacketAsync(new BlockEventPacket
-                    {
-                        Position = position,
-                        ActionId = 1,
-                        ActionParam = 0,
-                        BlockType = block.BaseId
-                    });
+                    (player.Level as AbstractLevel)?.QueueBlockEvent(position, block.RegistryId, 1, 0);
 
                     //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockChestClose)
                     //    .WithSoundPosition(position.SoundPosition)
@@ -170,13 +165,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 }
             case BlockIds.EnderChest:
                 {
-                    await player.QueuePacketAsync(new BlockEventPacket
-                    {
-                        Position = position,
-                        ActionId = 1,
-                        ActionParam = 0,
-                        BlockType = block.BaseId
-                    });
+                    (player.Level as AbstractLevel)?.QueueBlockEvent(position, block.RegistryId, 1, 0);
 
                     //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockEnderChestClose)
                     //    .WithSoundPosition(position.SoundPosition)
@@ -195,13 +184,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 }
             case var shulker when TagsRegistry.Block.ShulkerBoxes.Entries.Contains(shulker):
                 {
-                    await player.QueuePacketAsync(new BlockEventPacket
-                    {
-                        Position = position,
-                        ActionId = 1,
-                        ActionParam = 0,
-                        BlockType = block.BaseId
-                    });
+                    (player.Level as AbstractLevel)?.QueueBlockEvent(position, block.RegistryId, 1, 0);
 
                     //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockShulkerBoxClose)
                     //    .WithSoundPosition(position.SoundPosition)
@@ -312,13 +295,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 container = NewChest(player, blockPosition);
 
                 // The inventory opens below, once the chest's contents (and loot) are in place.
-                await player.QueuePacketAsync(new BlockEventPacket
-                {
-                    Position = blockPosition,
-                    ActionId = 1,
-                    ActionParam = 1,
-                    BlockType = block.RegistryId
-                });
+                (player.Level as AbstractLevel)?.QueueBlockEvent(blockPosition, block.RegistryId, 1, 1);
                 //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockChestOpen, SoundCategory.Blocks)
                 //    .WithSoundPosition(blockPosition.SoundPosition)
                 //    .Build());
@@ -329,17 +306,12 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                 {
                     Owner = player.Uuid,
                     Title = "Ender Chest",
+                    BlockPosition = blockPosition,
                     Id = "ender_chest"
                 };
 
                 await player.OpenInventoryAsync(container);
-                await player.QueuePacketAsync(new BlockEventPacket
-                {
-                    Position = blockPosition,
-                    ActionId = 1,
-                    ActionParam = 1,
-                    BlockType = block.RegistryId
-                });
+                (player.Level as AbstractLevel)?.QueueBlockEvent(blockPosition, block.RegistryId, 1, 1);
                 //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockEnderChestOpen, SoundCategory.Blocks)
                 //    .WithSoundPosition(blockPosition.SoundPosition)
                 //    .Build());
@@ -370,13 +342,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
                     Id = "shulker_box"
                 };
 
-                await player.QueuePacketAsync(new BlockEventPacket
-                {
-                    Position = blockPosition,
-                    ActionId = 1,
-                    ActionParam = 1,
-                    BlockType = block.RegistryId
-                });
+                (player.Level as AbstractLevel)?.QueueBlockEvent(blockPosition, block.RegistryId, 1, 1);
                 //await player.SendSoundAsync(SoundEffectBuilder.Create(SoundId.BlockShulkerBoxOpen, SoundCategory.Blocks)
                 //    .WithSoundPosition(blockPosition.SoundPosition)
                 //    .Build());
@@ -496,13 +462,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
 
         var other = await StoredContainerAsync(player, level, neighbourPosition, NewChest(player, neighbourPosition));
 
-        await player.QueuePacketAsync(new BlockEventPacket
-        {
-            Position = neighbourPosition,
-            ActionId = 1,
-            ActionParam = 1,
-            BlockType = neighbour.RegistryId
-        });
+        (player.Level as AbstractLevel)?.QueueBlockEvent(neighbourPosition, neighbour.RegistryId, 1, 1);
 
         var (first, second) = chestType == "right" ? (container, other) : (other, container);
         var title = first.CustomName ?? second.CustomName ?? "Large Chest";

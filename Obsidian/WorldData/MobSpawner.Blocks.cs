@@ -14,9 +14,9 @@ internal sealed partial class MobSpawner
     /// </summary>
     internal void TickSpawnerMinecart(DataBlockEntity spawner) => this.TickSpawner(
         spawner,
-        level.Players.Values.Where(player => player.GameMode != GameMode.Spectator).ToArray());
+        level.Players.Values.Where(player => player.GameMode != GameMode.Spectator).ToArray(), blockEvent: false);
 
-    private void TickSpawner(DataBlockEntity spawner, IPlayer[] players)
+    private void TickSpawner(DataBlockEntity spawner, IPlayer[] players, bool blockEvent = true)
     {
         var position = (VectorD)spawner.BlockPosition + 0.5f;
         var data = spawner.Data;
@@ -26,7 +26,7 @@ internal sealed partial class MobSpawner
         var delay = ReadShort(data, "Delay", 20, -1, short.MaxValue);
         if (delay < 0)
         {
-            ResetSpawner(spawner);
+            ResetSpawner(spawner, blockEvent);
             return;
         }
         if (delay > 0)
@@ -59,7 +59,7 @@ internal sealed partial class MobSpawner
                 ? entity.Type == type
                 : ReferenceEquals(entity.Definition, plugin)) >= maximum)
             {
-                ResetSpawner(spawner);
+                ResetSpawner(spawner, blockEvent);
                 return;
             }
             var point = position + new VectorD((random.NextSingle() - random.NextSingle()) * range,
@@ -123,14 +123,22 @@ internal sealed partial class MobSpawner
             spawned = true;
         }
         if (spawned)
-            ResetSpawner(spawner);
+            ResetSpawner(spawner, blockEvent);
     }
 
-    private void ResetSpawner(DataBlockEntity spawner)
+    private void ResetSpawner(DataBlockEntity spawner, bool blockEvent)
     {
         var minimum = ReadShort(spawner.Data, "MinSpawnDelay", 200, 1, short.MaxValue);
         var maximum = ReadShort(spawner.Data, "MaxSpawnDelay", 800, minimum, short.MaxValue);
         spawner.Set("Delay", (short)(maximum <= minimum ? minimum : random.Next(minimum, maximum)));
+
+        // Vanilla's block spawner resets its client animation through the shared event phase.
+        // Minecart spawners use entity events instead of block events.
+        if (blockEvent)
+        {
+            level.QueueBlockEvent(spawner.BlockPosition, BlockIds.Spawner, 1, 0);
+        }
+
         if (!spawner.Data.TryGetTag<NbtList>("SpawnPotentials", out var potentials))
             return;
         var entries = potentials.OfType<NbtCompound>().Where(entry => entry.TryGetNumber<int>("weight", out var weight) && weight > 0 &&

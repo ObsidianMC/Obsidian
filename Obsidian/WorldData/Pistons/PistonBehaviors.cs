@@ -61,7 +61,7 @@ internal static class PistonBehaviors
             if (powered && !extended)
             {
                 if (new PistonStructureResolver(level, position, facing, extending: true).Resolve())
-                    this.QueueEvent(position, EventExtend, facing);
+                    this.QueueEvent(position, state.RegistryId, EventExtend, facing);
             }
             else if (!powered && extended)
             {
@@ -75,44 +75,43 @@ internal static class PistonBehaviors
                     type = EventDrop;
                 }
 
-                this.QueueEvent(position, type, facing);
+                this.QueueEvent(position, state.RegistryId, type, facing);
             }
         }
 
         // Vanilla blockEvent: the event runs later on the simulation path, against the state at that time.
-        private void QueueEvent(Vector position, int type, BlockFace facing) =>
-            level.EnqueueSimulation(() => this.TriggerAsync(position, type, facing));
+        private void QueueEvent(Vector position, int block, int type, BlockFace facing) =>
+            level.QueueBlockEvent(position, block, type, (int)facing, () => this.TriggerAsync(position, type, facing));
 
         // Vanilla PistonBaseBlock.triggerEvent.
-        private async ValueTask TriggerAsync(Vector position, int type, BlockFace facing)
+        private async ValueTask<bool> TriggerAsync(Vector position, int type, BlockFace facing)
         {
             var state = level.GetLoadedBlock(position);
             if (state is null || !PistonRules.IsBase(state))
-                return;
+                return false;
 
             var powered = Mover.NeighborSignal(mover.Engine, position, facing);
             if (powered && type != EventExtend)
             {
                 await level.WriteAsync(position, state.WithProperty("extended", "true"), notifyNeighbors: false);
-                return;
+                return false;
             }
 
             if (!powered && type == EventExtend)
-                return;
+                return false;
 
             if (type == EventExtend)
             {
                 if (!await mover.MoveBlocksAsync(position, facing, extending: true, PistonRules.IsStickyPiston(state)))
-                    return;
+                    return false;
 
                 await level.WriteAsync(position, state.WithProperty("extended", "true"), notifyNeighbors: true);
                 level.PlaySound(position, "minecraft:block.piston.extend");
-                level.BroadcastBlockEvent(position, state.RegistryId, EventExtend, (int)facing);
-                return;
+                return true;
             }
 
             await this.RetractAsync(position, state, type, facing);
-            level.BroadcastBlockEvent(position, state.RegistryId, type, (int)facing);
+            return true;
         }
 
         private async ValueTask RetractAsync(Vector position, IBlock state, int type, BlockFace facing)

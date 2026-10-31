@@ -68,8 +68,15 @@ replaces only what vanilla produced.
   Their replay advances the real Obsidian world tick, checking the block-event phase is connected. The use-item
   cases call `ServerPlayerGameMode.useItemOn` with all seven top-instrument heads and stone controls on upward and
   side faces, plus a sneaking control; they check note counters, target block states/rotations and consumption
-  through Obsidian's `UseItemOnPacket`. The bounded level suppresses advancement/stat delivery and unrelated
-  neighbor updates. These are native routine captures, rather than an RCON interaction or sleep lifecycle capture.
+  through Obsidian's `UseItemOnPacket`. The `shared_*` block-event cases use the native insertion-ordered event
+  set and drain with piston movement and note playback together. They record pre/post queue sizes, ordered sound
+  and event packets (including block types), and watched block states. Opt-in piston notifications invoke native
+  note neighbor reactions, so a note queued during the drain must run in that phase. They cover both note/piston
+  orders, duplicates, every key component, replacement, inactive-chunk retry, lids (including copper chests and
+  colored shulkers), bells, gateways, spawners and geysers. Gateway cooldown and spawner delay-reset cases also
+  invoke their native producers. Mixed cases check sound IDs/order and movement; exact piston pitch/random draws
+  are outside this queue change, while the existing note cases retain their exact seed/pitch assertions. The bounded
+  level suppresses advancement/stat delivery and unrelated neighbor updates. These are native routine captures, rather than an RCON interaction or sleep lifecycle capture.
 
 - `structure_pieces.json` (`VanillaStructureSaves.StartsSaveLikeVanilla`) holds what vanilla 26.3 saves of
   structure starts (`StructureStart.createTag`), from `Java/StructurePieceFixtures.java`, which runs a dedicated

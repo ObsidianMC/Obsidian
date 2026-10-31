@@ -26,6 +26,7 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
 {
     private readonly Dictionary<long, Chunk> chunks = [];
     private readonly Queue<Func<ValueTask>> simulation = new();
+    private readonly BlockEventQueue blockEvents = new();
 
     public RedstoneTestWorld(Action<Vector>? playNote = null)
     {
@@ -87,6 +88,8 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
 
         while (this.simulation.Count > 0)
             await this.simulation.Dequeue()();
+
+        await this.blockEvents.DrainAsync(_ => true, position => this.GetLoadedBlock(position)?.RegistryId);
 
         // Vanilla ticks block entities after the block ticks; moving pistons advance here.
         foreach (var chunk in this.chunks.Values.ToList())
@@ -199,8 +202,13 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
         return ValueTask.CompletedTask;
     }
 
-    void IRedstoneLevel.BroadcastBlockEvent(Vector position, int blockId, int type, int data)
+    void IRedstoneLevel.QueueBlockEvent(Vector position, int blockId, int type, int data,
+        Func<ValueTask<bool>> trigger)
     {
+        this.blockEvents.Enqueue(new(position, blockId, type, data), async () =>
+        {
+            await trigger();
+        });
     }
 
     public void ScheduleFluidTick(Vector position) => this.FluidTicks.Add(position);

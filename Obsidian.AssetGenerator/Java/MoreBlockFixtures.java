@@ -136,6 +136,61 @@ public final class MoreBlockFixtures {
                 var placed = level.getBlockState(origin);
                 placed.getBlock().setPlacedBy(level, origin, placed, null, new ItemStack(placed.getBlock()));
                 input.addProperty("upper", text(level.getBlockState(origin.above())));
+            } else if (kind.equals("block_events")) {
+                initializeEvents(level);
+                field(Level.class, "random").set(level, random);
+                for (var placement : level.blocks.entrySet()) {
+                    if (placement.getValue().getBlock() instanceof net.minecraft.world.level.block.EntityBlock block) {
+                        level.setBlockEntity(block.newBlockEntity(placement.getKey(), placement.getValue()));
+                    }
+                }
+
+                level.notifyNotes = input.has("notifyNotes") && input.get("notifyNotes").getAsBoolean();
+                var phases = new JsonArray();
+                for (var value : input.getAsJsonArray("actions")) {
+                    var action = value.getAsJsonObject();
+                    var pos = action.has("pos") ? position(action.getAsJsonArray("pos")) : origin;
+                    switch (action.get("action").getAsString()) {
+                        case "set" -> level.blocks.put(pos, state(action.get("state").getAsString()));
+                        case "play" -> playNote(level, pos);
+                        case "ticking" -> level.ticking = action.get("value").getAsBoolean();
+                        case "piston" -> level.blockEvent(pos, level.getBlockState(pos).getBlock(), 0, 5);
+                        case "gateway_cooldown" ->
+                            net.minecraft.world.level.block.entity.TheEndGatewayBlockEntity.triggerCooldown(
+                                level, pos, level.getBlockState(pos),
+                                (net.minecraft.world.level.block.entity.TheEndGatewayBlockEntity)level.getBlockEntity(pos));
+                        case "spawner_reset" -> {
+                            var spawner = ((net.minecraft.world.level.block.entity.SpawnerBlockEntity)
+                                level.getBlockEntity(pos)).getSpawner();
+                            var delay = net.minecraft.world.level.BaseSpawner.class
+                                .getDeclaredMethod("delay", Level.class, BlockPos.class);
+                            delay.setAccessible(true);
+                            delay.invoke(spawner, level, pos);
+                        }
+                        case "event" -> level.blockEvent(pos, level.getBlockState(pos).getBlock(),
+                            action.get("id").getAsInt(), action.get("parameter").getAsInt());
+                        case "phase" -> {
+                            var phase = new JsonObject();
+                            phase.addProperty("queued", queuedEvents(level));
+                            phase.addProperty("soundsBefore", level.sounds.size());
+                            phase.addProperty("eventsBefore", level.events.size());
+                            runBlockEvents(level);
+                            phase.addProperty("pendingAfter", queuedEvents(level));
+                            phase.add("sounds", level.sounds.deepCopy());
+                            phase.add("events", level.events.deepCopy());
+                            var states = new JsonArray();
+                            for (var watched : input.getAsJsonArray("watch")) {
+                                states.add(text(level.getBlockState(position(watched.getAsJsonArray()))));
+                            }
+
+                            phase.add("states", states);
+                            phases.add(phase);
+                        }
+                        default -> throw new IllegalArgumentException("Unknown block-event action: " + action);
+                    }
+                }
+
+                input.add("phases", phases);
             } else if (kind.equals("note_lifecycle")) {
                 initializeEvents(level);
                 var phases = new JsonArray();
@@ -249,9 +304,11 @@ public final class MoreBlockFixtures {
     private static ProbeLevel createLevel() throws Exception {
         var level = (ProbeLevel)allocate(ProbeLevel.class);
         level.blocks = new HashMap<>();
+        level.blockEntities = new HashMap<>();
         level.ticks = new JsonArray();
         level.events = new JsonArray();
         level.sounds = new JsonArray();
+        level.ticking = true;
         return level;
     }
 
@@ -380,6 +437,7 @@ public final class MoreBlockFixtures {
             ResourceKey<Level> dimension, Packet<?> packet) {
             if (packet instanceof ClientboundBlockEventPacket event) {
                 var value = new JsonObject();
+                value.addProperty("block", BuiltInRegistries.BLOCK.getKey(event.getBlock()).toString());
                 value.addProperty("id", event.getB0());
                 value.addProperty("parameter", event.getB1());
                 var pos = new JsonArray();
@@ -394,6 +452,9 @@ public final class MoreBlockFixtures {
 
     private static final class ProbeLevel extends ServerLevel {
         Map<BlockPos, BlockState> blocks;
+        Map<BlockPos, net.minecraft.world.level.block.entity.BlockEntity> blockEntities;
+        boolean notifyNotes;
+        boolean ticking;
         JsonArray ticks;
         JsonArray events;
         JsonArray sounds;
@@ -415,11 +476,77 @@ public final class MoreBlockFixtures {
         }
 
         @Override public net.minecraft.world.level.block.entity.BlockEntity getBlockEntity(BlockPos pos) {
-            return null;
+            return blockEntities.get(pos);
+        }
+
+        @Override public void setBlockEntity(net.minecraft.world.level.block.entity.BlockEntity entity) {
+            if (!(entity instanceof net.minecraft.world.level.block.piston.PistonMovingBlockEntity)) {
+                entity.setLevel(this);
+            }
+
+            blockEntities.put(entity.getBlockPos(), entity);
+        }
+
+        @Override public void removeBlockEntity(BlockPos pos) {
+            blockEntities.remove(pos);
+        }
+
+        @Override public net.minecraft.world.level.border.WorldBorder getWorldBorder() {
+            return new net.minecraft.world.level.border.WorldBorder();
+        }
+
+        @Override public int getSignal(BlockPos pos, Direction direction) {
+            return getBlockState(pos).is(Blocks.REDSTONE_BLOCK) ? 15 : 0;
+        }
+
+        @Override public int getDirectSignal(BlockPos pos, Direction direction) {
+            return getSignal(pos, direction);
+        }
+
+        @Override public void updateNeighborsAt(BlockPos pos, Block source) {
+            notifyNotes(pos, source);
+        }
+
+        @Override public void updateNeighborsAt(BlockPos pos, Block source,
+            net.minecraft.world.level.redstone.Orientation orientation) {
+            notifyNotes(pos, source);
+        }
+
+        private void notifyNotes(BlockPos source, Block block) {
+            if (!notifyNotes) {
+                return;
+            }
+
+            for (var side : Direction.values()) {
+                var pos = source.relative(side);
+                var state = getBlockState(pos);
+                if (state.is(Blocks.NOTE_BLOCK)) {
+                    state.handleNeighborChanged(this, pos, block, null, false);
+                }
+            }
+        }
+
+        @Override public void blockEntityChanged(BlockPos pos) {
+        }
+
+        @Override public void updateNeighbourForOutputSignal(BlockPos pos, Block block) {
+        }
+
+        @Override public void sendBlockUpdated(BlockPos pos, BlockState before, BlockState after, int flags) {
+        }
+
+        @Override public long getGameTime() {
+            return 0;
+        }
+
+        @Override public <T extends Entity> List<T> getEntities(
+            net.minecraft.world.level.entity.EntityTypeTest<Entity, T> type,
+            net.minecraft.world.phys.AABB bounds, java.util.function.Predicate<? super T> filter) {
+            return List.of();
         }
 
         @Override public boolean shouldTickBlocksAt(long chunk) {
-            return true;
+            return ticking;
         }
 
         @Override public FeatureFlagSet enabledFeatures() {
@@ -444,11 +571,25 @@ public final class MoreBlockFixtures {
         }
 
         @Override public boolean hasNeighborSignal(BlockPos pos) {
-            return powered;
+            if (powered) {
+                return true;
+            }
+
+            for (var side : Direction.values()) {
+                if (getSignal(pos.relative(side), side) > 0) {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         @Override public boolean setBlock(BlockPos pos, BlockState state, int flags, int limit) {
             blocks.put(pos.immutable(), state);
+            if (notifyNotes && (flags & 1) != 0) {
+                notifyNotes(pos, state.getBlock());
+            }
+
             return true;
         }
 

@@ -8,14 +8,8 @@ public abstract partial class AbstractLevel
 {
     internal void StartGeyser(Vector position, IBlock state)
     {
-        // The block event starts the vanilla client's plume particles and looping sound.
-        this.PacketBroadcaster.QueuePacketToLevelInRange(this, (VectorD)position, new BlockEventPacket
-        {
-            Position = position,
-            BlockType = state.RegistryId,
-            ActionId = 0,
-            ActionParam = 0
-        });
+        // The shared block-event phase starts the client's plume particles and looping sound.
+        this.QueueBlockEvent(position, state.RegistryId, 0, 0);
 
         this.PacketBroadcaster.QueuePacketToLevelInRange(this, (VectorD)position, new SoundPacket
         {

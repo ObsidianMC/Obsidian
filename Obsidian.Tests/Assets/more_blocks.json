@@ -1,6 +1,6 @@
 {
   "version": "26.3",
-  "_notes": "MoreBlockFixtures.java records vanilla 26.3 routines against an explicit bounded block view. Placement calls getStateForPlacement and canSurvive on an already chosen block/sign variant. Shape outputs include scheduled block/fluid ticks; scheduled leaf distance and axe-provider outputs include the next seeded random draw. Door/trapdoor/gate use records sound IDs (their replay checks IDs and state, not pitch); placed_by records door upper halves. Note playback invokes playNote and triggerEvent and records trigger success, events, exact sound volume/pitch/seed and next random draw. Writes do not recursively notify neighbors in the probe; shape cases replay through Obsidian live notifications. One test replays the entire reference and reports all differing cases. Review lifecycle cases call the real ServerLevel.blockEvent and runBlockEvents routines with an initialized native event set, recording queue size, pre-phase output, final sound/event packets, exact seeds and next draw. Use-item cases call ServerPlayerGameMode.useItemOn with a survival player, empty advancement listeners, no entities obstructing placement, and the bounded write-backed level; they record the note counter, placed target state and remaining item count. Their neighbor notification effects are covered separately by shape probes.",
+  "_notes": "MoreBlockFixtures.java records vanilla 26.3 routines against an explicit bounded block view. Placement calls getStateForPlacement and canSurvive on an already chosen block/sign variant. Shape outputs include scheduled block/fluid ticks; scheduled leaf distance and axe-provider outputs include the next seeded random draw. Door/trapdoor/gate use records sound IDs (their replay checks IDs and state, not pitch); placed_by records door upper halves. Note playback invokes playNote and triggerEvent and records trigger success, events, exact sound volume/pitch/seed and next random draw. Writes do not recursively notify neighbors in the probe; shape cases replay through Obsidian live notifications. One test replays the entire reference and reports all differing cases. Review lifecycle cases call the real ServerLevel.blockEvent and runBlockEvents routines with an initialized native event set, recording queue size, pre-phase output, final sound/event packets, exact seeds and next draw. Use-item cases call ServerPlayerGameMode.useItemOn with a survival player, empty advancement listeners, no entities obstructing placement, and the bounded write-backed level; they record the note counter, placed target state and remaining item count. Their neighbor notification effects are covered separately by shape probes. Shared block-event cases capture the native event set/drain, mixed note/piston ordering, all key fields, stale-block cancellation, inactive-chunk retry, and notifications that queue playback during draining. They record ordered sounds, full event keys and watched states. Gateway cooldown and spawner reset cases invoke their native producers; client-only lid/bell/gateway/spawner/geyser event forms use native block entity handlers. Only the opt-in mixed notification probe calls native note neighbor reactions on piston writes; unrelated updates remain suppressed. Mixed replay compares sound IDs/order and block movement, leaving existing exact note assertions unchanged.",
   "cases": [
     {
       "name": "note_trumpet_0_air",
@@ -27954,6 +27954,1756 @@
       "horizontal": "west",
       "nearest": "down",
       "placed": "minecraft:poplar_door[facing=west,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "name": "shared_note_then_piston",
+      "kind": "block_events",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            -1,
+            72,
+            0
+          ],
+          "state": "minecraft:piston[facing=east,extended=false]"
+        },
+        {
+          "pos": [
+            -2,
+            72,
+            0
+          ],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[instrument=harp,note=12,powered=false]"
+        }
+      ],
+      "watch": [
+        [
+          -1,
+          72,
+          0
+        ],
+        [
+          0,
+          72,
+          0
+        ],
+        [
+          1,
+          72,
+          0
+        ]
+      ],
+      "actions": [
+        {
+          "action": "play"
+        },
+        {
+          "action": "piston",
+          "pos": [
+            -1,
+            72,
+            0
+          ]
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 2,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.note_block.harp",
+              "volume": 3.0,
+              "pitch": 1.0,
+              "seed": -5106534569952410475,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            },
+            {
+              "sound": "minecraft:block.piston.extend",
+              "volume": 0.5,
+              "pitch": 0.84772474
+            }
+          ],
+          "events": [
+            {
+              "block": "minecraft:note_block",
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            },
+            {
+              "block": "minecraft:piston",
+              "id": 0,
+              "parameter": 5,
+              "pos": [
+                -1,
+                72,
+                0
+              ]
+            }
+          ],
+          "states": [
+            "minecraft:piston[extended=true,facing=east]",
+            "minecraft:moving_piston[facing=east,type=normal]",
+            "minecraft:moving_piston[facing=east,type=normal]"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shared_piston_then_note",
+      "kind": "block_events",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            -1,
+            72,
+            0
+          ],
+          "state": "minecraft:piston[facing=east,extended=false]"
+        },
+        {
+          "pos": [
+            -2,
+            72,
+            0
+          ],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[instrument=harp,note=12,powered=false]"
+        }
+      ],
+      "watch": [
+        [
+          -1,
+          72,
+          0
+        ],
+        [
+          0,
+          72,
+          0
+        ],
+        [
+          1,
+          72,
+          0
+        ]
+      ],
+      "actions": [
+        {
+          "action": "piston",
+          "pos": [
+            -1,
+            72,
+            0
+          ]
+        },
+        {
+          "action": "play"
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 2,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.piston.extend",
+              "volume": 0.5,
+              "pitch": 0.78079355
+            }
+          ],
+          "events": [
+            {
+              "block": "minecraft:piston",
+              "id": 0,
+              "parameter": 5,
+              "pos": [
+                -1,
+                72,
+                0
+              ]
+            }
+          ],
+          "states": [
+            "minecraft:piston[extended=true,facing=east]",
+            "minecraft:moving_piston[facing=east,type=normal]",
+            "minecraft:moving_piston[facing=east,type=normal]"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shared_duplicate_mixed_events",
+      "kind": "block_events",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            -1,
+            72,
+            0
+          ],
+          "state": "minecraft:piston[facing=east,extended=false]"
+        },
+        {
+          "pos": [
+            -2,
+            72,
+            0
+          ],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[instrument=harp,note=12,powered=false]"
+        }
+      ],
+      "watch": [
+        [
+          -1,
+          72,
+          0
+        ],
+        [
+          0,
+          72,
+          0
+        ],
+        [
+          1,
+          72,
+          0
+        ]
+      ],
+      "actions": [
+        {
+          "action": "play"
+        },
+        {
+          "action": "play"
+        },
+        {
+          "action": "piston",
+          "pos": [
+            -1,
+            72,
+            0
+          ]
+        },
+        {
+          "action": "piston",
+          "pos": [
+            -1,
+            72,
+            0
+          ]
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 2,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.note_block.harp",
+              "volume": 3.0,
+              "pitch": 1.0,
+              "seed": -5106534569952410475,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            },
+            {
+              "sound": "minecraft:block.piston.extend",
+              "volume": 0.5,
+              "pitch": 0.84772474
+            }
+          ],
+          "events": [
+            {
+              "block": "minecraft:note_block",
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            },
+            {
+              "block": "minecraft:piston",
+              "id": 0,
+              "parameter": 5,
+              "pos": [
+                -1,
+                72,
+                0
+              ]
+            }
+          ],
+          "states": [
+            "minecraft:piston[extended=true,facing=east]",
+            "minecraft:moving_piston[facing=east,type=normal]",
+            "minecraft:moving_piston[facing=east,type=normal]"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shared_event_added_during_drain",
+      "kind": "block_events",
+      "origin": [
+        -1,
+        72,
+        1
+      ],
+      "notifyNotes": true,
+      "setup": [
+        {
+          "pos": [
+            -1,
+            72,
+            0
+          ],
+          "state": "minecraft:piston[facing=east,extended=false]"
+        },
+        {
+          "pos": [
+            -2,
+            72,
+            0
+          ],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "pos": [
+            -1,
+            72,
+            1
+          ],
+          "state": "minecraft:note_block[instrument=harp,note=12,powered=false]"
+        },
+        {
+          "pos": [
+            -2,
+            72,
+            1
+          ],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "watch": [
+        [
+          -1,
+          72,
+          0
+        ],
+        [
+          -1,
+          72,
+          1
+        ]
+      ],
+      "actions": [
+        {
+          "action": "piston",
+          "pos": [
+            -1,
+            72,
+            0
+          ]
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 1,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.piston.extend",
+              "volume": 0.5,
+              "pitch": 0.78079355
+            },
+            {
+              "sound": "minecraft:block.note_block.harp",
+              "volume": 3.0,
+              "pitch": 1.0,
+              "seed": 4376377975854828753,
+              "pos": [
+                -0.5,
+                72.5,
+                1.5
+              ]
+            }
+          ],
+          "events": [
+            {
+              "block": "minecraft:piston",
+              "id": 0,
+              "parameter": 5,
+              "pos": [
+                -1,
+                72,
+                0
+              ]
+            },
+            {
+              "block": "minecraft:note_block",
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                -1,
+                72,
+                1
+              ]
+            }
+          ],
+          "states": [
+            "minecraft:piston[extended=true,facing=east]",
+            "minecraft:note_block[instrument=harp,note=12,powered=true]"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shared_event_key_id_and_parameter",
+      "kind": "block_events",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block[instrument=harp,note=12,powered=false]"
+        }
+      ],
+      "watch": [
+        [
+          0,
+          72,
+          0
+        ]
+      ],
+      "actions": [
+        {
+          "action": "event",
+          "id": 0,
+          "parameter": 0
+        },
+        {
+          "action": "event",
+          "id": 0,
+          "parameter": 0
+        },
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 0
+        },
+        {
+          "action": "event",
+          "id": 0,
+          "parameter": 1
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 3,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.note_block.harp",
+              "volume": 3.0,
+              "pitch": 1.0,
+              "seed": -5106534569952410475,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            },
+            {
+              "sound": "minecraft:block.note_block.harp",
+              "volume": 3.0,
+              "pitch": 1.0,
+              "seed": -167885730524958550,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            },
+            {
+              "sound": "minecraft:block.note_block.harp",
+              "volume": 3.0,
+              "pitch": 1.0,
+              "seed": 4672433029010564658,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            }
+          ],
+          "events": [
+            {
+              "block": "minecraft:note_block",
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            },
+            {
+              "block": "minecraft:note_block",
+              "id": 1,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            },
+            {
+              "block": "minecraft:note_block",
+              "id": 0,
+              "parameter": 1,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ],
+          "states": [
+            "minecraft:note_block[instrument=harp,note=12,powered=false]"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shared_chest_events",
+      "kind": "block_events",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:chest"
+        }
+      ],
+      "watch": [
+        [
+          0,
+          72,
+          0
+        ]
+      ],
+      "actions": [
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 1
+        },
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 1
+        },
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 0
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 2,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [],
+          "events": [
+            {
+              "block": "minecraft:chest",
+              "id": 1,
+              "parameter": 1,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            },
+            {
+              "block": "minecraft:chest",
+              "id": 1,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ],
+          "states": [
+            "minecraft:chest[facing=north,type=single,waterlogged=false]"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shared_trapped_chest_events",
+      "kind": "block_events",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:trapped_chest"
+        }
+      ],
+      "watch": [
+        [
+          0,
+          72,
+          0
+        ]
+      ],
+      "actions": [
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 1
+        },
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 1
+        },
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 0
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 2,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [],
+          "events": [
+            {
+              "block": "minecraft:trapped_chest",
+              "id": 1,
+              "parameter": 1,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            },
+            {
+              "block": "minecraft:trapped_chest",
+              "id": 1,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ],
+          "states": [
+            "minecraft:trapped_chest[facing=north,type=single,waterlogged=false]"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shared_copper_chest_events",
+      "kind": "block_events",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:copper_chest"
+        }
+      ],
+      "watch": [
+        [
+          0,
+          72,
+          0
+        ]
+      ],
+      "actions": [
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 1
+        },
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 1
+        },
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 0
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 2,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [],
+          "events": [
+            {
+              "block": "minecraft:copper_chest",
+              "id": 1,
+              "parameter": 1,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            },
+            {
+              "block": "minecraft:copper_chest",
+              "id": 1,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ],
+          "states": [
+            "minecraft:copper_chest[facing=north,type=single,waterlogged=false]"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shared_ender_chest_events",
+      "kind": "block_events",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:ender_chest"
+        }
+      ],
+      "watch": [
+        [
+          0,
+          72,
+          0
+        ]
+      ],
+      "actions": [
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 1
+        },
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 1
+        },
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 0
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 2,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [],
+          "events": [
+            {
+              "block": "minecraft:ender_chest",
+              "id": 1,
+              "parameter": 1,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            },
+            {
+              "block": "minecraft:ender_chest",
+              "id": 1,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ],
+          "states": [
+            "minecraft:ender_chest[facing=north,waterlogged=false]"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shared_shulker_box_events",
+      "kind": "block_events",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:shulker_box"
+        }
+      ],
+      "watch": [
+        [
+          0,
+          72,
+          0
+        ]
+      ],
+      "actions": [
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 1
+        },
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 1
+        },
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 0
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 2,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [],
+          "events": [
+            {
+              "block": "minecraft:shulker_box",
+              "id": 1,
+              "parameter": 1,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            },
+            {
+              "block": "minecraft:shulker_box",
+              "id": 1,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ],
+          "states": [
+            "minecraft:shulker_box[facing=up]"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shared_red_shulker_box_events",
+      "kind": "block_events",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:red_shulker_box"
+        }
+      ],
+      "watch": [
+        [
+          0,
+          72,
+          0
+        ]
+      ],
+      "actions": [
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 1
+        },
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 1
+        },
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 0
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 2,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [],
+          "events": [
+            {
+              "block": "minecraft:red_shulker_box",
+              "id": 1,
+              "parameter": 1,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            },
+            {
+              "block": "minecraft:red_shulker_box",
+              "id": 1,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ],
+          "states": [
+            "minecraft:red_shulker_box[facing=up]"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shared_bell_events",
+      "kind": "block_events",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:bell"
+        }
+      ],
+      "watch": [
+        [
+          0,
+          72,
+          0
+        ]
+      ],
+      "actions": [
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 1
+        },
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 1
+        },
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 0
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 2,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [],
+          "events": [
+            {
+              "block": "minecraft:bell",
+              "id": 1,
+              "parameter": 1,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            },
+            {
+              "block": "minecraft:bell",
+              "id": 1,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ],
+          "states": [
+            "minecraft:bell[attachment=floor,facing=north,powered=false]"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shared_end_gateway_events",
+      "kind": "block_events",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:end_gateway"
+        }
+      ],
+      "watch": [
+        [
+          0,
+          72,
+          0
+        ]
+      ],
+      "actions": [
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 1
+        },
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 1
+        },
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 0
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 2,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [],
+          "events": [
+            {
+              "block": "minecraft:end_gateway",
+              "id": 1,
+              "parameter": 1,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            },
+            {
+              "block": "minecraft:end_gateway",
+              "id": 1,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ],
+          "states": [
+            "minecraft:end_gateway"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shared_spawner_events",
+      "kind": "block_events",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:spawner"
+        }
+      ],
+      "watch": [
+        [
+          0,
+          72,
+          0
+        ]
+      ],
+      "actions": [
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 1
+        },
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 1
+        },
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 0
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 2,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [],
+          "events": [
+            {
+              "block": "minecraft:spawner",
+              "id": 1,
+              "parameter": 1,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            },
+            {
+              "block": "minecraft:spawner",
+              "id": 1,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ],
+          "states": [
+            "minecraft:spawner"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shared_potent_sulfur_events",
+      "kind": "block_events",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:potent_sulfur"
+        }
+      ],
+      "watch": [
+        [
+          0,
+          72,
+          0
+        ]
+      ],
+      "actions": [
+        {
+          "action": "event",
+          "id": 0,
+          "parameter": 0
+        },
+        {
+          "action": "event",
+          "id": 0,
+          "parameter": 0
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 1,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [],
+          "events": [
+            {
+              "block": "minecraft:potent_sulfur",
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ],
+          "states": [
+            "minecraft:potent_sulfur[potent_sulfur_state=dry]"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shared_replaced_block_type",
+      "kind": "block_events",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:chest"
+        }
+      ],
+      "watch": [
+        [
+          0,
+          72,
+          0
+        ]
+      ],
+      "actions": [
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 1
+        },
+        {
+          "action": "set",
+          "state": "minecraft:trapped_chest"
+        },
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 1
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 2,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [],
+          "events": [
+            {
+              "block": "minecraft:trapped_chest",
+              "id": 1,
+              "parameter": 1,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ],
+          "states": [
+            "minecraft:trapped_chest[facing=north,type=single,waterlogged=false]"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shared_event_key_block_identity",
+      "kind": "block_events",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block"
+        }
+      ],
+      "watch": [
+        [
+          0,
+          72,
+          0
+        ]
+      ],
+      "actions": [
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 0
+        },
+        {
+          "action": "set",
+          "state": "minecraft:bell"
+        },
+        {
+          "action": "event",
+          "id": 1,
+          "parameter": 0
+        },
+        {
+          "action": "set",
+          "state": "minecraft:note_block"
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 2,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.note_block.harp",
+              "volume": 3.0,
+              "pitch": 0.5,
+              "seed": -5106534569952410475,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            }
+          ],
+          "events": [
+            {
+              "block": "minecraft:note_block",
+              "id": 1,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ],
+          "states": [
+            "minecraft:note_block[instrument=harp,note=0,powered=false]"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shared_gateway_cooldown_producer",
+      "kind": "block_events",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:end_gateway"
+        }
+      ],
+      "watch": [
+        [
+          0,
+          72,
+          0
+        ]
+      ],
+      "actions": [
+        {
+          "action": "gateway_cooldown"
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 1,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [],
+          "events": [
+            {
+              "block": "minecraft:end_gateway",
+              "id": 1,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ],
+          "states": [
+            "minecraft:end_gateway"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shared_spawner_reset_producer",
+      "kind": "block_events",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:spawner"
+        }
+      ],
+      "watch": [
+        [
+          0,
+          72,
+          0
+        ]
+      ],
+      "actions": [
+        {
+          "action": "spawner_reset"
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 1,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [],
+          "events": [
+            {
+              "block": "minecraft:spawner",
+              "id": 1,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ],
+          "states": [
+            "minecraft:spawner"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shared_inactive_chunk_retries",
+      "kind": "block_events",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:note_block"
+        }
+      ],
+      "watch": [
+        [
+          0,
+          72,
+          0
+        ]
+      ],
+      "actions": [
+        {
+          "action": "play"
+        },
+        {
+          "action": "ticking",
+          "value": false
+        },
+        {
+          "action": "phase"
+        },
+        {
+          "action": "ticking",
+          "value": true
+        },
+        {
+          "action": "phase"
+        }
+      ],
+      "phases": [
+        {
+          "queued": 1,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 1,
+          "sounds": [],
+          "events": [],
+          "states": [
+            "minecraft:note_block[instrument=harp,note=0,powered=false]"
+          ]
+        },
+        {
+          "queued": 1,
+          "soundsBefore": 0,
+          "eventsBefore": 0,
+          "pendingAfter": 0,
+          "sounds": [
+            {
+              "sound": "minecraft:block.note_block.harp",
+              "volume": 3.0,
+              "pitch": 0.5,
+              "seed": -5106534569952410475,
+              "pos": [
+                0.5,
+                72.5,
+                0.5
+              ]
+            }
+          ],
+          "events": [
+            {
+              "block": "minecraft:note_block",
+              "id": 0,
+              "parameter": 0,
+              "pos": [
+                0,
+                72,
+                0
+              ]
+            }
+          ],
+          "states": [
+            "minecraft:note_block[instrument=harp,note=0,powered=false]"
+          ]
+        }
+      ]
     }
   ]
 }
