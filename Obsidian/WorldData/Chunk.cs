@@ -430,9 +430,10 @@ public sealed class Chunk : IChunk
     }
 
     private readonly IChunkSection[] sections;
+    private readonly Dictionary<HeightmapType, Heightmap> heightmaps;
 
     public ReadOnlySpan<IChunkSection> Sections => this.sections;
-    public IDictionary<HeightmapType, Heightmap> Heightmaps { get; }
+    public IDictionary<HeightmapType, Heightmap> Heightmaps => this.heightmaps;
 
     public Chunk(int x, int z, ChunkGenStage status = ChunkGenStage.empty) : this(x, z, -64, 384, status)
     {
@@ -454,7 +455,7 @@ public sealed class Chunk : IChunk
             this.sections[i] = new ChunkSection(yBase: i + (minY >> 4));
         }
 
-        Heightmaps = new Dictionary<HeightmapType, Heightmap>()
+        this.heightmaps = new Dictionary<HeightmapType, Heightmap>()
         {
             { HeightmapType.MotionBlocking, new Heightmap(HeightmapType.MotionBlocking, this) },
             { HeightmapType.OceanFloor, new Heightmap(HeightmapType.OceanFloor, this) },
@@ -471,7 +472,7 @@ public sealed class Chunk : IChunk
         Z = z;
         MinY = sections[0].YBase!.Value << 4;
 
-        Heightmaps = heightmaps;
+        this.heightmaps = heightmaps;
         this.sections = sections;
     }
 
@@ -619,8 +620,14 @@ public sealed class Chunk : IChunk
 
         ((ChunkSection)this.sections[i]).SetBlockUntracked(x, y & 15, z, block);
 
-        foreach (var heightmap in this.Heightmaps.Values)
-            heightmap.Update(x, y, z, block);
+        var mask = Generators.Mojang.WorldgenHeightmaps.Mask(block);
+        var masks = Generators.Mojang.WorldgenHeightmaps.StateMasks;
+        // Enumerate the concrete dictionary: IDictionary.Values boxes its enumerator on every block write.
+        foreach (var (_, heightmap) in this.heightmaps)
+        {
+            var bit = Generators.Mojang.WorldgenHeightmaps.Bit(heightmap.HeightmapType);
+            heightmap.Update(x, y, z, block, mask, bit, masks);
+        }
     }
 
     public BlockMeta GetBlockMeta(int x, int y, int z)
