@@ -73,13 +73,13 @@ internal sealed record BenchDimension(string Name, MojangDimension Dimension, in
     // overworld). The 26.3 references include BiomeTerrain.CompleteHeightmaps: decoration's final maps are handed
     // to chunk storage after all neighboring decoration, before lighting and saving. Its surfaces read the biomes
     // stored in the chunk and its neighbors, like vanilla's, rather than fresh climate searches, which resolve some
-    // exact ties differently.
+    // exact ties differently (the End's biomes take no search, so that only moved the overworld's and Nether's).
     public static IReadOnlyList<BenchDimension> All { get; } =
     [
         new("overworld", MojangDimension.Overworld, 6, -2, "6f824c2e873bca90", "869a5df6644e5d41",
-            "minecraft:overworld", "e12c7618a28b84b0", "652f43e278203d18"),
+            "minecraft:overworld", "7f525e4814b7a87f", "a28eda4465b76827"),
         new("nether", MojangDimension.Nether, 0, 0, "2880fa86ca3c5e6c", "fec88678179d32d9",
-            "minecraft:nether", "2767e40e5dedc4c5", "b446a4c9731a8d61"),
+            "minecraft:nether", "bb77820e04f62b7b", "b85513bc6f8e9c30"),
         new("end", MojangDimension.End, 6, 0, "5c34c3f5867f27ac", "d940fd5e665d6164",
             "minecraft:the_end", "5c34c3f5867f27ac", "762ccf03eda84ce2"),
     ];
