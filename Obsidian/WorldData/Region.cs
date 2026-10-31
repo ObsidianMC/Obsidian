@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Obsidian.API.BlockEntities;
 using Obsidian.ChunkData;
 using Obsidian.Entities;
@@ -7,11 +8,12 @@ using Obsidian.WorldData.Fluids;
 using Obsidian.WorldData.Generators.Mojang;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 
 namespace Obsidian.WorldData;
 
-public class Region : IRegion
+public partial class Region : IRegion
 {
     public const int CubicRegionSizeShift = 5;
     public const int CubicRegionSize = 1 << CubicRegionSizeShift;
@@ -65,18 +67,34 @@ public class Region : IRegion
     // Serializes filling empty chunk slots, so concurrent callers never end up with different instances of a chunk.
     private readonly SemaphoreSlim chunkSlotLock = new(1, 1);
 
-    // Saves between their snapshot and the end of their writes, which a flush and closing the region wait for. What
-    // an unloading save retired is let go after (see ReleaseRetiredAsync), outside them.
-    private readonly HashSet<Task> savesInFlight = [];
+    // The saves admitted and not yet committed, by admission order, from before their snapshot (see AdmitSave).
+    private readonly Dictionary<long, TaskCompletionSource> saves = [];
+    private long lastSave;
+
+    // Set as the region closes: no save is admitted after.
+    private bool closing;
+
+    // One flush of the region at a time, so the saves of two flushes never wait for each other's commits.
+    private readonly SemaphoreSlim flushLock = new(1, 1);
 
     /// <summary>
-    /// Bounds the chunks a flush has snapshotted but not yet written, across regions: each holds its uncompressed NBT
+    /// Bounds the chunks a flush has snapshotted but not yet staged, across regions: each holds its uncompressed NBT
     /// until compressed, and compressing more at once than there are cores gains nothing.
     /// </summary>
     private static readonly SemaphoreSlim flushSlots = new(Math.Max(2, Environment.ProcessorCount));
 
     // What a chunk's NBT is serialized into at first; a chunk of a few sections takes about this much.
     private const int UncompressedChunkCapacity = 64 * 1024;
+
+    /// <summary>
+    /// Where the region reports damage found in its files, such as chunks sharing sectors.
+    /// </summary>
+    internal ILogger? Logger { get; init; }
+
+    /// <summary>
+    /// The chunk region file, for tests that watch or pause its writes (see <see cref="RegionFile.Observe"/>).
+    /// </summary>
+    internal RegionFile ChunkFile => this.regionFile;
 
     /// <summary>
     /// Locks a chunk against generation while it's serialized (the level's generator), or <c>null</c> for no locking.
@@ -147,7 +165,21 @@ public class Region : IRegion
         Directory.CreateDirectory(entityFolder);
         this.entityRegionFile = new RegionFile(Path.Join(entityFolder, $"r.{X}.{Z}.mca"), chunkCompression, CubicRegionSize);
 
-        this.initialization = new(() => Task.WhenAll(this.regionFile.InitializeAsync(), this.entityRegionFile.InitializeAsync()));
+        this.initialization = new(this.InitializeFilesAsync);
+    }
+
+    private async Task InitializeFilesAsync()
+    {
+        await Task.WhenAll(this.regionFile.InitializeAsync(), this.entityRegionFile.InitializeAsync());
+
+        if (this.Logger is null)
+            return;
+
+        if (this.regionFile.OverlappingChunks != 0)
+            Log.OverlappingChunks(this.Logger, this.regionFile.OverlappingChunks, "chunk", this.X, this.Z);
+
+        if (this.entityRegionFile.OverlappingChunks != 0)
+            Log.OverlappingChunks(this.Logger, this.entityRegionFile.OverlappingChunks, "entity", this.X, this.Z);
     }
 
     public async Task<bool> InitAsync()
@@ -170,6 +202,40 @@ public class Region : IRegion
     {
         await this.initialization.Value;
 
+        var admitted = this.AdmitSave();
+        var taken = new List<ChunkSave>();
+        try
+        {
+            await this.flushLock.WaitAsync();
+            try
+            {
+                await this.WriteChangesUnderLockAsync(taken);
+            }
+            finally
+            {
+                this.flushLock.Release();
+            }
+        }
+        finally
+        {
+            // After the save ends: handlers of the closing windows may flush this region again, which waits for the
+            // saves admitted before it.
+            this.EndSave(admitted);
+
+            foreach (var save in taken)
+            {
+                save.Dispose();
+                await this.ReleaseRetiredAsync(save);
+            }
+        }
+
+        // Saves admitted before this flush (unloads) are committed too, so syncing after it reaches the disk with
+        // them. Their failures are their callers'.
+        await this.SavesAdmittedBeforeAsync(admitted).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+    }
+
+    private async Task WriteChangesUnderLockAsync(List<ChunkSave> taken)
+    {
         // Like vanilla, only chunks that changed since their last save are written, and only chunks with entities, or
         // that had some, write their entities. A removed region's final save still retires every chunk. Pending light
         // goes in first, so a chunk it reaches counts as changed.
@@ -177,9 +243,11 @@ public class Region : IRegion
             this.FlushLight?.Invoke();
 
         // Snapshots are taken one at a time, in order, each holding the tick lock only while the chunk is serialized;
-        // compressing and writing them runs in parallel, while the next ones are taken.
+        // compressing and staging them runs in parallel, while the next ones are taken. They're committed together,
+        // for two flushes per file however many chunks changed.
         var entityChunks = this.ChunksWithEntities();
-        var saves = new List<Task>();
+        var staging = new List<Task>();
+        Task completing = Task.CompletedTask;
         try
         {
             foreach (Chunk c in loadedChunks.Cast<Chunk>())
@@ -189,10 +257,11 @@ public class Region : IRegion
                     continue;
 
                 await flushSlots.WaitAsync();
-                ChunkSave save;
+                var save = NewSave(c);
+                taken.Add(save);
                 try
                 {
-                    save = await this.SnapshotChunkAsync(c, unloading: this.lightingRetired, saveEntities: entities);
+                    await this.SnapshotChunkAsync(save, unloading: this.lightingRetired, saveEntities: entities);
                 }
                 catch
                 {
@@ -200,33 +269,32 @@ public class Region : IRegion
                     throw;
                 }
 
-                saves.Add(Task.Run(async () =>
+                staging.Add(Task.Run(async () =>
                 {
                     try
                     {
-                        await this.Track(this.WriteSaveAsync(save));
+                        await this.StageSaveAsync(save);
                     }
                     finally
                     {
-                        // The slot only bounds the snapshots not yet written; closing the retired windows below can
-                        // run handlers that flush this region again, which take slots of their own.
                         flushSlots.Release();
-                        await this.ReleaseRetiredAsync(save);
                     }
                 }));
             }
         }
         finally
         {
-            // Every save taken is written even when a later snapshot fails, whose failure is then the one reported.
-            await Task.WhenAll(saves).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            // Every save taken is staged and committed even when a later snapshot fails, whose failure is then the
+            // one reported. Commit failures reach each save's writes.
+            await Task.WhenAll(staging).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            await this.CommitAsync().ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+
+            completing = Task.WhenAll(taken.Select(this.CompleteSaveAsync));
+            await completing.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
         }
 
-        await Task.WhenAll(saves);
-
-        // Saves started elsewhere (unloads) before this flush are written too, so syncing after it reaches the disk
-        // with them. Their failures are their callers'.
-        await this.SavesInFlightAsync().ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+        await Task.WhenAll(staging);
+        await completing;
     }
 
     /// <summary>
@@ -606,7 +674,7 @@ public class Region : IRegion
     /// <summary>
     /// Stores <paramref name="replacement"/> in place of <paramref name="stored"/>, if that's the chunk stored at its
     /// position. Generation replaces a chunk it failed on under the chunk's lock, so a save waiting for the lock
-    /// serializes the replacement (see <see cref="WriteChunkAsync"/>).
+    /// serializes the replacement (see <see cref="SnapshotChunkAsync"/>).
     /// </summary>
     internal void ReplaceChunk(IChunk stored, IChunk replacement)
     {
@@ -631,25 +699,49 @@ public class Region : IRegion
     {
         await this.initialization.Value;
 
-        var save = await this.SnapshotChunkAsync(chunk, unloading, entities);
+        var admitted = this.AdmitSave();
+        var save = NewSave(chunk);
         try
         {
-            await this.Track(this.WriteSaveAsync(save));
+            try
+            {
+                await this.SnapshotChunkAsync(save, unloading, entities);
+                await this.StageSaveAsync(save);
+            }
+            finally
+            {
+                // Commits with the writes other saves staged meanwhile; failures reach each save's writes.
+                await this.CommitAsync().ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            }
+
+            await this.CompleteSaveAsync(save);
         }
         finally
         {
+            save.Dispose();
+            this.EndSave(admitted);
+
+            // Also when the snapshot failed after retiring them, once its locks are released.
             await this.ReleaseRetiredAsync(save);
         }
     }
 
-    /// <summary>
-    /// Takes what a save writes of a chunk: its NBT, uncompressed, and its entities, as of one moment under the tick
-    /// lock, and its turn to be written to each file, in the order snapshots are taken.
-    /// </summary>
-    private async Task<ChunkSave> SnapshotChunkAsync(IChunk chunk, bool unloading, bool saveEntities)
+    private static ChunkSave NewSave(IChunk chunk) => new()
     {
-        var (x, z) = (NumericsHelper.Modulo(chunk.X, CubicRegionSize), NumericsHelper.Modulo(chunk.Z, CubicRegionSize));
-        var save = new ChunkSave { Chunk = chunk, X = x, Z = z };
+        Chunk = chunk,
+        X = NumericsHelper.Modulo(chunk.X, CubicRegionSize),
+        Z = NumericsHelper.Modulo(chunk.Z, CubicRegionSize)
+    };
+
+    /// <summary>
+    /// Takes what a save writes of a chunk into <paramref name="save"/>: its NBT, uncompressed, and its entities, as of
+    /// one moment under the tick lock, and its turn to be written to each file, in the order snapshots are taken. An
+    /// unloading save takes its turns even with nothing to write: waiting for them, it waits for the chunk's earlier
+    /// writes, so the chunk read once it's unloaded is the latest.
+    /// </summary>
+    private async Task SnapshotChunkAsync(ChunkSave save, bool unloading, bool saveEntities)
+    {
+        var (chunk, x, z) = (save.Chunk, save.X, save.Z);
         NbtWriterStream? writer = null;
         try
         {
@@ -689,15 +781,16 @@ public class Region : IRegion
                         save.Nbt = new PooledBufferStream(UncompressedChunkCapacity);
                         writer = new NbtWriterStream(save.Nbt, NbtCompression.None, "");
                         SerializeChunk(writer.Value, current, structureStarts);
-                        save.ChunkWrite = this.regionFile.ReserveWrite(x, z);
                     }
 
+                    if (write || unloading)
+                        save.ChunkWrite = this.regionFile.ReserveWrite(x, z);
+
                     if ((unloading || saveEntities) && current.IsGenerated && current is Chunk complete)
-                    {
                         save.Entities = this.CollectEntities(complete, unloading);
-                        if (save.Entities is not null)
-                            save.EntityWrite = this.entityRegionFile.ReserveWrite(x, z);
-                    }
+
+                    if (save.Entities is not null || unloading)
+                        save.EntityWrite = this.entityRegionFile.ReserveWrite(x, z);
                 }
             }
 
@@ -706,8 +799,6 @@ public class Region : IRegion
                 finishing.EndCompound();
                 finishing.TryFinish();
             }
-
-            return save;
         }
         catch
         {
@@ -726,47 +817,73 @@ public class Region : IRegion
     }
 
     /// <summary>
-    /// Compresses and writes what <see cref="SnapshotChunkAsync"/> took, each write in its turn.
+    /// Compresses what <see cref="SnapshotChunkAsync"/> took and stages it in each file, each write in its turn, for
+    /// the next commit. Turns with nothing to write are given up, which still waits for the turns before them.
     /// </summary>
-    private async Task WriteSaveAsync(ChunkSave save)
+    private async Task StageSaveAsync(ChunkSave save)
     {
+        PooledBufferStream? compressed = null;
         try
         {
             if (save.Nbt is not null)
             {
-                PooledBufferStream? compressed = null;
-                try
-                {
-                    compressed = this.regionFile.Compress(save.Nbt.Written.Span);
-                    save.Nbt.Return();
+                compressed = this.regionFile.Compress(save.Nbt.Written.Span);
+                save.Nbt.Return();
 
-                    await save.ChunkWrite!.TurnAsync;
-                    await this.regionFile.WriteChunkAsync(save.X, save.Z, compressed.Written);
-                }
-                catch
-                {
-                    save.Taken?.MarkUnsaved();
-                    throw;
-                }
-                finally
-                {
-                    compressed?.Return();
-                    save.ChunkWrite!.Dispose();
-                }
+                await this.regionFile.StageAsync(save.ChunkWrite!, compressed.Written);
             }
 
             if (save.Entities is not null)
-                await this.WriteEntitiesAsync(save);
+                await this.StageEntitiesAsync(save);
+        }
+        catch
+        {
+            save.Taken?.MarkUnsaved();
+            throw;
         }
         finally
         {
-            save.Dispose();
+            compressed?.Return();
+
+            // Ends only the turns that weren't staged; their commit ends the others.
+            save.ChunkWrite?.Dispose();
+            save.EntityWrite?.Dispose();
+        }
+    }
+
+    // Commits what both files have staged.
+    private Task CommitAsync() => Task.WhenAll(this.regionFile.CommitAsync(), this.entityRegionFile.CommitAsync());
+
+    /// <summary>
+    /// Waits for the save's turns, and every turn of the chunk before them, to end; throws when its writes failed.
+    /// </summary>
+    private async Task CompleteSaveAsync(ChunkSave save)
+    {
+        if (save.ChunkWrite is { } chunkWrite)
+            await chunkWrite.Done;
+
+        if (save.EntityWrite is { } entityWrite)
+            await entityWrite.Done;
+
+        if (save.ChunkWrite?.Failure is Exception chunkFailure)
+        {
+            save.Taken?.MarkUnsaved();
+            ExceptionDispatchInfo.Throw(chunkFailure);
+        }
+
+        if (save.EntityWrite?.Failure is Exception entityFailure)
+        {
+            // The file may still list the entities its last commit wrote.
+            if (save.Chunk is Chunk unknown)
+                unknown.SavedEntityCount = -1;
+
+            ExceptionDispatchInfo.Throw(entityFailure);
         }
     }
 
     /// <summary>
-    /// Lets the containers and block entities an unloading save retired go, once it's written or failed. It's not one
-    /// of the saves in flight: handlers of the closing windows may flush this region, which waits for those.
+    /// Lets the containers and block entities an unloading save retired go, once it's written or failed. It's not part
+    /// of the save: handlers of the closing windows may flush this region, which waits for the saves admitted before.
     /// </summary>
     private async Task ReleaseRetiredAsync(ChunkSave save)
     {
@@ -781,27 +898,61 @@ public class Region : IRegion
             this.BlockEntityUnloaded?.Invoke(blockEntity);
             BlockEntityLifecycle.Detach(blockEntity);
         }
+
+        save.Retired.Clear();
+        save.Unloaded.Clear();
     }
 
-    // Keeps a save in the region's saves in flight until it ends.
-    private Task Track(Task save)
+    /// <summary>
+    /// Admits a save (a flush, or one chunk's) before it takes anything, so closing the region waits for it.
+    /// </summary>
+    /// <exception cref="ObjectDisposedException">The region is closing.</exception>
+    private long AdmitSave()
     {
-        lock (this.savesInFlight)
-            this.savesInFlight.Add(save);
-
-        save.ContinueWith(ended =>
+        lock (this.saves)
         {
-            lock (this.savesInFlight)
-                this.savesInFlight.Remove(ended);
-        }, TaskContinuationOptions.ExecuteSynchronously);
+            ObjectDisposedException.ThrowIf(this.closing, this);
 
-        return save;
+            var admitted = ++this.lastSave;
+            this.saves[admitted] = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            return admitted;
+        }
     }
 
-    private Task SavesInFlightAsync()
+    private void EndSave(long admitted)
     {
-        lock (this.savesInFlight)
-            return Task.WhenAll(this.savesInFlight);
+        TaskCompletionSource? ended;
+        lock (this.saves)
+            this.saves.Remove(admitted, out ended);
+
+        ended?.TrySetResult();
+    }
+
+    // Admission order, not the saves themselves, decides what a flush waits for, so two flushes never wait for each
+    // other.
+    private Task SavesAdmittedBeforeAsync(long admitted)
+    {
+        lock (this.saves)
+            return Task.WhenAll(this.saves.Where(save => save.Key < admitted).Select(save => save.Value.Task));
+    }
+
+    // Stops admitting saves, then waits for every one admitted, however many are admitted while it waits.
+    private async Task CloseSavesAsync()
+    {
+        while (true)
+        {
+            Task admitted;
+            lock (this.saves)
+            {
+                this.closing = true;
+                if (this.saves.Count == 0)
+                    return;
+
+                admitted = Task.WhenAll(this.saves.Values.Select(save => save.Task));
+            }
+
+            await admitted;
+        }
     }
 
     /// <summary>
@@ -886,14 +1037,15 @@ public class Region : IRegion
     }
 
     /// <summary>
-    /// Writes a chunk's entities like vanilla's <c>EntityStorage</c>: <c>DataVersion</c>, <c>Position</c> and
-    /// <c>Entities</c>, in the save's turn, so whether the file has an entry for the chunk is as of the saves before.
+    /// Stages a chunk's entities like vanilla's <c>EntityStorage</c> writes them: <c>DataVersion</c>, <c>Position</c>
+    /// and <c>Entities</c>, in the save's turn, so whether the file has an entry for the chunk is as of the saves
+    /// before.
     /// </summary>
-    private async Task WriteEntitiesAsync(ChunkSave save)
+    private async Task StageEntitiesAsync(ChunkSave save)
     {
         var (chunkX, chunkZ) = (save.Chunk.X, save.Chunk.Z);
         var entities = save.Entities!;
-        using var turn = save.EntityWrite!;
+        var turn = save.EntityWrite!;
 
         await turn.TurnAsync;
 
@@ -922,7 +1074,7 @@ public class Region : IRegion
             }
 
             compressed = this.entityRegionFile.Compress(nbt.Written.Span);
-            await this.entityRegionFile.WriteChunkAsync(save.X, save.Z, compressed.Written);
+            await this.entityRegionFile.StageAsync(turn, compressed.Written);
         }
         finally
         {
@@ -930,7 +1082,8 @@ public class Region : IRegion
             compressed?.Return();
         }
 
-        // Before the turn passes, so the next save of the chunk counts what this one wrote.
+        // In the turn, which passes only once this is committed: a failed commit makes it unknown again (see
+        // CompleteSaveAsync).
         if (save.Chunk is Chunk saved)
             saved.SavedEntityCount = entities.Count;
     }
@@ -1382,8 +1535,8 @@ public class Region : IRegion
         if (this.initialization.IsValueCreated)
             await this.initialization.Value.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
 
-        // Saves still compressing or writing finish first; their failures are their callers'.
-        await this.SavesInFlightAsync().ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+        // No save is admitted from now on; those admitted are committed first. Their failures are their callers'.
+        await this.CloseSavesAsync();
 
         await regionFile.DisposeAsync();
         await this.entityRegionFile.DisposeAsync();
@@ -1391,7 +1544,7 @@ public class Region : IRegion
 
     /// <summary>
     /// What a save took of a chunk (see <see cref="SnapshotChunkAsync"/>) until it's written. Disposing it gives back
-    /// the uncompressed NBT and lets the chunk's next writes go.
+    /// the uncompressed NBT and gives up the turns it didn't stage.
     /// </summary>
     private sealed class ChunkSave : IDisposable
     {
@@ -1425,5 +1578,12 @@ public class Region : IRegion
             this.ChunkWrite?.Dispose();
             this.EntityWrite?.Dispose();
         }
+    }
+
+    private static partial class Log
+    {
+        [LoggerMessage(Level = LogLevel.Warning, Message = "{Count} chunks of {Kind} region ({X}, {Z}) share sectors "
+            + "with another chunk; the file is damaged. Their sectors are kept until no chunk uses them.")]
+        public static partial void OverlappingChunks(ILogger logger, int count, string kind, int x, int z);
     }
 }

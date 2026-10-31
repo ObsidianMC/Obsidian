@@ -2,9 +2,12 @@ using Microsoft.Win32.SafeHandles;
 using Obsidian.Nbt;
 using System.Buffers;
 using System.Buffers.Binary;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
+using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace Obsidian.WorldData;
@@ -16,18 +19,26 @@ namespace Obsidian.WorldData;
 /// </summary>
 /// <remarks>
 /// <para>
-/// A chunk is never written over its previous version. Its new version goes to free sectors, then its location in
-/// the header is switched to them: that 4-byte write is the commit point. A write that fails or is torn before it
-/// leaves the header pointing at the previous version, whose sectors are untouched. The previous version's sectors
-/// are only reused once the switch away from them was flushed to disk (see <see cref="FlushAsync"/>), so not even a
-/// crash that loses unflushed writes can leave the header pointing at sectors that were already reused.
+/// Writes are staged, then committed in batches. Staging writes a chunk's new version to free sectors, never over its
+/// previous version. A commit (see <see cref="CommitAsync"/>) then flushes the file, so every staged payload and the
+/// file growth it made are on the disk; writes the staged chunks' header entries, switching them to their new
+/// versions; flushes again; and only then frees the previous versions' sectors, once no read may still be reading
+/// them. An autosave stages all its chunks and commits once: two flushes per file however many chunks it writes.
 /// </para>
 /// <para>
-/// Payloads are read and written at their own offsets, outside the lock, which only guards the header and the
-/// free-sector map. Writes of a chunk are taken in order with <see cref="ReserveWrite"/>.
+/// On a disk that keeps what a flush reported written, this guarantees that no header entry on the disk points at a
+/// payload that isn't, and that no previous version's sectors are reused before the entry replacing it is on the
+/// disk. It doesn't guarantee that writing a 4-byte entry is all or nothing: entries are aligned and never cross a
+/// sector, which disks write whole in practice, but no API promises it. A torn entry would leave that one chunk's
+/// entry invalid, with both versions' payloads intact, and no other chunk's.
+/// </para>
+/// <para>
+/// Payloads are read and written at their own offsets, outside the lock, which only guards the header, the sector
+/// map and the staged chunks. Writes of a chunk take turns (see <see cref="ReserveWrite"/>): each is staged only once
+/// the one before it is committed or given up.
 /// </para>
 /// </remarks>
-public sealed class RegionFile : IAsyncDisposable
+public sealed partial class RegionFile : IAsyncDisposable
 {
     /// <summary>
     /// The zlib (or gzip) level, 0 to 9, chunk payloads are compressed at. Vanilla reads every level the same. Measured
@@ -51,6 +62,9 @@ public sealed class RegionFile : IAsyncDisposable
     // The least a chunk's NBT is decompressed into at first; it grows from there.
     private const int MinDecompressedCapacity = 64 * 1024;
 
+    private const uint MoveFileReplaceExisting = 0x1;
+    private const uint MoveFileWriteThrough = 0x8;
+
     private static readonly ReadOnlyMemory<byte> zeroes = new byte[SectorSize];
 
     private readonly string filePath;
@@ -63,8 +77,16 @@ public sealed class RegionFile : IAsyncDisposable
 
     private readonly SafeFileHandle handle;
 
-    // Guards the header, the sector map, the retired runs and the file's length. Payload I/O happens outside it.
+    // Guards the header, the sector map, the staged chunks, the retired runs and the file's length. Payload I/O happens
+    // outside it.
     private readonly SemaphoreSlim headerLock = new(1, 1);
+
+    // One commit at a time, so the flushes of one batch are never interleaved with another's header writes.
+    private readonly SemaphoreSlim commitLock = new(1, 1);
+
+    // Held while external files are replaced and their header entries switched, and while an external chunk's file is
+    // read, so a read never pairs a stub with a file of another version.
+    private readonly SemaphoreSlim externalLock = new(1, 1);
 
     // The last write reserved for each chunk, which the next one waits for; guarded by itself.
     private readonly Task?[] lastWrites = new Task?[HeaderTableSize];
@@ -75,28 +97,25 @@ public sealed class RegionFile : IAsyncDisposable
     // Whether each chunk's committed version is external, as far as this session knows.
     private readonly Storage[] storage = new Storage[HeaderTableSize];
 
-    // Which sectors are in use, for the first sectorCount sectors; past them every sector is free.
-    private bool[] usedSectors = [];
+    // How many header entries (or staged chunks) use each of the first sectorCount sectors; past them every sector is
+    // free. A damaged file can have entries sharing sectors: a sector is free only once none of them uses it.
+    private int[] sectorUsers = [];
     private int sectorCount;
 
-    // Runs of chunks' previous versions, kept until the header switches away from them are on disk. This costs space:
-    // between flushes the file keeps both versions of every chunk rewritten since the last one, so a region whose
-    // chunks all change between autosaves can grow to about twice its chunks' size before reusing the old runs.
-    private List<RetiredRun> retiredSinceFlush = [];
+    // Payloads written to free sectors, waiting for the next commit.
+    private List<StagedChunk> staged = [];
 
-    // Runs whose switch is on disk, kept until the reads that may still be reading them end.
+    // Runs of previous versions whose switch is on the disk, kept until the reads that may still be reading them end.
+    // Between two commits, the file keeps both versions of every chunk rewritten since the last one, so a region whose
+    // chunks all change between autosaves can grow to about twice its chunks' size before reusing the old runs.
     private readonly List<RetiredRun> retiredBehindReads = [];
 
     private int activeReads;
-    private int activeWrites;
 
     private long fileLength;
 
     private bool disposed;
     private bool initialized;
-
-    // Whether something was written since the file was last flushed to disk.
-    private bool unflushed;
 
     /// <summary>
     /// The length of the file, as far as the writes that completed made it.
@@ -106,10 +125,15 @@ public sealed class RegionFile : IAsyncDisposable
     public NbtCompression Compression { get; }
 
     /// <summary>
-    /// Called with a chunk's local coordinates once its payload was written, before its header entry is switched; a
-    /// test throwing from it interrupts the write where a crash would.
+    /// How many chunks share sectors with another chunk, as found when the file was opened. Their sectors are kept
+    /// until no chunk uses them.
     /// </summary>
-    internal Func<int, int, ValueTask>? PayloadWritten { get; init; }
+    internal int OverlappingChunks { get; private set; }
+
+    /// <summary>
+    /// Called at each step of staging and committing writes. Tests record the steps, or fail or pause a write at one.
+    /// </summary>
+    internal Func<Event, ValueTask>? Observe { get; set; }
 
     /// <summary>
     /// Reference Material: <see href="https://minecraft.wiki/w/Region_file_format">Region File Structure</see>
@@ -170,17 +194,20 @@ public sealed class RegionFile : IAsyncDisposable
     }
 
     /// <summary>
-    /// Writes the provided chunk data to the region file.
+    /// Writes the provided chunk data to the region file, and commits it.
     /// </summary>
     /// <param name="chunkX">The chunks local x coordinate.</param>
     /// <param name="chunkZ">The chunks local z coordinate</param>
     /// <param name="chunkData">The serialized nbt data, compressed in <see cref="Compression"/>.</param>
     public async Task SetChunkAsync(int chunkX, int chunkZ, Memory<byte> chunkData)
     {
-        using var write = this.ReserveWrite(chunkX, chunkZ);
+        var write = await this.StageAsync(chunkX, chunkZ, chunkData);
 
-        await write.TurnAsync;
-        await this.WriteChunkAsync(chunkX, chunkZ, chunkData);
+        await this.CommitAsync();
+        await write.Done;
+
+        if (write.Failure is Exception failure)
+            ExceptionDispatchInfo.Throw(failure);
     }
 
     /// <summary>
@@ -198,16 +225,37 @@ public sealed class RegionFile : IAsyncDisposable
     }
 
     /// <summary>
-    /// Takes the next turn to write the chunk: the write waits for <see cref="ChunkWrite.TurnAsync"/>, which completes
-    /// once every write reserved before it is disposed. Reserving writes as their contents are taken writes them in
-    /// that order however long each takes to compress. Dispose the reservation once written, or once it won't be.
+    /// Stages a chunk's compressed payload in its turn, for the next commit (see <see cref="CommitAsync"/>), like a
+    /// batch of writes that commits once.
+    /// </summary>
+    internal async Task<ChunkWrite> StageAsync(int chunkX, int chunkZ, ReadOnlyMemory<byte> payload)
+    {
+        var write = this.ReserveWrite(chunkX, chunkZ);
+        try
+        {
+            await this.StageAsync(write, payload);
+            return write;
+        }
+        finally
+        {
+            // Only gives the write up when it wasn't staged.
+            write.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Takes the chunk's next turn to be written: the write waits for <see cref="ChunkWrite.TurnAsync"/>, which
+    /// completes once every write reserved before it is committed or given up. Reserving writes as their contents are
+    /// taken writes them in that order, however long each takes to compress. A reservation that isn't staged must be
+    /// given up (disposed); the commit of a staged one ends it.
     /// </summary>
     internal ChunkWrite ReserveWrite(int chunkX, int chunkZ)
     {
         var tableIndex = this.GetChunkTableIndex(chunkX, chunkZ);
+
         lock (this.lastWrites)
         {
-            var write = new ChunkWrite(this.lastWrites[tableIndex] ?? Task.CompletedTask);
+            var write = new ChunkWrite(tableIndex, this.lastWrites[tableIndex] ?? Task.CompletedTask);
             this.lastWrites[tableIndex] = write.Done;
 
             return write;
@@ -218,107 +266,63 @@ public sealed class RegionFile : IAsyncDisposable
     /// Compresses a chunk's NBT as this file stores it, at <see cref="PayloadCompressionLevel"/>. Return the result to
     /// the pool once written.
     /// </summary>
-    internal PooledBufferStream Compress(ReadOnlySpan<byte> nbt)
-    {
-        // Chunk NBT compresses several times over, so a quarter of it is a generous start.
-        var compressed = new PooledBufferStream(Math.Max(nbt.Length / 4, SectorSize));
-        try
-        {
-            if (this.Compression == NbtCompression.None)
-            {
-                compressed.Write(nbt);
-                return compressed;
-            }
-
-            var options = new ZLibCompressionOptions { CompressionLevel = PayloadCompressionLevel };
-            using (Stream compressor = this.Compression == NbtCompression.GZip
-                ? new GZipStream(compressed, options, leaveOpen: true)
-                : new ZLibStream(compressed, options, leaveOpen: true))
-            {
-                compressor.Write(nbt);
-            }
-
-            return compressed;
-        }
-        catch
-        {
-            compressed.Return();
-            throw;
-        }
-    }
+    internal PooledBufferStream Compress(ReadOnlySpan<byte> nbt) => CompressAs(CompressionType(this.Compression), nbt);
 
     /// <summary>
-    /// Writes a chunk's compressed payload to free sectors and switches its header entry to them. Callers take their
-    /// turn first (see <see cref="ReserveWrite"/>).
+    /// Writes a chunk's compressed payload to free sectors, in the write's turn, and adds it to the next commit. Until
+    /// then reads still find the chunk's previous version.
     /// </summary>
-    internal async Task WriteChunkAsync(int chunkX, int chunkZ, ReadOnlyMemory<byte> payload)
+    internal async Task StageAsync(ChunkWrite write, ReadOnlyMemory<byte> payload)
     {
-        var tableIndex = this.GetChunkTableIndex(chunkX, chunkZ);
+        await write.TurnAsync;
+
+        var tableIndex = write.TableIndex;
+        var (chunkX, chunkZ) = this.PositionOf(tableIndex);
         var compressionType = CompressionType(this.Compression);
         var sectorsNeeded = SectorsFor(PrefixSize + payload.Length);
-
-        // Like vanilla, a chunk too big for its 255 sectors goes to its external file, and the region keeps a stub
-        // (length 1, the compression type flagged external) in one sector. The file is written to a temporary first
-        // and moved over the previous one as the write commits, so a failed write leaves the previous one.
-        var external = sectorsNeeded > MaxInternalSectors;
-        if (external)
-        {
-            compressionType |= ExternalFlag;
-            sectorsNeeded = 1;
-        }
-
-        int start;
-        bool extendsFile;
-        await this.headerLock.WaitAsync();
-        try
-        {
-            ObjectDisposedException.ThrowIf(this.disposed, this);
-
-            (start, extendsFile) = this.Allocate(sectorsNeeded);
-            this.activeWrites++;
-        }
-        finally
-        {
-            this.headerLock.Release();
-        }
-
-        // Whether this write stopped counting as running, and whether the header may point at its sectors.
-        var ended = false;
-        var switching = false;
+        PooledBufferStream? transcoded = null;
         string? externalTemporary = null;
+        var start = -1;
         try
         {
+            // Like vanilla, a chunk too big for its 255 sectors goes to its external file, and the region keeps a
+            // stub (length 1, the compression type flagged external) in one sector. The file is written to a
+            // temporary and flushed, then moved over the previous one as the write commits.
+            var external = sectorsNeeded > MaxInternalSectors;
             if (external)
             {
-                externalTemporary = await this.WriteExternalTemporaryAsync(chunkX, chunkZ, payload);
+                (compressionType, transcoded) = await this.KeepExternalCodecAsync(tableIndex, compressionType, payload);
+                var externalPayload = transcoded?.Written ?? payload;
+                externalTemporary = await this.WriteExternalTemporaryAsync(chunkX, chunkZ, externalPayload);
+                compressionType |= ExternalFlag;
                 payload = ReadOnlyMemory<byte>.Empty;
+                sectorsNeeded = 1;
+            }
+
+            bool extendsFile;
+            await this.headerLock.WaitAsync();
+            try
+            {
+                ObjectDisposedException.ThrowIf(this.disposed, this);
+
+                (start, extendsFile) = this.Allocate(sectorsNeeded);
+            }
+            finally
+            {
+                this.headerLock.Release();
             }
 
             await this.WritePayloadAsync(start, sectorsNeeded, extendsFile, compressionType, payload);
-
-            if (this.PayloadWritten is not null)
-                await this.PayloadWritten(chunkX & this.op, chunkZ & this.op);
+            await this.ObserveAsync(Step.PayloadWritten, tableIndex);
 
             await this.headerLock.WaitAsync();
             try
             {
-                this.activeWrites--;
-                ended = true;
                 ObjectDisposedException.ThrowIf(this.disposed, this);
 
-                var end = (long)(start + sectorsNeeded) * SectorSize;
-                this.fileLength = Math.Max(this.fileLength, end);
-
-                if (externalTemporary is not null)
-                {
-                    File.Move(externalTemporary, this.ExternalPath(chunkX, chunkZ), overwrite: true);
-                    externalTemporary = null;
-                }
-
-                await this.WriteTimestampAsync(tableIndex);
-
-                switching = true;
-                await this.SwitchLocationAsync(tableIndex, start, sectorsNeeded, external);
+                this.fileLength = Math.Max(this.fileLength, (long)(start + sectorsNeeded) * SectorSize);
+                this.staged.Add(new StagedChunk(write, start, sectorsNeeded, external, externalTemporary));
+                write.MarkStaged();
             }
             finally
             {
@@ -327,13 +331,241 @@ public sealed class RegionFile : IAsyncDisposable
         }
         catch
         {
-            await this.AbandonAsync(start, sectorsNeeded, freeSectors: !switching, endWrite: !ended);
+            // No header entry ever pointed at the sectors.
+            if (start >= 0)
+                await this.FreeAsync(start, sectorsNeeded);
 
             if (externalTemporary is not null)
                 File.Delete(externalTemporary);
 
             throw;
         }
+        finally
+        {
+            transcoded?.Return();
+        }
+    }
+
+    /// <summary>
+    /// Commits every staged write: flushes the file, writes their header entries, flushes again, then frees their
+    /// previous versions' sectors and ends their turns. A failure ends the turns of the writes it failed, with it as
+    /// their <see cref="ChunkWrite.Failure"/>.
+    /// </summary>
+    internal async Task CommitAsync()
+    {
+        await this.commitLock.WaitAsync();
+        try
+        {
+            await this.CommitUnderLockAsync();
+        }
+        finally
+        {
+            this.commitLock.Release();
+        }
+    }
+
+    private async Task CommitUnderLockAsync()
+    {
+        List<StagedChunk> batch;
+        await this.headerLock.WaitAsync();
+        try
+        {
+            batch = this.staged;
+            this.staged = [];
+        }
+        finally
+        {
+            this.headerLock.Release();
+        }
+
+        if (batch.Count == 0)
+            return;
+
+        // The payloads, and the file's growth they made, reach the disk before any entry points at them.
+        try
+        {
+            await this.FlushToDiskAsync();
+        }
+        catch (Exception exception)
+        {
+            await this.AbandonAsync(batch, exception);
+            throw;
+        }
+
+        var retired = new List<RetiredRun>();
+        var switched = 0;
+        Exception? failure = null;
+        await this.externalLock.WaitAsync();
+        try
+        {
+            for (; switched < batch.Count; switched++)
+                await this.SwitchAsync(batch[switched], retired);
+        }
+        catch (Exception exception)
+        {
+            failure = exception;
+        }
+        finally
+        {
+            this.externalLock.Release();
+        }
+
+        // The switches reach the disk before the previous versions' sectors can be reused.
+        if (failure is null)
+        {
+            try
+            {
+                await this.FlushToDiskAsync();
+            }
+            catch (Exception exception)
+            {
+                failure = exception;
+            }
+        }
+
+        if (failure is not null)
+        {
+            await this.FailAsync(batch, switched, failure);
+            ExceptionDispatchInfo.Throw(failure);
+        }
+
+        await this.headerLock.WaitAsync();
+        try
+        {
+            this.retiredBehindReads.AddRange(retired);
+            this.ReleaseRetiredRuns();
+        }
+        finally
+        {
+            this.headerLock.Release();
+        }
+
+        await this.ObserveAsync(Step.SectorsReleased, -1);
+
+        foreach (var chunk in batch)
+            chunk.Write.Release(null);
+    }
+
+    // Switches a staged chunk's header entry to its new version. Called under the commit and external locks.
+    private async Task SwitchAsync(StagedChunk chunk, List<RetiredRun> retired)
+    {
+        var tableIndex = chunk.Write.TableIndex;
+        var (chunkX, chunkZ) = this.PositionOf(tableIndex);
+
+        // The new external file replaces the previous one, durably, before the entry names its stub. A chunk already
+        // external has the same stub either way, so the move itself is its commit point: the file keeps the codec that
+        // stub names (see KeepExternalCodecAsync), and a crash after it reads the new version, which is complete.
+        if (chunk.ExternalTemporary is string temporary)
+        {
+            MoveDurably(temporary, this.ExternalPath(chunkX, chunkZ));
+            chunk.ExternalTemporary = null;
+        }
+
+        await this.ObserveAsync(Step.HeaderWriting, tableIndex);
+
+        var timestamp = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var location = (chunk.Start << 8) | chunk.Count;
+
+        var timestampEntry = new byte[sizeof(int)];
+        BinaryPrimitives.WriteInt32BigEndian(timestampEntry, timestamp);
+
+        var locationEntry = new byte[sizeof(int)];
+        BinaryPrimitives.WriteInt32BigEndian(locationEntry, location);
+
+        await this.headerLock.WaitAsync();
+        try
+        {
+            ObjectDisposedException.ThrowIf(this.disposed, this);
+
+            // Vanilla only reports timestamps. Only the chunk's own entries are written, not the whole header.
+            await RandomAccess.WriteAsync(this.handle, timestampEntry, SectorSize + tableIndex * sizeof(int));
+            this.timestamps[tableIndex] = timestamp;
+
+            await RandomAccess.WriteAsync(this.handle, locationEntry, tableIndex * sizeof(int));
+
+            // Readers take the location under the lock; its payload is on the disk already.
+            var previous = this.locations[tableIndex];
+            Volatile.Write(ref this.locations[tableIndex], location);
+
+            var previousStorage = this.storage[tableIndex];
+            this.storage[tableIndex] = chunk.External ? Storage.External : Storage.Internal;
+
+            if (previous == 0)
+                return;
+
+            // When the previous version was (or may have been) external and this one isn't, its external file goes with
+            // its sectors, like vanilla deletes it.
+            var deleteExternal = !chunk.External && previousStorage != Storage.Internal
+                && this.regionPosition is not null;
+            retired.Add(new RetiredRun(previous >> 8, previous & 0xFF, deleteExternal ? tableIndex : -1));
+        }
+        finally
+        {
+            this.headerLock.Release();
+        }
+    }
+
+    // Ends a batch whose payloads never reached the disk: no entry points at their sectors, so they're freed.
+    private async Task AbandonAsync(List<StagedChunk> batch, Exception failure)
+    {
+        foreach (var chunk in batch)
+        {
+            await this.FreeAsync(chunk.Start, chunk.Count);
+
+            if (chunk.ExternalTemporary is not null)
+                File.Delete(chunk.ExternalTemporary);
+
+            chunk.Write.Release(failure);
+        }
+    }
+
+    // Ends a batch that failed while switching its entries or flushing them. The entries written, and the one being
+    // written, may point at either version on the disk, so their sectors stay used this session (the sector map is
+    // rebuilt from the header when the file is opened again). Those not reached never pointed at theirs.
+    private async Task FailAsync(List<StagedChunk> batch, int switched, Exception failure)
+    {
+        for (var index = 0; index < batch.Count; index++)
+        {
+            var chunk = batch[index];
+            if (index > switched)
+                await this.FreeAsync(chunk.Start, chunk.Count);
+
+            // Still a temporary when it wasn't moved in.
+            if (chunk.ExternalTemporary is not null)
+                File.Delete(chunk.ExternalTemporary);
+
+            chunk.Write.Release(failure);
+        }
+    }
+
+    private async Task FreeAsync(int start, int count)
+    {
+        await this.headerLock.WaitAsync();
+        try
+        {
+            if (!this.disposed)
+                this.MarkFree(start, count);
+        }
+        finally
+        {
+            this.headerLock.Release();
+        }
+    }
+
+    // Like vanilla's synced writes, this also has the operating system write its cache to the disk.
+    private async Task FlushToDiskAsync()
+    {
+        await WorkerThreads.Storage.RunAsync(() => RandomAccess.FlushToDisk(this.handle));
+        await this.ObserveAsync(Step.Flushed, -1);
+    }
+
+    private ValueTask ObserveAsync(Step step, int tableIndex)
+    {
+        if (this.Observe is null)
+            return ValueTask.CompletedTask;
+
+        var (x, z) = tableIndex < 0 ? (-1, -1) : this.PositionOf(tableIndex);
+        return this.Observe(new Event(step, x, z));
     }
 
     /// <summary>
@@ -358,38 +590,43 @@ public sealed class RegionFile : IAsyncDisposable
     internal async Task<RentedArray<byte>?> RentChunkBytesAsync(int chunkX, int chunkZ)
     {
         var tableIndex = this.GetChunkTableIndex(chunkX, chunkZ);
-
-        // The location is taken under the lock, so it's one a write committed, never one being switched. Its sectors
-        // aren't reused while the read is running (see ReleaseRetiredRuns), so they're read outside the lock.
-        long offset;
-        int size;
-        await this.headerLock.WaitAsync();
-        try
+        while (true)
         {
-            ObjectDisposedException.ThrowIf(this.disposed, this);
-
-            (offset, size) = this.GetLocation(tableIndex);
-            if (offset == 0 && size == 0)
-                return null;
-
-            this.ValidateLocation(tableIndex, offset, size);
-            this.activeReads++;
-        }
-        finally
-        {
-            this.headerLock.Release();
-        }
-
-        try
-        {
-            return await this.ReadChunkAsync(chunkX, chunkZ, offset, size);
-        }
-        finally
-        {
+            // The location is taken under the lock, so it's one a commit switched to, never one being switched. Its
+            // sectors aren't reused while the read is running (see ReleaseRetiredRuns), so they're read outside it.
+            long offset;
+            int size;
             await this.headerLock.WaitAsync();
-            this.activeReads--;
-            this.ReleaseRetiredRuns();
-            this.headerLock.Release();
+            try
+            {
+                ObjectDisposedException.ThrowIf(this.disposed, this);
+
+                (offset, size) = this.GetLocation(tableIndex);
+                if (offset == 0 && size == 0)
+                    return null;
+
+                this.ValidateLocation(tableIndex, offset, size);
+                this.activeReads++;
+            }
+            finally
+            {
+                this.headerLock.Release();
+            }
+
+            try
+            {
+                if (await this.ReadChunkAsync(tableIndex, offset, size) is RentedArray<byte> chunk)
+                    return chunk;
+            }
+            finally
+            {
+                await this.headerLock.WaitAsync();
+                this.activeReads--;
+                this.ReleaseRetiredRuns();
+                this.headerLock.Release();
+            }
+
+            // An external chunk switched to another version while its stub was read; read the one now current.
         }
     }
 
@@ -414,114 +651,11 @@ public sealed class RegionFile : IAsyncDisposable
     }
 
     /// <summary>
-    /// Flushes what was written to the disk, unless nothing was since the last flush or the file was closed, which
-    /// flushed it. Waiting for the disk happens on the storage threads (see <see cref="WorkerThreads.Storage"/>), not on
-    /// the caller's. The sectors of chunks' previous versions are free again after.
+    /// Commits what was staged (see <see cref="CommitAsync"/>), which puts it on the disk; what was committed already
+    /// is there. Waiting for the disk happens on the storage threads (see <see cref="WorkerThreads.Storage"/>), not on
+    /// the caller's.
     /// </summary>
-    public async Task FlushAsync()
-    {
-        await this.headerLock.WaitAsync();
-        try
-        {
-            if (!this.disposed)
-                await this.FlushUnderLockAsync();
-        }
-        finally
-        {
-            this.headerLock.Release();
-        }
-    }
-
-    private async Task FlushUnderLockAsync()
-    {
-        if (!this.unflushed)
-            return;
-
-        // A write that failed at the end of the file can leave its last sector short; vanilla pads it on closing too.
-        // Only while no write is running, which could be extending the file past it.
-        var padded = this.fileLength;
-        if (this.activeWrites == 0 && this.fileLength % SectorSize != 0)
-            padded = SectorsFor(this.fileLength) * (long)SectorSize;
-
-        await WorkerThreads.Storage.RunAsync(() =>
-        {
-            if (padded != this.fileLength)
-                RandomAccess.SetLength(this.handle, padded);
-
-            // Like vanilla's synced writes, this also has the operating system write its cache to the disk.
-            RandomAccess.FlushToDisk(this.handle);
-        });
-
-        this.fileLength = padded;
-        this.unflushed = false;
-
-        // Every header switch that retired these runs is on the disk now, so no crash can bring back a header that
-        // points at them: they can be reused once no read that may still be reading them is running.
-        this.retiredBehindReads.AddRange(this.retiredSinceFlush);
-        this.retiredSinceFlush = [];
-        this.ReleaseRetiredRuns();
-    }
-
-    // Called under the lock. Vanilla only reports timestamps, so one written for a switch that fails loses nothing.
-    private async Task WriteTimestampAsync(int tableIndex)
-    {
-        var timestamp = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-
-        var entry = new byte[sizeof(int)];
-        BinaryPrimitives.WriteInt32BigEndian(entry, timestamp);
-
-        await RandomAccess.WriteAsync(this.handle, entry, SectorSize + tableIndex * sizeof(int));
-        this.timestamps[tableIndex] = timestamp;
-        this.unflushed = true;
-    }
-
-    // The commit point, called under the lock once the payload is in free sectors. The location switches the chunk to
-    // its new version in a single aligned 4-byte write, which a crash can't tear; until it, the header points at the
-    // previous version, whose sectors nothing wrote to. Only the chunk's own entries are written, not the whole header.
-    private async Task SwitchLocationAsync(int tableIndex, int start, int count, bool external)
-    {
-        var previous = this.locations[tableIndex];
-        var location = (start << 8) | count;
-
-        var entry = new byte[sizeof(int)];
-        BinaryPrimitives.WriteInt32BigEndian(entry, location);
-
-        await RandomAccess.WriteAsync(this.handle, entry, tableIndex * sizeof(int));
-
-        // Readers take the location under the lock, so none sees it before its payload is complete.
-        Volatile.Write(ref this.locations[tableIndex], location);
-
-        var previousStorage = this.storage[tableIndex];
-        this.storage[tableIndex] = external ? Storage.External : Storage.Internal;
-
-        if (previous == 0)
-            return;
-
-        // The previous version's sectors are free once this switch is on disk. When it was (or may have been) external
-        // and this one isn't, its external file goes with them, like vanilla deletes it.
-        var deleteExternal = !external && previousStorage != Storage.Internal && this.regionPosition is not null;
-        this.retiredSinceFlush.Add(new RetiredRun(previous >> 8, previous & 0xFF, deleteExternal ? tableIndex : -1));
-    }
-
-    // Gives back the sectors of a write that didn't commit, which the header never pointed at. When its location write
-    // failed, whether it reached the file is unknown, so they stay used this session; the sector map is rebuilt from
-    // the header when the file is opened again.
-    private async Task AbandonAsync(int start, int count, bool freeSectors, bool endWrite)
-    {
-        await this.headerLock.WaitAsync();
-        try
-        {
-            if (endWrite)
-                this.activeWrites--;
-
-            if (freeSectors && !this.disposed)
-                this.MarkFree(start, count);
-        }
-        finally
-        {
-            this.headerLock.Release();
-        }
-    }
+    public Task FlushAsync() => this.CommitAsync();
 
     // Frees the retired runs no read may still be reading. Called under the lock.
     private void ReleaseRetiredRuns()
@@ -536,7 +670,7 @@ public sealed class RegionFile : IAsyncDisposable
             // Unless the chunk went external again since.
             if (run.ExternalOf >= 0 && this.storage[run.ExternalOf] == Storage.Internal)
             {
-                var (x, z) = (run.ExternalOf % this.cubicRegionSize, run.ExternalOf / this.cubicRegionSize);
+                var (x, z) = this.PositionOf(run.ExternalOf);
                 DeleteStaleExternal(this.ExternalPath(x, z));
             }
         }
@@ -545,7 +679,7 @@ public sealed class RegionFile : IAsyncDisposable
     }
 
     // A stale external file is harmless, since its chunk's header says it's internal, so failing to delete it doesn't
-    // fail the read or flush that released it.
+    // fail the read or commit that released it.
     private static void DeleteStaleExternal(string path)
     {
         try
@@ -576,6 +710,44 @@ public sealed class RegionFile : IAsyncDisposable
         await RandomAccess.WriteAsync(this.handle, buffers, (long)start * SectorSize);
     }
 
+    /// <summary>
+    /// The compression type a new external version is written in, and the payload recompressed in it when that isn't
+    /// this file's. Replacing an external chunk's file keeps the codec its current stub names: until the header
+    /// switches, that stub may be read with the new file.
+    /// </summary>
+    private async Task<(byte Type, PooledBufferStream? Transcoded)> KeepExternalCodecAsync(int tableIndex, byte type,
+        ReadOnlyMemory<byte> payload)
+    {
+        // The chunk's current version stays put: it's this write's turn, and its sectors are freed only by this write.
+        long offset;
+        await this.headerLock.WaitAsync();
+        try
+        {
+            (offset, _) = this.GetLocation(tableIndex);
+        }
+        finally
+        {
+            this.headerLock.Release();
+        }
+
+        if (offset == 0)
+            return (type, null);
+
+        var prefix = new byte[PrefixSize];
+        var read = await RandomAccess.ReadAsync(this.handle, prefix, offset);
+        if (read < PrefixSize || (prefix[4] & ExternalFlag) == 0)
+            return (type, null);
+
+        var current = (byte)(prefix[4] & ~ExternalFlag);
+        if (current == type)
+            return (type, null);
+
+        var (chunkX, chunkZ) = this.PositionOf(tableIndex);
+        using var nbt = this.Decompress(chunkX, chunkZ, type, payload);
+
+        return (current, CompressAs(current, nbt.Span));
+    }
+
     private async Task<string> WriteExternalTemporaryAsync(int chunkX, int chunkZ, ReadOnlyMemory<byte> payload)
     {
         if (this.regionPosition is null)
@@ -590,15 +762,18 @@ public sealed class RegionFile : IAsyncDisposable
         {
             await file.WriteAsync(payload);
 
-            // On the disk before it's moved in, so the move never commits an external file a crash can empty.
+            // On the disk before it's moved in, so the move never puts in a file a crash can empty.
             file.Flush(flushToDisk: true);
         }
 
         return temporary;
     }
 
-    private async Task<RentedArray<byte>> ReadChunkAsync(int chunkX, int chunkZ, long offset, int size)
+    // Reads a chunk's sectors and decompresses its payload; null when it's external and switched to another version
+    // while its stub was read.
+    private async Task<RentedArray<byte>?> ReadChunkAsync(int tableIndex, long offset, int size)
     {
+        var (chunkX, chunkZ) = this.PositionOf(tableIndex);
         using var sectors = new RentedArray<byte>(size);
         var read = await RandomAccess.ReadAsync(this.handle, sectors.Memory, offset);
         var length = read < PrefixSize ? 0 : BinaryPrimitives.ReadInt32BigEndian(sectors.Span);
@@ -622,13 +797,29 @@ public sealed class RegionFile : IAsyncDisposable
                 + "but the file's name doesn't give the region's position.");
         }
 
-        using var external = await ReadExternalAsync(this.ExternalPath(chunkX, chunkZ));
-        return this.Decompress(chunkX, chunkZ, (byte)(compressionType & ~ExternalFlag), external.Memory);
+        // The file is read under the external lock, after checking the stub read is still the chunk's: no commit
+        // replaces the file or switches the entry meanwhile.
+        await this.externalLock.WaitAsync();
+        try
+        {
+            await this.headerLock.WaitAsync();
+            var current = this.GetLocation(tableIndex) == (offset, size);
+            this.headerLock.Release();
+
+            if (!current)
+                return null;
+
+            using var external = await ReadExternalAsync(this.ExternalPath(chunkX, chunkZ));
+            return this.Decompress(chunkX, chunkZ, (byte)(compressionType & ~ExternalFlag), external.Memory);
+        }
+        finally
+        {
+            this.externalLock.Release();
+        }
     }
 
     private static async Task<RentedArray<byte>> ReadExternalAsync(string path)
     {
-        // Shared for deleting, so a newer version can be moved over it while it's read.
         await using var file = new FileStream(path, FileMode.Open, FileAccess.Read,
             FileShare.ReadWrite | FileShare.Delete, bufferSize: 0, FileOptions.Asynchronous);
 
@@ -641,6 +832,32 @@ public sealed class RegionFile : IAsyncDisposable
         catch
         {
             bytes.Dispose();
+            throw;
+        }
+    }
+
+    // Compresses in vanilla's compression type (1 gzip, 2 zlib, 3 none).
+    private static PooledBufferStream CompressAs(byte compressionType, ReadOnlySpan<byte> nbt)
+    {
+        // Chunk NBT compresses several times over, so a quarter of it is a generous start.
+        var compressed = new PooledBufferStream(Math.Max(nbt.Length / 4, SectorSize));
+        try
+        {
+            var options = new ZLibCompressionOptions { CompressionLevel = PayloadCompressionLevel };
+            using Stream compressor = compressionType switch
+            {
+                1 => new GZipStream(compressed, options, leaveOpen: true),
+                2 => new ZLibStream(compressed, options, leaveOpen: true),
+                3 => compressed,
+                _ => throw new NotSupportedException($"Chunks can't be written in compression type {compressionType}.")
+            };
+
+            compressor.Write(nbt);
+            return compressed;
+        }
+        catch
+        {
+            compressed.Return();
             throw;
         }
     }
@@ -702,7 +919,7 @@ public sealed class RegionFile : IAsyncDisposable
         var start = -1;
         for (var sector = HeaderSectors; sector < this.sectorCount; sector++)
         {
-            run = this.usedSectors[sector] ? 0 : run + 1;
+            run = this.sectorUsers[sector] != 0 ? 0 : run + 1;
             if (run == count)
             {
                 start = sector - count + 1;
@@ -722,7 +939,7 @@ public sealed class RegionFile : IAsyncDisposable
     private void BuildSectorMap()
     {
         this.sectorCount = Math.Max(HeaderSectors, SectorsFor(this.fileLength));
-        this.usedSectors = new bool[this.sectorCount];
+        this.sectorUsers = new int[this.sectorCount];
         this.MarkUsed(0, HeaderSectors);
 
         for (var index = 0; index < HeaderTableSize; index++)
@@ -734,23 +951,39 @@ public sealed class RegionFile : IAsyncDisposable
             this.ValidateLocation(index, offset, size);
             this.MarkUsed((int)(offset / SectorSize), size / SectorSize);
         }
+
+        // Counted once every entry is in: a chunk overlaps when any of its sectors has another user.
+        for (var index = 0; index < HeaderTableSize; index++)
+        {
+            var (offset, size) = this.GetLocation(index);
+            if (offset == 0 && size == 0)
+                continue;
+
+            var users = this.sectorUsers.AsSpan((int)(offset / SectorSize), size / SectorSize);
+            if (users.ContainsAnyExcept(1))
+                this.OverlappingChunks++;
+        }
     }
 
     private void MarkUsed(int start, int count)
     {
         var end = start + count;
-        if (end > this.usedSectors.Length)
-            Array.Resize(ref this.usedSectors, Math.Max(end, this.usedSectors.Length * 2));
+        if (end > this.sectorUsers.Length)
+            Array.Resize(ref this.sectorUsers, Math.Max(end, this.sectorUsers.Length * 2));
 
         this.sectorCount = Math.Max(this.sectorCount, end);
-        this.usedSectors.AsSpan(start, count).Fill(true);
+        for (var sector = start; sector < end; sector++)
+            this.sectorUsers[sector]++;
     }
 
     private void MarkFree(int start, int count)
     {
         var end = Math.Min(start + count, this.sectorCount);
-        if (start < end)
-            this.usedSectors.AsSpan(start, end - start).Clear();
+        for (var sector = start; sector < end; sector++)
+        {
+            if (this.sectorUsers[sector] > 0)
+                this.sectorUsers[sector]--;
+        }
     }
 
     private (long offset, int size) GetLocation(int tableIndex)
@@ -768,13 +1001,16 @@ public sealed class RegionFile : IAsyncDisposable
         if (offset >= HeaderSectors * SectorSize && size != 0 && offset <= this.fileLength - size)
             return;
 
-        var (x, z) = (tableIndex % this.cubicRegionSize, tableIndex / this.cubicRegionSize);
+        var (x, z) = this.PositionOf(tableIndex);
         throw new InvalidDataException($"Region file '{this.filePath}', chunk ({x}, {z}) has invalid allocation at "
             + $"byte {offset} with length {size}; file length is {this.fileLength}.");
     }
 
     private int GetChunkTableIndex(int x, int z) =>
         (x & this.op) + (z & this.op) * this.cubicRegionSize;
+
+    private (int X, int Z) PositionOf(int tableIndex) =>
+        (tableIndex % this.cubicRegionSize, tableIndex / this.cubicRegionSize);
 
     // Vanilla's name for a chunk's external file, by its absolute coordinates, beside the region file.
     private string ExternalPath(int chunkX, int chunkZ)
@@ -811,20 +1047,89 @@ public sealed class RegionFile : IAsyncDisposable
 
     private static int SectorsFor(long length) => (int)((length + SectorSize - 1) / SectorSize);
 
+    // Moves a file over another, returning once the move is on the disk: the directory holding the name is flushed too.
+    private static void MoveDurably(string source, string destination)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            if (!MoveFileEx(source, destination, MoveFileReplaceExisting | MoveFileWriteThrough))
+            {
+                var error = new Win32Exception(Marshal.GetLastPInvokeError());
+                throw new IOException($"Couldn't move '{source}' to '{destination}'.", error);
+            }
+
+            return;
+        }
+
+        File.Move(source, destination, overwrite: true);
+
+        var folder = Path.GetDirectoryName(destination)!;
+        var directory = OpenDirectory(folder, 0);
+        if (directory < 0)
+            throw new IOException($"Couldn't open '{folder}' to flush it ({Marshal.GetLastPInvokeError()}).");
+
+        try
+        {
+            if (FlushDescriptor(directory) != 0)
+                throw new IOException($"Couldn't flush '{folder}' ({Marshal.GetLastPInvokeError()}).");
+        }
+        finally
+        {
+            _ = CloseDescriptor(directory);
+        }
+    }
+
+    [LibraryImport("kernel32.dll", EntryPoint = "MoveFileExW", SetLastError = true,
+        StringMarshalling = StringMarshalling.Utf16)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool MoveFileEx(string existing, string replacement, uint flags);
+
+    [LibraryImport("libc", EntryPoint = "open", SetLastError = true, StringMarshalling = StringMarshalling.Utf8)]
+    private static partial int OpenDirectory(string path, int flags);
+
+    [LibraryImport("libc", EntryPoint = "fsync", SetLastError = true)]
+    private static partial int FlushDescriptor(int descriptor);
+
+    [LibraryImport("libc", EntryPoint = "close")]
+    private static partial int CloseDescriptor(int descriptor);
+
     public async ValueTask DisposeAsync()
     {
-        // Closed under the lock, so a flush waiting for it finds the file closed rather than closing under it. The lock
-        // stays undisposed for those waiters.
+        // Commits what's staged, then closes under the locks, so a commit or flush waiting for them finds the file
+        // closed rather than closing under it. The locks stay undisposed for those waiters.
+        await this.commitLock.WaitAsync();
+        try
+        {
+            try
+            {
+                if (!this.disposed)
+                    await this.CommitUnderLockAsync();
+            }
+            finally
+            {
+                await this.CloseAsync();
+            }
+        }
+        finally
+        {
+            this.commitLock.Release();
+        }
+    }
+
+    private async Task CloseAsync()
+    {
         await this.headerLock.WaitAsync();
         try
         {
             if (this.disposed)
                 return;
 
-            // A failed final flush still closes the file, so it doesn't stay locked, and is reported.
+            // A file opened ending within a sector is padded, like vanilla pads it on closing; every write since
+            // wrote whole sectors at the end.
             try
             {
-                await this.FlushUnderLockAsync();
+                if (this.fileLength % SectorSize != 0)
+                    RandomAccess.SetLength(this.handle, SectorsFor(this.fileLength) * (long)SectorSize);
             }
             finally
             {
@@ -838,6 +1143,24 @@ public sealed class RegionFile : IAsyncDisposable
         }
     }
 
+    /// <summary>A step of staging and committing writes, and the chunk it's of, or -1 for the whole file.</summary>
+    internal readonly record struct Event(Step Step, int ChunkX, int ChunkZ);
+
+    internal enum Step
+    {
+        // A chunk's payload is in its free sectors.
+        PayloadWritten,
+
+        // The file was flushed to disk.
+        Flushed,
+
+        // A chunk's header entry is about to be written, after its external file (if any) was moved in.
+        HeaderWriting,
+
+        // A commit freed its previous versions' sectors (or kept them for the reads still running).
+        SectorsReleased
+    }
+
     private enum Storage : byte
     {
         Unknown,
@@ -845,21 +1168,76 @@ public sealed class RegionFile : IAsyncDisposable
         External
     }
 
+    // A staged payload, in sectors no entry points at yet, and its external file's temporary until it's moved in.
+    private sealed class StagedChunk(ChunkWrite write, int start, int count, bool external, string? externalTemporary)
+    {
+        public ChunkWrite Write { get; } = write;
+
+        public int Start { get; } = start;
+
+        public int Count { get; } = count;
+
+        public bool External { get; } = external;
+
+        public string? ExternalTemporary { get; set; } = externalTemporary;
+    }
+
     // The sectors of a chunk's previous version, and the chunk whose external file goes with them, or -1.
     private readonly record struct RetiredRun(int Start, int Count, int ExternalOf);
 
     /// <summary>
-    /// A chunk's turn to be written (see <see cref="ReserveWrite"/>). Disposing it lets the next write go.
+    /// A chunk's turn to be written (see <see cref="ReserveWrite"/>). It ends when its write is committed or fails, or
+    /// when it's given up (disposed) unstaged, and <see cref="Done"/> then completes once every turn before it ended.
     /// </summary>
-    internal sealed class ChunkWrite(Task turn) : IDisposable
+    internal sealed class ChunkWrite : IDisposable
     {
+        private const int Reserved = 0;
+        private const int Staged = 1;
+        private const int Ended = 2;
+
         private readonly TaskCompletionSource done = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        /// <summary>Completes once every write reserved before this one is done.</summary>
-        public Task TurnAsync { get; } = turn;
+        private int state;
 
-        internal Task Done => this.done.Task;
+        internal ChunkWrite(int tableIndex, Task turn)
+        {
+            this.TableIndex = tableIndex;
+            this.TurnAsync = turn;
+        }
 
-        public void Dispose() => this.done.TrySetResult();
+        internal int TableIndex { get; }
+
+        /// <summary>Completes once every write reserved before this one ended.</summary>
+        public Task TurnAsync { get; }
+
+        /// <summary>Completes once this write and every write before it ended; it never fails.</summary>
+        public Task Done => this.done.Task;
+
+        /// <summary>
+        /// Why the write failed, once <see cref="Done"/> completed; null when it committed or was given up.
+        /// </summary>
+        public Exception? Failure { get; private set; }
+
+        /// <summary>Gives the write up, unless it was staged: then its commit ends it.</summary>
+        public void Dispose()
+        {
+            if (Interlocked.CompareExchange(ref this.state, Ended, Reserved) == Reserved)
+                this.End();
+        }
+
+        internal void MarkStaged() => Interlocked.CompareExchange(ref this.state, Staged, Reserved);
+
+        internal void Release(Exception? failure)
+        {
+            if (Interlocked.Exchange(ref this.state, Ended) == Ended)
+                return;
+
+            this.Failure = failure;
+            this.End();
+        }
+
+        // Done waits for the turn before, so giving up a write in the middle never lets a later one overtake.
+        private void End() => this.TurnAsync.ContinueWith(_ => this.done.TrySetResult(), CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
     }
 }

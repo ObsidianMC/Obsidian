@@ -572,7 +572,9 @@ internal static partial class WorldUpgrade
                         await writer.TryFinishAsync();
                     }
 
-                    await file.SetChunkAsync(x, z, written);
+                    // Staged, then committed together by the flush below, for two flushes per file.
+                    written.TryGetBuffer(out var payload);
+                    await file.StageAsync(x, z, payload.AsMemory());
                 }
             }
 
