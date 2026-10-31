@@ -5,6 +5,10 @@ using Obsidian.Nbt.Interfaces;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Generators;
 using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Generators.Density;
+using Obsidian.WorldData.Generators.Features;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Net.Packets.Play.Clientbound;
 
@@ -50,7 +54,7 @@ public abstract partial class AbstractLevel
 
         var entities = GetEntitiesInRange(new VectorD(0, 128, 0), 256).ToArray();
         if (!endFightInitialized)
-            await InitializeEndFightAsync(entities);
+            InitializeEndFight(entities);
 
         if (!dragonKilled)
         {
@@ -93,10 +97,10 @@ public abstract partial class AbstractLevel
         return ready;
     }
 
-    private async ValueTask InitializeEndFightAsync(IEntity[] entities)
+    private void InitializeEndFight(IEntity[] entities)
     {
         var terrain = new MobTerrain(this);
-        LocateExitPortal(terrain);
+        var portalFound = LocateExitPortal(terrain);
         dragonKilled = terrain.GetBlock(exitPortal + new Vector(1, 0, 0))?.RegistryId == BlockIds.EndPortal;
         dragonPreviouslyKilled = dragonKilled;
 
@@ -104,29 +108,33 @@ public abstract partial class AbstractLevel
         if (existing != null)
             fightDragon = existing.Uuid;
 
-        if (!dragonKilled && existing == null)
-        {
-            foreach (var spike in EndSpikeFeature.GetSpikesForLevel(RandomState.ParseSeed(Seed)))
-                await RebuildEndSpikeAsync(spike, false);
-
-            await CreateExitPortalAsync(false);
-        }
+        // Like vanilla's first scan, the spikes and crystals decoration placed stay as they are (only a resurrection
+        // rebuilds them), and an inactive exit portal is built only where there's none yet.
+        if (!dragonKilled && !portalFound)
+            CreateExitPortal(false);
 
         endFightInitialized = true;
     }
 
-    // The highest block at the island's center from y 127 down; from bedrock, the portal is three below it.
-    private void LocateExitPortal(MobTerrain terrain)
+    /// <summary>
+    /// Finds the highest block at the island's center from y 127 down: the exit portal's bedrock pillar, whose top is
+    /// three above the portal, or else the ground the portal is to be built on.
+    /// </summary>
+    /// <returns>Whether the pillar of an existing portal was found.</returns>
+    private bool LocateExitPortal(MobTerrain terrain)
     {
         for (var y = 127; y >= MinY; y--)
         {
             if (terrain.GetBlock(new Vector(0, y, 0)) is not { IsAir: false } center)
                 continue;
 
-            var portalY = center.Is(BlockIds.Bedrock) ? y - 3 : y + 1;
+            var pillar = center.Is(BlockIds.Bedrock);
+            var portalY = pillar ? y - 3 : y + 1;
             exitPortal = new Vector(0, portalY, 0);
-            return;
+            return pillar;
         }
+
+        return false;
     }
 
     // Keeps the fight's dragon attached, and spawns a new one when it's been missing for a minute.
@@ -148,7 +156,7 @@ public abstract partial class AbstractLevel
     {
         if (resurrectionTicks < 0)
         {
-            var started = await TryStartDragonResurrectionAsync(entities);
+            var started = TryStartDragonResurrection(entities);
             if (!started)
                 return;
         }
@@ -158,7 +166,7 @@ public abstract partial class AbstractLevel
             .ToArray();
         if (ritual.Length != resurrectionCrystals.Length)
         {
-            await AbortDragonResurrectionAsync();
+            AbortDragonResurrection();
             return;
         }
 
@@ -171,7 +179,7 @@ public abstract partial class AbstractLevel
     }
 
     // The ritual starts once a living crystal stands on each side of the exit portal.
-    private async ValueTask<bool> TryStartDragonResurrectionAsync(IEntity[] entities)
+    private bool TryStartDragonResurrection(IEntity[] entities)
     {
         Vector[] sides = [new(2, 1, 0), new(-2, 1, 0), new(0, 1, 2), new(0, 1, -2)];
         List<Guid> crystals = [];
@@ -189,7 +197,7 @@ public abstract partial class AbstractLevel
 
         resurrectionCrystals = crystals.ToArray();
         resurrectionTicks = 0;
-        await CreateExitPortalAsync(false);
+        CreateExitPortal(false);
         return true;
     }
 
@@ -228,7 +236,7 @@ public abstract partial class AbstractLevel
         }
 
         if (spikeTick % 40 == 39)
-            await RebuildEndSpikeAsync(spike, true);
+            await RebuildEndSpikeAsync(spike);
     }
 
     private async ValueTask FinishDragonResurrectionAsync(IEntity[] entities, EndCrystal[] ritual)
@@ -383,7 +391,7 @@ public abstract partial class AbstractLevel
 
         dragonKilled = true;
         fightDragon = Guid.Empty;
-        await CreateExitPortalAsync(true);
+        CreateExitPortal(true);
         if (!dragonPreviouslyKilled)
             await SetBlockAsync(exitPortal + new Vector(0, 4, 0), BlocksRegistry.DragonEgg, true);
 
@@ -434,7 +442,7 @@ public abstract partial class AbstractLevel
         return frame ? BlocksRegistry.Bedrock : BlocksRegistry.Air;
     }
 
-    internal async ValueTask AbortDragonResurrectionAsync(EndCrystal? destroyed = null)
+    internal void AbortDragonResurrection(EndCrystal? destroyed = null)
     {
         if (!HasEndFight || resurrectionTicks < 0)
             return;
@@ -450,60 +458,43 @@ public abstract partial class AbstractLevel
             crystal.SetBeam(null);
         }
 
-        await CreateExitPortalAsync(true);
+        CreateExitPortal(true);
     }
 
-    private static readonly (Vector Offset, string Facing)[] ExitPortalTorches =
-    [
-        (new Vector(1, 2, 0), "east"),
-        (new Vector(-1, 2, 0), "west"),
-        (new Vector(0, 2, 1), "south"),
-        (new Vector(0, 2, -1), "north"),
-    ];
-
-    private async ValueTask CreateExitPortalAsync(bool active)
+    // The 26.3 end_podium feature, inactive and active, which vanilla's fight places its exit portal with.
+    private static readonly Lazy<ExitPortalFeatures> exitPortalFeatures = new(() =>
     {
-        for (var x = -4; x <= 4; x++)
-        {
-            for (var z = -4; z <= 4; z++)
-            {
-                var distance = x * x + z * z;
-                if (distance > 12)
-                    continue;
+        var registry = new FeatureRegistry(WorldgenData.Vanilla);
 
-                for (var y = -1; y <= 3; y++)
-                {
-                    var block = ExitPortalBlock(x, y, z, distance, active);
-                    await SetBlockAsync(exitPortal + new Vector(x, y, z), block, true);
-                }
-            }
-        }
+        return new ExitPortalFeatures(registry, ExitPortalFeature(registry, false), ExitPortalFeature(registry, true));
+    });
 
-        foreach (var (offset, facing) in ExitPortalTorches)
+    private sealed record ExitPortalFeatures(FeatureRegistry Registry, Feature Inactive, Feature Active);
+
+    private static Feature ExitPortalFeature(FeatureRegistry registry, bool active)
+    {
+        var definition = new JsonObject
         {
-            var torch = BlocksRegistry.WallTorch.WithProperty("facing", facing);
-            await SetBlockAsync(exitPortal + offset, torch, true);
-        }
+            ["type"] = "minecraft:end_podium",
+            ["active"] = active
+        };
+
+        return registry.Feature(JsonSerializer.SerializeToElement(definition));
     }
 
-    /// <summary>
-    /// The exit portal's block at an offset <paramref name="distance"/> (squared) from its centre: a bedrock and End
-    /// stone base, a bedrock rim, the portal itself when active, and the bedrock pillar in the middle.
-    /// </summary>
-    private static IBlock ExitPortalBlock(int x, int y, int z, int distance, bool active)
+    private void CreateExitPortal(bool active)
     {
-        var block = BlocksRegistry.Air;
-        if (y == -1)
-            block = distance <= 6 ? BlocksRegistry.Bedrock : BlocksRegistry.EndStone;
-        else if (y == 0 && distance > 6)
-            block = BlocksRegistry.Bedrock;
-        else if (y == 0 && active)
-            block = BlocksRegistry.EndPortal;
+        var features = exitPortalFeatures.Value;
+        var podium = active ? features.Active : features.Inactive;
 
-        if (x == 0 && z == 0 && y >= 0)
-            block = BlocksRegistry.Bedrock;
+        lock (Fluids.TickLock)
+        {
+            var view = new LiveFeatureLevel(this);
+            var context = new DecorationContext(features.Registry, view, at => view.GetBiome(at).Name, MinY, Height);
 
-        return block;
+            podium(context, view.Random, exitPortal);
+            view.Commit();
+        }
     }
 
     // The order vanilla places the 20 gateways in, seeded by the world.
@@ -513,15 +504,15 @@ public abstract partial class AbstractLevel
         return FeatureHelpers.ShuffledCopy(Enumerable.Range(0, 20), random);
     }
 
-    private async ValueTask RebuildEndSpikeAsync(EndSpike spike, bool resurrecting)
+    // A resurrection's rebuild of one spike: its top blasted away, then the pillar, cage and an invulnerable crystal.
+    private async ValueTask RebuildEndSpikeAsync(EndSpike spike)
     {
         var spikeTop = new VectorD(spike.CenterX, spike.Height, spike.CenterZ);
         var oldCrystals = GetEntitiesInRange(spikeTop, 12).OfType<EndCrystal>().ToArray();
         foreach (var crystal in oldCrystals)
             await crystal.RemoveAsync();
 
-        if (resurrecting)
-            await BlastSpikeTopAsync(spike);
+        await BlastSpikeTopAsync(spike);
 
         await BuildSpikePillarAsync(spike);
         if (spike.Guarded)
@@ -533,10 +524,9 @@ public abstract partial class AbstractLevel
             Level = this,
             EntityId = Server.GetNextEntityId(),
             Position = new VectorD(spike.CenterX + 0.5, spike.Height + 1, spike.CenterZ + 0.5),
-            Invulnerable = resurrecting
+            Invulnerable = true
         };
-        if (resurrecting)
-            crystalEntity.SetBeam(new Vector(0, 128, 0));
+        crystalEntity.SetBeam(new Vector(0, 128, 0));
 
         SpawnEntity(crystalEntity);
     }

@@ -38,16 +38,7 @@ internal sealed partial class FeatureRegistry
                 level.SetBlock(position, state);
             }
 
-            if (level.GetBlockEntity(origin) is not DataBlockEntity gateway)
-                return true;
-
-            // Vanilla's gateway saves its age (0 until it ticks) whether or not it has an exit.
-            if (!gateway.Data.HasTag("Age"))
-            {
-                gateway.Set("Age", 0L);
-            }
-
-            if (exit is Vector target)
+            if (exit is Vector target && level.GetBlockEntity(origin) is DataBlockEntity gateway)
             {
                 gateway.Set(new NbtArray<int>("exit_portal", [target.X, target.Y, target.Z]));
 

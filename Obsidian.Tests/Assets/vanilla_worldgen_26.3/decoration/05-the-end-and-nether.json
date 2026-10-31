@@ -1001,6 +1001,253 @@
       "entities": []
     },
     {
+      "name": "second_end_spike",
+      "seed": 987654321,
+      "dimension": "minecraft:the_end",
+      "verifyStatus": true,
+      "chunkX": 2,
+      "chunkZ": 1,
+      "recordEntities": true,
+      "minY": 0,
+      "height": 256,
+      "seaLevel": 0,
+      "possibleBiomes": [
+        "minecraft:the_end",
+        "minecraft:end_highlands",
+        "minecraft:end_midlands",
+        "minecraft:small_end_islands",
+        "minecraft:end_barrens"
+      ],
+      "featureOrder": [
+        [
+          "minecraft:end_island_decorated"
+        ],
+        [],
+        [],
+        [],
+        [
+          "minecraft:end_gateway_return",
+          "minecraft:end_spike"
+        ],
+        [],
+        [],
+        [],
+        [],
+        [
+          "minecraft:chorus_plant"
+        ],
+        [
+          "minecraft:end_platform"
+        ]
+      ],
+      "biomes": [
+        "minecraft:the_end"
+      ],
+      "status": "minecraft:features",
+      "chunks": [
+        {
+          "chunkX": 1,
+          "chunkZ": 0,
+          "blocks": {
+            "palette": [
+              "minecraft:air",
+              "minecraft:end_stone"
+            ],
+            "data": "H4sIAAAAAAAA/+3UwQkAMAwDsXT/pbtD8zgKEniE88zK+XTAXt2x/qFTd6x/6NQd6x86dcf6h07dsf6hU3esf+jUHesfOnXH+odO3bH+oVN3rH/o1B3rHzp1x/qHTt2x/qFTd6x/6NQdax86dcs+ADp1x/qHTt2x/qFTd6x/6NQd6x86dcf6h07dsf6hU3esf+jUHesfOnXH+odO3bH+oVN3rH/o1B3rHzp1x/qHTt2x9qFTt6x/6NQt+wDo1B3rHzp1x/qHTt2x/qFTd6x/6NQd6x86dcf6h07dsf6hU3esf+jUHesfOnXH+odO3bH+oVN3rH3o1C3rHzp1y/qHTt2y/qFTt+wDoFN3rH/o1B3rHzp1x/qHTt2x/qFTd6x/6NQd6x86dcfah07dsv6hU7esf+jULesfOnXL+odO3bL+oVO3rH/o1C3rHzp1y/qHTt2yD4BO3bH+oVN3rH/o1B3rHzp1x/qHTt2x/qFTd6x96NQt6x86dcv6h07dsv6hU7esf+jULesfOnXL+odO3bL+oVO3rH/o1C3rHzp1yz4AOnXH+odO3bH+oVN3rH/o1B3rHzp1x9qHTt2y/qFTt6x/6NQt6x86dcv6h07dsv6hU7esf+jULesfOnXL+odO3bL+oVO3rH/o1C37AOjUHesfOnXH+odO3bH+oVN3rH3o1C3rHzp1y/qHTt2y/qFTt6x/6NQt6x86dcv6h07dsv6hU7esf+jULesfOnXL+odO3bL+oVO37AOgU3esf+jUHesfOnXH2odO3bL+oVO3rH/o1C3rHzp1y/qHTt2y/qFTt6x/6NQt6x86dcv6h07dsv6hU7esf+jULesfOnXL+odO3bIPgE7dsf6hU3esf+jUHWsfOnXL+odO3bL+oVO3rH/o1C3rHzp1y9qHTt2zD4BO3bL+oVO3rH/o1C3rHzp1y/qHTt2y/qFTt6x/6NQt+wDo1B3rHzp1x/qHTt2x9qFTt6x/6NQt6x86dcv6h07dsv6hU7esf+jULesfOnXL+odO3bL+oVO3rH/o1C3rHzp1y/qHTt2yD4BO3bH+oVN3rH/o1B1rHzp1y/qHTt2y/qFTt6x/6NQt6x86dcv6h1bds/6hUbesf+jULesfOnXL+odO3bL+oVO3rH/o1C3rHzp1yz4AOnXH+odO3bH+oVN3rH3o1C3rHzp1y/qHTt2y/qFV96x/6NQ96x86dc/6h07ds/6hU/esf+jUPesfOnXP+odO3bP+oVG37AOgU3esf+jUHesfOnXH+odO3bH2oVO3rH/o1C3rH1p1z/qHTt2z/qFT96x/6NQ96x86dc/6h07ds/6hU/esf+jUPesfOnXP+odO3bMPgE7dsv6hUXesf+jUHesfOnXH2odO3bL+oVX3rH/o1D3rHzp1z/qHTt2z/qFT96x/6NQ96x86dc/6h07ds/6hU/esf+jUPfsA6NQt6x86dcv6h0bdsf6hU3esfejULesfOnXL+odW3bP+oVP3rH/o1D3rH1p10/qHTt20/qFTN61/6NRN6x86ddP6h07dtP6hUffsA6BTt6x/6NQt6x8adcf6h07dsfahU7esf2jVPesfOnXP+odO3bP+oVP3rH9o1U3rHzp10/qHTt20/qFTN61/6NRN6x86ddM+ADp1z/qHTt2z/qFT96x/eHABgs/H5AAABAA=",
+            "hash": "d971dfc576131cb4c86243c3b3d2acc4cdd01f93b01a61119d32716be15d58dc"
+          },
+          "heightmaps": {
+            "WORLD_SURFACE_WG": "H4sIAAAAAAAA/2NgYLBlIB/bUKiXHP02aJgUtdgwJXpx6SdWLzb9pOhF10+qXmL0W9PQflq7nV7hPpBxTpHdANdkY4gABAAA",
+            "WORLD_SURFACE": "H4sIAAAAAAAA/2NgYLBlIB/bUKiXHP02aJgUtdgwJXpx6SdWLzb9pOhF10+qXmL0W9PQflq7nV7hPpBxTpHdANdkY4gABAAA",
+            "OCEAN_FLOOR_WG": "H4sIAAAAAAAA/2NgYLBlIB/bUKiXHP02aJgUtdgwJXpx6SdWLzb9pOhF10+qXmL0W9PQflq7nV7hPpBxTpHdANdkY4gABAAA",
+            "OCEAN_FLOOR": "H4sIAAAAAAAA/2NgYLBlIB/bUKiXHP02aJgUtdgwJXpx6SdWLzb9pOhF10+qXmL0W9PQflq7nV7hPpBxTpHdANdkY4gABAAA",
+            "MOTION_BLOCKING": "H4sIAAAAAAAA/2NgYLBlIB/bUKiXHP02aJgUtdgwJXpx6SdWLzb9pOhF10+qXmL0W9PQflq7nV7hPpBxTpHdANdkY4gABAAA",
+            "MOTION_BLOCKING_NO_LEAVES": "H4sIAAAAAAAA/2NgYLBlIB/bUKiXHP02aJgUtdgwJXpx6SdWLzb9pOhF10+qXmL0W9PQflq7nV7hPpBxTpHdANdkY4gABAAA"
+          }
+        },
+        {
+          "chunkX": 2,
+          "chunkZ": 0,
+          "blocks": {
+            "palette": [
+              "minecraft:air",
+              "minecraft:end_stone"
+            ],
+            "data": "H4sIAAAAAAAA/+3UgQmAQAADsXf/pZ1BlB5CAh3hes4r1w8HfKNuWf/QqVvWP3TqlvUPnbpl/UOnbln/0Kp71j906p71D526Z/1Dp+5Z/9Cpe9Y/tOqm9Q+dumn9Q6duWv/QqrvWP3TqrvUPW3XL+odO3bL+oVO3rH/o1C3rHzp1y/qHTt2y/qFV96x/6NQ96x86dc/6h07ds/6hU/esf2jVTesfOnXT+odO3bT+oVV3rX/o1F3rH7bqlvUPnbpl/UOnbln/0Klb1j906pb1D526Zf1Dq+5Z/9Cpe9Y/dOqe9Q+dumf9Q6tuWv/QqZvWP3TqpvUPnbpp/UOr7lr/0Km71j9s1S3rHzp1y/qHTt2y/qFTt6x/6NQt6x86dcv6h1bds/6hU/esf+jUPesfOnXP+odW3bT+oVM3rX/o1E3rHzp10/qHVt21/qFTd61/2Kpb1j906pb1D526Zf1Dp25Z/9CpW9Y/dOqW9Q+tumf9Q6fuWf/QqXvWP3TqnvUPrbpp/UOnblr/0Kmb1j+06q71D526a/1Dp+5a/7BVt+wDoFN3rH3o1C3rHzp1y/qHTt2y/qFTt6x/aNU96x86dc/6h07ds/6hU/esf2jVTesfOnXT+odO3bT+oVV3rX/o1F3rHzp11/qHrbplHwCdumPtQ6duWf/QqVvWP3TqlvUPnbpl/UOr7ln/0Kl71j906p71D626af1Dp25a/9Cpm9Y/dOqm9Q+tumv9Q6fuWv/QqbvWP2zVLfsA6NQd6x86dcfah07dsv6hU7esf2jVPesfOnXP+odO3bP+oVP3rH9o1U3rHzp10/qHTt20/qFTN61/aNVd6x86ddf6h07dtf5hq27ZB0Cn7lj/0Kk71j506pb1D526Zf1Dq+5Z/9Cpe9Y/dOqe9Q+dumf9Q6tuWv/QqZvWP3TqpvUPnbpp/UOr7lr/0Km71j906q71D1t1yz4AOnXH+odO3bH+oVN3rH1o1T3rHzp1z/qHTt2z/qFT96x/6NQ96x9addP6h07dtP6hUzetf+jUTesfWnXX+odO3bX+oVN3rX/Yqlv2AdCpO9Y/dOqO9Q+tumX9Q6duWfvQqXvWP3TqnvUPnbpn/UOrblr/0Kmb1j906qb1D526af1Dp25a/9Cqu9Y/dOqu9Q+dumv9w1bdsg+ATt2x/qFVt6x/6NQt6x86dcvah07ds/6hU/esf+jUPesfWnXT+odO3bT+oVM3rX/o1E3rH1p11/qHTt21/qFTd61/6NRd6x/26p59AHTqlvUPnbpl/UOnbln/0Klb1j906pa1D526Z/1Dq25a/9Cpm9Y/dOqm9Q+dumn9Q6duWv/QqrvWP3TqrvUPnbpr/UOn7lr/sFf37AOgU7esf+jULesfOnXL+odO3bL+oVO3rH1o1U3rHzp10/qHTt20/qFTN61/6NRN6x86ddP6h1bdtf6hU3etf+jUXesfOnXX+oe9umcfAJ26Zf1Dp25Z/9CpW9Y/tOqe9Q+dumf9Q6fuWfvQqZvWP3TqpvUPnbpp/UOnblr/0Kmb1j+06q71D526a/1Dp+5a/9Cpu9Y/NOqmfQB06p71D526Z/1Dp+5Z/9Cpe9Y/dOqe9Q+dumftQ6duWv/QqZvWP3TqpvUPnbpp/UOnblr/0Kq71j906q71D526a/1Dp+5a//DQDaK7tbcAAAQA",
+            "hash": "f23ea20e233c4aedc0b92528f0e16bb9dd3f8279e1d4a4a593745ac7dcd7a4bc"
+          },
+          "heightmaps": {
+            "WORLD_SURFACE_WG": "H4sIAAAAAAAA/2NgYLBhGMWUYNtBoJ8SM6iln1wzbCk0g9r6STWDFvpJMYMi/QCYj9L5AAQAAA==",
+            "WORLD_SURFACE": "H4sIAAAAAAAA/2NgYLBhGMWUYNtBoJ8SM6iln1wzbCk0g9r6STWDFvpJMYMi/QCYj9L5AAQAAA==",
+            "OCEAN_FLOOR_WG": "H4sIAAAAAAAA/2NgYLBhGMWUYNtBoJ8SM6iln1wzbCk0g9r6STWDFvpJMYMi/QCYj9L5AAQAAA==",
+            "OCEAN_FLOOR": "H4sIAAAAAAAA/2NgYLBhGMWUYNtBoJ8SM6iln1wzbCk0g9r6STWDFvpJMYMi/QCYj9L5AAQAAA==",
+            "MOTION_BLOCKING": "H4sIAAAAAAAA/2NgYLBhGMWUYNtBoJ8SM6iln1wzbCk0g9r6STWDFvpJMYMi/QCYj9L5AAQAAA==",
+            "MOTION_BLOCKING_NO_LEAVES": "H4sIAAAAAAAA/2NgYLBhGMWUYNtBoJ8SM6iln1wzbCk0g9r6STWDFvpJMYMi/QCYj9L5AAQAAA=="
+          }
+        },
+        {
+          "chunkX": 3,
+          "chunkZ": 0,
+          "blocks": {
+            "palette": [
+              "minecraft:air",
+              "minecraft:end_stone"
+            ],
+            "data": "H4sIAAAAAAAA/+3TwQmAQADEQO2/aRvw6W0QZiAl5Lo+c/8k4Hv11/6HTv21/6FTf+1/aNVv+x869dv+h079tv+hU7/tf+jUb/sfOvXb/odO/bb/oVO/7X/o1G/7Hzr12/6HTv22/6FTv+1/aNRf+x869df+h079tf+hU3/tf2jVb/sfOvXb/odO/bb/oVO/7X/o1G/7Hzr12/6HTv22/6FTv+1/6NRv+x869dv+h079tv+hVf/tf9irv/Y/dOqv/Q+d+mv/Q6f+2v/Qqt/2P3Tqt/0Pnfpt/0Onftv/0Knf9j906rf9D536bf9Dp37b/9Cq//Y/dOq//Q+d+m//Q6f+2/+wV3/tf+jUX/sfOvXX/odW/bb/oVO/7X/o1G/7Hzr12/6HTv22/6FTv+1/6NRv+x869dv+h1b9t/+hU//tf+jUf/sfOvXf/odO/bf/Ya/+2v/Qqb/2P3Tqr/0Prfpt/0Onftv/0Knf9j906rf9D536bf9Dp37b/9Cp3/Y/tOq//Q+d+m//Q6f+2//Qqf/2P3Tqv/0Prfpx/8NW/bX/oVN/7X/o1F/7H1r12/6HTv22/6FTv+1/6NRv+x869dv+h079tv+hU7/tf2jVf/sfOvXf/odO/bf/oVU/7n/o1I/7Hzr14/6Hrfpr/0On/tr/0Krf9j906rf9D536bf9Dp37b/9Cp3/Y/dOq3/Q+d+m3/Q6v+2//Qqf/2P3Tqv/0Prfpx/0Onftz/0Kkf9z906sf9D1v11/6HTv21/6FVv+1/6NRv+x869dv+h079tv+hU7/tf+jUb/sfOvXb/odW/bf/oVP/7X/o1H/7H1r14/6HTv24/6FTP+5/aNWf+x926q/9D536a/9Dq37b/9Cp3/Y/dOq3/Q+d+m3/Q6d+2//Qqd/2P3Tqt/0Prfpv/0On/tv/0Kof9z906sf9D536cf9Dq/7c/9CpP/c/7NRf+x869df+h1b9tv+hU7/tf+jUb/sfOvXb/odO/bb/oVO/7X9o1X/7Hzr13/6HTv23/6FVP+5/6NSP+x9a9ef+h079uf+hU3/uf9ipv/Y/dOqv/Q+t+m3/Q6d+2//Qqd/2P3Tqt/0Pnfpt/0Onftv/0Kr/9j906r/9D636cf9Dp37c/9CqP/c/dOrP/Q+t+nX/Q6d+3f+wUX/tf+jUX/sfWvXb/odO/bb/oVO/7X/o1G/7Hzr12/6HVv23/6FT/+1/6NR/+x9a9eP+h1b9uf+hU3/uf2jVr/sfOvXr/odO/br/YaP+2v/Qqb/2P7Tqt/0Pnfpt/0Onftv/0Knf9j906rf9D636b/9Dp/7b/9CqH/c/dOrH/Q+t+nP/Q6f+3P/Qql/3P3Tq1/0Prfp3/8N59df+h079tf+hVb/tf+jUb/sfOvXb/odO/bb/oVO/7X9o1X/7Hzr13/6HVv24/6FVf+5/6NSf+x9a9ev+h079uv+hVf/uf+jUv/sfzqu/9j906q/9D636bf9Dp37b/9Cp3/Y/dOq3/Q+t+m//Q6f+2//Qqf/2P7Tqx/0Prfpz/0Orft3/0Klf9z+06t/9D536d/9Dp/7d/3Be/bX/oVN/7X9o1W/7Hzr12/6HTv22/6FTv+1/aNV/+x869d/+h079t/+hVT/uf2jVn/sfWvXr/odO/br/oVX/7n/o1L/7H1r18/6HFw/QyelMAAAEAA==",
+            "hash": "50a5a27b2f01bab4fba6ba952d6dfdabeeba07d5bd19d8cf0c295724e7dc9956"
+          },
+          "heightmaps": {
+            "WORLD_SURFACE_WG": "H4sIAAAAAAAA/2NgYLBhGMWjeBSPSAwAZK7GFwAEAAA=",
+            "WORLD_SURFACE": "H4sIAAAAAAAA/2NgYLBhGMWjeBSPSAwAZK7GFwAEAAA=",
+            "OCEAN_FLOOR_WG": "H4sIAAAAAAAA/2NgYLBhGMWjeBSPSAwAZK7GFwAEAAA=",
+            "OCEAN_FLOOR": "H4sIAAAAAAAA/2NgYLBhGMWjeBSPSAwAZK7GFwAEAAA=",
+            "MOTION_BLOCKING": "H4sIAAAAAAAA/2NgYLBhGMWjeBSPSAwAZK7GFwAEAAA=",
+            "MOTION_BLOCKING_NO_LEAVES": "H4sIAAAAAAAA/2NgYLBhGMWjeBSPSAwAZK7GFwAEAAA="
+          }
+        },
+        {
+          "chunkX": 1,
+          "chunkZ": 1,
+          "blocks": {
+            "palette": [
+              "minecraft:air",
+              "minecraft:end_stone",
+              "minecraft:obsidian"
+            ],
+            "data": "H4sIAAAAAAAA/+3bMQ4DIRAEQez/P9ohMb7TtpCqJJ7QsxFrPfK58AHvqFvWP3TqlvUPrbpn/UOn7ln/0Kl71j+06qb1D526af1Dq+5a/9Cpu9Y/NOqm9Q+dumkbAJ26Z/1Dp+5Z/9Cpe9Y/dOqe9Q/z6o61D526Zf1Dp25Z/9Cqe9Y/dOqe9Q+dumf9Q6tuWv/QqZvWP7TqrvUPnbpr/UOn7lr/0KibtgHQqXvWP3TqnvUPnbpn/UOn7ln/MK/uWPvQqVvWP7TqnvUPnbpn/UOn7ln/0Kl71j+06qb1D526af1Dq+5a/9Cpu9Y/dOqu9Q+dumv9Q6Nu2gZAp+5Z/9Cpe9Y/dOqe9Q/z6o61D526Zf1Dq+5Z/9Cpe9Y/dOqe9Q+tumn9Q6duWv/QqrvWP3TqrvUPnbpr/UOn7lr/0Km71j906q5tAHTqpvUPnbpp/UOj7ln/MK/uWPvQqnvWP3TqnvUPnbpn/UOn7ln/0Kqb1j906qb1D626a/1Dp+5a/9Cpu9Y/dOqu9Q+dumv9Q6fu2gZAp25a/9Cpm9Y/dOqm9Q+z6o61D626Z/1Dp+5Z/9Cpe9Y/dOqe9Q+tumn9Q6duWv/QqrvWP3TqrvUPnbpr/UOn7lr/0Km71j906q5tAHTqpvUPnbpp/UOnblr/MK9uWfvQqXvWP3TqnvUPnbpn/UOrblr/0Kmb1j906qb1D626a/1Dp+5a/9Cpu9Y/dOqu9Q+dumv9Q6fuWv/Qqbu2AdCpm9Y/dOqm9Q/z6pa1D526Z/1Dp+5Z/9Cpe9Y/tOqm9Q+dumn9Q6vuWv/QqbvWP3TqrvUPnbpr/UOn7lr/0Km71j+06rb1D526bRsAnbpr/cOZr3f0gK2+5W4/dOqe9Q+dumf9Q6tuWv/QqZvWP3TqpvUPrbpr/UOn7lr/0Km71j+06rb1D526bf1Dp25b/9Cp29Y/dOq2bQB06q71D2fq//S3PWCrb7nbD526Z/1Dp+5Z/9Cqm9Y/dOqm9Q+dumn9Q6duWv/QqrvWP3TqrvUPnbpr/UOn7lr/0Km71j906q71D526a/1Dq27bBsCZ+j/9bQ/Y6lvu9kOn7ln/0Kl71j906p71D626af1Dp25a/9Cpm9Y/dOqm9Q+dumn9Q6duWv/QqrvWP3TqrvUPnbpr/UOn7lr/0Km7tgHQqZvWP8yrW9Y+dOqe9Q+dumf9Q6fuWf/QqXvWP7TqpvUPnbpp/UOnblr/0Kmb1j906qb1D526af1Dp25a/9Cpm9Y/tOqu9Q+dumv9Q6fu2gbAvLpl7UOn7ln/0Kl71j906p71D526Z/1Dp+5Z/9Cpe9Y/dOqe9Q+dumf9Q6tuWv/QqZvWP3TqpvUPnbpp/UOnblr/0Kmb1j+06q71D/PqnvUPnbpn/UOn7ln/0Kl71j906p71D526Z/1Dp+5Z/9Cpe9Y/dOqetQ+dumkbAK26af1Dp25a/9Cpm9Y/dOqm9Q+dumn9Q6duWv/QqHvWP3TqnvUPnbpn/UOn7ln/0Kl71j906p71D526Z/1Dp+5Z+9Cpm9Y/dOqm9Q+dumkbAJ26Z/1Dq25a/9Cpm9Y/dOqm9Q+dumn9Q6PuWf/QqXvWP3TqnvUPnbpn/UOn7ln/0Kl71j906p71D526Z+1Do+5Z/9Cqm9Y/dOqm9Q+dumkbAJ26Z/1Dp+5Z/9Cqm9Y/dOqm9Q9/+AF5GjAKAAAEAA==",
+            "hash": "cd3f0f7eb4b11c9e29f7d7a5c038075ee88986b1b145a63a897d57397cccc936"
+          },
+          "heightmaps": {
+            "WORLD_SURFACE_WG": "H4sIAAAAAAAA/2NgYLBhIB7bYsH01I/NjJGmH92MoajfZhDot6GCfmKwNYV6rSkww5qQGQBDROfdAAQAAA==",
+            "WORLD_SURFACE": "H4sIAAAAAAAA/2NgYLBhIB7bYsH01I/NjJGmH90MSvT7DJB+GyrpJ9f/yGZQop8YbE2hXmsKzLAmZAYApUTtJQAEAAA=",
+            "OCEAN_FLOOR_WG": "H4sIAAAAAAAA/2NgYLBhIB7bYsH01I/NjJGmH92MoajfZhDot6GCfmKwNYV6rSkww5qQGQBDROfdAAQAAA==",
+            "OCEAN_FLOOR": "H4sIAAAAAAAA/2NgYLBhIB7bYsH01I/NjJGmH90MSvT7DJB+GyrpJ9f/yGZQop8YbE2hXmsKzLAmZAYApUTtJQAEAAA=",
+            "MOTION_BLOCKING": "H4sIAAAAAAAA/2NgYLBhIB7bYsH01I/NjJGmH90MSvT7DJB+GyrpJ9f/yGZQop8YbE2hXmsKzLAmZAYApUTtJQAEAAA=",
+            "MOTION_BLOCKING_NO_LEAVES": "H4sIAAAAAAAA/2NgYLBhIB7bYsH01I/NjJGmH90MSvT7DJB+GyrpJ9f/yGZQop8YbE2hXmsKzLAmZAYApUTtJQAEAAA="
+          }
+        },
+        {
+          "chunkX": 2,
+          "chunkZ": 1,
+          "blocks": {
+            "palette": [
+              "minecraft:air",
+              "minecraft:end_stone",
+              "minecraft:obsidian",
+              "minecraft:bedrock",
+              "minecraft:fire{age=0, east=false, north=false, south=false, up=false, west=false}"
+            ],
+            "data": "H4sIAAAAAAAA/+3bQWpDQQwFQTvO/c+c7Gc1wbgjUQXvAoYWeOA/Hm/xHDbgfeqe9Q+dumf9Q6fuWf/QqXvWP3TqnvUPnbpn/UOn7ln70Kmb1j906qb1D526af1Dp25a/9Cqu9Y/dOqu9Q+dumv9Q6fuWv/QqJt2A6BT96x/6NQ96x86dc/6h07ds/6hU/esf+jUPesfOnXP2odO3bT+oVM3rX/o1E3rHzp10/qHVt21/qFTd61/6NRd6x86ddf6h0bdtBsAnbpn/UOn7ln/0Kl71j906p71D526Z/1Dp+5Z/9Cpe9Y+dOqm9Q+dumn9Q6duWv/QqZvWP7TqrvUPnbpr/UOn7lr/0Km71j806qbdAOjUPesfOnXP+odO3bP+oVP3rH/o1D3rHzp1z/qHTt2z9qFTN61/6NRN6x86ddP6h07dtP6hVXetf+jUXesfOnXX+odO3bX+oVN37QZAp25a/9Cpm9Y/dOqm9Q+dumn9Q6PuWf/QqXvWP3TqnrUPnbpp/UOnblr/0Kmb1j+06q71D526a/1Dp+5a/9Cpu9Y/dOqu9Q+dums3ADp10/qHTt20/qFTN61/6NRN6x86ddP6h07dtP6hUfesfejUTesfOnXT+odO3bT+oVV3rX/o1F3rHzp11/qHTt21/qFTd61/uPdlV4NN6p6mDTape5o24FT/r/cGAJ26af1Dp25a/9Cpm9Y/dOqmtQ+Numn9Q6duWv/QqrvWP3TqrvUPnbpr/UOn7lr/0Km71j906q71D/fq7+mmDTape5o22KTuadpgk7qnaQNO9bueN0Do1E3rHzp10/qHTt209qFTd61/6NRd6x86ddf6h07dtf6hU3etf+jUXesfOnXX+odO3bX+4V79Pc20wSZ1T9P2+t33n35p+H/qnqYNNql7mjbgVL/reQOETt20/qFTN61/6NRNax86ddf6h07dtf6hU3etf+jUXesfOnXX+odO3bX+oVN3rX/o1F3rH+7V39NMG2xS9zRtsEnd07TBJnVP0wac6nc9b4DQqZvWP3TqprUPnbpr/UOn7lr/0Km71j906q71D526a/1Dp+5a/9Cpu9Y/dOqu9Q+dumv9w736e5ppg03qnqYNNql7mjbgVP+v9wYAnbpp/UOnblr70Km71j906q71D526a/1Dp+5a/9Cpu9Y/dOqu9Q+dumv9Q6fuWv/QqbvWP3TqrvUPnbprNwA6ddP6h07dtP6hUzetfejUXesfOnXX+odO3bX+oVN3rX/o1F3rHzp11/qHTt21/qFTd61/6NRd6x86ddf6h07dtf6hU3etfejUbbsD0Kmb1j506q71D526a/1Dp+5a/9Cpu9Y/dOqu9Q+dumv9Q6fuWv/QqbvWP3TqrvUPnbpr/UOn7lr/0Km71j906q61D526bf1Do+7aDYBO3bT+oVM3rX9o1V3rHzp11/qHTt21/qFTd61/6NRd6x86ddf6h07dtf6hU3etf+jUXesfOnXX+odO3bX2oVO3rX/o1G3rHxp1124AdOqm9Q+dumn9Q6duWv/QqZvWP3TqpvUPrbpr/UOn7lr/0Km71j906q71D526a/1Dp+5a/9Cpu9Y+dOq29Q+dum39Q6vuW//weXXXbgB06qb1D526af1Dp25a/9Cpm9Y/dOqm9Q+dumn9Q6vuWv/QqbvWP3TqrvUPnbpr/UOn7lr70Knb1j906rb1D626b/1Dp+5b/3DhB9j2floAAAQA",
+            "hash": "f709a4e06d7681f831e1c926a369f4c27edac797dd0ee0fbf7dd519ded9df422"
+          },
+          "heightmaps": {
+            "WORLD_SURFACE_WG": "H4sIAAAAAAAA/2NgYLBlwI1tiMCj+kf1k6sXl35i9aLrJ0UfCFuTqQ+m15pCveTot6ZAP7peawD6eq39AAQAAA==",
+            "WORLD_SURFACE": "H4sIAAAAAAAA/2NgYLBlwI1tiMCj+inT74OEKdWPbgax+v0o1I/NfmL04vI/sXrRw58UfSBsTaY+mF5rCvWSo9+aAv3oeq0BIXlEgQAEAAA=",
+            "OCEAN_FLOOR_WG": "H4sIAAAAAAAA/2NgYLBlwI1tiMCj+kf1k6sXl35i9aLrJ0UfCFuTqQ+m15pCveTot6ZAP7peawD6eq39AAQAAA==",
+            "OCEAN_FLOOR": "H4sIAAAAAAAA/2NgYLBlwI1tiMCj+inT74OEKdWPbgax+n0p1I/NfmL04vI/sXrRw58UfSBsTaY+mF5rCvWSo9+aAv3oeq0BVZ1aJAAEAAA=",
+            "MOTION_BLOCKING": "H4sIAAAAAAAA/2NgYLBlwI1tiMCj+inT74OEKdWPbgax+n0p1I/NfmL04vI/sXrRw58UfSBsTaY+mF5rCvWSo9+aAv3oeq0BVZ1aJAAEAAA=",
+            "MOTION_BLOCKING_NO_LEAVES": "H4sIAAAAAAAA/2NgYLBlwI1tiMCj+inT74OEKdWPbgax+n0p1I/NfmL04vI/sXrRw58UfSBsTaY+mF5rCvWSo9+aAv3oeq0BVZ1aJAAEAAA="
+          }
+        },
+        {
+          "chunkX": 3,
+          "chunkZ": 1,
+          "blocks": {
+            "palette": [
+              "minecraft:air",
+              "minecraft:end_stone"
+            ],
+            "data": "H4sIAAAAAAAA/+3ZQW4bMRQFweT+l84FjMSROWhRrwrQStw2h/z89euY35f8gPPqrvUPrbpt/UOnblv/0Knb1j906rb1D626b/1Dp+5b/9Cp+9Y/9OrO9Q+dunP9Q6tuXf/QqnvXP3Tq3vUPrbp5/UPn6X71D636u65/6NRd6x9addv6h07dtv6hU7etf+jUbesfWnXf+odO3bf+oVU3rn9o1Z3rH1p16/qHTt26/qFV965/aNXN6x86dfP6h9aT3eofWvV3Xf/QqbvWP7TqtvUPnbpt/UOnblv/0Kr71j906r71D526b/1Dq25c/9CqO9c/tOrW9Q+tunf9Q6fuXf/QqpvXP7Tq7rUPnSd71T+06m+7PQA6ddf6h1bdtv6hU7etf+jUbesfWnXf+odO3bf+oVU3rn/o1I3rH1p15/qHVt26/qFV965/aNXNax9adfv6h86Tzeof3t9TneofWvXZ3h4Anbpr/UOrblv/0Knb1j906rb1D626b/1Dp+5b/9CqG9c/dOrG9Q+tunP9Q6tuXfvQqpvXP7Tq7vUPrbp9/UPrqVb1D3d4olH9Q6s+29sDoFN3rX9o1W3rHzp12/qHTt22/qFV961/aNWN6x86deP6h07duP6hV7eufWjVzesfWnX3+odW3b7+ofWTZvUP93uiU/3DPZ5oVP/Qqe/2zgDQqbvWP7TqtvUPnbpt/UOr7lv/0Kn71j+06sb1D526ce1Dp+5c/9Cre9c/tOrm9Q+tunv9Q0//sO2nrX71v/7hHqcb1T/c44lG9Q+d+m7vDACdumv9Q6tuW//QqdvWP7TqvvUPnbpv7UOr7lz/0Kk71z+06tb1D626d/1Dr+5e/9Cq29c/tF5tVv/wGZ7oVP9wj9ON6h/ucrpP/UOnnu05A0Cn7lr/0Krb1j906rb1D626b+1Dq+5c/9CpO9c/dOrO9Q+tunX9Q6vuXf/Qq7vXP7Tq9vUPvVd71T98htON6h/ucrpP/cM99A+fo57tuQNAp+5a/9Cq29Y+tOrG9Q+tunP9Q6fuXP/QqlvXP7Tq3vUPnbp3/UOv7l7/0Krb1z/09A/bXm1V//AZTjaqf7jL6T71D3c52ab+oVPO9cwAoFe3rX1o1Y3rH1p15/qHVt26/qFTt65/aNW96x9adfP6h1bdvf6hVbevf+jpH7bpH7a92uhX6/QP9znVp/7hPifb1D/c51SX+odOOdd3/ode3bf+oVU3rn9o1Z3rH1p16/qHXt28/qFVd69/aNXt6x86dfv6h57+YZv+YZv+YdupPvUPdzrVpv7hPqe61D9s0z80qpm++R+8j7px/UOr7lz/0Kpb1z+06t71D726e/1Dq25f/9DSP2zTP2zTP2zTP2z7bqv/Wqd/uNOJNvUP2/QP2/QPu7QPnepdz/0f3kPduP6hVXeuf+jVvesfWnXz+ode3b7+oaV/2KZ/2KZ/2KZ/2KZ/2PbdRv+2Tv+wTf+wTfuwS/+wS//QKd70zP/hfdSN6x96dev6h17dvP6hVXevf+jpH9A/7NI/bNM/7NI/bNM/bPvfLr9ar33Ypn/Ypn/YpX/Ypn9oFG965v/wXurO9Q+tunX9Q69uXv/wHvQP2/QP2/QP2/QPu7QP2/QP2040rX/Ypn/Ypn/YpX/Ypn/Ypn/4hj8Cao4lAAAEAA==",
+            "hash": "ee5bbbfb2432508fccbf05ec11d6b5c2ebae137595c91e2d7e1cb1aa7f57a299"
+          },
+          "heightmaps": {
+            "WORLD_SURFACE_WG": "H4sIAAAAAAAA/9XLsQ0AIAgEwJ8L3H8uG2OIEZSnMBZXHoCGP+nAvuxfX+Z79/SjF/2b5/3M1cKzn72vSeEJ8WWDOVMHav9ylAAEAAA=",
+            "WORLD_SURFACE": "H4sIAAAAAAAA/9XLsQ0AIAgEwJ8L3H8uG2OIEZSnMBZXHoCGP+nAvuxfX+Z79/SjF/2b5/3M1cKzn72vSeEJ8WWDOVMHav9ylAAEAAA=",
+            "OCEAN_FLOOR_WG": "H4sIAAAAAAAA/9XLsQ0AIAgEwJ8L3H8uG2OIEZSnMBZXHoCGP+nAvuxfX+Z79/SjF/2b5/3M1cKzn72vSeEJ8WWDOVMHav9ylAAEAAA=",
+            "OCEAN_FLOOR": "H4sIAAAAAAAA/9XLsQ0AIAgEwJ8L3H8uG2OIEZSnMBZXHoCGP+nAvuxfX+Z79/SjF/2b5/3M1cKzn72vSeEJ8WWDOVMHav9ylAAEAAA=",
+            "MOTION_BLOCKING": "H4sIAAAAAAAA/9XLsQ0AIAgEwJ8L3H8uG2OIEZSnMBZXHoCGP+nAvuxfX+Z79/SjF/2b5/3M1cKzn72vSeEJ8WWDOVMHav9ylAAEAAA=",
+            "MOTION_BLOCKING_NO_LEAVES": "H4sIAAAAAAAA/9XLsQ0AIAgEwJ8L3H8uG2OIEZSnMBZXHoCGP+nAvuxfX+Z79/SjF/2b5/3M1cKzn72vSeEJ8WWDOVMHav9ylAAEAAA="
+          }
+        },
+        {
+          "chunkX": 1,
+          "chunkZ": 2,
+          "blocks": {
+            "palette": [
+              "minecraft:air",
+              "minecraft:end_stone"
+            ],
+            "data": "H4sIAAAAAAAA/+3UgQmAQAADsXf/pd1BpYeQQEe4nvPa9bMB36l71j906p71D526Z/1Dp+5Z/9Cpe9Y/NOqWtQ+dumf9Q6fuWf/QqXvWP3TqnvUPrbpp/UOnbtoHQKfuWf/QqXvWP7TqpvUPjbpn/UOn7ln/0Kl71j906p71D526Z/1Dp+5Z+9Coe9Y/dOqe9Q+dumf9Q6fuWf/QqpvWP3TqpvUPnbpp/UOnblr/0Kmb1j+06q59ADTqnvUPnbpn/UOn7ln/0Kl71j906p61D526af1Do+5Z/9Cpe9Y/dOqe9Q+dumf9Q6tuWv/QqZvWP3TqpvUPnbpp/UOnblr/0Kq71j806qZ9AHTqnvUPnbpn/UOn7ln70Kmb1j806p71D526Z/1Dp+5Z/9Cpe9Y/dOqe9Q+tumn9Q6duWv/QqZvWP3TqpvUPnbpp/UOr7lr/0Kib9gHQqXvWP3TqnrUPnbpp/UOnblr/0Kh71j906p71D526Z/1Dp+5Z/9Cpe9Y/tOqm9Q+dumn9Q6duWv/QqZvWP3TqpvUPrbpr/UOjbtoHQKfuWfvQqZvWP3TqpvUPjbpn/UOn7ln/0Kl71j906p71D526Z/1Dp+5Z/9Cqm9Y/dOqm9Q+dumn9Q6duWv/QqZvWPrTqtvUPe3XTPgA6dc/6h07ds/6hU/esf+jUPesfOnXP+odO3bP+oVP3rH/o1D3rH1p10/qHTt209qFTd61/6NRd6x86ddf6h07dtf6hVbetf9irm/YB0Kl71j906p71D526Z/1Dp+5Z/9Cpe9Y/dOqe9Q+dumf9Q6fuWf/QqpvWPnTqrvUPnbpr/UOn7lr/0Km71j906q71D626bf3DXt20D4BO3bP+oVP3rH/o1D3rHzp1z/qHTt2z/qFT96x/6NQ96x86dc/ah1bdtf6hU3etf+jUXesfOnXX+odO3bX+oVN3rX9o1W3rH/bqpn0AdOqe9Q+dumf9Q6fuWf/QqXvWP3TqnvUPnbpn/UOn7ln70Kmb1j+06q71D526a/1Dp+5a/9Cpu9Y/dOqu9Q+dumv9Q6tuW/+wVzftA6BT96x/6NQ96x86dc/6h07ds/6hU/esf+jUPWsfOnXT+odW3bX+oVN3rX/o1F3rHzp11/qHTt21/qFTd61/6NRd6x9addvah726az8Anbpn/UOn7ln/0Kl71j906p71D526Z+1Dp25a/9Cqu9Y/dOqu9Q+dumv9Q6fuWv/QqbvWP3TqrvUPnbpr/UOrblv70Kn71j/s1V37AejUPesfOnXP+odO3bP+oVP3rH/o1D1rH1p11/qHTt21/qFTd61/6NRd6x86ddf6h07dtf6hU3etf+jUXesfWnXb2odO3bf+Ya/u2g9Ap+5Z/9Cpe9Y/dOqe9Q+dumftQ6duWv/QqrvWP3TqrvUPnbpr/UOn7lr/0Km71j906q71D526a/1Dp+5a+9Cq+9Y/dOq+9Q97ddd+ADp1z/qHTt2z/qFT96x/6NQ9ax9addf6h07dtf6hU3etf+jUXesfOnXX+odO3bX+oVN3rX/o1F1rH1p13/qHTt23/qFT961/2Ku79gPQqXvWP3TqnvUPnbpn7UOr7lr/0Km71j906q71D526a/1Dp+5a/9Cpu9Y/dOqu9Q+dumvtQ6duW//QqvvWP3TqvvUPnbpv/cMDNzkbvkMAAAQA",
+            "hash": "fdd6cbdc5d770f6c3ef63f3a12f359a0c6b67ac80b63f8ad5dcd4c654c85e988"
+          },
+          "heightmaps": {
+            "WORLD_SURFACE_WG": "H4sIAAAAAAAA/7XMsREAIAhD0ayFuP9cNlYeYDBn8bu8AJiI86Rsz1jmi7XRR9e6aF2wY9fdnymW8ZW9+ZutPGNNtD98x754K3zX2gKgyWAPAAQAAA==",
+            "WORLD_SURFACE": "H4sIAAAAAAAA/7XMsREAIAhD0ayFuP9cNlYeYDBn8bu8AJiI86Rsz1jmi7XRR9e6aF2wY9fdnymW8ZW9+ZutPGNNtD98x754K3zX2gKgyWAPAAQAAA==",
+            "OCEAN_FLOOR_WG": "H4sIAAAAAAAA/7XMsREAIAhD0ayFuP9cNlYeYDBn8bu8AJiI86Rsz1jmi7XRR9e6aF2wY9fdnymW8ZW9+ZutPGNNtD98x754K3zX2gKgyWAPAAQAAA==",
+            "OCEAN_FLOOR": "H4sIAAAAAAAA/7XMsREAIAhD0ayFuP9cNlYeYDBn8bu8AJiI86Rsz1jmi7XRR9e6aF2wY9fdnymW8ZW9+ZutPGNNtD98x754K3zX2gKgyWAPAAQAAA==",
+            "MOTION_BLOCKING": "H4sIAAAAAAAA/7XMsREAIAhD0ayFuP9cNlYeYDBn8bu8AJiI86Rsz1jmi7XRR9e6aF2wY9fdnymW8ZW9+ZutPGNNtD98x754K3zX2gKgyWAPAAQAAA==",
+            "MOTION_BLOCKING_NO_LEAVES": "H4sIAAAAAAAA/7XMsREAIAhD0ayFuP9cNlYeYDBn8bu8AJiI86Rsz1jmi7XRR9e6aF2wY9fdnymW8ZW9+ZutPGNNtD98x754K3zX2gKgyWAPAAQAAA=="
+          }
+        },
+        {
+          "chunkX": 2,
+          "chunkZ": 2,
+          "blocks": {
+            "palette": [
+              "minecraft:air",
+              "minecraft:end_stone"
+            ],
+            "data": "H4sIAAAAAAAA/+3XgY0QMQwAQei/aSpAQlzuNn7PSClh7fjXryN+D3rAWXXT+odO3bT+oVM3rX/o1E3rHzp10/qHTt20/qFVd61/6NRd6x86ddf6h07dtfahU7etf+jUbesfOnXb+odW3bf+oVP3rX/4Xt21GQCdumn9Q6duWv/QqZvWP3TqpvUPnbpp7UOn7lr/0Krb1j906rb1D526bf1Dp25b/9Cq+9Y/dOq+9Q+dum/9Q6tuXP/QqRvXP3yr7lr/0Km71j906q71D526a/1Dp+5a/9Cpu9Y/dOqu9Q+tum39Q6duW//QqdvWP7TqvvUPnbpv/UOrblz/0Kkb1z+06s71D626df3DN+qu9Q+dumv9Q6fuWv/QqbvWP3TqrvUPnbpr/UOn7lr/0Krb1j906rb1D526bf1Dq+5b/9CqG9c/tOrO9Q+tunX9Q6vuXf/Qq7vXP7yn7lr/0Km71j906q71D526a/1Dp+5a/9Cpu9Y/dOqu9Q+tum39Q6duW//QqdvWP7TqvvUPrbpx/UOvbl3/0Kp71z/coW5f/9DTP/ws9V7XPnTqtvUPnbpt/UOnbtsMgE7dtf6hU3etf+jUXesfWnXb+odO3bb+oVX3rX9o1Y3rH1p15/qHXt27/uEO2gf0D7vpH36O+m+vf+jUbesfOnXb+odO3bb+oVO3rX/o1G3rHzp12/qHVt23/qFT920GQKvuW/vQqjvXP/Tq3vUPd6jb1z/cQf+wm/5hN/3Dz1Df9vqHTt22/qFTt61/6NRt6x86ddv6h07dtv6hU7etf2jVfesfOnXf+odW3bj+oVe3rn/o1c3rH+6hf0D/sJv+YS/9w89Q3vX6h1bdtv6hU7etf+jUbesfOnXb+odO3bb+oVO3rX9o1X3rHzp13/qHVt24/qFXt65/uEfdvv7hHvqH3fQPe+kfdtM/zFfc89qHO9R96x86dd9mAHTqtvUPnbpt/UOnblv/0Kr71j906r71D526b/1Dq25c/3CHunf9w130D+gfdtM/7KZ/2Ev/MF9xz2sf7lD3rX/o1H3rHzp13/qHTt23/qFT961/aNWNmwHQqfvWP3TqvvUPvbpz/cMd6ub1D/fRP+ymf9hN/7CX/mEv/cN8X9/y2od71H3rHzp13/qHTt23/qFT961/aNWN6x86deP6h07duP6hUzeuf+jVresf7vG3/vQPu+kf9tI/7KV/2Ev/sJf+Yb6vOtY/3KfuW//QqfvWP3TqvvUPrbpx/UOnblz/0Kkb1z90nnSpf5jtaZP6h/n+t0P9w07+/7CX/mGnt9vXP9xL/7CX/mEv/cNsXzSsf7hT3bf+oVP3rX/o1H3rH1p14/qHzpM29Q+zPW1S/zDXiR71DzOdaFH/MNuT/vQPe+kfdnqrff3D/fQP+7zZvf7hbvqHvfQPs33RsP7hTnXf+odO3bf+oVU3rn/oPGlT/zDb0yb1D3Od6PF06/qHb5zYw3Y9zHWiS/3DXvqHnfz/Ya8T/ZsJMJP+Yae32tc/3OvN7vUPd9M/zPZFw/qHO9V96x9adeP6h86TNvUPs51o8o3W9Q/vO7GP7XqY6VSb+od5TnWpf5jpRJPah73sf9hL/7CX/mGnp+3rH+Y60b85APOcbN8MgBne6N4MgH/wB615Nn8AAAQA",
+            "hash": "ee2daddfab9d75b923be0f6b48ffcf95de5d105b26d1a387bf1cb872bd8e0779"
+          },
+          "heightmaps": {
+            "WORLD_SURFACE_WG": "H4sIAAAAAAAA/2NgYLBhIA5b48CkqB2O2AoJk6OHECZVPb2xJRRTqh8dU6p/OGATNEyOPmMs5pgBsTkQWwAAwx+3AQAEAAA=",
+            "WORLD_SURFACE": "H4sIAAAAAAAA/2NgYLBhIA5b48CkqB2O2AoJk6OHECZVPb2xJRRTqh8dU6p/OGATNEyOPmMs5pgBsTkQWwAAwx+3AQAEAAA=",
+            "OCEAN_FLOOR_WG": "H4sIAAAAAAAA/2NgYLBhIA5b48CkqB2O2AoJk6OHECZVPb2xJRRTqh8dU6p/OGATNEyOPmMs5pgBsTkQWwAAwx+3AQAEAAA=",
+            "OCEAN_FLOOR": "H4sIAAAAAAAA/2NgYLBhIA5b48CkqB2O2AoJk6OHECZVPb2xJRRTqh8dU6p/OGATNEyOPmMs5pgBsTkQWwAAwx+3AQAEAAA=",
+            "MOTION_BLOCKING": "H4sIAAAAAAAA/2NgYLBhIA5b48CkqB2O2AoJk6OHECZVPb2xJRRTqh8dU6p/OGATNEyOPmMs5pgBsTkQWwAAwx+3AQAEAAA=",
+            "MOTION_BLOCKING_NO_LEAVES": "H4sIAAAAAAAA/2NgYLBhIA5b48CkqB2O2AoJk6OHECZVPb2xJRRTqh8dU6p/OGATNEyOPmMs5pgBsTkQWwAAwx+3AQAEAAA="
+          }
+        },
+        {
+          "chunkX": 3,
+          "chunkZ": 2,
+          "blocks": {
+            "palette": [
+              "minecraft:air",
+              "minecraft:end_stone"
+            ],
+            "data": "H4sIAAAAAAAA/+3bQW7jMBQFwcz9Lz3QIsAsEkkLDfnlrgJ8hDZhP/Lr61F/hn+A/2935/qH/Xb3rn/Yb3f3+ocZ9A9t+oc2/UOX9qFN/9D1VNf6h3d66jzXP7TpH7r0D236hzb9Q5f+YZ+Vu747ADDT7t71D/vt7l7/MIP+oU3/0KZ/6NI+tOkfuvQPbfoHzlw1rX9o0z+06R/a9A9t+ocu/cN+K/d9GwDMtbt9/cN++oc2/UOb9qFL/9Clf2jTP3TpH9r0D1w561r/0KZ/aNM/tOkf2vQPXfqHeVbu/b4DYCb9Q5f2oU3/0KV/6NI/tOkfuvQPXfqHNv0DV/QP/ET/0KZ/aNM/tOkf2vQPc63c/fUPs+gf2vQPXfqHNv1Dl/6hS//QpX9o0z906R+4on/goH/gm/4B/UOb/qFN/zDbqt1P/zCP/qFL/9Cmf+jSP3TpH7r0D136hzb9Q5f+gTv0D236Bw76B/QP6B/QP8y2avfTP8yjf2jTP3TpH7r0D136hzb9Q5f+oUv/0PVbo/oH/qV/aNM/oH9o0z+06R+69A/vtGr71z/Mo3/o0j906R+69A9t+ocu/UOX/qFL/8AZ/QP6hzb9Q5v+oU3/0KZ/6NI/vNeq7V//MI/+oUv/0KV/aNM/dOkfuvQPXfqHLv0DZ/QP6B/a9A9t+oc2/UOX/qFN//Beq7Z//cM8+oc2/UOX/qFL/9Clfej6qVX9Awf9Q5v+Af0D+oc2/UOX/qFN/9B11rr+4bOdnfP6h9mevufnNwC8i/6hS/vQpX/oOutU/4D+oU3/0KZ/aNM/oH9o0z90XbWuf/hsV+e8/uFzOeOhS//QpX14p6fu9/v/H95J/9Clf+i606j+oU3/0KZ/aNM/cNA/8E3zAAAAAAAAALCH93/QpX/outOp/qFN/9Cmf0D7AAAAAAAAAAAAALCH97/Qdadb/UOb/qFN+8BB8wAAAAAAAAAAAAAAsI73/9B1p1X9A7qHNr0DAAAAAAAAAAAAAADAOnfe8Hn/C5/pbqO6hzbNAwAAAAAAAAAAAAAAAJDwF/nuxroAAAQA",
+            "hash": "42bebdc5984bdbaa73ed239f00ca664174ab56c7b15fb57cea3d0db8580d4c04"
+          },
+          "heightmaps": {
+            "WORLD_SURFACE_WG": "H4sIAAAAAAAA/2NgYLBmwI2tiMCU6MWmn1h96PpJ1TeKaYctScDk6DGCYkMi1Jox4AfY9FgQ0INLP0ifKQl6kfWbA7ExiXph+kF6TcjQywAAtEFSmgAEAAA=",
+            "WORLD_SURFACE": "H4sIAAAAAAAA/2NgYLBmwI2tiMCU6MWmn1h96PpJ1TeKaYctScDk6DGCYkMi1Jox4AfY9FgQ0INLP0ifKQl6kfWbA7ExiXph+kF6TcjQywAAtEFSmgAEAAA=",
+            "OCEAN_FLOOR_WG": "H4sIAAAAAAAA/2NgYLBmwI2tiMCU6MWmn1h96PpJ1TeKaYctScDk6DGCYkMi1Jox4AfY9FgQ0INLP0ifKQl6kfWbA7ExiXph+kF6TcjQywAAtEFSmgAEAAA=",
+            "OCEAN_FLOOR": "H4sIAAAAAAAA/2NgYLBmwI2tiMCU6MWmn1h96PpJ1TeKaYctScDk6DGCYkMi1Jox4AfY9FgQ0INLP0ifKQl6kfWbA7ExiXph+kF6TcjQywAAtEFSmgAEAAA=",
+            "MOTION_BLOCKING": "H4sIAAAAAAAA/2NgYLBmwI2tiMCU6MWmn1h96PpJ1TeKaYctScDk6DGCYkMi1Jox4AfY9FgQ0INLP0ifKQl6kfWbA7ExiXph+kF6TcjQywAAtEFSmgAEAAA=",
+            "MOTION_BLOCKING_NO_LEAVES": "H4sIAAAAAAAA/2NgYLBmwI2tiMCU6MWmn1h96PpJ1TeKaYctScDk6DGCYkMi1Jox4AfY9FgQ0INLP0ifKQl6kfWbA7ExiXph+kF6TcjQywAAtEFSmgAEAAA="
+          }
+        }
+      ],
+      "marks": [],
+      "blockEntities": [],
+      "entities": [
+        [
+          33.5,
+          77.0,
+          24.5,
+          315.031,
+          0.0,
+          "minecraft:end_crystal",
+          {
+            "Invulnerable": 0,
+            "ShowBottom": 1
+          }
+        ]
+      ]
+    },
+    {
       "name": "second_end_spike_guarded",
       "seed": 987654321,
       "dimension": "minecraft:the_end",
