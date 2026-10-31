@@ -6,6 +6,8 @@ namespace Obsidian.WorldData.Generators.Density;
 /// </summary>
 internal sealed class ConstantFunction(float value) : DensityFunction
 {
+    public override bool IsFlat => true;
+
     public float Value { get; } = value;
 
     public override float Sample(int x, int y, int z) => this.Value;
@@ -23,6 +25,8 @@ internal sealed class ConstantFunction(float value) : DensityFunction
 /// </remarks>
 internal sealed class ContextFunction(string name, float defaultValue) : DensityFunction
 {
+    public override bool IsFlat => true;
+
     public string Name { get; } = name;
 
     public override float Sample(int x, int y, int z) => defaultValue;
@@ -50,7 +54,12 @@ internal sealed class NoiseFunction(
     {
     }
 
+    // y times a zero scale is zero or negative zero, which noise reads alike.
+    public override bool IsFlat => yScale == 0.0 && IsFlatShift(shiftX) && IsFlatShift(shiftY) && IsFlatShift(shiftZ);
+
     private bool Shifted => shiftX is not null || shiftY is not null || shiftZ is not null;
+
+    private static bool IsFlatShift(DensityFunction? shift) => shift?.IsFlat ?? true;
 
     public override float Sample(int x, int y, int z)
     {
@@ -135,6 +144,8 @@ internal sealed class ShiftFunction(NoiseStack noise, ShiftKind kind) : DensityF
 {
     // shift and shift_a: the noise at a quarter of the coordinates (y fixed at 0 for shift_a). Unused by shift_b.
     private readonly NoiseFunction quarter = new(noise, 0.25, kind == ShiftKind.A ? 0.0 : 0.25);
+
+    public override bool IsFlat => kind != ShiftKind.All;
 
     public override float Sample(int x, int y, int z)
     {
@@ -235,6 +246,8 @@ internal sealed class GradientFunction : DensityFunction
         this.fromValue = fromValue;
         this.slope = (toValue - fromValue) / this.coordinateRange;
     }
+
+    public override bool IsFlat => this.axis != DensityAxis.Y;
 
     public override float Sample(int x, int y, int z)
     {

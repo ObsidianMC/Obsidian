@@ -19,6 +19,8 @@ internal enum UnaryOperation
 /// <summary>A one-input arithmetic function, in float like vanilla's UnaryFunction samplers.</summary>
 internal sealed class UnaryFunction(UnaryOperation operation, DensityFunction input) : DensityFunction
 {
+    public override bool IsFlat => input.IsFlat;
+
     public override float Sample(int x, int y, int z) => this.Apply(input.Sample(x, y, z));
 
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
@@ -78,6 +80,8 @@ internal enum RoundingMode
 internal sealed class RoundFunction(RoundingMode mode, DensityFunction input, DensityFunction multiple)
     : DensityFunction
 {
+    public override bool IsFlat => input.IsFlat && multiple.IsFlat;
+
     public override float Sample(int x, int y, int z)
     {
         var value = input.Sample(x, y, z);
@@ -171,6 +175,8 @@ internal abstract class BinaryFunction : DensityFunction
     /// <summary>Both operands are functions.</summary>
     private sealed class Both(BinaryOperation operation, DensityFunction left, DensityFunction right) : BinaryFunction
     {
+        public override bool IsFlat => left.IsFlat && right.IsFlat;
+
         public override float Sample(int x, int y, int z)
         {
             var leftValue = left.Sample(x, y, z);
@@ -207,6 +213,8 @@ internal abstract class BinaryFunction : DensityFunction
     private sealed class WithConstant(BinaryOperation operation, DensityFunction input, float constant)
         : BinaryFunction
     {
+        public override bool IsFlat => input.IsFlat;
+
         public override float Sample(int x, int y, int z)
         {
             var value = input.Sample(x, y, z);
@@ -233,6 +241,8 @@ internal abstract class BinaryFunction : DensityFunction
     private sealed class ConstantLeft(BinaryOperation operation, float constant, DensityFunction input)
         : BinaryFunction
     {
+        public override bool IsFlat => input.IsFlat;
+
         public override float Sample(int x, int y, int z) => this.Apply(input.Sample(x, y, z));
 
         public override void SampleVolume(Span<float> output, in DensityVolume volume)
@@ -278,6 +288,8 @@ internal sealed class PowFunction(DensityFunction baseFunction, DensityFunction 
 
         return CreateWithConstantExponent(baseFunction, constantExponent.Value);
     }
+
+    public override bool IsFlat => baseFunction.IsFlat && exponent.IsFlat;
 
     public override float Sample(int x, int y, int z)
     {

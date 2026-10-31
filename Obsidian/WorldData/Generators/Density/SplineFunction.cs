@@ -164,6 +164,8 @@ internal sealed class SplineFunction : DensityFunction
         this.coordinates = [.. coordinates];
     }
 
+    public override bool IsFlat => this.coordinates.All(coordinate => coordinate.IsFlat);
+
     public override float Sample(int x, int y, int z)
     {
         var count = this.coordinates.Length;

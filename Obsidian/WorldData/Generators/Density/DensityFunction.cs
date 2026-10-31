@@ -15,13 +15,19 @@ namespace Obsidian.WorldData.Generators.Density;
 /// </para>
 /// <para>
 /// <see cref="DensityCompiler"/> builds the functions from JSON the way vanilla's compiler does: references are
-/// inlined, caches are transparent, and constant operands pick the same specialised arithmetic vanilla picks.
+/// inlined, caches only remember values (<see cref="CacheFunction"/>), and constant operands pick the same specialised arithmetic vanilla picks.
 /// </para>
 /// </remarks>
 internal abstract class DensityFunction
 {
     /// <summary>The value at a block position.</summary>
     public abstract float Sample(int x, int y, int z);
+
+    /// <summary>
+    /// Whether the value is the same at every y of a column, at a point and over a volume, so that a
+    /// <see cref="CacheFunction"/> can sample each column once. A function that can't tell says no.
+    /// </summary>
+    public virtual bool IsFlat => false;
 
     /// <summary>Writes the value at each point of <paramref name="volume"/> to <paramref name="output"/>.</summary>
     public virtual void SampleVolume(Span<float> output, in DensityVolume volume)

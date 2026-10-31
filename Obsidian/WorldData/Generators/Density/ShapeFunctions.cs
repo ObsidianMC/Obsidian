@@ -7,6 +7,8 @@ namespace Obsidian.WorldData.Generators.Density;
 internal sealed class LerpFunction(DensityFunction alpha, DensityFunction first, DensityFunction second)
     : DensityFunction
 {
+    public override bool IsFlat => alpha.IsFlat && first.IsFlat && second.IsFlat;
+
     public override float Sample(int x, int y, int z)
     {
         var amount = alpha.Sample(x, y, z);
@@ -46,6 +48,8 @@ internal sealed class LerpFunction(DensityFunction alpha, DensityFunction first,
 /// <summary><c>clamp</c>: <c>input</c> clamped to <c>min</c> and <c>max</c>.</summary>
 internal sealed class ClampFunction(DensityFunction input, float min, float max) : DensityFunction
 {
+    public override bool IsFlat => input.IsFlat;
+
     public override float Sample(int x, int y, int z) => FloatMath.Clamp(input.Sample(x, y, z), min, max);
 
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
@@ -68,6 +72,8 @@ internal sealed class RangeChoiceFunction(
     DensityFunction whenInRange,
     DensityFunction whenOutOfRange) : DensityFunction
 {
+    public override bool IsFlat => input.IsFlat && whenInRange.IsFlat && whenOutOfRange.IsFlat;
+
     public override float Sample(int x, int y, int z)
     {
         var value = input.Sample(x, y, z);
@@ -101,6 +107,8 @@ internal sealed class IntervalSelectFunction(
     ImmutableArray<float> thresholds,
     ImmutableArray<DensityFunction> functions) : DensityFunction
 {
+    public override bool IsFlat => input.IsFlat && functions.All(function => function.IsFlat);
+
     public override float Sample(int x, int y, int z)
     {
         var value = input.Sample(x, y, z);
@@ -383,6 +391,8 @@ internal sealed class SliceFunction(DensityFunction input, int? fixedX, int? fix
         };
     }
 
+    public override bool IsFlat => fixedY is not null || input.IsFlat;
+
     public override float Sample(int x, int y, int z) => input.Sample(fixedX ?? x, fixedY ?? y, fixedZ ?? z);
 
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
@@ -435,6 +445,9 @@ internal sealed class FindTopSurfaceFunction(
     int lowerBound,
     int cellHeight) : DensityFunction
 {
+    // Both paths find one surface per column.
+    public override bool IsFlat => true;
+
     public override float Sample(int x, int y, int z) => this.FindSurface(x, z, upperBound.Sample(x, 0, z));
 
     // Over a volume vanilla samples the bounds as a volume too, which can round differently from a point.
