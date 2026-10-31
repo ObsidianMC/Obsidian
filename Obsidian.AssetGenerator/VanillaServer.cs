@@ -25,6 +25,10 @@ internal sealed record VanillaServer(
     // need Java 25 (the LTS release with both).
     private const int RequiredJavaVersion = 25;
 
+    // Waits before each retry of a download. A dropped connection or a truncated download is usually gone a few
+    // seconds later.
+    private static readonly TimeSpan[] DownloadRetryDelays = [TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5)];
+
     /// <summary>The data generators' output (<c>data</c> and <c>reports</c>).</summary>
     public string GeneratedDirectory => Path.Combine(Directory, "generated");
 
@@ -60,8 +64,7 @@ internal sealed record VanillaServer(
     private static async Task DownloadAndGenerateAsync(HttpClient httpClient, string version, string directory,
         string jarPath, string marker)
     {
-        var downloads = await GetDownloadsAsync(httpClient, version);
-        await DownloadAsync(httpClient, downloads.GetProperty("server"), jarPath);
+        await DownloadServerAsync(httpClient, version, jarPath);
 
         var generated = Path.Combine(directory, "generated");
         if (System.IO.Directory.Exists(generated))
@@ -192,6 +195,36 @@ internal sealed record VanillaServer(
             throw new InvalidOperationException(
                 $"Generating Obsidian's assets needs Java {RequiredJavaVersion} or newer, but {JavaPath} is {(found.Length > 0 ? found : "older")}.");
         }
+    }
+
+    // Downloads the server jar, retrying network errors, timeouts and a download that doesn't match its hash a couple
+    // of times before giving up.
+    private static async Task DownloadServerAsync(HttpClient httpClient, string version, string jarPath)
+    {
+        foreach (var delay in DownloadRetryDelays)
+        {
+            try
+            {
+                await DownloadServerOnceAsync(httpClient, version, jarPath);
+                return;
+            }
+            catch (Exception exception) when (exception is HttpRequestException
+                or IOException
+                or InvalidDataException
+                or TaskCanceledException)
+            {
+                Console.WriteLine($"Downloading the {version} server jar failed ({exception.Message}); retrying.");
+                await Task.Delay(delay);
+            }
+        }
+
+        await DownloadServerOnceAsync(httpClient, version, jarPath);
+    }
+
+    private static async Task DownloadServerOnceAsync(HttpClient httpClient, string version, string jarPath)
+    {
+        var downloads = await GetDownloadsAsync(httpClient, version);
+        await DownloadAsync(httpClient, downloads.GetProperty("server"), jarPath);
     }
 
     private static async Task<JsonElement> GetDownloadsAsync(HttpClient httpClient, string version)
