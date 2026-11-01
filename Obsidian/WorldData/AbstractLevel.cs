@@ -1114,7 +1114,13 @@ public abstract partial class AbstractLevel : ILevel
                 BlockAccessUnloaded = this.Fluids.Untrack,
                 BlockEntityUnloaded = this.OnBlockEntityUnloaded,
                 EntitiesLoaded = this.QueueEntitySpawn,
-                SaveStructureStarts = this.Generator is IStructureStartStorage storage ? storage.SaveStructureStarts : null
+                SaveStructureStarts = this.Generator is IStructureStartStorage storage ? storage.SaveStructureStarts : null,
+                StructureChunkLoaded = this.Generator is IStructureStartStorage loading
+                    ? loading.TrackStructureChunk
+                    : null,
+                StructureChunkUnloaded = this.Generator is IStructureStartStorage unloading
+                    ? unloading.UntrackStructureChunk
+                    : null
             };
 
             if (this.Regions.TryAdd(value, region))

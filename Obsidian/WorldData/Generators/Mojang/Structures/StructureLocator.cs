@@ -201,6 +201,7 @@ internal sealed class StructureLocator(StructureManager structures)
         if (!placement.IsStructureChunk(structures, chunkX, chunkZ))
             return null;
 
+        using var lease = structures.StartCache.BeginGeneration(chunkX, chunkZ);
         foreach (var start in structures.GetStarts(chunkX, chunkZ))
         {
             if (!placed.Contains(start.Structure))

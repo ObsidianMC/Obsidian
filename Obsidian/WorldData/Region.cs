@@ -122,6 +122,11 @@ public partial class Region : IRegion
     /// </summary>
     internal Func<int, int, NbtCompound?, NbtCompound?>? SaveStructureStarts { get; init; }
 
+    // Structure lifetime includes unfinished chunks and lasts through the final committed save.
+    internal Action<IChunk>? StructureChunkLoaded { get; init; }
+
+    internal Action<IChunk>? StructureChunkUnloaded { get; init; }
+
     /// <summary>
     /// The lock fluid ticks run under (the level's <see cref="Fluids.LevelFluids.TickLock"/>), held while a chunk is
     /// serialized so its blocks and fluid ticks are saved as of the same moment.
@@ -438,6 +443,7 @@ public partial class Region : IRegion
             this.DetachLighting(chunk);
             loadedChunks[x, z] = null;
             this.retiredBlockAccess.Remove(chunk);
+            this.StructureChunkUnloaded?.Invoke(chunk);
         }
     }
 
@@ -654,10 +660,13 @@ public partial class Region : IRegion
         if (this.lightingRetired)
             return;
 
+        // Pin the replacement before releasing the previous instance at this position.
+        this.StructureChunkLoaded?.Invoke(chunk);
         if (this.loadedChunks[x, z] is IChunk previous && !ReferenceEquals(previous, chunk))
         {
             this.DetachLighting(previous);
             this.retiredBlockAccess.Remove(previous);
+            this.StructureChunkUnloaded?.Invoke(previous);
         }
 
         if (chunk is Chunk concrete)
@@ -1606,6 +1615,9 @@ public partial class Region : IRegion
 
         await regionFile.DisposeAsync();
         await this.entityRegionFile.DisposeAsync();
+
+        foreach (var chunk in this.loadedChunks)
+            this.StructureChunkUnloaded?.Invoke(chunk);
     }
 
     /// <summary>

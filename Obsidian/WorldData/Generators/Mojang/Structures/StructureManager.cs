@@ -181,7 +181,8 @@ internal sealed class StructureManager : IStructurePlacementState
             var layout = this.Layout;
             var cache = Volatile.Read(ref this.lastReachingStarts);
             var last = cache.Value;
-            if (last is not null && last.Layout == layout && last.ChunkX == chunkX && last.ChunkZ == chunkZ)
+            if (last is not null && last.Layout == layout && last.ChunkX == chunkX && last.ChunkZ == chunkZ
+                && last.CacheEpoch == this.StartCache.Epoch)
                 return last;
 
             if (this.TryFindReaching(layout, chunkX, chunkZ) is ReachingStarts found)
@@ -202,6 +203,7 @@ internal sealed class StructureManager : IStructurePlacementState
     // starts of different layouts would place structures of both, or leave some out.
     private ReachingStarts? TryFindReaching(StructureLayout layout, int chunkX, int chunkZ)
     {
+        var epoch = this.StartCache.Epoch;
         var minX = chunkX << 4;
         var minZ = chunkZ << 4;
         var reaching = new List<(long, StructureStart)>();
@@ -222,7 +224,9 @@ internal sealed class StructureManager : IStructurePlacementState
             }
         }
 
-        return new ReachingStarts(layout, chunkX, chunkZ, reaching);
+        return epoch == this.StartCache.Epoch
+            ? new ReachingStarts(layout, chunkX, chunkZ, reaching, epoch)
+            : null;
     }
 
     /// <summary>
