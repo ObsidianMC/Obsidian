@@ -28,8 +28,10 @@ public sealed class BubbleColumns
     private const int Ground = 69;
 
     // 26.1 moved starting a column from soul sand's and magma's own hooks to the water above them (LiquidBlock, with
-    // the enables_bubble_column_* tags), so their owners no longer bind. See docs/known-gaps.md.
-    private const string WaterStartsColumns = "Phase 6: 26.1 moved starting a bubble column from soul sand and magma to the water above";
+    // the enables_bubble_column_* tags), so their owners no longer bind.
+    // See docs/known-gaps/bubble-columns-started-by-water.md.
+    private const string WaterStartsColumns =
+        "Left out of the 26.3 port: 26.1 moved starting a bubble column from soul sand and magma to the water above";
 
     [Fact(DisplayName = "Replacing the block beneath existing water with magma starts a downward column", Skip = WaterStartsColumns)]
     public async Task MagmaPlacedUnderExistingWaterStartsColumn()

@@ -66,7 +66,7 @@ The base every mod needs: blocks with state that save, tick, react and sync.
 - **Drops.** (done) Block drops from loot tables (vanilla's and a plugin's `data/<ns>/loot_table`), with tool checks,
   silk touch and fortune, and container contents dropped on break.
 - **Runtime light.** (done) The light engine's decrease pass, so placing and breaking blocks relights the area. This
-  closes the plant-growth light gap in [known-gaps.md](known-gaps.md) too.
+  closes the plant-growth light gap in [known gaps](known-gaps/plant-growth-beyond-saplings.md) too.
 - **Redstone signals.** (done) A signal API (a block's output power by side, the power a position receives) used by
   vanilla's basic components: wire, torch, repeater, comparator, lever, button, pressure plate. Pistons and
   observers can follow.
@@ -88,7 +88,7 @@ its surroundings, and drops its loot table.
   same shape when a mod needs it.
 - **Recipe types.** (done) Plugins register recipe types with their own serializers and matching, loaded from
   `data/<ns>/recipe` like vanilla's. The `UpdateRecipes` packet is sent. Furnaces, smokers, blast furnaces and
-  campfires cook. Stonecutter and smithing result slots remain in [known-gaps.md](known-gaps.md).
+  campfires cook. Stonecutter and smithing result slots remain in [known gaps](known-gaps/workstation-details.md).
 
 **Sample:** a machine block that pulls items from a chest above, processes them with a plugin recipe type, and
 pushes them into a hopper below.
@@ -142,7 +142,7 @@ a mod entity glows and can be ridden.
   Implemented for explicit level teleports and rectangular plugin portals, with the Nether using the same mechanism
   and plugin types able to share its portal block; vehicles carry their passenger trees, leads follow vanilla's
   travel rules, and non-player entities use End portals and gateways. Saving passenger trees with their chunk is in
-  [known-gaps.md](known-gaps.md#saved-passenger-trees-and-leads).
+  [known gaps](known-gaps/saved-passenger-trees-and-leads.md).
 - **Saved data.** (done) Per-level and per-world data, and attachments on players, entities and chunks, saved and
   optionally synced to the client (like NeoForge's data attachments).
 - **Plugin entities.** (done) Saved per-entity data, synced metadata fields for modded clients, attribute modifiers
@@ -155,7 +155,7 @@ a mod entity glows and can be ridden.
 - **Chunk tickets.** (done) Plugins keep chunks loaded and ticking without players nearby.
 - **Progress.** Advancements and statistics (vanilla parity), so mods can grant and check them.
   Core statistics, saved criteria, rewards, common triggers and plugin APIs are implemented; full parity remains
-  in [known-gaps.md](known-gaps.md#progress-parity).
+  in [known gaps](known-gaps/progress-parity.md).
 
 **Sample:** a portal to a sample dimension, a rideable flying mob with saved data and a loot table, and a player
 attachment shown in an extra inventory slot.

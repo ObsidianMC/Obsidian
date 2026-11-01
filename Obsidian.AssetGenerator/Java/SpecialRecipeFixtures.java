@@ -359,7 +359,8 @@ public final class SpecialRecipeFixtures {
 
     // Decodes every crafting recipe vanilla evaluates by its own rules, in identifier order like vanilla's recipe
     // manager tries them. The older special recipes (CustomRecipe: firework stars, banner duplicates, ...) are left
-    // out: Obsidian doesn't evaluate them yet (docs/known-gaps.md), and some need a level to match.
+    // out: Obsidian doesn't evaluate them yet (docs/known-gaps/special-crafting-recipes.md),
+    // and some need a level to match.
     private static Map<String, CraftingRecipe> readCraftingRecipes(Path directory) throws Exception {
         List<Path> files;
         // Crafting recipes are at the top; brewing recipes have a directory of their own.
