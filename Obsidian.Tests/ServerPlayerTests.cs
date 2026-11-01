@@ -14,6 +14,7 @@ using Obsidian.Utilities;
 using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -335,6 +336,7 @@ public sealed class ServerPlayerTests
         var world = context.World;
         // The least simulation distance, 5, so that the player keeps 13 by 13 chunks.
         context.Server.Configuration.SimulationDistance = 5;
+        const int SquareChunks = 13 * 13;
         var player = (ServerPlayer)await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "Wanderer", world);
 
         // Sent far from the spawn and from other players, it loads the chunks around it, and what's in them ticks.
@@ -365,31 +367,48 @@ public sealed class ServerPlayerTests
         await LoadAroundAsync(101, 100);
         Assert.DoesNotContain(NumericsHelper.IntsToLong(94, 100), player.LoadedChunks);
 
-        // The server's chunk loop calls LoadChunksAsync; here it's called directly, with the level's generation.
+        // The server's chunk loop calls LoadChunksAsync; here it's called directly, with the level's generation. A pass
+        // loads only what fits its time budget, so on a busy machine it may load a chunk or two: this fails only once
+        // the passes stop loading any.
         async Task LoadAroundAsync(int centerX, int centerZ)
         {
-            var loading = DateTime.UtcNow.AddSeconds(15);
-            while (!AllLoaded(centerX, centerZ))
+            var loaded = CountLoaded(centerX, centerZ);
+            var stalled = Stopwatch.StartNew();
+            while (loaded < SquareChunks)
             {
-                Assert.True(DateTime.UtcNow < loading, "The chunks around the player didn't load.");
+                Assert.True(
+                    stalled.Elapsed < TimeSpan.FromSeconds(15),
+                    "The chunks around the player stopped loading.");
                 await player.LoadChunksAsync();
                 await world.ManageChunksAsync();
                 await Task.Delay(10);
+
+                var now = CountLoaded(centerX, centerZ);
+                if (now > loaded)
+                {
+                    loaded = now;
+                    stalled.Restart();
+                }
             }
         }
 
-        bool AllLoaded(int centerX, int centerZ)
+        bool AllLoaded(int centerX, int centerZ) => CountLoaded(centerX, centerZ) == SquareChunks;
+
+        // The chunks of the 13 by 13 square that the level has loaded and the player holds.
+        int CountLoaded(int centerX, int centerZ)
         {
+            var count = 0;
             for (var x = centerX - 6; x <= centerX + 6; x++)
             {
                 for (var z = centerZ - 6; z <= centerZ + 6; z++)
                 {
-                    if (world.GetLoadedChunk(x, z) is null || !player.LoadedChunks.Contains(NumericsHelper.IntsToLong(x, z)))
-                        return false;
+                    var held = player.LoadedChunks.Contains(NumericsHelper.IntsToLong(x, z));
+                    if (held && world.GetLoadedChunk(x, z) is not null)
+                        count++;
                 }
             }
 
-            return true;
+            return count;
         }
     }
 

@@ -15,7 +15,9 @@ namespace Obsidian.Tests;
 /// </summary>
 public sealed class PlayerChunkRequests
 {
-    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    // Longer than other tests', like ServerPlayerKeepsTheChunksAroundItLoaded's: the 130 chunks generated here have
+    // their light reconciled across their borders when the world is disposed and first saves them.
+    [Fact(Timeout = 2 * TestServerFactory.TestTimeout)]
     public async Task ViewIsGeneratedAheadOfTheClientAndDroppedOutOfView()
     {
         await using var context = TestServerFactory.CreateServer($"requests-{Guid.NewGuid():N}");
@@ -36,26 +38,41 @@ public sealed class PlayerChunkRequests
         Assert.All(inView, chunk => Assert.NotNull(world.GetLoadedChunk(chunk.x, chunk.z)));
         Assert.True(client.SentPackets.OfType<LevelChunkWithLightPacket>().Count() < inView.Count);
 
-        // Far away, the old view's requests are dropped, not generated.
+        // Far away, the old view's requests are dropped, not generated. The level doesn't get to them before the view
+        // moves on: a job of the first view, its chunk already published, would otherwise start the next nearest ones
+        // as it finishes.
+        world.ChunkManagementPaused = true;
         player.Position = new VectorD(10_000.5, 64, 0.5);
         await player.UpdateChunksAsync();
         Assert.True(world.ChunksToGenCount > 0);
+
         player.Position = new VectorD(20_000.5, 64, 0.5);
         player.ClientInformation = player.ClientInformation with { ViewDistance = 2 };
         await player.UpdateChunksAsync();
+        world.ChunkManagementPaused = false;
+
         await GenerateUntilAsync(world, () => world.ChunksToGenCount == 0 && world.GetLoadedChunk(20_000 >> 4, 0) is not null);
         Assert.Null(world.GetLoadedChunk(10_000 >> 4, 0));
     }
 
-    // Starts queued jobs until the condition holds.
+    // Starts queued jobs until the condition holds. How long generation takes depends on how busy the machine is, so
+    // this fails only once it stops making progress: no chunk loaded and no request dropped for a while.
     private static async Task GenerateUntilAsync(WorldData.World world, Func<bool> done)
     {
-        var timeout = Stopwatch.StartNew();
+        var progress = (world.LoadedChunks.Count, world.ChunksToGenCount);
+        var stalled = Stopwatch.StartNew();
         while (!done())
         {
-            Assert.True(timeout.Elapsed < TimeSpan.FromSeconds(20), "Generation didn't finish.");
+            Assert.True(stalled.Elapsed < TimeSpan.FromSeconds(20), "Generation stopped making progress.");
             await world.ManageChunksAsync();
             await Task.Delay(10);
+
+            var now = (world.LoadedChunks.Count, world.ChunksToGenCount);
+            if (now != progress)
+            {
+                progress = now;
+                stalled.Restart();
+            }
         }
     }
 }

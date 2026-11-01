@@ -376,8 +376,8 @@ public partial class Portals
             Level = context.World
         };
         var results = await Task.WhenAll(
-            Task.Run(() => first.StartRiding(second)),
-            Task.Run(() => second.StartRiding(first)));
+            OnOwnThread(() => first.StartRiding(second)),
+            OnOwnThread(() => second.StartRiding(first)));
         Assert.NotEqual(results[0], results[1]);
         Assert.Same(first.RootVehicle, second.RootVehicle);
         Assert.Single(first.Passengers.Concat(second.Passengers));
@@ -391,12 +391,12 @@ public partial class Portals
         var snapshot = ((IEntity)vehicle).Passengers;
         using var release = new ManualResetEventSlim();
         var held = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var holding = Task.Run(() =>
+        var holding = OnOwnThread(() =>
         {
             lock (ItemEntity.TransferLock)
             {
                 held.SetResult();
-                Assert.True(release.Wait(TimeSpan.FromSeconds(10)));
+                return release.Wait(TimeSpan.FromSeconds(10));
             }
         });
         await held.Task.WaitAsync(TimeSpan.FromSeconds(10));
@@ -407,7 +407,8 @@ public partial class Portals
                 var container = new Container(5);
                 using (await container.LockAsync())
                 {
-                    await Task.Run(() =>
+                    // Waiting for TransferLock would never end, so the bound only tells a deadlock from a slow machine.
+                    await OnOwnThread(() =>
                     {
                         Assert.Same(rider, Assert.Single(((IEntity)vehicle).Passengers));
                         Assert.Same(vehicle, rider.RootVehicle);
@@ -417,14 +418,16 @@ public partial class Portals
                         Assert.True(replacement.StartRiding(vehicle));
                         Assert.Same(vehicle, rider.Vehicle);
                         Assert.Null(vehicle.Vehicle);
-                    }).WaitAsync(TimeSpan.FromSeconds(2));
+                        return true;
+                    }).WaitAsync(TimeSpan.FromSeconds(10));
                 }
             }
             finally
             {
                 release.Set();
-                await holding.WaitAsync(TimeSpan.FromSeconds(10));
             }
+
+            Assert.True(await holding.WaitAsync(TimeSpan.FromSeconds(10)));
         }
 
         Assert.Null(rider.Vehicle);
@@ -434,6 +437,13 @@ public partial class Portals
         Assert.Same(vehicle, Assert.Single(replacement.Passengers));
         Assert.Same(rider, Assert.Single(snapshot));
     }
+
+    // Runs work that blocks (on a barrier, or holding the process-wide TransferLock) on a thread of its own rather
+    // than the thread pool's. Parallel test classes' pool threads block on TransferLock while this test holds it, and
+    // on a runner with few cores the pool then has no thread left for the work this test waits on before letting go.
+    // The current flow's DeferredInventoryWork section still flows into it.
+    private static Task<T> OnOwnThread<T>(Func<T> work) =>
+        Task.Factory.StartNew(work, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
     // Entries in the client's pipeline not yet sent or dropped.
     private static int Unsent(Client client) =>
