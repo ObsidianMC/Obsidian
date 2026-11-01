@@ -101,6 +101,11 @@ internal sealed class KelpBlockBehavior : IScheduledTickBehavior, IShapeUpdateBe
         if (!BlockSurvival.KelpMayPlaceOn(level.GetBlock(position + Vector.Down)))
             level.ScheduleTick(position, state, 1);
 
+        if (state.RegistryId == BlockIds.Kelp
+            && direction == BlockFace.Up
+            && neighbor.RegistryId is BlockIds.Kelp or BlockIds.KelpPlant)
+                return BlocksRegistry.KelpPlant;
+
         return state;
     }
 
