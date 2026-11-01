@@ -412,6 +412,9 @@ internal sealed record BiomeData(
         Func<string, bool> exists,
         bool inline)
     {
+        if (value.ValueKind == JsonValueKind.String && value.GetString()!.StartsWith('#'))
+            return $"#{Tag(value, path)}";
+
         if (value.ValueKind == JsonValueKind.Object)
         {
             return inline

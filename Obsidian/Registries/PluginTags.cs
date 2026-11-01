@@ -86,6 +86,9 @@ internal static partial class PluginTags
     /// <exception cref="InvalidDataException">The file isn't a valid tag file.</exception>
     public static TagFile Parse(string registry, string identifier, string source, ReadOnlySpan<byte> json)
     {
+        if (registry == PluginFeatures.Carver)
+            registry = ConfiguredCarver;
+
         // Clients read the tag's identifier with vanilla's rules, and refuse the tags if it breaks them.
         if (!IsFileIdentifier(identifier))
             throw new InvalidDataException($"{source}: {identifier} isn't a valid tag identifier.");
@@ -199,6 +202,8 @@ internal static partial class PluginTags
 
             var folders = parts[3] == "worldgen" ? 2 : 1;
             var registry = string.Join('/', parts[3..(3 + folders)]);
+            if (registry == PluginFeatures.Carver)
+                registry = ConfiguredCarver;
 
             if (parts.Length < 4 + folders || !Registries.Contains(registry))
                 continue;

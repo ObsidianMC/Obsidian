@@ -451,8 +451,9 @@ public sealed partial class PluginManager : IAsyncDisposable
             container.AdvancementFiles = AdvancementsRegistry.Read(files, this.logger);
             this.ApplyLootTables();
             this.ApplyAdvancements();
-            container.FeatureFiles = this.ReadFeatureFiles(files);
-            container.CodecFiles = this.ReadCodecFiles(files, container.FeatureFiles);
+            container.FeatureFiles = [.. this.ReadFeatureFiles(files).Select(file => file with { Owner = container })];
+            container.CodecFiles = [.. this.ReadCodecFiles(files, container.FeatureFiles)
+                .Select(file => file with { Owner = container })];
 
             // Read before tags, which may name the plugin's structures; they're applied with the features.
             (container.StructureFiles, container.StructureTemplates) = this.ReadStructureFiles(files);

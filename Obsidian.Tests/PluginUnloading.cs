@@ -291,6 +291,78 @@ public sealed class PluginUnloading : IDisposable
         return (new WeakReference(container.LoadContext), dimension, terrain);
     }
 
+    [Trait("Category", TestCategory.Worldgen)]
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task Unload_ReleasesThe263DimensionsUsingOnlyItsCarvers()
+    {
+        await using var context = TestServerFactory.CreateServer($"probe-carvers-{Guid.NewGuid():N}");
+        await using var manager = CreateManager(context);
+        var path = Path.Join(this.folder, "probe.obby");
+        var files = new Dictionary<string, byte[]>
+        {
+            ["data/minecraft/worldgen/carver/cave.json"] =
+                Encoding.UTF8.GetBytes(PluginFeatureFiles.EveryChunkCaves)
+        };
+        await File.WriteAllBytesAsync(path, PluginLoading.ProbeArchive("1.0.0", files));
+
+        // The stem uses vanilla's settings and biome source. Only its carver override belongs to the plugin.
+        var (loadContext, dimension, terrain) = await GenerateCarverWorldAsync(manager, path);
+        var before = terrain.CarversAt(0, 0);
+        await UnloadAllAsync(manager);
+
+        Assert.True(dimension.IsReleased);
+        Assert.Throws<InvalidOperationException>(() => BiomeTerrain.Create(dimension, 1234));
+        Assert.Throws<GeneratorStoppedException>(() =>
+            terrain.Generate(new Chunk(1, 0, terrain.MinY, terrain.Height)));
+
+        // Keep both the released dimension and the generator (including its populated carver cache) alive.
+        // Their host-owned snapshots and cleared containers must not root the collectible plugin assembly.
+        for (var i = 0; loadContext.IsAlive && i < 100; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            await Task.Delay(20);
+        }
+
+        Assert.False(loadContext.IsAlive, "The carver-only dimension still references the unloaded plugin's code.");
+        GC.KeepAlive(dimension);
+        GC.KeepAlive(terrain);
+        GC.KeepAlive(before);
+
+        // A newly read dimension uses the reloaded files, without inheriting the old snapshot's configuration.
+        files["data/minecraft/worldgen/carver/cave.json"] = Encoding.UTF8.GetBytes(
+            PluginFeatureFiles.EveryChunkCaves.Replace("\"probability\": 1", "\"probability\": 0"));
+        await File.WriteAllBytesAsync(path, PluginLoading.ProbeArchive("1.1.0", files));
+        var (_, reloaded, regenerated) = await GenerateCarverWorldAsync(manager, path);
+        Assert.False(reloaded.IsReleased);
+        Assert.Equal(0, PluginFeatures.CurrentCarvers.Configuration("minecraft:cave").Probability);
+        regenerated.Generate(new Chunk(1, 0, regenerated.MinY, regenerated.Height));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<(WeakReference Context, WorldgenDimension Dimension, BiomeTerrain Terrain)>
+        GenerateCarverWorldAsync(PluginManager manager, string path)
+    {
+        var container = (await manager.LoadPluginAsync(path))!;
+        var stem = """
+            {
+              "type": "minecraft:overworld",
+              "generator": {
+                "type": "minecraft:noise",
+                "settings": "minecraft:overworld",
+                "biome_source": { "type": "minecraft:fixed", "biome": "minecraft:plains" }
+              }
+            }
+            """;
+        var dimension = PluginWorldgen.ReadDimension(
+            "probe:carvers", Encoding.UTF8.GetBytes(stem), PluginNoise.Current, PluginWorldgen.Data);
+        Assert.Same(container, Assert.Single(dimension.Plugins));
+
+        var terrain = BiomeTerrain.Create(dimension, 1234);
+        terrain.Generate(new Chunk(0, 0, terrain.MinY, terrain.Height));
+        return (new WeakReference(container.LoadContext), dimension, terrain);
+    }
+
     // Solid below y 40, where the ore rule makes every block a diamond block.
     private static readonly string OreWorld = ProbeWorld("""
         {
