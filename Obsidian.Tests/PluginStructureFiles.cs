@@ -7,6 +7,8 @@ using Obsidian.Plugins.Archives;
 using Obsidian.Registries;
 using Obsidian.Tests.Utilities;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Generators.Density;
+using Obsidian.WorldData.Generators.Features;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Mojang.Structures;
 using Obsidian.WorldData.Structures;
@@ -94,10 +96,12 @@ public class PluginStructureFiles
         """;
 
     [Trait("Category", TestCategory.Worldgen)]
-    [Fact(DisplayName = "A plugin's jigsaw structure places its template in a chunk, and goes with it")]
-    public void PlacesPluginJigsawStructures()
+    [Theory(DisplayName = "A plugin's jigsaw structure places its template in a chunk, and goes with it")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PlacesPluginJigsawStructures(bool current)
     {
-        var structures = Build(TowerFiles());
+        var structures = Build(TowerFiles(), current);
         Assert.Empty(structures.Owners);
         structures = Only(structures, "structuretest:towers");
         Assert.Equal(Tower, Assert.Single(structures.Templates).Key);
@@ -121,7 +125,7 @@ public class PluginStructureFiles
             Assert.Equal(3 * columns, DiamondBlocks(chunks.Get(0, 0)));
 
             // Once the plugin is gone, chunks not generated yet don't get its structure, even where it started.
-            structures = Only(Build([]));
+            structures = Only(Build([], current));
 
             Assert.DoesNotContain(builder.Structures.GetStarts(8, 8), start => start.Structure.Identifier == Tower);
             Assert.Equal(0, DiamondBlocks(chunks.Get(8, 8)));
@@ -133,8 +137,10 @@ public class PluginStructureFiles
     }
 
     [Trait("Category", TestCategory.Worldgen)]
-    [Fact(DisplayName = "A vanilla structure set override moves vanilla's structures, and reads vanilla's sets again")]
-    public void OverridesVanillaStructureSets()
+    [Theory(DisplayName = "A vanilla structure set override moves vanilla's structures, and reads vanilla's sets again")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void OverridesVanillaStructureSets(bool current)
     {
         // Vanilla's swamp hut in every overworld biome: vanilla's set of huts names it, so it's read again with it.
         var hut = VanillaOverrides.Entries(PluginStructures.Structure)["minecraft:swamp_hut"].GetRawText()
@@ -144,7 +150,7 @@ public class PluginStructureFiles
         [
             Parse(PluginStructures.StructureSet, "minecraft:villages", DenseVillages),
             Parse(PluginStructures.Structure, "minecraft:swamp_hut", hut)
-        ]);
+        ], current);
 
         var huts = structures.Sets["minecraft:swamp_huts"];
         Assert.NotSame(StructureSets.All["minecraft:swamp_huts"], huts);
@@ -180,11 +186,13 @@ public class PluginStructureFiles
     }
 
     [Trait("Category", TestCategory.Worldgen)]
-    [Fact(DisplayName = "A start whose structure is gone is kept as saved, and its state comes back with it")]
-    public void KeepsStartsOfStructuresThatAreGone()
+    [Theory(DisplayName = "A start whose structure is gone is kept as saved, and its state comes back with it")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void KeepsStartsOfStructuresThatAreGone(bool current)
     {
         var files = TowerFiles();
-        var structures = Only(Build(files), "structuretest:towers");
+        var structures = Only(Build(files, current), "structuretest:towers");
         var manager = new ChunkBuilder(MojangDimension.Overworld, Seed, structures: () => structures).Structures!;
 
         // The tower is placed in this session, so its state is saved with its start chunk.
@@ -192,7 +200,7 @@ public class PluginStructureFiles
         StructureManager.RestoreStart(tower, null);
 
         // Its plugin unloads: the start is dropped, but its state is still saved.
-        structures = Only(Build([]));
+        structures = Only(Build([], current));
         manager.Refresh();
 
         Assert.DoesNotContain(manager.GetStarts(0, 0), start => start.Structure.Identifier == Tower);
@@ -200,7 +208,7 @@ public class PluginStructureFiles
         Assert.True(saved!.TryGetTag<NbtCompound>(Tower, out _));
 
         // After a restart without the plugin, the chunk loads, and its saved start stays as it was.
-        var vanilla = Only(Build([]));
+        var vanilla = Only(Build([], current));
         var restarted = new ChunkBuilder(MojangDimension.Overworld, Seed, structures: () => vanilla).Structures!;
         foreach (var start in restarted.GetStarts(0, 0))
             StructureManager.RestoreStart(start, saved);
@@ -208,7 +216,7 @@ public class PluginStructureFiles
         Assert.True(restarted.SaveStarts(0, 0, saved)!.TryGetTag<NbtCompound>(Tower, out _));
 
         // The plugin loads again: the start made again takes the state the dropped one had.
-        structures = Only(Build(files), "structuretest:towers");
+        structures = Only(Build(files, current), "structuretest:towers");
         manager.Refresh();
 
         var again = manager.GetStarts(0, 0).Single(start => start.Structure.Identifier == Tower);
@@ -217,8 +225,10 @@ public class PluginStructureFiles
     }
 
     [Trait("Category", TestCategory.Worldgen)]
-    [Fact(DisplayName = "A start keeps its plugins: once they unload, it isn't placed, and is made again without them")]
-    public void DropsStartsOfUnloadingPlugins()
+    [Theory(DisplayName = "A start keeps its plugins: once they unload, it isn't placed, and is made again without them")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DropsStartsOfUnloadingPlugins(bool current)
     {
         var plugin = new PluginContainer
         {
@@ -233,7 +243,7 @@ public class PluginStructureFiles
 
         // The tower's pieces run the plugin's code, as a vanilla structure does when an overridden template reaches
         // a plugin's pool with a plugin's processor.
-        var built = Only(Build(TowerFiles()), "structuretest:towers");
+        var built = Only(Build(TowerFiles(), current), "structuretest:towers");
         var tower = built.Structures[Tower];
         var structures = built with
         {
@@ -274,6 +284,32 @@ public class PluginStructureFiles
         finally
         {
             StructureRegistry.SetOverrides(PluginStructures.Current.Templates);
+        }
+    }
+
+    [Trait("Category", TestCategory.Worldgen)]
+    [Fact]
+    public void AppliedStructuresAndTemplatesRefreshThe26_3Snapshot()
+    {
+        var features = PluginFeatures.CurrentRegistry;
+        var template = Template();
+        try
+        {
+            PluginStructures.Apply(TowerFiles(), [template], WorldgenFeatureSet.Vanilla, [], NullLogger.Instance);
+            var before = PluginStructures.CurrentRegistry;
+            Assert.Contains(Tower, before.Structures.Keys);
+            Assert.Same(template.Template, features.Template(Tower));
+
+            PluginStructures.Apply([], [], WorldgenFeatureSet.Vanilla, [], NullLogger.Instance);
+            var after = PluginStructures.CurrentRegistry;
+            Assert.True(after.Version > before.Version);
+            Assert.DoesNotContain(Tower, after.Structures.Keys);
+            Assert.Empty(after.Templates);
+            Assert.NotSame(template.Template, features.Template(Tower));
+        }
+        finally
+        {
+            PluginStructures.Apply([], [], WorldgenFeatureSet.Vanilla, [], NullLogger.Instance);
         }
     }
 
@@ -361,7 +397,14 @@ public class PluginStructureFiles
         }
     }
 
-    private static WorldgenStructures Build(StructureFile[] files) => PluginStructures.Build(
+    private static WorldgenStructures Build(StructureFile[] files, bool current = false) => current
+        ? StructureData.Read(
+            new FeatureRegistry(WorldgenData.Vanilla),
+            files,
+            files.Length == 0 ? [] : [Template()],
+            [],
+            NullLogger.Instance)
+        : PluginStructures.Build(
         files,
         files.Length == 0 ? [] : [Template()],
         WorldgenFeatureSet.Vanilla,

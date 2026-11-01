@@ -2,6 +2,8 @@ using Obsidian.API;
 using Obsidian.API.Registries;
 using Obsidian.API.World.Structures;
 using Obsidian.Nbt;
+using Obsidian.WorldData.Generators.Density;
+using Obsidian.WorldData.Generators.Features;
 using Obsidian.Registries;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Generators.Mojang;
@@ -93,11 +95,13 @@ public class PluginStructureTypes
         }
         """;
 
-    [Fact(DisplayName = "A plugin's structure type starts and places its pieces, and goes with the plugin")]
-    public void GeneratesPluginStructureTypes()
+    [Theory(DisplayName = "A plugin's structure type starts and places its pieces, and goes with the plugin")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void GeneratesPluginStructureTypes(bool current)
     {
         var logger = new PluginFeatureFiles.ListLogger();
-        var built = PluginStructures.Build(SpireFiles(), [], WorldgenFeatureSet.Vanilla, Types(), logger);
+        var built = Build(SpireFiles(), Types(), logger, current);
         Assert.Empty(logger.Messages);
 
         // Obsidian reads the fields every structure has, and the plugin's type the rest.
@@ -118,7 +122,7 @@ public class PluginStructureTypes
 
         // The plugin unloads: its type is gone, so its structure is left out like a file naming any missing type,
         // with the set naming it, and chunks generated later don't get it.
-        structures = Only(PluginStructures.Build(SpireFiles(), [], WorldgenFeatureSet.Vanilla, [], logger));
+        structures = Only(Build(SpireFiles(), [], logger, current));
 
         Assert.Contains(logger.Messages, message => message.Contains("structuretest:spire isn't a structure type"));
         Assert.False(structures.Structures.ContainsKey(Spire));
@@ -132,11 +136,13 @@ public class PluginStructureTypes
         Assert.True(restarted.SaveStarts(0, 0, saved)!.TryGetTag<NbtCompound>(Spire, out _));
     }
 
-    [Fact(DisplayName = "A plugin's pool element types are placed by template pools, and connect by their jigsaws")]
-    public void PlacesPluginPoolElements()
+    [Theory(DisplayName = "A plugin's pool element types are placed by template pools, and connect by their jigsaws")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PlacesPluginPoolElements(bool current)
     {
         var logger = new PluginFeatureFiles.ListLogger();
-        var built = PluginStructures.Build(PillarFiles(), [], WorldgenFeatureSet.Vanilla, Types(), logger);
+        var built = Build(PillarFiles(), Types(), logger, current);
         Assert.Empty(logger.Messages);
 
         var element = Assert.IsType<PluginPoolElement>(Assert.Single(built.Pools["structuretest:pillar/start"].Elements)
@@ -156,11 +162,19 @@ public class PluginStructureTypes
         Assert.Equal(1, Count(chunk, BlockIds.EmeraldBlock));
 
         // Without the plugin's types, the pools naming them are left out, with the structure starting from them.
-        built = PluginStructures.Build(PillarFiles(), [], WorldgenFeatureSet.Vanilla, [], logger);
+        built = Build(PillarFiles(), [], logger, current);
 
         Assert.Contains(logger.Messages, message => message.Contains("structuretest:pillar isn't a type"));
         Assert.False(built.Structures.ContainsKey(Pillar));
     }
+
+    private static WorldgenStructures Build(
+        StructureFile[] files,
+        List<WorldgenTypeRegistration> types,
+        PluginFeatureFiles.ListLogger logger,
+        bool current) => current
+            ? StructureData.Read(new FeatureRegistry(WorldgenData.Vanilla), files, [], types, logger)
+            : PluginStructures.Build(files, [], WorldgenFeatureSet.Vanilla, types, logger);
 
     internal static List<WorldgenTypeRegistration> Types()
     {

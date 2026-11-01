@@ -143,6 +143,34 @@ public sealed class WorldgenOverrides : IDisposable
             features.FindConfigured("minecraft:pale_moss_patch"));
     }
 
+    [Trait("Category", TestCategory.Worldgen)]
+    [Fact]
+    public void OverridesReach26_3FeaturesNamingThem()
+    {
+        var file = PluginFeatures.Parse(
+            PluginFeatures.Feature,
+            "minecraft:ore_diamond_small",
+            "plugin",
+            """{ "type": "minecraft:simple_block", "to_place": { "id": "minecraft:emerald_block" } }"""u8);
+        var logger = new PluginFeatureFiles.ListLogger();
+        var registry = PluginFeatures.BuildRegistry([file], [], [], logger);
+        var region = PluginFeatureRegistry.Region();
+        var context = PluginFeatureRegistry.Context(region);
+        var decoration = new WorldData.Generators.Features.DecorationContext(
+            registry, region, _ => "minecraft:plains", -64, 384);
+
+        // The vanilla placed feature compiles around the overridden configured entry, with native 26.3 data.
+        Assert.Empty(logger.Messages);
+        Assert.True(registry.Placed("minecraft:ore_diamond").Feature(decoration, context.Random, context.Origin));
+        Assert.True(region.GetBlock(context.Origin).Is(BlockIds.EmeraldBlock));
+        Assert.True(registry.FeatureSet!.PlaceConfigured("minecraft:ore_diamond_small", context));
+
+        var without = PluginFeatures.BuildRegistry([], [], [], NullLogger.Instance);
+        Assert.NotSame(
+            registry.FeatureSet.FindConfigured("minecraft:ore_diamond_small"),
+            without.FeatureSet!.FindConfigured("minecraft:ore_diamond_small"));
+    }
+
     [Fact(DisplayName = "The noises the surface builder reads by name follow overrides")]
     public void SurfaceNoisesFollowOverrides()
     {

@@ -2365,6 +2365,22 @@ The other attributes change what clients show and play.
 
 ## World generation features
 
+The live generator still reads 1.21.11 features during the 26.3 migration. The 26.3 pipeline also accepts plugin
+feature types, placed features, biome modifiers, processor lists, structure types, structure sets, pools and templates.
+Its native configured-feature folder is `worldgen/feature`, with configuration fields beside `type`. The old
+`worldgen/configured_feature` folder and `config` envelope remain accepted there; when both folders define the same
+identifier, the last file in load order wins. Types removed or redesigned by vanilla still need 26.3 data. The public
+`Obsidian.API` registration and placement interfaces are unchanged. Block states in plugin types may use the old
+`Name`/`Properties` form or 26.3's bare identifier and `id`/`properties` forms.
+
+For the server integration, `PluginFeatures.CurrentRegistry` supplies the 26.3 feature snapshot and its `FeatureSet`
+supplies the existing plant-growth interface. `PluginStructures.CurrentRegistry` supplies its structure layout;
+`StructureData.Read(features)` reads that layout for a particular feature registry. Both snapshots follow the existing
+apply/load/unload lifecycle, retain dependency owners, refuse calls into unloading plugins and report plugin placement
+failures through `PluginGenerationException`. The live-generator switch still needs to select these providers, refresh
+decoration and structure layouts when plugins change, and route plant growth's `PluginFeatures.Current` to the native
+feature set. Standalone parity replays can continue to construct a vanilla `FeatureRegistry` directly.
+
 Plugins add configured and placed features, and change what biomes place and spawn with biome modifiers:
 
 - `data/<namespace>/worldgen/configured_feature/<path>.json` is the configured feature `<namespace>:<path>`;

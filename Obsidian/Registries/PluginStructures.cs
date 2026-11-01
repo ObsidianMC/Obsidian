@@ -190,10 +190,12 @@ internal static partial class PluginStructures
     {
         lock (applying)
         {
-            var structures = Build(files, templates, features, types, logger);
+            var snapshot = new StructureInputs([.. files], [.. templates], [.. types], logger);
+            var structures = Build(snapshot.Files, snapshot.Templates, features, snapshot.Types, logger);
 
             StructureRegistry.SetOverrides(structures.Templates);
             Volatile.Write(ref current, structures);
+            Volatile.Write(ref inputs, snapshot);
             return structures;
         }
     }
@@ -207,7 +209,8 @@ internal static partial class PluginStructures
         IEnumerable<TemplateFile> templates,
         WorldgenFeatureSet features,
         IEnumerable<WorldgenTypeRegistration> types,
-        ILogger logger)
+        ILogger logger,
+        WorldgenStructures? vanilla = null)
     {
         var kept = VanillaOverrides.LastWins(
             files,
@@ -215,7 +218,8 @@ internal static partial class PluginStructures
             file => file.Source,
             logger);
 
-        kept.AddRange(VanillaDependents(kept, features));
+        if (vanilla is null)
+            kept.AddRange(VanillaDependents(kept, features));
 
         var keptTemplates = VanillaOverrides.LastWins(
             templates,
@@ -223,7 +227,7 @@ internal static partial class PluginStructures
             file => file.Source,
             logger);
 
-        var resolver = new StructureResolver(kept, WorldgenTypes.With(types), features);
+        var resolver = new StructureResolver(kept, WorldgenTypes.With(types), features, vanilla);
 
         foreach (var file in kept)
         {
@@ -238,24 +242,30 @@ internal static partial class PluginStructures
         }
 
         var structures = new Dictionary<string, WorldData.Structures.Structure>(
-            global::Obsidian.Registries.Structures.All);
+            vanilla?.Structures ?? global::Obsidian.Registries.Structures.All);
 
         foreach (var (identifier, structure) in resolver.Structures)
             structures[identifier] = structure;
 
-        var sets = new Dictionary<string, WorldData.Structures.StructureSet>(StructureSets.All);
+        var sets = new Dictionary<string, WorldData.Structures.StructureSet>(vanilla?.Sets ?? StructureSets.All);
 
         foreach (var (identifier, set) in resolver.Sets)
             sets[identifier] = set;
+
+        var pools = new Dictionary<string, StructureTemplatePool>(
+            vanilla?.Pools ?? FrozenDictionary<string, StructureTemplatePool>.Empty);
+        foreach (var (identifier, pool) in resolver.Pools)
+            pools[identifier] = pool;
 
         return new WorldgenStructures
         {
             Version = Interlocked.Increment(ref versions),
             Structures = structures.ToFrozenDictionary(),
             Sets = sets.ToFrozenDictionary(),
-            Pools = resolver.Pools.ToFrozenDictionary(),
+            Pools = pools.ToFrozenDictionary(),
             Templates = keptTemplates.ToFrozenDictionary(file => file.Identifier, file => file.Template),
-            Owners = Owners(structures.Values, resolver)
+            Owners = Owners(structures.Values, resolver, vanilla),
+            LegacyPools = vanilla?.LegacyPools ?? true
         };
     }
 
@@ -264,7 +274,8 @@ internal static partial class PluginStructures
     // pool: jigsaw structures, vanilla's compiled ones too, call into every plugin a pool read from files needs.
     private static FrozenDictionary<WorldData.Structures.Structure, ImmutableArray<PluginContainer>> Owners(
         IEnumerable<WorldData.Structures.Structure> structures,
-        StructureResolver resolver)
+        StructureResolver resolver,
+        WorldgenStructures? vanilla = null)
     {
         var pools = resolver.Pools.Values
             .SelectMany(pool => resolver.Owners.GetValueOrDefault(pool, []))
@@ -275,7 +286,8 @@ internal static partial class PluginStructures
 
         foreach (var structure in structures)
         {
-            var plugins = resolver.Owners.GetValueOrDefault(structure, []).ToHashSet();
+            var previous = vanilla?.Owners.GetValueOrDefault(structure, []) ?? [];
+            var plugins = resolver.Owners.GetValueOrDefault(structure, previous).ToHashSet();
             if (structure is JigsawStructure)
                 plugins.UnionWith(pools);
 
@@ -320,12 +332,18 @@ internal static partial class PluginStructures
         private readonly HashSet<StructureFile> reading = new(ReferenceEqualityComparer.Instance);
         private readonly WorldgenFeatureSet features;
         private readonly WorldgenReader reader;
+        private readonly WorldgenStructures vanilla;
 
         // The plugins whose types each entry is made of.
         private readonly WorldgenDependencies<PluginContainer> owners = new();
 
-        public StructureResolver(List<StructureFile> files, WorldgenTypes types, WorldgenFeatureSet features)
+        public StructureResolver(
+            List<StructureFile> files,
+            WorldgenTypes types,
+            WorldgenFeatureSet features,
+            WorldgenStructures? vanilla = null)
         {
+            this.vanilla = vanilla ?? WorldgenStructures.Vanilla;
             this.files = files.ToDictionary(file => (file.Registry, file.Identifier));
             this.features = features;
 
@@ -373,21 +391,21 @@ internal static partial class PluginStructures
             Structure,
             identifier,
             this.Structures,
-            global::Obsidian.Registries.Structures.All,
+            this.vanilla.Structures,
             file => this.reader.ReadStructure(file.Json, file.Identifier));
 
         private WorldData.Structures.StructureSet SetOf(string identifier) => this.Find(
             StructureSet,
             identifier,
             this.Sets,
-            StructureSets.All,
+            this.vanilla.Sets,
             file => this.reader.ReadStructureSet(file.Json, file.Identifier));
 
         private StructureTemplatePool PoolOf(string identifier) => this.Find(
             TemplatePool,
             identifier,
             this.Pools,
-            TemplatePools.All,
+            this.vanilla.LegacyPools ? TemplatePools.All : this.vanilla.Pools,
             this.ReadPool);
 
         // Fallbacks are looked up by identifier as structures generate, since pools may fall back to each other, so
@@ -395,7 +413,7 @@ internal static partial class PluginStructures
         private StructureTemplatePool ReadPool(StructureFile file)
         {
             var pool = this.reader.ReadTemplatePool(file.Json, file.Identifier);
-            if (!this.files.ContainsKey((TemplatePool, pool.Fallback)) && !TemplatePools.All.ContainsKey(pool.Fallback))
+            if (!this.files.ContainsKey((TemplatePool, pool.Fallback)) && this.vanilla.Pool(pool.Fallback) is null)
                 throw new InvalidDataException($"fallback: {pool.Fallback} isn't a template pool");
 
             return pool;
@@ -404,20 +422,20 @@ internal static partial class PluginStructures
         // Plugins' features and processor lists, with vanilla's overridden ones, come from the feature set, and
         // bring the plugins they call into.
         private ConfiguredFeatureBase Configured(string identifier) => this.FromFeatures(
-            this.features.ConfiguredFeatures.GetValueOrDefault(identifier)
-                ?? ConfiguredFeatures.All.GetValueOrDefault(identifier),
+            this.features.FindConfigured(identifier),
             identifier,
             "configured feature");
 
         private PlacedFeature Placed(string identifier) => this.FromFeatures(
-            this.features.PlacedFeatures.GetValueOrDefault(identifier)
-                ?? PlacedFeatures.All.GetValueOrDefault(identifier),
+            this.features.FindPlaced(identifier),
             identifier,
             "placed feature");
 
         private StructureProcessorList ProcessorListOf(string identifier) => this.FromFeatures(
-            this.features.ProcessorLists.GetValueOrDefault(identifier)
-                ?? ProcessorLists.All.GetValueOrDefault(identifier),
+            this.features.ProcessorLookup is not null
+                ? this.features.ProcessorLookup(identifier)
+                : this.features.ProcessorLists.GetValueOrDefault(identifier)
+                    ?? ProcessorLists.All.GetValueOrDefault(identifier),
             identifier,
             "processor list");
 
@@ -427,7 +445,7 @@ internal static partial class PluginStructures
             if (entry is null)
                 throw new InvalidDataException($"{identifier} isn't a {kind}");
 
-            foreach (var owner in this.features.EntryOwners.GetValueOrDefault(entry, []))
+            foreach (var owner in this.features.OwnersOf(entry))
                 this.owners.Add(owner);
 
             return entry;

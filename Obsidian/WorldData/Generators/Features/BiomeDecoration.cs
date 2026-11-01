@@ -19,9 +19,7 @@ internal sealed class BiomeDecoration
     {
         this.registry = registry;
         var orderedBiomes = possibleBiomes.Distinct().ToArray();
-        this.biomes = orderedBiomes.ToDictionary(biome => biome, biome => registry.Data
-            .Read("biome", biome).GetProperty("features").EnumerateArray()
-            .Select(step => step.EnumerateArray().Select(feature => feature.GetString()!).ToArray()).ToArray());
+        this.biomes = orderedBiomes.ToDictionary(biome => biome, registry.BiomeSteps);
         this.Steps = OrderFeatures(orderedBiomes.Select(biome => this.biomes[biome]));
 
         for (var step = 0; step < this.Steps.Count; step++)

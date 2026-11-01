@@ -1,4 +1,5 @@
 using Obsidian.WorldData.Features;
+using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Structures;
 using System.Text.Json;
 
@@ -6,11 +7,29 @@ namespace Obsidian.WorldData.Generators.Features;
 
 internal sealed partial class FeatureRegistry
 {
+    private Func<string, StructureTemplate> vanillaTemplate = Registries.StructureRegistry.GetCurrent;
+
+    internal IReadOnlyDictionary<string, StructureTemplate>? TemplateOverrides { get; set; }
+
     /// <summary>
     /// The generator's 26.3 template lookup: the templates the server extracts from the 26.3 jar by default (see
     /// <see cref="Registries.StructureRegistry.GetCurrent"/>). Callers can supply others, such as a data pack's.
     /// </summary>
-    public Func<string, StructureTemplate> Template { get; init; } = Registries.StructureRegistry.GetCurrent;
+    public Func<string, StructureTemplate> Template
+    {
+        get => this.FindTemplate;
+        init => this.vanillaTemplate = value;
+    }
+
+    private StructureTemplate FindTemplate(string id)
+    {
+        id = WorldgenData.Qualify(id);
+        var templates = this.TemplateOverrides;
+        if (templates is null && this.UsesPluginFiles)
+            templates = PluginStructures.Current.Templates;
+
+        return templates?.GetValueOrDefault(id) ?? this.vanillaTemplate(id);
+    }
 
     private Feature TemplateFeature(JsonElement json)
     {
@@ -21,14 +40,12 @@ internal sealed partial class FeatureRegistry
         {
             if (processorJson.ValueKind == JsonValueKind.String)
             {
-                processorJson = this.Data.Read("processor_list", processorJson.GetString()!);
+                processors = this.Processors(processorJson.GetString()!);
             }
-
-            var reader = new WorldgenReader(
-                WorldgenTypes.BuiltIn,
-                _ => throw new InvalidOperationException("A template processor cannot resolve a configured feature."),
-                _ => throw new InvalidOperationException("A template processor cannot resolve a placed feature."));
-            processors = reader.ReadProcessorList(TemplateProcessorStates(processorJson), "");
+            else
+            {
+                processors = this.ReadProcessors(processorJson);
+            }
         }
 
         return (context, random, origin) =>

@@ -73,14 +73,9 @@ internal sealed partial class FeatureRegistry
     {
         if (json.ValueKind == JsonValueKind.String)
         {
-            json = this.Data.Read("processor_list", json.GetString()!);
+            return this.Processors(json.GetString()!);
         }
 
-        var reader = new WorldgenReader(
-            WorldgenTypes.BuiltIn,
-            _ => throw new InvalidOperationException("A fossil processor cannot resolve a configured feature."),
-            _ => throw new InvalidOperationException("A fossil processor cannot resolve a placed feature."));
-
-        return reader.ReadProcessorList(TemplateProcessorStates(json), "");
+        return this.ReadProcessors(json);
     }
 }

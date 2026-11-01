@@ -70,8 +70,12 @@ internal static class StructureRegistry
     /// </remarks>
     public static StructureTemplate GetCurrent(string id)
     {
+        id = Qualify(id);
+        if (!id.StartsWith(Vanilla, StringComparison.Ordinal))
+            return StructureTemplate.CreateEmpty();
+
         var template = currentTemplates.GetOrAdd(
-            Qualify(id),
+            id,
             static key => new Lazy<StructureTemplate>(
                 () => Load(key, CurrentDirectory(), nameof(InitializeCurrent)),
                 LazyThreadSafetyMode.PublicationOnly));
