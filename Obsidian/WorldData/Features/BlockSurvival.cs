@@ -193,9 +193,6 @@ internal static class BlockSurvival
     /// <summary>Vanilla <c>SugarCaneBlock.canSurvive</c>, reading blocks through <paramref name="blockAt"/> (worldgen or a live level).</summary>
     internal static bool SugarCaneMayStay(Func<Vector, IBlock> blockAt, Vector position)
     {
-        if (blockAt(position).IsLiquid)
-            return false;
-
         Vector belowPosition = position + Vector.Down;
 
         var below = blockAt(belowPosition);
