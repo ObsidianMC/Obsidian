@@ -6,7 +6,8 @@ namespace Obsidian.WorldData.Fluids;
 /// The chunks around a chunk being post-processed, as fluids see them: like vanilla's <c>postProcessGeneration</c> on a
 /// live level, ticks are scheduled with their real delays (in the tick lists of the chunks, which keep them until they tick).
 /// </summary>
-internal sealed class WorldGenFluidAccess(WorldGenRegion region, FluidRules rules, Random random) : IFluidLevelAccess
+internal sealed class WorldGenFluidAccess(WorldGenRegion region, FluidRules rules, Random random,
+    Func<Vector, int>? brightness = null) : IFluidLevelAccess
 {
     public int MinY => region.MinY;
 
@@ -17,6 +18,11 @@ internal sealed class WorldGenFluidAccess(WorldGenRegion region, FluidRules rule
     public Random Random => random;
 
     public IBlock GetBlock(Vector position) => region.GetBlock(position);
+
+    public int GetRawBrightness(Vector position) => brightness?.Invoke(position) ?? region.UnlitBrightness;
+
+    public void ScheduleBlockTick(Vector position, IBlock block, int delay) =>
+        region.ScheduleBlockTick(position, block, delay);
 
     public bool SetBlock(Vector position, IBlock block) => region.SetBlock(position, block);
 

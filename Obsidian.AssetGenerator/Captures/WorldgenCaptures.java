@@ -76,6 +76,9 @@ class WorldgenCaptures {
         SECTIONS.put("biome_search", false);
         SECTIONS.put("biome_points", false);
         SECTIONS.put("spawn_attributes", false);
+        SECTIONS.put("spawn_search", false);
+        SECTIONS.put("population", false);
+        SECTIONS.put("completion", false);
         SECTIONS.put("structures", true);
     }
 
@@ -94,6 +97,10 @@ class WorldgenCaptures {
         }
 
         var cases = casesOf(fixture, seed, structures);
+        if (cases.containsKey("completion")) {
+            // FULL generates neighboring features too; one worker makes their write order reproducible.
+            System.setProperty("max.bg.threads", "1");
+        }
         if (cases.isEmpty()) {
             System.out.println("No cases for seed " + seed + " with structures " + structures + ".");
             return;
@@ -295,6 +302,9 @@ class WorldgenCaptures {
                     case "biome_search" -> biomeSearch(entry);
                     case "biome_points" -> biomePoint(entry);
                     case "spawn_attributes" -> spawnAttributes(entry);
+                    case "spawn_search" -> spawnSearch(entry);
+                    case "population" -> population(entry);
+                    case "completion" -> completion(entry);
                     case "structures" -> structures(entry);
                     default -> throw new IllegalArgumentException(section);
                 }
@@ -745,6 +755,152 @@ class WorldgenCaptures {
         var source = level.getChunkSource().getGenerator().getBiomeSource();
         var biome = source.createResolver(sampler).getNoiseBiome(x, y, z);
         entry.addProperty("biome", biome.unwrapKey().orElseThrow().identifier().toString());
+    }
+
+    // Initial creature packs in an otherwise controlled region, including the caller's random tail.
+    static void population(JsonObject entry) {
+        try {
+            populationChecked(entry);
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    static void populationChecked(JsonObject entry) throws Exception {
+        var level = server.overworld();
+        int chunkX = entry.get("chunkX").getAsInt();
+        int chunkZ = entry.get("chunkZ").getAsInt();
+        var biomeKey = ResourceKey.create(Registries.BIOME, Identifier.parse(entry.get("biome").getAsString()));
+        var biome = server.registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(biomeKey);
+        var layers = layers(entry);
+        var step = ChunkPyramid.GENERATION_PYRAMID.getStepTo(ChunkStatus.SPAWN);
+        var chunks = new HashMap<Long, ProtoChunk>();
+        var cache = StaticCache2D.<ChunkAccess>create(chunkX, chunkZ, 2, (x, z) -> {
+            var chunk = layeredChunk(level, new ChunkPos(x, z), layers, biome, entry);
+            chunks.put(ChunkPos.pack(x, z), chunk);
+            return chunk;
+        });
+        var center = chunks.get(ChunkPos.pack(chunkX, chunkZ));
+        var region = region(level, cache, step, center);
+        var random = new WorldgenRandom(new LegacyRandomSource(0L));
+        random.setDecorationSeed(entry.get("seed").getAsLong(), chunkX << 4, chunkZ << 4);
+        net.minecraft.world.level.NaturalSpawner.spawnMobsForChunkGeneration(
+            region, center.getPos().getWorldPosition().atY(level.getMaxY()), center.getPos(), random);
+        var compact = new JsonArray();
+        for (var entity : entities(chunks, chunkX, chunkZ)) {
+            var record = entity.getAsJsonArray();
+            record.remove(6);
+            compact.add(record);
+        }
+        entry.add("entities", compact);
+        entry.addProperty("nextRandom", random.nextInt());
+    }
+
+    static void completion(JsonObject entry) {
+        try {
+            var level = level(entry.get("dimension").getAsString());
+            int x = entry.get("chunkX").getAsInt();
+            int z = entry.get("chunkZ").getAsInt();
+            var centerBefore = level.getChunkSource().getChunk(x, z, ChunkStatus.SPAWN, true);
+            // Optional inherited ticks exercise distinct source/flowing registry keys at the same position.
+            if (entry.has("scheduledFluids")) {
+                for (var element : entry.getAsJsonArray("scheduledFluids")) {
+                    var row = element.getAsJsonArray();
+                    var position = new BlockPos(row.get(0).getAsInt(), row.get(1).getAsInt(), row.get(2).getAsInt());
+                    var fluid = BuiltInRegistries.FLUID.getValue(Identifier.parse(row.get(3).getAsString()));
+                    centerBefore.getFluidTicks().schedule(new net.minecraft.world.ticks.ScheduledTick<>(
+                        fluid, position, level.getGameTime(), 0L));
+                }
+            }
+            var inputs = new JsonArray();
+            var mushroomPositions = new ArrayList<BlockPos>();
+            for (int dz = -1; dz <= 1; dz++) {
+                for (int dx = -1; dx <= 1; dx++) {
+                    var before = level.getChunkSource().getChunk(x + dx, z + dz, ChunkStatus.FEATURES, true);
+                    var input = new JsonObject();
+                    input.addProperty("chunkX", x + dx);
+                    input.addProperty("chunkZ", z + dz);
+                    input.add("blocks", blocks(before, level.getMinY(), level.getHeight()));
+                    var marks = new JsonArray();
+                    var sections = before.getPostProcessing();
+                    for (int section = 0; section < sections.length; section++) {
+                        if (sections[section] != null) {
+                            for (short packed : sections[section]) {
+                                var position = ProtoChunk.unpackOffsetCoordinates(
+                                    packed, before.getSectionYFromSectionIndex(section), before.getPos());
+                                marks.add(coordinates(position));
+                                if (dx == 0 && dz == 0 && before.getBlockState(position).getBlock()
+                                    instanceof net.minecraft.world.level.block.MushroomBlock) {
+                                    mushroomPositions.add(position.immutable());
+                                }
+                            }
+                        }
+                    }
+                    input.add("marks", marks);
+                    completionTicks(input, before, level.getGameTime());
+                    inputs.add(input);
+                }
+            }
+            entry.add("inputs", inputs);
+            entry.add("mushroomLightBefore", completionLight(level, mushroomPositions));
+            var chunk = (LevelChunk) level.getChunkSource().getChunk(x, z, ChunkStatus.FULL, true);
+            chunk.postProcessGeneration(level);
+            entry.add("mushroomLightAfter", completionLight(level, mushroomPositions));
+            entry.addProperty("status", chunk.getPersistedStatus().getName());
+            entry.addProperty("minY", level.getMinY());
+            entry.addProperty("height", level.getHeight());
+            entry.add("blocks", blocks(chunk, level.getMinY(), level.getHeight()));
+            completionTicks(entry, chunk, level.getGameTime());
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    static JsonArray completionLight(ServerLevel level, List<BlockPos> positions) {
+        var light = new JsonArray();
+        for (var position : positions) {
+            var row = coordinates(position);
+            row.add(level.getRawBrightness(position, 0));
+            light.add(row);
+        }
+        return light;
+    }
+
+    static void completionTicks(JsonObject entry, ChunkAccess chunk, long time) {
+        var ticks = chunk.getTicksForSerialization(time);
+        var blockTicks = new JsonArray();
+        for (var tick : ticks.blocks()) {
+            var row = coordinates(tick.pos());
+            row.add(BuiltInRegistries.BLOCK.getKey(tick.type()).toString());
+            row.add(tick.delay());
+            row.add(tick.priority().getValue());
+            blockTicks.add(row);
+        }
+        var fluidTicks = new JsonArray();
+        for (var tick : ticks.fluids()) {
+            var row = coordinates(tick.pos());
+            row.add(BuiltInRegistries.FLUID.getKey(tick.type()).toString());
+            // These cases have no random lava level increases. Inherited and new deterministic ticks stay exact.
+            row.add(tick.delay());
+            row.add(tick.priority().getValue());
+            fluidTicks.add(row);
+        }
+        entry.add("blockTicks", blockTicks);
+        entry.add("fluidTicks", fluidTicks);
+    }
+
+    static void spawnSearch(JsonObject entry) {
+        var settings = settings(entry);
+        var random = randomState(entry, settings);
+        var targets = settings.spawnTarget();
+        if (entry.has("targets")) {
+            var ops = RegistryOps.create(JsonOps.INSTANCE, server.registryAccess());
+            targets = SpawnTargetPoint.CODEC.listOf().parse(ops, entry.get("targets")).getOrThrow();
+        }
+        var sampler = random.samplersWithContext(
+            net.minecraft.world.level.levelgen.densityfunction.SamplerContext.EMPTY_UNCACHED);
+        var result = NoiseSpawnFinder.findSpawnPosition(targets, sampler);
+        entry.add("position", coordinates(result));
     }
 
     // Resolve the same attribute maps vanilla applies: default, dimension, biome. Custom maps exercise overlays.

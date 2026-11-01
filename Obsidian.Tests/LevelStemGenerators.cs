@@ -6,6 +6,7 @@ using Obsidian.Registries.Codecs;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators;
 using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Generators.Biomes;
 using System;
 using System.IO;
 using System.Linq;
@@ -65,7 +66,7 @@ public sealed class LevelStemGenerators
             if (type == "minecraft:noise")
             {
                 var noise = file.Dimension.Noise();
-                Assert.Equal(generator.GetProperty("settings").GetString(), noise.NoiseSettings);
+                Assert.Equal(generator.GetProperty("settings").GetString(), noise.SettingsId);
                 Assert.NotEmpty(noise.PossibleBiomes);
             }
             else
@@ -237,5 +238,5 @@ internal static class LevelStemTestExtensions
     /// <summary>
     /// The dimension a stem generates with vanilla's noise generator, failing the test when it's another kind.
     /// </summary>
-    public static MojangDimension Noise(this LevelStem? stem) => Assert.IsType<MojangDimension>(stem);
+    public static WorldgenDimension Noise(this LevelStem? stem) => Assert.IsType<WorldgenDimension>(stem);
 }

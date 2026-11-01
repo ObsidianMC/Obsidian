@@ -34,7 +34,7 @@ internal interface IFluidLevelAccess
     public IBlock GetBlock(Vector position);
 
     /// <summary>
-    /// Raw light with no sky darkening. Unlit generation views assume full sky light.
+    /// Brightness for mushroom survival, without sky darkening. Generation may resolve only its light-13 threshold.
     /// </summary>
     public int GetRawBrightness(Vector position) => 15;
 
@@ -67,6 +67,10 @@ internal interface IFluidLevelAccess
     /// tick list of the position's chunk (ignored when one is already scheduled there for that fluid).
     /// </summary>
     public void ScheduleFluidTick(Vector position, FluidKind fluid, int delay);
+
+    public void ScheduleBlockTick(Vector position, IBlock block, int delay)
+    {
+    }
 
     /// <summary>
     /// Vanilla <c>levelEvent</c> (sounds and particles, like 1501 for lava fizzing).

@@ -175,7 +175,7 @@ internal sealed class FeatureDecorator
     // Places the starts of a structure reaching the chunk. A start made of plugins' types runs their code, so placing
     // it is a call into the plugins it started with: one whose plugins are unloading is left out, like their features,
     // and its failing is theirs.
-    private static void PlaceStructure(List<StructureStart> starts, StructurePieceContext context)
+    internal static void PlaceStructure(List<StructureStart> starts, StructurePieceContext context)
     {
         foreach (var start in starts)
         {

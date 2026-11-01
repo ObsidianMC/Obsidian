@@ -22,6 +22,7 @@ internal sealed class WorldgenData(Func<string, string, Stream?> open, Func<stri
     private const string ResourcePrefix = "Obsidian.Assets.worldgen_26_3.";
 
     private readonly ConcurrentDictionary<(string Registry, string Id), JsonElement> entries = new();
+    private Action<string, string, JsonElement>? readObserver;
 
     // Entries laid over the opened ones (see With), by registry and qualified identifier; none for opened data.
     private readonly FrozenDictionary<(string Registry, string Id), JsonElement> layered =
@@ -66,10 +67,11 @@ internal sealed class WorldgenData(Func<string, string, Stream?> open, Func<stri
     {
         var key = (registry, Qualify(id));
 
-        if (this.layered.TryGetValue(key, out var entry))
-            return entry;
-
-        return this.entries.GetOrAdd(key, static (key, open) => Parse(open, key.Registry, key.Id), open);
+        var value = this.layered.TryGetValue(key, out var entry)
+            ? entry
+            : this.entries.GetOrAdd(key, static (key, open) => Parse(open, key.Registry, key.Id), open);
+        this.readObserver?.Invoke(key.Item1, key.Item2, value);
+        return value;
     }
 
     /// <summary>
@@ -88,6 +90,12 @@ internal sealed class WorldgenData(Func<string, string, Stream?> open, Func<stri
 
         return layered.Count == 0 ? this : new WorldgenData(this, layered.ToFrozenDictionary());
     }
+
+    internal WorldgenData TraceReads(Action<string, string, JsonElement> read) => new((registry, id) =>
+        new MemoryStream(JsonSerializer.SerializeToUtf8Bytes(this.Read(registry, id))), this.Ids)
+        { readObserver = read };
+
+    internal void StopTracing() => this.readObserver = null;
 
     // Reads what this data opens, below its own layered entries, for data laid over it.
     private Stream? OpenBelow(string registry, string id)

@@ -7,7 +7,7 @@ namespace Obsidian.WorldData.Features;
 /// </summary>
 internal static class DripstoneUtils
 {
-    private static readonly BlockSet dripstoneReplaceable = LegacyWorldgenTags.Blocks("dripstone_replaceable_blocks");
+    private static readonly WorldgenTags.BlockGroup dripstoneReplaceable = WorldgenTags.Blocks("dripstone_replaceable_blocks");
 
     private static IBlock DripstoneBlock => field ??= BlocksRegistry.DripstoneBlock;
 

@@ -5,6 +5,9 @@ using Obsidian.Tests.Fakes;
 using Obsidian.Utilities;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators;
+using Obsidian.WorldData.Maps;
+using Obsidian.API.Loot;
+using Obsidian.API.Inventory.DataComponents;
 using System;
 using System.IO;
 using System.Linq;
@@ -28,6 +31,10 @@ public sealed class Pregeneration
     public async Task PregeneratedChunksAreSavedAndUnloaded()
     {
         const int range = 2;
+        // A fresh registry exercises placement-time cache initialization in the parallel waves.
+        var features = new Obsidian.WorldData.Generators.Features.FeatureRegistry(
+            Obsidian.WorldData.Generators.Density.WorldgenData.Vanilla);
+        var structures = Obsidian.WorldData.Generators.Features.StructureData.Read(features);
         var configuration = new ServerConfiguration { SpawnChunkRadius = 1, TimeTickSpeedMultiplier = 1, PregenerateChunkRange = range };
         var world = new World(
             Microsoft.Extensions.Logging.Abstractions.NullLogger<World>.Instance,
@@ -35,7 +42,7 @@ public sealed class Pregeneration
             new FakePacketBroadcaster(),
             new TestOptionsMonitor<ServerConfiguration>(configuration),
             new FakeEventDispatcher(),
-            new MojangGenerator(),
+            new MojangGenerator { Features = () => features, Structures = () => structures },
             $"pregeneration-{Guid.NewGuid():N}",
             "12345");
         world.Initialize(new DimensionCodec
@@ -74,6 +81,18 @@ public sealed class Pregeneration
                 for (var z = centerZ - range; z < centerZ + range; z++)
                     Assert.True((await world.GetChunkAsync(x, z, scheduleGeneration: false))!.IsGenerated);
             }
+
+            // Searches and explorer previews use the running generator's current structure and biome paths.
+            var generator = Assert.IsType<MojangGenerator>(world.Generator);
+            var found = generator.LocateStructure(locator => locator.Locate(
+                "minecraft:village", (Vector)world.LevelData.SpawnPosition.Floor(), 100, false));
+            Assert.NotNull(found);
+            var maps = Assert.IsType<ExplorationMaps>(ExplorationMaps.For(world));
+            var map = maps.Create(new ExplorationMapRequest("minecraft:village", world.LevelData.SpawnPosition,
+                100, false, 1, "minecraft:mansion"));
+            Assert.NotNull(map);
+            Assert.NotNull(MapStorage.GetMapId(map));
+            Assert.NotNull(map[DataComponentType.MapDecorations]);
         }
         finally
         {

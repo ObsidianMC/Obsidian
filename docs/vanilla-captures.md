@@ -429,7 +429,7 @@ outputs and count resampling. Predicate references add `height_range` and `volum
 Template features require an explicit 26.3 template resolver. The replay extracts templates from the cached
 26.3 server jar instead of using the legacy structure cache; NBT templates are not checked into the repository.
 Processor lists are read from the 26.3 worldgen assets, adapting compact block states at the feature compiler
-boundary before invoking the shared processor algorithms. These additions do not switch the live generator.
+boundary before invoking the shared processor algorithms. These additions are now used by the live generator.
 
 A recursive scan of the 26.3 `feature` assets, including inline child features, finds 56 feature types. The
 26.3 registry currently implements 43 of them. The remaining types are `end_podium`, `fallen_tree`, `fossil`,
@@ -438,3 +438,45 @@ A recursive scan of the 26.3 `feature` assets, including inline child features, 
 the parallel tree work. The other seven remain follow-up work. In particular, the legacy iceberg algorithm
 differs from 26.3 captures and is deliberately not registered as a 26.3 implementation. Unsupported types
 continue to fail explicitly when compiled.
+
+### Spawn search and initial population
+
+`WorldgenCaptures.java` records `spawn_search.json` through vanilla 26.3's `NoiseSpawnFinder`: two Overworld
+seeds, the Nether's empty targets, and custom density-function target ranges. `VanillaGenerationStart` replays
+all four through the live `SpawnSearch`. This checks the two radial sweeps, quart-aligned density samples,
+quantized target distances and strict tie handling, rather than pinning our interpretation in hand-written cases.
+
+`population.json` calls vanilla's `NaturalSpawner.spawnMobsForChunkGeneration` in layered chunk regions. Six
+cases cover pig, cow, mooshroom and turtle packs, a rejected stone floor and an empty creature table. The replay checks
+entity types, positions, yaw/pitch and the next population-random value. This distinguishes weighted selection,
+pack counts, placement retries, jitter and recentering draws. The live stage reads
+`creature_world_gen_spawn_probability` and creature tables through the current spawn attributes. Age and appearance
+also use region/per-entity randomness; these captures do not establish parity for independently randomized entity
+appearance or initialization NBT.
+
+Record only these sections with `CaptureSections=spawn_search` or `CaptureSections=population` on the existing
+`CaptureVanillaWorldgen` target. No other captures were re-recorded for the live switch. The retained 1.21.11
+replays select legacy tags only within their generation scope; live shared helpers and plant growth use current tags.
+
+### Chunk completion
+
+`completion.json` captures two chunks generated to FULL by the pinned 26.3 server: an ocean chunk with water,
+magma, bubble columns and aquatic vegetation, and a Nether chunk with marked mushrooms. The probe records the
+actual pre-FULL neighboring blocks, ordered marks and scheduled ticks, then the final blocks and scheduled block
+and fluid ticks after `LevelChunk.postProcessGeneration`. `VanillaCompletion.FullChunksMatchVanilla` replays native
+completion from those inputs, rather than feeding captured final blocks into the heightmap updater. This isolates
+completion from neighboring feature execution order. Completion uses a separate one-worker server so its FULL
+neighbor writes reproduce without changing older captures. Full light arrays are omitted; raw light at every marked
+mushroom is recorded before and after FULL, and the replay checks its survival threshold against those stored values.
+Fluid registry identities (including source versus flowing), priorities and every scheduled delay are compared exactly.
+The ocean case also seeds an inherited flowing-water tick beside its existing source-water tick at the same position,
+so conflating the two registry identities fails the replay.
+The current cases have no qualifying non-falling lava level increase that draws a random spread delay. If adding such
+a case, allow only its base delay or four times that delay at the specific new tick, while retaining exact inherited
+ticks and other deterministic delays. Do not normalize all lava delays.
+
+The new beach population case records successful turtles and the population-random tail. Native completion checks
+mushroom survival against the light engine's emission, attenuation and face occlusion at its light-13 threshold,
+including nearby lava, and ticks marked source water into bubble columns with their scheduled block checks. The
+reconstructed threshold reads changing blocks rather than vanilla's stored pre-FULL light; see the
+[completion light timing gap](known-gaps/completion-reads-light-from-changing-blocks.md) for its precise limit.

@@ -5,7 +5,7 @@ using Obsidian.WorldData.Generators.Mojang.Features;
 namespace Obsidian.WorldData.Generators.Features;
 
 /// <summary>
-/// The 26.3 features status, beside the live generator. The caller supplies terrain-status chunks and keeps
+/// The live 26.3 features status. The caller supplies terrain-status chunks and keeps
 /// their writes when decorating adjacent chunks. Structures place each step before its placed features.
 /// </summary>
 internal sealed class BiomeDecoration
@@ -34,6 +34,8 @@ internal sealed class BiomeDecoration
     }
 
     public IReadOnlyList<string[]> Steps { get; }
+
+    internal FeatureRegistry Registry => this.registry;
 
     /// <summary>
     /// Matches ChunkGenerator.applyBiomeDecoration: all section biomes in the surrounding 3x3 chunks,

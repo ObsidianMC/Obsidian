@@ -96,7 +96,17 @@ internal static partial class PluginNoise
         ILogger logger)
     {
         lock (applying)
-            Volatile.Write(ref current, Build(files, types, logger));
+        {
+            var kept = VanillaOverrides.LastWins(files,
+                file => (file.Registry, file.Identifier), file => file.Source, logger);
+            var native = new WorldgenNoise(
+                FrozenDictionary<string, NoiseSetting>.Empty,
+                FrozenDictionary<string, IDensityFunction>.Empty,
+                FrozenDictionary<string, BaseNoise>.Empty,
+                FrozenDictionary<object, ImmutableArray<object>>.Empty,
+                WorldgenTypes.With(types)) { Files = kept.ToArray() };
+            Volatile.Write(ref current, native);
+        }
     }
 
     /// <summary>
@@ -467,9 +477,19 @@ internal sealed class WorldgenNoise
     /// <summary>
     /// Finds a multi-noise parameter list by identifier: a file's, or vanilla's.
     /// </summary>
-    public bool TryGetParameterList(string identifier, [NotNullWhen(true)] out ParameterListPreset? list) =>
-        this.ParameterLists.TryGetValue(identifier, out list)
-        || this.builtIn && ParameterListPreset.Vanilla.TryGetValue(identifier, out list);
+    public bool TryGetParameterList(string identifier, [NotNullWhen(true)] out ParameterListPreset? list)
+    {
+        var file = this.Files.LastOrDefault(file => file.Registry == PluginNoise.ParameterList
+            && file.Identifier == identifier);
+        if (file is not null)
+        {
+            list = ParameterListPreset.Read(file.Json, identifier);
+            return true;
+        }
+
+        return this.ParameterLists.TryGetValue(identifier, out list)
+            || this.builtIn && ParameterListPreset.Vanilla.TryGetValue(identifier, out list);
+    }
 
     public ImmutableArray<PluginContainer> Owners(object entry) =>
         [.. this.Dependencies(entry).OfType<PluginContainer>()];

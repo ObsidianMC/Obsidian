@@ -153,7 +153,7 @@ public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) 
         {
             var (regionX, regionZ) = (ChunkX >> Region.CubicRegionSizeShift, ChunkZ >> Region.CubicRegionSizeShift);
 
-            var structures = new ChunkBuilder(Seed).Structures!;
+            var structures = NativeChunks.Pipeline(Seed, () => PluginStructures.CurrentRegistry).Structures!;
             var hut = structures.GetStarts(ChunkX, ChunkZ).Single(start => start.Structure.Identifier == SwampHut);
             this.PlacedHutBox = hut.Pieces[0].BoundingBox.Move(0, PlacedHeight - hut.Pieces[0].BoundingBox.MinY, 0);
             hut.RestoreState(PlacedHutState(hut));
@@ -172,7 +172,8 @@ public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) 
                     ChunkZ - (regionZ << Region.CubicRegionSizeShift));
             }
 
-            this.Hut = new ChunkBuilder(Seed).Structures!.GetStarts(ChunkX, ChunkZ).Single(start => start.Structure.Identifier == SwampHut);
+            var restarted = NativeChunks.Pipeline(Seed, () => PluginStructures.CurrentRegistry).Structures!;
+            this.Hut = restarted.GetStarts(ChunkX, ChunkZ).Single(start => start.Structure.Identifier == SwampHut);
             this.Hut.RestoreState(this.Chunk.StructureStarts!.TryGetTag<NbtCompound>(SwampHut, out var saved) ? saved : null);
         }
 

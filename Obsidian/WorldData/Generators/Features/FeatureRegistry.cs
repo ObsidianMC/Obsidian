@@ -3,6 +3,7 @@ using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Generators.Terrain;
 using System.IO;
+using System.Collections.Concurrent;
 using System.Text.Json;
 
 namespace Obsidian.WorldData.Generators.Features;
@@ -40,8 +41,8 @@ internal sealed partial class FeatureRegistry(WorldgenData data)
 {
     private readonly Dictionary<string, PlacedFeature> placedFeatures = [];
     private readonly Dictionary<string, Feature> features = [];
-    private readonly Dictionary<string, HashSet<int>> blockTags = [];
-    private readonly Dictionary<string, HashSet<string>> biomeFeatures = [];
+    private readonly ConcurrentDictionary<string, HashSet<int>> blockTags = [];
+    private readonly ConcurrentDictionary<string, HashSet<string>> biomeFeatures = [];
 
     public WorldgenData Data { get; } = data;
 
@@ -111,7 +112,7 @@ internal sealed partial class FeatureRegistry(WorldgenData data)
         if (this.pluginLookups && TagsRegistry.TryGet("block", id, out var tag))
         {
             blocks.UnionWith(tag.Entries);
-            this.blockTags.Add(id, blocks);
+            this.blockTags.TryAdd(id, blocks);
             return blocks;
         }
 
@@ -131,7 +132,7 @@ internal sealed partial class FeatureRegistry(WorldgenData data)
             }
         }
 
-        this.blockTags.Add(id, blocks);
+        this.blockTags.TryAdd(id, blocks);
         return blocks;
     }
 
@@ -150,7 +151,7 @@ internal sealed partial class FeatureRegistry(WorldgenData data)
                 }
             }
 
-            this.biomeFeatures.Add(biome, placed);
+            this.biomeFeatures.TryAdd(biome, placed);
         }
 
         return feature.Id is not null && placed.Contains(feature.Id);

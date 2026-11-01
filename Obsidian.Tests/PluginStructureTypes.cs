@@ -1,4 +1,14 @@
 using Obsidian.API;
+using Obsidian.Plugins;
+using Obsidian.Plugins.Archives;
+using Obsidian.Tests.Fakes;
+using Obsidian.Tests.Utilities;
+using Obsidian.WorldData;
+using Obsidian.WorldData.Generators;
+using System.Collections.Frozen;
+using System.Collections.Immutable;
+using System.IO;
+using System.Threading.Tasks;
 using Obsidian.API.Registries;
 using Obsidian.API.World.Structures;
 using Obsidian.Nbt;
@@ -96,7 +106,6 @@ public class PluginStructureTypes
         """;
 
     [Theory(DisplayName = "A plugin's structure type starts and places its pieces, and goes with the plugin")]
-    [InlineData(false)]
     [InlineData(true)]
     public void GeneratesPluginStructureTypes(bool current)
     {
@@ -110,8 +119,8 @@ public class PluginStructureTypes
         Assert.Equal(5, Assert.IsType<SpireType>(spire.Definition).Height);
 
         var structures = Only(built, "structuretest:spires");
-        var builder = new ChunkBuilder(MojangDimension.Overworld, Seed, structures: () => structures);
-        var chunks = new FullChunks(builder, MojangDimension.Overworld);
+        var builder = NativeChunks.Pipeline(Seed, () => structures);
+        var chunks = new NativeChunks(builder);
         var manager = builder.Structures!;
 
         var start = manager.GetStarts(0, 0).Single(candidate => candidate.Structure.Identifier == Spire);
@@ -129,15 +138,62 @@ public class PluginStructureTypes
         Assert.Equal(0, Count(chunks.Get(8, 8), BlockIds.EmeraldBlock));
 
         // After a restart without the plugin, the chunk's saved start loads and stays as it was saved.
-        var restarted = new ChunkBuilder(MojangDimension.Overworld, Seed, structures: () => structures).Structures!;
+        var restarted = NativeChunks.Pipeline(Seed, () => structures).Structures!;
         foreach (var candidate in restarted.GetStarts(0, 0))
             StructureManager.RestoreStart(candidate, saved);
 
         Assert.True(restarted.SaveStarts(0, 0, saved)!.TryGetTag<NbtCompound>(Spire, out _));
     }
 
+    [Fact]
+    public async Task ThrowingStructurePieceStopsOnlyItsGenerator()
+    {
+        var plugin = new PluginContainer
+        {
+            Info = new PluginInfo("structureprobe"),
+            Archive = PluginArchive.Open("structureprobe.obby", PluginArchives.Zip(new Dictionary<string, byte[]>
+            {
+                [PluginMetadata.FileName] = PluginArchives.Metadata("structureprobe", "1.0.0", "Probe")
+            }))
+        };
+        var files = SpireFiles();
+        files[0] = Parse(PluginStructures.Structure, Spire,
+            SpireStructure.Replace("\"height\": 5", "\"height\": 5, \"fail\": true"));
+        var built = Only(Build(files, Types(), new PluginFeatureFiles.ListLogger(), true), "structuretest:spires");
+        var structures = built with
+        {
+            Owners = new Dictionary<Structure, ImmutableArray<PluginContainer>>
+            {
+                [built.Structures[Spire]] = [plugin]
+            }.ToFrozenDictionary()
+        };
+        var features = new FeatureRegistry(PluginFeatureRegistry.EmptyBiomes());
+        var generator = new MojangGenerator { Features = () => features, Structures = () => structures };
+        var world = TestWorldFactory.Create($"throwing-structure-{Guid.NewGuid():N}", generator);
+        try
+        {
+            var chunk = await generator.GenerateChunkAsync(0, 0, stage: ChunkGenStage.features);
+            Assert.Equal(ChunkGenStage.features, chunk.ChunkStatus);
+            Assert.Null(generator.Builder);
+            Assert.Same(plugin, Assert.Single(generator.FailedBy));
+            Assert.True(Count(chunk, BlockIds.EmeraldBlock) > 0);
+
+            // The write before the failure survives; another dimension's pipeline still generates normally.
+            var healthy = NativeChunks.Pipeline(Seed, () => built);
+            var other = new Chunk(4, 4);
+            healthy.Generate(other);
+            Assert.Equal(ChunkGenStage.carvers, other.ChunkStatus);
+        }
+        finally
+        {
+            await world.DisposeAsync();
+            Directory.Delete(world.WorldFolderPath, recursive: true);
+            PluginDimensions.GiveBack("minecraft:overworld");
+            plugin.Close();
+        }
+    }
+
     [Theory(DisplayName = "A plugin's pool element types are placed by template pools, and connect by their jigsaws")]
-    [InlineData(false)]
     [InlineData(true)]
     public void PlacesPluginPoolElements(bool current)
     {
@@ -150,8 +206,8 @@ public class PluginStructureTypes
         Assert.Equal(4, Assert.IsType<PillarElement>(element.Element).Height);
 
         var structures = Only(built, "structuretest:pillars");
-        var builder = new ChunkBuilder(MojangDimension.Overworld, Seed, structures: () => structures);
-        var chunks = new FullChunks(builder, MojangDimension.Overworld);
+        var builder = NativeChunks.Pipeline(Seed, () => structures);
+        var chunks = new NativeChunks(builder);
 
         // The pillar, then the cap attached to its top jigsaw by the cap's default bottom one.
         var start = builder.Structures!.GetStarts(0, 0).Single(candidate => candidate.Structure.Identifier == Pillar);
@@ -221,6 +277,8 @@ public class PluginStructureTypes
     {
         public required int Height { get; init; }
 
+        public bool Fail { get; init; }
+
         public override Vector? FindStart(StructureStartContext context)
         {
             var x = (context.ChunkX << 4) + 8;
@@ -232,15 +290,19 @@ public class PluginStructureTypes
             StructureStartContext context,
             Vector start,
             ICollection<CustomStructurePiece> pieces) =>
-            pieces.Add(new SpirePiece(new BlockArea(start, start + new Vector(0, this.Height - 1, 0))));
+            pieces.Add(new SpirePiece(new BlockArea(start, start + new Vector(0, this.Height - 1, 0)), this.Fail));
     }
 
-    private sealed class SpirePiece(BlockArea bounds) : CustomStructurePiece(bounds)
+    private sealed class SpirePiece(BlockArea bounds, bool fail) : CustomStructurePiece(bounds)
     {
         public override void Place(CustomPieceContext context)
         {
             for (var y = 0; y <= this.Bounds.Max.Y - this.Bounds.Min.Y; y++)
+            {
                 context.SetBlock(new Vector(0, y, 0), BlocksRegistry.EmeraldBlock);
+                if (fail)
+                    throw new InvalidOperationException("structure piece failed after writing");
+            }
         }
     }
 

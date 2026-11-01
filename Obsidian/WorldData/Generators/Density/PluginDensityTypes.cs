@@ -108,7 +108,7 @@ internal sealed class PluginDensityTypes(WorldgenTypes types) : IDensityTypes
         throw new InvalidDataException($"{identifier}: features can't be used here");
 
     // A named 26.3 noise, seeded for the compiler's world; inline noises and a plugin's own noise class can't be.
-    private static BaseNoise Noise(JsonElement json, Type target, string path, DensityCompiler compiler)
+    internal static BaseNoise Noise(JsonElement json, Type target, string path, DensityCompiler compiler)
     {
         if (target != typeof(INoise) && target != typeof(BaseNoise))
         {

@@ -272,31 +272,22 @@ public sealed class DataPackStartup : IDisposable
             {
               "sea_level": 63,
               "disable_mob_generation": false,
-              "aquifers_enabled": false,
-              "ore_veins_enabled": false,
               "legacy_random_source": false,
-              "default_block": { "Name": "minecraft:stone" },
+              "default_block": "minecraft:stone",
               "default_fluid": { "Name": "minecraft:water", "Properties": { "level": "0" } },
-              "noise": { "min_y": 0, "height": 512, "size_horizontal": 1, "size_vertical": 2 },
+              "noise": { "min_y": 0, "height": 512 },
               "noise_router": {
-                "barrier": 0,
-                "fluid_level_floodedness": 0,
-                "fluid_level_spread": 0,
-                "lava": 0,
                 "temperature": 0,
                 "vegetation": 0,
                 "continents": 0,
                 "erosion": 0,
                 "depth": 0,
                 "ridges": 0,
-                "preliminary_surface_level": 0,
-                "final_density": 0,
-                "vein_toggle": 0,
-                "vein_ridged": 0,
-                "vein_gap": 0
+                "chunk_surface_level": 0,
+                "final_density": 0
               },
               "spawn_target": [],
-              "surface_rule": { "type": "minecraft:sequence", "sequence": [] }
+              "material_rule": { "type": "minecraft:sequence", "sequence": [] }
             }
             """;
 
@@ -334,7 +325,7 @@ public sealed class DataPackStartup : IDisposable
             manager.FinishStartup(Path.Join(this.folder, "packs"));
 
             Assert.Equal(0, CodecRegistry.Dimensions.All["minecraft:overworld"].Element.MinY);
-            Assert.Equal("startuptest:tall", PluginDimensions.Find("minecraft:overworld").Noise().NoiseSettings);
+            Assert.Equal("startuptest:tall", PluginDimensions.Find("minecraft:overworld").Noise().SettingsId);
         }
         finally
         {

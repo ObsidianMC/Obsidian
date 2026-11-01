@@ -1,5 +1,6 @@
 using Obsidian.API.World.Generator;
 using Obsidian.Plugins;
+using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Generators.Biomes;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Generators.Mojang;
@@ -24,7 +25,8 @@ internal static partial class LevelStemData
         string path,
         WorldgenNoise noise,
         WorldgenData data,
-        HashSet<PluginContainer> plugins)
+        HashSet<PluginContainer> plugins,
+        bool legacyRandomSource)
     {
         CodecJson.Object(value, path);
         var typePath = CodecJson.Field(path, "type");
@@ -56,10 +58,47 @@ internal static partial class LevelStemData
                         + "minecraft:checkerboard, minecraft:the_end or a type a plugin registered");
                 }
 
-                var (source, possibleBiomes) = ReadPluginSource(value, path, noise, plugins, null);
-                return new PluginLayout(source, possibleBiomes);
+                return NativePluginLayout(value, path, noise, data, plugins, legacyRandomSource);
         }
     }
+
+    // Source properties use the same native density/noise adapters as terrain plugins. Discover owners with a
+    // placeholder seed, then retain only the source's types and rebuild its seeded values for each world.
+    private static PluginLayout NativePluginLayout(JsonElement value, string path, WorldgenNoise noise,
+        WorldgenData data, HashSet<PluginContainer> plugins, bool legacyRandomSource)
+    {
+        var used = new HashSet<Type>();
+        var density = new PluginDensityTypes(noise.Types);
+        var compiler = new DensityCompiler(data, 0, legacyRandomSource, types: density);
+        var reader = SourceReader(noise.Types, compiler, type =>
+        {
+            used.Add(type);
+            if (WorldgenDependencies<PluginContainer>.Owner(type) is PluginContainer owner)
+                plugins.Add(owner);
+        });
+        var (source, biomes) = ReadPluginSource(value, path, noise, plugins, null, reader);
+        plugins.UnionWith(density.Owners);
+
+        var factory = SourceFactory(value.Clone(), path, data, noise.Types.Narrow(used),
+            density.Narrowed(), legacyRandomSource);
+        return new PluginLayout(source, biomes, factory);
+    }
+
+    private static Func<long, BiomeSourceBase> SourceFactory(JsonElement value, string path, WorldgenData data,
+        WorldgenTypes types, PluginDensityTypes? density, bool legacyRandomSource) => seed =>
+    {
+        var compiler = new DensityCompiler(data, seed, legacyRandomSource, types: density);
+        return SourceReader(types, compiler).Read<BiomeSourceBase>(value, path);
+    };
+
+    private static WorldgenReader SourceReader(WorldgenTypes types, DensityCompiler compiler,
+        Action<Type>? created = null) => new(types,
+            id => throw new InvalidDataException($"{id}: features can't be used in a biome source"),
+            id => throw new InvalidDataException($"{id}: features can't be used in a biome source"), created)
+        {
+            DensityFunctions = (json, path) => new CompiledDensityFunction(compiler.Compile(json, path)),
+            Noises = (json, target, path) => PluginDensityTypes.Noise(json, target, path, compiler)
+        };
 
     // Like vanilla's Codec.mapEither: an inline biomes list, or else a parameter list naming one of 26.3's presets.
     private static MultiNoiseLayout MultiNoiseLayout(

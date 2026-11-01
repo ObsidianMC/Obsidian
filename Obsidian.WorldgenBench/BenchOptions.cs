@@ -63,23 +63,28 @@ internal sealed record BenchOptions(IReadOnlyList<BenchDimension> Dimensions, in
 
 /// <summary>
 /// A dimension, the chunk its square is centred on, and the hashes of the square's chunks for the default seed and
-/// radius: the live generator's, and the 26.3 pipeline's (<see cref="CurrentPreset"/> is its biome preset).
+/// radius: the legacy generator's, and the live 26.3 pipeline's (<see cref="CurrentPreset"/> is its biome preset).
 /// </summary>
 internal sealed record BenchDimension(string Name, MojangDimension Dimension, int CenterX, int CenterZ, string ExpectedHash,
     string ExpectedNbtHash, string CurrentPreset, string CurrentHash, string CurrentNbtHash)
 {
-    // Optimizations must not change them. The live generator's were recorded on origin/26.3.x 80555196, whose block
+    // Optimizations must not change them. The legacy generator's were recorded on origin/26.3.x 80555196, whose block
     // states and saved chunks differ from 1.21.x's (on 1.21.x they were c73225baaf86c6fe and 0525f8628623dc64 for the
     // overworld). The 26.3 references include BiomeTerrain.CompleteHeightmaps: decoration's final maps are handed
     // to chunk storage after all neighboring decoration, before lighting and saving. Its surfaces read the biomes
     // stored in the chunk and its neighbors, like vanilla's, rather than fresh climate searches, which resolve some
     // exact ties differently (the End's biomes take no search, so that only moved the overworld's and Nether's).
+    // The live switch adds fluid/shape post-processing before heightmaps and lighting. Only the 26.3 Overworld
+    // and Nether hashes were re-recorded for those final blocks, light and scheduled ticks; legacy hashes stay fixed.
+    // Shared vegetation support now selects 26.3's supports_vegetation tag; legacy replays keep their own dirt tag.
+    // Completion now retains dark Nether mushrooms (while checking nearby emission), and ticks marked water into
+    // bubble columns with block checks. FULL completion captures back these final-block/tick reference changes.
     public static IReadOnlyList<BenchDimension> All { get; } =
     [
         new("overworld", MojangDimension.Overworld, 6, -2, "6f824c2e873bca90", "869a5df6644e5d41",
-            "minecraft:overworld", "7f525e4814b7a87f", "a28eda4465b76827"),
+            "minecraft:overworld", "2d54ff3885c4051e", "549e4efa115c90f3"),
         new("nether", MojangDimension.Nether, 0, 0, "2880fa86ca3c5e6c", "fec88678179d32d9",
-            "minecraft:nether", "bb77820e04f62b7b", "b85513bc6f8e9c30"),
+            "minecraft:nether", "3ef4470d0a7794b8", "d7a5b14aeb9f4477"),
         new("end", MojangDimension.End, 6, 0, "5c34c3f5867f27ac", "d940fd5e665d6164",
             "minecraft:the_end", "5c34c3f5867f27ac", "762ccf03eda84ce2"),
     ];

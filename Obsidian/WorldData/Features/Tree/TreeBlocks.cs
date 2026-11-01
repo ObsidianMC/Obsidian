@@ -8,11 +8,11 @@ namespace Obsidian.WorldData.Features.Tree;
 /// </summary>
 internal static class TreeBlocks
 {
-    public static readonly BlockSet Leaves = LegacyWorldgenTags.Blocks("leaves");
+    public static readonly WorldgenTags.BlockGroup Leaves = WorldgenTags.Blocks("leaves");
 
-    public static readonly BlockSet Dirt = LegacyWorldgenTags.Blocks("dirt");
+    public static readonly WorldgenTags.BlockGroup Dirt = WorldgenTags.Blocks("dirt");
 
-    public static readonly BlockSet Snow = LegacyWorldgenTags.Blocks("snow");
+    public static readonly WorldgenTags.BlockGroup Snow = WorldgenTags.Blocks("snow");
 
     private static readonly BlockSet vine = new("minecraft:vine");
 

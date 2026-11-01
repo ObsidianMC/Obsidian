@@ -1,3 +1,4 @@
+using Obsidian.WorldData.Generators;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.API.World.Structures;
 using Obsidian.WorldData.Features;
@@ -13,9 +14,9 @@ namespace Obsidian.WorldData.Structures.Processors;
 public sealed class BlockAgeProcessor : StructureProcessor
 {
     private static readonly BlockSet fullStone = new("minecraft:stone_bricks", "minecraft:stone", "minecraft:chiseled_stone_bricks");
-    private static readonly BlockSet stairs = LegacyWorldgenTags.Blocks("stairs");
-    private static readonly BlockSet slabs = LegacyWorldgenTags.Blocks("slabs");
-    private static readonly BlockSet walls = LegacyWorldgenTags.Blocks("walls");
+    private static readonly WorldgenTags.BlockGroup stairs = WorldgenTags.Blocks("stairs");
+    private static readonly WorldgenTags.BlockGroup slabs = WorldgenTags.Blocks("slabs");
+    private static readonly WorldgenTags.BlockGroup walls = WorldgenTags.Blocks("walls");
 
     private static readonly IBlock[] nonMossyReplacements =
         [BlockStateProperties.GetState("minecraft:stone_slab"), BlockStateProperties.GetState("minecraft:stone_brick_slab")];

@@ -196,12 +196,11 @@ public class PluginTagFiles
         {
             PluginTags.Apply([], logger);
             Assert.Empty(logger.Messages);
-            // Built-in tags must agree with the legacy structure registry until Phase 5, including nested tags whose
-            // current contents may name new structures (such as abandoned camps).
-            foreach (var (identifier, structures) in Registries.StructureTags.All)
+            // Built-in tags resolve the current data pack, including nested tags and newly added structures.
+            foreach (var (identifier, structures) in CurrentStructureTags.All)
             {
                 Assert.True(PluginTags.TryGetIdentifiers(PluginTags.Structure, identifier, out var resolved));
-                Assert.Equal(structures.Select(structure => structure.Identifier), resolved.AsEnumerable());
+                Assert.Equal(structures.Order(), resolved.Order());
             }
             Assert.True(PluginTags.TryGetIdentifiers(PluginTags.Structure, treasure, out var vanilla));
             Assert.Equal(["minecraft:buried_treasure"], vanilla.AsEnumerable());

@@ -13,8 +13,7 @@ internal static partial class PluginFeatures
     private static FeatureInputs inputs = new([], [], [], NullLogger.Instance);
 
     /// <summary>
-    /// The 26.3 counterpart of <see cref="Current"/>. Replaced on the same successful apply, including unload.
-    /// The live generator still uses Current; switching it must also refresh its decoration and structure layout.
+    /// The live 26.3 registry. Replaced on the same successful apply as its shared feature adapter, including unload.
     /// </summary>
     public static FeatureRegistry CurrentRegistry => Volatile.Read(ref inputs).Registry.Value;
 

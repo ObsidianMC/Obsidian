@@ -19,8 +19,8 @@ using WorldgenBench;
 //   --radius N                            (default 16: 1,024 chunks)
 //   --seed N                              (default 12345)
 //   --cold                                serial: skip the warmup; pipeline: time the first pass rather than a second one
-//   --generator 1.21.11|26.3              serial: the live generator (default) or the 26.3 pipeline (BiomeTerrain),
-//                                         with its structures and 26.3 templates; it has no post-processing stage
+//   --generator 1.21.11|26.3              serial: the retained 1.21.11 pipeline (default) or the live 26.3 pipeline,
+//                                         with structures, current templates, post-processing and initial population
 //
 // Each dimension is centred where a server pregenerates it for seed 12345: the overworld on its spawn chunk (6, -2), the
 // nether on (0, 0) and the end on its spawn platform's chunk (6, 0). Run a Release build.

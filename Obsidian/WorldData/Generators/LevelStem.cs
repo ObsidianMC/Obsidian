@@ -12,7 +12,7 @@ namespace Obsidian.WorldData.Generators;
 /// </summary>
 /// <remarks>
 /// The kinds are vanilla's chunk generators: <c>minecraft:noise</c>
-/// (<see cref="Mojang.MojangDimension"/>), <c>minecraft:flat</c> (<see cref="FlatStem"/>) and
+/// (<see cref="Biomes.WorldgenDimension"/>), <c>minecraft:flat</c> (<see cref="FlatStem"/>) and
 /// <c>minecraft:debug</c> (<see cref="DebugStem"/>), and Obsidian's plugin generators (see
 /// <see cref="PluginGeneratorStem"/>).
 /// </remarks>
@@ -52,6 +52,9 @@ internal abstract class LevelStem
     /// The biomes the stem names for its generator to generate, which a reload changing makes a change to the stem.
     /// </summary>
     public abstract IReadOnlyList<BiomeCodec> SourceBiomes { get; }
+
+    public virtual IReadOnlyList<BiomeCodec> PossibleBiomes =>
+        PluginBiomeRegions.PossibleBiomes(this.Identifier, this.SourceBiomes);
 
     /// <summary>
     /// Whether <see cref="Release"/> dropped the generator's parts.

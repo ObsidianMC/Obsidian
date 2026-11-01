@@ -393,7 +393,7 @@ public class VanillaWorldGeneration(WorldgenFixture worldgen)
         }
     }
 
-    private static string BlockNames(IChunk chunk)
+    internal static string BlockNames(IChunk chunk)
     {
         var blocks = new StringBuilder();
         for (var y = chunk.MinY; y < chunk.MinY + chunk.Height; y++)

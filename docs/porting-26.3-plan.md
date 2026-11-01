@@ -360,6 +360,19 @@ in the parts we model.
 
 ### Phase 5: world generation
 
+The live `minecraft:mojang_generator`, Nether and End IDs now run the 26.3 pipeline. Noise level stems build
+`WorldgenDimension` and `BiomeTerrain`; flat, debug and custom plugin generators retain their host dispatch.
+Chunk locks and pregeneration waves are retained, with fluid post-processing, final heightmaps, lighting and
+initial creature population before entity publication. Stored biomes feed weather and natural spawning.
+Structure persistence, searches and explorer-map biome previews use this same pipeline. Successful plugin feature
+and structure applies refresh running generators, and plant growth uses the native feature adapter. Plugins keep
+their per-dimension ownership, unload/reload and collectible-context behavior, including #657's value types.
+
+`spawn_search.json` and `population.json` add vanilla 26.3 evidence for the spawn-target search and initial creature
+packs, including the population random tail. See [capture details](vanilla-captures.md#spawn-search-and-initial-population).
+The legacy pipeline, replay tests and data remain for a separate removal PR; the live pipeline selects current tags
+in shared algorithms. `WorldgenBench --generator 26.3` calls the live terrain/decoration/completion methods.
+
 Re-capture with the Phase 0 harness first, then work in this order. Each step has its own fixture.
 
 1. **Read the new JSON.** Feature, carver and material-rule registries, the new noise and density-function schemas
@@ -376,10 +389,10 @@ Re-capture with the Phase 0 harness first, then work in this order. Each step ha
    - Replace the consolidated types with the general machinery.
    - Add the new feature and placement types and the block-state providers.
    - Speleothems, poplar trees, shelf mushrooms and red shrubs.
-   - Per-biome decoration is implemented beside the live generator in `BiomeTerrain.Decorate`. It collects
+   - Per-biome decoration runs in `BiomeTerrain.Decorate`. It collects
      section biomes from the surrounding 3x3 terrain chunks and runs the source's globally ordered features by
      generation step with 26.3 decoration and feature seeds. `BiomeDecoration.Generate` reserves a structure
-     placement hook before the placed features in each step; structure pieces remain step 6 work.
+     placement hook before the placed features in each step, which places reaching structure starts.
 6. **Structures.** Abandoned camps (jigsaw, so mostly data) and the changed templates. Structure starts are saved
    with vanilla's piece ids and fields, checked against starts vanilla saved (`VanillaStructureSaves`); what remains
    is in [known gaps](known-gaps/structure-pieces-in-saved-chunks.md).
@@ -466,17 +479,15 @@ Phase 2.
 ## Decisions
 
 1. **Existing worlds are upgraded.** Obsidian-written 1.21.11 worlds are upgraded once, on a copy that keeps a backup,
-   as in Phase 3. We don't port general vanilla data fixers.
+   as in Phase 3. We don't port general vanilla data fixers. Existing terrain stays saved; new chunks use 26.3
+   without blending. Incompatible saved structure starts are kept but no longer placed, so structures crossing
+   the frontier may remain incomplete. See [terrain seams](known-gaps/seams-between-1-21-11-and-26-3-terrain.md).
 2. **`1.21.x` is frozen.** It takes only critical fixes from now on, and we merge those forward into `26.3.x`.
 3. **26.3 comes first.** 26.4 is in snapshots and probably ships in December. We finish 26.3, then start `26.4.x` from
    it. Phase 0 is meant to make later version bumps mostly regeneration.
-4. **Worldgen runs on 1.21.11 data until Phase 5; loot now uses 26.3.** Phase 4 removed loot from the legacy asset
-   writer and embedding. The asset generator still writes 1.21.11 worldgen, structure tags, carvers and biome
-   parameters to `Assets/legacy-1.21.11`, embedded under the normal asset names. Natural spawning reads 26.3's biome
-   spawn attributes and fortress spawns. The server extracts 26.3 structure templates at startup and 1.21.11 ones
-   only once the legacy generator first places one. Legacy worldgen reads 1.21.11 tag contents through
-   `obsidian_legacy` tags, which are never sent to clients. `LegacyMinecraftVersion` in `Obsidian.csproj` remains until
-   Phase 5 removes that bridge.
+4. **Live worldgen uses 26.3 data.** Legacy builders, registries, tags and replay/benchmark support remain for the
+   removal PR. Startup extracts only current structure templates. Legacy state data needed for saved-world upgrades
+   must remain available until that upgrade no longer needs it.
 
 ## Risks
 

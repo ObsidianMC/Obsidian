@@ -325,8 +325,11 @@ internal sealed partial class FeatureRegistry
 
     // Modifier cycle checks must include 26.3's new biomes. Custom sources keep the possible biomes registered
     // with their dimension, rather than having a vanilla parameter list imposed on them.
-    internal IEnumerable<BiomeCodec> SourceBiomes(MojangDimension dimension)
+    internal IEnumerable<BiomeCodec> SourceBiomes(LevelStem dimension)
     {
+        if (dimension is not MojangDimension)
+            return dimension.PossibleBiomes;
+
         string? preset = null;
         if (ReferenceEquals(dimension, MojangDimension.Overworld))
             preset = "minecraft:overworld";

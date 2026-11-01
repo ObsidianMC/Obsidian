@@ -1,3 +1,4 @@
+using Obsidian.WorldData.Generators;
 using Obsidian.Nbt;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Features;
@@ -201,7 +202,7 @@ public sealed class RuinedPortalProperties
 /// </summary>
 public sealed class RuinedPortalPiece : TemplateStructurePiece
 {
-    private static readonly BlockSet featuresCannotReplace = LegacyWorldgenTags.Blocks("features_cannot_replace");
+    private static readonly WorldgenTags.BlockGroup featuresCannotReplace = WorldgenTags.Blocks("features_cannot_replace");
 
     private static readonly float[] spreadChances = [1f, 1f, 1f, 1f, 1f, 1f, 1f, 0.9f, 0.9f, 0.8f, 0.7f, 0.6f, 0.4f, 0.2f];
 
@@ -391,7 +392,7 @@ public sealed class RuinedPortalPiece : TemplateStructurePiece
         settings.Processors.Add(properties.AirPocket ? BlockIgnoreProcessor.StructureBlock : BlockIgnoreProcessor.StructureAndAir);
         settings.Processors.Add(new RuleProcessor { Type = "minecraft:rule", Rules = [.. rules] });
         settings.Processors.Add(new BlockAgeProcessor { Type = "minecraft:block_age", Mossiness = properties.Mossiness });
-        settings.Processors.Add(new ProtectedBlocksProcessor { Type = "minecraft:protected_blocks", Value = featuresCannotReplace });
+        settings.Processors.Add(new ProtectedBlocksProcessor { Type = "minecraft:protected_blocks", Value = featuresCannotReplace.Selected });
         settings.Processors.Add(LavaSubmergedBlockProcessor.Instance);
         if (properties.ReplaceWithBlackstone)
             settings.Processors.Add(BlackstoneReplaceProcessor.Instance);

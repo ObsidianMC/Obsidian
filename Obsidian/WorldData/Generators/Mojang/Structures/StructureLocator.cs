@@ -19,8 +19,8 @@ internal sealed class StructureLocator(StructureManager structures)
         if (PluginTags.TryGetIdentifiers(PluginTags.Structure, tag, out var identifiers))
             return identifiers.ToHashSet();
 
-        return StructureTags.All.TryGetValue(tag, out var vanilla)
-            ? vanilla.Select(structure => structure.Identifier).ToHashSet()
+        return CurrentStructureTags.All.TryGetValue(tag, out var vanilla)
+            ? vanilla
             : null;
     }
 

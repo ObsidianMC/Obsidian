@@ -7,7 +7,7 @@ namespace Obsidian.WorldData.Features;
 [ConfiguredFeatureClass("minecraft:monster_room")]
 public sealed class MonsterRoomFeature : ConfiguredFeatureBase
 {
-    private static readonly BlockSet featuresCannotReplace = LegacyWorldgenTags.Blocks("features_cannot_replace");
+    private static readonly WorldgenTags.BlockGroup featuresCannotReplace = WorldgenTags.Blocks("features_cannot_replace");
 
     // Vanilla's MonsterRoomFeature.MOBS: zombies are twice as likely.
     private static readonly string[] mobs = ["minecraft:skeleton", "minecraft:zombie", "minecraft:zombie", "minecraft:spider"];

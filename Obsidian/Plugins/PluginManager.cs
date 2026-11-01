@@ -1386,9 +1386,9 @@ public sealed partial class PluginManager : IAsyncDisposable
         if (generator.FailedBy.Any(this.plugins.Contains))
             return;
 
-        // A dimension built from a stem is read again once released; vanilla's compiled ones are never released.
+        // A dimension built from a stem is read again once released.
         var current = generator.Dimension;
-        var dimension = PluginDimensions.Find(current.Identifier) as WorldData.Generators.Mojang.MojangDimension
+        var dimension = PluginDimensions.Find(current.Identifier) as WorldData.Generators.Biomes.WorldgenDimension
             ?? current;
         if (dimension.IsReleased)
             return;
@@ -1457,7 +1457,7 @@ public sealed partial class PluginManager : IAsyncDisposable
         PluginStructures.Apply(
             this.DataFilesOf(plugin => plugin.StructureFiles, pack => pack.StructureFiles),
             this.DataFilesOf(plugin => plugin.StructureTemplates, pack => pack.StructureTemplates),
-            PluginFeatures.Current,
+            PluginFeatures.CurrentRegistry.FeatureSet!,
             this.plugins.SelectMany(plugin => plugin.WorldgenTypes),
             this.logger);
 

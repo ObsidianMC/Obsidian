@@ -251,12 +251,15 @@ public class PluginFeatureFiles
         Assert.DoesNotContain(cycleA, cycle.BiomeFeatures["minecraft:plains"][vegetal]);
         Assert.Contains(cycleA, cycle.BiomeFeatures["minecraft:nether_wastes"][vegetal]);
 
-        var builder = new ChunkBuilder(MojangDimension.Overworld, 1234, generateStructures: false, () => current);
-        var chunks = new FullChunks(builder, MojangDimension.Overworld);
+        var native = PluginFeatures.BuildRegistry(files, [], types: [], NullLogger.Instance);
+        var builder = BiomeTerrain.Create(WorldgenDimension.Overworld, 1234,
+            featureSource: () => native);
+        var chunks = new NativeChunks(builder);
         Assert.True(HasDiamondBlocks(chunks.Get(0, 0)));
 
         // Once the plugin is gone, vanilla's features are back, and the builder places them in new chunks.
         current = PluginFeatures.Build([], [], [], NullLogger.Instance);
+        native = PluginFeatures.BuildRegistry([], [], [], NullLogger.Instance);
 
         Assert.Same(BiomeFeatures.All, current.BiomeFeatures);
         Assert.Empty(current.PlacedFeatures);
@@ -299,12 +302,15 @@ public class PluginFeatureFiles
         Assert.Equal(["minecraft:stone", "#minecraft:deepslate_ore_replaceables"], feature.Replaceable.Entries);
         Assert.Equal(-4, Assert.IsType<ProbeAtHeight>(pillar.Placement[0]).Y);
 
-        var builder = new ChunkBuilder(MojangDimension.Overworld, 1234, generateStructures: false, () => current);
-        var chunks = new FullChunks(builder, MojangDimension.Overworld);
+        var native = PluginFeatures.BuildRegistry(files, [], types, NullLogger.Instance);
+        var builder = BiomeTerrain.Create(WorldgenDimension.Overworld, 1234,
+            featureSource: () => native);
+        var chunks = new NativeChunks(builder);
         Assert.True(HasDiamondBlocks(chunks.Get(0, 0)));
 
         // Once the plugin is gone, so are its types and the features made of them.
         current = PluginFeatures.Build(files, [], [], logger);
+        native = PluginFeatures.BuildRegistry(files, [], [], NullLogger.Instance);
 
         Assert.Contains(logger.Messages, message => message.Contains("probe:pillar isn't a feature type"));
         Assert.Empty(current.PlacedFeatures);
@@ -679,7 +685,7 @@ public class PluginFeatureFiles
     [Fact]
     public void LaterPluginsBiomesNamePlacedFeaturesOnlyThe26_3RegistryBuilds()
     {
-        // In 26.3's schema, which the live legacy reader can't read.
+        // In 26.3's schema, shared through the native adapter after a successful apply.
         var feature = Parse(PluginFeatures.Feature, "featurefiles:native_marker", """
             { "type": "minecraft:simple_block", "to_place": { "id": "minecraft:emerald_block" } }
             """);
@@ -690,7 +696,7 @@ public class PluginFeatureFiles
         try
         {
             Assert.True(PluginFeatures.Apply([feature, placed], [], [], new HashSet<string>(), NullLogger.Instance));
-            Assert.Null(PluginFeatures.Current.FindPlaced(placed.Identifier));
+            Assert.NotNull(PluginFeatures.CurrentRegistry.FeatureSet!.FindPlaced(placed.Identifier));
             Assert.True(PluginFeatures.IsPlacedFeature(placed.Identifier));
 
             // A later plugin's biome is parsed before its files join the snapshot, and may name the placed feature.
