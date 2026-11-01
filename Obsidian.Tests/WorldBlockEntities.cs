@@ -34,6 +34,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -498,19 +499,27 @@ public sealed class WorldBlockEntities : IDisposable
                 rolls++;
 
                 // Kept for the assertions below: thrown here, the plugin call would swallow it and return no item.
-                // The limit only has to tell a deadlock from a busy machine.
+                // The limit only has to tell a deadlock from a busy machine. The save runs on its own thread: this
+                // function blocks a pool thread waiting for it, and with the whole suite running the pool only
+                // adds a thread for it slowly.
                 try
                 {
-                    Task.Run(() =>
-                    {
-                        lock (context.World.Fluids.TickLock)
+                    var save = Task.Factory.StartNew(
+                        () =>
                         {
-                            var saved = BlockEntityNbt.Save(crate)!;
-                            Assert.True(saved.TryGetTagValue<string>("LootTable", out var pending));
-                            Assert.Equal("probe:snapshot", pending);
-                            Assert.False(saved.HasTag("Items"));
-                        }
-                    }).WaitAsync(TimeSpan.FromSeconds(30)).GetAwaiter().GetResult();
+                            lock (context.World.Fluids.TickLock)
+                            {
+                                var saved = BlockEntityNbt.Save(crate)!;
+                                Assert.True(saved.TryGetTagValue<string>("LootTable", out var pending));
+                                Assert.Equal("probe:snapshot", pending);
+                                Assert.False(saved.HasTag("Items"));
+                            }
+                        },
+                        CancellationToken.None,
+                        TaskCreationOptions.LongRunning,
+                        TaskScheduler.Default);
+
+                    save.WaitAsync(TimeSpan.FromSeconds(30)).GetAwaiter().GetResult();
                 }
                 catch (Exception exception)
                 {
