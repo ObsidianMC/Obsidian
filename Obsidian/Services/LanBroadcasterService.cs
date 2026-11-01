@@ -30,8 +30,22 @@ public sealed partial class LanBroadcasterService : BackgroundService
         if (!this.configuration.AllowLan)
             return Task.CompletedTask;
 
-        // The server's port is the bound one once it listens, which matters when the configured port is 0.
-        return BroadcastAsync(() => (this.configuration.Motd, this.server.Port), this.logger, stoppingToken);
+        // Advertised only once the server accepts players, like vanilla, which starts its pinger after the server
+        // is up. The port is then the bound one, which matters when the configured port is 0.
+        return BroadcastAsync(
+            () => (this.configuration.Motd, this.server.Port),
+            this.logger,
+            stoppingToken,
+            this.AcceptsPlayers);
+    }
+
+    // Whether the server listens for players: its worlds are ready and its socket is open.
+    private bool AcceptsPlayers()
+    {
+        if (this.server is not Server listening)
+            return true;
+
+        return listening.Started;
     }
 
     /// <summary>
@@ -39,7 +53,12 @@ public sealed partial class LanBroadcasterService : BackgroundService
     /// <c>LanServerPinger</c>: a <c>[MOTD]...[/MOTD][AD]port[/AD]</c> datagram to 224.0.2.60:4445 every 1.5 seconds.
     /// </summary>
     /// <param name="advertisement">The MOTD and port to advertise, read before each datagram.</param>
-    internal static async Task BroadcastAsync(Func<(string Motd, int Port)> advertisement, ILogger logger, CancellationToken stoppingToken)
+    /// <param name="ready">Whether to advertise yet, checked before each datagram; always, when null.</param>
+    internal static async Task BroadcastAsync(
+        Func<(string Motd, int Port)> advertisement,
+        ILogger logger,
+        CancellationToken stoppingToken,
+        Func<bool>? ready = null)
     {
         using var udpClient = new UdpClient("224.0.2.60", 4445);
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1.5));
@@ -50,6 +69,9 @@ public sealed partial class LanBroadcasterService : BackgroundService
         {
             while (await timer.WaitForNextTickAsync(stoppingToken))
             {
+                if (ready is not null && !ready())
+                    continue;
+
                 var current = advertisement();
                 if (current != last)
                 {
