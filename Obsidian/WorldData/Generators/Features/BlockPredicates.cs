@@ -26,12 +26,12 @@ internal sealed partial class FeatureRegistry
                 return static (_, _) => true;
             case "minecraft:matching_blocks":
             {
-                var blocks = this.Blocks(json.GetProperty("blocks"));
+                var blocks = new RegistryIdSet(this.Blocks(json.GetProperty("blocks")));
                 return (level, position) => blocks.Contains(level.GetBlock(position + offset).RegistryId);
             }
             case "minecraft:matching_block_tag":
             {
-                var blocks = this.BlockTag(json.GetProperty("tag").GetString()!);
+                var blocks = new RegistryIdSet(this.BlockTag(json.GetProperty("tag").GetString()!));
                 return (level, position) => blocks.Contains(level.GetBlock(position + offset).RegistryId);
             }
             case "minecraft:matching_fluids":
@@ -246,7 +246,7 @@ internal sealed partial class FeatureRegistry
             }
             case "minecraft:tag_match":
             {
-                var blocks = this.BlockTag(json.GetProperty("tag").GetString()!);
+                var blocks = new RegistryIdSet(this.BlockTag(json.GetProperty("tag").GetString()!));
                 return (state, _, _) => blocks.Contains(state.RegistryId);
             }
             case "minecraft:random_block_match":
@@ -341,4 +341,24 @@ internal sealed partial class FeatureRegistry
 
         return new Vector(offset[0].GetInt32(), offset[1].GetInt32(), offset[2].GetInt32());
     }
+}
+
+/// <summary>
+/// Block registry ids as a table, for sets tested once per block, such as an ore's targets: cheaper to ask than a
+/// hash set.
+/// </summary>
+internal sealed class RegistryIdSet
+{
+    private readonly bool[] contains;
+
+    public RegistryIdSet(IReadOnlyCollection<int> ids)
+    {
+        var length = ids.Count == 0 ? 0 : ids.Max() + 1;
+        this.contains = new bool[length];
+
+        foreach (var id in ids)
+            this.contains[id] = true;
+    }
+
+    public bool Contains(int id) => (uint)id < (uint)this.contains.Length && this.contains[id];
 }

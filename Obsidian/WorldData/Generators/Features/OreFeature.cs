@@ -55,9 +55,13 @@ internal sealed partial class FeatureRegistry
 /// </summary>
 internal sealed class OreBlob((RuleTest Target, IBlock State)[] targets, int size, float discardChance)
 {
-    // A thread's buffers for the blob being placed, which DoPlace and Spheres clear before use.
+    // A thread's buffers for the blob being placed. A position is visited by the current blob when its stamp is the
+    // blob's, so the buffer is never cleared between blobs; Spheres writes its buffer before reading it.
     [ThreadStatic]
-    private static bool[]? visitedBuffer;
+    private static int[]? visitedStamps;
+
+    [ThreadStatic]
+    private static int visitedStamp;
 
     [ThreadStatic]
     private static (double X, double Y, double Z, double Radius)[]? sphereBuffer;
@@ -102,7 +106,7 @@ internal sealed class OreBlob((RuleTest Target, IBlock State)[] targets, int siz
     private bool DoPlace(IWorldGenLevel level, IRandomSource random, OreLine line, Vector min, int width, int height)
     {
         var spheres = this.Spheres(random, line);
-        var visited = Buffer(ref visitedBuffer, width * height * width);
+        var visited = Visited(width * height * width, out var stamp);
         var placed = 0;
 
         foreach (var (centerX, centerY, centerZ, radius) in spheres)
@@ -152,12 +156,12 @@ internal sealed class OreBlob((RuleTest Target, IBlock State)[] targets, int siz
 
                         var index = x - min.X + (y - min.Y) * width + (z - min.Z) * width * height;
 
-                        if (visited[index])
+                        if (visited[index] == stamp)
                         {
                             continue;
                         }
 
-                        visited[index] = true;
+                        visited[index] = stamp;
 
                         if (this.TryPlace(level, random, new Vector(x, y, z)))
                         {
@@ -220,7 +224,7 @@ internal sealed class OreBlob((RuleTest Target, IBlock State)[] targets, int siz
         return spheres;
     }
 
-    // The first length elements of a thread's buffer, cleared.
+    // The first length elements of a thread's buffer, without clearing them.
     private static Span<T> Buffer<T>(ref T[]? buffer, int length)
     {
         if (buffer is null || buffer.Length < length)
@@ -228,10 +232,21 @@ internal sealed class OreBlob((RuleTest Target, IBlock State)[] targets, int siz
             buffer = new T[length];
         }
 
-        var span = buffer.AsSpan(0, length);
-        span.Clear();
+        return buffer.AsSpan(0, length);
+    }
 
-        return span;
+    // The thread's visited stamps for a new blob, and the stamp that marks its visited positions.
+    private static Span<int> Visited(int length, out int stamp)
+    {
+        if (visitedStamps is null || visitedStamps.Length < length || visitedStamp == int.MaxValue)
+        {
+            visitedStamps = new int[Math.Max(length, visitedStamps?.Length ?? 0)];
+            visitedStamp = 0;
+        }
+
+        stamp = ++visitedStamp;
+
+        return visitedStamps.AsSpan(0, length);
     }
 
     private bool TryPlace(IWorldGenLevel level, IRandomSource random, Vector position)

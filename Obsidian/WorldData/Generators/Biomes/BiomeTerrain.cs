@@ -20,6 +20,7 @@ internal sealed class BiomeTerrain
     private readonly FeatureRegistry? features;
     private readonly int unlitBrightness;
     private readonly TerrainColumns columns;
+    private readonly long zoomSeed;
 
     // Each biome's carvers, read once: every chunk asks for the 289 chunks its carvers can start in.
     private readonly ConcurrentDictionary<string, string[]> carversByBiome = new();
@@ -45,6 +46,7 @@ internal sealed class BiomeTerrain
         this.manager = new BiomeManager(this.Source, terrain.Seed, terrain.Settings.MinY,
             terrain.Settings.Height, cacheNoiseBiomes: false, clampToHeight: false);
         this.columns = new TerrainColumns(terrain);
+        this.zoomSeed = BiomeManager.ObfuscateSeed(terrain.Seed);
         this.MinY = dimensionType.GetProperty("min_y").GetInt32();
         this.Height = dimensionType.GetProperty("height").GetInt32();
 
@@ -236,16 +238,32 @@ internal sealed class BiomeTerrain
     /// </param>
     public TerrainBiomes ChunkBiomes(IChunk chunk, Func<int, int, IChunk?>? neighbors = null)
     {
-        var stored = new BiomeManager(
-            new SurfaceBiomeSource(this.Source, chunk, neighbors),
-            this.terrain.Seed,
-            chunk.MinY,
-            chunk.Height,
-            cacheNoiseBiomes: false,
-            readsNeighbors: true);
-        stored.FocusOn(chunk.X, chunk.Z);
+        var source = new SurfaceBiomeSource(this.Source, chunk, neighbors);
+        var table = new SurfaceBiomes(source, this.zoomSeed, chunk.X, chunk.Z, chunk.MinY, chunk.Height);
+        BiomeManager? outside = null;
 
-        return new TerrainBiomes(Surface: (x, y, z) => stored.GetBiome(x, y, z).Name, Carving: this.BiomeAt);
+        // The table answers the chunk's own blocks; any other block goes through a manager over the same quarts.
+        string SurfaceAt(int x, int y, int z)
+        {
+            if (table.Get(x, y, z) is BiomeCodec biome)
+                return biome.Name;
+
+            if (outside is null)
+            {
+                outside = new BiomeManager(
+                    source,
+                    this.terrain.Seed,
+                    chunk.MinY,
+                    chunk.Height,
+                    cacheNoiseBiomes: false,
+                    readsNeighbors: true);
+                outside.FocusOn(chunk.X, chunk.Z);
+            }
+
+            return outside.GetBiome(x, y, z).Name;
+        }
+
+        return new TerrainBiomes(Surface: SurfaceAt, Carving: this.BiomeAt) { SurfaceNames = table.Names };
     }
 
     /// <summary>The carvers of the biome a chunk's carvers start in. Callers mustn't change the list.</summary>

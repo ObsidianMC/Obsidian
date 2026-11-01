@@ -103,11 +103,17 @@ internal abstract class BenchGenerator
         {
             var chunk = new Chunk(x, z, this.pipeline.MinY, this.pipeline.Height);
             TerrainContext? context = null;
+            TerrainBiomes biomes = default;
 
-            timer.Time(SerialStage.Biomes, () => this.pipeline.Source.FillBiomes(chunk));
+            // The surface's biomes read the chunk's and its neighbors' stored biomes, filling neighbors not yet filled.
+            timer.Time(SerialStage.Biomes, () =>
+            {
+                this.pipeline.Source.FillBiomes(chunk);
+                biomes = this.pipeline.ChunkBiomes(chunk);
+            });
             timer.Time(SerialStage.Noise, () =>
             {
-                context = this.terrain.CreateContext(chunk, this.pipeline.ChunkBiomes(chunk), chunk.PostProcessing);
+                context = this.terrain.CreateContext(chunk, biomes, chunk.PostProcessing);
                 this.terrain.Fill(context, this.pipeline.BeardifierFor(x, z));
             });
             timer.Time(SerialStage.Surface, () =>

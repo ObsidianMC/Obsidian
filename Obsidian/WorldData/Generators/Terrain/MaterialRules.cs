@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.ChunkData;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Generators.Mojang;
 using System.IO;
@@ -22,6 +23,11 @@ internal sealed partial class MaterialRules
     // per condition (see MaterialContext.BiomeId).
     private readonly ConcurrentDictionary<string, int> biomeIds = new();
 
+    // The noises and densities rules sample, numbered for the arrays a context caches their samples in. Like the
+    // rule caches above, they're filled while compiling, which the constructor does for the settings' rule.
+    private readonly Dictionary<NoiseStack, int> noiseSlots = new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<DensityFunction, int> densitySlots = new(ReferenceEqualityComparer.Instance);
+
     public MaterialRules(TerrainGenerator generator)
     {
         this.generator = generator;
@@ -29,11 +35,57 @@ internal sealed partial class MaterialRules
         this.root = this.CompileRule(generator.Settings.MaterialRule);
     }
 
+    private NoiseStack SurfaceNoise => field ??= this.generator.Compiler.Noise("minecraft:surface");
+
+    // Stone depth conditions with a secondary range read it; it is given its slot when the first is compiled.
+    private NoiseStack SecondaryNoise => field ??= this.generator.Compiler.Noise("minecraft:surface_secondary");
+
+    private int SecondarySlot { get; set; } = -1;
+
+    private int NoiseSlot(NoiseStack noise)
+    {
+        if (!this.noiseSlots.TryGetValue(noise, out var slot))
+        {
+            slot = this.noiseSlots.Count;
+            this.noiseSlots.Add(noise, slot);
+        }
+
+        return slot;
+    }
+
+    private int DensitySlot(DensityFunction function)
+    {
+        if (!this.densitySlots.TryGetValue(function, out var slot))
+        {
+            slot = this.densitySlots.Count;
+            this.densitySlots.Add(function, slot);
+        }
+
+        return slot;
+    }
+
+    /// <summary>The biome condition numbers (see <see cref="BiomeId"/>) of <paramref name="names"/>.</summary>
+    private bool[] ReachableIds(IReadOnlyList<string> names)
+    {
+        var reachable = new bool[this.biomeIds.Count];
+
+        foreach (var name in names)
+        {
+            var id = this.FindBiomeId(name);
+
+            if (id >= 0)
+                reachable[id] = true;
+        }
+
+        return reachable;
+    }
+
     public void Apply(TerrainContext terrain)
     {
         var biomeAt = terrain.Biomes.Surface;
-        using var context = new MaterialContext(this, terrain, biomeAt);
+        using var context = new MaterialContext(this, terrain, biomeAt, biomeNames: terrain.Biomes.SurfaceNames);
         var chunk = terrain.Chunk;
+        var kinds = new BlockKind[chunk.Height + 1];
 
         // Each column sees the heightmaps updated by earlier columns, including badlands and iceberg extensions.
         // This is vanilla's x-major surface traversal, distinct from the density buffer's z-major order.
@@ -50,7 +102,7 @@ internal sealed partial class MaterialRules
                     this.ExtendBadlands(context, startY);
                 }
 
-                this.ApplyColumn(context, SurfaceHeight(chunk, x, z));
+                this.ApplyColumn(context, SurfaceHeight(chunk, x, z), kinds);
 
                 if (biome is "minecraft:frozen_ocean" or "minecraft:deep_frozen_ocean")
                 {
@@ -60,25 +112,32 @@ internal sealed partial class MaterialRules
         }
     }
 
-    private void ApplyColumn(MaterialContext context, int startY)
+    // The column's blocks are read once, before any rule replaces one: a block is replaced after the blocks below it
+    // were read, and the stone depth search only reads below. Kinds are indexed from one below the chunk, which reads
+    // as air like any block outside it.
+    private void ApplyColumn(MaterialContext context, int startY, BlockKind[] kinds)
     {
         var above = 0;
         var water = int.MinValue;
         var bottom = int.MaxValue;
-        var minY = context.Terrain.Chunk.MinY;
+        var chunk = context.Terrain.Chunk;
+        var minY = chunk.MinY;
+        var top = Math.Min(startY, minY + chunk.Height - 1);
+
+        ReadKinds(chunk, context.LocalX, context.LocalZ, top, kinds);
 
         for (var y = startY; y >= minY; y--)
         {
-            var block = context.GetBlock(y);
+            var kind = y > top ? BlockKind.Air : kinds[y - minY + 1];
 
-            if (block.IsAir)
+            if (kind == BlockKind.Air)
             {
                 above = 0;
                 water = int.MinValue;
                 continue;
             }
 
-            if (block.IsLiquid)
+            if (kind == BlockKind.Liquid)
             {
                 if (water == int.MinValue)
                 {
@@ -94,9 +153,7 @@ internal sealed partial class MaterialRules
 
                 for (var belowY = y - 1; belowY >= minY - 1; belowY--)
                 {
-                    var below = context.GetBlock(belowY);
-
-                    if (below.IsAir || below.IsLiquid)
+                    if (kinds[belowY - minY + 1] != BlockKind.Solid)
                     {
                         bottom = belowY + 1;
                         break;
@@ -191,6 +248,8 @@ internal sealed partial class MaterialRules
         var density = compiler.Compile(json.GetProperty("density"), "ore_vein.density");
         var richness = compiler.Compile(json.GetProperty("richness"), "ore_vein.richness");
         var gap = compiler.Compile(json.GetProperty("filler_gap"), "ore_vein.filler_gap");
+        var densitySlot = this.DensitySlot(density);
+        var richnessSlot = this.DensitySlot(richness);
         var ore = ReadBlock(json.GetProperty("ore_block"));
         var raw = ReadBlock(json.GetProperty("raw_ore_block"));
         var filler = ReadBlock(json.GetProperty("filler_block"));
@@ -199,7 +258,7 @@ internal sealed partial class MaterialRules
 
         return context =>
         {
-            var chance = context.Density(density, volume: true);
+            var chance = context.Density(densitySlot, density);
 
             if (chance <= 0.0f)
             {
@@ -215,9 +274,9 @@ internal sealed partial class MaterialRules
                 return null;
             }
 
-            var oreChance = context.Density(richness, volume: true);
+            var oreChance = context.Density(richnessSlot, richness);
 
-            if (random.NextFloat() < oreChance && context.Density(gap, volume: false) < 0.0f)
+            if (random.NextFloat() < oreChance && context.PointDensity(gap) < 0.0f)
             {
                 return random.NextFloat() < rawChance ? raw : ore;
             }
@@ -249,25 +308,26 @@ internal sealed partial class MaterialRules
                     ? [WorldgenData.Qualify(names.GetString()!)]
                     : names.EnumerateArray().Select(name => WorldgenData.Qualify(name.GetString()!)).ToArray();
                 var ids = biomes.Select(this.BiomeId).ToArray();
-                return context => ids.AsSpan().Contains(context.BiomeId);
+                return context => context.IsBiome(ids);
             case "minecraft:not":
                 var inverted = this.CompileCondition(json.GetProperty("invert"));
                 return context => !inverted(context);
             case "minecraft:noise_threshold":
                 var noiseId = WorldgenData.Qualify(json.GetProperty("noise").GetString()!);
                 var noise = this.generator.Compiler.Noise(noiseId);
+                var slot = this.NoiseSlot(noise);
                 var min = json.GetProperty("min_threshold").GetDouble();
                 var max = json.GetProperty("max_threshold").GetDouble();
                 var is3d = json.TryGetProperty("is_3d", out var is3dJson) && is3dJson.GetBoolean();
                 return context =>
                 {
-                    var value = context.Noise(noise, is3d);
+                    var value = context.Noise(slot, noise, is3d);
                     return value >= min && value <= max;
                 };
             case "minecraft:vertical_gradient":
                 return this.CompileGradient(json);
             case "minecraft:stone_depth":
-                return CompileStoneDepth(json);
+                return this.CompileStoneDepth(json);
             case "minecraft:water":
                 var waterOffset = json.GetProperty("offset").GetInt32();
                 var waterMultiplier = json.GetProperty("surface_depth_multiplier").GetInt32();
@@ -325,12 +385,17 @@ internal sealed partial class MaterialRules
         };
     }
 
-    private static Func<MaterialContext, bool> CompileStoneDepth(JsonElement json)
+    private Func<MaterialContext, bool> CompileStoneDepth(JsonElement json)
     {
         var ceiling = json.GetProperty("surface_type").GetString() == "ceiling";
         var offset = json.GetProperty("offset").GetInt32();
         var addSurface = json.GetProperty("add_surface_depth").GetBoolean();
         var secondaryRange = json.GetProperty("secondary_depth_range").GetInt32();
+
+        if (secondaryRange != 0 && this.SecondarySlot < 0)
+        {
+            this.SecondarySlot = this.NoiseSlot(this.SecondaryNoise);
+        }
 
         return context =>
         {
@@ -375,4 +440,41 @@ internal sealed partial class MaterialRules
 
     internal static int SurfaceHeight(IChunk chunk, int x, int z) =>
         chunk.Heightmaps[HeightmapType.WorldSurfaceWG].GetHeight(x, z);
+
+    /// <summary>What a material column needs to know about a block.</summary>
+    private enum BlockKind : byte
+    {
+        Air,
+        Liquid,
+
+        /// <summary>Any other block, which rules may replace.</summary>
+        Solid
+    }
+
+    /// <summary>
+    /// The kinds of a column's blocks from one below the chunk up to <paramref name="top"/>, indexed from one below.
+    /// </summary>
+    private static void ReadKinds(IChunk chunk, int x, int z, int top, BlockKind[] kinds)
+    {
+        var minY = chunk.MinY;
+        kinds[0] = BlockKind.Air;
+
+        for (var y = minY; y <= top; y++)
+        {
+            var section = chunk.Sections[(y - minY) >> 4] as ChunkSection;
+            var kind = section is not null
+                ? KindOf(BlocksRegistry.RegistryIdOf(section.GetStateId(x, y & 15, z)))
+                : KindOf(chunk.GetBlock(x, y, z).RegistryId);
+
+            kinds[y - minY + 1] = kind;
+        }
+    }
+
+    // As IBlock.IsAir and IBlock.IsLiquid tell them apart.
+    private static BlockKind KindOf(int registryId) => registryId switch
+    {
+        BlockIds.Air or BlockIds.CaveAir or BlockIds.VoidAir => BlockKind.Air,
+        BlockIds.Water or BlockIds.Lava => BlockKind.Liquid,
+        _ => BlockKind.Solid
+    };
 }

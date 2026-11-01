@@ -1,3 +1,4 @@
+using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Generators.Mojang.Features;
 
@@ -44,6 +45,9 @@ internal sealed class BiomeDecoration
     {
         var present = new HashSet<string>();
 
+        // Neighboring quarts mostly hold the same biome instance, whose name needn't be hashed again.
+        BiomeCodec? last = null;
+
         foreach (var chunk in neighbors)
         {
             for (var y = chunk.MinY; y < chunk.MinY + chunk.Height; y += 4)
@@ -52,7 +56,13 @@ internal sealed class BiomeDecoration
                 {
                     for (var x = 0; x < 16; x += 4)
                     {
-                        present.Add(chunk.GetBiome(x, y, z).Name);
+                        var biome = chunk.GetBiome(x, y, z);
+
+                        if (ReferenceEquals(biome, last))
+                            continue;
+
+                        present.Add(biome.Name);
+                        last = biome;
                     }
                 }
             }
