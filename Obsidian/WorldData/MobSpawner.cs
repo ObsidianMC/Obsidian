@@ -6,8 +6,10 @@ using Obsidian.Entities.AI;
 using Obsidian.Entities.Factories;
 using Obsidian.Nbt;
 using Obsidian.Providers.IntProviders;
+using Obsidian.Registries.Codecs;
 using Obsidian.WorldData.Fluids;
 using Obsidian.WorldData.Generators;
+using Obsidian.WorldData.Generators.Density;
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
@@ -73,13 +75,20 @@ internal sealed partial class MobSpawner(AbstractLevel level)
 
     internal static bool IsAquatic(EntityType type) => type is EntityType.Squid or EntityType.GlowSquid or EntityType.Dolphin or EntityType.Axolotl or EntityType.Tadpole or
         EntityType.Cod or EntityType.Salmon or EntityType.TropicalFish or EntityType.Pufferfish or EntityType.Drowned or EntityType.Guardian or EntityType.ElderGuardian;
+    // The monsters that spawn inside Nether fortresses, from the 26.3 structure's spawn_overrides.
     private static SpawnerMob[] LoadFortressSpawns()
     {
-        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Obsidian.Assets.worldgen.structures.nether.json")
-            ?? throw new InvalidDataException("Missing Nether structure spawn data.");
-        using var document = JsonDocument.Parse(stream);
-        return document.RootElement.GetProperty("minecraft:fortress").GetProperty("spawn_overrides").GetProperty("monster")
-            .GetProperty("spawns").Deserialize<SpawnerMob[]>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+        const string path = "fortress.spawn_overrides.monster.spawns";
+        var spawns = WorldgenData.Vanilla.Read("structure", "minecraft:fortress")
+            .GetProperty("spawn_overrides")
+            .GetProperty("monster")
+            .GetProperty("spawns");
+
+        return
+        [
+            .. spawns.EnumerateArray()
+                .Select((spawn, index) => BiomeData.ReadSpawner(spawn, $"{path}[{index}]", requireCount: true))
+        ];
     }
     private readonly Random random = new();
 

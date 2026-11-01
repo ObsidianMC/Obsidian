@@ -51,6 +51,13 @@ internal static class SpawnEnvironment
         return settings with { CreatureProbability = Math.Clamp(probability, 0f, 0.9999999f) };
     }
 
+    /// <summary>
+    /// A vanilla biome's own spawns: its attributes over the attributes' defaults, without a dimension's. These
+    /// are the per-biome tables plugins' biome modifiers change (see <see cref="Registries.BiomeSpawns"/>).
+    /// </summary>
+    public static SpawnSettings OfVanillaBiome(string id) =>
+        Resolve(EnvironmentAttributeMap.Empty, VanillaMap("biome", id));
+
     private static EnvironmentAttributeMap VanillaMap(string registry, string id)
     {
         // Custom entries with no attached map inherit the defaults.

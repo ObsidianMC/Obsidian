@@ -99,8 +99,8 @@ internal static class DatagenAssets
     /// <summary>
     /// Writes the worldgen assets from an older vanilla version's data generators into
     /// <paramref name="outputDirectory"/> (<c>Assets/legacy-1.21.11</c>), in the layout the current version's would have:
-    /// <c>worldgen</c> (see <see cref="WorldgenAssets"/>), <c>configured_carver</c>,
-    /// <c>biome_parameters</c> and <c>biome_spawns.json</c>.
+    /// <c>worldgen</c> (see <see cref="WorldgenAssets"/>), <c>configured_carver</c> and <c>biome_parameters</c>.
+    /// Natural spawning reads the current version's biomes' spawn attributes instead.
     /// </summary>
     /// <remarks>
     /// Temporary: the current version's worldgen data doesn't fit Obsidian's models yet, so worldgen runs on
@@ -144,23 +144,6 @@ internal static class DatagenAssets
 
         foreach (var (path, carver) in ReadAll(Path.Combine(data, "worldgen", "configured_carver")))
             WriteJson(Path.Combine(outputDirectory, "configured_carver", path + ".json"), carver);
-
-        // Each biome's mob spawn settings, which 26.1 moved out of the biome: { "value": [{ "name", "element" }] } in the
-        // biomes' order, like the biome codec they used to be read from.
-        var spawns = new JsonArray();
-        foreach (var (path, biome) in ReadAll(Path.Combine(data, "worldgen", "biome")))
-        {
-            var element = new JsonObject();
-            foreach (var property in new[] { "creature_spawn_probability", "spawners", "spawn_costs" })
-            {
-                if (biome[property] is { } value)
-                    element[property] = value.DeepClone();
-            }
-
-            spawns.Add(new JsonObject { ["name"] = ToId(path), ["element"] = element });
-        }
-
-        WriteJson(Path.Combine(outputDirectory, "biome_spawns.json"), new JsonObject { ["value"] = spawns });
 
         WorldgenAssets.Write(data, reports, worldgenGroupsPath, outputDirectory);
         LegacyTags.Write(data, outputDirectory);
