@@ -199,12 +199,14 @@ internal sealed class ClimateSource : IBiomeSource
 
     private TargetPoint[] SampleVolume(DensityVolume volume)
     {
-        var values = this.functions.Select(function =>
+        var values = new float[this.functions.Length][];
+
+        for (var field = 0; field < this.functions.Length; field++)
         {
-            var buffer = new float[volume.Size];
-            function.SampleVolume(buffer, volume);
-            return buffer;
-        }).ToArray();
+            values[field] = new float[volume.Size];
+            SampleField(this.functions[field], values[field], volume);
+        }
+
         var targets = new TargetPoint[volume.Size];
 
         for (var index = 0; index < targets.Length; index++)
@@ -219,6 +221,30 @@ internal sealed class ClimateSource : IBiomeSource
         }
 
         return targets;
+    }
+
+    // A flat field, such as the overworld's uncached temperature and vegetation noises, has the same value at every y
+    // of a column at a point and over a volume (see DensityFunction.IsFlat), so one layer is sampled and copied up.
+    private static void SampleField(DensityFunction function, Span<float> output, in DensityVolume volume)
+    {
+        if (!function.IsFlat || volume.SizeY == 1)
+        {
+            function.SampleVolume(output, volume);
+            return;
+        }
+
+        var layer = volume with { SizeY = 1 };
+        Span<float> layerValues = stackalloc float[layer.Size];
+        function.SampleVolume(layerValues, layer);
+
+        for (var indexZ = 0; indexZ < volume.SizeZ; indexZ++)
+        {
+            for (var indexX = 0; indexX < volume.SizeX; indexX++)
+            {
+                var value = layerValues[layer.Index(indexX, 0, indexZ)];
+                output.Slice(volume.Index(indexX, 0, indexZ), volume.SizeY).Fill(value);
+            }
+        }
     }
 
     private string EndBiome(int quartX, int quartY, int quartZ)

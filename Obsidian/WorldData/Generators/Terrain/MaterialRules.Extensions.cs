@@ -13,12 +13,22 @@ internal sealed partial class MaterialRules
     private static readonly PerlinSimplexNoise biomeNoise = new(
         new WorldgenRandom(new LegacyRandomSource(2345L)), [0]);
 
-    private float Temperature(string biome, int x, int y, int z)
+    // Each biome's temperature and whether it is frozen, read once from its JSON.
+    private readonly ConcurrentDictionary<string, (float Temperature, bool Frozen)> climates = new();
+
+    private (float Temperature, bool Frozen) ReadClimate(string biome)
     {
         var json = this.generator.Data.Read("biome", biome);
-        var value = json.GetProperty("temperature").GetSingle();
+        var frozen = json.TryGetProperty("temperature_modifier", out var modifier) && modifier.GetString() == "frozen";
 
-        if (json.TryGetProperty("temperature_modifier", out var modifier) && modifier.GetString() == "frozen")
+        return (json.GetProperty("temperature").GetSingle(), frozen);
+    }
+
+    private float Temperature(string biome, int x, int y, int z)
+    {
+        var (value, isFrozen) = this.climates.GetOrAdd(biome, this.ReadClimate);
+
+        if (isFrozen)
         {
             var frozen = frozenNoise.GetValue(x * 0.05, z * 0.05, false) * 7.0;
             var info = biomeNoise.GetValue(x * 0.2, z * 0.2, false);

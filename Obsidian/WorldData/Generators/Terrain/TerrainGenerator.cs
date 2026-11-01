@@ -96,7 +96,14 @@ internal sealed class TerrainGenerator
 /// <param name="Carving">
 /// What material rules read for the top blocks carving exposes: vanilla zooms over uncached climate searches there.
 /// </param>
-internal readonly record struct TerrainBiomes(Func<int, int, int, string> Surface, Func<int, int, int, string> Carving);
+internal readonly record struct TerrainBiomes(Func<int, int, int, string> Surface, Func<int, int, int, string> Carving)
+{
+    /// <summary>
+    /// Every biome <see cref="Surface"/> can return for the chunk's blocks, when known; <c>null</c> otherwise. Biome
+    /// conditions naming none of them are false without a lookup.
+    /// </summary>
+    public IReadOnlyList<string>? SurfaceNames { get; init; }
+}
 
 /// <summary>Mutable state of one terrain status. It is never shared by concurrently generated chunks.</summary>
 internal sealed class TerrainContext
