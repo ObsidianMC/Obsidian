@@ -656,10 +656,10 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
                 this.startCache.Changed(start.ChunkX, start.ChunkZ);
 
             var restored = start.HasRestoredState;
-            var startChunk = await this.world.GetChunkAsync(start.ChunkX, start.ChunkZ, scheduleGeneration: false) as Chunk;
+            var startChunk = await this.GetStartChunkAsync(start.ChunkX, start.ChunkZ);
             StructureManager.RestoreStart(start, startChunk?.StructureStarts);
             if (placed || !restored)
-                startChunk?.MarkUnsaved();
+                await this.GetStartChunkAsync(start.ChunkX, start.ChunkZ, markUnsaved: true);
         }
     }
 
@@ -694,15 +694,25 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     // StructureManager.LoadStartChunk: structure searches run synchronously (explorer maps are made while loot is generated),
     // like vanilla's, which also wait for start chunks on the server thread. Getting a chunk takes no generation locks.
     private NbtCompound? LoadStartChunk(int chunkX, int chunkZ) =>
-        (this.world.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false).AsTask().GetAwaiter().GetResult() as Chunk)?.StructureStarts;
+        this.GetStartChunkAsync(chunkX, chunkZ).AsTask().GetAwaiter().GetResult()?.StructureStarts;
 
     // StructureManager.StartChanged: the start chunk LoadStartChunk loaded saves the start's new state.
     private void MarkStartChunkUnsaved(int chunkX, int chunkZ)
     {
         this.startCache.Changed(chunkX, chunkZ);
-        var chunk = this.world.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false)
-            .AsTask().GetAwaiter().GetResult() as Chunk;
-        chunk?.MarkUnsaved();
+        this.GetStartChunkAsync(chunkX, chunkZ, markUnsaved: true).AsTask().GetAwaiter().GetResult();
+    }
+
+    private async ValueTask<Chunk?> GetStartChunkAsync(int chunkX, int chunkZ, bool markUnsaved = false)
+    {
+        if (this.world is AbstractLevel level)
+            return await level.GetStructureStartChunkAsync(chunkX, chunkZ, markUnsaved);
+
+        var chunk = await this.world.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false) as Chunk;
+        if (markUnsaved)
+            chunk?.MarkUnsaved();
+
+        return chunk;
     }
 
     internal bool IsInsideFortress(Vector position)

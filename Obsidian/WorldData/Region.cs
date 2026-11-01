@@ -155,6 +155,61 @@ public partial class Region : IRegion
     // A removed region cannot publish or attach chunks, including loads and generation already in flight.
     private bool lightingRetired;
 
+    // Once the final save is clean, structure notifications wait for file closure, then mark a reloaded instance.
+    private bool structureChangesSealed;
+    private TaskCompletionSource? regionUnload;
+
+    // Read under FluidTickLock, which also orders registration/removal in the owning level.
+    internal Task? RegionUnload => this.regionUnload?.Task;
+
+    private bool HasUnsavedMarks => this.loadedChunks.OfType<Chunk>().Any(chunk => chunk.IsMarkedUnsaved);
+
+    /// <summary>Validates and optionally marks a stored start chunk, atomically with removal. Under FluidTickLock.</summary>
+    internal bool TryAccessStructureChunk(Chunk chunk, bool markUnsaved)
+    {
+        if (this.structureChangesSealed)
+            return false;
+
+        var x = NumericsHelper.Modulo(chunk.X, CubicRegionSize);
+        var z = NumericsHelper.Modulo(chunk.Z, CubicRegionSize);
+        if (this.loadedChunks[x, z] is null && this.lightingRetired)
+        {
+            // A structure search may load an absent start chunk while the region's final save is in flight.
+            // Keep its metadata in the retired region for the next snapshot, without reattaching block access.
+            this.PublishChunk(x, z, chunk, allowRetired: true);
+        }
+
+        if (!ReferenceEquals(this.loadedChunks[x, z], chunk))
+            return false;
+
+        if (markUnsaved)
+            chunk.MarkUnsaved();
+
+        return true;
+    }
+
+    /// <summary>Seals metadata changes once the final snapshot has every notification. Under FluidTickLock.</summary>
+    internal bool TrySealStructureChanges()
+    {
+        if (this.HasUnsavedMarks)
+            return false;
+
+        this.structureChangesSealed = true;
+        return true;
+    }
+
+    internal void EndRegionUnload(Exception? failure = null)
+    {
+        if (failure is null)
+            this.regionUnload?.TrySetResult();
+        else if (this.regionUnload is TaskCompletionSource pending)
+        {
+            pending.TrySetException(failure);
+            // The caller rethrows the I/O failure. A region with no metadata waiters must not leave an unobserved task.
+            _ = pending.Task.Exception;
+        }
+    }
+
     // The dimension's build range, which decides the section count of loaded chunks.
     private readonly int minY;
     private readonly int height;
@@ -434,16 +489,24 @@ public partial class Region : IRegion
         if (chunk is null)
             return;
 
-        await SerializeChunkAsync(chunk, unloading: true);
-        lock (this.FluidTickLock)
+        while (true)
         {
-            if (!ReferenceEquals(loadedChunks[x, z], chunk))
-                return;
+            await SerializeChunkAsync(chunk, unloading: true);
+            lock (this.FluidTickLock)
+            {
+                if (!ReferenceEquals(loadedChunks[x, z], chunk))
+                    return;
 
-            this.DetachLighting(chunk);
-            loadedChunks[x, z] = null;
-            this.retiredBlockAccess.Remove(chunk);
-            this.StructureChunkUnloaded?.Invoke(chunk);
+                // A structure search/placement can mark the start chunk during the final snapshot's I/O.
+                if (chunk is Chunk { IsMarkedUnsaved: true })
+                    continue;
+
+                this.DetachLighting(chunk);
+                loadedChunks[x, z] = null;
+                this.retiredBlockAccess.Remove(chunk);
+                this.StructureChunkUnloaded?.Invoke(chunk);
+                return;
+            }
         }
     }
 
@@ -655,9 +718,9 @@ public partial class Region : IRegion
     }
 
     // Slot changes and lighting attachment share the tick lock; no read can later attach a stale instance.
-    private void PublishChunk(int x, int z, IChunk chunk, bool fromDisk = false)
+    private void PublishChunk(int x, int z, IChunk chunk, bool fromDisk = false, bool allowRetired = false)
     {
-        if (this.lightingRetired)
+        if (this.lightingRetired && !allowRetired)
             return;
 
         // Pin the replacement before releasing the previous instance at this position.
@@ -673,11 +736,15 @@ public partial class Region : IRegion
             concrete.CompleteGeneration = this.CompleteChunk;
 
         // Lock-free readers must not see a complete chunk until all its section hooks are ready.
-        this.LightLoaded?.Invoke(chunk, false);
+        if (!this.lightingRetired)
+            this.LightLoaded?.Invoke(chunk, false);
+
         this.loadedChunks[x, z] = chunk;
+        if (this.lightingRetired)
+            this.DetachLighting(chunk);
 
         // Entity initialization reads this slot; queue it only after publication and lighting attachment.
-        if (fromDisk && chunk is Chunk { IsGenerated: true } complete)
+        if (!this.lightingRetired && fromDisk && chunk is Chunk { IsGenerated: true } complete)
             this.EntitiesLoaded?.Invoke(complete);
     }
 
@@ -720,6 +787,9 @@ public partial class Region : IRegion
     {
         lock (this.FluidTickLock)
         {
+            if (this.regionUnload is null || this.regionUnload.Task.IsCompleted)
+                this.regionUnload = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
             this.lightingRetired = true;
             this.FlushLight?.Invoke();
             foreach (var chunk in this.loadedChunks)

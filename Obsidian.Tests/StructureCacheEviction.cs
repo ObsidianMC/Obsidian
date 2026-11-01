@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -114,43 +115,127 @@ public sealed class StructureCacheEviction
         }
     }
 
-    [Fact]
-    public async Task AGeneratingNeighborPinsStartsUntilTheirFinalStateIsSaved()
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task ChangesAfterUnloadingSnapshotAreSavedBeforePinsAreReleased(
+        bool wholeRegion, bool loadStartDuringUnload)
     {
-        var pipeline = NativeChunks.Pipeline(12345L, () => PluginStructures.CurrentRegistry);
-        var manager = pipeline.Structures!;
-        var cache = manager.StartCache;
-        var chunk = new Chunk(StartX, StartZ);
-        cache.Track(chunk);
-        var start = manager.GetStarts(StartX, StartZ).Single(candidate => candidate.Structure.Identifier == Pyramid);
-        StructureManager.RestoreStart(start, null);
-
-        // The boundary chunk is still generating after its start chunk's unloading snapshot was taken.
-        using (cache.BeginGeneration(StartX + 8, StartZ))
+        var generator = new MojangGenerator();
+        var world = CreateWorld(generator);
+        var resume = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task? unloading = null;
+        Task? changing = null;
+        try
         {
-            var snapshot = await Task.Run(() => manager.SaveStarts(StartX, StartZ, null));
-            Assert.NotNull(snapshot);
-            cache.Untrack(chunk);
-            var pinned = manager.GetStarts(StartX, StartZ)
-                .Single(candidate => candidate.Structure.Identifier == Pyramid);
-            Assert.Same(start, pinned);
-            Assert.True(start.TryAddReference());
-            cache.Changed(StartX, StartZ);
+            var residentX = loadStartDuringUnload ? StartX + 1 : StartX;
+            var chunk = (Chunk)await world.GetChunkAsync(residentX, StartZ, scheduleGeneration: false);
+            var manager = generator.Builder!.Structures!;
+            var cache = manager.StartCache;
+            var start = manager.GetStarts(StartX, StartZ).Single(candidate => candidate.Structure.Identifier == Pyramid);
+            if (!loadStartDuringUnload)
+                manager.LoadStart(start);
+
+            var region = (Region)world.LoadRegionByChunk(StartX, StartZ);
+            var paused = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var pauseNextWrite = 1;
+            region.ChunkFile.Observe = step =>
+            {
+                if (step.Step == RegionFile.Step.PayloadWritten
+                    && Interlocked.Exchange(ref pauseNextWrite, 0) == 1)
+                {
+                    paused.TrySetResult();
+                    return new ValueTask(resume.Task);
+                }
+
+                return ValueTask.CompletedTask;
+            };
+
+            // The unloading snapshot precedes the reference. Its neighbor still needs the live start.
+            using (cache.BeginGeneration(StartX + 8, StartZ))
+            {
+                unloading = wholeRegion
+                    ? world.UnloadRegionAsync(region.X, region.Z)
+                    : region.UnloadChunk(chunk.X, chunk.Z);
+                await paused.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+                // Exercise the real callbacks, including loading a previously absent start into a retiring region.
+                changing = Task.Run(() =>
+                {
+                    manager.LoadStart(start);
+                    Assert.True(start.TryAddReference());
+                    manager.StartChanged!(StartX, StartZ);
+                });
+                await changing.WaitAsync(TimeSpan.FromSeconds(30));
+                resume.TrySetResult();
+                await unloading;
+                Assert.Same(start, manager.GetStarts(StartX, StartZ).Single());
+            }
+
+            // No manual SaveStarts: the unload must persist the change and make eviction possible itself.
+            await UnloadRegions(world);
+            Assert.Equal(0, cache.Count);
+            var saved = (Chunk)await world.GetChunkAsync(StartX, StartZ, scheduleGeneration: false);
+            Assert.Equal(1, ((NbtCompound)saved.StructureStarts![Pyramid]).GetInt("references"));
         }
+        finally
+        {
+            resume.TrySetResult();
+            if (unloading is not null)
+                await unloading;
+            if (changing is not null)
+                await changing;
 
-        // Ending generation cannot discard the reference taken after that snapshot.
-        var unsaved = manager.GetStarts(StartX, StartZ)
-            .Single(candidate => candidate.Structure.Identifier == Pyramid);
-        Assert.Same(start, unsaved);
-        var saved = manager.SaveStarts(StartX, StartZ, null)!;
-        Assert.Equal(1, ((NbtCompound)saved[Pyramid]).GetInt("references"));
-        Assert.Equal(0, cache.Count);
+            await DisposeWorld(world);
+        }
+    }
 
-        var again = manager.GetStarts(StartX, StartZ).Single(candidate => candidate.Structure.Identifier == Pyramid);
-        StructureManager.RestoreStart(again, saved);
-        Assert.NotSame(start, again);
-        Assert.Equal(1, again.References);
-        Assert.False(again.TryAddReference());
+    [Fact]
+    public async Task FailedRegionUnloadKeepsItsResidentStartsReachableForRetry()
+    {
+        var generator = new MojangGenerator();
+        var world = CreateWorld(generator);
+        Region? region = null;
+        try
+        {
+            var chunk = (Chunk)await world.GetChunkAsync(StartX, StartZ, scheduleGeneration: false);
+            var manager = generator.Builder!.Structures!;
+            var cache = manager.StartCache;
+            var start = manager.GetStarts(StartX, StartZ).Single(candidate => candidate.Structure.Identifier == Pyramid);
+            manager.LoadStart(start);
+            Assert.True(start.TryAddReference());
+            manager.StartChanged!(StartX, StartZ);
+            region = (Region)world.LoadRegionByChunk(StartX, StartZ);
+            region.ChunkFile.Observe = step => step.Step == RegionFile.Step.PayloadWritten
+                ? ValueTask.FromException(new IOException("Injected final-save failure."))
+                : ValueTask.CompletedTask;
+
+            await Assert.ThrowsAsync<IOException>(() => world.UnloadRegionAsync(region.X, region.Z));
+
+            Assert.Same(region, Assert.Single(world.Regions.Values));
+            Assert.Same(chunk, await world.GetChunkAsync(StartX, StartZ, scheduleGeneration: false));
+            Assert.Same(start, manager.GetStarts(StartX, StartZ).Single());
+            Assert.Equal(1, cache.Count);
+
+            region.ChunkFile.Observe = null;
+            await world.UnloadRegionAsync(region.X, region.Z);
+            Assert.Empty(world.Regions);
+            Assert.Equal(0, cache.Count);
+            var saved = (Chunk)await world.GetChunkAsync(StartX, StartZ, scheduleGeneration: false);
+            Assert.Equal(1, ((NbtCompound)saved.StructureStarts![Pyramid]).GetInt("references"));
+        }
+        finally
+        {
+            if (region is not null)
+            {
+                region.ChunkFile.Observe = null;
+                if (!world.Regions.Values.Contains(region))
+                    await region.DisposeAsync();
+            }
+
+            await DisposeWorld(world);
+        }
     }
 
     [Fact]

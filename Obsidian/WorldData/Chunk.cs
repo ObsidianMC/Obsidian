@@ -73,6 +73,12 @@ public sealed class Chunk : IChunk
     internal void MarkUnsaved() => Volatile.Write(ref this.unsaved, 1);
 
     /// <summary>
+    /// An explicit change since the last snapshot. Unlike <see cref="IsUnsaved"/>, merely holding containers does
+    /// not set this: unload checks it after freezing block access to detect late structure-state notifications.
+    /// </summary>
+    internal bool IsMarkedUnsaved => Volatile.Read(ref this.unsaved) != 0;
+
+    /// <summary>
     /// Whether the chunk may differ from its last save, so a save has to write it. Read without locks: a change racing
     /// the read marks the chunk again, and the next save writes it.
     /// </summary>

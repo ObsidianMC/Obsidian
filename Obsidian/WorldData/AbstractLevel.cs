@@ -315,6 +315,33 @@ public abstract partial class AbstractLevel : ILevel
         return region.ReadSavedStructureStartsAsync(chunkX, chunkZ);
     }
 
+    /// <summary>
+    /// Gets the stored start chunk, retrying a stale instance after unload. Notifications during final-save I/O
+    /// force another snapshot; those after sealing wait for file closure before loading and marking a new chunk.
+    /// </summary>
+    internal async ValueTask<Chunk?> GetStructureStartChunkAsync(int chunkX, int chunkZ, bool markUnsaved = false)
+    {
+        while (await this.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false) is Chunk chunk)
+        {
+            Task? unloading = null;
+            lock (this.Fluids.TickLock)
+            {
+                if (this.GetRegionForChunk(chunkX, chunkZ) is Region region)
+                {
+                    if (region.TryAccessStructureChunk(chunk, markUnsaved))
+                        return chunk;
+
+                    unloading = region.RegionUnload;
+                }
+            }
+
+            if (unloading is not null)
+                await unloading;
+        }
+
+        return null;
+    }
+
     internal bool TryMoveEntity(IEntity entity, VectorD from, VectorD to)
     {
         if (Generator is MobTestGenerator && entity is Entity testEntity && !MobTestGenerator.AllowsMovement(testEntity, to))
@@ -1156,23 +1183,44 @@ public abstract partial class AbstractLevel : ILevel
                 if (this.HasRegionTickets(regionX, regionZ))
                     return;
 
-                // Retire publication and detach lighting before another reader can create a replacement region.
+                // Keep the region registered through its final save and file closure. A failed flush stays
+                // reachable for retry, retaining its chunks and structure pins until their state reaches disk.
                 if (r is Region concrete)
                     concrete.RetireLighting();
-
-                if (Regions.TryRemove(KeyValuePair.Create(value, r)))
-                    Interlocked.Increment(ref this.regionsVersion);
             }
 
-            if (r is not null)
+            try
             {
-                await r.FlushAsync();
+                while (true)
+                {
+                    await r.FlushAsync();
+                    lock (this.Fluids.TickLock)
+                    {
+                        if (r is Region saving && !saving.TrySealStructureChanges())
+                            continue;
+
+                        break;
+                    }
+                }
+
                 await r.DisposeAsync();
+                lock (this.Fluids.TickLock)
+                {
+                    if (Regions.TryRemove(KeyValuePair.Create(value, r)))
+                        Interlocked.Increment(ref this.regionsVersion);
+                }
+
+                (r as Region)?.EndRegionUnload();
 
                 // The flush takes out the entities it saves; any it left (such as those in chunks never generated)
                 // go with the region, so they leave the entity index too.
                 foreach (var (_, entity) in r.Entities)
                     EntityGrid.Leave(entity);
+            }
+            catch (Exception failure)
+            {
+                (r as Region)?.EndRegionUnload(failure);
+                throw;
             }
         }
         finally
