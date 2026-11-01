@@ -52,6 +52,11 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
     private readonly HashSet<AbstractLevel> loadingLevels = [];
     private readonly Lock pauseLock = new();
 
+    // Cancelled as the manager stops (see StopAsync), for work that runs apart from its own loop: a plugin's
+    // dimension generating as the plugin loads may be waiting out a pause that no resume will end. Never disposed: the
+    // host may stop the manager again after the server disposed it.
+    private readonly CancellationTokenSource stopping = new();
+
     public bool ReadyToJoin { get; private set; }
 
     /// <summary>
@@ -332,8 +337,14 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
     /// loading while they're added waits for that pass, then adds those it missed.
     /// </para>
     /// </remarks>
-    internal Task AddPluginDimensionsAsync(CancellationToken cancellationToken = default) =>
-        this.AddPluginDimensionsAsync(opening: false, cancellationToken);
+    /// <exception cref="OperationCanceledException">
+    /// <paramref name="cancellationToken"/> was cancelled, or the manager stopped, before the dimensions were added.
+    /// </exception>
+    internal async Task AddPluginDimensionsAsync(CancellationToken cancellationToken = default)
+    {
+        using var stoppable = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, this.stopping.Token);
+        await this.AddPluginDimensionsAsync(opening: false, stoppable.Token);
+    }
 
     // A pass adding plugins' dimensions, the first of which, opening, runs as the worlds load. As passes run one at a
     // time, one a plugin asked for before it, finding them not open, has its dimensions added by that first pass.
@@ -518,6 +529,16 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
 
     public Task TickWorldsAsync() => ReadyToJoin ? Task.WhenAll(this.worlds.Values.Select(world => world.DoWorldTickAsync())) : Task.CompletedTask;
     public Task FlushLoadedWorldsAsync() => Task.WhenAll(this.worlds.Values.Cast<World>().Select(world => world.FlushAsync()));
+
+    /// <summary>
+    /// Stops the manager's loop, and ends plugins' dimension loads still under way (see
+    /// <see cref="AddPluginDimensionsAsync(CancellationToken)"/>), which then release what they hold.
+    /// </summary>
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        await this.stopping.CancelAsync();
+        await base.StopAsync(cancellationToken);
+    }
 
     public async ValueTask DisposeAsync()
     {
