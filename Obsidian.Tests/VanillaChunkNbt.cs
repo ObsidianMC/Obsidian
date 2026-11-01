@@ -1,12 +1,12 @@
 using Obsidian.API;
 using Obsidian.API.BlockEntities;
 using Obsidian.API.Registries;
+using Obsidian.API.Utilities;
 using Obsidian.Commands.Modules;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Registries;
 using Obsidian.WorldData;
-using Obsidian.WorldData.Pistons;
 using Obsidian.WorldData.Structures;
 using Obsidian.WorldData.Structures.Placement;
 using Obsidian.WorldData.Upgrade;
@@ -126,7 +126,7 @@ public sealed class VanillaChunkNbt
 
     private static void AssertLegacyNbtUpgradesWithoutLosingState(string status)
     {
-        var pistonState = BlockStateProperties.GetState("minecraft:oak_stairs").WithProperty("facing", "east").WithProperty("half", "top");
+        var stairs = BlockStateProperties.GetState("minecraft:oak_stairs").WithProperty("facing", "east").WithProperty("half", "top");
         var palette = new NbtList(NbtTagType.Compound, "palette")
         {
             LegacyState("", "minecraft:furnace"),
@@ -137,8 +137,7 @@ public sealed class VanillaChunkNbt
             new NbtCompound { new NbtTag<string>("id", "minecraft:furnace"), new NbtTag<short>("cooking_time_spent", 5), new NbtTag<short>("cooking_total_time", 200), new NbtTag<short>("lit_time_remaining", 100), new NbtTag<short>("lit_total_time", 300) },
             new NbtCompound { new NbtTag<string>("id", "minecraft:brewing_stand"), new NbtTag<short>("BrewTime", 123), new NbtTag<byte>("Fuel", 19) },
             new NbtCompound { new NbtTag<string>("id", "minecraft:decorated_pot"), new NbtList(NbtTagType.String, "sherds") { new NbtTag<string>("", "minecraft:angler_pottery_sherd"), new NbtTag<string>("", "minecraft:brick"), new NbtTag<string>("", "minecraft:brick"), new NbtTag<string>("", "minecraft:arms_up_pottery_sherd") }, new NbtCompound("item") { new NbtTag<string>("id", "minecraft:emerald"), new NbtTag<int>("count", 5) } },
-            new NbtCompound { new NbtTag<string>("id", "minecraft:bed") },
-            new NbtCompound { new NbtTag<string>("id", "minecraft:piston"), new NbtTag<int>("MovedState", LegacyWorldgenBlockStates.StateId(pistonState)), new NbtTag<string>("Facing", "east"), new NbtTag<byte>("Extending", 1), new NbtTag<byte>("Source", 0), new NbtTag<float>("Progress", 0.5f) }
+            new NbtCompound { new NbtTag<string>("id", "minecraft:bed") }
         };
         var chunk = new NbtCompound
         {
@@ -153,12 +152,12 @@ public sealed class VanillaChunkNbt
         Assert.Equal(77, ((NbtCompound)chunk["untouched"]).GetInt("value"));
         var upgradedPalette = (NbtList)((NbtCompound)((NbtCompound)((NbtList)chunk["sections"])[0])["block_states"])["palette"];
         Assert.Equal("minecraft:furnace", ((NbtTag<string>)((NbtCompound)upgradedPalette[0])[""]).Value);
-        Assert.Equal(pistonState, BlockStateNbt.Read(upgradedPalette[1]));
+        Assert.Equal(stairs, BlockStateNbt.Read(upgradedPalette[1]));
         var upgradedStairs = Assert.IsType<NbtCompound>(upgradedPalette[1]);
         Assert.Equal("minecraft:oak_stairs", upgradedStairs.GetString("id"));
         Assert.False(upgradedStairs.HasTag("Name"));
         Assert.Equal("top", ((NbtCompound)upgradedStairs["properties"]).GetString("half"));
-        Assert.Equal(4, entities.Count);
+        Assert.Equal(3, entities.Count);
         var furnace = (NbtCompound)entities[0];
         Assert.Equal(5, furnace.GetInt("cooking_time_spent"));
         Assert.Equal(200, furnace.GetInt("cooking_total_time"));
@@ -178,19 +177,6 @@ public sealed class VanillaChunkNbt
         Assert.Equal("minecraft:brick", ((NbtCompound)sherds["right"]).GetString("id"));
         Assert.Equal("minecraft:arms_up_pottery_sherd", ((NbtCompound)sherds["front"]).GetString("id"));
         Assert.Equal(5, ((NbtCompound)pot["item"]).GetInt("count"));
-        var piston = (NbtCompound)entities[3];
-        Assert.Equal(pistonState, BlockStateNbt.Read(piston["blockState"]));
-        Assert.Equal((int)BlockFace.East, piston.GetInt("facing"));
-        Assert.True(piston.GetBool("extending"));
-        Assert.False(piston.GetBool("source"));
-        Assert.Equal(0.5f, piston.GetFloat("progress"));
-        var moving = new MovingPistonBlockEntity();
-        moving.Load(piston);
-        Assert.Equal(pistonState, moving.MovedState);
-        var savedPiston = new NbtCompound();
-        moving.Save(savedPiston);
-        Assert.Equal(pistonState, BlockStateNbt.Read(savedPiston["blockState"]));
-        Assert.Equal(0.5f, savedPiston.GetFloat("progress"));
         var once = Write(chunk);
         Assert.Equal(once, Write(LegacyChunkUpgrade.UpgradeChunk(chunk)));
 
@@ -201,7 +187,7 @@ public sealed class VanillaChunkNbt
         LegacyChunkUpgrade.UpgradeEntityChunk(entityChunk);
         var enderman = (NbtCompound)((NbtList)entityChunk["Entities"])[0];
         Assert.Equal("minecraft:stone", enderman.GetString("carriedBlockState"));
-        Assert.Equal(pistonState, BlockStateNbt.Read(((NbtCompound)((NbtList)enderman["Passengers"])[0])["DisplayState"]));
+        Assert.Equal(stairs, BlockStateNbt.Read(((NbtCompound)((NbtList)enderman["Passengers"])[0])["DisplayState"]));
         once = Write(entityChunk);
         Assert.Equal(once, Write(LegacyChunkUpgrade.UpgradeEntityChunk(entityChunk)));
 
@@ -225,17 +211,13 @@ public sealed class VanillaChunkNbt
         Assert.Null(BlockEntityNbt.Save(new DataBlockEntity { Id = "minecraft:bed", BlockPosition = Vector.Zero }));
     }
 
-    [Fact(DisplayName = "Legacy palette entries with a numeric state id keep that state's properties")]
+    [Fact(DisplayName = "Legacy palette entries with a numeric state id keep the state saved beside the id")]
     public void LegacyPaletteIdsKeepTheirState()
     {
         var stairs = BlocksRegistry.OakStairs.WithProperty("facing", "east").WithProperty("half", "top");
-        var furnace = BlockStateProperties.GetState("minecraft:furnace").WithProperty("lit", "true");
         var palette = new NbtList(NbtTagType.Compound, "palette")
         {
-            // The name without properties, as Obsidian saved it beside the id.
-            WithId(LegacyState("", "minecraft:oak_stairs"), LegacyWorldgenBlockStates.StateId(stairs)),
-            WithId(new NbtCompound(), LegacyWorldgenBlockStates.StateId(furnace)),
-            // An id past 1.21.11's table falls back to the name.
+            WithId(LegacyState("", "minecraft:oak_stairs", ("facing", "east"), ("half", "top")), 1234),
             WithId(LegacyState("", "minecraft:granite"), int.MaxValue)
         };
         var chunk = new NbtCompound
@@ -246,7 +228,7 @@ public sealed class VanillaChunkNbt
         LegacyChunkUpgrade.UpgradeChunk(chunk);
 
         var upgraded = (NbtList)((NbtCompound)((NbtCompound)((NbtList)chunk["sections"])[0])["block_states"])["palette"];
-        Assert.Equal([stairs, furnace, BlockStateProperties.GetState("minecraft:granite")], upgraded.Select(BlockStateNbt.Read));
+        Assert.Equal([stairs, BlockStateProperties.GetState("minecraft:granite")], upgraded.Select(BlockStateNbt.Read));
         Assert.All(upgraded.OfType<NbtCompound>(), entry => Assert.False(entry.HasTag("Id")));
 
         static NbtCompound WithId(NbtCompound state, int id)
@@ -254,6 +236,69 @@ public sealed class VanillaChunkNbt
             state.Add(new NbtTag<int>("Id", id));
             return state;
         }
+    }
+
+    [Fact(DisplayName = "Moving pistons 1.21.11 saved by state id are dropped by the upgrade, and become air")]
+    public void LegacyMovingPistonsAreDropped()
+    {
+        // A section of stone with a moving piston at (3, 5, 7), its block entity saving the moved block by id.
+        var piston = (X: 3, Y: 5, Z: 7);
+        var pistonIndex = piston.Y << 8 | piston.Z << 4 | piston.X;
+        var data = new DataArray(4, 4096);
+        data[pistonIndex] = 1;
+
+        var section = new NbtCompound
+        {
+            new NbtTag<byte>("Y", 0),
+            new NbtCompound("block_states")
+            {
+                new NbtList(NbtTagType.Compound, "palette")
+                {
+                    LegacyState("", "minecraft:stone"),
+                    LegacyState("", "minecraft:moving_piston", ("facing", "east"), ("type", "normal"))
+                },
+                new NbtArray<long>("data", data.storage)
+            }
+        };
+        var chunk = new NbtCompound
+        {
+            new NbtList(NbtTagType.Compound, "sections") { section },
+            new NbtList(NbtTagType.Compound, "block_entities") { LegacyMovingPiston(piston.X, piston.Y, piston.Z) }
+        };
+
+        LegacyChunkUpgrade.UpgradeChunk(chunk);
+
+        Assert.Empty((NbtList)chunk["block_entities"]);
+        var states = (NbtCompound)section["block_states"];
+        var palette = ((NbtList)states["palette"]).Select(BlockStateNbt.Read).ToList();
+        var upgraded = new DataArray(4, 4096) { storage = ((NbtArray<long>)states["data"]).GetArray() };
+        Assert.Equal(BlockIds.Air, palette[upgraded[pistonIndex]].RegistryId);
+        Assert.Equal(4095, Enumerable.Range(0, 4096).Count(i => palette[upgraded[i]].RegistryId == BlockIds.Stone));
+
+        // A template's moving piston becomes air too.
+        var template = Template(new NbtList(NbtTagType.Compound, "palette")
+        {
+            LegacyState("", "minecraft:moving_piston", ("facing", "east"), ("type", "normal"))
+        });
+        var block = (NbtCompound)((NbtList)template["blocks"])[0];
+        block.Add(LegacyMovingPiston(0, 0, 0, "nbt"));
+
+        LegacyChunkUpgrade.UpgradeStructureTemplate(template);
+
+        Assert.False(block.HasTag("nbt"));
+        var templatePalette = (NbtList)template["palette"];
+        Assert.Equal(BlockIds.Air, BlockStateNbt.Read(templatePalette[block.GetInt("state")]).RegistryId);
+
+        static NbtCompound LegacyMovingPiston(int x, int y, int z, string name = "") => new(name)
+        {
+            new NbtTag<string>("id", "minecraft:piston"),
+            new NbtTag<int>("x", x),
+            new NbtTag<int>("y", y),
+            new NbtTag<int>("z", z),
+            new NbtTag<int>("MovedState", 1234),
+            new NbtTag<string>("Facing", "east"),
+            new NbtTag<float>("Progress", 0.5f)
+        };
     }
 
     [Fact]

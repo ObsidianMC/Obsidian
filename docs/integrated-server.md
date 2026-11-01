@@ -142,7 +142,9 @@ raids, patrols, the dragon fight's respawn and a dimension's spawn) is in each l
 A world Obsidian saved for 1.21.11, in its own layout or vanilla 1.21.11's, is upgraded once when it loads: the world
 is first copied to `<folder>-1.21.11-backup` beside it (`-2`, `-3`... when that's taken), then its files are moved and
 level.dat split as above, and its chunks, entity chunks and saved structure templates rewritten. One info line names
-the backup. An upgrade that stops partway is redone from the backup the next time the world loads.
+the backup. An upgrade that stops partway is redone from the backup the next time the world loads. Blocks that were
+mid-push when the world was saved (moving pistons) become air, as 1.21.11 saved what they carried by a state id the
+upgrade can't decode (see [the gap](known-gaps/moving-pistons-dropped-by-the-world-upgrade.md)).
 
 Chunks and their entities are read and written in 1.21.11's format (data version 4671): sections name block states by
 `Name` and `Properties` and biomes by id, and statuses are namespaced (`minecraft:full`). A missing or unknown status

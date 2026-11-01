@@ -18,6 +18,7 @@ and where to start.
 - [26.3 blocks](26-3-blocks.md)
 - [Bubble columns started by water](bubble-columns-started-by-water.md)
 - [Comparators reading unopened loot containers](comparators-reading-unopened-loot-containers.md)
+- [Moving pistons dropped by the world upgrade](moving-pistons-dropped-by-the-world-upgrade.md)
 - [Plant growth beyond saplings](plant-growth-beyond-saplings.md)
 - [Recursive placement callbacks](recursive-placement-callbacks.md)
 - [Redstone](redstone.md)

@@ -189,11 +189,17 @@ internal static class ChunkSectionNbt
     /// </summary>
     private static int StorageBits(int paletteSize, int minimumBits) =>
         paletteSize <= 1 ? 0 : Math.Max(minimumBits, 32 - BitOperations.LeadingZeroCount((uint)paletteSize - 1));
+
+    /// <summary>
+    /// The bits per entry vanilla stores a section's block states with, for a palette of <paramref name="paletteSize"/>
+    /// (see <see cref="StorageBits"/>).
+    /// </summary>
+    internal static int BlockStorageBits(int paletteSize) => StorageBits(paletteSize, minimumBits: 4);
 }
 
 /// <summary>
 /// BlockState.CODEC's saved form: the default state is a string, other states have an id and properties.
-/// Readers also accept 1.21.11 templates, which remain in data packs and the legacy worldgen assets.
+/// Readers also accept 1.21.11 templates, which remain in data packs.
 /// </summary>
 internal static class BlockStateNbt
 {
