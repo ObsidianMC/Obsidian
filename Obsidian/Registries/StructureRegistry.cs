@@ -14,7 +14,9 @@ namespace Obsidian.Registries;
 /// </summary>
 /// <remarks>
 /// Vanilla's templates aren't shipped with Obsidian, since Mojang's EULA doesn't allow redistributing them. They load
-/// on first use, since most worlds only ever need part of them.
+/// on first use, since most worlds only ever need part of them. The server extracts the current version's at startup
+/// (see <see cref="InitializeCurrent"/>); the legacy version's, which only the live generator places until Phase 5 of
+/// <c>docs/porting-26.3-plan.md</c> switches it, are extracted once the first of them is needed.
 /// </remarks>
 internal static class StructureRegistry
 {
@@ -25,16 +27,13 @@ internal static class StructureRegistry
     // Lazy, so chunks generating in parallel that need the same template load it once.
     private static readonly ConcurrentDictionary<string, Lazy<StructureTemplate>> templates = new();
 
-    private static string? directory;
+    // The legacy version's templates, for the live generator (see Get).
+    private static TemplateDirectory? directory;
 
     // The current version's templates, for the 26.3 generator (see GetCurrent).
     private static readonly ConcurrentDictionary<string, Lazy<StructureTemplate>> currentTemplates = new();
 
-    // Extracts the current version's templates and gives their directory; see InitializeCurrent.
-    private static Func<Task<string>>? extractCurrent;
-
-    // The extraction every template load waits on, replaced once it fails so that the next load tries again.
-    private static Lazy<Task<string>>? currentExtraction;
+    private static TemplateDirectory? currentDirectory;
 
     // See Use: the templates a structure on this thread starts and places with, instead of the legacy ones.
     [ThreadStatic]
@@ -44,21 +43,29 @@ internal static class StructureRegistry
         FrozenDictionary<string, StructureTemplate>.Empty;
 
     /// <summary>
-    /// Sets the directory templates are read from, before any template is used.
+    /// Sets the directory the legacy version's templates (see <see cref="Get"/>) are read from, before any template
+    /// is used.
     /// </summary>
-    public static void Initialize(string structureDirectory) => directory = structureDirectory;
+    public static void Initialize(string structureDirectory) =>
+        Initialize(() => Task.FromResult(structureDirectory));
 
     /// <summary>
-    /// Sets how the current version's templates are extracted (see <see cref="GetCurrent"/>): only when the first
-    /// one is needed, since the live generator places the legacy ones.
+    /// Sets how the legacy version's templates (see <see cref="Get"/>) are extracted: only when the first one is
+    /// needed, so a server whose worlds place none never downloads the legacy server jar.
     /// </summary>
     /// <param name="extract">Extracts the templates and gives their directory, like
     /// <see cref="VanillaServerJar.ExtractStructuresAsync"/>.</param>
-    public static void InitializeCurrent(Func<Task<string>> extract)
-    {
-        extractCurrent = extract;
-        Volatile.Write(ref currentExtraction, new Lazy<Task<string>>(extract));
-    }
+    public static void Initialize(Func<Task<string>> extract) =>
+        Volatile.Write(ref directory, new TemplateDirectory(extract));
+
+    /// <summary>
+    /// Sets how the current version's templates (see <see cref="GetCurrent"/>) are extracted, or where they already
+    /// are: only when the first one is needed, unless <paramref name="extract"/> gives a finished task.
+    /// </summary>
+    /// <param name="extract">Extracts the templates and gives their directory, like
+    /// <see cref="VanillaServerJar.ExtractStructuresAsync"/>.</param>
+    public static void InitializeCurrent(Func<Task<string>> extract) =>
+        Volatile.Write(ref currentDirectory, new TemplateDirectory(extract));
 
     /// <summary>
     /// Gets one of the current version's vanilla templates by id, loaded on first use; unknown ids get an empty
@@ -71,36 +78,13 @@ internal static class StructureRegistry
     public static StructureTemplate GetCurrent(string id)
     {
         id = Qualify(id);
+
+        // Only vanilla's templates are extracted; another namespace's isn't cached, so the cache holds only vanilla's.
         if (!id.StartsWith(Vanilla, StringComparison.Ordinal))
             return StructureTemplate.CreateEmpty();
 
-        var template = currentTemplates.GetOrAdd(
-            id,
-            static key => new Lazy<StructureTemplate>(
-                () => Load(key, CurrentDirectory(), nameof(InitializeCurrent)),
-                LazyThreadSafetyMode.PublicationOnly));
-
-        return template.Value;
-    }
-
-    private static string CurrentDirectory()
-    {
-        var extraction = Volatile.Read(ref currentExtraction)
-            ?? throw new InvalidOperationException(
-                "Structure templates are used before StructureRegistry.InitializeCurrent.");
-
-        try
-        {
-            return extraction.Value.GetAwaiter().GetResult();
-        }
-        catch
-        {
-            Interlocked.CompareExchange(
-                ref currentExtraction,
-                new Lazy<Task<string>>(extractCurrent!),
-                extraction);
-            throw;
-        }
+        return GetOrLoad(currentTemplates, id, static () => Volatile.Read(ref currentDirectory),
+            nameof(InitializeCurrent));
     }
 
     /// <summary>
@@ -158,22 +142,46 @@ internal static class StructureRegistry
         if (files.Count > 0 && files.TryGetValue(id, out var file))
             return file;
 
-        return templates.GetOrAdd(id, static key => new Lazy<StructureTemplate>(() =>
-            Load(key, directory, nameof(Initialize)))).Value;
+        return GetOrLoad(templates, id, static () => Volatile.Read(ref directory), nameof(Initialize));
+    }
+
+    // Loads each template once, however many chunks ask for it at the same time. A load that fails, as when the
+    // templates couldn't be extracted, isn't kept: the next call loads again.
+    private static StructureTemplate GetOrLoad(
+        ConcurrentDictionary<string, Lazy<StructureTemplate>> cache,
+        string id,
+        Func<TemplateDirectory?> directory,
+        string initializer)
+    {
+        var template = cache.GetOrAdd(
+            id,
+            static (key, source) => new Lazy<StructureTemplate>(
+                () => Load(key, source.Directory(), source.Initializer)),
+            (Directory: directory, Initializer: initializer));
+
+        try
+        {
+            return template.Value;
+        }
+        catch
+        {
+            cache.TryRemove(KeyValuePair.Create(id, template));
+            throw;
+        }
     }
 
     // Like vanilla's identifiers, one without a namespace is vanilla's.
     private static string Qualify(string id) => id.Contains(':') ? id : Vanilla + id;
 
-    private static StructureTemplate Load(string id, string? directory, string initializer)
+    private static StructureTemplate Load(string id, TemplateDirectory? directory, string initializer)
     {
         // Only vanilla's templates are in the directory; another namespace's is a file's or doesn't exist.
         if (!id.StartsWith(Vanilla, StringComparison.Ordinal))
             return StructureTemplate.CreateEmpty();
 
-        var root = directory
+        var root = (directory
             ?? throw new InvalidOperationException(
-                $"Structure templates are used before StructureRegistry.{initializer}.");
+                $"Structure templates are used before StructureRegistry.{initializer}.")).Path;
         var path = id[Vanilla.Length..];
         var file = Path.Combine(root, path + FileSuffix);
 
@@ -189,5 +197,45 @@ internal static class StructureRegistry
 
         decompressed.Position = 0;
         return StructureTemplate.Load(decompressed, NbtCompression.None);
+    }
+
+    /// <summary>
+    /// A version's extracted templates, extracted once the first of them is needed. Every load waits on the same
+    /// extraction; one that fails isn't kept, so the next load extracts again.
+    /// </summary>
+    /// <remarks>
+    /// Loads block on the extraction, so it runs on the thread pool, away from any synchronization context of the
+    /// thread that first needed it. It doesn't take that thread's execution context either: the task lives as long as
+    /// the server, and the context's async locals can hold a plugin, which then could never unload.
+    /// </remarks>
+    private sealed class TemplateDirectory(Func<Task<string>> extract)
+    {
+        private Lazy<Task<string>> extraction = new(() => Start(extract));
+
+        /// <summary>The templates' directory, waiting for them to be extracted.</summary>
+        public string Path
+        {
+            get
+            {
+                var current = Volatile.Read(ref this.extraction);
+
+                try
+                {
+                    return current.Value.GetAwaiter().GetResult();
+                }
+                catch
+                {
+                    var retry = new Lazy<Task<string>>(() => Start(extract));
+                    Interlocked.CompareExchange(ref this.extraction, retry, current);
+                    throw;
+                }
+            }
+        }
+
+        private static Task<string> Start(Func<Task<string>> extract)
+        {
+            using (ExecutionContext.SuppressFlow())
+                return Task.Run(extract);
+        }
     }
 }
