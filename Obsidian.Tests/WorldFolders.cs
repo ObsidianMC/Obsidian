@@ -204,6 +204,37 @@ public sealed class WorldFolders : IDisposable
         }
     }
 
+    [Fact(DisplayName = "A world Obsidian saved before its vanilla-format saves is refused, and left unchanged")]
+    public async Task PreVanillaFormatWorldsAreRefused()
+    {
+        // Obsidian's palettes before #539: a name and a 1.21.11 state id, without the state's properties.
+        var folder = Path.Combine(this.root, "pre539");
+        await WriteObsidianWorldAsync(folder);
+        var section = new NbtCompound
+        {
+            new NbtTag<byte>("Y", 0),
+            new NbtCompound("block_states")
+            {
+                new NbtList(NbtTagType.Compound, "palette")
+                {
+                    new NbtCompound { new NbtTag<string>("Name", "minecraft:oak_stairs"), new NbtTag<int>("Id", 4000) }
+                }
+            }
+        };
+        await WriteRegionAsync(
+            Path.Combine(folder, "dimensions", "the_nether", "regions", "r.0.0.mca"),
+            new NbtList(NbtTagType.Compound, "sections") { section });
+        var original = ReadFiles(folder);
+
+        var refused = await Assert.ThrowsAsync<InvalidDataException>(
+            () => WorldUpgrade.UpgradeAsync(folder, "minecraft:overworld", NullLogger.Instance));
+
+        Assert.Contains(folder, refused.Message);
+        Assert.Equal(original, ReadFiles(folder));
+        Assert.False(Directory.Exists($"{folder}-1.21.11-backup"));
+        Assert.True(WorldUpgrade.IsNeeded(folder));
+    }
+
     [Fact(DisplayName = "An upgrade that stopped partway is redone from its backup, without another backup")]
     public async Task InterruptedUpgradeIsRedone()
     {
@@ -449,7 +480,7 @@ public sealed class WorldFolders : IDisposable
         }
     }
 
-    private static async Task WriteRegionAsync(string path)
+    private static async Task WriteRegionAsync(string path, NbtList sections = null)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         await using var file = new RegionFile(path, NbtCompression.ZLib);
@@ -460,6 +491,9 @@ public sealed class WorldFolders : IDisposable
         {
             writer.WriteInt("xPos", 1);
             writer.WriteInt("zPos", 1);
+            if (sections is not null)
+                writer.WriteTag(sections);
+
             writer.EndCompound();
             await writer.TryFinishAsync();
         }

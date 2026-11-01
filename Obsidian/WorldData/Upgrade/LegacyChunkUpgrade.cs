@@ -1,6 +1,7 @@
 using Obsidian.Nbt;
 using Obsidian.Registries;
 using Obsidian.WorldData.Structures;
+using System.IO;
 
 namespace Obsidian.WorldData.Upgrade;
 
@@ -15,8 +16,13 @@ namespace Obsidian.WorldData.Upgrade;
 /// <para>
 /// Moving pistons (blocks mid-push) saved the block they move as a 1.21.11 state id, which nothing in 26.3 can
 /// decode, so the upgrade drops them: the moving piston and the block it carried become air
-/// (<c>docs/known-gaps/moving-pistons-dropped-by-the-world-upgrade.md</c>). Palette entries Obsidian saved before its
-/// vanilla-format saves, by state id beside a name, keep the named block with the properties saved beside it.
+/// (<c>docs/known-gaps/world-upgrade-drops-and-refusals.md</c>).
+/// </para>
+/// <para>
+/// Obsidian builds before its vanilla-format saves (#539) saved chunk palettes by state id, in 1.21.11's numbering,
+/// beside the block's name without its properties (see <see cref="HasPaletteIds"/>). Those states can't be decoded
+/// without 1.21.11's state table, so such chunks are refused rather than upgraded with their properties reset:
+/// <c>WorldUpgrade</c> checks the whole world before it changes anything.
 /// </para>
 /// </remarks>
 internal static class LegacyChunkUpgrade
@@ -24,8 +30,16 @@ internal static class LegacyChunkUpgrade
     /// <summary>
     /// A region chunk: block-state palettes, the chunk status, block entities and the <c>DataVersion</c>.
     /// </summary>
+    /// <exception cref="InvalidDataException">The chunk's palettes name states by id (see
+    /// <see cref="HasPaletteIds"/>).</exception>
     public static NbtCompound UpgradeChunk(NbtCompound chunk)
     {
+        if (HasPaletteIds(chunk))
+        {
+            throw new InvalidDataException("The chunk was saved by an Obsidian build before 26.3's vanilla-format "
+                + "saves: its palettes name block states by 1.21.11 state id, which can't be upgraded.");
+        }
+
         if (chunk.TryGetTag<NbtList>("sections", out var sections))
         {
             foreach (var section in sections.OfType<NbtCompound>())
@@ -48,6 +62,30 @@ internal static class LegacyChunkUpgrade
         UpgradeEntities(chunk, "entities");
         SetVersion(chunk);
         return chunk;
+    }
+
+    /// <summary>
+    /// Whether a region chunk is in the format Obsidian saved before its vanilla-format saves (#539): a block-state
+    /// palette entry carries a numeric <c>Id</c>. Only that writer put an <c>Id</c> in a palette entry, always beside a
+    /// <c>Name</c> without the state's <c>Properties</c>; later builds save a <c>Name</c> and its <c>Properties</c>, like
+    /// vanilla.
+    /// </summary>
+    public static bool HasPaletteIds(NbtCompound chunk)
+    {
+        if (!chunk.TryGetTag<NbtList>("sections", out var sections))
+            return false;
+
+        foreach (var section in sections.OfType<NbtCompound>())
+        {
+            if (section.TryGetTag<NbtCompound>("block_states", out var states)
+                && states.TryGetTag<NbtList>("palette", out var palette)
+                && palette.OfType<NbtCompound>().Any(entry => entry.HasTag("Id")))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -130,10 +168,6 @@ internal static class LegacyChunkUpgrade
     {
         if (tag is not NbtCompound state)
             return tag;
-
-        // Obsidian's earlier palettes saved the state id, in 1.21.11's numbering, often beside a Name without the
-        // state's Properties. Nothing in 26.3 decodes those ids, so the Name and Properties saved beside it are read.
-        state.Remove("Id");
 
         if (!state.TryGetTagValue<string>("Name", out var name))
             return tag;

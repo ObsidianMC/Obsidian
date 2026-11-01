@@ -316,8 +316,9 @@ load test bot is updated to match.
    - splitting `level.dat`;
    - rewriting block-state NBT, in palettes, block entities and templates;
    - mapping the chunk status;
-   - dropping moving pistons, whose moved block 1.21.11 saved by numeric state: they become air (see
-     [the gap](known-gaps/moving-pistons-dropped-by-the-world-upgrade.md)).
+   - dropping moving pistons, whose moved block 1.21.11 saved by numeric state: they become air;
+   - refusing, unchanged, worlds whose chunk palettes an Obsidian build before its vanilla-format saves wrote by
+     numeric state (see [the gap](known-gaps/world-upgrade-drops-and-refusals.md)).
 
    It only runs on a copy, and it leaves a backup. It does not try to be a general vanilla data fixer.
 5. **Round-trip tests** with a vanilla-26.3-written world fixture: open it, save it, and compare what we model.
@@ -412,8 +413,9 @@ Re-capture with the Phase 0 harness first, then work in this order. Each step ha
 `VanillaBiomeGeneration`, `VanillaFeaturePlacement`, `VanillaStructurePlacement`, `VanillaStructureSaves` and the
 other 26.3 replays), the 1.21.11 data is gone (`LegacyMinecraftVersion`, `Assets/legacy-1.21.11`, the
 `obsidian_legacy` tags and the legacy state table), and throughput is no worse than on 1.21.x. The world upgrade
-(Phase 3) drops moving pistons that 1.21.11 saved by numeric state, rather than keeping that table for them (see
-[the gap](known-gaps/moving-pistons-dropped-by-the-world-upgrade.md)).
+(Phase 3) drops moving pistons that 1.21.11 saved by numeric state, and refuses worlds whose palettes pre-#539
+Obsidian saved by numeric state, rather than keeping that table for them (see
+[the gap](known-gaps/world-upgrade-drops-and-refusals.md)).
 
 ### Phase 6: content and gameplay
 
@@ -491,7 +493,7 @@ Phase 2.
    it. Phase 0 is meant to make later version bumps mostly regeneration.
 4. **Worldgen uses 26.3 data only.** The 1.21.11 generator, its registries, tags, replays and benchmark mode are
    removed, and startup extracts only current structure templates. No 1.21.11 state table is kept: the world upgrade
-   drops the moving pistons that needed it.
+   drops the moving pistons that needed it and refuses worlds saved before Obsidian's vanilla-format saves.
 
 ## Risks
 

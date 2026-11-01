@@ -31,6 +31,10 @@ namespace Obsidian.WorldData.Upgrade;
 /// Until the upgrade finishes, a marker file in the world names its backup, so an upgrade that stopped partway is
 /// redone from the backup the next time the world loads.
 /// </para>
+/// <para>
+/// A world with chunks that an Obsidian build before its vanilla-format saves (#539) wrote is refused, unchanged,
+/// before anything is backed up or moved (see <see cref="LegacyChunkUpgrade.HasPaletteIds"/>).
+/// </para>
 /// </remarks>
 internal static partial class WorldUpgrade
 {
@@ -99,6 +103,8 @@ internal static partial class WorldUpgrade
     /// </summary>
     /// <param name="rootDimension">The dimension of the world's own level, whose chunks are in the world's folder.</param>
     /// <exception cref="IOException">The upgrade can't go on; the world is left for the next load to try again.</exception>
+    /// <exception cref="InvalidDataException">An Obsidian build from before its vanilla-format saves wrote the world's
+    /// chunks, which can't be upgraded; the world is left as it was.</exception>
     public static async Task UpgradeAsync(string folder, string rootDimension, ILogger logger,
         CancellationToken cancellationToken = default)
     {
@@ -106,16 +112,18 @@ internal static partial class WorldUpgrade
             return;
 
         var marker = Path.Combine(folder, MarkerFile);
-        string backup;
-        if (File.Exists(marker))
+        var backup = File.Exists(marker) ? File.ReadAllText(marker).Trim() : null;
+        if (backup is not null && !Directory.Exists(backup))
         {
-            backup = File.ReadAllText(marker).Trim();
-            if (!Directory.Exists(backup))
-            {
-                throw new IOException($"An upgrade of the world in {folder} stopped partway, and its backup {backup} is "
-                    + "missing. Restore the world from a backup of your own, then remove " + MarkerFile + ".");
-            }
+            throw new IOException($"An upgrade of the world in {folder} stopped partway, and its backup {backup} is "
+                + "missing. Restore the world from a backup of your own, then remove " + MarkerFile + ".");
+        }
 
+        // Checked before anything is written. A redone upgrade restores from the backup, so that's what's checked.
+        ThrowIfUnsupported(backup ?? folder, folder, cancellationToken);
+
+        if (backup is not null)
+        {
             Log.Redoing(logger, folder, backup);
             Restore(backup, folder);
         }
@@ -137,6 +145,125 @@ internal static partial class WorldUpgrade
             throw new IOException($"The upgrade of the world in {folder} left files in 1.21.11's layout. Move them out of "
                 + $"the world, or restore it from {backup} and remove {MarkerFile}.");
         }
+    }
+
+    // Refuses a world with a chunk that an Obsidian build before its vanilla-format saves wrote (see
+    // LegacyChunkUpgrade.HasPaletteIds): its block states would lose their properties. Reads only.
+    private static void ThrowIfUnsupported(string source, string folder, CancellationToken cancellationToken)
+    {
+        if (!Directory.Exists(source))
+            return;
+
+        var regions = Directory.EnumerateFiles(source, "r.*.mca", SearchOption.AllDirectories)
+            .Where(path => Path.GetFileName(Path.GetDirectoryName(path)) is "region" or "regions");
+
+        foreach (var path in regions)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (!ReadChunks(path).Any(LegacyChunkUpgrade.HasPaletteIds))
+                continue;
+
+            throw new InvalidDataException($"The world in {folder} was saved by an Obsidian build from before Obsidian "
+                + "saved chunks in vanilla's format, and can't be upgraded to Minecraft 26.3: its chunks (such as in "
+                + $"{Path.GetRelativePath(source, path)}) name block states by 1.21.11 state ids, without the "
+                + "properties those states need. Such worlds aren't supported. The world was left unchanged.");
+        }
+    }
+
+    /// <summary>
+    /// The chunks of a region file, read without opening it for writing (<see cref="RegionFile"/> reclaims temporary
+    /// files and repairs headers). Chunks that can't be read are skipped: the upgrade itself reports them.
+    /// </summary>
+    private static IEnumerable<NbtCompound> ReadChunks(string path)
+    {
+        const int sectorSize = 4096;
+        const int externalFlag = 0x80;
+
+        var bytes = File.ReadAllBytes(path);
+        if (bytes.Length < 2 * sectorSize)
+            yield break;
+
+        var name = Path.GetFileName(path).Split('.');
+        var hasPosition = int.TryParse(name[1], out var regionX) & int.TryParse(name[2], out var regionZ);
+
+        for (var index = 0; index < 1024; index++)
+        {
+            var location = System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan(index * 4));
+            var start = (long)(location >>> 8) * sectorSize;
+            if (location == 0 || start + 5 > bytes.Length)
+                continue;
+
+            var length = System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan((int)start));
+            var type = bytes[start + 4];
+            byte[] payload;
+
+            if ((type & externalFlag) != 0)
+            {
+                var external = Path.Combine(Path.GetDirectoryName(path)!,
+                    $"c.{regionX * 32 + index % 32}.{regionZ * 32 + index / 32}.mcc");
+                if (!hasPosition || !File.Exists(external))
+                    continue;
+
+                payload = File.ReadAllBytes(external);
+            }
+            else
+            {
+                if (length < 1 || start + 4 + length > bytes.Length)
+                    continue;
+
+                payload = bytes.AsSpan((int)start + 5, length - 1).ToArray();
+            }
+
+            if (Decompress(payload, type & ~externalFlag) is not byte[] nbt)
+                continue;
+
+            if (ParseChunk(nbt) is NbtCompound chunk)
+                yield return chunk;
+        }
+    }
+
+    // A chunk's root compound, or null for NBT that can't be read.
+    private static NbtCompound? ParseChunk(byte[] nbt)
+    {
+        try
+        {
+            return NbtReader.ReadTag(nbt, true, out _) as NbtCompound;
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            return null;
+        }
+    }
+
+    // A chunk's NBT from its region payload: gzip (1), zlib (2) or uncompressed (3).
+    private static byte[]? Decompress(byte[] payload, int type)
+    {
+        if (type == 3)
+            return payload;
+
+        using var input = new MemoryStream(payload);
+        using Stream? decompressor = type switch
+        {
+            1 => new System.IO.Compression.GZipStream(input, System.IO.Compression.CompressionMode.Decompress),
+            2 => new System.IO.Compression.ZLibStream(input, System.IO.Compression.CompressionMode.Decompress),
+            _ => null
+        };
+
+        if (decompressor is null)
+            return null;
+
+        using var output = new MemoryStream();
+        try
+        {
+            decompressor.CopyTo(output);
+        }
+        catch (InvalidDataException)
+        {
+            return null;
+        }
+
+        return output.ToArray();
     }
 
     private static async Task ConvertAsync(string folder, string rootDimension, ILogger logger,

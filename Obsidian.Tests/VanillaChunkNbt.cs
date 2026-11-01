@@ -211,33 +211,6 @@ public sealed class VanillaChunkNbt
         Assert.Null(BlockEntityNbt.Save(new DataBlockEntity { Id = "minecraft:bed", BlockPosition = Vector.Zero }));
     }
 
-    [Fact(DisplayName = "Legacy palette entries with a numeric state id keep the state saved beside the id")]
-    public void LegacyPaletteIdsKeepTheirState()
-    {
-        var stairs = BlocksRegistry.OakStairs.WithProperty("facing", "east").WithProperty("half", "top");
-        var palette = new NbtList(NbtTagType.Compound, "palette")
-        {
-            WithId(LegacyState("", "minecraft:oak_stairs", ("facing", "east"), ("half", "top")), 1234),
-            WithId(LegacyState("", "minecraft:granite"), int.MaxValue)
-        };
-        var chunk = new NbtCompound
-        {
-            new NbtList(NbtTagType.Compound, "sections") { new NbtCompound { new NbtCompound("block_states") { palette } } }
-        };
-
-        LegacyChunkUpgrade.UpgradeChunk(chunk);
-
-        var upgraded = (NbtList)((NbtCompound)((NbtCompound)((NbtList)chunk["sections"])[0])["block_states"])["palette"];
-        Assert.Equal([stairs, BlockStateProperties.GetState("minecraft:granite")], upgraded.Select(BlockStateNbt.Read));
-        Assert.All(upgraded.OfType<NbtCompound>(), entry => Assert.False(entry.HasTag("Id")));
-
-        static NbtCompound WithId(NbtCompound state, int id)
-        {
-            state.Add(new NbtTag<int>("Id", id));
-            return state;
-        }
-    }
-
     [Fact(DisplayName = "Moving pistons 1.21.11 saved by state id are dropped by the upgrade, and become air")]
     public void LegacyMovingPistonsAreDropped()
     {
