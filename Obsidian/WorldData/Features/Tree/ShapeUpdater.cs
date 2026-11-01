@@ -39,10 +39,12 @@ internal static class ShapeUpdater
     /// <summary>
     /// Vanilla <c>Block.updateFromNeighbourShapes</c>: <paramref name="state"/> updated against each of its neighbors.
     /// </summary>
-    public static IBlock UpdateFromNeighbourShapes(IWorldGenLevel level, IBlock state, Vector position)
+    public static IBlock UpdateFromNeighbourShapes(IWorldGenLevel level, IBlock state, Vector position,
+        int rawBrightness = 15, Action<Vector, IBlock, int>? scheduleBlockTick = null)
     {
         foreach (var direction in updateShapeOrder)
-            state = UpdateShape(level, state, position, direction, level.GetBlock(position.Offset(direction)));
+            state = UpdateShape(level, state, position, direction, level.GetBlock(position.Offset(direction)),
+                rawBrightness, scheduleBlockTick: scheduleBlockTick);
 
         return state;
     }
@@ -77,7 +79,8 @@ internal static class ShapeUpdater
         BlockFace direction,
         IBlock neighbor,
         int rawBrightness = 15,
-        bool scheduleFluidTick = true)
+        bool scheduleFluidTick = true,
+        Action<Vector, IBlock, int>? scheduleBlockTick = null)
     {
         if (scheduleFluidTick)
         {
@@ -86,6 +89,15 @@ internal static class ShapeUpdater
 
         switch (state.BlockClass())
         {
+            case "BubbleColumnBlock":
+                if (!BubbleColumns.CanSurvive(level.GetBlock(position + Vector.Down))
+                    || direction == BlockFace.Down
+                    || direction == BlockFace.Up && !neighbor.Is(BlockIds.BubbleColumn)
+                        && BubbleColumns.CanExistIn(neighbor))
+                {
+                    scheduleBlockTick?.Invoke(position, state, BubbleColumns.CheckPeriod);
+                }
+                return state;
             case "MossyCarpetBlock":
                 return Generators.Features.FeatureRegistry.UpdateMossCarpetShape(state, level, position);
             case "PointedDripstoneBlock" or "SulfurSpikeBlock":

@@ -446,8 +446,8 @@ seeds, the Nether's empty targets, and custom density-function target ranges. `V
 all four through the live `SpawnSearch`. This checks the two radial sweeps, quart-aligned density samples,
 quantized target distances and strict tie handling, rather than pinning our interpretation in hand-written cases.
 
-`population.json` calls vanilla's `NaturalSpawner.spawnMobsForChunkGeneration` in layered chunk regions. Five
-cases cover pig, cow and mooshroom packs, a rejected stone floor and an empty creature table. The replay checks
+`population.json` calls vanilla's `NaturalSpawner.spawnMobsForChunkGeneration` in layered chunk regions. Six
+cases cover pig, cow, mooshroom and turtle packs, a rejected stone floor and an empty creature table. The replay checks
 entity types, positions, yaw/pitch and the next population-random value. This distinguishes weighted selection,
 pack counts, placement retries, jitter and recentering draws. The live stage reads
 `creature_world_gen_spawn_probability` and creature tables through the current spawn attributes. Age and appearance
@@ -457,3 +457,18 @@ appearance or initialization NBT.
 Record only these sections with `CaptureSections=spawn_search` or `CaptureSections=population` on the existing
 `CaptureVanillaWorldgen` target. No other captures were re-recorded for the live switch. The retained 1.21.11
 replays select legacy tags only within their generation scope; live shared helpers and plant growth use current tags.
+
+### Chunk completion
+
+`completion.json` captures two chunks generated to FULL by the pinned 26.3 server: an ocean chunk with water,
+magma, bubble columns and aquatic vegetation, and a Nether chunk with marked mushrooms. The probe records the
+actual pre-FULL neighboring blocks, ordered marks and scheduled ticks, then the final blocks and scheduled block
+and fluid ticks after `LevelChunk.postProcessGeneration`. `VanillaCompletion.FullChunksMatchVanilla` replays native
+completion from those inputs, rather than feeding captured final blocks into the heightmap updater. This isolates
+completion from neighboring feature execution order. Completion uses a separate one-worker server so its FULL
+neighbor writes reproduce without changing older captures. Light arrays are omitted; lava's independently randomized
+spread delays are normalized, while water delays and tick identities/priorities are compared.
+
+The new beach population case records successful turtles and the population-random tail. Native completion checks
+mushroom survival against the light engine's emission, attenuation and face occlusion at its light-13 threshold,
+including nearby lava, and ticks marked source water into bubble columns with their scheduled block checks.

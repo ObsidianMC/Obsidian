@@ -479,17 +479,15 @@ Phase 2.
 ## Decisions
 
 1. **Existing worlds are upgraded.** Obsidian-written 1.21.11 worlds are upgraded once, on a copy that keeps a backup,
-   as in Phase 3. We don't port general vanilla data fixers.
+   as in Phase 3. We don't port general vanilla data fixers. Existing terrain stays saved; new chunks use 26.3
+   without blending. Incompatible saved structure starts are kept but no longer placed, so structures crossing
+   the frontier may remain incomplete. See [terrain seams](known-gaps/seams-between-1-21-11-and-26-3-terrain.md).
 2. **`1.21.x` is frozen.** It takes only critical fixes from now on, and we merge those forward into `26.3.x`.
 3. **26.3 comes first.** 26.4 is in snapshots and probably ships in December. We finish 26.3, then start `26.4.x` from
    it. Phase 0 is meant to make later version bumps mostly regeneration.
-4. **Worldgen runs on 1.21.11 data until Phase 5; loot now uses 26.3.** Phase 4 removed loot from the legacy asset
-   writer and embedding. The asset generator still writes 1.21.11 worldgen, structure tags, carvers and biome
-   parameters to `Assets/legacy-1.21.11`, embedded under the normal asset names. Natural spawning reads 26.3's biome
-   spawn attributes and fortress spawns. The server extracts 26.3 structure templates at startup and 1.21.11 ones
-   only once the legacy generator first places one. Legacy worldgen reads 1.21.11 tag contents through
-   `obsidian_legacy` tags, which are never sent to clients. `LegacyMinecraftVersion` in `Obsidian.csproj` remains until
-   Phase 5 removes that bridge.
+4. **Live worldgen uses 26.3 data.** Legacy builders, registries, tags and replay/benchmark support remain for the
+   removal PR. Startup extracts only current structure templates. Legacy state data needed for saved-world upgrades
+   must remain available until that upgrade no longer needs it.
 
 ## Risks
 

@@ -35,6 +35,8 @@ internal sealed class BiomeDecoration
 
     public IReadOnlyList<string[]> Steps { get; }
 
+    internal FeatureRegistry Registry => this.registry;
+
     /// <summary>
     /// Matches ChunkGenerator.applyBiomeDecoration: all section biomes in the surrounding 3x3 chunks,
     /// restricted to this source's possible biomes, then distinct feature indices in ascending order per step.

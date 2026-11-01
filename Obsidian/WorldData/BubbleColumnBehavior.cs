@@ -92,6 +92,22 @@ internal static class BubbleColumns
             level.ScheduleBlockTick(position, state, SourceCheckDelay);
     }
 
+    /// <summary>A marked water block runs LiquidBlock.tick after its fluid tick during chunk completion.</summary>
+    internal static void PostProcessWater(IWorldGenLevel level, Vector position, IBlock original,
+        Func<Vector, IBlock, bool> store)
+    {
+        if (!original.Is(BlockIds.Water) || !FluidState.Of(original).IsSource)
+            return;
+
+        var column = ColumnState(level.GetBlock(position + Vector.Down));
+        while (level.EnsureCanWrite(position) && CanExistIn(level.GetBlock(position)))
+        {
+            if (!store(position, column))
+                break;
+            position += Vector.Up;
+        }
+    }
+
     /// <summary>Vanilla's <c>BubbleColumnBlock.updateShape</c>: a column that can't stay, or is above the water it can't hold, is checked a tick later.</summary>
     internal static void ScheduleColumnCheck(IBlockLevel level, Vector position, IBlock state, BlockFace direction, IBlock neighbor)
     {

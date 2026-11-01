@@ -8,6 +8,7 @@ using Obsidian.Registries;
 using Obsidian.Tests.Utilities;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators.Density;
+using Obsidian.WorldData.Generators.Biomes;
 using Obsidian.WorldData.Generators.Features;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Mojang.Structures;
@@ -94,6 +95,82 @@ public class PluginStructureFiles
           "placement": { "type": "minecraft:random_spread", "spacing": 4, "separation": 2, "salt": 7 }
         }
         """;
+
+    [Trait("Category", TestCategory.Worldgen)]
+    [Fact]
+    public void TemplateReloadCannotChangeAnInFlightDecoration()
+    {
+        var data = PluginFeatureRegistry.EmptyBiomes();
+        var features = new FeatureRegistry(data);
+        var structures = Only(StructureData.Read(features, TowerFiles(), [Template()], [], NullLogger.Instance),
+            "structuretest:towers");
+        var currentFeatures = features;
+        var pipeline = BiomeTerrain.Create(WorldgenDimension.Overworld, Seed, structures: true,
+            featureSource: () => currentFeatures, structureSource: () => structures);
+        var layout = pipeline.Structures!.FindReaching(0, 0).Layout;
+        var original = structures.Templates[Tower];
+        var replacement = StructureTemplate.CreateEmpty();
+        var area = new Dictionary<(int X, int Z), IChunk>();
+        for (var x = -1; x <= 1; x++)
+        {
+            for (var z = -1; z <= 1; z++)
+                area[(x, z)] = new Chunk(x, z);
+        }
+
+        var start = new StructureStart(structures.Structures[Tower], 0, 0,
+        [
+            new LookupPiece(context =>
+            {
+                Assert.Same(original, StructureRegistry.Get(Tower));
+                Assert.Same(original, features.Template(Tower));
+                context.Level.SetBlock(new Vector(8, 64, 8), BlocksRegistry.DiamondBlock);
+                structures = structures with
+                {
+                    Version = structures.Version + 1,
+                    Templates = new Dictionary<string, StructureTemplate> { [Tower] = replacement }.ToFrozenDictionary()
+                };
+                features.TemplateOverrides = structures.Templates;
+                currentFeatures = new FeatureRegistry(data) { TemplateOverrides = structures.Templates };
+            }),
+            new LookupPiece(context =>
+            {
+                // Both jigsaw/structure lookup and inline native feature lookup retain the captured templates.
+                Assert.Same(original, StructureRegistry.Get(Tower));
+                Assert.Same(original, features.Template(Tower));
+                context.Level.SetBlock(new Vector(9, 64, 8), BlocksRegistry.EmeraldBlock);
+            })
+        ]);
+        var reaching = new ReachingStarts(layout, 0, 0, [(0L, start)]);
+        pipeline.Decorate(area, 0, 0, reaching);
+
+        Assert.Same(replacement, currentFeatures.Template(Tower));
+        Assert.Same(replacement, features.Template(Tower));
+
+        // An already-computed start must refuse placement once its owner closes, even if its layout is retained.
+        var plugin = new PluginContainer
+        {
+            Info = new PluginInfo("structureprobe"),
+            Archive = PluginArchive.Open("structureprobe.obby", PluginArchives.Zip(new Dictionary<string, byte[]>
+            {
+                [PluginMetadata.FileName] = PluginArchives.Metadata("structureprobe", "1.0.0", "Probe")
+            }))
+        };
+        start.Owners = [plugin];
+        plugin.Close();
+        var center = area[(0, 0)];
+        center.SetBlock(8, 64, 8, BlocksRegistry.Air);
+        center.SetBlock(9, 64, 8, BlocksRegistry.Air);
+        pipeline.Decorate(area, 0, 0, reaching);
+        Assert.True(center.GetBlock(8, 64, 8).IsAir);
+        Assert.True(center.GetBlock(9, 64, 8).IsAir);
+    }
+
+    private sealed class LookupPiece(Action<StructurePieceContext> place) : StructurePiece(0, BlockBox.Create(0, 64, 0, 15, 64, 15))
+    {
+        internal override string TypeId => "test:template_lookup";
+
+        public override void PostProcess(StructurePieceContext context) => place(context);
+    }
 
     [Trait("Category", TestCategory.Worldgen)]
     [Theory(DisplayName = "A plugin's jigsaw structure places its template in a chunk, and goes with it")]

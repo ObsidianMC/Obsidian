@@ -7,6 +7,30 @@ namespace Obsidian.WorldData.Generators.Features;
 
 internal sealed partial class FeatureRegistry
 {
+    [ThreadStatic]
+    private static Func<string, StructureTemplate>? activeTemplates;
+
+    internal Func<string, StructureTemplate> CaptureTemplates(
+        IReadOnlyDictionary<string, StructureTemplate>? overrides = null)
+    {
+        var templates = overrides ?? this.TemplateOverrides
+            ?? (this.UsesPluginFiles ? PluginStructures.CurrentRegistry.Templates : null);
+        var fallback = this.vanillaTemplate;
+        return id => templates?.GetValueOrDefault(WorldgenData.Qualify(id)) ?? fallback(id);
+    }
+
+    internal static TemplateScope UseTemplates(Func<string, StructureTemplate> lookup)
+    {
+        var scope = new TemplateScope(activeTemplates);
+        activeTemplates = lookup;
+        return scope;
+    }
+
+    internal readonly struct TemplateScope(Func<string, StructureTemplate>? previous) : IDisposable
+    {
+        public void Dispose() => activeTemplates = previous;
+    }
+
     private Func<string, StructureTemplate> vanillaTemplate = Registries.StructureRegistry.GetCurrent;
 
     internal IReadOnlyDictionary<string, StructureTemplate>? TemplateOverrides { get; set; }
@@ -24,6 +48,8 @@ internal sealed partial class FeatureRegistry
     private StructureTemplate FindTemplate(string id)
     {
         id = WorldgenData.Qualify(id);
+        if (activeTemplates is not null)
+            return activeTemplates(id);
         var templates = this.TemplateOverrides;
         if (templates is null && this.UsesPluginFiles)
             templates = PluginStructures.CurrentRegistry.Templates;

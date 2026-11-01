@@ -47,6 +47,9 @@ Source: `Entities/Living.cs`, `Entities/Mob.AI.cs`, `Entities/Mob.Environment.cs
 
 ### Spawning and despawning
 
+- **Approximate:** Initial worldgen creature packs save minimal NBT and approximate age; initialization draws such
+  as follow range, handedness and independently randomized appearance are not replayed from the region random.
+
 - **Approximate:** Natural spawning uses common category caps and placement checks. Per-player local caps, spawn-cost budgets, biome generation probabilities, pack initialization and all species-specific placement predicates are not fully represented.
 - **Incomplete:** Structure overrides beyond the explicit fortress path, specialized spawns, jockey creation, equipment/enchantment distributions and biome/variant probabilities. Trial-spawner and ominous-trial spawning behavior is not covered by the ordinary mob-spawner path.
 - **Incomplete:** The 1.21.11 hostile mount groups lack general mob passenger support: Zombie Horse/Zombie, Camel Husk/Husk/Parched and Zombie Nautilus/Drowned spawning and rider-controlled combat need implementation.
@@ -107,7 +110,7 @@ Source: `Entities/Wither.cs`, `Entities/EnderDragon.cs`, `Entities/Warden.cs`, t
 
 | Mob/system | Missing or approximate behavior |
 | --- | --- |
-| Villager | Explorer-map trades find structures with Obsidian's 1.21.11-based worldgen. Gossip/reputation/cure/Hero discounts; full schedules, POI competition, food inventory/sharing, farming, breeding, village golem spawning, social behavior and hero gifts. Restock/work/sleep behavior uses a reduced model. |
+| Villager | Explorer-map trades find structures with the live 26.3 worldgen. Gossip/reputation/cure/Hero discounts; full schedules, POI competition, food inventory/sharing, farming, breeding, village golem spawning, social behavior and hero gifts. Restock/work/sleep behavior uses a reduced model. |
 | Zombie Villager | Full gossip/offer/discount transfer through infection and cure; cure-player reputation and complete equipment/conversion rules. Copying villager data and XP does not restore the full merchant state. |
 | Wandering Trader | Vanilla wander/avoid/drink/despawn interaction rules. |
 | Trader Llama | Actual trader leash, detachment/lead drops and caravan behavior; full trader-linked despawn/taming/loading rules. |

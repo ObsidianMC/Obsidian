@@ -141,6 +141,8 @@ internal static class GenerationPopulation
             return PluginSpawnRules.Fits(SpawnPlacementType.OnGround, feet, floor, above);
         if (!EntityNbt.TryParseType(id, out var type))
             return false;
+        if (type == EntityType.Strider)
+            return FluidState.Of(feet).Kind == FluidKind.Lava;
         if (!FluidState.Of(feet).IsEmpty || !FluidState.Of(above).IsEmpty
             || !floor.HasFullTopCollisionFace()
             || BlockCollisionShapes.Get(feet).Count > 0 || BlockCollisionShapes.Get(above).Count > 0)
@@ -157,10 +159,36 @@ internal static class GenerationPopulation
             return true;
         if (!EntityNbt.TryParseType(id, out var type))
             return false;
+        if (type == EntityType.Strider)
+        {
+            var above = position + Vector.Up;
+            while (FluidState.Of(region.GetBlock(above)).Kind == FluidKind.Lava)
+                above += Vector.Up;
+            return region.GetBlock(above).IsAir;
+        }
+
         var floor = region.GetBlock(position + Vector.Down);
         var biome = region.GetBiome(position);
-        if (MobSpawner.RejectsCreatureFloor(type, floor, biome) || region.UnlitBrightness <= 8)
+        var tag = type switch
+        {
+            EntityType.Armadillo => "armadillo_spawnable_on",
+            EntityType.Camel => "camels_spawnable_on",
+            EntityType.Mooshroom => "mooshrooms_spawnable_on",
+            EntityType.Turtle => "sand",
+            EntityType.Wolf => "wolves_spawnable_on",
+            EntityType.Goat => "goats_spawnable_on",
+            EntityType.Rabbit => "rabbits_spawnable_on",
+            EntityType.Frog => "frogs_spawnable_on",
+            EntityType.Parrot => "parrots_spawnable_on",
+            EntityType.PolarBear when TagsRegistry.Worldgen.Biome.PolarBearsSpawnOnAlternateBlocks.Entries.Contains(biome.Id)
+                => "polar_bears_spawnable_on_alternate",
+            _ => "animals_spawnable_on"
+        };
+        if (!TagsRegistry.TryGet("block", $"minecraft:{tag}", out var blocks)
+            || !blocks.Entries.Contains(floor.RegistryId) || region.UnlitBrightness <= 8)
             return false;
+        if (type == EntityType.Turtle)
+            return position.Y < region.SeaLevel + 4;
         if (type == EntityType.Ocelot)
             return position.Y >= region.SeaLevel && region.Random.NextInt(3) != 0;
         return true;

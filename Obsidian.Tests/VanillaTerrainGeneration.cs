@@ -340,7 +340,7 @@ public class VanillaTerrainGeneration
             $"{mismatches.Count} blocks differ. First differences:\n{string.Join("\n", mismatches.Take(12))}");
     }
 
-    private static void RestoreBlocks(JsonElement captured, Chunk chunk)
+    internal static void RestoreBlocks(JsonElement captured, Chunk chunk)
     {
         var palette = captured.GetProperty("palette").EnumerateArray()
             .Select(value => ParseBlock(value.GetString()!))

@@ -33,14 +33,19 @@ internal static class WorldgenCaptures
         var selected = Select(files, selection);
         var capturing = Path.Combine(server.ScratchDirectory, "captures", "fixture.json");
         Directory.CreateDirectory(Path.GetDirectoryName(capturing)!);
-        await File.WriteAllTextAsync(capturing, WorldgenFixtureFile.Serialize(Fixture(selected)));
-
         Console.WriteLine($"Capturing {selected.Count} cases ({selection})...");
-        await CaptureWorldsAsync(server, capturing, Seeds(selected));
+        // Completion runs with one worker to fix neighboring feature write order. Give it its own server so
+        // that setting cannot alter the scheduling or biome-search history of existing capture sections.
+        foreach (var group in selected.GroupBy(entry => entry.File.Section == "completion"))
+        {
+            var batch = group.ToList();
+            await File.WriteAllTextAsync(capturing, WorldgenFixtureFile.Serialize(Fixture(batch)));
+            await CaptureWorldsAsync(server, capturing, Seeds(batch));
 
-        var captured = JsonNode.Parse(await File.ReadAllTextAsync(capturing))!.AsObject();
-        Replace(selected, captured);
-        File.Delete(capturing);
+            var captured = JsonNode.Parse(await File.ReadAllTextAsync(capturing))!.AsObject();
+            Replace(batch, captured);
+            File.Delete(capturing);
+        }
 
         foreach (var file in selected.Select(entry => entry.File).Distinct())
         {

@@ -77,12 +77,14 @@ internal sealed record BenchDimension(string Name, MojangDimension Dimension, in
     // The live switch adds fluid/shape post-processing before heightmaps and lighting. Only the 26.3 Overworld
     // and Nether hashes were re-recorded for those final blocks, light and scheduled ticks; legacy hashes stay fixed.
     // Shared vegetation support now selects 26.3's supports_vegetation tag; legacy replays keep their own dirt tag.
+    // Completion now retains dark Nether mushrooms (while checking nearby emission), and ticks marked water into
+    // bubble columns with block checks. FULL completion captures back these final-block/tick reference changes.
     public static IReadOnlyList<BenchDimension> All { get; } =
     [
         new("overworld", MojangDimension.Overworld, 6, -2, "6f824c2e873bca90", "869a5df6644e5d41",
-            "minecraft:overworld", "ebb9d62f25dead4b", "b81a46ecbe4feba1"),
+            "minecraft:overworld", "2d54ff3885c4051e", "549e4efa115c90f3"),
         new("nether", MojangDimension.Nether, 0, 0, "2880fa86ca3c5e6c", "fec88678179d32d9",
-            "minecraft:nether", "78186dbd2c043e73", "9ff2471fa0539cbd"),
+            "minecraft:nether", "3ef4470d0a7794b8", "d7a5b14aeb9f4477"),
         new("end", MojangDimension.End, 6, 0, "5c34c3f5867f27ac", "d940fd5e665d6164",
             "minecraft:the_end", "5c34c3f5867f27ac", "762ccf03eda84ce2"),
     ];

@@ -202,6 +202,50 @@
       ],
       "entities": [],
       "nextRandom": -1206062260
+    },
+    {
+      "name": "beach_turtles",
+      "seed": 12345,
+      "chunkX": -5,
+      "chunkZ": -1,
+      "biome": "minecraft:beach",
+      "layers": [
+        [
+          "minecraft:stone",
+          61
+        ],
+        [
+          "minecraft:sand",
+          62
+        ]
+      ],
+      "entities": [
+        [
+          -73.0,
+          63.0,
+          -8.0,
+          33.751823,
+          0.0,
+          "minecraft:turtle"
+        ],
+        [
+          -75.0,
+          63.0,
+          -4.0,
+          4.24731,
+          0.0,
+          "minecraft:turtle"
+        ],
+        [
+          -76.0,
+          63.0,
+          -6.0,
+          68.7657,
+          0.0,
+          "minecraft:turtle"
+        ]
+      ],
+      "nextRandom": -1763234938
     }
   ]
 }

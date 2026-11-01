@@ -78,6 +78,7 @@ class WorldgenCaptures {
         SECTIONS.put("spawn_attributes", false);
         SECTIONS.put("spawn_search", false);
         SECTIONS.put("population", false);
+        SECTIONS.put("completion", false);
         SECTIONS.put("structures", true);
     }
 
@@ -96,6 +97,10 @@ class WorldgenCaptures {
         }
 
         var cases = casesOf(fixture, seed, structures);
+        if (cases.containsKey("completion")) {
+            // FULL generates neighboring features too; one worker makes their write order reproducible.
+            System.setProperty("max.bg.threads", "1");
+        }
         if (cases.isEmpty()) {
             System.out.println("No cases for seed " + seed + " with structures " + structures + ".");
             return;
@@ -299,6 +304,7 @@ class WorldgenCaptures {
                     case "spawn_attributes" -> spawnAttributes(entry);
                     case "spawn_search" -> spawnSearch(entry);
                     case "population" -> population(entry);
+                    case "completion" -> completion(entry);
                     case "structures" -> structures(entry);
                     default -> throw new IllegalArgumentException(section);
                 }
@@ -788,6 +794,73 @@ class WorldgenCaptures {
         }
         entry.add("entities", compact);
         entry.addProperty("nextRandom", random.nextInt());
+    }
+
+    static void completion(JsonObject entry) {
+        try {
+            var level = level(entry.get("dimension").getAsString());
+            int x = entry.get("chunkX").getAsInt();
+            int z = entry.get("chunkZ").getAsInt();
+            level.getChunkSource().getChunk(x, z, ChunkStatus.SPAWN, true);
+            var inputs = new JsonArray();
+            for (int dz = -1; dz <= 1; dz++) {
+                for (int dx = -1; dx <= 1; dx++) {
+                    var before = level.getChunkSource().getChunk(x + dx, z + dz, ChunkStatus.FEATURES, true);
+                    var input = new JsonObject();
+                    input.addProperty("chunkX", x + dx);
+                    input.addProperty("chunkZ", z + dz);
+                    input.add("blocks", blocks(before, level.getMinY(), level.getHeight()));
+                    var marks = new JsonArray();
+                    var sections = before.getPostProcessing();
+                    for (int section = 0; section < sections.length; section++) {
+                        if (sections[section] != null) {
+                            for (short packed : sections[section]) {
+                                marks.add(coordinates(ProtoChunk.unpackOffsetCoordinates(
+                                    packed, before.getSectionYFromSectionIndex(section), before.getPos())));
+                            }
+                        }
+                    }
+                    input.add("marks", marks);
+                    completionTicks(input, before, level.getGameTime(), false);
+                    inputs.add(input);
+                }
+            }
+            entry.add("inputs", inputs);
+            var chunk = (LevelChunk) level.getChunkSource().getChunk(x, z, ChunkStatus.FULL, true);
+            chunk.postProcessGeneration(level);
+            entry.addProperty("status", chunk.getPersistedStatus().getName());
+            entry.addProperty("minY", level.getMinY());
+            entry.addProperty("height", level.getHeight());
+            entry.add("blocks", blocks(chunk, level.getMinY(), level.getHeight()));
+            completionTicks(entry, chunk, level.getGameTime(), true);
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    static void completionTicks(JsonObject entry, ChunkAccess chunk, long time, boolean normalizeLava) {
+        var ticks = chunk.getTicksForSerialization(time);
+        var blockTicks = new JsonArray();
+        for (var tick : ticks.blocks()) {
+            var row = coordinates(tick.pos());
+            row.add(BuiltInRegistries.BLOCK.getKey(tick.type()).toString());
+            row.add(tick.delay());
+            row.add(tick.priority().getValue());
+            blockTicks.add(row);
+        }
+        var fluidTicks = new JsonArray();
+        for (var tick : ticks.fluids()) {
+            var row = coordinates(tick.pos());
+            row.add(BuiltInRegistries.FLUID.getKey(tick.type()).toString());
+            // Lava's spread delay uses the live level's independent random; water's delay is deterministic.
+            boolean lava = tick.type() == net.minecraft.world.level.material.Fluids.LAVA
+                || tick.type() == net.minecraft.world.level.material.Fluids.FLOWING_LAVA;
+            row.add(normalizeLava && lava ? -1 : tick.delay());
+            row.add(tick.priority().getValue());
+            fluidTicks.add(row);
+        }
+        entry.add("blockTicks", blockTicks);
+        entry.add("fluidTicks", fluidTicks);
     }
 
     static void spawnSearch(JsonObject entry) {

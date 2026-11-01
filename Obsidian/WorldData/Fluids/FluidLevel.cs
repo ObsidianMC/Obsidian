@@ -323,7 +323,7 @@ internal sealed class FluidLevel
         {
             var brightness = block.BlockClass() == "MushroomBlock" ? this.access.GetRawBrightness(position) : 15;
             return ShapeUpdater.UpdateShape(this.ShapeView, block, position, direction, neighbor, brightness,
-                scheduleFluidTick);
+                scheduleFluidTick, this.access.ScheduleBlockTick);
         }
 
         if (scheduleFluidTick)

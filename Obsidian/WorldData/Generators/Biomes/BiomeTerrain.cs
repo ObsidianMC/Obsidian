@@ -194,7 +194,9 @@ internal sealed class BiomeTerrain
 
         // Vanilla post-processes on the live level, whose random only varies lava's spread delay; any seed will do.
         var rules = fluidRules ?? FluidRules.ForDimension(this.DimensionCodec);
-        var fluids = new FluidLevel(new WorldGenFluidAccess(region, rules, new Random(chunkX * 31 + chunkZ)));
+        var light = new CompletionLight(area, this.DimensionCodec.Element.HasSkylight);
+        var fluids = new FluidLevel(new WorldGenFluidAccess(region, rules, new Random(chunkX * 31 + chunkZ),
+            light.MushroomBrightness));
 
         // Vanilla walks the marks section by section, in the order they were added.
         var marks = chunk.PostProcessing.OrderBy(position => (position.Y - minY) >> 4).ToList();
@@ -207,10 +209,16 @@ internal sealed class BiomeTerrain
             if (block.HasFluid())
                 fluids.TickFluid(position);
 
-            if (block.IsLiquidBlock())
+            if (block.BlockClass() == "LiquidBlock")
+            {
+                BubbleColumns.PostProcessWater(region, position, block,
+                    (point, state) => fluids.SetBlock(point, state, Obsidian.API.Blocks.BlockUpdateFlags.Clients));
                 continue;
+            }
 
-            var updated = ShapeUpdater.UpdateFromNeighbourShapes(fluids.ShapeView, block, position);
+            var updated = ShapeUpdater.UpdateFromNeighbourShapes(fluids.ShapeView, block, position,
+                block.BlockClass() == "MushroomBlock" ? light.MushroomBrightness(position) : region.UnlitBrightness,
+                region.ScheduleBlockTick);
             if (!updated.IsSameState(block))
                 region.SetBlock(position, updated);
 
@@ -257,12 +265,11 @@ internal sealed class BiomeTerrain
             this.Height,
             startCache: this.startCache,
             structures: source,
-            templates: this.Template);
+            templates: features.CaptureTemplates(
+                System.Collections.Frozen.FrozenDictionary<string, StructureTemplate>.Empty));
 
         static InvalidOperationException Unknown(string biome) => new($"Unknown biome '{biome}'.");
     }
-
-    private StructureTemplate Template(string id) => this.features()!.Template(id);
 
     /// <summary>The decoration status. Throws before writing any block unless a feature registry was given.</summary>
     public BiomeDecoration Decoration
@@ -371,13 +378,16 @@ internal sealed class BiomeTerrain
             }
         }
 
-        this.Decoration.Generate(
+        var decoration = this.Decoration;
+        var lookup = decoration.Registry.CaptureTemplates();
+        using var templates = FeatureRegistry.UseTemplates(lookup);
+        decoration.Generate(
             region,
             center,
             neighbors,
             this.terrain.Settings.MinY,
             this.terrain.Settings.Height,
-            this.StructurePlacer(region, chunkX, chunkZ, structures));
+            this.StructurePlacer(region, chunkX, chunkZ, structures, decoration.Registry));
 
         return region;
     }
@@ -446,12 +456,13 @@ internal sealed class BiomeTerrain
     // Vanilla's applyBiomeDecoration: before each step's features, the step's structures in registry order, each
     // seeded by its index among them, place the starts reaching the chunk inside the chunk (getWritableArea).
     private Action<int, long, WorldgenRandom>? StructurePlacer(WorldGenRegion region, int chunkX, int chunkZ,
-        ReachingStarts? saved = null)
+        ReachingStarts? saved = null, FeatureRegistry? features = null)
     {
         if (this.Structures is not StructureManager structures)
             return null;
 
         var reaching = saved ?? structures.FindReaching(chunkX, chunkZ);
+        var lookup = (features ?? this.features()!).CaptureTemplates(reaching.Layout.Source.Templates);
         var writableArea = BlockBox.Create(
             chunkX << 4,
             region.MinY + 1,
@@ -469,7 +480,8 @@ internal sealed class BiomeTerrain
                 return;
 
             var stepStructures = reaching.Layout.StructuresPerStep[step];
-            using var templates = StructureRegistry.Use(structures.Templates);
+            using var templates = StructureRegistry.Use(lookup);
+            using var featureTemplates = FeatureRegistry.UseTemplates(lookup);
 
             for (var index = 0; index < stepStructures.Count; index++)
             {
@@ -483,10 +495,7 @@ internal sealed class BiomeTerrain
                     Generation = generation
                 };
 
-                foreach (var start in reaching.Of(stepStructures[index]))
-                {
-                    start.PlaceInChunk(context);
-                }
+                FeatureDecorator.PlaceStructure(reaching.Of(stepStructures[index]), context);
             }
         };
     }

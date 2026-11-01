@@ -418,7 +418,15 @@ internal sealed class StructureManager : IStructurePlacementState
             Math.Min(this.height, this.world.NoiseHeight));
 
         using var tags = WorldgenTags.UseLegacy(layout.Source.LegacyPools);
-        using var templates = StructureRegistry.Use(this.Templates);
+        var lookup = this.Templates;
+        if (!layout.Source.LegacyPools)
+        {
+            var overrides = layout.Source.Templates;
+            var fallback = lookup ?? StructureRegistry.GetCurrent;
+            lookup = id => overrides.GetValueOrDefault(id) ?? fallback(id);
+        }
+        using var templates = StructureRegistry.Use(lookup);
+        using var featureTemplates = lookup is null ? default : Generators.Features.FeatureRegistry.UseTemplates(lookup);
 
         return structure.Generate(new StructureGenerationContext
         {
