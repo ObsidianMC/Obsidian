@@ -5,10 +5,9 @@ using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.Entities;
 using Obsidian.Registries.Codecs;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Generators.Density;
 using System.Collections.Frozen;
 using System.IO;
-using System.Reflection;
-using System.Text.Json;
 using System.Threading;
 
 namespace Obsidian.Registries;
@@ -140,8 +139,8 @@ internal static partial class PluginSpawns
             CreatureProbabilities = probabilities.ToFrozenDictionary(),
             EnvironmentModifiers = (name, settings) =>
             {
-                // Resolve dimension and biome attributes before the plugin modifier phases. The flattened legacy
-                // tables above remain available to the live worldgen/plugin API during the Phase 5 transition.
+                // Resolve dimension and biome attributes before the plugin modifier phases. The per-biome tables
+                // above decide which modifiers apply at all, and back CostOf and CreatureProbabilityOf.
                 var resolvedLists = new Dictionary<string, IReadOnlyDictionary<string, SpawnerMob[]>>
                 {
                     [name] = settings.Categories
@@ -163,7 +162,7 @@ internal static partial class PluginSpawns
                     }
                     catch (InvalidDataException ex)
                     {
-                        // Dimension defaults can make a resolved list's weight exceed the legacy table's.
+                        // Dimension attributes can make a resolved list's weight exceed the biome's own table's.
                         rejected.Add(file);
                         Log.Invalid(logger, file.Source, ex.Message);
                     }
@@ -337,17 +336,22 @@ internal static partial class PluginSpawns
 /// The spawners of each biome, by biome identifier and mob category (vanilla's names, like <c>monster</c>), with the
 /// biomes' spawn costs and creature spawn probabilities.
 /// </summary>
+/// <remarks>
+/// These tables hold each biome's own spawns, which plugins' biome modifiers change. Natural spawning reads
+/// <see cref="At"/> instead, which also resolves the dimension's attributes.
+/// </remarks>
 internal sealed partial record BiomeSpawns(
     IReadOnlyDictionary<string, IReadOnlyDictionary<string, SpawnerMob[]>> Biomes)
 {
     /// <summary>
-    /// Vanilla's chance of each further group of creatures spawning when a chunk generates, for biomes that don't set
-    /// their own.
+    /// The default of vanilla's <c>gameplay/creature_world_gen_spawn_probability</c> attribute: the chance of each
+    /// further group of creatures spawning when a chunk generates, for biomes that don't set their own.
     /// </summary>
     public const float DefaultCreatureProbability = 0.1f;
 
     /// <summary>
-    /// Vanilla's biomes' spawners, from Codecs/biomes.json.
+    /// Vanilla's biomes' spawns, from their 26.3 <c>gameplay/natural_mob_spawns</c> and
+    /// <c>gameplay/creature_world_gen_spawn_probability</c> attributes (<c>Assets/worldgen_26_3/biome</c>).
     /// </summary>
     public static BiomeSpawns Vanilla { get; } = LoadVanilla();
 
@@ -358,7 +362,7 @@ internal sealed partial record BiomeSpawns(
         FrozenDictionary<string, IReadOnlyDictionary<string, SpawnCost>>.Empty;
 
     /// <summary>
-    /// The biomes' creature spawn probabilities, by biome identifier, for biomes that don't use
+    /// The biomes' creature spawn probabilities, by biome identifier. Biomes missing here use
     /// <see cref="DefaultCreatureProbability"/>.
     /// </summary>
     public IReadOnlyDictionary<string, float> CreatureProbabilities { get; init; } =
@@ -378,39 +382,23 @@ internal sealed partial record BiomeSpawns(
 
     private static BiomeSpawns LoadVanilla()
     {
-        // The legacy version's (Assets/legacy-1.21.11/biome_spawns.json), since 26.1 moved spawns out of the biome and
-        // worldgen runs on the legacy version's biomes for now.
-        var resource = "Obsidian.Assets.biome_spawns.json";
-        using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resource)
-            ?? throw new InvalidDataException("Missing biome spawn data.");
-        using var document = JsonDocument.Parse(stream);
-
-        var options = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
-        };
-
         var spawners = new Dictionary<string, IReadOnlyDictionary<string, SpawnerMob[]>>();
         var costs = new Dictionary<string, IReadOnlyDictionary<string, SpawnCost>>();
         var probabilities = new Dictionary<string, float>();
 
-        // In the file's order, which MobSpawner's vanilla mob categories depend on.
-        foreach (var entry in document.RootElement.GetProperty("value").EnumerateArray())
+        foreach (var biome in WorldgenData.Vanilla.Ids("biome"))
         {
-            var name = entry.GetProperty("name").GetString()!;
-            var element = entry.GetProperty("element");
+            var settings = SpawnEnvironment.OfVanillaBiome(biome);
 
-            spawners[name] = element.GetProperty("spawners").Deserialize<Dictionary<string, SpawnerMob[]>>(options)!;
-
-            if (element.TryGetProperty("spawn_costs", out var spawnCosts))
-                costs[name] = spawnCosts.Deserialize<Dictionary<string, SpawnCost>>(options)!;
-
-            if (element.TryGetProperty("creature_spawn_probability", out var probability))
-                probabilities[name] = probability.GetSingle();
+            spawners[biome] = settings.Categories;
+            costs[biome] = settings.Costs;
+            probabilities[biome] = settings.CreatureProbability;
         }
 
-        return new BiomeSpawns(spawners)
+        if (spawners.Count == 0)
+            throw new InvalidDataException("Missing vanilla biome data.");
+
+        return new BiomeSpawns(spawners.ToFrozenDictionary())
         {
             Costs = costs.ToFrozenDictionary(),
             CreatureProbabilities = probabilities.ToFrozenDictionary()

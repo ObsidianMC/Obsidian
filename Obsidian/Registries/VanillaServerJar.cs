@@ -18,7 +18,7 @@ internal static partial class VanillaServerJar
     /// Makes sure the structure templates of <paramref name="version"/> (the jar's <c>data/minecraft/structure</c>) are
     /// extracted under <paramref name="cacheDirectory"/>, downloading the server jar when they aren't.
     /// </summary>
-    /// <returns>The directory of the templates, for <see cref="StructureRegistry.Initialize"/>.</returns>
+    /// <returns>The directory of the templates, for <see cref="StructureRegistry"/>.</returns>
     public static async Task<string> ExtractStructuresAsync(HttpClient httpClient, string cacheDirectory, string version, ILogger logger,
         CancellationToken cancellationToken = default)
     {

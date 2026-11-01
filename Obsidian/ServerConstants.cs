@@ -46,9 +46,9 @@ public static class ServerConstants
     public static (int Major, int Minor) DataPackFormat { get; } = (121, 0);
 
     /// <summary>
-    /// The older Minecraft version whose loot tables, worldgen and structure templates Obsidian runs on for now, since
+    /// The older Minecraft version whose worldgen and structure templates the live generator runs on for now, since
     /// its models don't read the implemented version's yet (<c>LegacyMinecraftVersion</c> in Obsidian.csproj).
-    /// Temporary: Phases 4 (loot) and 5 (worldgen) of <c>docs/porting-26.3-plan.md</c> remove it.
+    /// Temporary: Phase 5 (worldgen) of <c>docs/porting-26.3-plan.md</c> removes it.
     /// </summary>
     public static readonly string LegacyVersion = typeof(ServerConstants).Assembly
         .GetCustomAttributes<AssemblyMetadataAttribute>()

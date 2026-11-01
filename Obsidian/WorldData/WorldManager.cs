@@ -73,17 +73,22 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
 
             this.levelFactory.Initialize();
 
-            // Structure templates come from Mojang's server jar, which Obsidian can't ship. They're the legacy version's,
-            // like the jigsaw pools and structures that place them.
-            StructureRegistry.Initialize(await VanillaServerJar.ExtractStructuresAsync(httpClientFactory.CreateClient(),
-                ServerConstants.VanillaCachePath, ServerConstants.LegacyVersion, this.logger, stoppingToken));
-
-            // The 26.3 generator's structures and template features place the current version's templates, which
-            // are extracted once one is first needed: the live generator doesn't.
-            StructureRegistry.InitializeCurrent(() => VanillaServerJar.ExtractStructuresAsync(
+            // Structure templates come from Mojang's server jar, which Obsidian can't ship. The 26.3 generator's
+            // structures and template features place the current version's, extracted before any world loads.
+            var currentTemplates = await VanillaServerJar.ExtractStructuresAsync(
                 httpClientFactory.CreateClient(),
                 ServerConstants.VanillaCachePath,
                 ServerConstants.ProtocolDescription,
+                this.logger,
+                stoppingToken);
+            StructureRegistry.InitializeCurrent(() => Task.FromResult(currentTemplates));
+
+            // The live generator still places the legacy version's, like the jigsaw pools and structures it reads.
+            // They're extracted once it first needs one, so a server that never places them doesn't download that jar.
+            StructureRegistry.Initialize(() => VanillaServerJar.ExtractStructuresAsync(
+                httpClientFactory.CreateClient(),
+                ServerConstants.VanillaCachePath,
+                ServerConstants.LegacyVersion,
                 this.logger,
                 stoppingToken));
 

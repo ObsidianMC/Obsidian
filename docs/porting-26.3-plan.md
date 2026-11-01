@@ -471,10 +471,12 @@ Phase 2.
 3. **26.3 comes first.** 26.4 is in snapshots and probably ships in December. We finish 26.3, then start `26.4.x` from
    it. Phase 0 is meant to make later version bumps mostly regeneration.
 4. **Worldgen runs on 1.21.11 data until Phase 5; loot now uses 26.3.** Phase 4 removed loot from the legacy asset
-   writer and embedding. The asset generator still writes 1.21.11 worldgen, structure tags, carvers, biome spawns and
-   biome parameters to `Assets/legacy-1.21.11`, embedded under the normal asset names, and the server extracts
-   1.21.11 structure templates. Legacy worldgen reads 1.21.11 tag contents through `obsidian_legacy` tags, which are
-   never sent to clients. `LegacyMinecraftVersion` in `Obsidian.csproj` remains until Phase 5 removes that bridge.
+   writer and embedding. The asset generator still writes 1.21.11 worldgen, structure tags, carvers and biome
+   parameters to `Assets/legacy-1.21.11`, embedded under the normal asset names. Natural spawning reads 26.3's biome
+   spawn attributes and fortress spawns. The server extracts 26.3 structure templates at startup and 1.21.11 ones
+   only once the legacy generator first places one. Legacy worldgen reads 1.21.11 tag contents through
+   `obsidian_legacy` tags, which are never sent to clients. `LegacyMinecraftVersion` in `Obsidian.csproj` remains until
+   Phase 5 removes that bridge.
 
 ## Risks
 
