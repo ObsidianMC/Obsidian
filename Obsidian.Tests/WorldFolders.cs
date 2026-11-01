@@ -204,13 +204,59 @@ public sealed class WorldFolders : IDisposable
         }
     }
 
-    [Fact(DisplayName = "A world Obsidian saved before its vanilla-format saves is refused, and left unchanged")]
-    public async Task PreVanillaFormatWorldsAreRefused()
+    [Fact(DisplayName = "A world saved before Obsidian's vanilla-format saves, or with a file the upgrade can't read, "
+        + "is refused unchanged")]
+    public async Task UnsupportedWorldsAreRefused()
     {
-        // Obsidian's palettes before #539: a name and a 1.21.11 state id, without the state's properties.
-        var folder = Path.Combine(this.root, "pre539");
+        (string Name, Func<string, Task> Write, string Message)[] cases =
+        [
+            ("pre-539 palette", path => WriteRegionAsync(path, Pre539Sections()), "vanilla's format"),
+            ("truncated region header", path => WriteBytesAsync(path, [1, 2, 3]), "can't be read")
+        ];
+
+        await FixtureCases.AssertAllAsync(
+            cases,
+            row => row.Name,
+            row => this.AssertRefused(row.Name, row.Write, row.Message));
+    }
+
+    private async Task AssertRefused(string name, Func<string, Task> write, string message)
+    {
+        var folder = Path.Combine(this.root, name.Replace(' ', '-'));
         await WriteObsidianWorldAsync(folder);
-        var section = new NbtCompound
+        await write(Path.Combine(folder, "dimensions", "the_nether", "regions", "r.0.0.mca"));
+        var original = ReadFiles(folder);
+
+        var refused = await Assert.ThrowsAsync<WorldLoadException>(
+            () => WorldUpgrade.UpgradeAsync(folder, "minecraft:overworld", NullLogger.Instance));
+
+        // Nothing is written, nor backed up: loading has only taken the session lock, which ReadFiles leaves out.
+        Assert.Contains(folder, refused.Message);
+        Assert.Contains(message, refused.Message);
+        Assert.Equal(original, ReadFiles(folder));
+        Assert.False(Directory.Exists($"{folder}-1.21.11-backup"));
+        Assert.True(WorldUpgrade.IsNeeded(folder));
+    }
+
+    [Fact(DisplayName = "Chunks a plugin keeps in a level's data folder don't stop the upgrade")]
+    public async Task ArchivedChunksInDataFoldersAreLeftAlone()
+    {
+        var folder = Path.Combine(this.root, "archived");
+        await WriteObsidianWorldAsync(folder);
+        await WriteRegionAsync(Path.Combine(folder, "data", "probe", "archive", "region", "r.0.0.mca"), Pre539Sections());
+        await WriteRegionAsync(
+            Path.Combine(folder, "dimensions", "the_nether", "data", "probe", "region", "r.0.0.mca"),
+            Pre539Sections());
+
+        await WorldUpgrade.UpgradeAsync(folder, "minecraft:overworld", NullLogger.Instance);
+
+        Assert.False(WorldUpgrade.IsNeeded(folder));
+    }
+
+    // A section as Obsidian saved it before #539: a name and a 1.21.11 state id, without the state's properties.
+    internal static NbtList Pre539Sections() => new(NbtTagType.Compound, "sections")
+    {
+        new NbtCompound
         {
             new NbtTag<byte>("Y", 0),
             new NbtCompound("block_states")
@@ -220,19 +266,13 @@ public sealed class WorldFolders : IDisposable
                     new NbtCompound { new NbtTag<string>("Name", "minecraft:oak_stairs"), new NbtTag<int>("Id", 4000) }
                 }
             }
-        };
-        await WriteRegionAsync(
-            Path.Combine(folder, "dimensions", "the_nether", "regions", "r.0.0.mca"),
-            new NbtList(NbtTagType.Compound, "sections") { section });
-        var original = ReadFiles(folder);
+        }
+    };
 
-        var refused = await Assert.ThrowsAsync<InvalidDataException>(
-            () => WorldUpgrade.UpgradeAsync(folder, "minecraft:overworld", NullLogger.Instance));
-
-        Assert.Contains(folder, refused.Message);
-        Assert.Equal(original, ReadFiles(folder));
-        Assert.False(Directory.Exists($"{folder}-1.21.11-backup"));
-        Assert.True(WorldUpgrade.IsNeeded(folder));
+    private static async Task WriteBytesAsync(string path, byte[] bytes)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        await File.WriteAllBytesAsync(path, bytes);
     }
 
     [Fact(DisplayName = "An upgrade that stopped partway is redone from its backup, without another backup")]
@@ -480,7 +520,7 @@ public sealed class WorldFolders : IDisposable
         }
     }
 
-    private static async Task WriteRegionAsync(string path, NbtList sections = null)
+    internal static async Task WriteRegionAsync(string path, NbtList sections = null)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         await using var file = new RegionFile(path, NbtCompression.ZLib);

@@ -12,9 +12,12 @@ of the save are affected; pistons and their heads stay.
 
 Worlds that Obsidian saved before its vanilla-format saves (#539) aren't upgraded at all. Their chunk palettes name
 every block state by a 1.21.11 state id beside the block's name, without its properties, so without the state table
-every stair, door, slab and fluid level would lose its state. The upgrade checks the whole world first, and refuses
-such a world with an error naming it, leaving it unchanged (no backup, nothing moved). A world counts as that format
-when any chunk section's block-state palette entry carries an `Id` tag, which only that writer produced.
+every stair, door, slab and fluid level would lose its state. The upgrade checks every level's chunks first (what it
+would convert; not what a level keeps in its `data` folder), and refuses such a world with an error naming it,
+leaving it unchanged apart from `session.lock` (no backup, nothing moved). It's a load failure, not a crash. A world
+counts as that format when any chunk section's block-state palette entry carries an `Id` tag, which only that writer
+produced. The same check refuses a world with a chunk, region file or template the upgrade couldn't read, naming the
+file, so a world is never left half-converted.
 
 **Where to start:** keeping the moved blocks, or upgrading pre-#539 worlds, needs 1.21.11's block state names by id
 (29,671 entries, from the 1.21.11 server's `blocks.json` report), shipped or generated for the upgrade alone and read

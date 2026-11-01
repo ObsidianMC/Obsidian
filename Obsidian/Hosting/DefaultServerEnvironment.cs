@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace Obsidian.Hosting;
 
@@ -6,9 +7,23 @@ namespace Obsidian.Hosting;
 /// A default <see cref="IServerEnvironment"/> implementation aimed for Console applications.
 /// Console commands are read by <see cref="Console.ConsoleCommandService"/>.
 /// </summary>
-internal sealed partial class DefaultServerEnvironment(ILogger<DefaultServerEnvironment> logger) : IServerEnvironment
+internal sealed partial class DefaultServerEnvironment(
+    ILogger<DefaultServerEnvironment> logger,
+    IHostApplicationLifetime lifetime) : IServerEnvironment
 {
     private readonly ILogger<DefaultServerEnvironment> logger = logger;
+
+    // Not a crash: the message says what the operator can do, so it's logged alone, and the server stops with exit
+    // code 1.
+    public ValueTask OnWorldLoadFailedAsync(string message)
+    {
+        Log.WorldLoadFailed(this.logger, message);
+
+        Environment.ExitCode = 1;
+        lifetime.StopApplication();
+
+        return default;
+    }
 
     // The server logs its own shutdown.
     public ValueTask OnServerStoppedGracefullyAsync() => default;
@@ -41,6 +56,9 @@ internal sealed partial class DefaultServerEnvironment(ILogger<DefaultServerEnvi
     {
         [LoggerMessage(Level = LogLevel.Critical, Message = "Obsidian has crashed! {ByeMessage}")]
         public static partial void Crashed(ILogger logger, Exception exception, string byeMessage);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "{Message}")]
+        public static partial void WorldLoadFailed(ILogger logger, string message);
     }
 }
 

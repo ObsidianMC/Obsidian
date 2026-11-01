@@ -106,6 +106,11 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         {
             // Stopping, possibly while the worlds were still loading or generating.
         }
+        catch (WorldLoadException ex)
+        {
+            // A world the operator has to deal with, such as one the upgrade refuses: not a crash.
+            await this.serverEnvironment.OnWorldLoadFailedAsync(ex.Message);
+        }
         catch (Exception ex)
         {
             await this.serverEnvironment.OnServerCrashAsync(ex);

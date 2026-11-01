@@ -92,6 +92,7 @@ servers only) runs the same thing and also emits the event.
 | `{"event":"published","port":25565}` / `{"event":"publishFailed","message":"..."}` | Open to LAN's outcome, from the control command or `/publish`. |
 | `{"event":"stopping"}` | Once, when a graceful stop starts, whatever started it. |
 | `{"event":"crashed","message":"..."}` | The server crashed; it stops and exits with code 1. |
+| `{"event":"loadFailed","message":"..."}` | The world can't be loaded, such as one the upgrade refuses; `message` says why. The server stops and exits with code 1. |
 
 ## Joining
 
@@ -144,9 +145,16 @@ is first copied to `<folder>-1.21.11-backup` beside it (`-2`, `-3`... when that'
 level.dat split as above, and its chunks, entity chunks and saved structure templates rewritten. One info line names
 the backup. An upgrade that stops partway is redone from the backup the next time the world loads. Blocks that were
 mid-push when the world was saved (moving pistons) become air, as 1.21.11 saved what they carried by a state id the
-upgrade can't decode. A world saved by an Obsidian build from before it saved chunks in vanilla's format, whose
-palettes name block states by such ids, isn't upgraded: loading it fails with an error naming the world, which is
-left unchanged (see [the gap](known-gaps/world-upgrade-drops-and-refusals.md)).
+upgrade can't decode.
+
+Before anything is copied or moved, the upgrade reads and converts in memory every file it would convert: the
+levels' region and entity chunks (the world's own, `DIM-1`, `DIM1` and those in `dimensions/`, not what a level keeps
+in its `data` folder), saved structure templates and Obsidian's level.dat of a dimension. A world saved by an Obsidian
+build from before it saved chunks in vanilla's format, whose palettes name block states by such ids, or with a file
+the upgrade can't read, isn't upgraded: loading it fails with an error naming the world (and the file), and the world
+is left unchanged, apart from its `session.lock`, which loading takes first. That's a load failure, not a crash: the
+error is logged without a stack trace and the server stops with exit code 1; an integrated server emits `loadFailed`
+(see [the gap](known-gaps/world-upgrade-drops-and-refusals.md)).
 
 Chunks and their entities are read and written in 1.21.11's format (data version 4671): sections name block states by
 `Name` and `Properties` and biomes by id, and statuses are namespaced (`minecraft:full`). A missing or unknown status
