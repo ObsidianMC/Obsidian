@@ -304,8 +304,9 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
         if (stage < ChunkGenStage.features)
         {
+            var savedStarts = await this.ReadSavedStartsAsync(chunk, stage);
             using (await this.LockAsync(cx, cz, 0))
-                this.GenerateUpToCarvers(chunk, stage);
+                this.GenerateUpToCarvers(chunk, stage, savedStarts);
 
             return chunk;
         }
@@ -426,13 +427,14 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// replaces the noise's stone, carvers carve what the surface left) and add post-processing marks, so replaying
     /// one over its partial result could differ.
     /// </remarks>
-    private void GenerateUpToCarvers(IChunk chunk, ChunkGenStage stage)
+    private void GenerateUpToCarvers(IChunk chunk, ChunkGenStage stage,
+        IReadOnlyDictionary<(int X, int Z), SavedStructureStart[]>? savedStarts)
     {
         var builder = this.Running;
 
         try
         {
-            RunStepsUpToCarvers(builder, chunk, stage);
+            RunStepsUpToCarvers(builder, chunk, stage, savedStarts);
         }
         catch (Exception ex) when (ex is not GeneratorStoppedException && chunk is Chunk generated)
         {
@@ -442,11 +444,12 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         }
     }
 
-    private static void RunStepsUpToCarvers(BiomeTerrain builder, IChunk chunk, ChunkGenStage stage)
+    private static void RunStepsUpToCarvers(BiomeTerrain builder, IChunk chunk, ChunkGenStage stage,
+        IReadOnlyDictionary<(int X, int Z), SavedStructureStart[]>? savedStarts)
     {
         // 26.3 merges noise, surface and carving into the terrain status. The persisted enum still uses carvers.
         if (stage >= ChunkGenStage.biomes && chunk.ChunkStatus < ChunkGenStage.carvers)
-            builder.Generate(chunk);
+            builder.Generate(chunk, savedStarts: savedStarts);
     }
 
     /// <summary>
@@ -582,8 +585,10 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
         await this.RunStepAsync(cx, cz, ChunkGenStage.carvers, () => GenerationThreads.Run(async () =>
         {
+            var chunk = await this.GetChunkAsync(cx, cz);
+            var savedStarts = await this.ReadSavedStartsAsync(chunk, ChunkGenStage.carvers);
             using var chunkLock = await this.LockAsync(cx, cz, 0);
-            this.GenerateUpToCarvers(await this.GetChunkAsync(cx, cz), ChunkGenStage.carvers);
+            this.GenerateUpToCarvers(await this.GetChunkAsync(cx, cz), ChunkGenStage.carvers, savedStarts);
         }));
     }
 
@@ -641,6 +646,34 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
             if (placed)
                 startChunk?.MarkUnsaved();
         }
+    }
+
+    // Await metadata I/O before taking terrain locks. Blocking the generation scheduler on its own continuations
+    // deadlocks a full pregeneration wave; the synchronous terrain pipeline consumes only this immutable snapshot.
+    private async ValueTask<IReadOnlyDictionary<(int X, int Z), SavedStructureStart[]>?> ReadSavedStartsAsync(
+        IChunk chunk, ChunkGenStage stage)
+    {
+        var complete = chunk.ChunkStatus >= ChunkGenStage.structure_references
+            && chunk is Chunk { StructureReferences: not null };
+        if (stage < ChunkGenStage.biomes || complete
+            || this.Running.Structures is null || this.world is not AbstractLevel level)
+        {
+            return null;
+        }
+
+        var result = new Dictionary<(int X, int Z), SavedStructureStart[]>();
+        const int radius = StructureManager.ReferenceRadius;
+        for (var x = chunk.X - radius; x <= chunk.X + radius; x++)
+        {
+            for (var z = chunk.Z - radius; z <= chunk.Z + radius; z++)
+            {
+                var starts = await level.ReadSavedStructureStartsAsync(x, z);
+                if (starts.Length > 0)
+                    result[(x, z)] = starts;
+            }
+        }
+
+        return result;
     }
 
     // StructureManager.LoadStartChunk: structure searches run synchronously (explorer maps are made while loot is generated),

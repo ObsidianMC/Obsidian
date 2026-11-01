@@ -729,6 +729,7 @@
     },
     {
       "name": "desert_pyramid",
+      "captureReferences": true,
       "dimension": "minecraft:overworld",
       "structure": "minecraft:desert_pyramid",
       "chunkX": -320,
@@ -740,6 +741,88 @@
           "{BB:[I;-5120,64,-4864,-5100,78,-4844],Depth:21,GD:0,HPos:-1,Height:15,O:3,Width:21,hasPlacedChest0:0b,hasPlacedChest1:0b,hasPlacedChest2:0b,hasPlacedChest3:0b,id:\"minecraft:tedp\"}"
         ]
       },
+      "referenceChunks": [
+        {
+          "chunkX": -321,
+          "chunkZ": -305,
+          "references": "{\"minecraft:mineshaft\":[L;-1318554960190L]}"
+        },
+        {
+          "chunkX": -321,
+          "chunkZ": -304,
+          "references": "{\"minecraft:mineshaft\":[L;-1318554960190L]}"
+        },
+        {
+          "chunkX": -321,
+          "chunkZ": -303,
+          "references": "{\"minecraft:mineshaft\":[L;-1318554960190L]}"
+        },
+        {
+          "chunkX": -321,
+          "chunkZ": -302,
+          "references": "{\"minecraft:mineshaft_mesa\":[L;-1279900254528L]}"
+        },
+        {
+          "chunkX": -320,
+          "chunkZ": -305,
+          "references": "{\"minecraft:mineshaft\":[L;-1318554960190L]}"
+        },
+        {
+          "chunkX": -320,
+          "chunkZ": -304,
+          "references": "{\"minecraft:desert_pyramid\":[L;-1301375091008L],\"minecraft:mineshaft\":[L;-1318554960190L]}"
+        },
+        {
+          "chunkX": -320,
+          "chunkZ": -303,
+          "references": "{\"minecraft:desert_pyramid\":[L;-1301375091008L],\"minecraft:mineshaft\":[L;-1318554960190L]}"
+        },
+        {
+          "chunkX": -320,
+          "chunkZ": -302,
+          "references": "{\"minecraft:mineshaft_mesa\":[L;-1279900254528L]}"
+        },
+        {
+          "chunkX": -319,
+          "chunkZ": -305,
+          "references": "{\"minecraft:mineshaft\":[L;-1318554960190L]}"
+        },
+        {
+          "chunkX": -319,
+          "chunkZ": -304,
+          "references": "{\"minecraft:desert_pyramid\":[L;-1301375091008L],\"minecraft:mineshaft\":[L;-1318554960190L]}"
+        },
+        {
+          "chunkX": -319,
+          "chunkZ": -303,
+          "references": "{\"minecraft:desert_pyramid\":[L;-1301375091008L],\"minecraft:mineshaft\":[L;-1318554960190L]}"
+        },
+        {
+          "chunkX": -319,
+          "chunkZ": -302,
+          "references": "{\"minecraft:mineshaft_mesa\":[L;-1279900254528L]}"
+        },
+        {
+          "chunkX": -318,
+          "chunkZ": -305,
+          "references": "{\"minecraft:mineshaft\":[L;-1318554960190L]}"
+        },
+        {
+          "chunkX": -318,
+          "chunkZ": -304,
+          "references": "{\"minecraft:mineshaft\":[L;-1318554960190L]}"
+        },
+        {
+          "chunkX": -318,
+          "chunkZ": -303,
+          "references": "{\"minecraft:mineshaft\":[L;-1318554960190L]}"
+        },
+        {
+          "chunkX": -318,
+          "chunkZ": -302,
+          "references": "{\"minecraft:mineshaft_mesa\":[L;-1279900254528L]}"
+        }
+      ],
       "placed": {
         "start": "{ChunkX:-320,ChunkZ:-304,id:\"minecraft:desert_pyramid\",references:0}",
         "pieces": [
@@ -1850,6 +1933,7 @@
     },
     {
       "name": "swamp_hut",
+      "captureReferences": true,
       "dimension": "minecraft:overworld",
       "structure": "minecraft:swamp_hut",
       "chunkX": -126,
@@ -1861,6 +1945,53 @@
           "{BB:[I;-2016,64,-1696,-2010,70,-1688],Cat:0b,Depth:9,GD:0,HPos:-1,Height:7,O:2,Width:7,Witch:0b,id:\"minecraft:tesh\"}"
         ]
       },
+      "referenceChunks": [
+        {
+          "chunkX": -127,
+          "chunkZ": -107,
+          "references": "{}"
+        },
+        {
+          "chunkX": -127,
+          "chunkZ": -106,
+          "references": "{}"
+        },
+        {
+          "chunkX": -127,
+          "chunkZ": -105,
+          "references": "{}"
+        },
+        {
+          "chunkX": -126,
+          "chunkZ": -107,
+          "references": "{}"
+        },
+        {
+          "chunkX": -126,
+          "chunkZ": -106,
+          "references": "{\"minecraft:swamp_hut\":[L;-450971566206L]}"
+        },
+        {
+          "chunkX": -126,
+          "chunkZ": -105,
+          "references": "{}"
+        },
+        {
+          "chunkX": -125,
+          "chunkZ": -107,
+          "references": "{}"
+        },
+        {
+          "chunkX": -125,
+          "chunkZ": -106,
+          "references": "{}"
+        },
+        {
+          "chunkX": -125,
+          "chunkZ": -105,
+          "references": "{}"
+        }
+      ],
       "placed": {
         "start": "{ChunkX:-126,ChunkZ:-106,id:\"minecraft:swamp_hut\",references:0}",
         "pieces": [

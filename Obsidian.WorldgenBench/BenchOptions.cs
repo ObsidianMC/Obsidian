@@ -63,10 +63,11 @@ internal sealed record BenchDimension(string Name, string Identifier, int Center
     // some exact ties differently. Fluid/shape post-processing runs before heightmaps and lighting. Completion retains
     // dark Nether mushrooms (while checking nearby emission), and ticks marked water into bubble columns with block
     // checks; FULL completion captures back these final blocks and ticks.
+    // Generated chunks save structures.References; only the Overworld and Nether NBT hashes change.
     public static IReadOnlyList<BenchDimension> All { get; } =
     [
-        new("overworld", "minecraft:overworld", 6, -2, "2d54ff3885c4051e", "549e4efa115c90f3"),
-        new("nether", "minecraft:the_nether", 0, 0, "3ef4470d0a7794b8", "d7a5b14aeb9f4477"),
+        new("overworld", "minecraft:overworld", 6, -2, "2d54ff3885c4051e", "38e77404a2af1eec"),
+        new("nether", "minecraft:the_nether", 0, 0, "3ef4470d0a7794b8", "d93fe3cc43d1ee2d"),
         new("end", "minecraft:the_end", 6, 0, "5c34c3f5867f27ac", "762ccf03eda84ce2"),
     ];
 }

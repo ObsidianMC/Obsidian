@@ -1,3 +1,4 @@
+using Obsidian.WorldData.Generators.Mojang.Structures;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Obsidian.API.Blocks;
@@ -306,6 +307,12 @@ public abstract partial class AbstractLevel : ILevel
         return GetRegionForChunk(chunkX, chunkZ) is Region region
             ? region.GetLoadedChunk(NumericsHelper.Modulo(chunkX, 32), NumericsHelper.Modulo(chunkZ, 32))
             : null;
+    }
+
+    internal ValueTask<SavedStructureStart[]> ReadSavedStructureStartsAsync(int chunkX, int chunkZ)
+    {
+        var region = (Region)this.LoadRegionByChunk(chunkX, chunkZ);
+        return region.ReadSavedStructureStartsAsync(chunkX, chunkZ);
     }
 
     internal bool TryMoveEntity(IEntity entity, VectorD from, VectorD to)

@@ -155,6 +155,11 @@ For `more_blocks`, `CaptureCases` accepts exact `+`-separated names in `more_blo
 Java probes. No RCON server is started and no other fixture is changed. Its source and the reusable runtime
 instrument dumper are separate so editing these probes does not regenerate unrelated assets.
 
+A `structure_pieces` case with `captureReferences: true` also records `referenceChunks`: the saved
+`structures.References` from vanilla's chunk serializer at STRUCTURE_REFERENCES, across its bounding box plus
+one chunk of border. `VanillaStructureSaves.GeneratedChunksSaveVanillaReferences` compares generated chunk saves
+with those compounds, including empty border chunks and packed start positions at negative coordinates.
+
 For `structure_pieces`, `CaptureCases` accepts exact `+`-separated case names and re-records only those starts. The
 capture takes about 15 seconds after the server starts. `StructurePieceFixtures.java` is an asset input like the
 other dumpers, so editing it regenerates the assets once.
