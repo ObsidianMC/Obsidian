@@ -9,7 +9,7 @@ namespace Obsidian.Entities;
 public partial class Mob
 {
     // This is intentionally a bounded migration. Others keep their special death handling until the predicates
-    // and functions their vanilla tables need are supported (see known-gaps.md).
+    // and functions their vanilla tables need are supported (see docs/known-gaps/plugin-entities.md).
     private static readonly HashSet<EntityType> tableLootTypes =
     [
         EntityType.Zombie, EntityType.Husk, EntityType.Drowned, EntityType.ZombieVillager,

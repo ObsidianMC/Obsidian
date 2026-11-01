@@ -240,7 +240,7 @@ These changes don't depend on the version. They go into `26.3.x` before the bump
 6. **In-repo capture harness.** Add Java fixture dumpers for worldgen (router values, noise and surface, carvers,
    decoration, biomes, light), structures, fluids and redstone, plus a documented command to re-record. The harness is
    finished when it reproduces today's 1.21.11 hashes exactly. Only then do we trust it for 26.3.
-7. **Fix the concurrent test-cache download race** (`known-gaps.md`). Every cache starts cold after the bump.
+7. **Fix the concurrent test-cache download race** ([known gaps](known-gaps/README.md)). Every cache starts cold after the bump.
 
 **Exit:** all of the above merged, the test suite green on 1.21.11, and recapture reproducing the existing fixtures.
 
@@ -382,7 +382,7 @@ Re-capture with the Phase 0 harness first, then work in this order. Each step ha
      placement hook before the placed features in each step; structure pieces remain step 6 work.
 6. **Structures.** Abandoned camps (jigsaw, so mostly data) and the changed templates. Structure starts are saved
    with vanilla's piece ids and fields, checked against starts vanilla saved (`VanillaStructureSaves`); what remains
-   is in `known-gaps.md`, "Structure pieces in saved chunks".
+   is in [known gaps](known-gaps/structure-pieces-in-saved-chunks.md).
 7. **The Nether and the End,** including the new End island composition. The Nether's terrain (lava sea, bedrock,
    material rules), multi-noise biomes, carvers, structures and decoration, and the End's composed islands
    (`end/islands`: the main island's distance gradient and `end_outer_islands`), biome source, structures and
@@ -405,12 +405,12 @@ pistons.
    - note block trumpets — placement/neighbor instrument selection and playback implemented, captured in
      `more_blocks.json` (`VanillaMoreBlocks`);
    - the sulfur family, potent sulfur gas and geysers, and sulfur spikes — implemented with the limits in
-     [known gaps](known-gaps.md#263-blocks). `VanillaSulfurBlocks` replays the RCON sulfur scenarios and Java sulfur
+     [known gaps](known-gaps/26-3-blocks.md). `VanillaSulfurBlocks` replays the RCON sulfur scenarios and Java sulfur
      probes, recorded together with `CaptureFixtures=sulfur`;
    - poplar construction blocks, wool and concrete stairs/slabs, and colored poplar leaves — implemented through
      the shared block-family APIs, with captured placement, shaping, leaf-distance and interaction references in
      `more_blocks.json` (`CaptureFixtures=more_blocks`). Shared shelf interactions and poplar sapling growth remain
-     gaps; see [known gaps](known-gaps.md#263-blocks);
+     gaps; see [known gaps](known-gaps/26-3-blocks.md);
    - straw bed placement and its own sleep rules remain open.
 2. **New entities:**
    - the Sulfur Cube, with archetypes, absorbing blocks, shearing, splitting, buckets and dispensers;
@@ -422,7 +422,7 @@ pistons.
    inline `/place feature`. Success/failure and integer results propagate through `/execute run`; command-class
    permissions are enforced. `CommandFixtures.java` captures the client grammar, argument bytes, suggestions,
    restrictions, clock/compute results, slot changes, post effects, NBT mutations and spam budgets. See
-   [known gaps](known-gaps.md#263-commands) for remaining provider contexts, NBT paths, inventory sources and older
+   [known gaps](known-gaps/26-3-commands.md) for remaining provider contexts, NBT paths, inventory sources and older
    command branches.
 5. **Server defaults — implemented:** whitelist on by default, and separate chat and command spam thresholds.
 6. **Fixtures — complete.** The redstone, fluid and daylight detector scenarios are recorded on a headless 26.3
@@ -444,7 +444,7 @@ pistons.
 
 ### Phase 7: finishing and making `26.3.x` the main branch
 
-- **Docs.** Re-anchor `known-gaps.md` to 26.3 (many entries say "capture vanilla 1.21.11"), and update the README,
+- **Docs.** Re-anchor the [known gaps](known-gaps/README.md) to 26.3 (many entries say "capture vanilla 1.21.11"), and update the README,
   `protocol-open-decisions.md`, `ComponentWireFormat.md` and Docker.
 - **Final checks.** Run the load test for 100 players, run the full test suite and play through by hand.
 - **Promote the branch.** Make `26.3.x` the default branch on GitHub and point the nuget, docfx and CI filters at

@@ -1,7 +1,8 @@
 ﻿namespace Obsidian.Net.Packets.Play.Serverbound;
 
 /// <summary>
-/// A player's pick-block (middle click) on a block. Obsidian doesn't act on it yet (see docs/known-gaps.md).
+/// A player's pick-block (middle click) on a block. Obsidian doesn't act on it yet
+/// (see docs/known-gaps/signed-chat-and-block-picking.md).
 /// </summary>
 public partial class PickItemFromBlockPacket
 {

@@ -134,7 +134,7 @@ not through `ILevel`'s asynchronous methods, and keep them short. Neighbour and 
 neighbour or shape callback wait until that callback returns, in vanilla's order. Placement and removal callbacks
 run synchronously during the block change, like vanilla's `onPlace`; a change inside them can run another placement
 callback or start neighbour updates before the outer callback returns. Keep placement chains bounded (see
-[known gaps](known-gaps.md#recursive-placement-callbacks)). `IBlockLevel.GetBlockEntity` reads the block's block
+[known gaps](known-gaps/recursive-placement-callbacks.md)). `IBlockLevel.GetBlockEntity` reads the block's block
 entity, like vanilla's `getBlockEntity`; a hook may run on a player's thread while block entities tick, so read only
 what's safe to read so (a field written whole) and change the block entity on its own tick. A hook that throws is
 logged and the updates, and the level's tick, go on. Like `UseAsync`, every hook runs as a call into the plugin, and
@@ -156,7 +156,7 @@ neighbours don't get `NeighborChanged` and nether portals don't check their fram
 and `SkipOnPlace` skips `OnPlaced`. `doBlockUpdate: false` is a plain change, without hooks or updates. Of vanilla's
 blocks, liquids react to the updates (they flow), falling blocks fall two ticks after they're placed or a neighbour
 changes, [redstone components](#redstone) react like vanilla's, and the other vanilla blocks only change shape when
-water or lava changes blocks (see [known gaps](known-gaps.md)).
+water or lava changes blocks (see [known gaps](known-gaps/vanilla-blocks-reactions-to-block-updates.md)).
 
 `ILevel.ScheduleBlockTick` and `IBlockLevel.ScheduleTick` schedule a block's tick in a number of game ticks, with a
 `TickPriority`, like vanilla's `scheduleTick`: one per block and position, run if the block is still there then.
@@ -282,7 +282,7 @@ wooden ones feel any entity, stone ones mobs and players, weighted ones count th
 redstone lamp. Players place them as vanilla does: facing and attached from where they click and look, where they can
 stay. Those that lose their support pop off, dropping their loot. A comparator's output is saved in its block
 entity, and vanilla saves' scheduled ticks of these blocks run. Other powered blocks (doors, pistons and the like)
-don't react yet (see [known gaps](known-gaps.md#redstone)).
+don't react yet (see [known gaps](known-gaps/redstone.md)).
 
 ### Saplings
 
@@ -793,7 +793,7 @@ id/tag/state predicates; and supported `entity_properties`, `location_check`, `b
 `match_tool` checks. Unsupported triggers and condition fields never match.
 
 Full vanilla visibility, predicates, selective recipe unlocking, breeding attribution, function rewards and
-remaining event coverage are recorded in [known-gaps.md](known-gaps.md#progress-parity). Progress is usable but the
+remaining event coverage are recorded in [known gaps](known-gaps/progress-parity.md). Progress is usable but the
 engine plan's Progress item is not marked done.
 
 ## Travel and portals
@@ -966,7 +966,7 @@ ticket.Dispose();
   machines can save their chunk coordinates with `RegisterSavedData` and acquire fresh handles on startup. Unlike
   vanilla's propagated levels (31 entity ticking, 32 block ticking, 33 full), this API has a ticking square and one
   loaded border. Vanilla forced tickets and `/forceload` are deferred; see
-  [known-gaps.md](known-gaps.md#chunk-ticket-parity).
+  [known gaps](known-gaps/chunk-ticket-parity.md).
 
 ObsidianMod exposes `KeepChunks` to keep a machine active; the engine's smoke test loads and ticks its counter
 without players, then unloads the plugin to release even forgotten handles.
@@ -1190,7 +1190,7 @@ or set `damage.Cancelled`. `damage.Source` is a `DamageSource`: vanilla's damage
 `DiedAsync(entity, source)` runs when it dies, before its loot drops. Both run inside a call into the plugin, never
 after it unloads.
 
-A dying plugin mob (and the migrated vanilla mobs listed in [known-gaps.md](known-gaps.md#plugin-entities)) drops
+A dying plugin mob (and the migrated vanilla mobs listed in [known gaps](known-gaps/plugin-entities.md)) drops
 its type's loot table, `data/<namespace>/loot_table/entities/<path>.json` for
 `<namespace>:<path>` (a data pack can override it), like vanilla's `dropFromLootTable`, when the `mob_drops` rule is
 on. Its context has the mob, the attacker and the player who hurt it in the last 100 ticks, whose luck counts, so

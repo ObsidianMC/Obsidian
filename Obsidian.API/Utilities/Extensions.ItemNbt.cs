@@ -28,7 +28,8 @@ public partial class Extensions
     /// Modeled persistent components and plugins' components are saved in vanilla's patch format. Loaded NBT beyond
     /// the models is retained. Components vanilla doesn't persist are skipped, as vanilla's codec skips them, and so is
     /// a component received only from the network that has no saved codec yet: losing that one component is better
-    /// than failing the whole chunk or player save it's part of (see known-gaps.md).
+    /// than failing the whole chunk or player save it's part of
+    /// (see docs/known-gaps/item-components-without-a-saved-codec.md).
     /// </remarks>
     public static NbtCompound ToNbt(this ItemStack item, string name = "")
     {

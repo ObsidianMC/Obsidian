@@ -550,7 +550,7 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      handle keeping a bounded square loaded and optionally simulated without players. Ticking squares load one
      border for block and fluid updates; plugin unload releases all its tickets. Handles are not persistent; mods
      can save coordinates with `RegisterSavedData` and reacquire them on startup. Vanilla's separate block-ticking
-     border and forced-ticket persistence remain in [known-gaps.md](known-gaps.md#chunk-ticket-parity). See
+     border and forced-ticket persistence remain in [known gaps](known-gaps/chunk-ticket-parity.md). See
      [plugin-content.md](plugin-content.md#chunk-tickets).
    - Done, engine phase 5 saved data and attachments: `RegisterSavedData` gives worlds and levels lazy, dirty-marked
      gzip NBT files, and `RegisterAttachment` adds detached data to players, entities and chunks. Unknown NBT survives
@@ -572,7 +572,7 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      a component-backed egg item; the sample moth supplies its model, texture and creative tab. Common vanilla mobs
      now use generated entity loot tables through the plugin loot evaluator, including furnace smelting and entity
      flag/equipment predicates. Remaining vanilla parity gaps: see
-     [known-gaps.md](known-gaps.md#plugin-entities). See [plugin-content.md](plugin-content.md#riding-and-flying).
+     [known gaps](known-gaps/plugin-entities.md). See [plugin-content.md](plugin-content.md#riding-and-flying).
    - Done, engine phase 5 movement: the Obsidian client predicts a mod's mount its player rides first, walking or
      flying from the type's settings and synced attributes with the server's own steering (`MountSteering`), and
      sends `MoveVehicle`; the server takes those moves for plugin mobs after vanilla's `handleMoveVehicle` checks
@@ -587,7 +587,7 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      vanishing included, unless `keep_inventory` is on or the type copies on death. `AttachmentType.Changed` tells
      the mod when a holder's value changes, to apply worn items' modifiers and movement abilities. No accessory API,
      slot types or inventory-screen button: a key binding's payload opens the menu (see
-     [known-gaps.md](known-gaps.md#mods-menus-in-the-inventory-screen)). See
+     [known gaps](known-gaps/mods-menus-in-the-inventory-screen.md)). See
      [plugin-content.md](plugin-content.md#player-extensions).
    - Done, engine phase 4 entity renderers: `EntityRendererProperties` gains `Layers` drawn over the model and posed
      like it (an `EntityRenderLayer`: the model or another model layer, a texture, a tint and a cutout, translucent or
@@ -630,7 +630,7 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      client jar's data. `IClientRegistry.RegisterDimensionEffects` adds a cloud texture, and `IDimensionEffects` code
      that adjusts the sky colour, fog and clouds each frame or draws quads into the sky, guarded like other client
      code. Plugins already register dimension types with these fields as data files. Left: see
-     [known-gaps.md](known-gaps.md#dimension-effects-beyond-the-sky-clouds-and-fog). See
+     [known gaps](known-gaps/dimension-effects-beyond-the-sky-clouds-and-fog.md). See
      [plugin-content.md](plugin-content.md#client).
    - Next: particle types with options (a codec on both sides) and particle providers in code, for particles that
      move or draw unlike a sprite; menus whose slots aren't a grid of up to six rows of nine; animations a server
@@ -647,7 +647,7 @@ sample's grinder advancement exercises inventory criteria and an experience rewa
 `/advancement grant|revoke <player> only <id> [criterion]`.
 
 This is the core implementation, not full vanilla parity: richer predicates/triggers, visibility rules, selective
-recipe unlocking and some event coverage remain in [known-gaps.md](known-gaps.md#progress-parity).
+recipe unlocking and some event coverage remain in [known gaps](known-gaps/progress-parity.md).
 See [Progress](plugin-content.md#progress) for the public API.
 
 ## Porting from NeoForge
