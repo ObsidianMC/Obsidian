@@ -33,7 +33,7 @@ namespace Obsidian.WorldData.Generators.Mojang.Structures;
 internal sealed class StructureManager : IStructurePlacementState
 {
     // Vanilla's createReferences radius: starts within 8 chunks can reach a chunk.
-    private const int ReferenceRadius = 8;
+    internal const int ReferenceRadius = 8;
 
     private readonly StructureWorld world;
     private readonly IStructureTerrain terrain;
@@ -226,24 +226,62 @@ internal sealed class StructureManager : IStructurePlacementState
     }
 
     /// <summary>
-    /// Records vanilla's STRUCTURE_REFERENCES result before placement can move a piece's bounding box.
-    /// Loaded references are retained, including structures not available to this generator.
+    /// Records vanilla's STRUCTURE_REFERENCES result before placement. Status decides completion: a saved proto
+    /// chunk can contain an empty placeholder. Completed references and unknown loaded entries are retained.
     /// </summary>
-    public void RecordReferences(Chunk chunk)
+    public void RecordReferences(Chunk chunk,
+        IReadOnlyDictionary<(int X, int Z), SavedStructureStart[]>? savedStarts = null)
     {
-        if (chunk.StructureReferences is not null)
+        if (chunk.ChunkStatus >= ChunkGenStage.structure_references && chunk.StructureReferences is not null)
             return;
 
-        var references = new NbtCompound("References");
-        var groups = this.FindReaching(chunk.X, chunk.Z).Starts.GroupBy(start => start.Structure.Identifier);
-        foreach (var group in groups)
+        var reaching = this.FindReaching(chunk.X, chunk.Z);
+        var boxes = new Dictionary<(string Identifier, int X, int Z), BlockBox>();
+        foreach (var start in reaching.Starts)
+            boxes[(start.Structure.Identifier, start.ChunkX, start.ChunkZ)] = start.BoundingBox;
+
+        // Vanilla scans the neighboring chunks' saved starts, even when their sets no longer generate starts.
+        var minX = chunk.X << 4;
+        var minZ = chunk.Z << 4;
+        var registered = reaching.Layout.Source.Structures;
+        for (var x = chunk.X - ReferenceRadius; x <= chunk.X + ReferenceRadius; x++)
         {
-            var keys = group.Select(start => ChunkKey(start.ChunkX, start.ChunkZ));
-            var positions = LongHashSetOrder.Order(keys).ToArray();
-            references.Add(new NbtArray<long>(group.Key, positions));
+            for (var z = chunk.Z - ReferenceRadius; z <= chunk.Z + ReferenceRadius; z++)
+            {
+                foreach (var saved in savedStarts?.GetValueOrDefault((x, z)) ?? [])
+                {
+                    if (registered.TryGetValue(saved.Identifier, out var structure))
+                        boxes[(saved.Identifier, x, z)] = structure.AdjustBoundingBox(saved.PieceBounds);
+                }
+
+                // In-session retirements can be newer than the last file snapshot.
+                foreach (var (identifier, box) in this.StartCache.RetainedReferences(x, z, registered))
+                    boxes[(identifier, x, z)] = box;
+            }
+        }
+
+        var references = new NbtCompound("References");
+        if (chunk.StructureReferences is NbtCompound loaded)
+        {
+            foreach (var (name, tag) in loaded)
+            {
+                if (!registered.ContainsKey(name))
+                    references.Add(name, tag);
+            }
+        }
+
+        var positions = boxes.Where(entry => entry.Value.Intersects(minX, minZ, minX + 15, minZ + 15));
+        foreach (var group in positions.GroupBy(entry => entry.Key.Identifier))
+        {
+            var keys = group.Select(entry => ChunkKey(entry.Key.X, entry.Key.Z));
+            // Recreate the x-then-z insertion order before vanilla's LongOpenHashSet iteration order.
+            var ordered = keys.OrderBy(key => (int)key).ThenBy(key => (int)(key >> 32));
+            references.Add(new NbtArray<long>(group.Key, [.. LongHashSetOrder.Order(ordered)]));
         }
 
         chunk.StructureReferences = references;
+        if (chunk.ChunkStatus < ChunkGenStage.structure_references)
+            chunk.SetChunkStatus(ChunkGenStage.structure_references);
     }
 
     /// <summary>

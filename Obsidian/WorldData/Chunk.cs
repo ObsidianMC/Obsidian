@@ -831,7 +831,8 @@ public sealed class Chunk : IChunk
             this.Heightmaps[type] = new Heightmap(type, this);
 
         this.PostProcessing.Clear();
-        this.ChunkStatus = ChunkGenStage.structure_references;
+        if (this.ChunkStatus > ChunkGenStage.structure_references)
+            this.ChunkStatus = ChunkGenStage.structure_references;
         this.MarkUnsaved();
     }
 

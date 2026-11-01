@@ -174,6 +174,44 @@ internal sealed class StructureStartCache
     }
 
     /// <summary>
+    /// Reference boxes retained when sets disappear. Snapshot under the gate, then read host-owned metadata only:
+    /// waiting for retirement or invoking a piece's save here could deadlock with generation holding chunk locks.
+    /// </summary>
+    public IReadOnlyList<(string Identifier, BlockBox Box)> RetainedReferences(
+        int chunkX, int chunkZ, IReadOnlyDictionary<string, Structure> registered)
+    {
+        ImmutableDictionary<string, NbtCompound>? saved;
+        ImmutableList<Retirement>? pending;
+        lock (this.gate)
+        {
+            this.dropped.TryGetValue((chunkX, chunkZ), out saved);
+            this.retiring.TryGetValue((chunkX, chunkZ), out pending);
+        }
+
+        if (saved is null && pending is null)
+            return [];
+
+        var result = new List<(string Identifier, BlockBox Box)>();
+        foreach (var (identifier, state) in saved ?? ImmutableDictionary<string, NbtCompound>.Empty)
+        {
+            if (registered.TryGetValue(identifier, out var structure)
+                && SavedStructureStart.Read(identifier, state) is SavedStructureStart start)
+            {
+                result.Add((identifier, structure.AdjustBoundingBox(start.PieceBounds)));
+            }
+        }
+
+        foreach (var retirement in pending ?? [])
+        {
+            var start = retirement.Start;
+            if (start.HasRestoredState && registered.ContainsKey(start.Structure.Identifier))
+                result.Add((start.Structure.Identifier, start.BoundingBox));
+        }
+
+        return result;
+    }
+
+    /// <summary>
     /// The structure starts to save in their start chunk (vanilla's <c>structures.starts</c>, keyed by structure id):
     /// those the chunk was loaded with, where starts restored in this session, or dropped since, replace theirs with
     /// their pieces' current state. A start whose structure is gone stays as it was saved.

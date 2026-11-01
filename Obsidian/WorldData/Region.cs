@@ -6,6 +6,7 @@ using Obsidian.Nbt;
 using Obsidian.Utilities.Collections;
 using Obsidian.WorldData.Fluids;
 using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Generators.Mojang.Structures;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.ExceptionServices;
@@ -57,6 +58,9 @@ public partial class Region : IRegion
     private DenseCollection<IChunk> loadedChunks { get; } = new(CubicRegionSize, CubicRegionSize);
 
     private readonly RegionFile regionFile;
+
+    // At most 1024 entries, released with the region. Only ids and boxes are retained, never full chunk/piece NBT.
+    private readonly ConcurrentDictionary<int, Lazy<Task<SavedStructureStart[]>>> savedStartBounds = new();
 
     // Like vanilla, entities of complete chunks are kept in their own region files (entities/r.x.z.mca).
     private readonly RegionFile entityRegionFile;
@@ -379,6 +383,44 @@ public partial class Region : IRegion
         {
             chunkSlotLock.Release();
         }
+    }
+
+    /// <summary>Reads reference metadata without publishing a chunk or loading its entities.</summary>
+    internal async ValueTask<SavedStructureStart[]> ReadSavedStructureStartsAsync(int chunkX, int chunkZ)
+    {
+        var x = NumericsHelper.Modulo(chunkX, CubicRegionSize);
+        var z = NumericsHelper.Modulo(chunkZ, CubicRegionSize);
+        if (this.loadedChunks[x, z] is Chunk { StructureStarts: NbtCompound loaded })
+            return SavedStructureStart.Read(loaded);
+
+        await this.initialization.Value;
+        if (!this.regionFile.HasChunk(x, z))
+            return [];
+
+        var key = x + z * CubicRegionSize;
+        var read = this.savedStartBounds.GetOrAdd(key, static (position, region) =>
+            new Lazy<Task<SavedStructureStart[]>>(() => region.ReadSavedStartBoundsAsync(position)), this);
+        try
+        {
+            return await read.Value;
+        }
+        catch
+        {
+            this.savedStartBounds.TryRemove(new KeyValuePair<int, Lazy<Task<SavedStructureStart[]>>>(key, read));
+            throw;
+        }
+    }
+
+    private async Task<SavedStructureStart[]> ReadSavedStartBoundsAsync(int position)
+    {
+        var chunk = await this.ReadCompoundAsync(this.regionFile, position % CubicRegionSize, position / CubicRegionSize);
+        if (chunk is null || !chunk.TryGetTag<NbtCompound>("structures", out var structures)
+            || !structures.TryGetTag<NbtCompound>("starts", out var starts))
+        {
+            return [];
+        }
+
+        return SavedStructureStart.Read(starts);
     }
 
     public async Task UnloadChunk(int x, int z)
@@ -872,6 +914,10 @@ public partial class Region : IRegion
 
         if (save.EntityWrite is { } entityWrite)
             await entityWrite.Done;
+
+        // A later metadata read must see the committed version, including starts saved after an earlier read.
+        if (save.Nbt is not null)
+            this.savedStartBounds.TryRemove(save.X + save.Z * CubicRegionSize, out _);
 
         var chunkFailure = save.ChunkWrite?.Failure;
         if (chunkFailure is not null)

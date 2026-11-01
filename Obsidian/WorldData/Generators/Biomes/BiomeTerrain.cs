@@ -590,7 +590,8 @@ internal sealed class BiomeTerrain
     public void Generate(
         IChunk chunk,
         ICollection<Vector>? fluidUpdates = null,
-        Func<int, int, IChunk?>? neighbors = null)
+        Func<int, int, IChunk?>? neighbors = null,
+        IReadOnlyDictionary<(int X, int Z), SavedStructureStart[]>? savedStarts = null)
     {
         var carvers = this.carvers();
         var owners = this.GenerationOwners(carvers);
@@ -598,7 +599,7 @@ internal sealed class BiomeTerrain
 
         try
         {
-            this.GenerateEntered(chunk, fluidUpdates, neighbors, carvers);
+            this.GenerateEntered(chunk, fluidUpdates, neighbors, carvers, savedStarts);
         }
         catch (Exception ex) when (Contains(owners, ex))
         {
@@ -619,11 +620,12 @@ internal sealed class BiomeTerrain
         IChunk chunk,
         ICollection<Vector>? fluidUpdates,
         Func<int, int, IChunk?>? neighbors,
-        CarverRegistry carvers)
+        CarverRegistry carvers,
+        IReadOnlyDictionary<(int X, int Z), SavedStructureStart[]>? savedStarts)
     {
         using var writes = (chunk as Chunk)?.BeginTerrainWrites();
         if (chunk is Chunk generated)
-            this.Structures?.RecordReferences(generated);
+            this.Structures?.RecordReferences(generated, savedStarts);
 
         this.Source.FillBiomes(chunk);
         fluidUpdates ??= (chunk as Chunk)?.PostProcessing;

@@ -148,6 +148,9 @@ public sealed class StructureStart
         }
     }
 
+    // Reference discovery holds generation locks and must not wait for a placement or restoration to finish.
+    internal bool HasRestoredState => Volatile.Read(ref this.stateRestored);
+
     /// <summary>
     /// Saves the start in the format of vanilla 26.3's <c>StructureStart.createTag</c> (<c>id</c>, <c>ChunkX</c>,
     /// <c>ChunkZ</c>, <c>references</c>, and the pieces in <c>Children</c>; see
