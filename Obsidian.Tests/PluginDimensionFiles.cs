@@ -5,6 +5,8 @@ using Obsidian.API.Registries;
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.World.Features;
 using Obsidian.API.World.Generator;
+using Obsidian.API.World.Generator.SurfaceConditions;
+using Obsidian.API.World.Generator.SurfaceRules;
 using Obsidian.Nbt;
 using Obsidian.Plugins;
 using Obsidian.Plugins.Archives;
@@ -26,9 +28,11 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
 using Dimension = Obsidian.WorldData.Dimension;
+using SurfaceAnchor = Obsidian.API.World.Generator.SurfaceConditions.VerticalAnchor;
 
 namespace Obsidian.Tests;
 
@@ -520,6 +524,184 @@ public sealed class PluginDimensionFiles : IDisposable
         GenerateShelf(resumed, 6);
     }
 
+    [Trait("Category", TestCategory.Worldgen)]
+    [Fact(DisplayName = "The 26.3 pipeline evaluates plugins' surface rules and conditions, and stops when they fail")]
+    public void GeneratesPluginSurfaceRulesInThe263Pipeline()
+    {
+        var noise = PluginNoise.Build(
+            [
+                PluginNoise.Parse(PluginNoise.NoiseSettings, "probe:ruled_world", "test", Bytes(RuledWorld26)),
+                PluginNoise.Parse(PluginNoise.NoiseSettings, "probe:failing_rules", "test", Bytes(FailingRules26)),
+                PluginNoise.Parse(PluginNoise.DensityFunction, "probe:ground", "test", Bytes(Ground26)),
+                PluginNoise.Parse(PluginNoise.Noise, "probe:bumps", "test", Bytes(Bumps26))
+            ],
+            ProbeTypes(),
+            NullLogger.Instance);
+        var data = PluginWorldgen.Layer(WorldgenData.Vanilla, [], noise.Files);
+        var stem = FixedStem
+            .Replace("\"settings\": \"minecraft:overworld\"", "\"settings\": \"probe:ruled_world\"")
+            .Replace(
+                """{ "type": "minecraft:fixed", "biome": "stemfiles:glade" }""",
+                """{ "type": "probe:halves", "west": "minecraft:desert", "east": "minecraft:plains" }""");
+        var plugin = ProbePlugin();
+
+        // Reading the stem finds the plugin's rule types its material rule names.
+        var read = Read26("stemfiles:ruled", stem, noise, data);
+        Assert.NotNull(read.MaterialTypes);
+
+        // The plugin's rules hold vanilla's, by identifier too, and its conditions, inside vanilla's.
+        var dimension = WithPlugin(read, plugin);
+        var terrain = BiomeTerrain.Create(dimension, 1234);
+        var chunk = NewChunk(terrain, 0);
+        terrain.Generate(chunk);
+
+        Assert.True(CountLayer(chunk, 39, BlockIds.GoldBlock) > 192, "The floor isn't gold.");
+        Assert.True(CountLayer(chunk, 25, BlockIds.Stone) > 192, "The middle isn't stone.");
+        Assert.True(CountLayer(chunk, 5, BlockIds.DiamondBlock) > 192, "The bottom isn't diamond.");
+
+        // A plugin's rule failing fails its own dimension's chunk, naming the plugin; other dimensions go on.
+        var failingStem = stem.Replace("probe:ruled_world", "probe:failing_rules");
+        var failingDimension = WithPlugin(Read26("stemfiles:failing_rules", failingStem, noise, data), plugin);
+        var failing = BiomeTerrain.Create(failingDimension, 1);
+        var error = Assert.Throws<PluginGenerationException>(() => failing.Generate(NewChunk(failing, 0)));
+
+        Assert.Same(plugin, Assert.Single(error.Plugins));
+        terrain.Generate(NewChunk(terrain, 1));
+
+        // Releasing drops the rule types with the rest.
+        dimension.Release();
+        Assert.Throws<InvalidOperationException>(() => dimension.MaterialTypes);
+    }
+
+    [Trait("Category", TestCategory.Worldgen)]
+    [Fact(DisplayName = "In the 26.3 pipeline, plugins' rules evaluate vanilla's rule classes they hold or make")]
+    public void EvaluatesVanillaRuleClassesInThe263Pipeline()
+    {
+        var (noise, data) = ShelfData();
+        var fallback = """{ "type": "probe:fallback", "fallback": { "result_state": "minecraft:gold_block" } }""";
+        var stem = ShelfStem(ShelfWith(fallback));
+        var dimension = WithPlugin(Read26("stemfiles:fallback", stem, noise, data), ProbePlugin());
+
+        // The rule's own sequence, made in code, gives bedrock below y 10; the block rule read for it, gold above.
+        var terrain = BiomeTerrain.Create(dimension, 1234);
+        var chunk = NewChunk(terrain, 0);
+        terrain.Generate(chunk);
+
+        Assert.True(CountLayer(chunk, 5, BlockIds.Bedrock) > 192, "The bottom isn't bedrock.");
+        Assert.True(CountLayer(chunk, 25, BlockIds.GoldBlock) > 192, "The middle isn't gold.");
+    }
+
+    [Trait("Category", TestCategory.Worldgen)]
+    [Fact(DisplayName = "The 26.3 pipeline fails a dimension whose rules refer back to themselves or hold a noise")]
+    public void RefusesCyclicRulesAndNoisesInThe263Pipeline()
+    {
+        var (noise, shelf) = ShelfData();
+        var data = shelf.With(
+            [
+                new WorldgenEntry("material_rule", "probe:loop", Json(LoopRule)),
+                new WorldgenEntry("material_condition", "probe:loop", Json(LoopCondition))
+            ]);
+
+        // A named rule or condition holding itself, through a plugin's rule or vanilla's, says how.
+        var ruleStem = ShelfStem(ShelfWith("\"probe:loop\""));
+        var rule = Assert.Throws<InvalidDataException>(() => Read26("stemfiles:rule_loop", ruleStem, noise, data));
+        Assert.Contains("probe:loop -> probe:loop", rule.Message);
+
+        var conditionStem = ShelfStem(ShelfWith(LoopConditionRule));
+        var condition = Assert.Throws<InvalidDataException>(
+            () => Read26("stemfiles:condition_loop", conditionStem, noise, data));
+        Assert.Contains("probe:loop -> probe:loop", condition.Message);
+
+        // A plugin's rule can't hold a 1.21.11 noise, inline or named, which would sample unseeded.
+        var noisyStem = ShelfStem(ShelfWith(NoisyRuleJson));
+        var noiseError = Assert.Throws<InvalidDataException>(() => Read26("stemfiles:noisy", noisyStem, noise, data));
+        Assert.Contains("can't hold a noise", noiseError.Message);
+
+        // Nor a property typed as a plugin's own noise class, which plain deserialization would leave unseeded.
+        var subclassStem = ShelfStem(ShelfWith(SubclassNoisyRuleJson));
+        var subclassError = Assert.Throws<InvalidDataException>(
+            () => Read26("stemfiles:subclass_noisy", subclassStem, noise, data));
+        Assert.Contains("can't hold a noise", subclassError.Message);
+
+        // A plugin's rule evaluating itself fails its dimension's chunk, naming the plugin, rather than the process.
+        var plugin = ProbePlugin();
+        var selfStem = ShelfStem(ShelfWith("""{ "type": "probe:self" }"""));
+        var self = BiomeTerrain.Create(WithPlugin(Read26("stemfiles:self", selfStem, noise, data), plugin), 1);
+        var error = Assert.Throws<PluginGenerationException>(() => self.Generate(NewChunk(self, 0)));
+
+        Assert.Same(plugin, Assert.Single(error.Plugins));
+        Assert.IsType<InvalidOperationException>(error.InnerException);
+    }
+
+    // The plugin's shelf terrain functions and noise, in 26.3's schema, laid over vanilla's 26.3 data.
+    private static (WorldgenNoise Noise, WorldgenData Data) ShelfData()
+    {
+        var noise = PluginNoise.Build(
+            [
+                PluginNoise.Parse(PluginNoise.DensityFunction, "probe:ground", "test", Bytes(Ground26)),
+                PluginNoise.Parse(PluginNoise.Noise, "probe:bumps", "test", Bytes(Bumps26))
+            ],
+            ProbeTypes(),
+            NullLogger.Instance);
+
+        return (noise, PluginWorldgen.Layer(WorldgenData.Vanilla, [], noise.Files));
+    }
+
+    // A stem of the plugin's halves of desert and plains, with its noise settings inline.
+    private static string ShelfStem(string settings) => FixedStem
+        .Replace("\"settings\": \"minecraft:overworld\"", $"\"settings\": {settings}")
+        .Replace(
+            """{ "type": "minecraft:fixed", "biome": "stemfiles:glade" }""",
+            """{ "type": "probe:halves", "west": "minecraft:desert", "east": "minecraft:plains" }""");
+
+    // The shelf's settings with a material rule.
+    private static string ShelfWith(string materialRule) =>
+        ShelfWorld26.Replace(EmptyMaterialRule, $"\"material_rule\": {materialRule}");
+
+    private static JsonElement Json(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        return document.RootElement.Clone();
+    }
+
+    private const string EmptyMaterialRule = "\"material_rule\": { \"type\": \"minecraft:sequence\", \"sequence\": [] }";
+
+    // A plugin's rule whose rule is the entry itself.
+    private const string LoopRule = """
+        { "type": "probe:unless", "unless": { "type": "probe:below", "y": 0 }, "then": "probe:loop" }
+        """;
+
+    private const string LoopCondition = """{ "type": "minecraft:not", "invert": "probe:loop" }""";
+
+    private const string LoopConditionRule = """
+        { "type": "minecraft:condition", "if_true": "probe:loop", "then_run": "minecraft:bedrock_floor" }
+        """;
+
+    private const string SubclassNoisyRuleJson = """
+        { "type": "probe:subclass_noisy", "noise": { "key": "probe:own", "first_octave": -4, "amplitudes": [1.0] } }
+        """;
+
+    private const string NoisyRuleJson = """
+        { "type": "probe:noisy", "noise": { "firstOctave": -4, "amplitudes": [1.0] } }
+        """;
+
+    // How many of a layer's blocks are the block: carvers may cut into any layer.
+    private static int CountLayer(Chunk chunk, int y, int block)
+    {
+        var count = 0;
+
+        for (var x = 0; x < 16; x++)
+        {
+            for (var z = 0; z < 16; z++)
+            {
+                if (chunk.GetBlock(x, y, z).Is(block))
+                    count++;
+            }
+        }
+
+        return count;
+    }
+
     // The worldgen types a plugin registers, here from the test's own load context.
     private static List<WorldgenTypeRegistration> ProbeTypes()
     {
@@ -539,6 +721,46 @@ public sealed class PluginDimensionFiles : IDisposable
             "probe:failing",
             typeof(IDensityFunction),
             typeof(FailingFunction)));
+        types.Add(WorldgenTypeRegistration.Create(
+            types,
+            "probe:top",
+            typeof(ISurfaceRule),
+            typeof(TopRule)));
+        types.Add(WorldgenTypeRegistration.Create(
+            types,
+            "probe:unless",
+            typeof(ISurfaceRule),
+            typeof(UnlessRule)));
+        types.Add(WorldgenTypeRegistration.Create(
+            types,
+            "probe:below",
+            typeof(ISurfaceCondition),
+            typeof(BelowCondition)));
+        types.Add(WorldgenTypeRegistration.Create(
+            types,
+            "probe:failing_rule",
+            typeof(ISurfaceRule),
+            typeof(FailingRule)));
+        types.Add(WorldgenTypeRegistration.Create(
+            types,
+            "probe:fallback",
+            typeof(ISurfaceRule),
+            typeof(FallbackRule)));
+        types.Add(WorldgenTypeRegistration.Create(
+            types,
+            "probe:self",
+            typeof(ISurfaceRule),
+            typeof(SelfRule)));
+        types.Add(WorldgenTypeRegistration.Create(
+            types,
+            "probe:noisy",
+            typeof(ISurfaceRule),
+            typeof(NoisyRule)));
+        types.Add(WorldgenTypeRegistration.Create(
+            types,
+            "probe:subclass_noisy",
+            typeof(ISurfaceRule),
+            typeof(SubclassNoisyRule)));
 
         return types;
     }
@@ -570,7 +792,8 @@ public sealed class PluginDimensionFiles : IDisposable
         read.Layout,
         read.DensityTypes,
         [plugin],
-        () => regions.IsDefault ? [] : regions);
+        () => regions.IsDefault ? [] : regions,
+        read.MaterialTypes);
 
     private static Chunk NewChunk(BiomeTerrain terrain, int chunkX) =>
         new(chunkX, 0, terrain.MinY, terrain.Height);
@@ -635,6 +858,31 @@ public sealed class PluginDimensionFiles : IDisposable
           "material_rule": { "type": "minecraft:sequence", "sequence": [] }
         }
         """;
+
+    // The shelf, gold on its floor and diamond below y 10, from plugins' rules and conditions holding vanilla's.
+    private static readonly string RuledWorld26 = ShelfWith("""
+        {
+          "type": "minecraft:sequence",
+          "sequence": [
+            {
+              "type": "probe:unless",
+              "unless": { "type": "probe:below", "y": 20 },
+              "then": {
+                "type": "minecraft:condition",
+                "if_true": "minecraft:on_floor",
+                "then_run": { "type": "minecraft:block", "result_state": "minecraft:gold_block" }
+              }
+            },
+            {
+              "type": "minecraft:condition",
+              "if_true": { "type": "probe:below", "y": 10 },
+              "then_run": { "type": "probe:top", "block": "minecraft:diamond_block", "depth": 100 }
+            }
+          ]
+        }
+        """);
+
+    private static readonly string FailingRules26 = ShelfWith("""{ "type": "probe:failing_rule" }""");
 
     private static readonly string FailingWorld26 = ShelfWorld26.Replace(
         """{ "type": "probe:shelf", "y": 40, "argument": "probe:ground" }""",
@@ -766,6 +1014,102 @@ public sealed class PluginDimensionFiles : IDisposable
 
         public IBlock? Apply(ISurfaceContext context) =>
             context.StoneDepthAbove <= this.Depth ? this.Block.ToBlock() : null;
+    }
+
+    // A plugin's surface rule holding a rule and a condition: the rule, unless the condition holds.
+    public sealed class UnlessRule : ICustomSurfaceRule
+    {
+        public string Type => "probe:unless";
+
+        public required ISurfaceCondition Unless { get; init; }
+
+        public required ISurfaceRule Then { get; init; }
+
+        public IBlock? Apply(ISurfaceContext context) => context.Test(this.Unless) ? null : context.Apply(this.Then);
+    }
+
+    // A plugin's surface condition: whether the block is below a height.
+    public sealed class BelowCondition : ICustomSurfaceCondition
+    {
+        public string Type => "probe:below";
+
+        public required int Y { get; init; }
+
+        public bool Test(ISurfaceContext context) => context.BlockY < this.Y;
+    }
+
+    // A plugin's surface rule whose code fails.
+    public sealed class FailingRule : ICustomSurfaceRule
+    {
+        public string Type => "probe:failing_rule";
+
+        public IBlock? Apply(ISurfaceContext context) => throw new InvalidOperationException("probe failed");
+    }
+
+    // A plugin's surface rule falling back on vanilla's rule classes: one it makes and keeps, and one read for it.
+    public sealed class FallbackRule : ICustomSurfaceRule
+    {
+        // Diamond where the terrain is steep, which the shelf never is, and bedrock below y 10.
+        private readonly ISurfaceRule bottom = new SequenceSurfaceRule
+        {
+            Sequence =
+            [
+                new ConditionSurfaceRule
+                {
+                    IfTrue = new SteepSurfaceCondition(),
+                    ThenRun = new BlockSurfaceRule { ResultState = new SimpleBlockState { Name = "diamond_block" } }
+                },
+                new ConditionSurfaceRule
+                {
+                    IfTrue = new NotSurfaceCondition { Invert = AboveY(10) },
+                    ThenRun = new BlockSurfaceRule { ResultState = new SimpleBlockState { Name = "minecraft:bedrock" } }
+                }
+            ]
+        };
+
+        public string Type => "probe:fallback";
+
+        public required BlockSurfaceRule Fallback { get; init; }
+
+        public IBlock? Apply(ISurfaceContext context) => context.Apply(this.bottom) ?? context.Apply(this.Fallback);
+
+        private static YAboveSurfaceCondition AboveY(int y) => new()
+        {
+            Anchor = new SurfaceAnchor { Absolute = y },
+            SurfaceDepthMultiplier = 0,
+            AddStoneDepth = false
+        };
+    }
+
+    // A plugin's surface rule evaluating itself.
+    public sealed class SelfRule : ICustomSurfaceRule
+    {
+        public string Type => "probe:self";
+
+        public IBlock? Apply(ISurfaceContext context) => context.Apply(this);
+    }
+
+    // A plugin's own noise class.
+    public sealed class OwnNoise : Obsidian.API.World.Generator.Noise.BaseNoise;
+
+    // A plugin's surface rule holding its own noise class.
+    public sealed class SubclassNoisyRule : ICustomSurfaceRule
+    {
+        public string Type => "probe:subclass_noisy";
+
+        public required OwnNoise Noise { get; init; }
+
+        public IBlock? Apply(ISurfaceContext context) => null;
+    }
+
+    // A plugin's surface rule holding a 1.21.11 noise.
+    public sealed class NoisyRule : ICustomSurfaceRule
+    {
+        public string Type => "probe:noisy";
+
+        public required INoise Noise { get; init; }
+
+        public IBlock? Apply(ISurfaceContext context) => null;
     }
 
     // A plugin's biome source: one biome west of x 0, another east.

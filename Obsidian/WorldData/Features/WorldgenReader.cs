@@ -82,6 +82,24 @@ internal sealed partial class WorldgenReader(
     public Func<JsonElement, string, IDensityFunction>? DensityFunctions { get; init; }
 
     /// <summary>
+    /// Reads every surface rule value instead of this reader, identifiers included, such as the 26.3 material rules
+    /// reading those of a plugin's surface rule (see <see cref="Generators.Terrain.PluginMaterialTypes"/>); null to
+    /// read them as 1.21.11's.
+    /// </summary>
+    public Func<JsonElement, string, ISurfaceRule>? SurfaceRules { get; init; }
+
+    /// <summary>
+    /// Reads every surface condition value instead of this reader, like <see cref="SurfaceRules"/>.
+    /// </summary>
+    public Func<JsonElement, string, ISurfaceCondition>? SurfaceConditions { get; init; }
+
+    /// <summary>
+    /// Reads every noise value instead of this reader, identifiers and inline noises alike, such as the 26.3
+    /// pipeline refusing them in plugins' types, whose noises would be unseeded there; null to read them as 1.21.11's.
+    /// </summary>
+    public Func<JsonElement, string, BaseNoise>? Noises { get; init; }
+
+    /// <summary>
     /// Reads a configured feature, <c>{"type": ..., "config": {...}}</c>.
     /// </summary>
     /// <param name="identifier">The feature's identifier, or null for one defined inline.</param>

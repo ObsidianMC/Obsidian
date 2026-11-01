@@ -3090,12 +3090,22 @@ The live generator still reads 1.21.11's formats above. The 26.3 generator that 
 and an optional `aquifers` object; density functions take 26.3's types and operands (`add` with `left` and `right`);
 noises are `{"base_octave": ..., "octave_count": ...}`. Until the switch, a file in 1.21.11's schema fails the 26.3
 dimensions naming it, and one in 26.3's is left out of the live generator with a warning. Plugins' biome sources, biome regions and dimensions generate in both, with the same
-lifecycle, and regions land in the same places in both. Two limits, until the switch:
+lifecycle, and regions land in the same places in both. Plugins' surface rule and condition types are read in
+`material_rule`, inline or inside vanilla's rules, and a dimension whose material rule alone names a plugin's type
+generates with that plugin, as with its density functions. Limits, until the switch:
 
 - A plugin's density function type gets 26.3 density functions in its `IDensityFunction` properties, already seeded,
   so `MapAll` isn't called; it can't hold a noise, since 26.3's noises aren't `BaseNoise`s. Take a density function,
   like a `minecraft:noise`, instead.
-- Plugins' surface rule and condition types aren't read in `material_rule` yet.
+- A plugin's surface rule or condition type gets 26.3 rules and conditions in its `ISurfaceRule` and
+  `ISurfaceCondition` properties, read in 26.3's schema (`material_rule` and `material_condition` identifiers, like
+  `minecraft:on_floor`, included), and 26.3 density functions in its `IDensityFunction` ones; it can't hold a noise,
+  named or inline, for the same reason. Its context evaluates those properties, plugins' own types, and vanilla's rule
+  and condition classes, whether the plugin made them in code (a cached `new BlockSurfaceRule`, say) or they were
+  read for a property of that class: they evaluate as 26.3's rules do. A `NoiseThresholdSurfaceCondition` made in code
+  samples the 26.3 noise of its noise's identifier.
+- A named rule or condition that refers back to itself fails the dimension naming it, and so does a plugin's rule or
+  condition evaluating itself through its context (more than 128 levels deep), as a failure of the plugin's code.
 
 ### Noise types
 

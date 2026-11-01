@@ -14,8 +14,12 @@ namespace Obsidian.WorldData.Generators.Terrain;
 internal sealed partial class MaterialRules
 {
     private readonly TerrainGenerator generator;
+    private readonly IMaterialTypes? types;
     private readonly Dictionary<string, Func<MaterialContext, IBlock?>> rules = [];
     private readonly Dictionary<string, Func<MaterialContext, bool>> conditions = [];
+
+    // The named rules and conditions being compiled, outermost first (see CompileEntry).
+    private readonly List<(string Registry, string Id)> compilingEntries = [];
     private readonly Func<MaterialContext, IBlock?> root;
     private readonly IBlock[] bands;
 
@@ -28,12 +32,18 @@ internal sealed partial class MaterialRules
     private readonly Dictionary<NoiseStack, int> noiseSlots = new(ReferenceEqualityComparer.Instance);
     private readonly Dictionary<DensityFunction, int> densitySlots = new(ReferenceEqualityComparer.Instance);
 
-    public MaterialRules(TerrainGenerator generator)
+    /// <param name="types">The rule and condition types beyond vanilla's the settings' rule may name, such as
+    /// plugins' (see <see cref="PluginMaterialTypes"/>); none by default.</param>
+    public MaterialRules(TerrainGenerator generator, IMaterialTypes? types = null)
     {
         this.generator = generator;
+        this.types = types;
         this.bands = GenerateBands(generator.Compiler.Random.FromHashOf("minecraft:clay_bands"));
         this.root = this.CompileRule(generator.Settings.MaterialRule);
     }
+
+    /// <summary>The generator's density compiler, which compiles the density functions rules hold.</summary>
+    public DensityCompiler Compiler => this.generator.Compiler;
 
     private NoiseStack SurfaceNoise => field ??= this.generator.Compiler.Noise("minecraft:surface");
 
@@ -191,36 +201,18 @@ internal sealed partial class MaterialRules
         {
             var id = WorldgenData.Qualify(json.GetString()!);
 
-            if (!this.rules.TryGetValue(id, out var rule))
-            {
-                rule = this.CompileRule(this.generator.Data.Read("material_rule", id));
-                this.rules.Add(id, rule);
-            }
-
-            return rule;
+            return this.CompileEntry(this.rules, "material_rule", id, this.CompileRule);
         }
 
-        switch (json.GetProperty("type").GetString())
+        var type = json.GetProperty("type").GetString()!;
+
+        switch (type)
         {
             case "minecraft:block":
                 var block = ReadBlock(json.GetProperty("result_state"));
                 return _ => block;
             case "minecraft:sequence":
-                var sequence = json.GetProperty("sequence").EnumerateArray().Select(this.CompileRule).ToArray();
-                return context =>
-                {
-                    foreach (var rule in sequence)
-                    {
-                        var result = rule(context);
-
-                        if (result is not null)
-                        {
-                            return result;
-                        }
-                    }
-
-                    return null;
-                };
+                return Sequence(json.GetProperty("sequence").EnumerateArray().Select(this.CompileRule).ToArray());
             case "minecraft:condition":
                 var condition = this.CompileCondition(json.GetProperty("if_true"));
                 var then = this.CompileRule(json.GetProperty("then_run"));
@@ -238,8 +230,40 @@ internal sealed partial class MaterialRules
             case "minecraft:ore_vein":
                 return this.CompileOre(json);
             default:
-                throw new InvalidDataException($"Unknown 26.3 material rule {json.GetProperty("type")}.");
+                return this.CompilePluginRule(type, json)
+                    ?? throw new InvalidDataException($"Unknown 26.3 material rule {type}.");
         }
+    }
+
+    // A named rule or condition, compiled once. Entries are only cached once compiled, so one that refers back to
+    // itself, which data can write (through a plugin's rule too), would recurse until the stack overflows: it's
+    // refused instead, naming the chain.
+    private T CompileEntry<T>(Dictionary<string, T> cache, string registry, string id, Func<JsonElement, T> compile)
+    {
+        if (cache.TryGetValue(id, out var compiled))
+            return compiled;
+
+        var start = this.compilingEntries.IndexOf((registry, id));
+
+        if (start >= 0)
+        {
+            var chain = this.compilingEntries.Skip(start).Select(entry => entry.Id);
+            throw new InvalidDataException($"{id} refers back to itself: {string.Join(" -> ", chain)} -> {id}");
+        }
+
+        this.compilingEntries.Add((registry, id));
+
+        try
+        {
+            compiled = compile(this.generator.Data.Read(registry, id));
+        }
+        finally
+        {
+            this.compilingEntries.RemoveAt(this.compilingEntries.Count - 1);
+        }
+
+        cache.Add(id, compiled);
+        return compiled;
     }
 
     private Func<MaterialContext, IBlock?> CompileOre(JsonElement json)
@@ -291,16 +315,12 @@ internal sealed partial class MaterialRules
         {
             var id = WorldgenData.Qualify(json.GetString()!);
 
-            if (!this.conditions.TryGetValue(id, out var condition))
-            {
-                condition = this.CompileCondition(this.generator.Data.Read("material_condition", id));
-                this.conditions.Add(id, condition);
-            }
-
-            return condition;
+            return this.CompileEntry(this.conditions, "material_condition", id, this.CompileCondition);
         }
 
-        switch (json.GetProperty("type").GetString())
+        var type = json.GetProperty("type").GetString()!;
+
+        switch (type)
         {
             case "minecraft:biome":
                 var names = json.GetProperty("biome_is");
@@ -346,11 +366,12 @@ internal sealed partial class MaterialRules
             case "minecraft:hole":
                 return context => context.SurfaceDepth <= 0;
             case "minecraft:steep":
-                return context => context.GradientX <= -4 || context.GradientZ >= 4;
+                return context => context.Steep;
             case "minecraft:temperature":
                 return context => this.Temperature(context.Biome, context.X, context.Y, context.Z) < 0.15f;
             default:
-                throw new InvalidDataException($"Unknown 26.3 material condition {json.GetProperty("type")}.");
+                return this.CompilePluginCondition(type, json)
+                    ?? throw new InvalidDataException($"Unknown 26.3 material condition {type}.");
         }
     }
 

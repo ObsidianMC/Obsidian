@@ -3,6 +3,7 @@ using Obsidian.Registries;
 using Obsidian.Registries.Codecs;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Generators.Mojang.Regions;
+using Obsidian.WorldData.Generators.Terrain;
 using System.IO;
 using System.Text.Json;
 
@@ -34,6 +35,7 @@ internal sealed class WorldgenDimension
     private NoiseGeneratorSettings? settings;
     private BiomeLayout? layout;
     private IDensityTypes? densityTypes;
+    private IMaterialTypes? materialTypes;
 
     /// <param name="identifier">The level stem's identifier.</param>
     /// <param name="dimensionType">The dimension type, which <paramref name="data"/> has.</param>
@@ -45,6 +47,8 @@ internal sealed class WorldgenDimension
     /// <param name="plugins">The plugins whose types the settings or the biome source are made of.</param>
     /// <param name="regions">Fixes the dimension's biome regions as its first generator is created; none by
     /// default.</param>
+    /// <param name="materialTypes">The material rule and condition types beyond vanilla's the settings may name.
+    /// </param>
     public WorldgenDimension(
         string identifier,
         string dimensionType,
@@ -54,7 +58,8 @@ internal sealed class WorldgenDimension
         BiomeLayout layout,
         IDensityTypes? densityTypes = null,
         ImmutableArray<PluginContainer> plugins = default,
-        Func<ImmutableArray<BiomeRegion>>? regions = null)
+        Func<ImmutableArray<BiomeRegion>>? regions = null,
+        IMaterialTypes? materialTypes = null)
     {
         this.Identifier = identifier;
         this.DimensionType = dimensionType;
@@ -63,6 +68,7 @@ internal sealed class WorldgenDimension
         this.settings = settings;
         this.layout = layout;
         this.densityTypes = densityTypes;
+        this.materialTypes = materialTypes;
         this.Plugins = plugins.IsDefault ? [] : plugins;
         this.regions = regions ?? (() => []);
         this.SourceBiomes = layout.PossibleBiomes;
@@ -100,6 +106,10 @@ internal sealed class WorldgenDimension
     /// <exception cref="InvalidOperationException">The dimension was released.</exception>
     public IDensityTypes? DensityTypes => this.IsReleased ? throw this.Released() : this.densityTypes;
 
+    /// <summary>The material rule and condition types beyond vanilla's the settings may name, or null.</summary>
+    /// <exception cref="InvalidOperationException">The dimension was released.</exception>
+    public IMaterialTypes? MaterialTypes => this.IsReleased ? throw this.Released() : this.materialTypes;
+
     /// <summary>Whether <see cref="Release"/> dropped the generator's parts.</summary>
     public bool IsReleased => this.layout is null;
 
@@ -109,14 +119,16 @@ internal sealed class WorldgenDimension
     public ImmutableArray<BiomeRegion> FixRegions() => this.regions();
 
     /// <summary>
-    /// Drops the noise settings, the biome layout and the density types, so that the plugins they're made of can
-    /// unload: the dimension can't create generators any more, and those it created stop as their plugins unload.
+    /// Drops the noise settings, the biome layout and the density and material types, so that the plugins they're
+    /// made of can unload: the dimension can't create generators any more, and those it created stop as their
+    /// plugins unload.
     /// </summary>
     public void Release()
     {
         this.settings = null;
         this.layout = null;
         this.densityTypes = null;
+        this.materialTypes = null;
     }
 
     /// <summary>
@@ -152,9 +164,10 @@ internal sealed class WorldgenDimension
     /// </summary>
     /// <remarks>
     /// Its terrain is built once for a placeholder seed, which checks the noise settings like generating would and
-    /// finds the plugins whose density function types any of their functions are made of: the router's, the aquifers',
-    /// the material rules' and the spawn targets'. It keeps only those types (see
-    /// <see cref="PluginDensityTypes.Narrowed"/>).
+    /// finds the plugins whose types they're made of: the density function types of any of their functions (the
+    /// router's, the aquifers', the material rules' and the spawn targets'), and the surface rule and condition types
+    /// of their material rule. It keeps only those types (see <see cref="PluginDensityTypes.Narrowed"/> and
+    /// <see cref="PluginMaterialTypes.Narrowed"/>).
     /// </remarks>
     /// <param name="identifier">The level stem's identifier.</param>
     /// <param name="stem">The stem file's bytes.</param>
@@ -214,8 +227,9 @@ internal sealed class WorldgenDimension
             data,
             plugins);
 
-        var densityTypes = FindDensityTypes(data, settings, noise);
+        var (densityTypes, materialTypes) = FindPluginTypes(data, settings, noise);
         plugins.UnionWith(densityTypes?.Owners ?? []);
+        plugins.UnionWith(materialTypes?.Owners ?? []);
 
         return new WorldgenDimension(
             identifier,
@@ -226,18 +240,20 @@ internal sealed class WorldgenDimension
             layout,
             densityTypes,
             [.. plugins],
-            regions);
+            regions,
+            materialTypes);
     }
 
-    // Builds every density function the dimension's terrain generator builds, for a placeholder seed, and gives the
-    // plugins' types they're made of, or null for none.
-    private static PluginDensityTypes? FindDensityTypes(
+    // Builds every density function and material rule the dimension's terrain generator builds, for a placeholder
+    // seed, and gives the plugins' types they're made of, or null for none.
+    private static (PluginDensityTypes? Density, PluginMaterialTypes? Materials) FindPluginTypes(
         WorldgenData data,
         NoiseGeneratorSettings settings,
         WorldgenNoise noise)
     {
-        var all = new PluginDensityTypes(noise.Types);
-        var terrain = new Terrain.TerrainGenerator(data, 0L, settings, types: all);
+        var density = new PluginDensityTypes(noise.Types);
+        var materials = new PluginMaterialTypes(noise.Types);
+        var terrain = new TerrainGenerator(data, 0L, settings, types: density, materialTypes: materials);
 
         foreach (var target in settings.SpawnTargets)
         {
@@ -245,7 +261,7 @@ internal sealed class WorldgenDimension
                 terrain.Compiler.Function(function);
         }
 
-        return all.Narrowed();
+        return (density.Narrowed(), materials.Narrowed());
     }
 
     private InvalidOperationException Released() =>
