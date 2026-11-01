@@ -86,3 +86,31 @@ internal sealed class BambooStalkBlockBehavior : IScheduledTickBehavior, IShapeU
             level.DestroyBlock(position, dropItems: true);
     }
 }
+
+/// <summary>
+/// Delayed support checks for kelp heads and stems
+/// </summary>
+internal sealed class KelpBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior
+{
+    /// <summary>Vanilla's <c>updateShape</c>: schedules a tick at delay 1 when the block can't survive, and keeps its state.</summary>
+    public IBlock? UpdateShape(IBlockLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
+    {
+        if (state.RegistryId is not (BlockIds.Kelp or BlockIds.KelpPlant))
+            return state;
+
+        if (!BlockSurvival.KelpMayPlaceOn(level.GetBlock(position + Vector.Down)))
+            level.ScheduleTick(position, state, 1);
+
+        return state;
+    }
+
+    /// <summary>Vanilla's <c>tick</c>: a stalk that can't survive breaks and drops itself.</summary>
+    public void Tick(IBlockLevel level, Vector position, IBlock block, IRandomSource random)
+    {
+        if (block.RegistryId is not (BlockIds.Kelp or BlockIds.KelpPlant))
+            return;
+
+        if (!BlockSurvival.KelpMayPlaceOn(level.GetBlock(position + Vector.Down)))
+            level.DestroyBlock(position, dropItems: true);
+    }
+}
