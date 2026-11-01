@@ -44,8 +44,13 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
     // Held while the levels manage their chunks, so pausing waits for the pass in progress.
     private readonly SemaphoreSlim chunkGate = new(1, 1);
 
-    // Set under chunkGate by a pause, so that no pass runs once it returns; cleared at once by a resume.
+    // Set under chunkGate by a pause, so that no pass runs once it returns; cleared at once by a resume. Changed under
+    // pauseLock too, with the levels' own flags.
     private volatile bool chunksPaused;
+
+    // Levels being loaded, which pausing reaches before they're among Levels (see FollowPause). Guarded by pauseLock.
+    private readonly HashSet<AbstractLevel> loadingLevels = [];
+    private readonly Lock pauseLock = new();
 
     public bool ReadyToJoin { get; private set; }
 
@@ -158,6 +163,8 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         if (!this.worlds.TryAdd(world.Name, world))
             throw new InvalidOperationException($"World already exists: {world.Name}");
 
+        using var worldPause = this.FollowPause(world);
+
         if (!CodecRegistry.TryGetDimension(serverWorld.DefaultDimension, out var defaultCodec)
             && !CodecRegistry.TryGetDimension("minecraft:overworld", out defaultCodec))
         {
@@ -191,6 +198,7 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
             }
 
             var dimension = this.levelFactory.CreateDimension(world, codec.Name, dimensionName);
+            using var dimensionPause = this.FollowPause((AbstractLevel)dimension);
 
             dimension.Initialize(codec);
             world.RegisterDimension(dimension);
@@ -365,6 +373,7 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
     {
         var factory = (LevelFactory)this.levelFactory;
         IDimension? dimension = null;
+        IDisposable? dimensionPause = null;
         var registered = false;
 
         // The level is registered once it's loaded or generated with its spawn, so players can't reach it, and it
@@ -375,6 +384,9 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
             // be ordered, as vanilla's would.
             var generator = stem.CreateGenerator();
             dimension = factory.CreateDimension(world, stem.Identifier, generator);
+
+            // Until it's registered, the level isn't among Levels for a pause to reach.
+            dimensionPause = this.FollowPause((AbstractLevel)dimension);
 
             // The stem is a snapshot: a plugin may have unloaded, or a reload changed the files, since. The level
             // generates with the dimension it took as it was created, or is left out when that one went; a later
@@ -401,6 +413,7 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         }
         finally
         {
+            dimensionPause?.Dispose();
             if (!registered && dimension is not null)
                 await this.DisposeFailedDimensionAsync(dimension, stem.Identifier);
         }
@@ -448,10 +461,13 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         await this.chunkGate.WaitAsync();
         try
         {
-            this.chunksPaused = true;
+            lock (this.pauseLock)
+            {
+                this.chunksPaused = true;
 
-            foreach (var level in this.Levels)
-                level.ChunkManagementPaused = true;
+                foreach (var level in this.Levels.Concat(this.loadingLevels))
+                    level.ChunkManagementPaused = true;
+            }
         }
         finally
         {
@@ -464,10 +480,40 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
     /// </summary>
     internal void ResumeChunkManagement()
     {
-        foreach (var level in this.Levels)
-            level.ChunkManagementPaused = false;
+        lock (this.pauseLock)
+        {
+            foreach (var level in this.Levels.Concat(this.loadingLevels))
+                level.ChunkManagementPaused = false;
 
-        this.chunksPaused = false;
+            this.chunksPaused = false;
+        }
+    }
+
+    /// <summary>
+    /// Makes a level being loaded follow the chunk management pause until the returned scope ends, whether or not
+    /// it's among <see cref="Levels"/> yet: it's paused at once if the server is, and pausing or resuming reaches it.
+    /// Keeps a new level's pregeneration from starting chunks while the server is paused. End the scope once the
+    /// level is registered, or given up.
+    /// </summary>
+    private IDisposable FollowPause(AbstractLevel level)
+    {
+        lock (this.pauseLock)
+        {
+            this.loadingLevels.Add(level);
+            if (this.chunksPaused)
+                level.ChunkManagementPaused = true;
+        }
+
+        return new PauseFollower(this, level);
+    }
+
+    private sealed class PauseFollower(WorldManager manager, AbstractLevel level) : IDisposable
+    {
+        public void Dispose()
+        {
+            lock (manager.pauseLock)
+                manager.loadingLevels.Remove(level);
+        }
     }
 
     public Task TickWorldsAsync() => ReadyToJoin ? Task.WhenAll(this.worlds.Values.Select(world => world.DoWorldTickAsync())) : Task.CompletedTask;

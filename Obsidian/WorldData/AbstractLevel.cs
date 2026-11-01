@@ -1306,11 +1306,12 @@ public abstract partial class AbstractLevel : ILevel
 
     /// <summary>
     /// Whether the server paused chunk management (see <see cref="WorldManager.PauseChunkManagementAsync"/>): the
-    /// generation jobs running finish, but don't start the queued ones.
+    /// generation jobs running finish, but don't start the queued ones, and pregeneration waits for the resume.
     /// </summary>
     /// <remarks>
-    /// Set under the lock jobs are taken with (see <see cref="TryTakeNearestJob"/>), which checks it again: once the
-    /// pause is set, no job starts, not even from a finishing job that passed <see cref="StartQueuedJobs"/>' check.
+    /// Set under the lock jobs are taken with (see <see cref="TryTakeNearestJob"/> and
+    /// <see cref="TakePregenerationJobAsync"/>), which check it again: once the pause is set, no job starts, not even
+    /// from a finishing job that passed <see cref="StartQueuedJobs"/>' check.
     /// </remarks>
     internal bool ChunkManagementPaused
     {
@@ -1318,11 +1319,26 @@ public abstract partial class AbstractLevel : ILevel
         set
         {
             lock (this.waitingJobs)
+            {
                 Volatile.Write(ref this.chunkManagementPaused, value);
+                if (value)
+                {
+                    this.chunkManagementResumed ??= new(TaskCreationOptions.RunContinuationsAsynchronously);
+                }
+                else
+                {
+                    this.chunkManagementResumed?.TrySetResult();
+                    this.chunkManagementResumed = null;
+                }
+            }
         }
     }
 
     private bool chunkManagementPaused;
+
+    // Set while chunk management is paused, and completed as it resumes, for pregeneration to wait on. Guarded by
+    // waitingJobs.
+    private TaskCompletionSource? chunkManagementResumed;
 
     public async Task ManageChunksAsync()
     {
@@ -1986,6 +2002,9 @@ public abstract partial class AbstractLevel : ILevel
                 .ToHashSet();
             foreach (var tile in tiles)
             {
+                // Staging generates most of the tile, so it waits out a pause too. Unlike a job's start it isn't taken
+                // under the pause's lock: a pause landing as it starts lets it run, like a job already running.
+                await this.WaitWhileChunkManagementPausedAsync(cancellationToken);
                 await mojang.PrepareAsync(tile, cancellationToken);
                 await CompleteQueuedAsync(tile.Count, flushEvery: false);
                 await Task.WhenAll(jobs);
@@ -2024,9 +2043,11 @@ public abstract partial class AbstractLevel : ILevel
         // chunks.
         async Task CompleteQueuedAsync(int count, bool flushEvery)
         {
-            for (var started = 0; started < count && this.ChunksToGen.TryDequeue(out var job); started++)
+            for (var started = 0; started < count; started++)
             {
-                await this.generationSlots.WaitAsync(cancellationToken);
+                if (await this.TakePregenerationJobAsync(cancellationToken) is not long job)
+                    break;
+
                 jobs.Add(this.RunGenerationJob(() => this.GenerateQueuedChunkAsync(job)));
 
                 while (completedChunks < jobs.Count && jobs[completedChunks].IsCompleted)
@@ -2112,6 +2133,50 @@ public abstract partial class AbstractLevel : ILevel
         }
 
         return square;
+    }
+
+    /// <summary>
+    /// Waits for a generation slot and takes the next chunk pregeneration queued with it. While chunk management is
+    /// paused (see <see cref="ChunkManagementPaused"/>) it lets go of the slot, which disposal takes, and waits for the
+    /// resume: once a pause returns, pregeneration starts no chunk until it resumes.
+    /// </summary>
+    /// <returns>The chunk, or null once the queue is empty.</returns>
+    private async Task<long?> TakePregenerationJobAsync(CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            await this.generationSlots.WaitAsync(cancellationToken);
+
+            Task? resumed;
+            lock (this.waitingJobs)
+            {
+                resumed = this.chunkManagementResumed?.Task;
+                if (resumed is null && this.ChunksToGen.TryDequeue(out var job))
+                    return job;
+            }
+
+            this.generationSlots.Release();
+            if (resumed is null)
+                return null;
+
+            await resumed.WaitAsync(cancellationToken);
+        }
+    }
+
+    // Returns once chunk management isn't paused (see ChunkManagementPaused).
+    private async Task WaitWhileChunkManagementPausedAsync(CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            Task? resumed;
+            lock (this.waitingJobs)
+                resumed = this.chunkManagementResumed?.Task;
+
+            if (resumed is null)
+                return;
+
+            await resumed.WaitAsync(cancellationToken);
+        }
     }
 
     /// <summary>
