@@ -8,9 +8,9 @@ namespace Obsidian.WorldData.Generators.Features.Trees;
 /// replacing the crown's leaves near the trunk and two small rows below the attachment. Ported from the 26.3 bytecode
 /// for its row order, its corner cuts and its one float draw per edge-surviving position.
 /// </summary>
-internal sealed class PoplarFoliagePlacer(JsonElement json) : FoliagePlacer(json)
+internal sealed class PoplarFoliagePlacer(FeatureRegistry registry, JsonElement json) : FoliagePlacer(registry, json)
 {
-    private readonly IntProvider height = ValueProviders.Int(json.GetProperty("height"));
+    private readonly IntProvider height = registry.Int(json.GetProperty("height"));
     private readonly float sideHoleChance = json.GetProperty("side_hole_chance").GetSingle();
 
     public override int FoliageHeight(IRandomSource random, int treeHeight) => this.height(random);

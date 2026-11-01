@@ -6,6 +6,7 @@ using Obsidian.API.Commands;
 using Obsidian.API.Events;
 using Obsidian.API.Networking;
 using Obsidian.API.Registries;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Commands.Framework;
 using Obsidian.Entities;
 using Obsidian.Entities.AI;
@@ -17,6 +18,7 @@ using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators.Biomes;
+using Obsidian.WorldData.Generators.Features;
 using Obsidian.WorldData.Generators.Mojang;
 using System;
 using System.Collections.Generic;
@@ -230,6 +232,54 @@ public sealed class PluginUnloading : IDisposable
         // Once the generator goes, nothing holds the plugin's code.
         terrain = null;
         await AssertCollectedAsync(loadContext);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task Unload_ReleasesThe263FeaturesMadeOfItsBlockStateProvider()
+    {
+        await using var context = TestServerFactory.CreateServer($"probe-gold-{Guid.NewGuid():N}");
+        await using var manager = CreateManager(context);
+        var path = Path.Join(this.folder, "probe.obby");
+        var files = new Dictionary<string, byte[]>
+        {
+            [ProbeGoldProvider.FeatureFile] = Encoding.UTF8.GetBytes(
+                """{ "type": "minecraft:simple_block", "to_place": { "type": "probe:gold" } }"""),
+            [ProbeGoldProvider.PlacedFile] = Encoding.UTF8.GetBytes("""{ "feature": "probe:gold" }""")
+        };
+        await File.WriteAllBytesAsync(path, PluginLoading.ProbeArchive("1.0.0", files));
+        AppContext.SetData(ProbeGoldProvider.AskedKey, null);
+
+        // Only the vanilla simple_block's provider names the plugin's type, which placing it asks.
+        var loadContext = await PlaceGoldAsync(manager);
+
+        Assert.Equal(true, AppContext.GetData(ProbeGoldProvider.AskedKey));
+
+        // Unloading replaces the 26.3 features without the plugin's, and nothing holds its code.
+        await UnloadAllAsync(manager);
+
+        Assert.Null(PluginFeatures.CurrentRegistry.FeatureSet!.FindPlaced("probe:gold"));
+        await AssertCollectedAsync(loadContext);
+    }
+
+    // Loads the plugin and places its feature with the 26.3 registry, out of the test method so that no local keeps
+    // the plugin alive.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private async Task<WeakReference> PlaceGoldAsync(PluginManager manager)
+    {
+        var container = (await manager.LoadPluginAsync(Path.Join(this.folder, "probe.obby")))!;
+        var registry = PluginFeatures.CurrentRegistry;
+        var placed = registry.Placed("probe:gold");
+
+        Assert.Same(container, Assert.Single(registry.OwnersOf(placed)));
+
+        var region = PluginFeatureRegistry.Region();
+        var decoration = new DecorationContext(registry, region, _ => "minecraft:plains", -64, 384);
+        var origin = new Vector(8, 8, 8);
+
+        Assert.True(placed.Place(decoration, new XoroshiroRandomSource(1), origin));
+        Assert.True(region.GetBlock(origin).Is(BlockIds.GoldBlock));
+
+        return new WeakReference(container.LoadContext);
     }
 
     // Unloads the plugins, and checks that the dimension was released and its generator stopped.

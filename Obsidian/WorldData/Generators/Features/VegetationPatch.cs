@@ -14,11 +14,11 @@ internal sealed partial class FeatureRegistry
             this.Provider(json.GetProperty("ground_state")),
             this.Placed(json.GetProperty("vegetation_feature")),
             json.GetProperty("surface").GetString() == "floor" ? BlockFace.Down : BlockFace.Up,
-            ValueProviders.Int(json.GetProperty("depth")),
+            this.Int(json.GetProperty("depth")),
             json.GetProperty("extra_bottom_block_chance").GetSingle(),
             json.GetProperty("vertical_range").GetInt32(),
             json.GetProperty("vegetation_chance").GetSingle(),
-            ValueProviders.Int(json.GetProperty("xz_radius")),
+            this.Int(json.GetProperty("xz_radius")),
             json.GetProperty("extra_edge_column_chance").GetSingle());
 
         return (context, random, origin) =>

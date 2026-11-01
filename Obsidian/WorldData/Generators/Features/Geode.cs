@@ -28,16 +28,12 @@ internal sealed partial class FeatureRegistry
                 min_inclusive = 4,
                 max_inclusive = 5
             });
-        var wallDistance = ValueProviders.Int(distanceJson);
-        var reader = new WorldgenReader(
-            WorldgenTypes.BuiltIn,
-            _ => throw new InvalidOperationException("Geodes cannot resolve configured features."),
-            _ => throw new InvalidOperationException("Geodes cannot resolve placed features."));
-        var maxWallDistance = reader.Read<IIntProvider>(distanceJson).MaxValue;
+        var wallDistance = this.Int(distanceJson);
+        var maxWallDistance = this.Reader.Read<IIntProvider>(distanceJson).MaxValue;
         var pointCount = json.TryGetProperty("distribution_points", out var points)
-            ? ValueProviders.Int(points) : random => random.NextIntBetweenInclusive(3, 4);
+            ? this.Int(points) : random => random.NextIntBetweenInclusive(3, 4);
         var pointOffset = json.TryGetProperty("point_offset", out var offset)
-            ? ValueProviders.Int(offset) : random => random.NextIntBetweenInclusive(1, 2);
+            ? this.Int(offset) : random => random.NextIntBetweenInclusive(1, 2);
         var min = json.TryGetProperty("min_gen_offset", out var minJson) ? minJson.GetInt32() : -16;
         var max = json.TryGetProperty("max_gen_offset", out var maxJson) ? maxJson.GetInt32() : 16;
         var noiseMultiplier = DoubleOr(json, "noise_multiplier", 0.05);

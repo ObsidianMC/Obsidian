@@ -94,10 +94,12 @@ internal sealed partial class WorldgenReader(
     public Func<JsonElement, string, ISurfaceCondition>? SurfaceConditions { get; init; }
 
     /// <summary>
-    /// Reads every noise value instead of this reader, identifiers and inline noises alike, such as the 26.3
-    /// pipeline refusing them in plugins' types, whose noises would be unseeded there; null to read them as 1.21.11's.
+    /// Reads every noise value instead of this reader, identifiers and inline noises alike, given the value, the type
+    /// of the property it's for (<see cref="INoise"/>, <see cref="BaseNoise"/> or a plugin's subclass) and its path:
+    /// such as the 26.3 pipeline seeding them for its world, or refusing them where it can't; null to read them as
+    /// 1.21.11's.
     /// </summary>
-    public Func<JsonElement, string, BaseNoise>? Noises { get; init; }
+    public Func<JsonElement, Type, string, BaseNoise>? Noises { get; init; }
 
     /// <summary>
     /// Reads a configured feature, <c>{"type": ..., "config": {...}}</c>.

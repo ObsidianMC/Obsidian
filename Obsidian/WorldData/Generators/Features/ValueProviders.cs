@@ -1,5 +1,4 @@
 using Obsidian.API.World.Generator.RandomSources;
-using System.IO;
 using System.Text.Json;
 
 namespace Obsidian.WorldData.Generators.Features;
@@ -13,13 +12,12 @@ internal delegate float FloatProvider(IRandomSource random);
 /// <summary>Samples a height provider for a generator's build range.</summary>
 internal delegate int HeightProvider(IRandomSource random, int minY, int height);
 
-/// <summary>
-/// Reads 26.3's int, float and height providers and vertical anchors. Each sample draws exactly vanilla's randoms in
-/// vanilla's order, since features share one random.
-/// </summary>
-internal static class ValueProviders
+// 26.3's int, float and height providers. Each sample draws exactly vanilla's randoms in vanilla's order, since
+// features share one random. A type that isn't vanilla's is one a plugin registered (see FeatureRegistry.PluginValues).
+internal sealed partial class FeatureRegistry
 {
-    public static IntProvider Int(JsonElement json)
+    /// <summary>An int provider: a number for a constant, one of 26.3's types or a type a plugin registered.</summary>
+    public IntProvider Int(JsonElement json)
     {
         if (json.ValueKind == JsonValueKind.Number)
         {
@@ -50,7 +48,7 @@ internal static class ValueProviders
             }
             case "minecraft:clamped":
             {
-                var source = Int(json.GetProperty("source"));
+                var source = this.Int(json.GetProperty("source"));
                 var min = json.GetProperty("min_inclusive").GetInt32();
                 var max = json.GetProperty("max_inclusive").GetInt32();
                 return random => Math.Clamp(source(random), min, max);
@@ -61,24 +59,25 @@ internal static class ValueProviders
                 var deviation = json.GetProperty("deviation").GetSingle();
                 var min = (float)json.GetProperty("min_inclusive").GetInt32();
                 var max = (float)json.GetProperty("max_inclusive").GetInt32();
-                return random => (int)ClampedNormal(random, mean, deviation, min, max);
+                return random => (int)ValueProviders.ClampedNormal(random, mean, deviation, min, max);
             }
             case "minecraft:trapezoid":
-                return Trapezoid(
+                return ValueProviders.Trapezoid(
                     json.GetProperty("min").GetInt32(),
                     json.GetProperty("max").GetInt32(),
                     json.GetProperty("plateau").GetInt32());
             case "minecraft:weighted_list":
             {
-                var entries = Weighted(json.GetProperty("distribution"), Int);
+                var entries = ValueProviders.Weighted(json.GetProperty("distribution"), this.Int);
                 return random => entries.Pick(random)!(random);
             }
             default:
-                throw new InvalidDataException($"Unknown 26.3 int provider {type}.");
+                return this.PluginInt(json, type);
         }
     }
 
-    public static FloatProvider Float(JsonElement json)
+    /// <summary>A float provider: a number for a constant, one of 26.3's types or a type a plugin registered.</summary>
+    public FloatProvider Float(JsonElement json)
     {
         if (json.ValueKind == JsonValueKind.Number)
         {
@@ -109,18 +108,21 @@ internal static class ValueProviders
                 var deviation = json.GetProperty("deviation").GetSingle();
                 var min = json.GetProperty("min").GetSingle();
                 var max = json.GetProperty("max").GetSingle();
-                return random => ClampedNormal(random, mean, deviation, min, max);
+                return random => ValueProviders.ClampedNormal(random, mean, deviation, min, max);
             }
             default:
-                throw new InvalidDataException($"Unknown 26.3 float provider {type}.");
+                return this.PluginFloat(json, type);
         }
     }
 
-    public static HeightProvider Height(JsonElement json)
+    /// <summary>
+    /// A height provider: a vertical anchor for a constant, one of 26.3's types or a type a plugin registered.
+    /// </summary>
+    public HeightProvider Height(JsonElement json)
     {
         if (!json.TryGetProperty("type", out var typeJson))
         {
-            var anchor = Anchor(json);
+            var anchor = ValueProviders.Anchor(json);
             return (_, minY, height) => anchor(minY, height);
         }
 
@@ -130,13 +132,13 @@ internal static class ValueProviders
         {
             case "minecraft:constant":
             {
-                var anchor = Anchor(json.GetProperty("value"));
+                var anchor = ValueProviders.Anchor(json.GetProperty("value"));
                 return (_, minY, height) => anchor(minY, height);
             }
             case "minecraft:uniform":
             {
-                var low = Anchor(json.GetProperty("min_inclusive"));
-                var high = Anchor(json.GetProperty("max_inclusive"));
+                var low = ValueProviders.Anchor(json.GetProperty("min_inclusive"));
+                var high = ValueProviders.Anchor(json.GetProperty("max_inclusive"));
                 return (random, minY, height) =>
                 {
                     var min = low(minY, height);
@@ -148,25 +150,32 @@ internal static class ValueProviders
             }
             case "minecraft:trapezoid":
             {
-                var low = Anchor(json.GetProperty("min_inclusive"));
-                var high = Anchor(json.GetProperty("max_inclusive"));
+                var low = ValueProviders.Anchor(json.GetProperty("min_inclusive"));
+                var high = ValueProviders.Anchor(json.GetProperty("max_inclusive"));
                 var plateau = json.TryGetProperty("plateau", out var plateauJson) ? plateauJson.GetInt32() : 0;
                 return (random, minY, height) =>
                 {
                     var min = low(minY, height);
                     var max = high(minY, height);
 
-                    return min > max ? min : TrapezoidHeight(random, min, max, plateau);
+                    return min > max ? min : ValueProviders.TrapezoidHeight(random, min, max, plateau);
                 };
             }
             case "minecraft:biased_to_bottom":
             case "minecraft:very_biased_to_bottom":
-                return BiasedHeight(json, type == "minecraft:very_biased_to_bottom");
+                return ValueProviders.BiasedHeight(json, type == "minecraft:very_biased_to_bottom");
             default:
-                throw new InvalidDataException($"Unknown 26.3 height provider {type}.");
+                return this.PluginHeight(json, type);
         }
     }
+}
 
+/// <summary>
+/// The parts of 26.3's value providers that don't depend on a registry: vertical anchors, weighted lists and the
+/// draws of the providers with more than one.
+/// </summary>
+internal static class ValueProviders
+{
     /// <summary>A vertical anchor, resolved against a build range's minimum Y and height.</summary>
     public static Func<int, int, int> Anchor(JsonElement json)
     {
@@ -199,7 +208,7 @@ internal static class ValueProviders
     }
 
     /// <summary>TrapezoidInt: a symmetric triangle draws twice from its positive half, others in two parts.</summary>
-    private static IntProvider Trapezoid(int min, int max, int plateau)
+    public static IntProvider Trapezoid(int min, int max, int plateau)
     {
         if (plateau == 0 && min == -max)
         {
@@ -219,7 +228,7 @@ internal static class ValueProviders
     }
 
     // TrapezoidHeight: like TrapezoidInt's general case, without the symmetric shortcut.
-    private static int TrapezoidHeight(IRandomSource random, int min, int max, int plateau)
+    public static int TrapezoidHeight(IRandomSource random, int min, int max, int plateau)
     {
         var range = max - min;
 
@@ -233,7 +242,7 @@ internal static class ValueProviders
         return min + random.NextIntBetweenInclusive(0, rest) + random.NextIntBetweenInclusive(0, slope);
     }
 
-    private static HeightProvider BiasedHeight(JsonElement json, bool very)
+    public static HeightProvider BiasedHeight(JsonElement json, bool very)
     {
         var low = Anchor(json.GetProperty("min_inclusive"));
         var high = Anchor(json.GetProperty("max_inclusive"));
@@ -266,7 +275,7 @@ internal static class ValueProviders
         min >= max ? min : random.NextInt(max - min + 1) + min;
 
     // Mth.normal then Mth.clamp, in float.
-    private static float ClampedNormal(IRandomSource random, float mean, float deviation, float min, float max)
+    public static float ClampedNormal(IRandomSource random, float mean, float deviation, float min, float max)
     {
         var value = mean + (float)random.NextGaussian() * deviation;
 

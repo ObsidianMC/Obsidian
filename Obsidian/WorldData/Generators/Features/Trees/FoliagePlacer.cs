@@ -1,35 +1,47 @@
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Features;
-using System.IO;
 using System.Text.Json;
+using ApiFoliagePlacer = Obsidian.API.World.Features.Trees.FoliagePlacer;
 
 namespace Obsidian.WorldData.Generators.Features.Trees;
 
 /// <summary>Places a tree's leaves around its foliage attachments, like vanilla's <c>FoliagePlacer</c>.</summary>
-internal abstract class FoliagePlacer(JsonElement json)
+internal abstract class FoliagePlacer
 {
-    private readonly IntProvider radius = ValueProviders.Int(json.GetProperty("radius"));
-    private readonly IntProvider offset = ValueProviders.Int(json.GetProperty("offset"));
+    private readonly IntProvider radius;
+    private readonly IntProvider offset;
 
-    public static FoliagePlacer Read(JsonElement json)
+    /// <summary>Reads the <c>radius</c> and <c>offset</c> every foliage placer has.</summary>
+    protected FoliagePlacer(FeatureRegistry registry, JsonElement json)
+        : this(registry.Int(json.GetProperty("radius")), registry.Int(json.GetProperty("offset")))
+    {
+    }
+
+    protected FoliagePlacer(IntProvider radius, IntProvider offset)
+    {
+        this.radius = radius;
+        this.offset = offset;
+    }
+
+    public static FoliagePlacer Read(FeatureRegistry registry, JsonElement json)
     {
         var type = json.GetProperty("type").GetString();
 
         return type switch
         {
-            "minecraft:blob_foliage_placer" => new BlobFoliagePlacer(json),
-            "minecraft:bush_foliage_placer" => new BushFoliagePlacer(json),
-            "minecraft:fancy_foliage_placer" => new FancyFoliagePlacer(json),
-            "minecraft:jungle_foliage_placer" => new JungleFoliagePlacer(json),
-            "minecraft:spruce_foliage_placer" => new SpruceFoliagePlacer(json),
-            "minecraft:pine_foliage_placer" => new PineFoliagePlacer(json),
-            "minecraft:mega_pine_foliage_placer" => new MegaPineFoliagePlacer(json),
-            "minecraft:acacia_foliage_placer" => new AcaciaFoliagePlacer(json),
-            "minecraft:dark_oak_foliage_placer" => new DarkOakFoliagePlacer(json),
-            "minecraft:random_spread_foliage_placer" => new RandomSpreadFoliagePlacer(json),
-            "minecraft:cherry_foliage_placer" => new CherryFoliagePlacer(json),
-            "minecraft:poplar_foliage_placer" => new PoplarFoliagePlacer(json),
-            _ => throw new InvalidDataException($"Unknown foliage placer {type}.")
+            "minecraft:blob_foliage_placer" => new BlobFoliagePlacer(registry, json),
+            "minecraft:bush_foliage_placer" => new BushFoliagePlacer(registry, json),
+            "minecraft:fancy_foliage_placer" => new FancyFoliagePlacer(registry, json),
+            "minecraft:jungle_foliage_placer" => new JungleFoliagePlacer(registry, json),
+            "minecraft:spruce_foliage_placer" => new SpruceFoliagePlacer(registry, json),
+            "minecraft:pine_foliage_placer" => new PineFoliagePlacer(registry, json),
+            "minecraft:mega_pine_foliage_placer" => new MegaPineFoliagePlacer(registry, json),
+            "minecraft:acacia_foliage_placer" => new AcaciaFoliagePlacer(registry, json),
+            "minecraft:dark_oak_foliage_placer" => new DarkOakFoliagePlacer(registry, json),
+            "minecraft:random_spread_foliage_placer" => new RandomSpreadFoliagePlacer(registry, json),
+            "minecraft:cherry_foliage_placer" => new CherryFoliagePlacer(registry, json),
+            "minecraft:poplar_foliage_placer" => new PoplarFoliagePlacer(registry, json),
+            _ => new PluginFoliagePlacer(registry.PluginValue<ApiFoliagePlacer>(json, type, "foliage placer"))
         };
     }
 

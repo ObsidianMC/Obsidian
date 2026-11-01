@@ -2,6 +2,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
 using Obsidian.API.Registries;
 using Obsidian.API.World.Features;
+using Obsidian.API.World.Features.Trees;
+using Obsidian.API.World.Generator;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.API.World.Structures;
 using Obsidian.Plugins;
@@ -113,6 +115,114 @@ public sealed class PluginFeatureRegistry
         var gone = PluginFeatures.BuildRegistry(files, [], [], logger, EmptyBiomes());
         Assert.Null(gone.FeatureSet!.FindConfigured("probe:pillar"));
         Assert.DoesNotContain("probe:outer", new BiomeDecoration(gone, ["minecraft:plains"]).Steps.SelectMany(x => x));
+    }
+
+    [Fact]
+    public void VanillaFeaturesTakePluginsValueTypes()
+    {
+        using var loaded = new LoadedTypes();
+        var types = loaded.Register(
+            ("probe:count", typeof(IIntProvider), typeof(ProbeCount)),
+            ("probe:failing_count", typeof(IIntProvider), typeof(FailingCount)),
+            ("probe:height", typeof(IHeightProvider), typeof(ProbeHeight)),
+            ("probe:air", typeof(IBlockPredicate), typeof(ProbeAir)),
+            ("probe:state", typeof(IBlockStateProvider), typeof(ProbeState)),
+            ("probe:stone", typeof(IRuleTest), typeof(ProbeStone)),
+            ("probe:wind", typeof(IFloatProvider), typeof(ProbeWind)));
+        var files = new[]
+        {
+            File(PluginFeatures.Feature, "probe:gold", """
+                { "type": "minecraft:simple_block",
+                  "to_place": { "type": "probe:state", "state": { "Name": "minecraft:gold_block" } } }
+                """),
+            File(PluginFeatures.PlacedFeature, "probe:gold", """
+                { "feature": "probe:gold", "placement": [
+                  { "type": "minecraft:count", "count": { "type": "probe:count", "value": 3 } },
+                  { "type": "minecraft:height_range", "height": { "type": "probe:height", "y": 9 } },
+                  { "type": "minecraft:block_predicate_filter", "predicate": { "type": "probe:air" } }
+                ] }
+                """),
+            File(PluginFeatures.Feature, "probe:ore", """
+                { "type": "minecraft:ore", "size": 12, "discard_chance_on_air_exposure": 0.0,
+                  "targets": [{ "target": { "predicate_type": "probe:stone" },
+                                "state": { "Name": "minecraft:diamond_block" } }] }
+                """),
+            File(PluginFeatures.Feature, "probe:dripstone", LargeDripstone),
+            File(PluginFeatures.PlacedFeature, "probe:failing", """
+                { "feature": "probe:healthy",
+                  "placement": [{ "type": "minecraft:count", "count": { "type": "probe:failing_count" } }] }
+                """),
+            File(PluginFeatures.Feature, "probe:unknown", """
+                { "type": "minecraft:simple_block", "to_place": { "type": "probe:unregistered" } }
+                """),
+            File(PluginFeatures.Feature, "probe:healthy", Marker)
+        };
+        var registry = PluginFeatures.BuildRegistry(files, [], types, NullLogger.Instance, EmptyBiomes());
+        var set = registry.FeatureSet!;
+
+        // Each entry using the plugin's values is the plugin's; a vanilla feature alone isn't.
+        string[] owned = ["probe:gold", "probe:failing"];
+        foreach (var id in owned)
+            Assert.Equal(loaded.Plugin, Assert.Single(set.OwnersOf(set.FindPlaced(id)!)));
+
+        Assert.Equal(loaded.Plugin, Assert.Single(set.OwnersOf(set.FindConfigured("probe:dripstone")!)));
+        Assert.Empty(set.OwnersOf(set.FindConfigured("probe:healthy")!));
+        Assert.Null(set.FindConfigured("probe:unknown"));
+
+        // The count, height, filter and provider are the plugin's: its block at its height.
+        var region = Region();
+        var context = new DecorationContext(registry, region, _ => "minecraft:plains", -64, 384);
+        var gold = registry.Placed("probe:gold");
+        Assert.True(gold.Place(context, new XoroshiroRandomSource(1), new Vector(3, 0, 3)));
+        Assert.True(region.GetBlock(new Vector(3, 9, 3)).Is(BlockIds.GoldBlock));
+
+        // The ore replaces what the plugin's rule test accepts.
+        Assert.True(set.PlaceConfigured("probe:ore", Context(region)));
+        Assert.True(Count(region, BlockIds.DiamondBlock) > 0);
+
+        // A plugin's value failing fails its entry's placement, naming the plugin.
+        var failing = registry.Placed("probe:failing");
+        var failure = Assert.Throws<PluginGenerationException>(() =>
+            failing.Place(context, new XoroshiroRandomSource(1), Vector.Zero));
+        Assert.Equal(loaded.Plugin, Assert.Single(failure.Plugins));
+
+        // An unloading plugin's values place nothing; vanilla's go on.
+        loaded.Plugin.Close();
+        Assert.False(gold.Place(context, new XoroshiroRandomSource(1), new Vector(5, 0, 5)));
+        Assert.True(set.PlaceConfigured("probe:healthy", Context(region)));
+    }
+
+    [Fact]
+    public void VanillaTreesTakePluginsTreeParts()
+    {
+        using var loaded = new LoadedTypes();
+        var types = loaded.Register(
+            ("probe:pole", typeof(TrunkPlacer), typeof(PoleTrunkPlacer)),
+            ("probe:cube", typeof(FoliagePlacer), typeof(WorldgenFeatureReading.CubeFoliagePlacer)),
+            ("probe:column", typeof(FeatureSize), typeof(WorldgenFeatureReading.ColumnFeatureSize)),
+            ("probe:stilts", typeof(RootPlacer), typeof(StiltRootPlacer)),
+            ("probe:cap", typeof(TreeDecorator), typeof(WorldgenFeatureReading.CapDecorator)));
+        var files = new[] { File(PluginFeatures.Feature, "probe:tree", PluginTree) };
+        var registry = PluginFeatures.BuildRegistry(files, [], types, NullLogger.Instance, EmptyBiomes());
+        var set = registry.FeatureSet!;
+
+        Assert.Equal(loaded.Plugin, Assert.Single(set.OwnersOf(set.FindConfigured("probe:tree")!)));
+
+        // Stilts up to a trunk raised two blocks, a pole of four logs, a cube of leaves and a cap on the pole.
+        var region = Region();
+        var origin = new Vector(8, 8, 8);
+        var growth = Context(region, origin);
+        Assert.True(set.PlaceConfigured("probe:tree", growth));
+
+        Assert.True(region.GetBlock(origin).Is(BlockIds.MangroveRoots));
+        Assert.True(region.GetBlock(origin + (0, 1, 0)).Is(BlockIds.MangroveRoots));
+        Assert.True(region.GetBlock(origin + (0, 2, 0)).Is(BlockIds.OakLog));
+        Assert.True(region.GetBlock(origin + (0, 5, 0)).Is(BlockIds.OakLog));
+        Assert.True(region.GetBlock(origin + (1, 6, 1)).Is(BlockIds.OakLeaves));
+        Assert.True(region.GetBlock(origin + (0, 6, 0)).Is(BlockIds.GoldBlock));
+
+        loaded.Plugin.Close();
+        Assert.False(set.PlaceConfigured("probe:tree", Context(Region(), origin)));
     }
 
     [Fact]
@@ -258,11 +368,13 @@ public sealed class PluginFeatureRegistry
         }
     }
 
-    internal static FeatureContext Context(WorldGenRegion region) => new()
+    internal static FeatureContext Context(WorldGenRegion region) => Context(region, new Vector(8, 0, 8));
+
+    internal static FeatureContext Context(WorldGenRegion region, Vector origin) => new()
     {
         Level = region,
         Generation = new WorldGenerationContext(-64, 384),
-        Origin = new Vector(8, 0, 8),
+        Origin = origin,
         Random = new XoroshiroRandomSource(1)
     };
 
@@ -309,6 +421,134 @@ public sealed class PluginFeatureRegistry
     }
 
     public sealed class ProbeProcessor : StructureProcessor;
+
+    // 26.3's large dripstone, with the plugin's wind speed.
+    private const string LargeDripstone = """
+        { "type": "minecraft:large_dripstone",
+          "replaceable_blocks": "#minecraft:dripstone_replaceable_blocks",
+          "column_radius": { "type": "minecraft:uniform", "min_inclusive": 3, "max_inclusive": 19 },
+          "height_scale": { "type": "minecraft:uniform", "min_inclusive": 0.4, "max_exclusive": 2.0 },
+          "max_column_radius_to_cave_height_ratio": 0.33,
+          "stalactite_bluntness": { "type": "minecraft:uniform", "min_inclusive": 0.3, "max_exclusive": 0.9 },
+          "stalagmite_bluntness": { "type": "minecraft:uniform", "min_inclusive": 0.4, "max_exclusive": 1.0 },
+          "wind_speed": { "type": "probe:wind" },
+          "min_radius_for_wind": 4,
+          "min_bluntness_for_wind": 0.6 }
+        """;
+
+    // A 26.3 tree of only the plugin's parts, with vanilla's providers.
+    private const string PluginTree = """
+        { "type": "minecraft:tree",
+          "trunk_provider": { "type": "minecraft:simple_state_provider", "state": { "Name": "minecraft:oak_log" } },
+          "foliage_provider": {
+            "type": "minecraft:simple_state_provider", "state": { "Name": "minecraft:oak_leaves" }
+          },
+          "below_trunk_provider": "minecraft:soil_beneath_tree",
+          "trunk_placer": { "type": "probe:pole", "base_height": 4, "height_rand_a": 0, "height_rand_b": 0 },
+          "foliage_placer": { "type": "probe:cube", "radius": 1, "offset": 0, "height": 2 },
+          "minimum_size": { "type": "probe:column" },
+          "root_placer": {
+            "type": "probe:stilts",
+            "trunk_offset_y": 2,
+            "root_provider": {
+              "type": "minecraft:simple_state_provider", "state": { "Name": "minecraft:mangrove_roots" }
+            }
+          },
+          "decorators": [{ "type": "probe:cap", "state": { "Name": "minecraft:gold_block" } }] }
+        """;
+
+    // A plugin's int provider: always its value.
+    public sealed class ProbeCount : IIntProvider
+    {
+        public string Type => "probe:count";
+
+        public required int Value { get; init; }
+
+        public int MinValue => this.Value;
+
+        public int MaxValue => this.Value;
+
+        public int Sample(IRandomSource random) => this.Value;
+    }
+
+    public sealed class FailingCount : IIntProvider
+    {
+        public string Type => "probe:failing_count";
+
+        public int MinValue => 0;
+
+        public int MaxValue => 0;
+
+        public int Sample(IRandomSource random) => throw new InvalidOperationException("Plugin failure.");
+    }
+
+    // A plugin's height provider: always its Y.
+    public sealed class ProbeHeight : IHeightProvider
+    {
+        public string Type => "probe:height";
+
+        public required int Y { get; init; }
+
+        public int Sample(IRandomSource random, WorldGenerationContext context) => this.Y;
+    }
+
+    public sealed class ProbeAir : IBlockPredicate
+    {
+        public string Type => "probe:air";
+
+        public bool Test(IWorldGenLevel level, Vector position) => level.GetBlock(position).IsAir;
+    }
+
+    public sealed class ProbeState : IBlockStateProvider
+    {
+        public string Type => "probe:state";
+
+        public required SimpleBlockState State { get; init; }
+
+        public IBlock GetState(IRandomSource random, Vector position) => this.State.ToBlock();
+    }
+
+    public sealed class ProbeStone : IRuleTest
+    {
+        public string Type => "probe:stone";
+
+        public bool Test(IBlock block, IRandomSource random) => block.Is(BlockIds.Stone);
+    }
+
+    public sealed class ProbeWind : IFloatProvider
+    {
+        public string Type => "probe:wind";
+
+        public float MinValue => 0.0f;
+
+        public float MaxValue => 0.0f;
+
+        public float Sample(IRandomSource random) => 0.0f;
+    }
+
+    // A plugin's trunk placer: a column of logs, with its foliage on top.
+    public sealed class PoleTrunkPlacer : TrunkPlacer
+    {
+        public override List<FoliageAttachment> PlaceTrunk(TreeContext tree, int freeTreeHeight, Vector origin)
+        {
+            for (var y = 0; y < freeTreeHeight; y++)
+                this.PlaceLog(tree, origin + (0, y, 0));
+
+            return [new FoliageAttachment(origin + (0, freeTreeHeight, 0), 0, false)];
+        }
+    }
+
+    // A plugin's root placer: a column of roots from the origin up to the trunk.
+    public sealed class StiltRootPlacer : RootPlacer
+    {
+        public override bool PlaceRoots(TreeContext tree, Vector origin, Vector trunkOrigin)
+        {
+            for (var position = origin; position.Y < trunkOrigin.Y; position += Vector.Up)
+                this.PlaceRoot(tree, position);
+
+            return true;
+        }
+    }
 
     private sealed class LoadedTypes : IDisposable
     {

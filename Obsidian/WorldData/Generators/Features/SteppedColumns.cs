@@ -14,10 +14,10 @@ internal sealed partial class FeatureRegistry
             this.Predicate(json.GetProperty("continue_through")),
             this.Predicate(json.GetProperty("can_replace")),
             this.Blocks(json.GetProperty("cannot_place_on")),
-            ValueProviders.Int(json.GetProperty("column_reach")));
-        var height = ValueProviders.Int(json.GetProperty("height"));
-        var clusterReach = ValueProviders.Int(json.GetProperty("cluster_reach"));
-        var columnCount = ValueProviders.Int(json.GetProperty("column_count"));
+            this.Int(json.GetProperty("column_reach")));
+        var height = this.Int(json.GetProperty("height"));
+        var clusterReach = this.Int(json.GetProperty("cluster_reach"));
+        var columnCount = this.Int(json.GetProperty("column_count"));
 
         return (context, random, origin) =>
         {

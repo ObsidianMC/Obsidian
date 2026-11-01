@@ -676,6 +676,46 @@ public class PluginFeatureFiles
 
     internal sealed class ListLogger<T> : ListLogger, ILogger<T>;
 
+    [Fact]
+    public void LaterPluginsBiomesNamePlacedFeaturesOnlyThe26_3RegistryBuilds()
+    {
+        // In 26.3's schema, which the live legacy reader can't read.
+        var feature = Parse(PluginFeatures.Feature, "featurefiles:native_marker", """
+            { "type": "minecraft:simple_block", "to_place": { "id": "minecraft:emerald_block" } }
+            """);
+        var placed = Parse(PluginFeatures.PlacedFeature, "featurefiles:native_marker", """
+            { "feature": "featurefiles:native_marker" }
+            """);
+
+        try
+        {
+            Assert.True(PluginFeatures.Apply([feature, placed], [], [], new HashSet<string>(), NullLogger.Instance));
+            Assert.Null(PluginFeatures.Current.FindPlaced(placed.Identifier));
+            Assert.True(PluginFeatures.IsPlacedFeature(placed.Identifier));
+
+            // A later plugin's biome is parsed before its files join the snapshot, and may name the placed feature.
+            var biome = PluginCodecs.Parse(PluginCodecs.Biome, "minecraft:plains", "later-plugin", """
+                {
+                  "has_precipitation": true,
+                  "temperature": 0.5,
+                  "downfall": 0.5,
+                  "effects": { "water_color": "#3f76e4" },
+                  "carvers": [],
+                  "features": [["featurefiles:native_marker"]]
+                }
+                """u8, isPlacedFeature: PluginFeatures.IsPlacedFeature);
+            var registry = PluginFeatures.BuildRegistry([feature, placed], [biome], [], NullLogger.Instance);
+            Assert.Contains(placed.Identifier, registry.BiomeSteps("minecraft:plains").SelectMany(step => step));
+
+            Assert.True(PluginFeatures.Apply([], [], [], new HashSet<string>(), NullLogger.Instance));
+            Assert.False(PluginFeatures.IsPlacedFeature(placed.Identifier));
+        }
+        finally
+        {
+            PluginFeatures.Apply([], [], [], new HashSet<string>(), NullLogger.Instance);
+        }
+    }
+
     private static FeatureFile Parse(string registry, string identifier, string json) =>
         PluginFeatures.Parse(registry, identifier, "test", Encoding.UTF8.GetBytes(json));
 

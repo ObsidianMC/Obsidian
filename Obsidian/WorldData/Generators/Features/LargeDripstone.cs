@@ -8,10 +8,8 @@ internal sealed partial class FeatureRegistry
 {
     private Feature LargeDripstone(JsonElement json)
     {
-        var reader = new WorldgenReader(
-            WorldgenTypes.BuiltIn,
-            _ => throw new InvalidOperationException("Large dripstone cannot resolve configured features."),
-            _ => throw new InvalidOperationException("Large dripstone cannot resolve placed features."));
+        // The cones are shared with the 1.21.11 feature, which takes the API's providers: plugins' types included.
+        var reader = this.Reader;
         var cones = new DripstoneCones(
             this.Blocks(json.GetProperty("replaceable_blocks")), this.BlockTag("minecraft:base_stone_overworld"))
         {

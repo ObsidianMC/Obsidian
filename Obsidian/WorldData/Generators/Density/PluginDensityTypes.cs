@@ -32,8 +32,11 @@ internal interface IDensityTypes
 /// <para>
 /// The 1.21.11 pipeline gives plugins' functions 1.21.11 functions and noises, which it seeds through
 /// <see cref="IDensityFunction.MapAll"/>. Here the functions a plugin's function holds are already seeded 26.3 ones,
-/// so nothing is mapped. A 26.3 noise can't be a 1.21.11 <see cref="BaseNoise"/> (26.3 changed the noise schema), so
-/// a plugin's function can't hold a noise here, named or inline: it takes a density function, such as a <c>minecraft:noise</c>.
+/// so nothing is mapped. Its <see cref="INoise"/> and <see cref="BaseNoise"/> properties name 26.3 noises, which are
+/// seeded for the compiler's world from their identifiers, as vanilla seeds the noises its own functions name (see
+/// <see cref="SeededNoise"/>). Noises written inline aren't: vanilla doesn't seed those, and 1.21.11's have the old
+/// schema. Nor is a property typed as the plugin's own noise class, which can't sample a 26.3 noise. Those are refused
+/// rather than sampled unseeded.
 /// </para>
 /// <para>
 /// The plugins whose code the functions run are collected in <see cref="Owners"/>, which the dimension holds while it
@@ -66,7 +69,7 @@ internal sealed class PluginDensityTypes(WorldgenTypes types) : IDensityTypes
             this.OnCreated)
         {
             DensityFunctions = (value, valuePath) => new CompiledDensityFunction(compiler.Compile(value, valuePath)),
-            Noises = NoNoise
+            Noises = (value, target, valuePath) => Noise(value, target, valuePath, compiler)
         };
 
         var function = reader.ReadTyped<IDensityFunction>(json, path);
@@ -104,11 +107,48 @@ internal sealed class PluginDensityTypes(WorldgenTypes types) : IDensityTypes
     private static T NoFeature<T>(string identifier) =>
         throw new InvalidDataException($"{identifier}: features can't be used here");
 
-    // Named and inline noises alike: a 1.21.11 noise would sample unseeded here.
-    private static BaseNoise NoNoise(JsonElement json, string path) =>
-        throw new InvalidDataException(
-            $"{path}: a plugin's density function can't hold a noise in 26.3; take a density function, such as a "
-            + "minecraft:noise, instead");
+    // A named 26.3 noise, seeded for the compiler's world; inline noises and a plugin's own noise class can't be.
+    private static BaseNoise Noise(JsonElement json, Type target, string path, DensityCompiler compiler)
+    {
+        if (target != typeof(INoise) && target != typeof(BaseNoise))
+        {
+            throw new InvalidDataException(
+                $"{path}: a plugin's density function can't hold a noise of its own class {target.Name} in 26.3, "
+                + "which can't sample a 26.3 noise; type it INoise or BaseNoise and name a noise");
+        }
+
+        if (json.ValueKind != JsonValueKind.String)
+        {
+            throw new InvalidDataException(
+                $"{path}: a plugin's density function can't hold an inline noise in 26.3, which vanilla doesn't seed; "
+                + "name a noise instead");
+        }
+
+        var identifier = WorldgenData.Qualify(json.GetString()!);
+
+        return new BaseNoise(identifier, new SeededNoise(compiler.Noise(identifier)));
+    }
+}
+
+/// <summary>
+/// A 26.3 noise seeded for a world, as the <see cref="INoise"/> plugins' types sample (see
+/// <see cref="PluginDensityTypes"/>): its value at a point, like a <c>minecraft:noise</c> function of scale 1.
+/// </summary>
+/// <param name="noise">The noise, which <see cref="DensityCompiler.Noise"/> seeded.</param>
+internal sealed class SeededNoise(NoiseStack noise) : INoise
+{
+    public string Type => "obsidian:seeded_noise";
+
+    // A bound rather than the exact range, as vanilla bounds its noises: each gradient noise taken as at most 2.
+    public double MaxValue { get; } = noise.Layers.Sum(layer => 2.0 * Math.Abs(layer.Amplitude));
+
+    public double MinValue => -this.MaxValue;
+
+    public void Create()
+    {
+    }
+
+    public double GetValue(double x, double y, double z) => noise.Get(x, y, z);
 }
 
 /// <summary>

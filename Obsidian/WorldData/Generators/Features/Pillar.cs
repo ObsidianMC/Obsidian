@@ -41,7 +41,7 @@ internal sealed partial class FeatureRegistry
     {
         var provider = this.Provider(json.GetProperty("block"));
         var projectThrough = this.Predicate(json.GetProperty("project_through"));
-        var size = ValueProviders.Int(json.GetProperty("size"));
+        var size = this.Int(json.GetProperty("size"));
         var projection = json.GetProperty("max_projection_height").GetInt32();
 
         return (context, random, origin) =>

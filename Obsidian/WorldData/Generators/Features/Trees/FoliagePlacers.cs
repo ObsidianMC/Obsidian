@@ -4,7 +4,7 @@ using System.Text.Json;
 namespace Obsidian.WorldData.Generators.Features.Trees;
 
 /// <summary>Oak and birch: rows shrinking toward the top, with random corners.</summary>
-internal sealed class BlobFoliagePlacer(JsonElement json) : FoliagePlacer(json)
+internal sealed class BlobFoliagePlacer(FeatureRegistry registry, JsonElement json) : FoliagePlacer(registry, json)
 {
     private readonly int height = json.GetProperty("height").GetInt32();
 
@@ -26,7 +26,7 @@ internal sealed class BlobFoliagePlacer(JsonElement json) : FoliagePlacer(json)
         dx == radius && dz == radius && (random.NextInt(2) == 0 || y == 0);
 }
 
-internal sealed class BushFoliagePlacer(JsonElement json) : FoliagePlacer(json)
+internal sealed class BushFoliagePlacer(FeatureRegistry registry, JsonElement json) : FoliagePlacer(registry, json)
 {
     private readonly int height = json.GetProperty("height").GetInt32();
 
@@ -49,7 +49,7 @@ internal sealed class BushFoliagePlacer(JsonElement json) : FoliagePlacer(json)
 }
 
 /// <summary>Fancy oak's round clusters, one block wider in the middle rows.</summary>
-internal sealed class FancyFoliagePlacer(JsonElement json) : FoliagePlacer(json)
+internal sealed class FancyFoliagePlacer(FeatureRegistry registry, JsonElement json) : FoliagePlacer(registry, json)
 {
     private readonly int height = json.GetProperty("height").GetInt32();
 
@@ -78,7 +78,7 @@ internal sealed class FancyFoliagePlacer(JsonElement json) : FoliagePlacer(json)
 }
 
 /// <summary>Jungle trees and their branches: rows widening downward, one or two for single trunks.</summary>
-internal sealed class JungleFoliagePlacer(JsonElement json) : FoliagePlacer(json)
+internal sealed class JungleFoliagePlacer(FeatureRegistry registry, JsonElement json) : FoliagePlacer(registry, json)
 {
     private readonly int height = json.GetProperty("height").GetInt32();
 
@@ -103,9 +103,9 @@ internal sealed class JungleFoliagePlacer(JsonElement json) : FoliagePlacer(json
 }
 
 /// <summary>Spruce: rows alternating between growing and resetting radii.</summary>
-internal sealed class SpruceFoliagePlacer(JsonElement json) : FoliagePlacer(json)
+internal sealed class SpruceFoliagePlacer(FeatureRegistry registry, JsonElement json) : FoliagePlacer(registry, json)
 {
-    private readonly IntProvider trunkHeight = ValueProviders.Int(json.GetProperty("trunk_height"));
+    private readonly IntProvider trunkHeight = registry.Int(json.GetProperty("trunk_height"));
 
     public override int FoliageHeight(IRandomSource random, int treeHeight) =>
         Math.Max(4, treeHeight - this.trunkHeight(random));
@@ -141,9 +141,9 @@ internal sealed class SpruceFoliagePlacer(JsonElement json) : FoliagePlacer(json
 }
 
 /// <summary>Pine: a narrow cone, its radius growing with a draw from the trunk height.</summary>
-internal sealed class PineFoliagePlacer(JsonElement json) : FoliagePlacer(json)
+internal sealed class PineFoliagePlacer(FeatureRegistry registry, JsonElement json) : FoliagePlacer(registry, json)
 {
-    private readonly IntProvider height = ValueProviders.Int(json.GetProperty("height"));
+    private readonly IntProvider height = registry.Int(json.GetProperty("height"));
 
     public override int FoliageHeight(IRandomSource random, int treeHeight) => this.height(random);
 
@@ -181,9 +181,9 @@ internal sealed class PineFoliagePlacer(JsonElement json) : FoliagePlacer(json)
 }
 
 /// <summary>Mega spruce and pine: a crown widening in steps toward its base.</summary>
-internal sealed class MegaPineFoliagePlacer(JsonElement json) : FoliagePlacer(json)
+internal sealed class MegaPineFoliagePlacer(FeatureRegistry registry, JsonElement json) : FoliagePlacer(registry, json)
 {
-    private readonly IntProvider crownHeight = ValueProviders.Int(json.GetProperty("crown_height"));
+    private readonly IntProvider crownHeight = registry.Int(json.GetProperty("crown_height"));
 
     public override int FoliageHeight(IRandomSource random, int treeHeight) => this.crownHeight(random);
 
@@ -212,7 +212,7 @@ internal sealed class MegaPineFoliagePlacer(JsonElement json) : FoliagePlacer(js
         dx + dz >= 7 || dx * dx + dz * dz > radius * radius;
 }
 
-internal sealed class AcaciaFoliagePlacer(JsonElement json) : FoliagePlacer(json)
+internal sealed class AcaciaFoliagePlacer(FeatureRegistry registry, JsonElement json) : FoliagePlacer(registry, json)
 {
     public override int FoliageHeight(IRandomSource random, int treeHeight) => 0;
 
@@ -241,7 +241,7 @@ internal sealed class AcaciaFoliagePlacer(JsonElement json) : FoliagePlacer(json
     }
 }
 
-internal sealed class DarkOakFoliagePlacer(JsonElement json) : FoliagePlacer(json)
+internal sealed class DarkOakFoliagePlacer(FeatureRegistry registry, JsonElement json) : FoliagePlacer(registry, json)
 {
     public override int FoliageHeight(IRandomSource random, int treeHeight) => 4;
 
@@ -297,9 +297,10 @@ internal sealed class DarkOakFoliagePlacer(JsonElement json) : FoliagePlacer(jso
 }
 
 /// <summary>Azalea: leaves at random offsets around each attachment.</summary>
-internal sealed class RandomSpreadFoliagePlacer(JsonElement json) : FoliagePlacer(json)
+internal sealed class RandomSpreadFoliagePlacer(FeatureRegistry registry, JsonElement json)
+    : FoliagePlacer(registry, json)
 {
-    private readonly IntProvider foliageHeight = ValueProviders.Int(json.GetProperty("foliage_height"));
+    private readonly IntProvider foliageHeight = registry.Int(json.GetProperty("foliage_height"));
     private readonly int leafPlacementAttempts = json.GetProperty("leaf_placement_attempts").GetInt32();
 
     public override int FoliageHeight(IRandomSource random, int treeHeight) => this.foliageHeight(random);
@@ -326,9 +327,9 @@ internal sealed class RandomSpreadFoliagePlacer(JsonElement json) : FoliagePlace
 }
 
 /// <summary>Cherry: a wide crown with holes in its corners and leaves hanging below.</summary>
-internal sealed class CherryFoliagePlacer(JsonElement json) : FoliagePlacer(json)
+internal sealed class CherryFoliagePlacer(FeatureRegistry registry, JsonElement json) : FoliagePlacer(registry, json)
 {
-    private readonly IntProvider height = ValueProviders.Int(json.GetProperty("height"));
+    private readonly IntProvider height = registry.Int(json.GetProperty("height"));
     private readonly float wideBottomLayerHoleChance = json.GetProperty("wide_bottom_layer_hole_chance").GetSingle();
     private readonly float cornerHoleChance = json.GetProperty("corner_hole_chance").GetSingle();
     private readonly float hangingLeavesChance = json.GetProperty("hanging_leaves_chance").GetSingle();

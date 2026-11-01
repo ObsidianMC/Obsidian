@@ -2373,6 +2373,17 @@ identifier, the last file in load order wins. Types removed or redesigned by van
 `Obsidian.API` registration and placement interfaces are unchanged. Block states in plugin types may use the old
 `Name`/`Properties` form or 26.3's bare identifier and `id`/`properties` forms.
 
+Vanilla's own feature and placement types there take plugins' value types too, wherever they take a value of that
+kind: `IIntProvider`, `IFloatProvider` and `IHeightProvider` (a `count`, a `height_range`'s `height`), an
+`IBlockStateProvider` (a `simple_block`'s `to_place`), an `IBlockPredicate` (a `block_predicate_filter`), an
+`IRuleTest` (an ore target's `target`), and a tree's `TrunkPlacer`, `FoliagePlacer`, `RootPlacer`, `FeatureSize` and
+`TreeDecorator`. Vanilla's type ids are read as before; any other id is looked up among the registered types. The
+plugin owns every entry using its value, like one using its feature type: a failure in its code names it, and an
+unloading plugin's entries place nothing. Its tree parts see the tree through `TreeContext` and
+`TreeDecoratorContext`, as in 1.21.11; 26.3's `below_trunk_provider` stands in for `dirt_provider` (with `ForceDirt`
+true), and where that provider places nothing, the trunk placer's dirt isn't placed either. A plugin's rule test sees
+the block and the random, not the position 26.3's own rule tests also see.
+
 For the server integration, `PluginFeatures.CurrentRegistry` supplies the 26.3 feature snapshot and its `FeatureSet`
 supplies the existing plant-growth interface. `PluginStructures.CurrentRegistry` supplies its structure layout;
 `StructureData.Read(features)` reads that layout for a particular feature registry. Both snapshots follow the existing
@@ -3106,15 +3117,18 @@ lifecycle, and regions land in the same places in both. Plugins' surface rule an
 generates with that plugin, as with its density functions. Limits, until the switch:
 
 - A plugin's density function type gets 26.3 density functions in its `IDensityFunction` properties, already seeded,
-  so `MapAll` isn't called; it can't hold a noise, since 26.3's noises aren't `BaseNoise`s. Take a density function,
-  like a `minecraft:noise`, instead.
+  so `MapAll` isn't called. Its `INoise` and `BaseNoise` properties name 26.3 noises
+  (`"noise": "minecraft:cave_layer"`), seeded for the world from their identifiers as vanilla seeds the noises its
+  functions name, and sampled at the coordinates given, like a `minecraft:noise` of scale 1. A noise written inline
+  isn't seeded by vanilla, and a property typed as the plugin's own `BaseNoise` subclass can't hold a 26.3 noise, so
+  both fail the dimension.
 - A plugin's surface rule or condition type gets 26.3 rules and conditions in its `ISurfaceRule` and
   `ISurfaceCondition` properties, read in 26.3's schema (`material_rule` and `material_condition` identifiers, like
   `minecraft:on_floor`, included), and 26.3 density functions in its `IDensityFunction` ones; it can't hold a noise,
-  named or inline, for the same reason. Its context evaluates those properties, plugins' own types, and vanilla's rule
-  and condition classes, whether the plugin made them in code (a cached `new BlockSurfaceRule`, say) or they were
-  read for a property of that class: they evaluate as 26.3's rules do. A `NoiseThresholdSurfaceCondition` made in code
-  samples the 26.3 noise of its noise's identifier.
+  named or inline (take a density function or a `minecraft:noise_threshold` condition instead). Its context
+  evaluates those properties, plugins' own types, and vanilla's rule and condition classes, whether the plugin made
+  them in code (a cached `new BlockSurfaceRule`, say) or they were read for a property of that class: they evaluate as
+  26.3's rules do. A `NoiseThresholdSurfaceCondition` made in code samples the 26.3 noise of its noise's identifier.
 - A named rule or condition that refers back to itself fails the dimension naming it, and so does a plugin's rule or
   condition evaluating itself through its context (more than 128 levels deep), as a failure of the plugin's code.
 

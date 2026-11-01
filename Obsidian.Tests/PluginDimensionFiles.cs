@@ -592,6 +592,41 @@ public sealed class PluginDimensionFiles : IDisposable
     }
 
     [Trait("Category", TestCategory.Worldgen)]
+    [Fact(DisplayName = "In the 26.3 pipeline, plugins' density functions sample the named noises they hold, seeded")]
+    public void SeedsTheNoisesPluginsDensityFunctionsHold()
+    {
+        var (_, data) = ShelfData();
+        var types = new PluginDensityTypes(WorldgenTypes.With(ProbeTypes()));
+        var held = Json("""{ "type": "probe:held_noise", "noise": "probe:bumps", "base": "probe:bumps" }""");
+        var vanilla = Json("""{ "type": "minecraft:noise", "noise": "probe:bumps", "xz_scale": 1, "y_scale": 1 }""");
+        Vector[] points = [new(0, 0, 0), new(37, 12, -90), new(-500, 70, 1000)];
+
+        // Both of the plugin's noises are the one vanilla's noise function samples in the same world.
+        var first = new DensityCompiler(data, 1234, false, types: types);
+        var plugin = first.Compile(held, "held");
+        var expected = first.Compile(vanilla, "vanilla");
+
+        foreach (var point in points)
+        {
+            var noise = expected.Sample(point.X, point.Y, point.Z);
+            Assert.Equal(2 * noise, plugin.Sample(point.X, point.Y, point.Z), 4);
+        }
+
+        // Seeded for its world, not for seed 0.
+        var other = new DensityCompiler(data, 5678, false, types: types).Compile(held, "held");
+        Assert.Contains(points, point => Sample(other, point) != Sample(plugin, point));
+
+        // Noises that can't be seeded so are refused: one written inline, and the plugin's own noise class.
+        var inline = Json("""{ "type": "probe:held_noise", "noise": { "base_octave": -4 }, "base": "probe:bumps" }""");
+        var inlineError = Assert.Throws<InvalidDataException>(() => first.Compile(inline, "inline"));
+        Assert.Contains("inline noise", inlineError.Message);
+
+        var own = Json("""{ "type": "probe:own_noise", "noise": "probe:bumps" }""");
+        var ownError = Assert.Throws<InvalidDataException>(() => first.Compile(own, "own"));
+        Assert.Contains("its own class", ownError.Message);
+    }
+
+    [Trait("Category", TestCategory.Worldgen)]
     [Fact(DisplayName = "The 26.3 pipeline fails a dimension whose rules refer back to themselves or hold a noise")]
     public void RefusesCyclicRulesAndNoisesInThe263Pipeline()
     {
@@ -657,6 +692,9 @@ public sealed class PluginDimensionFiles : IDisposable
     // The shelf's settings with a material rule.
     private static string ShelfWith(string materialRule) =>
         ShelfWorld26.Replace(EmptyMaterialRule, $"\"material_rule\": {materialRule}");
+
+    private static float Sample(DensityFunction function, Vector point) =>
+        function.Sample(point.X, point.Y, point.Z);
 
     private static JsonElement Json(string json)
     {
@@ -761,6 +799,16 @@ public sealed class PluginDimensionFiles : IDisposable
             "probe:subclass_noisy",
             typeof(ISurfaceRule),
             typeof(SubclassNoisyRule)));
+        types.Add(WorldgenTypeRegistration.Create(
+            types,
+            "probe:held_noise",
+            typeof(IDensityFunction),
+            typeof(HeldNoiseFunction)));
+        types.Add(WorldgenTypeRegistration.Create(
+            types,
+            "probe:own_noise",
+            typeof(IDensityFunction),
+            typeof(OwnNoiseFunction)));
 
         return types;
     }
@@ -1091,6 +1139,45 @@ public sealed class PluginDimensionFiles : IDisposable
 
     // A plugin's own noise class.
     public sealed class OwnNoise : Obsidian.API.World.Generator.Noise.BaseNoise;
+
+    // A plugin's density function adding the noises it holds, as the interface and as the class.
+    public sealed class HeldNoiseFunction : IDensityFunction
+    {
+        public string Type => "probe:held_noise";
+
+        public required INoise Noise { get; init; }
+
+        public required Obsidian.API.World.Generator.Noise.BaseNoise Base { get; init; }
+
+        public double MinValue => this.Noise.MinValue + this.Base.MinValue;
+
+        public double MaxValue => this.Noise.MaxValue + this.Base.MaxValue;
+
+        public double GetValue(double x, double y, double z) =>
+            this.Noise.GetValue(x, y, z) + this.Base.GetValue(x, y, z);
+
+        public IDensityFunction MapAll(IDensityFunctionVisitor visitor) => visitor.Apply(new HeldNoiseFunction
+        {
+            Noise = visitor.VisitNoise(this.Noise),
+            Base = (Obsidian.API.World.Generator.Noise.BaseNoise)visitor.VisitNoise(this.Base)
+        });
+    }
+
+    // A plugin's density function holding its own noise class.
+    public sealed class OwnNoiseFunction : IDensityFunction
+    {
+        public string Type => "probe:own_noise";
+
+        public required OwnNoise Noise { get; init; }
+
+        public double MinValue => 0.0;
+
+        public double MaxValue => 0.0;
+
+        public double GetValue(double x, double y, double z) => 0.0;
+
+        public IDensityFunction MapAll(IDensityFunctionVisitor visitor) => visitor.Apply(this);
+    }
 
     // A plugin's surface rule holding its own noise class.
     public sealed class SubclassNoisyRule : ICustomSurfaceRule

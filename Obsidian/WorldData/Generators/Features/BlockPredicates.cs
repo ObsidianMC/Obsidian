@@ -18,7 +18,8 @@ internal sealed partial class FeatureRegistry
     public BlockPredicate Predicate(JsonElement json)
     {
         var type = json.GetProperty("type").GetString();
-        var offset = Offset(json);
+
+        // Vanilla's predicates that test an offset position read it; a plugin's type may have a field of the name.
 
         switch (type)
         {
@@ -26,36 +27,50 @@ internal sealed partial class FeatureRegistry
                 return static (_, _) => true;
             case "minecraft:matching_blocks":
             {
+                var offset = Offset(json);
                 var blocks = new RegistryIdSet(this.Blocks(json.GetProperty("blocks")));
                 return (level, position) => blocks.Contains(level.GetBlock(position + offset).RegistryId);
             }
             case "minecraft:matching_block_tag":
             {
+                var offset = Offset(json);
                 var blocks = new RegistryIdSet(this.BlockTag(json.GetProperty("tag").GetString()!));
                 return (level, position) => blocks.Contains(level.GetBlock(position + offset).RegistryId);
             }
             case "minecraft:matching_fluids":
             {
+                var offset = Offset(json);
                 var fluids = Fluids(json.GetProperty("fluids"));
                 return (level, position) => fluids.Contains(level.GetBlock(position + offset).GetFluid());
             }
             case "minecraft:solid":
+            {
+                var offset = Offset(json);
                 return (level, position) => level.GetBlock(position + offset).IsSolid();
+            }
             case "minecraft:replaceable":
+            {
+                var offset = Offset(json);
                 return (level, position) => level.GetBlock(position + offset).CanBeReplaced();
+            }
             case "minecraft:would_survive":
             {
+                var offset = Offset(json);
                 var state = ReadBlock(json.GetProperty("state"));
 
                 return (level, position) => this.CanSurvive(state, level, position + offset);
             }
             case "minecraft:has_sturdy_face":
             {
+                var offset = Offset(json);
                 var face = FeatureHelpers.ParseFace(json.GetProperty("direction").GetString());
                 return (level, position) => level.GetBlock(position + offset).IsFaceSturdy(face);
             }
             case "minecraft:inside_world_bounds":
+            {
+                var offset = Offset(json);
                 return (level, position) => !level.IsOutsideBuildHeight(position.Y + offset.Y);
+            }
             case "minecraft:height_range":
                 return HeightPredicate(json);
             case "minecraft:volume_match":
@@ -76,7 +91,7 @@ internal sealed partial class FeatureRegistry
                 return (level, position) => !NoneOf(predicates, level, position);
             }
             default:
-                throw new NotSupportedException($"The 26.3 block predicate {type} isn't implemented yet.");
+                return this.PluginPredicate(json, type);
         }
     }
 
@@ -279,7 +294,7 @@ internal sealed partial class FeatureRegistry
                 return (state, position, random) => !NoneOf(rules, state, position, random);
             }
             default:
-                throw new NotSupportedException($"The 26.3 rule test {type} isn't implemented yet.");
+                return this.PluginRule(json, type);
         }
     }
 

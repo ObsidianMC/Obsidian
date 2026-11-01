@@ -907,6 +907,28 @@ public sealed class ProbeCrustRule : ICustomSurfaceRule
 }
 
 /// <summary>
+/// The probe plugin's block-state provider, which only its 26.3 feature file names, in a vanilla feature type: gold
+/// everywhere. It records that it was asked in <see cref="AppContext"/> data.
+/// </summary>
+public sealed class ProbeGoldProvider : IBlockStateProvider
+{
+    /// <summary>The feature file that makes the plugin register the type.</summary>
+    public const string FeatureFile = "data/probe/worldgen/feature/gold.json";
+
+    public const string PlacedFile = "data/probe/worldgen/placed_feature/gold.json";
+
+    public const string AskedKey = "Obsidian.Tests.ProbeGoldProvider.Asked";
+
+    public string Type => "probe:gold";
+
+    public IBlock GetState(IRandomSource random, Vector position)
+    {
+        AppContext.SetData(AskedKey, true);
+        return new SimpleBlockState { Name = "minecraft:gold_block" }.ToBlock();
+    }
+}
+
+/// <summary>
 /// The plugin that <see cref="PluginLoading"/> loads from the test assembly. It counts its event handler's calls in
 /// <see cref="AppContext"/> data, since its static fields belong to its own copy of the assembly. Its injected services
 /// have types from its own assembly, which mustn't be cached outside it.
@@ -977,6 +999,9 @@ public sealed class ProbePlugin : PluginBase
 
         if (this.Container.GetFileData(ProbeCrustRule.SettingsFile) is not null)
             pluginRegistry.RegisterWorldgenType<ISurfaceRule, ProbeCrustRule>("probe:crust");
+
+        if (this.Container.GetFileData(ProbeGoldProvider.FeatureFile) is not null)
+            pluginRegistry.RegisterWorldgenType<IBlockStateProvider, ProbeGoldProvider>("probe:gold");
 
         pluginRegistry.MapEvent<ServerStatusRequestEventArgs>(_ =>
         {

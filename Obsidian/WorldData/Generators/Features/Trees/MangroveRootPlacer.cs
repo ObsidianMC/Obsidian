@@ -1,16 +1,38 @@
 using Obsidian.API.World.Features;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Features;
-using System.IO;
 using System.Text.Json;
+using ApiRootPlacer = Obsidian.API.World.Features.Trees.RootPlacer;
 
 namespace Obsidian.WorldData.Generators.Features.Trees;
+
+/// <summary>Places roots below a raised trunk, like vanilla's <c>RootPlacer</c>.</summary>
+internal abstract class RootPlacer
+{
+    public static RootPlacer Read(FeatureRegistry registry, JsonElement json)
+    {
+        var type = json.GetProperty("type").GetString();
+
+        if (type == "minecraft:mangrove_root_placer")
+        {
+            return new MangroveRootPlacer(registry, json);
+        }
+
+        return new PluginRootPlacer(registry.PluginValue<ApiRootPlacer>(json, type, "root placer"));
+    }
+
+    /// <summary>Where the trunk starts, above the feature's origin.</summary>
+    public abstract Vector TrunkOrigin(Vector origin, IRandomSource random);
+
+    /// <summary>Places the roots between the origin and the trunk; false fails the tree.</summary>
+    public abstract bool PlaceRoots(TreePlacement tree, Vector origin, Vector trunkOrigin);
+}
 
 /// <summary>
 /// Mangrove roots: the trunk starts above the origin, and four roots per side are simulated outward and down before
 /// any is placed. A root fails the whole tree when it can't end within its length.
 /// </summary>
-internal sealed class MangroveRootPlacer
+internal sealed class MangroveRootPlacer : RootPlacer
 {
     private readonly IntProvider trunkOffsetY;
     private readonly StateProvider rootProvider;
@@ -23,9 +45,9 @@ internal sealed class MangroveRootPlacer
     private readonly int maxRootLength;
     private readonly float randomSkewChance;
 
-    private MangroveRootPlacer(FeatureRegistry registry, JsonElement json)
+    public MangroveRootPlacer(FeatureRegistry registry, JsonElement json)
     {
-        this.trunkOffsetY = ValueProviders.Int(json.GetProperty("trunk_offset_y"));
+        this.trunkOffsetY = registry.Int(json.GetProperty("trunk_offset_y"));
         this.rootProvider = registry.Provider(json.GetProperty("root_provider"));
 
         if (json.TryGetProperty("above_root_placement", out var above))
@@ -44,21 +66,10 @@ internal sealed class MangroveRootPlacer
         this.randomSkewChance = placement.GetProperty("random_skew_chance").GetSingle();
     }
 
-    public static MangroveRootPlacer Read(FeatureRegistry registry, JsonElement json)
-    {
-        var type = json.GetProperty("type").GetString();
+    public override Vector TrunkOrigin(Vector origin, IRandomSource random) =>
+        origin + (0, this.trunkOffsetY(random), 0);
 
-        if (type != "minecraft:mangrove_root_placer")
-        {
-            throw new InvalidDataException($"Unknown root placer {type}.");
-        }
-
-        return new MangroveRootPlacer(registry, json);
-    }
-
-    public Vector TrunkOrigin(Vector origin, IRandomSource random) => origin + (0, this.trunkOffsetY(random), 0);
-
-    public bool PlaceRoots(TreePlacement tree, Vector origin, Vector trunkOrigin)
+    public override bool PlaceRoots(TreePlacement tree, Vector origin, Vector trunkOrigin)
     {
         for (var position = origin; position.Y < trunkOrigin.Y; position += Vector.Up)
         {

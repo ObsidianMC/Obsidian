@@ -2,8 +2,8 @@ using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Features.Tree;
 using Obsidian.API.World.Features;
-using System.IO;
 using System.Text.Json;
+using ApiTreeDecorator = Obsidian.API.World.Features.Trees.TreeDecorator;
 
 namespace Obsidian.WorldData.Generators.Features.Trees;
 
@@ -29,7 +29,7 @@ internal abstract class TreeDecorator
             "minecraft:pale_moss" => new PaleMossDecorator(json),
             "minecraft:cocoa" => new CocoaDecorator(json),
             "minecraft:creaking_heart" => new CreakingHeartDecorator(json),
-            _ => throw new InvalidDataException($"Unknown tree decorator {type}.")
+            _ => new PluginTreeDecorator(registry.PluginValue<ApiTreeDecorator>(json, type, "tree decorator"))
         };
     }
 

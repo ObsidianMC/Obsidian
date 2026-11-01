@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.Noise;
 using Obsidian.API.World.Generator.RandomSources;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.World.Generator.Noise;
 
@@ -12,6 +13,24 @@ namespace Obsidian.API.World.Generator.Noise;
 /// </remarks>
 public partial class BaseNoise : INoise
 {
+    // A noise the server already seeded for a world from data of another schema, such as a 26.3 noise, which this
+    // samples instead of its own parameters; null for a noise of these parameters.
+    private readonly INoise? seeded;
+
+    public BaseNoise()
+    {
+    }
+
+    /// <summary>A noise the server seeded for a world, under its registry key, sampled as it is.</summary>
+    [SetsRequiredMembers]
+    internal BaseNoise(string key, INoise seeded)
+    {
+        this.Key = key;
+        this.Amplitudes = [];
+        this.FirstOctave = 0;
+        this.seeded = seeded;
+    }
+
     public string Type => "minecraft:base_noise";
 
     /// <summary>
@@ -25,7 +44,7 @@ public partial class BaseNoise : INoise
 
     public double MinValue => -this.MaxValue;
 
-    public double MaxValue => this.Noise.MaxValue;
+    public double MaxValue => this.seeded?.MaxValue ?? this.Noise.MaxValue;
 
     private NormalNoise? noise;
 
@@ -33,6 +52,9 @@ public partial class BaseNoise : INoise
     {
         get
         {
+            if (this.seeded is not null)
+                throw new InvalidOperationException($"{this.Key} was seeded from another schema, not a NormalNoise.");
+
             if (this.noise is null)
                 this.Create();
 
@@ -41,9 +63,16 @@ public partial class BaseNoise : INoise
     }
 
     /// <summary>
-    /// Returns a copy of this noise seeded from <paramref name="random"/>.
+    /// Returns a copy of this noise seeded from <paramref name="random"/>; a noise the server seeded already is
+    /// returned as it is.
     /// </summary>
-    public BaseNoise Bind(IRandomSource random) => this.Bind(NormalNoise.Create(random, (int)this.FirstOctave, this.Amplitudes.AsSpan()));
+    public BaseNoise Bind(IRandomSource random)
+    {
+        if (this.seeded is not null)
+            return this;
+
+        return this.Bind(NormalNoise.Create(random, (int)this.FirstOctave, this.Amplitudes.AsSpan()));
+    }
 
     /// <summary>
     /// Returns a copy of this noise backed by <paramref name="noise"/>. Used for vanilla's legacy special cases,
@@ -58,15 +87,23 @@ public partial class BaseNoise : INoise
     };
 
     /// <summary>
-    /// Returns a copy of this noise seeded the way vanilla seeds registry noises for a world.
+    /// Returns a copy of this noise seeded the way vanilla seeds registry noises for a world; a noise the server
+    /// seeded already is returned as it is.
     /// </summary>
-    public BaseNoise Bind(IPositionalRandomFactory worldRandom) => this.Bind(worldRandom.FromHashOf(this.Key));
+    public BaseNoise Bind(IPositionalRandomFactory worldRandom) =>
+        this.seeded is not null ? this : this.Bind(worldRandom.FromHashOf(this.Key));
 
-    public void Create() =>
-        this.noise ??= NormalNoise.Create(new XoroshiroRandomSource(0L).ForkPositional().FromHashOf(this.Key), (int)this.FirstOctave,
-            this.Amplitudes.AsSpan());
+    public void Create()
+    {
+        if (this.seeded is not null || this.noise is not null)
+            return;
 
-    public double GetValue(double x, double y, double z) => this.Noise.GetValue(x, y, z);
+        var random = new XoroshiroRandomSource(0L).ForkPositional().FromHashOf(this.Key);
+        this.noise = NormalNoise.Create(random, (int)this.FirstOctave, this.Amplitudes.AsSpan());
+    }
+
+    public double GetValue(double x, double y, double z) =>
+        this.seeded is null ? this.Noise.GetValue(x, y, z) : this.seeded.GetValue(x, y, z);
 
     /// <summary>The noise <see cref="GetValue"/> samples.</summary>
     internal NormalNoise NormalNoise => this.Noise;

@@ -5,11 +5,11 @@ namespace Obsidian.WorldData.Generators.Features;
 
 internal sealed partial class FeatureRegistry
 {
-    private static Feature ReplaceBlobs(JsonElement json)
+    private Feature ReplaceBlobs(JsonElement json)
     {
         var target = ReadBlock(json.GetProperty("target"));
         var replacement = ReadBlock(json.GetProperty("state"));
-        var radius = ValueProviders.Int(json.GetProperty("radius"));
+        var radius = this.Int(json.GetProperty("radius"));
 
         return (context, random, origin) =>
         {

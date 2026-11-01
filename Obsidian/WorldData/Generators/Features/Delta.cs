@@ -6,12 +6,12 @@ namespace Obsidian.WorldData.Generators.Features;
 
 internal sealed partial class FeatureRegistry
 {
-    private static Feature Delta(JsonElement json)
+    private Feature Delta(JsonElement json)
     {
         var contents = ReadBlock(json.GetProperty("contents"));
         var rim = ReadBlock(json.GetProperty("rim"));
-        var size = ValueProviders.Int(json.GetProperty("size"));
-        var rimSize = ValueProviders.Int(json.GetProperty("rim_size"));
+        var size = this.Int(json.GetProperty("size"));
+        var rimSize = this.Int(json.GetProperty("rim_size"));
 
         return (context, random, origin) =>
         {

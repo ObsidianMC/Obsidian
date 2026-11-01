@@ -85,7 +85,12 @@ internal static partial class PluginFeatures
     /// Whether a placed feature is vanilla's or a loaded plugin's.
     /// </summary>
     public static bool IsPlacedFeature(string identifier) =>
-        RegistryIds.IsPlacedFeature(identifier) || Current.PlacedFeatures.ContainsKey(identifier);
+        RegistryIds.IsPlacedFeature(identifier)
+        || Current.PlacedFeatures.ContainsKey(identifier)
+        // A placed feature only the 26.3 registry builds, such as one in 26.3's schema, isn't in the legacy set.
+        // Later plugins' biome files can still name it; the 26.3 registry checks it and isolates what needs it.
+        || Volatile.Read(ref inputs).Files.Any(file =>
+            file.Registry == PlacedFeature && file.Identifier == identifier);
 
     /// <summary>
     /// Whether a configured carver is vanilla's or a loaded plugin's.
