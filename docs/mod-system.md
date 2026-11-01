@@ -326,9 +326,8 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      before (see [plugin-content.md](plugin-content.md#biome-regions)).
    - Phase 3.8, structures (done): plugins' and data packs' structures, structure sets, template pools, processor
      lists and structure templates, from `data/<namespace>/worldgen/structure`, `structure_set`, `template_pool`,
-     `processor_list` and `data/<namespace>/structure/*.nbt` files, read at runtime like vanilla 1.21.11's codecs
-     into the same objects as vanilla's compiled ones (a parity test reads all of vanilla's both ways and compares
-     them). Every data-driven vanilla structure type is available, jigsaw structures with every pool element type,
+     `processor_list` and `data/<namespace>/structure/*.nbt` files, read at runtime like vanilla's codecs into the
+     same objects as vanilla's own, which are read the same way from 26.3's files. Every data-driven vanilla structure type is available, jigsaw structures with every pool element type,
      both placements with exclusion zones and frequency reduction, and plugins' processor types in processor lists.
      Like features, they're applied again on every plugin change: a level's structures move to the new sets, whose
      starts chunks not generated yet get, keeping the starts of the sets that stay; starts of a set that's gone, and

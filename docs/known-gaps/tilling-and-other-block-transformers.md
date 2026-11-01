@@ -8,6 +8,5 @@ axes strip, scrape and remove wax, and shovels make paths. The generated registr
 sounds, particles, durability and rooted-dirt loot. Component overrides and removals work on other items too.
 `DataSystemsFixtures.java` captures vanilla's provider results; `DataSystems` replays them and exercises packet use.
 
-Gameplay tag uses were checked against 26.3's tags. Mushroom survival now uses
-`overrides_mushroom_light_requirement`; the removed `mushroom_grow_block` tag is only retained for Phase 5's legacy
-world generation.
+Gameplay tag uses were checked against 26.3's tags. Mushroom survival, and the worldgen helpers that named the
+removed `mushroom_grow_block` tag, now use `overrides_mushroom_light_requirement`.
