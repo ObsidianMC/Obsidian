@@ -446,6 +446,13 @@ internal static partial class PluginDimensions
             : null;
 
     /// <summary>
+    /// Vanilla's world preset's level stem of one of its dimensions, or null for another dimension. 26.3's are the
+    /// same as 1.21.11's.
+    /// </summary>
+    public static byte[]? VanillaStem(string identifier) =>
+        vanillaStems.TryGetValue(identifier, out var stem) ? Encoding.UTF8.GetBytes(stem.Stem) : null;
+
+    /// <summary>
     /// The dimension types of vanilla's dimensions no level took yet whose build range, as a file overrides it, the
     /// dimension can't generate in, with why: Obsidian can't clamp generation to the build range, as vanilla does,
     /// so such a type has to stay vanilla's.
@@ -553,6 +560,9 @@ internal static partial class PluginDimensions
                 if (!file.Dimension.IsReleased && file.Dimension.Plugins.Contains(plugin))
                     file.Dimension.Release();
             }
+
+            // The 26.3 pipeline's dimensions too, until it replaces the 1.21.11 one.
+            PluginWorldgen.Release(plugin);
 
             return released;
         }

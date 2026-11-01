@@ -1,13 +1,22 @@
 using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.API.World.Generator;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Generators.Mojang;
 using System.Buffers;
+using Obsidian.WorldData.Generators.Mojang.Regions;
 using System.Threading;
 
 namespace Obsidian.WorldData.Generators.Biomes;
 
-/// <summary>26.3 biome selection over the float router, separate from the live legacy biome source.</summary>
-internal sealed class ClimateSource : IBiomeSource
+/// <summary>
+/// 26.3 biome selection over the float router, separate from the live legacy biome source: a dimension's
+/// <see cref="BiomeLayout"/>, with plugins' biome regions over it (see <see cref="RegionLayout"/>).
+/// </summary>
+/// <remarks>
+/// It's also the climate sampler plugins' biome sources read (<see cref="IClimateSampler"/>): the router's values, as
+/// floats, before quantizing.
+/// </remarks>
+internal sealed class ClimateSource : IBiomeSource, IClimateSampler
 {
     private static readonly string[] climateFields =
         ["temperature", "vegetation", "continents", "erosion", "depth", "ridges"];
@@ -23,7 +32,15 @@ internal sealed class ClimateSource : IBiomeSource
 
     private readonly DensityFunction[] functions;
 
+    private readonly BiomeLayout layout;
+
+    // The layout's parameter list when it's multi-noise, which filling searches itself.
     private readonly BiomeParameters? parameters;
+
+    // Where plugins' biome regions are, or null without any.
+    private readonly RegionLayout? regions;
+
+    private readonly IReadOnlyList<string> possibleBiomes;
 
     // The parameter list's biomes by their name instances, which the tree's searches return: comparing references
     // is cheaper than hashing the names. Read only, so threads share it.
@@ -38,9 +55,19 @@ internal sealed class ClimateSource : IBiomeSource
 
     /// <param name="preset">minecraft:overworld, minecraft:nether, or minecraft:the_end.</param>
     public ClimateSource(WorldgenData data, DensityRouter router, string preset)
+        : this(router, BiomeLayout.Vanilla(data, preset))
+    {
+    }
+
+    /// <param name="layout">How the dimension's biome source picks biomes.</param>
+    /// <param name="regions">Where plugins' biome regions are, or null for the layout alone.</param>
+    public ClimateSource(DensityRouter router, BiomeLayout layout, RegionLayout? regions = null)
     {
         this.functions = climateFields.Select(field => router.Functions[field]).ToArray();
-        this.parameters = preset == "minecraft:the_end" ? null : BiomeParameters.Read(data, preset);
+        this.layout = layout;
+        this.parameters = (layout as MultiNoiseLayout)?.Parameters;
+        this.regions = regions;
+        this.possibleBiomes = PossibleNames(layout, regions);
 
         foreach (var (_, biome) in this.parameters?.Entries ?? [])
         {
@@ -92,19 +119,61 @@ internal sealed class ClimateSource : IBiomeSource
         return point;
     }
 
-    /// <summary>Source encounter order, which also determines decoration's feature identities.</summary>
-    public IEnumerable<string> PossibleBiomes => this.parameters is null
-        ? ["minecraft:the_end", "minecraft:end_highlands", "minecraft:end_midlands",
-            "minecraft:small_end_islands", "minecraft:end_barrens"]
-        : this.parameters.Entries.Select(entry => entry.Biome).Distinct();
+    /// <summary>
+    /// Source encounter order, which also determines decoration's feature identities: the layout's, followed by those
+    /// its regions add.
+    /// </summary>
+    public IEnumerable<string> PossibleBiomes => this.possibleBiomes;
 
     public BiomeCodec GetNoiseBiome(int quartX, int quartY, int quartZ)
     {
-        var name = this.parameters is null
-            ? this.EndBiome(quartX, quartY, quartZ)
-            : this.parameters.Tree.Search(this.CachedSample(quartX, quartY, quartZ));
+        if (this.regions?.RegionAt(quartX, quartZ) is BiomeRegion region)
+            return this.RegionBiome(region, quartX, quartY, quartZ);
 
-        return this.Codec(name);
+        return this.LayoutBiome(quartX, quartY, quartZ);
+    }
+
+    // The layout's own biome, without regions.
+    private BiomeCodec LayoutBiome(int quartX, int quartY, int quartZ)
+    {
+        if (this.parameters is not null)
+            return this.Codec(this.parameters.Tree.Search(this.CachedSample(quartX, quartY, quartZ)));
+
+        return this.layout.GetBiome(this, quartX, quartY, quartZ);
+    }
+
+    private BiomeCodec RegionBiome(BiomeRegion region, int quartX, int quartY, int quartZ)
+    {
+        if (region.ReadsClimate)
+            return region.Select(null, this.CachedSample(quartX, quartY, quartZ));
+
+        return region.Select(this.LayoutBiome(quartX, quartY, quartZ), default);
+    }
+
+    // The climate as plugins' biome sources read it: the router's float values, before quantizing.
+    ClimatePoint IClimateSampler.Sample(int quartX, int quartY, int quartZ)
+    {
+        var x = quartX << 2;
+        var y = quartY << 2;
+        var z = quartZ << 2;
+
+        return new ClimatePoint(
+            this.functions[0].Sample(x, y, z),
+            this.functions[1].Sample(x, y, z),
+            this.functions[2].Sample(x, y, z),
+            this.functions[3].Sample(x, y, z),
+            this.functions[4].Sample(x, y, z),
+            this.functions[5].Sample(x, y, z));
+    }
+
+    private static IReadOnlyList<string> PossibleNames(BiomeLayout layout, RegionLayout? regions)
+    {
+        if (regions is null)
+            return layout.PossibleBiomes;
+
+        var biomes = RegionLayout.PossibleBiomes(layout.PossibleCodecs(), regions.Regions);
+
+        return [.. biomes.Select(biome => biome.Name)];
     }
 
     private BiomeCodec Codec(string name) => this.codecs.TryGetValue(name, out var codec) ? codec : GetBiome(name);
@@ -206,6 +275,7 @@ internal sealed class ClimateSource : IBiomeSource
         int height)
     {
         var run = new BiomeParameterTree<string>.SearchRun();
+        var columnRegions = this.ColumnRegions(chunkX, chunkZ);
 
         for (var sectionY = 0; sectionY < height; sectionY += 16)
         {
@@ -226,7 +296,7 @@ internal sealed class ClimateSource : IBiomeSource
                         else
                         {
                             var target = Target(climate, volume.Size, volume.Index(x, quartY, z));
-                            biome = this.Codec(this.parameters!.Tree.Search(target, ref run));
+                            biome = this.SearchFilled(target, columnRegions?[x * 4 + z], ref run);
                         }
 
                         indices[StoredBiomes.Index(x, quartY, z)] = this.paletteIndices[biome];
@@ -234,6 +304,39 @@ internal sealed class ClimateSource : IBiomeSource
                 }
             }
         }
+    }
+
+    // A multi-noise biome while filling: the region's where a region is, else the search continuing the chunk's run.
+    private BiomeCodec SearchFilled(
+        TargetPoint sample,
+        BiomeRegion? region,
+        ref BiomeParameterTree<string>.SearchRun run)
+    {
+        if (region is not null && region.ReadsClimate)
+            return region.Select(null, sample);
+
+        var biome = this.Codec(this.parameters!.Tree.Search(sample, ref run));
+
+        return region is null ? biome : region.Select(biome, default);
+    }
+
+    // The region of each of a chunk's 16 quart columns, by x * 4 + z, or null without regions.
+    private BiomeRegion?[]? ColumnRegions(int chunkX, int chunkZ)
+    {
+        if (this.regions is null)
+            return null;
+
+        var columns = new BiomeRegion?[16];
+
+        for (var x = 0; x < 4; x++)
+        {
+            for (var z = 0; z < 4; z++)
+            {
+                columns[x * 4 + z] = this.regions.RegionAt((chunkX << 2) + x, (chunkZ << 2) + z);
+            }
+        }
+
+        return columns;
     }
 
     // Samples each climate field over the volume into climate, one field after another (see Target).
@@ -279,7 +382,11 @@ internal sealed class ClimateSource : IBiomeSource
         }
     }
 
-    private string EndBiome(int quartX, int quartY, int quartZ)
+    /// <summary>Vanilla's <c>the_end</c> biome source (see <see cref="EndLayout"/>).</summary>
+    internal BiomeCodec EndBiome(int quartX, int quartY, int quartZ) =>
+        this.Codec(this.EndBiomeName(quartX, quartY, quartZ));
+
+    private string EndBiomeName(int quartX, int quartY, int quartZ)
     {
         var sectionX = quartX >> 2;
         var sectionZ = quartZ >> 2;

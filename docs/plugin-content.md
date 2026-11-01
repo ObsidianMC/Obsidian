@@ -3066,6 +3066,21 @@ The rules:
   like noises of one identifier, so name a noise file to have two different noises of the same parameters. Noise
   settings may be defined inline in a level stem (see [Dimensions](#dimensions)).
 
+### In the 26.3 generator
+
+The live generator still reads 1.21.11's formats above. The 26.3 generator that replaces it in Phase 5 of the
+[26.3 port](porting-26.3-plan.md) reads the same files, as written, in vanilla 26.3's schemas: noise settings have a
+`material_rule` instead of `surface_rule`, the 8 functions of 26.3's `noise_router` (`chunk_surface_level` included)
+and an optional `aquifers` object; density functions take 26.3's types and operands (`add` with `left` and `right`);
+noises are `{"base_octave": ..., "octave_count": ...}`. Until the switch, a file in 1.21.11's schema fails the 26.3
+dimensions naming it, and one in 26.3's is left out of the live generator with a warning. Plugins' biome sources, biome regions and dimensions generate in both, with the same
+lifecycle, and regions land in the same places in both. Two limits, until the switch:
+
+- A plugin's density function type gets 26.3 density functions in its `IDensityFunction` properties, already seeded,
+  so `MapAll` isn't called; it can't hold a noise, since 26.3's noises aren't `BaseNoise`s. Take a density function,
+  like a `minecraft:noise`, instead.
+- Plugins' surface rule and condition types aren't read in `material_rule` yet.
+
 ### Noise types
 
 Like a NeoForge mod's density function, surface rule and biome source types, a plugin registers types that its

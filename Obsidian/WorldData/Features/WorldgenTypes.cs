@@ -66,6 +66,15 @@ internal sealed class WorldgenTypes
             : null;
     }
 
+    /// <summary>
+    /// The type a plugin registered with the identifier for exactly <paramref name="target"/>, or null; Obsidian's
+    /// own types aren't looked at.
+    /// </summary>
+    public Type? FindRegistered(string identifier, Type target) =>
+        this.registered.TryGetValue(identifier, out var registrations)
+            ? registrations.FirstOrDefault(registration => registration.Base == target)?.Type
+            : null;
+
     private static Dictionary<string, List<Type>> Scan(IEnumerable<Assembly> assemblies)
     {
         var types = new Dictionary<string, List<Type>>();

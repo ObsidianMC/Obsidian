@@ -98,6 +98,9 @@ internal sealed partial class WorldgenReader
     // Like vanilla's density function codec: a number is a constant, a string a registered function.
     private IDensityFunction ReadDensityFunction(JsonElement json, string path)
     {
+        if (this.DensityFunctions is Func<JsonElement, string, IDensityFunction> read)
+            return read(json, path);
+
         if (json.ValueKind == JsonValueKind.Number)
         {
             return new ConstantDensityFunction

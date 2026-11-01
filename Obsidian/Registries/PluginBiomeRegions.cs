@@ -167,7 +167,13 @@ internal static partial class PluginBiomeRegions
             fixedRegions = fixedRegions.Remove(dimension);
     }
 
-    private static ImmutableArray<BiomeRegion> Fix(string dimension)
+    /// <summary>
+    /// A dimension's regions, fixed until the server stops as its first biome source is created: the 26.3 pipeline
+    /// fixes them as it creates a dimension's generator (see
+    /// <see cref="WorldData.Generators.Biomes.WorldgenDimension.FixRegions"/>).
+    /// </summary>
+    /// <param name="dimension">The dimension's identifier, its level stem's.</param>
+    public static ImmutableArray<BiomeRegion> Fix(string dimension)
     {
         lock (applying)
         {

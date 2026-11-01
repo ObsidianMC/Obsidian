@@ -15,11 +15,24 @@ internal sealed class TerrainGenerator
         long seed,
         string settingsId,
         DensityFunction? beardifier = null)
+        : this(data, seed, NoiseGeneratorSettings.Read(data, settingsId), beardifier)
+    {
+    }
+
+    /// <param name="settings">The noise settings, read from <paramref name="data"/> or defined inline.</param>
+    /// <param name="types">The density function types beyond vanilla's the settings may name, such as plugins'.
+    /// </param>
+    public TerrainGenerator(
+        WorldgenData data,
+        long seed,
+        NoiseGeneratorSettings settings,
+        DensityFunction? beardifier = null,
+        IDensityTypes? types = null)
     {
         this.Data = data;
         this.Seed = seed;
-        this.Settings = NoiseGeneratorSettings.Read(data, settingsId);
-        this.Compiler = new DensityCompiler(data, seed, this.Settings.LegacyRandomSource, beardifier);
+        this.Settings = settings;
+        this.Compiler = new DensityCompiler(data, seed, this.Settings.LegacyRandomSource, beardifier, types);
         this.Router = DensityRouter.Create(this.Settings, this.Compiler);
         this.DefaultBlock = BlocksRegistry.Get(this.Settings.DefaultBlock);
         this.DefaultFluid = BlocksRegistry.Get(this.Settings.DefaultFluid);

@@ -70,6 +70,13 @@ internal sealed partial class WorldgenReader(
     private readonly StructureLookups structures = structures ?? StructureLookups.Vanilla;
 
     /// <summary>
+    /// Reads every density function value instead of this reader, numbers and identifiers included, such as the
+    /// 26.3 compiler reading those of a plugin's density function (see
+    /// <see cref="Generators.Density.PluginDensityTypes"/>); null to read them as 1.21.11's.
+    /// </summary>
+    public Func<JsonElement, string, IDensityFunction>? DensityFunctions { get; init; }
+
+    /// <summary>
     /// Reads a configured feature, <c>{"type": ..., "config": {...}}</c>.
     /// </summary>
     /// <param name="identifier">The feature's identifier, or null for one defined inline.</param>
@@ -92,6 +99,15 @@ internal sealed partial class WorldgenReader(
     /// <param name="path">Where the value is in its file, for messages.</param>
     public T Read<T>(JsonElement json, string path = "") =>
         Guard(path, () => (T)this.ReadValue(typeof(T), json, path)!);
+
+    /// <summary>
+    /// Reads an object of one of the types data can name for <typeparamref name="T"/> by its <c>type</c>, without
+    /// <see cref="DensityFunctions"/> reading it, such as a plugin's density function whose own density functions it
+    /// reads.
+    /// </summary>
+    /// <param name="path">Where the value is in its file, for messages.</param>
+    public T ReadTyped<T>(JsonElement json, string path = "") =>
+        Guard(path, () => (T)this.ReadPolymorphic(typeof(T), json, path));
 
     // Reading reflects over types, plugins' included, and runs their constructors and setters, which can fail in
     // more ways than the data's errors (a plugin type missing a dependency, an open generic type, ...). Any failure

@@ -1,8 +1,10 @@
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.Plugins;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Features;
 using Obsidian.WorldData.Generators.Mojang.Features;
+using Obsidian.WorldData.Generators.Mojang.Regions;
 using Obsidian.WorldData.Generators.Mojang.Structures;
 using Obsidian.WorldData.Generators.Terrain;
 using Obsidian.WorldData.Structures;
@@ -13,6 +15,12 @@ using TerrainGenerator = Obsidian.WorldData.Generators.Terrain.TerrainGenerator;
 namespace Obsidian.WorldData.Generators.Biomes;
 
 /// <summary>Runs the 26.3 biome, terrain and features statuses without switching the live generator.</summary>
+/// <remarks>
+/// A dimension made of plugins' types (see <see cref="WorldgenDimension.Plugins"/>) enters them for each step that
+/// can run their code: a plugin unloading stops it with a <see cref="GeneratorStoppedException"/>, and their code
+/// failing throws a <see cref="PluginGenerationException"/> naming them. Either only concerns this dimension's
+/// generator; other dimensions, and other worlds of this one, keep generating.
+/// </remarks>
 internal sealed class BiomeTerrain
 {
     private readonly TerrainGenerator terrain;
@@ -32,16 +40,38 @@ internal sealed class BiomeTerrain
     /// </param>
     /// <param name="structures">Whether structures start, beard the terrain and are placed; they need
     /// <paramref name="features"/>, whose templates and features they place.</param>
+    /// <param name="preset">The biome preset of one of vanilla's dimensions: minecraft:overworld, minecraft:nether
+    /// or minecraft:the_end.</param>
     public BiomeTerrain(TerrainGenerator terrain, string preset, FeatureRegistry? features = null,
         bool structures = false)
+        : this(
+            terrain,
+            VanillaDimension(preset),
+            VanillaDimension(preset),
+            new ClimateSource(terrain.Data, terrain.Router, preset),
+            [],
+            features,
+            structures)
+    {
+    }
+
+    private BiomeTerrain(
+        TerrainGenerator terrain,
+        string identifier,
+        string dimension,
+        ClimateSource source,
+        ImmutableArray<PluginContainer> plugins,
+        FeatureRegistry? features,
+        bool structures)
     {
         this.terrain = terrain;
         this.features = features;
-        var dimension = preset == "minecraft:nether" ? "minecraft:the_nether" : preset;
+        this.Identifier = identifier;
+        this.Plugins = plugins;
         var dimensionType = terrain.Data.Read("dimension_type", dimension);
         var hasSkylight = dimensionType.GetProperty("has_skylight").GetBoolean();
         this.unlitBrightness = hasSkylight ? 15 : 0;
-        this.Source = new ClimateSource(terrain.Data, terrain.Router, preset);
+        this.Source = source;
         // Point lookups must revisit the tree: memoizing a quart changes later exact ties' previous-leaf input.
         this.manager = new BiomeManager(this.Source, terrain.Seed, terrain.Settings.MinY,
             terrain.Settings.Height, cacheNoiseBiomes: false, clampToHeight: false);
@@ -55,6 +85,58 @@ internal sealed class BiomeTerrain
             this.Structures = this.CreateStructures();
         }
     }
+
+    /// <summary>
+    /// Builds the 26.3 statuses of a dimension, vanilla's or a plugin's, for a world. Its biome regions are fixed
+    /// from then on (see <see cref="WorldgenDimension.FixRegions"/>).
+    /// </summary>
+    /// <param name="features">As for the constructor.</param>
+    /// <param name="structures">As for the constructor.</param>
+    /// <exception cref="InvalidOperationException">The dimension was released.</exception>
+    /// <exception cref="GeneratorStoppedException">A plugin it's made of is unloading.</exception>
+    /// <exception cref="PluginGenerationException">A plugin's code failed building it.</exception>
+    public static BiomeTerrain Create(
+        WorldgenDimension dimension,
+        long seed,
+        FeatureRegistry? features = null,
+        bool structures = false)
+    {
+        // Taken before entering the plugins, so that a released dimension says so, whether or not they unloaded.
+        var settings = dimension.Settings;
+        var biomeLayout = dimension.Layout;
+        var densityTypes = dimension.DensityTypes;
+
+        using var calls = GeneratorCalls.Enter(dimension.Identifier, dimension.Plugins);
+
+        try
+        {
+            var terrain = new TerrainGenerator(dimension.Data, seed, settings, types: densityTypes);
+            var regions = dimension.FixRegions();
+            var regionLayout = regions.IsDefaultOrEmpty
+                ? null
+                : new RegionLayout(dimension.Identifier, regions, terrain.Compiler.Random);
+            var source = new ClimateSource(terrain.Router, biomeLayout, regionLayout);
+
+            return new BiomeTerrain(
+                terrain,
+                dimension.Identifier,
+                dimension.DimensionType,
+                source,
+                dimension.Plugins,
+                features,
+                structures);
+        }
+        catch (Exception ex) when (Contains(dimension.Plugins, ex))
+        {
+            throw Failed(dimension.Identifier, dimension.Plugins, ex);
+        }
+    }
+
+    /// <summary>The dimension's identifier, its level stem's.</summary>
+    public string Identifier { get; }
+
+    /// <summary>The plugins whose types the dimension is made of, which each step enters.</summary>
+    public ImmutableArray<PluginContainer> Plugins { get; }
 
     public ClimateSource Source { get; }
 
@@ -110,6 +192,20 @@ internal sealed class BiomeTerrain
     /// </summary>
     public WorldGenRegion Decorate(IReadOnlyDictionary<(int X, int Z), IChunk> chunks, int chunkX, int chunkZ)
     {
+        using var calls = GeneratorCalls.Enter(this.Identifier, this.Plugins);
+
+        try
+        {
+            return this.DecorateEntered(chunks, chunkX, chunkZ);
+        }
+        catch (Exception ex) when (Contains(this.Plugins, ex))
+        {
+            throw Failed(this.Identifier, this.Plugins, ex);
+        }
+    }
+
+    private WorldGenRegion DecorateEntered(IReadOnlyDictionary<(int X, int Z), IChunk> chunks, int chunkX, int chunkZ)
+    {
         var center = chunks[(chunkX, chunkZ)];
         var region = this.CreateRegion(chunks, chunkX, chunkZ);
         var neighbors = new List<IChunk>();
@@ -149,6 +245,23 @@ internal sealed class BiomeTerrain
     /// as <see cref="Decorate"/> does before each step's features. Its eight neighbors must exist.
     /// </summary>
     public WorldGenRegion PlaceStructures(IReadOnlyDictionary<(int X, int Z), IChunk> chunks, int chunkX, int chunkZ)
+    {
+        using var calls = GeneratorCalls.Enter(this.Identifier, this.Plugins);
+
+        try
+        {
+            return this.PlaceStructuresEntered(chunks, chunkX, chunkZ);
+        }
+        catch (Exception ex) when (Contains(this.Plugins, ex))
+        {
+            throw Failed(this.Identifier, this.Plugins, ex);
+        }
+    }
+
+    private WorldGenRegion PlaceStructuresEntered(
+        IReadOnlyDictionary<(int X, int Z), IChunk> chunks,
+        int chunkX,
+        int chunkZ)
     {
         var region = this.CreateRegion(chunks, chunkX, chunkZ);
         var place = this.StructurePlacer(region, chunkX, chunkZ);
@@ -294,6 +407,20 @@ internal sealed class BiomeTerrain
         ICollection<Vector>? fluidUpdates = null,
         Func<int, int, IChunk?>? neighbors = null)
     {
+        using var calls = GeneratorCalls.Enter(this.Identifier, this.Plugins);
+
+        try
+        {
+            this.GenerateEntered(chunk, fluidUpdates, neighbors);
+        }
+        catch (Exception ex) when (Contains(this.Plugins, ex))
+        {
+            throw Failed(this.Identifier, this.Plugins, ex);
+        }
+    }
+
+    private void GenerateEntered(IChunk chunk, ICollection<Vector>? fluidUpdates, Func<int, int, IChunk?>? neighbors)
+    {
         using var writes = (chunk as Chunk)?.BeginTerrainWrites();
         this.Source.FillBiomes(chunk);
         fluidUpdates ??= (chunk as Chunk)?.PostProcessing;
@@ -307,6 +434,27 @@ internal sealed class BiomeTerrain
         // Chunk storage keeps the legacy enum until the live pipeline switches; carvers saves as 26.3 terrain.
         chunk.SetChunkStatus(ChunkGenStage.carvers);
     }
+
+    // A dimension made of plugins' types blames them for what fails while it generates, except their unloading.
+    private static bool Contains(ImmutableArray<PluginContainer> plugins, Exception exception) =>
+        !plugins.IsDefaultOrEmpty
+        && exception is not (GeneratorStoppedException or PluginGenerationException or OutOfMemoryException);
+
+    private static PluginGenerationException Failed(
+        string identifier,
+        ImmutableArray<PluginContainer> plugins,
+        Exception exception)
+    {
+        var names = string.Join(", ", plugins.Select(plugin => plugin.Info.Name));
+
+        return new PluginGenerationException(
+            plugins,
+            $"{identifier} failed generating with {names}: {exception.Message}",
+            exception);
+    }
+
+    private static string VanillaDimension(string preset) =>
+        preset == "minecraft:nether" ? "minecraft:the_nether" : preset;
 
     /// <summary>The density of the structures around a chunk, or <c>null</c> when structures are off.</summary>
     public Beardifier? BeardifierFor(int chunkX, int chunkZ)

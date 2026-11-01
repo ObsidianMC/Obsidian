@@ -26,20 +26,25 @@ internal sealed partial class DensityCompiler
     private readonly bool legacyRandomSource;
     private readonly IPositionalRandomFactory random;
     private readonly DensityFunction? beardifier;
+    private readonly IDensityTypes? types;
     private readonly ConcurrentDictionary<string, NoiseStack> noises = new();
     private readonly ConcurrentDictionary<string, DensityFunction> functions = new();
 
     /// <param name="legacyRandomSource">The noise settings' <c>legacy_random_source</c>.</param>
+    /// <param name="types">The density function types beyond vanilla's that the JSON may name, such as plugins'
+    /// (see <see cref="PluginDensityTypes"/>); none by default.</param>
     public DensityCompiler(
         WorldgenData data,
         long seed,
         bool legacyRandomSource,
-        DensityFunction? beardifier = null)
+        DensityFunction? beardifier = null,
+        IDensityTypes? types = null)
     {
         IRandomSource worldRandom = legacyRandomSource ? new LegacyRandomSource(seed) : new XoroshiroRandomSource(seed);
 
         this.data = data;
         this.beardifier = beardifier;
+        this.types = types;
         this.seed = seed;
         this.legacyRandomSource = legacyRandomSource;
         this.random = worldRandom.ForkPositional();
@@ -154,7 +159,8 @@ internal sealed partial class DensityCompiler
             "slice" => this.CompileSlice(json, path),
             "find_top_surface" => this.CompileFindTopSurface(json, path),
             "old_blended_noise" => this.CompileBlendedNoise(json, path),
-            _ => throw Error(Field(path, "type"), $"{type} isn't a density function type")
+            _ => this.types?.Compile(type, json, path, this)
+                ?? throw Error(Field(path, "type"), $"{type} isn't a density function type")
         };
     }
 

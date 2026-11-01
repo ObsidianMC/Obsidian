@@ -117,6 +117,9 @@ internal static partial class PluginNoise
             file => file.Source,
             logger);
 
+        // The files' own entries, without vanilla's 1.21.11 entries read again below, for the 26.3 pipeline.
+        NoiseFile[] own = [.. kept];
+
         if (builtIn)
             kept.AddRange(VanillaDependents(kept));
 
@@ -134,7 +137,7 @@ internal static partial class PluginNoise
             }
         }
 
-        return resolver.Result();
+        return resolver.Result(own);
     }
 
     // Vanilla's entries naming an overridden one, read again from vanilla's files so that they use the override.
@@ -226,7 +229,7 @@ internal static partial class PluginNoise
             };
         }
 
-        public WorldgenNoise Result() => new(
+        public WorldgenNoise Result(IReadOnlyList<NoiseFile> own) => new(
             this.settings.ToFrozenDictionary(),
             this.functions.ToFrozenDictionary(),
             this.noises.ToFrozenDictionary(),
@@ -234,7 +237,8 @@ internal static partial class PluginNoise
             this.types,
             this.builtIn)
         {
-            ParameterLists = this.parameterLists.ToFrozenDictionary()
+            ParameterLists = this.parameterLists.ToFrozenDictionary(),
+            Files = own
         };
 
         // Vanilla's compiled entry, unless a file overrides it or it was read again because it names an override.
@@ -442,6 +446,13 @@ internal sealed class WorldgenNoise
     /// The worldgen types the entries were read with: Obsidian's and the loaded plugins'.
     /// </summary>
     public WorldgenTypes Types { get; }
+
+    /// <summary>
+    /// The files the entries were read from, as written, whichever pipeline's format they're in: the 26.3 pipeline
+    /// reads them again as 26.3 entries (see <see cref="PluginWorldgen"/>), and the 1.21.11 reader leaves out those it
+    /// can't read.
+    /// </summary>
+    public IReadOnlyList<NoiseFile> Files { get; init; } = [];
 
     /// <summary>
     /// Finds noise settings, vanilla's or a plugin's.

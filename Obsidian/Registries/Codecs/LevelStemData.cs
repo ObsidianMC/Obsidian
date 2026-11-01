@@ -31,7 +31,7 @@ namespace Obsidian.Registries.Codecs;
 /// Obsidian can't generate is rejected with a message saying so.
 /// </para>
 /// </remarks>
-internal static class LevelStemData
+internal static partial class LevelStemData
 {
     private const string ExpectedParameter =
         "expected a number from -2 to 2, [min, max] or {\"min\": ..., \"max\": ...}";
@@ -258,7 +258,7 @@ internal static class LevelStemData
     }
 
     // A dimension type by identifier: vanilla's or a plugin's, or one the stem defined inline (see LevelStemInline).
-    private static string DimensionType(JsonElement value, string path)
+    internal static string DimensionType(JsonElement value, string path)
     {
         var identifier = CodecJson.Identifier(value, path);
 
@@ -324,6 +324,19 @@ internal static class LevelStemData
             HashSet<PluginContainer> plugins,
             ISet<object>? entries)
     {
+        var (source, biomes) = ReadPluginSource(value, path, noise, plugins, entries);
+
+        return (randomState => new PluginBiomeSource(source, biomes, randomState), () => biomes);
+    }
+
+    // A plugin's biome source with its possible biomes, read here so that ordering features doesn't call the plugin.
+    private static (BiomeSourceBase Source, List<BiomeCodec> Biomes) ReadPluginSource(
+        JsonElement value,
+        string path,
+        WorldgenNoise noise,
+        HashSet<PluginContainer> plugins,
+        ISet<object>? entries)
+    {
         var source = noise.Reader(plugins, entries).Read<BiomeSourceBase>(value, path);
         var biomesPath = CodecJson.Field(path, "possible_biomes");
         IReadOnlyList<string> names;
@@ -349,7 +362,7 @@ internal static class LevelStemData
         if (biomes.Count == 0)
             throw CodecJson.Error(biomesPath, $"{source.Type} has no possible biomes");
 
-        return (randomState => new PluginBiomeSource(source, biomes, randomState), () => biomes);
+        return (source, biomes);
     }
 
     // Like vanilla's Codec.mapEither: an inline biomes list, or else a parameter list (a preset's).
@@ -480,7 +493,7 @@ internal static class LevelStemData
     }
 
     // A biome by identifier: vanilla's or a plugin's, or one the stem defined inline (see LevelStemInline).
-    private static BiomeCodec Biome(JsonElement value, string path)
+    internal static BiomeCodec Biome(JsonElement value, string path)
     {
         var identifier = CodecJson.Identifier(value, path);
 
@@ -491,7 +504,7 @@ internal static class LevelStemData
 
     // Vanilla's biome holder set: a biome, a list of them or a biome tag. Vanilla takes an empty one, but generating
     // with it fails, so it's rejected here.
-    private static List<BiomeCodec> BiomeList(JsonElement value, string path)
+    internal static List<BiomeCodec> BiomeList(JsonElement value, string path)
     {
         List<BiomeCodec> biomes;
 
