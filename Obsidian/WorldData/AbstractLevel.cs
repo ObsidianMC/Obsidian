@@ -50,7 +50,7 @@ public abstract partial class AbstractLevel : ILevel
     // A failed background generation job, rethrown by the next ManageChunksAsync so failures still reach the server.
     private Exception? generationFailure;
 
-    // The generation jobs finished since the last FlushRegionsAsync started, so disposal knows whether to save again.
+    // Generation jobs finished since the last flush started, plus failed saves that disposal must retry.
     private int jobsSinceFlush;
 
     // The chunks generation jobs may write, counted per job, which aren't unloaded meanwhile: a job writes up to 2 chunks
@@ -1569,6 +1569,8 @@ public abstract partial class AbstractLevel : ILevel
     public async virtual Task FlushRegionsAsync()
     {
         Region[] written = [];
+        var failures = new List<Exception>();
+        var jobsBeforeFlush = 0;
         try
         {
             await simulationGate.WaitAsync();
@@ -1576,23 +1578,41 @@ public abstract partial class AbstractLevel : ILevel
             {
                 this.TakeBlockEntityChanges();
 
-                Interlocked.Exchange(ref this.jobsSinceFlush, 0);
+                jobsBeforeFlush = Interlocked.Exchange(ref this.jobsSinceFlush, 0);
                 SavingEntities = true;
+                var failedRetries = new HashSet<IRegion>();
                 foreach (var region in Regions.Values.OfType<Region>())
                 {
                     bool retry;
                     lock (this.Fluids.TickLock)
                         retry = region.UnloadFailed;
                     if (retry)
-                        await this.UnloadRegionUnderGateAsync(region.X, region.Z, retry: true);
+                    {
+                        var failure = await CaptureRegionSaveFailureAsync(region,
+                            () => this.UnloadRegionUnderGateAsync(region.X, region.Z, retry: true));
+                        if (failure is not null)
+                        {
+                            failures.Add(failure);
+                            failedRetries.Add(region);
+                        }
+                    }
                 }
 
-                var regions = Regions.Values.ToArray();
+                // Failed retries remain reachable for the next autosave. Their failures must not prevent unrelated
+                // regions from taking a snapshot, nor should they be attempted twice in this save.
+                var regions = Regions.Values.Where(region => !failedRetries.Contains(region)).ToArray();
                 written = [.. regions.OfType<Region>()];
-                await Task.WhenAll(regions.Select(region => region is Region concrete
-                    ? concrete.WriteChangesAsync()
-                    : region.FlushAsync()));
-                this.SavePluginData();
+                var saves = regions.Select(region => CaptureRegionSaveFailureAsync(region,
+                    () => region is Region concrete ? concrete.WriteChangesAsync() : region.FlushAsync()));
+                failures.AddRange((await Task.WhenAll(saves)).OfType<Exception>());
+                try
+                {
+                    this.SavePluginData();
+                }
+                catch (Exception failure)
+                {
+                    failures.Add(failure);
+                }
             }
             finally
             {
@@ -1602,6 +1622,7 @@ public abstract partial class AbstractLevel : ILevel
         }
         catch
         {
+            Interlocked.Add(ref this.jobsSinceFlush, Math.Max(1, jobsBeforeFlush));
             // What was written still reaches the disk when another region or the plugin data fails; that failure is
             // the one reported.
             await SyncToDiskAsync(written).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
@@ -1610,7 +1631,28 @@ public abstract partial class AbstractLevel : ILevel
 
         // Like vanilla's autosave, which leaves the disk to its IO workers, the level ticks again while the files
         // reach the disk; the flush still ends once they have.
-        await SyncToDiskAsync(written);
+        var syncs = written.Select(region => CaptureRegionSaveFailureAsync(region, region.SyncToDiskAsync));
+        failures.AddRange((await Task.WhenAll(syncs)).OfType<Exception>());
+        if (failures.Count != 0)
+        {
+            // Preserve jobs completed during this save too. A failed save with no jobs must still be retried on
+            // shutdown, since ordinary edits may have made chunks dirty after the last generation job finished.
+            Interlocked.Add(ref this.jobsSinceFlush, Math.Max(1, jobsBeforeFlush));
+            throw new AggregateException($"Could not save every region of level '{this.Name}'.", failures);
+        }
+    }
+
+    private static async Task<Exception?> CaptureRegionSaveFailureAsync(IRegion region, Func<Task> save)
+    {
+        try
+        {
+            await save();
+            return null;
+        }
+        catch (Exception failure)
+        {
+            return new InvalidOperationException($"Could not save region ({region.X}, {region.Z}).", failure);
+        }
     }
 
     private static Task SyncToDiskAsync(Region[] regions) => Task.WhenAll(regions.Select(region => region.SyncToDiskAsync()));

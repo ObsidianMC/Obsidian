@@ -491,6 +491,79 @@ public sealed class StructureCacheEviction
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FailingUnloadDoesNotPreventHealthyRegionSaves(bool shutdown)
+    {
+        var world = CreateWorld(new MojangGenerator());
+        Region? failing = null;
+        try
+        {
+            _ = await world.GetChunkAsync(StartX, StartZ, scheduleGeneration: false);
+            failing = (Region)world.LoadRegionByChunk(StartX, StartZ);
+            var healthyX = StartX + Region.CubicRegionSize;
+            var healthy = (Chunk)await world.GetChunkAsync(healthyX, StartZ, scheduleGeneration: false);
+            var healthyRegion = (Region)world.LoadRegionByChunk(healthyX, StartZ);
+            SetMarker(healthy, 0);
+            await world.FlushRegionsAsync();
+
+            // The same region fails its initial unload and every later automatic retry.
+            failing.MarkChunksUnsaved();
+            failing.ChunkFile.Observe = step => step.Step == RegionFile.Step.PayloadWritten
+                ? ValueTask.FromException(new IOException("Persistent unload write failure."))
+                : ValueTask.CompletedTask;
+            await Assert.ThrowsAsync<IOException>(() => world.UnloadRegionAsync(failing.X, failing.Z));
+            SetMarker(healthy, 1);
+            var failure = await Record.ExceptionAsync(() => world.FlushRegionsAsync());
+
+            if (shutdown)
+            {
+                // A failed autosave must leave another save due, even with no generation jobs completing.
+                SetMarker(healthy, 2);
+                failure = await Record.ExceptionAsync(async () => await world.DisposeAsync());
+            }
+
+            // Disposal commits staged bytes without taking another chunk snapshot. Reopen the file to check disk.
+            var healthyKey = world.Regions.Single(entry => ReferenceEquals(entry.Value, healthyRegion)).Key;
+            world.Regions.TryRemove(healthyKey, out _);
+            await healthyRegion.DisposeAsync();
+            await using var reader = new Region(healthyRegion.X, healthyRegion.Z,
+                Path.GetDirectoryName(healthyRegion.RegionFolder)!, Path.GetFileName(healthyRegion.RegionFolder));
+            await reader.InitAsync();
+            var saved = (Chunk)await reader.GetChunkAsync(healthyX, StartZ);
+            Assert.NotNull(saved);
+            var marker = (NbtArray<long>)saved.StructureReferences!["test:healthy"];
+            Assert.Equal(shutdown ? 2L : 1L, Assert.Single(marker.GetArray()));
+            var aggregate = Assert.IsType<AggregateException>(failure);
+            Assert.Contains(aggregate.Flatten().InnerExceptions,
+                error => error.Message.Contains($"({failing.X}, {failing.Z})", StringComparison.Ordinal));
+        }
+        finally
+        {
+            if (failing is not null)
+                failing.ChunkFile.Observe = null;
+            try
+            {
+                await world.DisposeAsync();
+            }
+            finally
+            {
+                // A shutdown that reports the write failure may already have marked the level disposed.
+                foreach (var region in world.Regions.Values)
+                    await region.DisposeAsync();
+                Directory.Delete(world.WorldFolderPath, recursive: true);
+                PluginDimensions.GiveBack("minecraft:overworld");
+            }
+        }
+    }
+
+    private static void SetMarker(Chunk chunk, long marker)
+    {
+        chunk.StructureReferences = new NbtCompound("References") { new NbtArray<long>("test:healthy", [marker]) };
+        chunk.MarkUnsaved();
+    }
+
     private static TaskCompletionSource Barrier() => new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private static World CreateWorld(MojangGenerator generator)
