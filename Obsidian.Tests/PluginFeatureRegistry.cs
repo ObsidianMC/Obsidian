@@ -116,6 +116,22 @@ public sealed class PluginFeatureRegistry
     }
 
     [Fact]
+    public void NestedGenerationFailuresAndStopsKeepTheirOriginalIdentity()
+    {
+        using var loaded = new LoadedTypes();
+        var failure = new PluginGenerationException(
+            [loaded.Plugin], "An inner feature failed.", new InvalidOperationException());
+        var stopped = new GeneratorStoppedException("The dimension stopped.");
+
+        // Match the dimension boundary: an already attributed failure must retain its original owners, and a
+        // stopped dimension must not be converted into a plugin failure by an outer feature or growth adapter.
+        Assert.Same(failure, Assert.Throws<PluginGenerationException>(() =>
+            WorldgenFeatureSet.Place([loaded.Plugin], "outer feature", () => throw failure)));
+        Assert.Same(stopped, Assert.Throws<GeneratorStoppedException>(() =>
+            WorldgenFeatureSet.Place([loaded.Plugin], "outer feature", () => throw stopped)));
+    }
+
+    [Fact]
     public void InvalidFilesAndCyclesLeaveOtherPluginsFeaturesAvailable()
     {
         var files = new[]
@@ -250,9 +266,11 @@ public sealed class PluginFeatureRegistry
         Random = new XoroshiroRandomSource(1)
     };
 
-    internal static WorldGenRegion Region()
+    internal static WorldGenRegion Region() => Region(out _);
+
+    internal static WorldGenRegion Region(out Chunk chunk)
     {
-        var chunk = new Chunk(0, 0, -64, 384);
+        chunk = new Chunk(0, 0, -64, 384);
         for (var y = -4; y < 8; y++)
         {
             for (var z = 0; z < 16; z++)
@@ -277,7 +295,7 @@ public sealed class PluginFeatureRegistry
     private static string Probe(string path) => System.IO.File.ReadAllText(
         Path.Join(AppContext.BaseDirectory, "data", "probe", "worldgen", path));
 
-    private static WorldgenData EmptyBiomes() => new(
+    internal static WorldgenData EmptyBiomes() => new(
         (registry, id) => registry == "biome"
             ? new MemoryStream("""{ "features": [] }"""u8.ToArray())
             : new MemoryStream(Encoding.UTF8.GetBytes(WorldgenData.Vanilla.Read(registry, id).GetRawText())),

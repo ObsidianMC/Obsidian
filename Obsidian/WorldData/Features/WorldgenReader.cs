@@ -50,6 +50,8 @@ namespace Obsidian.WorldData.Features;
 /// default.</param>
 /// <param name="structures">Looks up processor lists, template pools, structures and structure sets by identifier;
 /// vanilla's by default.</param>
+/// <param name="inlineConfiguredFeature">Reads inline configured children with the generator's schema, when given.</param>
+/// <param name="inlinePlacedFeature">Reads inline placed children with the generator's schema, when given.</param>
 internal sealed partial class WorldgenReader(
     WorldgenTypes types,
     Func<string, ConfiguredFeatureBase> configuredFeature,
@@ -57,7 +59,9 @@ internal sealed partial class WorldgenReader(
     Action<Type>? created = null,
     Func<string, IDensityFunction>? densityFunction = null,
     Func<string, BaseNoise>? noise = null,
-    StructureLookups? structures = null)
+    StructureLookups? structures = null,
+    Func<JsonElement, ConfiguredFeatureBase>? inlineConfiguredFeature = null,
+    Func<JsonElement, PlacedFeature>? inlinePlacedFeature = null)
 {
     private static readonly string[] discriminators = ["type", "predicate_type", "processor_type", "element_type"];
 
@@ -127,6 +131,9 @@ internal sealed partial class WorldgenReader(
 
     private PlacedFeature ReadPlacedFeatureCore(JsonElement json, string? identifier, string path)
     {
+        if (inlinePlacedFeature is not null)
+            return inlinePlacedFeature(json);
+
         Object(json, path);
 
         var feature = Required(json, path, "feature");
@@ -240,10 +247,12 @@ internal sealed partial class WorldgenReader(
 
     private ConfiguredFeatureBase ReadConfiguredFeatureValue(Type target, JsonElement json, string path)
     {
-        if (json.ValueKind != JsonValueKind.String)
+        if (json.ValueKind != JsonValueKind.String && inlineConfiguredFeature is null)
             return this.ReadConfiguredFeature(json, target, null, path);
 
-        var feature = this.Configured(json, path);
+        var feature = json.ValueKind == JsonValueKind.String
+            ? this.Configured(json, path)
+            : inlineConfiguredFeature!(json);
         return feature.GetType().IsAssignableTo(target)
             ? feature
             : throw Error(path, $"{feature.Identifier} is a {feature.Type} feature{Expecting(target)}");

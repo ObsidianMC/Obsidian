@@ -397,7 +397,8 @@ internal sealed class StructureManager : IStructurePlacementState
 
                 return start;
             }
-            catch (Exception ex) when (!owners.IsEmpty && ex is not (GeneratorStoppedException or OutOfMemoryException))
+            catch (Exception ex) when (!owners.IsEmpty
+                && ex is not (GeneratorStoppedException or PluginGenerationException or OutOfMemoryException))
             {
                 throw new PluginGenerationException(
                     owners,

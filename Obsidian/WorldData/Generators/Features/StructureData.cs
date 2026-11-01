@@ -47,16 +47,17 @@ internal static class StructureData
         var registrations = types.ToArray();
         var pluginFiles = files.ToArray();
         var vanilla = PluginStructures.Build(
-            Normalize(vanillaFiles), [], featureSet, registrations, logger, empty);
+            vanillaFiles, [], featureSet, registrations, logger, empty, FeatureRegistry.TemplateProcessorStates);
         var structures = pluginFiles.Length == 0
             ? vanilla with { Templates = LastTemplates(templates, logger) }
             : PluginStructures.Build(
-                Normalize(vanillaFiles.Concat(pluginFiles)),
+                vanillaFiles.Concat(pluginFiles),
                 templates,
                 featureSet,
                 registrations,
                 logger,
-                vanilla);
+                vanilla,
+                FeatureRegistry.TemplateProcessorStates);
 
         foreach (var pool in structures.Pools.Values)
         {
@@ -67,9 +68,6 @@ internal static class StructureData
         features.TemplateOverrides = structures.Templates;
         return structures;
     }
-
-    private static IEnumerable<StructureFile> Normalize(IEnumerable<StructureFile> files) =>
-        files.Select(file => file with { Json = FeatureRegistry.TemplateProcessorStates(file.Json) });
 
     private static FrozenDictionary<string, StructureTemplate> LastTemplates(
         IEnumerable<TemplateFile> templates,

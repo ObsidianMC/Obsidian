@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Generators.Features;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace Obsidian.Registries;
@@ -23,8 +24,10 @@ internal static partial class PluginStructures
         ILogger logger)
     {
         private readonly Lock reading = new();
-        private FeatureRegistry? previousFeatures;
-        private WorldgenStructures? previous;
+
+        // Values may reference their registry through feature adapters. Ephemeron keys allow a stale registry and
+        // its layout to be collected together, even when an in-flight reader arrived after unload published us.
+        private readonly ConditionalWeakTable<FeatureRegistry, WorldgenStructures> layouts = new();
 
         public StructureFile[] Files { get; } = files;
 
@@ -36,15 +39,14 @@ internal static partial class PluginStructures
         {
             lock (this.reading)
             {
-                if (ReferenceEquals(features, this.previousFeatures))
-                    return this.previous!;
+                if (this.layouts.TryGetValue(features, out var previous))
+                    return previous;
 
                 var structures = StructureData.Read(features, files, templates, types, logger);
                 // The live snapshot's template lookup follows Apply immediately, even before a structure layout
                 // is requested again. Explicit StructureData.Read callers may instead pin their own templates.
                 features.TemplateOverrides = null;
-                this.previousFeatures = features;
-                this.previous = structures;
+                this.layouts.Add(features, structures);
                 return structures;
             }
         }

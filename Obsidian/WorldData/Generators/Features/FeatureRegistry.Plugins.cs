@@ -6,6 +6,7 @@ using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Structures;
+using Obsidian.WorldData.Structures.Pools;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -51,7 +52,9 @@ internal sealed partial class FeatureRegistry
         ConfiguredLookup = this.FindConfigured,
         PlacedLookup = this.FindPlaced,
         ProcessorLookup = this.Processors,
-        OwnerLookup = this.OwnersOf
+        OwnerLookup = this.OwnersOf,
+        InlineConfiguredLookup = this.ConfiguredAdapter,
+        InlinePlacedLookup = this.PlacedAdapter
     };
 
     internal void ConfigurePlugins(IEnumerable<FeatureFile> files, IEnumerable<WorldgenTypeRegistration> types)
@@ -83,7 +86,9 @@ internal sealed partial class FeatureRegistry
             if (WorldgenDependencies<PluginContainer>.Owner(type) is PluginContainer owner)
                 this.dependencies.Add(owner);
         },
-        structures: StructureLookups.Vanilla with { FindProcessorList = this.Processors });
+        structures: StructureLookups.Vanilla with { FindProcessorList = this.Processors },
+        inlineConfiguredFeature: this.ConfiguredAdapter,
+        inlinePlacedFeature: this.PlacedAdapter);
 
     private JsonElement Entry(string registry, string id) =>
         !this.failed.Contains((registry, id)) && this.pluginEntries.TryGetValue((registry, id), out var json)
@@ -120,6 +125,17 @@ internal sealed partial class FeatureRegistry
     {
         lock (this.compiling)
             return this.ConfiguredAdapterCore(id);
+    }
+
+    internal ConfiguredFeatureBase ConfiguredAdapter(JsonElement json)
+    {
+        lock (this.compiling)
+        {
+            var feature = this.Feature(json);
+            var adapter = this.pluginFeatures.GetValueOrDefault(feature) ?? new RegistryFeature(this, feature);
+            this.CopyOwners(feature, adapter);
+            return this.dependencies.Used(adapter);
+        }
     }
 
     private ConfiguredFeatureBase ConfiguredAdapterCore(string id)
@@ -190,7 +206,9 @@ internal sealed partial class FeatureRegistry
         var id = $"obsidian:inline/{this.inlineIds++}";
         var placed = this.dependencies.Used(this.dependencies.Track(() => this.CompilePlaced(json, id)));
         this.placedFeatures.Add(id, placed);
-        return this.PlacedAdapter(placed);
+        var adapter = this.PlacedAdapter(placed);
+        FeaturePoolElement.InlineDefinitions.AddOrUpdate(adapter, json.GetRawText());
+        return adapter;
     }
 
     internal LegacyPlacedFeature PlacedAdapter(PlacedFeature placed)

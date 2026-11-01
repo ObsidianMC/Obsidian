@@ -210,7 +210,8 @@ internal static partial class PluginStructures
         WorldgenFeatureSet features,
         IEnumerable<WorldgenTypeRegistration> types,
         ILogger logger,
-        WorldgenStructures? vanilla = null)
+        WorldgenStructures? vanilla = null,
+        Func<JsonElement, JsonElement>? normalize = null)
     {
         var kept = VanillaOverrides.LastWins(
             files,
@@ -227,7 +228,7 @@ internal static partial class PluginStructures
             file => file.Source,
             logger);
 
-        var resolver = new StructureResolver(kept, WorldgenTypes.With(types), features, vanilla);
+        var resolver = new StructureResolver(kept, WorldgenTypes.With(types), features, vanilla, normalize);
 
         foreach (var file in kept)
         {
@@ -333,6 +334,7 @@ internal static partial class PluginStructures
         private readonly WorldgenFeatureSet features;
         private readonly WorldgenReader reader;
         private readonly WorldgenStructures vanilla;
+        private readonly Func<JsonElement, JsonElement>? normalize;
 
         // The plugins whose types each entry is made of.
         private readonly WorldgenDependencies<PluginContainer> owners = new();
@@ -341,8 +343,10 @@ internal static partial class PluginStructures
             List<StructureFile> files,
             WorldgenTypes types,
             WorldgenFeatureSet features,
-            WorldgenStructures? vanilla = null)
+            WorldgenStructures? vanilla = null,
+            Func<JsonElement, JsonElement>? normalize = null)
         {
+            this.normalize = normalize;
             this.vanilla = vanilla ?? WorldgenStructures.Vanilla;
             this.files = files.ToDictionary(file => (file.Registry, file.Identifier));
             this.features = features;
@@ -353,7 +357,11 @@ internal static partial class PluginStructures
                 this.Configured,
                 this.Placed,
                 this.OnCreated,
-                structures: lookups);
+                structures: lookups,
+                inlineConfiguredFeature: features.InlineConfiguredLookup is null ? null
+                    : json => this.FromFeatures(features.InlineConfiguredLookup(json), "inline", "feature"),
+                inlinePlacedFeature: features.InlinePlacedLookup is null ? null
+                    : json => this.FromFeatures(features.InlinePlacedLookup(json), "inline", "placed feature"));
         }
 
         public Dictionary<string, WorldData.Structures.Structure> Structures { get; } = [];
@@ -478,14 +486,21 @@ internal static partial class PluginStructures
 
             try
             {
-                var entry = this.owners.Track(() => readFile(file));
+                var entry = this.owners.Track(() =>
+                {
+                    var normalized = this.normalize is null ? file : file with { Json = this.normalize(file.Json) };
+                    return readFile(normalized);
+                });
                 read[identifier] = entry;
                 return this.owners.Used(entry);
             }
-            catch (InvalidDataException ex)
+            catch (Exception ex) when (ex is not OutOfMemoryException)
             {
                 this.failed[file] = ex.Message;
-                throw;
+                if (ex is InvalidDataException)
+                    throw;
+
+                throw new InvalidDataException(ex.Message, ex);
             }
             finally
             {

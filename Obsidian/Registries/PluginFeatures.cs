@@ -336,7 +336,9 @@ internal static partial class PluginFeatures
             ConfiguredLookup = registry is null ? null : registry.FindConfigured,
             PlacedLookup = registry is null ? null : registry.FindPlaced,
             ProcessorLookup = registry is null ? null : registry.Processors,
-            OwnerLookup = registry is null ? null : registry.OwnersOf
+            OwnerLookup = registry is null ? null : registry.OwnersOf,
+            InlineConfiguredLookup = registry is null ? null : registry.ConfiguredAdapter,
+            InlinePlacedLookup = registry is null ? null : registry.PlacedAdapter
         };
     }
 
@@ -1144,6 +1146,10 @@ internal sealed record WorldgenFeatureSet(
 
     internal Func<string, PlacedFeature?>? PlacedLookup { get; init; }
 
+    internal Func<JsonElement, ConfiguredFeatureBase>? InlineConfiguredLookup { get; init; }
+
+    internal Func<JsonElement, PlacedFeature>? InlinePlacedLookup { get; init; }
+
     internal Func<string, StructureProcessorList>? ProcessorLookup { get; init; }
 
     internal Func<object, ImmutableArray<PluginContainer>>? OwnerLookup { get; init; }
@@ -1270,7 +1276,8 @@ internal sealed record WorldgenFeatureSet(
             {
                 return place();
             }
-            catch (Exception exception) when (!owners.IsEmpty && exception is not OutOfMemoryException)
+            catch (Exception exception) when (!owners.IsEmpty
+                && exception is not (GeneratorStoppedException or PluginGenerationException or OutOfMemoryException))
             {
                 throw new PluginGenerationException(owners, $"Failed to place {name}.", exception);
             }
