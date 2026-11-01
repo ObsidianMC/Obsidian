@@ -1,6 +1,7 @@
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Generators.Mojang.Structures;
+using Obsidian.WorldData.Generators.Terrain.Carvers;
 
 namespace Obsidian.WorldData.Generators.Terrain;
 
@@ -68,13 +69,14 @@ internal sealed class TerrainGenerator
         TerrainBiomes biomes,
         Func<int, int, IReadOnlyList<string>> carversAt,
         ICollection<Vector>? fluidUpdates = null,
-        Beardifier? beardifier = null)
+        Beardifier? beardifier = null,
+        CarverRegistry? carvers = null)
     {
         var context = this.CreateContext(chunk, biomes, fluidUpdates);
 
         this.Fill(context, beardifier);
         this.Materials.Apply(context);
-        TerrainCarvers.Apply(context, carversAt);
+        TerrainCarvers.Apply(context, carversAt, carvers);
     }
 
     /// <summary>Runs the entire terrain status, with one biome lookup for both the surface and carving.</summary>

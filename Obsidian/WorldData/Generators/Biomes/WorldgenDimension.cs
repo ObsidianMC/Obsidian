@@ -16,7 +16,7 @@ namespace Obsidian.WorldData.Generators.Biomes;
 /// </summary>
 /// <remarks>
 /// The 26.3 counterpart of <see cref="Mojang.MojangDimension"/>, with the same plugin lifecycle: the plugins whose
-/// types it's made of are <see cref="Plugins"/>, which generating enters (a plugin unloading stops it), and
+/// types or carver files it uses are <see cref="Plugins"/>, which generating enters (unloading stops it), and
 /// <see cref="Release"/> drops their objects so that they can unload. Its biome regions are fixed when its first
 /// generator is created, like the 1.21.11 pipeline's (see <see cref="PluginBiomeRegions"/>).
 /// </remarks>
@@ -49,6 +49,7 @@ internal sealed class WorldgenDimension
     /// default.</param>
     /// <param name="materialTypes">The material rule and condition types beyond vanilla's the settings may name.
     /// </param>
+    /// <param name="carvers">The reloadable carver snapshot; null for standalone vanilla data.</param>
     public WorldgenDimension(
         string identifier,
         string dimensionType,
@@ -59,7 +60,8 @@ internal sealed class WorldgenDimension
         IDensityTypes? densityTypes = null,
         ImmutableArray<PluginContainer> plugins = default,
         Func<ImmutableArray<BiomeRegion>>? regions = null,
-        IMaterialTypes? materialTypes = null)
+        IMaterialTypes? materialTypes = null,
+        Func<Terrain.Carvers.CarverRegistry>? carvers = null)
     {
         this.Identifier = identifier;
         this.DimensionType = dimensionType;
@@ -72,6 +74,7 @@ internal sealed class WorldgenDimension
         this.Plugins = plugins.IsDefault ? [] : plugins;
         this.regions = regions ?? (() => []);
         this.SourceBiomes = layout.PossibleBiomes;
+        this.Carvers = carvers;
     }
 
     /// <summary>The level stem's identifier, which names its level.</summary>
@@ -83,10 +86,12 @@ internal sealed class WorldgenDimension
     /// <summary>The 26.3 data the dimension is read from and generates with.</summary>
     public WorldgenData Data { get; }
 
+    internal Func<Terrain.Carvers.CarverRegistry>? Carvers { get; private set; }
+
     /// <summary>The noise settings' identifier, vanilla's or a plugin's, or null for ones defined inline.</summary>
     public string? SettingsId { get; }
 
-    /// <summary>The plugins whose types the noise settings or the biome source are made of.</summary>
+    /// <summary>The plugins whose types the settings/source use, or whose carvers its biomes use.</summary>
     public ImmutableArray<PluginContainer> Plugins { get; }
 
     /// <summary>
@@ -119,9 +124,9 @@ internal sealed class WorldgenDimension
     public ImmutableArray<BiomeRegion> FixRegions() => this.regions();
 
     /// <summary>
-    /// Drops the noise settings, the biome layout and the density and material types, so that the plugins they're
-    /// made of can unload: the dimension can't create generators any more, and those it created stop as their
-    /// plugins unload.
+    /// Drops the noise settings, biome layout, density and material types, and carver provider so their
+    /// plugins can unload: the dimension cannot create generators any more, and existing ones stop
+    /// as their plugins unload.
     /// </summary>
     public void Release()
     {
@@ -129,6 +134,7 @@ internal sealed class WorldgenDimension
         this.layout = null;
         this.densityTypes = null;
         this.materialTypes = null;
+        this.Carvers = null;
     }
 
     /// <summary>
@@ -173,13 +179,15 @@ internal sealed class WorldgenDimension
     /// <param name="stem">The stem file's bytes.</param>
     /// <param name="regions">Fixes the dimension's biome regions as its first generator is created; none by
     /// default.</param>
+    /// <param name="carvers">The reloadable carver snapshot, also used to discover file-only owners.</param>
     /// <exception cref="InvalidDataException">The stem isn't valid, or the 26.3 pipeline can't generate it.</exception>
     public static WorldgenDimension Read(
         string identifier,
         byte[] stem,
         WorldgenNoise noise,
         WorldgenData data,
-        Func<ImmutableArray<BiomeRegion>>? regions = null)
+        Func<ImmutableArray<BiomeRegion>>? regions = null,
+        Func<Terrain.Carvers.CarverRegistry>? carvers = null)
     {
         try
         {
@@ -187,7 +195,7 @@ internal sealed class WorldgenDimension
             var (extracted, _) = LevelStemInline.Extract(identifier, stem);
             using var document = JsonDocument.Parse(extracted, documentOptions);
 
-            return ReadStem(identifier, document.RootElement, noise, data, regions);
+            return ReadStem(identifier, document.RootElement, noise, data, regions, carvers);
         }
         catch (JsonException ex)
         {
@@ -200,7 +208,8 @@ internal sealed class WorldgenDimension
         JsonElement root,
         WorldgenNoise noise,
         WorldgenData data,
-        Func<ImmutableArray<BiomeRegion>>? regions)
+        Func<ImmutableArray<BiomeRegion>>? regions,
+        Func<Terrain.Carvers.CarverRegistry>? carvers)
     {
         CodecJson.Object(root, "");
 
@@ -231,6 +240,12 @@ internal sealed class WorldgenDimension
         plugins.UnionWith(densityTypes?.Owners ?? []);
         plugins.UnionWith(materialTypes?.Owners ?? []);
 
+        if (carvers is not null)
+        {
+            var possible = PluginBiomeRegions.PossibleBiomes(identifier, layout.PossibleCodecs());
+            plugins.UnionWith(carvers().OwnersOf(possible.Select(biome => biome.Name)));
+        }
+
         return new WorldgenDimension(
             identifier,
             dimensionType,
@@ -241,7 +256,8 @@ internal sealed class WorldgenDimension
             densityTypes,
             [.. plugins],
             regions,
-            materialTypes);
+            materialTypes,
+            carvers);
     }
 
     // Builds every density function and material rule the dimension's terrain generator builds, for a placeholder

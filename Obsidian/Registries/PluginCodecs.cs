@@ -249,4 +249,7 @@ internal sealed record CodecFile(
     string Source,
     object Element,
     string Json,
-    NbtCompound Data);
+    NbtCompound Data)
+{
+    internal Obsidian.Plugins.PluginContainer? Owner { get; init; }
+}

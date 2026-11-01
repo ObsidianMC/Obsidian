@@ -7,7 +7,9 @@ using Obsidian.Registries;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Generators.Mojang;
-using Obsidian.WorldData.Generators.Mojang.Carvers;
+using Obsidian.WorldData.Generators.Biomes;
+using Obsidian.WorldData.Generators.Density;
+using Obsidian.WorldData.Generators.Terrain.Carvers;
 using Obsidian.WorldData.Structures;
 using System;
 using System.Collections.Generic;
@@ -29,25 +31,22 @@ namespace Obsidian.Tests;
 [Collection(nameof(PluginTagFiles))]
 public class PluginFeatureFiles
 {
-    // Vanilla's cave carver, starting in every chunk. Carvers still use 1.21.11's format until Phase 5; 26.1 removed
-    // #minecraft:overworld_carver_replaceables, so it lists the stone and dirt it carves.
-    private const string EveryChunkCaves = """
+    // 26.3 geometry, starting caves in every chunk; fluids and replaceability belong to mask application.
+    internal const string EveryChunkCaves = """
         {
           "type": "minecraft:cave",
-          "config": {
-            "probability": 1,
-            "y": {
-              "type": "minecraft:uniform",
-              "min_inclusive": { "above_bottom": 8 },
-              "max_inclusive": { "absolute": 60 }
-            },
-            "yScale": { "type": "minecraft:uniform", "min_inclusive": 0.1, "max_exclusive": 0.9 },
-            "lava_level": { "above_bottom": 8 },
-            "replaceable": ["minecraft:stone", "minecraft:granite", "minecraft:diorite", "minecraft:andesite", "minecraft:tuff", "minecraft:deepslate", "minecraft:dirt", "minecraft:grass_block"],
-            "horizontal_radius_multiplier": 1,
-            "vertical_radius_multiplier": 1,
-            "floor_level": -0.7
-          }
+          "probability": 1,
+          "y": {
+            "type": "minecraft:uniform",
+            "min_inclusive": { "above_bottom": 8 },
+            "max_inclusive": { "absolute": 60 }
+          },
+          "count": 12,
+          "thickness": 2,
+          "room_vertical_radius_multiplier": 0.5,
+          "horizontal_radius_multiplier": 1,
+          "vertical_radius_multiplier": 1,
+          "floor_level": -0.7
         }
         """;
 
@@ -170,34 +169,14 @@ public class PluginFeatureFiles
         }
         """;
 
-    // A plugin biome with a placed feature and a carver defined inline, written leniently like data packs can be, and
-    // the plugin's ore.
+    // A plugin biome with a placed feature defined inline, written leniently like data packs can be, and its ore.
     private const string Marsh = """
         {
           "has_precipitation": true,
           "temperature": 0.5,
           "downfall": 0.5,
           "effects": { "water_color": "#3f76e4" },
-          "carvers": [
-            {
-              "type": "minecraft:cave",
-              "config": {
-                "probability": 0.5,
-                "y": {
-                  "type": "minecraft:uniform",
-                  "min_inclusive": { "above_bottom": 8 },
-                  "max_inclusive": { "absolute": 60 },
-                },
-                "yScale": 0.5,
-                "lava_level": { "above_bottom": 8 },
-                "replaceable": ["minecraft:stone", "minecraft:deepslate", "minecraft:dirt"],
-                "horizontal_radius_multiplier": 1,
-                "vertical_radius_multiplier": 1,
-                "floor_level": -0.7
-              }
-            },
-            "minecraft:cave"
-          ],
+          "carvers": [],
           "features": [
             [],
             [
@@ -253,14 +232,6 @@ public class PluginFeatureFiles
         var marshSteps = current.BiomeFeatures["featurefiles:marsh"];
         Assert.Equal("minecraft:no_op", marshSteps[1][0].Feature.Type);
         Assert.Same(ore, marshSteps[1][1]);
-
-        // An inline carver is the biome's own; one by identifier is vanilla's.
-        var cave = ConfiguredCarvers.Vanilla("minecraft:cave");
-        var marshCarvers = current.BiomeCarvers["featurefiles:marsh"];
-
-        Assert.Equal(2, marshCarvers.Length);
-        Assert.NotSame(cave, marshCarvers[0]);
-        Assert.Same(cave, marshCarvers[1]);
 
         // Features are ordered once every modifier ran, and per dimension: removing a from forest resolves the
         // overworld's cycle, and the nether's order is its own.
@@ -365,7 +336,8 @@ public class PluginFeatureFiles
             PluginTags.Apply([ores], NullLogger.Instance, files.Select(file => (file.Registry, file.Identifier)));
 
             var logger = new ListLogger();
-            var current = PluginFeatures.Build(files, [], [], logger);
+            var registry263 = PluginFeatures.BuildRegistry(files, [], [], logger);
+            var current = registry263.FeatureSet!;
             var spawns = PluginSpawns.Build(files, [], logger);
             Assert.Empty(logger.Messages);
 
@@ -373,10 +345,9 @@ public class PluginFeatureFiles
             Assert.Contains(ore, current.BiomeFeatures["minecraft:plains"][(int)DecorationStep.UndergroundOres]);
 
             // Carvers are added to the end of the biomes' lists, after every removal ran.
-            var caves = current.ConfiguredCarvers["featurefiles:every_chunk_caves"];
-            Assert.Equal(caves, current.BiomeCarvers["minecraft:plains"][^1]);
-            Assert.Equal(4, current.BiomeCarvers["minecraft:plains"].Length);
-            Assert.Equal(3, current.BiomeCarvers["minecraft:deep_dark"].Length);
+            var carvers = registry263.Carvers;
+            Assert.Equal("featurefiles:every_chunk_caves", carvers.BiomeCarvers("minecraft:plains")[^1]);
+            Assert.DoesNotContain("featurefiles:every_chunk_caves", carvers.BiomeCarvers("minecraft:deep_dark"));
 
             // Spawners go to their type's category's list.
             var plains = spawns.Biomes["minecraft:plains"];
@@ -399,13 +370,16 @@ public class PluginFeatureFiles
             Assert.Equal(0.07f, spawns.CreatureProbabilityOf("minecraft:snowy_plains"));
 
             // Each start chunk carves with its biome's carvers.
-            var builder = new ChunkBuilder(MojangDimension.Overworld, 1234, generateStructures: false, () => current);
-            var vanilla = new ChunkBuilder(MojangDimension.Overworld, 1234, generateStructures: false);
+            var builder = CarverTerrain(() => carvers);
+            var vanillaCarvers = PluginFeatures.BuildRegistry([], [], [], NullLogger.Instance).Carvers;
+            var vanilla = CarverTerrain(() => vanillaCarvers);
             Assert.True(CarvedAir(builder) > CarvedAir(vanilla));
 
             // Once the plugin is gone, vanilla's spawns and carvers are back.
             Assert.Same(BiomeSpawns.Vanilla, PluginSpawns.Build([], [], logger));
-            Assert.Same(ConfiguredCarvers.VanillaBiomes, PluginFeatures.Build([], [], [], logger).BiomeCarvers);
+            carvers = vanillaCarvers;
+            Assert.Equal(vanilla.CarversAt(0, 0), builder.CarversAt(0, 0));
+            Assert.Equal(CarvedAir(vanilla), CarvedAir(builder));
         }
         finally
         {
@@ -413,14 +387,276 @@ public class PluginFeatureFiles
         }
     }
 
-    // The air in chunk (0, 0) below Y 60 once carved.
-    private static int CarvedAir(ChunkBuilder builder)
+    internal static BiomeTerrain CarverTerrain(Func<CarverRegistry> carvers, string biome = "minecraft:plains")
     {
-        var chunk = new Chunk(0, 0, MojangDimension.Overworld.MinY, MojangDimension.Overworld.Height);
-        builder.PopulateBiomes(chunk);
-        builder.Generate3DTerrain(chunk);
-        builder.ApplySurfaceRules(chunk);
-        builder.ApplyCarvers(chunk);
+        var stem = $$"""
+            {
+              "type": "minecraft:overworld",
+              "generator": {
+                "type": "minecraft:noise",
+                "settings": "minecraft:overworld",
+                "biome_source": { "type": "minecraft:fixed", "biome": "{{biome}}" }
+              }
+            }
+            """;
+        var dimension = WorldgenDimension.Read(
+            "featurefiles:carvers", Encoding.UTF8.GetBytes(stem), WorldgenNoise.Vanilla,
+            WorldgenData.Vanilla, carvers: carvers);
+        return BiomeTerrain.Create(dimension, 1234);
+    }
+
+    [Fact]
+    public void Resolves26_3CarverFilesInlineBiomesAndNestedTags()
+    {
+        var file = Parse(PluginFeatures.Carver, "featurefiles:caves", EveryChunkCaves);
+        var inner = PluginTags.Parse(PluginTags.ConfiguredCarver, "featurefiles:inner", "inner",
+            """{ "values": ["featurefiles:caves"] }"""u8);
+        var (_, tagRegistry, tagId) = Assert.Single(PluginTags.FindFiles(
+            ["data/featurefiles/tags/worldgen/carver/outer.json"]));
+        var outer = PluginTags.Parse(tagRegistry, tagId, "outer",
+            """{ "values": ["#featurefiles:inner"] }"""u8);
+        var biomeJson = $$"""
+            {
+              "has_precipitation": true,
+              "temperature": 0.5,
+              "downfall": 0.5,
+              "effects": { "water_color": "#3f76e4" },
+              "carvers": [{{EveryChunkCaves}}, "#featurefiles:outer", "minecraft:cave"],
+              "features": []
+            }
+            """;
+        var biome = PluginCodecs.Parse(PluginCodecs.Biome, "minecraft:plains", "inline-plugin",
+            Encoding.UTF8.GetBytes(biomeJson), _ => true, _ => true);
+
+        try
+        {
+            PluginTags.Apply([inner, outer], NullLogger.Instance, [(file.Registry, file.Identifier)]);
+            var logger = new ListLogger();
+            var registry = PluginFeatures.BuildRegistry([file], [biome], [], logger).Carvers;
+            var terrain = CarverTerrain(() => registry);
+            var ids = terrain.CarversAt(0, 0);
+
+            Assert.Empty(logger.Messages);
+            Assert.Equal(3, ids.Length);
+            Assert.Equal(["featurefiles:caves", "minecraft:cave"], ids[1..]);
+            Assert.Equal(1, registry.Configuration(ids[0]).Probability);
+            Assert.NotSame(registry.Configuration(ids[0]), registry.Configuration(ids[1]));
+            Assert.True(CarvedAir(terrain) > CarvedAir(CarverTerrain(() =>
+                PluginFeatures.BuildRegistry([], [], [], NullLogger.Instance).Carvers)));
+
+            // Required tag cycles are rejected before carvers resolve them, without recursion in the reader.
+            var cycle = PluginTags.Parse(PluginTags.ConfiguredCarver, "featurefiles:inner", "cycle-plugin",
+                """{ "values": ["#featurefiles:outer"] }"""u8);
+            PluginTags.Apply([cycle, outer], logger, [(file.Registry, file.Identifier)]);
+            var invalid = PluginFeatures.BuildRegistry([file], [biome], [], logger).Carvers;
+            Assert.DoesNotContain("featurefiles:caves", invalid.BiomeCarvers("minecraft:plains"));
+            Assert.Contains(logger.Messages, message => message.Contains("inline-plugin"));
+        }
+        finally
+        {
+            PluginTags.Apply([], NullLogger.Instance);
+        }
+    }
+
+    [Fact]
+    public void Reloads26_3CarverOverridesAndSkipsMalformedFilesPerPlugin()
+    {
+        var quiet = EveryChunkCaves.Replace("\"probability\": 1", "\"probability\": 0");
+        var valid = Parse(PluginFeatures.ConfiguredCarver, "minecraft:cave", EveryChunkCaves)
+            with { Source = "valid-plugin/cave.json" };
+        var malformed = Parse(PluginFeatures.ConfiguredCarver, "minecraft:cave", """{ "type": "minecraft:cave" }""")
+            with { Source = "broken-plugin/cave.json" };
+        var unrelated = Parse(PluginFeatures.ConfiguredCarver, "featurefiles:good", EveryChunkCaves);
+        var addInline = Parse(PluginFeatures.BiomeModifier, "featurefiles:inline", $$"""
+            { "biomes": "minecraft:plains", "add": { "carvers": {{EveryChunkCaves}} } }
+            """);
+        var brokenModifier = Parse(PluginFeatures.BiomeModifier, "featurefiles:broken", """
+            {
+              "biomes": "minecraft:plains",
+              "add": { "carvers": "featurefiles:missing", "features": { "lakes": "minecraft:lake_lava" } }
+            }
+            """) with { Source = "broken-plugin/modifier.json" };
+        var logger = new ListLogger();
+        var registry = PluginFeatures.BuildRegistry([valid, unrelated, addInline], [], [], logger).Carvers;
+        var terrain = CarverTerrain(() => registry);
+        var activeAir = CarvedAir(terrain);
+        Assert.StartsWith("obsidian:inline_carver/", terrain.CarversAt(0, 0)[^1]);
+
+        // The same identifier now names different geometry; an existing generator must drop its old list/cache.
+        registry = PluginFeatures.BuildRegistry([valid with { Json = Parse(
+            PluginFeatures.ConfiguredCarver, "minecraft:cave", quiet).Json }], [], [], logger).Carvers;
+        Assert.DoesNotContain(terrain.CarversAt(0, 0), id => id.StartsWith("obsidian:inline_carver/"));
+        Assert.True(activeAir > CarvedAir(terrain));
+
+        // A malformed override falls back to vanilla. Other files survive, and broken modifiers apply nothing.
+        var broken = PluginFeatures.BuildRegistry([malformed, unrelated, brokenModifier], [], [], logger);
+        var vanilla = PluginFeatures.BuildRegistry([], [], [], NullLogger.Instance);
+        Assert.Equal(vanilla.Carvers.Configuration("minecraft:cave").Probability,
+            broken.Carvers.Configuration("minecraft:cave").Probability);
+        Assert.Equal(1, broken.Carvers.Configuration("featurefiles:good").Probability);
+        Assert.DoesNotContain("featurefiles:missing", broken.Carvers.BiomeCarvers("minecraft:plains"));
+        Assert.Equal(vanilla.FeatureSet!.BiomeFeatures["minecraft:plains"][1].Count,
+            broken.FeatureSet!.BiomeFeatures["minecraft:plains"][1].Count);
+        Assert.Contains(logger.Messages, message => message.Contains("broken-plugin/cave.json"));
+        Assert.Contains(logger.Messages, message => message.Contains("broken-plugin/modifier.json"));
+
+        registry = vanilla.Carvers;
+        Assert.Equal(vanilla.Carvers.BiomeCarvers("minecraft:plains"), terrain.CarversAt(0, 0));
+    }
+
+    [Fact]
+    public void ReloadsPluginUncarvableBlocksWith26_3Carvers()
+    {
+        var file = Parse(PluginFeatures.Carver, "minecraft:cave", EveryChunkCaves);
+        var carvers = PluginFeatures.BuildRegistry([file], [], [], NullLogger.Instance).Carvers;
+        var terrain = CarverTerrain(() => carvers);
+        var carved = CarvedAir(terrain);
+        var tag = PluginTags.Parse("block", "minecraft:uncarvable", "carver-plugin", """
+            { "values": ["minecraft:stone", "minecraft:deepslate", "minecraft:dirt", "minecraft:grass_block"] }
+            """u8);
+
+        try
+        {
+            PluginTags.Apply([tag], NullLogger.Instance);
+            carvers = PluginFeatures.BuildRegistry([file], [], [], NullLogger.Instance).Carvers;
+            Assert.True(CarvedAir(terrain) < carved);
+
+            PluginTags.Apply([], NullLogger.Instance);
+            carvers = PluginFeatures.BuildRegistry([file], [], [], NullLogger.Instance).Carvers;
+            Assert.Equal(carved, CarvedAir(terrain));
+        }
+        finally
+        {
+            PluginTags.Apply([], NullLogger.Instance);
+        }
+    }
+
+    [Fact]
+    public void Applied26_3CarversResolveAcrossPluginsAndRefreshExistingGenerators()
+    {
+        var file = Parse(PluginFeatures.Carver, "featurefiles:caves", EveryChunkCaves);
+        var modifier = Parse(PluginFeatures.BiomeModifier, "featurefiles:caves", """
+            { "biomes": "minecraft:plains", "add": { "carvers": "featurefiles:caves" } }
+            """);
+
+        try
+        {
+            Assert.True(PluginFeatures.Apply([file, modifier], [], [], new HashSet<string>(), NullLogger.Instance));
+            Assert.True(PluginFeatures.IsConfiguredCarver(file.Identifier));
+
+            // A later plugin's biome is parsed before its files join the native snapshot. Its loader must see
+            // native carvers even though the live legacy reader cannot read their 26.3 configuration.
+            var biome = PluginCodecs.Parse(PluginCodecs.Biome, "minecraft:plains", "later-plugin", """
+                {
+                  "has_precipitation": true,
+                  "temperature": 0.5,
+                  "downfall": 0.5,
+                  "effects": { "water_color": "#3f76e4" },
+                  "carvers": "featurefiles:caves",
+                  "features": []
+                }
+                """u8, isConfiguredCarver: PluginFeatures.IsConfiguredCarver);
+            var registry = PluginFeatures.BuildRegistry([file], [biome], [], NullLogger.Instance);
+            Assert.Equal([file.Identifier], registry.Carvers.BiomeCarvers("minecraft:plains"));
+
+            var terrain = CarverTerrain(() => PluginFeatures.CurrentCarvers);
+            var activeAir = CarvedAir(terrain);
+            Assert.Contains(file.Identifier, terrain.CarversAt(0, 0));
+
+            var quiet = Parse(PluginFeatures.Carver, file.Identifier,
+                EveryChunkCaves.Replace("\"probability\": 1", "\"probability\": 0"));
+            Assert.True(PluginFeatures.Apply([quiet, modifier], [], [], new HashSet<string>(), NullLogger.Instance));
+            Assert.True(CarvedAir(terrain) < activeAir);
+
+            Assert.True(PluginFeatures.Apply([], [], [], new HashSet<string>(), NullLogger.Instance));
+            Assert.False(PluginFeatures.IsConfiguredCarver(file.Identifier));
+            Assert.DoesNotContain(file.Identifier, terrain.CarversAt(0, 0));
+        }
+        finally
+        {
+            PluginFeatures.Apply([], [], [], new HashSet<string>(), NullLogger.Instance);
+        }
+    }
+
+    [Fact]
+    public void RejectedReloadKeepsTheSuccessfulCarverAndUncarvableTagsBeforeFirstRead()
+    {
+        var modifier = Parse(PluginFeatures.BiomeModifier, "featurefiles:tagged_carvers", """
+            { "biomes": "minecraft:plains", "add": { "carvers": "#featurefiles:carvers" } }
+            """);
+        FeatureFile[] cyclicFiles =
+        [
+            modifier,
+            Parse(PluginFeatures.PlacedFeature, "featurefiles:cycle_a", NoOp),
+            Parse(PluginFeatures.PlacedFeature, "featurefiles:cycle_b", NoOp)
+        ];
+        CodecFile[] cyclicBiomes =
+        [
+            CyclicBiome("minecraft:plains", "featurefiles:cycle_a", "featurefiles:cycle_b"),
+            CyclicBiome("minecraft:forest", "featurefiles:cycle_b", "featurefiles:cycle_a")
+        ];
+
+        try
+        {
+            ApplyTags("minecraft:cave", "minecraft:stone");
+            Assert.True(PluginFeatures.Apply([modifier], [], [], new HashSet<string>(), NullLogger.Instance));
+            var previous = PluginFeatures.Current;
+
+            // Do not read the native registry until after the next apply fails: it must retain the tags from
+            // the successful apply even though the global tag registry already contains the rejected reload's.
+            ApplyTags("minecraft:canyon", "minecraft:deepslate");
+            Assert.False(PluginFeatures.Apply(cyclicFiles, cyclicBiomes, [],
+                new HashSet<string> { "minecraft:overworld" }, NullLogger.Instance));
+            Assert.Same(previous, PluginFeatures.Current);
+
+            var retained = PluginFeatures.CurrentCarvers;
+            Assert.Equal(("minecraft:cave", true, false), TagsOf(retained));
+
+            // A subsequent successful apply takes the new tags, while the retained registry stays unchanged.
+            Assert.True(PluginFeatures.Apply([modifier], [], [], new HashSet<string>(), NullLogger.Instance));
+            var replacement = PluginFeatures.CurrentCarvers;
+            Assert.NotSame(retained, replacement);
+            Assert.Equal(("minecraft:canyon", false, true), TagsOf(replacement));
+            Assert.Equal(("minecraft:cave", true, false), TagsOf(retained));
+        }
+        finally
+        {
+            PluginTags.Apply([], NullLogger.Instance);
+            PluginFeatures.Apply([], [], [], new HashSet<string>(), NullLogger.Instance);
+        }
+
+        static CodecFile CyclicBiome(string biome, string first, string second) => PluginCodecs.Parse(
+            PluginCodecs.Biome, biome, "reload-plugin", Encoding.UTF8.GetBytes($$"""
+                {
+                  "has_precipitation": true,
+                  "temperature": 0.5,
+                  "downfall": 0.5,
+                  "effects": { "water_color": "#3f76e4" },
+                  "carvers": [],
+                  "features": [["{{first}}", "{{second}}"]]
+                }
+                """), _ => true);
+
+        static void ApplyTags(string carver, string block)
+        {
+            var carvers = PluginTags.Parse(PluginTags.ConfiguredCarver, "featurefiles:carvers", "reload-plugin",
+                Encoding.UTF8.GetBytes($$"""{ "replace": true, "values": ["{{carver}}"] }"""));
+            var uncarvable = PluginTags.Parse("block", "minecraft:uncarvable", "reload-plugin",
+                Encoding.UTF8.GetBytes($$"""{ "replace": true, "values": ["{{block}}"] }"""));
+            PluginTags.Apply([carvers, uncarvable], NullLogger.Instance);
+        }
+
+        static (string Carver, bool Stone, bool Deepslate) TagsOf(CarverRegistry carvers) =>
+            (carvers.BiomeCarvers("minecraft:plains")[^1],
+                carvers.Uncarvable!.Contains(BlocksRegistry.Stone.RegistryId),
+                carvers.Uncarvable.Contains(BlocksRegistry.Deepslate.RegistryId));
+    }
+
+    // The air in chunk (0, 0) below Y 60 after the full 26.3 terrain status, including mask application.
+    private static int CarvedAir(BiomeTerrain terrain)
+    {
+        var chunk = new Chunk(0, 0, terrain.MinY, terrain.Height);
+        terrain.Generate(chunk);
 
         return Enumerable.Range(0, 16 * 16 * 124)
             .Count(i => chunk.GetBlock(i & 15, (i >> 8) - 64, (i >> 4) & 15).IsAir);

@@ -19,6 +19,9 @@ internal abstract class CarverConfiguration
     public static CarverConfiguration Read(JsonElement json)
     {
         var probability = json.GetProperty("probability").GetSingle();
+        if (!float.IsFinite(probability) || probability is < 0 or > 1)
+            throw new InvalidDataException("probability: expected a number from 0 to 1.");
+
         var y = HeightProvider.Parse(json.GetProperty("y"));
 
         switch (json.GetProperty("type").GetString())
@@ -48,7 +51,7 @@ internal abstract class CarverConfiguration
                     DistanceFactor = FloatProvider.Parse(shape.GetProperty("distance_factor")),
                     Thickness = FloatProvider.Parse(shape.GetProperty("thickness")),
                     YScale = FloatProvider.Parse(shape.GetProperty("y_scale")),
-                    WidthSmoothness = shape.GetProperty("width_smoothness").GetInt32(),
+                    WidthSmoothness = WidthSmoothness(shape),
                     HorizontalRadiusFactor = FloatProvider.Parse(shape.GetProperty("horizontal_radius_factor")),
                     VerticalRadiusDefaultFactor = shape.GetProperty("vertical_radius_default_factor").GetSingle(),
                     VerticalRadiusCenterFactor = shape.GetProperty("vertical_radius_center_factor").GetSingle()
@@ -56,6 +59,12 @@ internal abstract class CarverConfiguration
             default:
                 throw new InvalidDataException($"Unknown 26.3 carver {json.GetProperty("type")}.");
         }
+    }
+
+    private static int WidthSmoothness(JsonElement shape)
+    {
+        var value = shape.GetProperty("width_smoothness").GetInt32();
+        return value > 0 ? value : throw new InvalidDataException("shape.width_smoothness must be positive.");
     }
 
     private static FloatProvider OptionalFloat(JsonElement json, string name, float fallback)
@@ -140,9 +149,17 @@ internal sealed class CarverCount(string type, int min, int max)
             return new CarverCount(type, value, value);
         }
 
-        return new CarverCount(
-            type,
-            json.GetProperty("min_inclusive").GetInt32(),
-            json.GetProperty("max_inclusive").GetInt32());
+        if (type is not ("minecraft:uniform" or "minecraft:biased_to_bottom"
+            or "minecraft:very_biased_to_bottom"))
+        {
+            throw new InvalidDataException($"Unknown cave count provider {type}.");
+        }
+
+        var min = json.GetProperty("min_inclusive").GetInt32();
+        var max = json.GetProperty("max_inclusive").GetInt32();
+        if (min < 0 || max < min || (long)max - min >= int.MaxValue)
+            throw new InvalidDataException("count: expected nonnegative, ordered bounds within an int range.");
+
+        return new CarverCount(type, min, max);
     }
 }

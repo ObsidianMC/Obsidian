@@ -22,7 +22,7 @@ namespace Obsidian.Registries;
 /// </para>
 /// <para>
 /// A dimension keeps the data it was read with, like the 1.21.11 pipeline's; a plugin unloading releases those made of
-/// its types (see <see cref="Release"/>), whose generators stop as it unloads.
+/// its types or carvers (see <see cref="Release"/>), whose generators stop as it unloads.
 /// </para>
 /// </remarks>
 internal static class PluginWorldgen
@@ -121,7 +121,7 @@ internal static class PluginWorldgen
 
     /// <summary>
     /// Reads a level stem for the 26.3 pipeline (see <see cref="WorldgenDimension.Read"/>), which a plugin unloading
-    /// releases when it's made of the plugin's types.
+    /// releases when it uses the plugin's types or carvers.
     /// </summary>
     /// <param name="noise">The worldgen types and parameter lists it can name.</param>
     /// <param name="data">The 26.3 data it's read from.</param>
@@ -137,7 +137,8 @@ internal static class PluginWorldgen
             stem,
             noise,
             data,
-            () => PluginBiomeRegions.Fix(identifier));
+            () => PluginBiomeRegions.Fix(identifier),
+            () => PluginFeatures.CurrentCarvers);
 
         if (!dimension.Plugins.IsEmpty)
         {
@@ -149,7 +150,7 @@ internal static class PluginWorldgen
     }
 
     /// <summary>
-    /// Releases the dimensions read that are made of an unloading plugin's types (see
+    /// Releases the dimensions read that use an unloading plugin's types or carvers (see
     /// <see cref="WorldgenDimension.Release"/>), so that they don't keep its code loaded.
     /// </summary>
     public static void Release(PluginContainer plugin)

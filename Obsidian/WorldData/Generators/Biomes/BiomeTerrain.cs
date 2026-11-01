@@ -7,16 +7,17 @@ using Obsidian.WorldData.Generators.Mojang.Features;
 using Obsidian.WorldData.Generators.Mojang.Regions;
 using Obsidian.WorldData.Generators.Mojang.Structures;
 using Obsidian.WorldData.Generators.Terrain;
+using Obsidian.WorldData.Generators.Terrain.Carvers;
 using Obsidian.WorldData.Structures;
 using System.Collections.Concurrent;
-using System.Text.Json;
+using System.Runtime.CompilerServices;
 using TerrainGenerator = Obsidian.WorldData.Generators.Terrain.TerrainGenerator;
 
 namespace Obsidian.WorldData.Generators.Biomes;
 
 /// <summary>Runs the 26.3 biome, terrain and features statuses without switching the live generator.</summary>
 /// <remarks>
-/// A dimension made of plugins' types (see <see cref="WorldgenDimension.Plugins"/>) enters them for each step that
+/// A dimension using plugin worldgen (see <see cref="WorldgenDimension.Plugins"/>) enters them for each step that
 /// can run their code: a plugin unloading stops it with a <see cref="GeneratorStoppedException"/>, and their code
 /// failing throws a <see cref="PluginGenerationException"/> naming them. Either only concerns this dimension's
 /// generator; other dimensions, and other worlds of this one, keep generating.
@@ -30,8 +31,9 @@ internal sealed class BiomeTerrain
     private readonly TerrainColumns columns;
     private readonly long zoomSeed;
 
-    // Each biome's carvers, read once: every chunk asks for the 289 chunks its carvers can start in.
-    private readonly ConcurrentDictionary<string, string[]> carversByBiome = new();
+    // Each snapshot's biome lists, read once: every chunk asks for the 289 chunks its carvers can start in.
+    private readonly ConditionalWeakTable<CarverRegistry, ConcurrentDictionary<string, string[]>> carversByBiome = new();
+    private readonly Func<CarverRegistry> carvers;
     private BiomeDecoration? decoration;
 
     /// <param name="features">
@@ -62,10 +64,14 @@ internal sealed class BiomeTerrain
         ClimateSource source,
         ImmutableArray<PluginContainer> plugins,
         FeatureRegistry? features,
-        bool structures)
+        bool structures,
+        Func<CarverRegistry>? carvers = null)
     {
         this.terrain = terrain;
         this.features = features;
+        var fallback = new Lazy<CarverRegistry>(() => CarverRegistry.Build(
+            [], [], terrain.Data, Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance));
+        this.carvers = carvers ?? (() => features?.Carvers ?? fallback.Value);
         this.Identifier = identifier;
         this.Plugins = plugins;
         var dimensionType = terrain.Data.Read("dimension_type", dimension);
@@ -130,7 +136,8 @@ internal sealed class BiomeTerrain
                 source,
                 dimension.Plugins,
                 features,
-                structures);
+                structures,
+                dimension.Carvers);
         }
         catch (Exception ex) when (Contains(dimension.Plugins, ex))
         {
@@ -141,7 +148,7 @@ internal sealed class BiomeTerrain
     /// <summary>The dimension's identifier, its level stem's.</summary>
     public string Identifier { get; }
 
-    /// <summary>The plugins whose types the dimension is made of, which each step enters.</summary>
+    /// <summary>The plugins supplying this dimension's worldgen, which each step enters.</summary>
     public ImmutableArray<PluginContainer> Plugins { get; }
 
     public ClimateSource Source { get; }
@@ -387,22 +394,13 @@ internal sealed class BiomeTerrain
 
     /// <summary>The carvers of the biome a chunk's carvers start in. Callers mustn't change the list.</summary>
     public string[] CarversAt(int chunkX, int chunkZ)
+        => this.CarversAt(this.carvers(), chunkX, chunkZ);
+
+    private string[] CarversAt(CarverRegistry carvers, int chunkX, int chunkZ)
     {
         var biome = this.Source.GetNoiseBiome(chunkX << 2, 0, chunkZ << 2);
-        return this.carversByBiome.GetOrAdd(biome.Name, this.ReadCarvers);
-    }
-
-    private string[] ReadCarvers(string biome)
-    {
-        var data = this.terrain.Data.Read("biome", biome);
-        var carvers = data.GetProperty("carvers");
-
-        if (carvers.ValueKind == JsonValueKind.String)
-        {
-            return [carvers.GetString()!];
-        }
-
-        return carvers.EnumerateArray().Select(value => value.GetString()!).ToArray();
+        var cache = this.carversByBiome.GetValue(carvers, static _ => new());
+        return cache.GetOrAdd(biome.Name, carvers.BiomeCarvers);
     }
 
     /// <param name="neighbors">
@@ -413,19 +411,34 @@ internal sealed class BiomeTerrain
         ICollection<Vector>? fluidUpdates = null,
         Func<int, int, IChunk?>? neighbors = null)
     {
-        using var calls = GeneratorCalls.Enter(this.Identifier, this.Plugins);
+        var carvers = this.carvers();
+        var owners = this.GenerationOwners(carvers);
+        using var calls = GeneratorCalls.Enter(this.Identifier, owners);
 
         try
         {
-            this.GenerateEntered(chunk, fluidUpdates, neighbors);
+            this.GenerateEntered(chunk, fluidUpdates, neighbors, carvers);
         }
-        catch (Exception ex) when (Contains(this.Plugins, ex))
+        catch (Exception ex) when (Contains(owners, ex))
         {
-            throw Failed(this.Identifier, this.Plugins, ex);
+            throw Failed(this.Identifier, owners, ex);
         }
     }
 
-    private void GenerateEntered(IChunk chunk, ICollection<Vector>? fluidUpdates, Func<int, int, IChunk?>? neighbors)
+    private ImmutableArray<PluginContainer> GenerationOwners(CarverRegistry carvers)
+    {
+        var owners = carvers.OwnersOf(this.Source.PossibleBiomes);
+        if (owners.IsEmpty)
+            return this.Plugins;
+
+        return this.Plugins.IsEmpty ? owners : [.. this.Plugins.Union(owners)];
+    }
+
+    private void GenerateEntered(
+        IChunk chunk,
+        ICollection<Vector>? fluidUpdates,
+        Func<int, int, IChunk?>? neighbors,
+        CarverRegistry carvers)
     {
         using var writes = (chunk as Chunk)?.BeginTerrainWrites();
         this.Source.FillBiomes(chunk);
@@ -433,15 +446,16 @@ internal sealed class BiomeTerrain
         this.terrain.Generate(
             chunk,
             this.ChunkBiomes(chunk, neighbors),
-            this.CarversAt,
+            (x, z) => this.CarversAt(carvers, x, z),
             fluidUpdates,
-            this.BeardifierFor(chunk.X, chunk.Z));
+            this.BeardifierFor(chunk.X, chunk.Z),
+            carvers);
 
         // Chunk storage keeps the legacy enum until the live pipeline switches; carvers saves as 26.3 terrain.
         chunk.SetChunkStatus(ChunkGenStage.carvers);
     }
 
-    // A dimension made of plugins' types blames them for what fails while it generates, except their unloading.
+    // A dimension using plugin worldgen blames its owners for generation failures, except their unloading.
     private static bool Contains(ImmutableArray<PluginContainer> plugins, Exception exception) =>
         !plugins.IsDefaultOrEmpty
         && exception is not (GeneratorStoppedException or PluginGenerationException or OutOfMemoryException);

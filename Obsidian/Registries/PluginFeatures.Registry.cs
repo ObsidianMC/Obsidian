@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Generators.Features;
+using Obsidian.WorldData.Generators.Terrain.Carvers;
 using System.Threading;
 
 namespace Obsidian.Registries;
@@ -16,6 +17,9 @@ internal static partial class PluginFeatures
     /// The live generator still uses Current; switching it must also refresh its decoration and structure layout.
     /// </summary>
     public static FeatureRegistry CurrentRegistry => Volatile.Read(ref inputs).Registry.Value;
+
+    /// <summary>The current 26.3 carvers, replaced with features on every successful apply.</summary>
+    public static CarverRegistry CurrentCarvers => CurrentRegistry.Carvers;
 
     /// <summary>
     /// Builds a 26.3 registry using the shared plugin biome modifiers, ownership and file failure handling.
@@ -36,6 +40,12 @@ internal static partial class PluginFeatures
         var registrations = types.ToArray();
         var registry = new FeatureRegistry(data ?? WorldgenData.Vanilla);
         registry.ConfigurePlugins(kept, registrations);
+        var resolver = new FeatureResolver(kept, WorldgenTypes.With(registrations), registry);
+        registry.Carvers = CarverRegistry.Build(kept, biomes, registry.Data, logger, modifier =>
+        {
+            resolver.StepFeatures(modifier.Add.Features, "add.features");
+            resolver.StepFeatures(modifier.Remove.Features, "remove.features");
+        }, usePluginBlockTags: true);
         registry.FeatureSet = Build(kept, biomes, registrations, logger, registry: registry);
         return registry;
     }

@@ -13,13 +13,19 @@ internal static class TerrainCarvers
     // What every chunk of a generator reads alike, read once per generator.
     private static readonly ConditionalWeakTable<TerrainGenerator, CarverData> data = new();
 
-    public static void Apply(TerrainContext terrain, Func<int, int, IReadOnlyList<string>> carversAt)
+    public static void Apply(
+        TerrainContext terrain,
+        Func<int, int, IReadOnlyList<string>> carversAt,
+        CarverRegistry? carvers = null)
     {
-        var context = GenerateMask(terrain, carversAt);
-        ApplyMask(terrain, context.Mask);
+        var context = GenerateMask(terrain, carversAt, carvers);
+        ApplyMask(terrain, context.Mask, carvers?.Uncarvable);
     }
 
-    public static CarvingContext GenerateMask(TerrainContext terrain, Func<int, int, IReadOnlyList<string>> carversAt)
+    public static CarvingContext GenerateMask(
+        TerrainContext terrain,
+        Func<int, int, IReadOnlyList<string>> carversAt,
+        CarverRegistry? carvers = null)
     {
         var context = new CarvingContext(terrain);
         var shared = data.GetValue(terrain.Generator, static generator => new CarverData(generator));
@@ -36,7 +42,7 @@ internal static class TerrainCarvers
 
                 for (var index = 0; index < sources.Count; index++)
                 {
-                    var configuration = shared.Configuration(sources[index]);
+                    var configuration = carvers?.Configuration(sources[index]) ?? shared.Configuration(sources[index]);
 
                     // Every carver starts a fresh large-feature sequence, offset by its biome-list index.
                     random.SetLargeFeatureSeed(unchecked(terrain.Generator.Seed + index), sourceX, sourceZ);
@@ -62,9 +68,9 @@ internal static class TerrainCarvers
         return context;
     }
 
-    public static void ApplyMask(TerrainContext terrain, CarvingMask mask)
+    public static void ApplyMask(TerrainContext terrain, CarvingMask mask, FrozenSet<int>? uncarvable = null)
     {
-        var uncarvable = data.GetValue(terrain.Generator, static generator => new CarverData(generator)).Uncarvable;
+        uncarvable ??= data.GetValue(terrain.Generator, static generator => new CarverData(generator)).Uncarvable;
 
         // Each column's carved runs, from the bottom up.
         for (var x = 0; x < 16; x++)
@@ -158,14 +164,21 @@ internal static class TerrainCarvers
         private static FrozenSet<int> ReadUncarvable(Density.WorldgenData data)
         {
             var blocks = new HashSet<int>();
-            ReadBlockTag(data, "minecraft:uncarvable", blocks);
+            ReadBlockTag(data, "minecraft:uncarvable", blocks, []);
 
             return blocks.ToFrozenSet();
         }
     }
 
-    private static void ReadBlockTag(Density.WorldgenData data, string id, HashSet<int> blocks)
+    private static void ReadBlockTag(
+        Density.WorldgenData data,
+        string id,
+        HashSet<int> blocks,
+        HashSet<string> reading)
     {
+        if (!reading.Add(id))
+            throw new System.IO.InvalidDataException($"Block tag {id} refers back to itself.");
+
         foreach (var entry in data.Read("block_tag", id).GetProperty("values").EnumerateArray())
         {
             var name = entry.ValueKind == JsonValueKind.String
@@ -174,12 +187,14 @@ internal static class TerrainCarvers
 
             if (name.StartsWith('#'))
             {
-                ReadBlockTag(data, name[1..], blocks);
+                ReadBlockTag(data, name[1..], blocks, reading);
             }
             else
             {
                 blocks.Add(BlocksRegistry.Get(name).RegistryId);
             }
         }
+
+        reading.Remove(id);
     }
 }

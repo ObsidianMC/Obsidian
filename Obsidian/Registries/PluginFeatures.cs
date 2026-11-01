@@ -49,6 +49,8 @@ internal static partial class PluginFeatures
 
     public const string ConfiguredCarver = "worldgen/configured_carver";
 
+    public const string Carver = "worldgen/carver";
+
     public const string BiomeModifier = "biome_modifier";
 
     /// <summary>
@@ -60,7 +62,8 @@ internal static partial class PluginFeatures
     /// The folders of plugins' feature, carver, processor list and biome modifier files.
     /// </summary>
     public static FrozenSet<string> Registries { get; } =
-        FrozenSet.Create(ConfiguredFeature, Feature, PlacedFeature, ConfiguredCarver, BiomeModifier, ProcessorList);
+        FrozenSet.Create(ConfiguredFeature, Feature, PlacedFeature, ConfiguredCarver, Carver,
+            BiomeModifier, ProcessorList);
 
     private static readonly Lock applying = new();
 
@@ -88,7 +91,12 @@ internal static partial class PluginFeatures
     /// Whether a configured carver is vanilla's or a loaded plugin's.
     /// </summary>
     public static bool IsConfiguredCarver(string identifier) =>
-        RegistryIds.IsConfiguredCarver(identifier) || Current.ConfiguredCarvers.ContainsKey(identifier);
+        RegistryIds.IsConfiguredCarver(identifier)
+        || Current.ConfiguredCarvers.ContainsKey(identifier)
+        // A 26.3 carver is intentionally absent from the legacy set. Later plugins' biome files can still name it;
+        // schema validation and missing-dependency isolation belong to the native snapshot resolver.
+        || Volatile.Read(ref inputs).Files.Any(file =>
+            file.Registry == ConfiguredCarver && file.Identifier == identifier);
 
     /// <summary>
     /// Finds the feature and biome modifier files in a plugin's files, by their paths.
@@ -137,6 +145,9 @@ internal static partial class PluginFeatures
     /// <exception cref="InvalidDataException">The file isn't valid.</exception>
     public static FeatureFile Parse(string registry, string identifier, string source, ReadOnlySpan<byte> json)
     {
+        if (registry == Carver)
+            registry = ConfiguredCarver;
+
         if (!PluginTags.IsFileIdentifier(identifier))
             throw new InvalidDataException($"{source}: {identifier} isn't a valid identifier.");
 
@@ -194,6 +205,10 @@ internal static partial class PluginFeatures
                 return false;
             }
 
+            // Native carvers resolve global carver, biome and uncarvable tags while building. Finish that work
+            // before publishing, so a later rejected reload cannot supply tags to this successful snapshot.
+            _ = snapshot.Registry.Value;
+
             Volatile.Write(ref current, features);
             Volatile.Write(ref inputs, snapshot);
             return true;
@@ -225,7 +240,7 @@ internal static partial class PluginFeatures
             kept.AddRange(VanillaDependents(kept));
 
         var resolver = new FeatureResolver(kept, WorldgenTypes.With(types), registry);
-        var carvers = ReadCarvers(kept, logger);
+        var carvers = ReadCarvers(registry is null ? kept : [], logger);
 
         foreach (var file in kept.Where(file =>
             file.Registry is ConfiguredFeature or Feature or PlacedFeature or ProcessorList))
@@ -268,6 +283,9 @@ internal static partial class PluginFeatures
                 Log.BiomeFeaturesLeftOut(logger, biome.Identifier, biome.Source, ex.Message);
             }
 
+            if (registry is not null)
+                continue;
+
             try
             {
                 biomeCarvers.Set(biome.Identifier, carvers.Resolve(element.Carvers, "carvers"));
@@ -285,6 +303,9 @@ internal static partial class PluginFeatures
 
         foreach (var file in kept.Where(file => file.Modifier is not null))
         {
+            if (registry is not null && !registry.Carvers.ValidModifiers.Contains(file))
+                continue;
+
             try
             {
                 var modifier = file.Modifier!;
@@ -292,9 +313,9 @@ internal static partial class PluginFeatures
                 modifiers.Add(new ResolvedModifier(
                     ResolveBiomes(modifier),
                     resolver.StepFeatures(modifier.Add.Features, "add.features"),
-                    carvers.Resolve(modifier.Add.Carvers, "add.carvers"),
+                    registry is null ? carvers.Resolve(modifier.Add.Carvers, "add.carvers") : [],
                     resolver.StepFeatures(modifier.Remove.Features, "remove.features"),
-                    carvers.Resolve(modifier.Remove.Carvers, "remove.carvers")));
+                    registry is null ? carvers.Resolve(modifier.Remove.Carvers, "remove.carvers") : []));
             }
             catch (InvalidDataException ex)
             {
@@ -1124,7 +1145,11 @@ internal sealed record FeatureFile(
     string Identifier,
     string Source,
     JsonElement Json,
-    BiomeModifierData? Modifier);
+    BiomeModifierData? Modifier)
+{
+    // File-only worldgen still belongs to its supplying plugin, which unloading must stop entering.
+    internal PluginContainer? Owner { get; init; }
+}
 
 /// <summary>
 /// The features and carvers chunk generation places: the loaded plugins' features, and every biome's features per

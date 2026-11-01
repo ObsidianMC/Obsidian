@@ -2381,6 +2381,17 @@ failures through `PluginGenerationException`. The live-generator switch still ne
 decoration and structure layouts when plugins change, and route plant growth's `PluginFeatures.Current` to the native
 feature set. Standalone parity replays can continue to construct a vanilla `FeatureRegistry` directly.
 
+The 26.3 terrain pipeline resolves carvers through `PluginFeatures.CurrentCarvers`, refreshed on that same successful
+apply. Both `worldgen/carver` and `worldgen/configured_carver` files are accepted, using 26.3 geometry: configuration
+fields sit beside `type`, with cave `count`, `thickness` and `room_vertical_radius_multiplier`; there is no legacy
+`config` envelope, `lava_level` or `replaceable` list. The terrain carving mask decides fluids and uncarvable blocks.
+Biome carver lists accept identifiers, inline carvers and nested tags (both `tags/worldgen/carver` and
+`tags/worldgen/configured_carver` folders). Biome modifiers add carvers before any removals run, preserving list order
+and duplicate entries, whose indices seed carving. Invalid files and modifiers are reported by source and skipped;
+an invalid override leaves vanilla's carver available. Dimensions discover the owners of the carvers their possible
+biomes use, including region biomes and removal-only modifiers. Unloading releases those dimensions, and reloads
+replace carver configurations and biome-list caches together between chunks.
+
 Plugins add configured and placed features, and change what biomes place and spawn with biome modifiers:
 
 - `data/<namespace>/worldgen/configured_feature/<path>.json` is the configured feature `<namespace>:<path>`;

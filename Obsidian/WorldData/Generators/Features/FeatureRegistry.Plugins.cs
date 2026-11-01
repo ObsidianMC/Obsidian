@@ -5,6 +5,7 @@ using Obsidian.Plugins;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Generators.Terrain.Carvers;
 using Obsidian.WorldData.Structures;
 using Obsidian.WorldData.Structures.Pools;
 using System.IO;
@@ -40,6 +41,8 @@ internal sealed partial class FeatureRegistry
 
     /// <summary>The shared plant-growth and structure interface, using 26.3 lookups.</summary>
     public WorldgenFeatureSet? FeatureSet { get; internal set; }
+
+    internal CarverRegistry Carvers { get; set; } = null!;
 
     internal IReadOnlyDictionary<object, ImmutableArray<PluginContainer>> EntryOwners => this.dependencies.Of;
 
