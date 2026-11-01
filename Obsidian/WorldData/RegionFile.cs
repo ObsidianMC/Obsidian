@@ -1250,6 +1250,7 @@ public sealed partial class RegionFile : IAsyncDisposable
             finally
             {
                 await this.CloseAsync();
+                await this.ObserveAsync(Step.Closed, -1);
             }
         }
         finally
@@ -1290,6 +1291,7 @@ public sealed partial class RegionFile : IAsyncDisposable
 
     internal enum Step
     {
+        Closed,
         // A chunk's payload is in its free sectors.
         PayloadWritten,
 

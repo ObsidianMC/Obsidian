@@ -274,6 +274,225 @@ public sealed class StructureCacheEviction
         Assert.Equal(0, cache.Count);
     }
 
+    [Fact]
+    public async Task StaleMetadataNotificationsCannotOverwriteANewerSavedChunk()
+    {
+        var world = CreateWorld(new MojangGenerator());
+        var obtained = Barrier();
+        var resumeNotification = Barrier();
+        var snapshot = Barrier();
+        var resumeSave = Barrier();
+        Task<Chunk?>? notifying = null;
+        Task? unloading = null;
+        Region? region = null;
+        try
+        {
+            var original = (Chunk)await world.GetChunkAsync(StartX, StartZ, scheduleGeneration: false);
+            region = (Region)world.LoadRegionByChunk(StartX, StartZ);
+            world.StructureChunkObtained = chunk =>
+            {
+                if (!ReferenceEquals(chunk, original))
+                    return ValueTask.CompletedTask;
+
+                obtained.TrySetResult();
+                return new ValueTask(resumeNotification.Task);
+            };
+            notifying = world.GetStructureStartChunkAsync(StartX, StartZ, markUnsaved: true).AsTask();
+            await obtained.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+            // Save a newer instance, then leave the slot empty while another chunk holds final-save I/O open.
+            await region.UnloadChunk(StartX, StartZ);
+            var newer = (Chunk)await world.GetChunkAsync(StartX, StartZ, scheduleGeneration: false);
+            Assert.NotSame(original, newer);
+            newer.StructureReferences = new NbtCompound("References") { new NbtArray<long>("test:newer", [456L]) };
+            newer.MarkUnsaved();
+            await region.UnloadChunk(StartX, StartZ);
+            _ = await world.GetChunkAsync(StartX + 1, StartZ, scheduleGeneration: false);
+            var pauseOnce = 1;
+            region.ChunkFile.Observe = step =>
+            {
+                if (step.Step != RegionFile.Step.PayloadWritten || Interlocked.Exchange(ref pauseOnce, 0) != 1)
+                    return ValueTask.CompletedTask;
+
+                snapshot.TrySetResult();
+                return new ValueTask(resumeSave.Task);
+            };
+            unloading = world.UnloadRegionAsync(region.X, region.Z);
+            await snapshot.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            resumeNotification.TrySetResult();
+            Assert.NotSame(original, await notifying.WaitAsync(TimeSpan.FromSeconds(30)));
+            resumeSave.TrySetResult();
+            await unloading;
+
+            var saved = (Chunk)await world.GetChunkAsync(StartX, StartZ, scheduleGeneration: false);
+            Assert.Equal(new long[] { 456L }, ((NbtArray<long>)saved.StructureReferences!["test:newer"]).GetArray());
+        }
+        finally
+        {
+            world.StructureChunkObtained = null;
+            resumeNotification.TrySetResult();
+            resumeSave.TrySetResult();
+            if (region is not null)
+                region.ChunkFile.Observe = null;
+            if (unloading is not null)
+                await unloading;
+            if (notifying is not null)
+                await notifying;
+            await DisposeWorld(world);
+        }
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task MetadataReadsRetryWhenTheirRegionCloses(bool readAlreadyStarted, bool savedBounds)
+    {
+        var world = CreateWorld(new MojangGenerator());
+        var reading = Barrier();
+        var resumeRead = Barrier();
+        var closed = Barrier();
+        var resumeClose = Barrier();
+        Task? notifying = null;
+        Task<Chunk?>? startRead = null;
+        Task<SavedStructureStart[]>? boundsRead = null;
+        Task? unloading = null;
+        Region? region = null;
+        Task BeginRead()
+        {
+            if (savedBounds)
+                return boundsRead = world.ReadSavedStructureStartsAsync(StartX, StartZ).AsTask();
+
+            return startRead = world.GetStructureStartChunkAsync(StartX, StartZ, markUnsaved: true).AsTask();
+        }
+
+        try
+        {
+            _ = await world.GetChunkAsync(StartX, StartZ, scheduleGeneration: false);
+            var manager = ((MojangGenerator)world.Generator).Builder!.Structures!;
+            manager.LoadStart(manager.GetStarts(StartX, StartZ).Single(start => start.Structure.Identifier == Pyramid));
+            region = (Region)world.LoadRegionByChunk(StartX, StartZ);
+            await region.UnloadChunk(StartX, StartZ);
+            region.ChunkFile.Observe = step =>
+            {
+                if (step.Step == RegionFile.Step.Reading && readAlreadyStarted)
+                {
+                    reading.TrySetResult();
+                    return new ValueTask(resumeRead.Task);
+                }
+                if (step.Step == RegionFile.Step.Closed)
+                {
+                    closed.TrySetResult();
+                    return new ValueTask(resumeClose.Task);
+                }
+                return ValueTask.CompletedTask;
+            };
+
+            if (readAlreadyStarted)
+            {
+                notifying = BeginRead();
+                await reading.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            }
+            unloading = world.UnloadRegionAsync(region.X, region.Z);
+            await closed.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            notifying ??= BeginRead();
+            resumeRead.TrySetResult();
+            resumeClose.TrySetResult();
+            await unloading;
+
+            await notifying.WaitAsync(TimeSpan.FromSeconds(30));
+            if (boundsRead is not null)
+            {
+                Assert.Contains(await boundsRead, start => start.Identifier == Pyramid);
+            }
+            else
+            {
+                var current = await startRead!;
+                Assert.NotNull(current);
+                Assert.Same(current, await world.GetChunkAsync(StartX, StartZ, scheduleGeneration: false));
+                Assert.True(current.IsMarkedUnsaved);
+            }
+        }
+        finally
+        {
+            resumeRead.TrySetResult();
+            resumeClose.TrySetResult();
+            if (region is not null)
+                region.ChunkFile.Observe = null;
+            if (unloading is not null)
+                await unloading;
+            try
+            {
+                if (notifying is not null)
+                    await notifying;
+            }
+            finally
+            {
+                await DisposeWorld(world);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task AutosaveCompletesAFailedRegionUnloadAndReleasesItsStarts()
+    {
+        var generator = new MojangGenerator();
+        var world = CreateWorld(generator);
+        var writing = Barrier();
+        var failWrite = Barrier();
+        Task? unloading = null;
+        Region? region = null;
+        try
+        {
+            _ = await world.GetChunkAsync(StartX, StartZ, scheduleGeneration: false);
+            var manager = generator.Builder!.Structures!;
+            var start = manager.GetStarts(StartX, StartZ).Single(candidate => candidate.Structure.Identifier == Pyramid);
+            manager.LoadStart(start);
+            Assert.True(start.TryAddReference());
+            manager.StartChanged!(StartX, StartZ);
+            region = (Region)world.LoadRegionByChunk(StartX, StartZ);
+            region.ChunkFile.Observe = async step =>
+            {
+                if (step.Step != RegionFile.Step.PayloadWritten)
+                    return;
+
+                writing.TrySetResult();
+                await failWrite.Task;
+                throw new IOException("Injected final-save failure.");
+            };
+            unloading = world.UnloadRegionAsync(region.X, region.Z);
+            await writing.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            failWrite.TrySetResult();
+            await Assert.ThrowsAsync<IOException>(() => unloading);
+            region.ChunkFile.Observe = null;
+
+            // Production autosave must finish the pending unload, without another explicit unload request.
+            await world.FlushRegionsAsync();
+            Assert.Empty(world.Regions);
+            Assert.Equal(0, manager.StartCache.Count);
+            var saved = (Chunk)await world.GetChunkAsync(StartX, StartZ, scheduleGeneration: false);
+            Assert.Equal(1, ((NbtCompound)saved.StructureStarts![Pyramid]).GetInt("references"));
+            var currentRegion = (Region)world.GetRegionForChunk(StartX, StartZ)!;
+            Assert.NotSame(region, currentRegion);
+            Assert.True(currentRegion.IsChunkResident(saved));
+        }
+        finally
+        {
+            failWrite.TrySetResult();
+            if (region is not null)
+                region.ChunkFile.Observe = null;
+            if (unloading is not null)
+            {
+                await unloading.ConfigureAwait(
+                    ConfigureAwaitOptions.SuppressThrowing | ConfigureAwaitOptions.ContinueOnCapturedContext);
+            }
+            await DisposeWorld(world);
+        }
+    }
+
+    private static TaskCompletionSource Barrier() => new(TaskCreationOptions.RunContinuationsAsynchronously);
+
     private static World CreateWorld(MojangGenerator generator)
     {
         var configuration = new ServerConfiguration { SpawnChunkRadius = 0, TimeTickSpeedMultiplier = 1 };

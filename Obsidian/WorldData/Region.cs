@@ -158,9 +158,14 @@ public partial class Region : IRegion
     // Once the final save is clean, structure notifications wait for file closure, then mark a reloaded instance.
     private bool structureChangesSealed;
     private TaskCompletionSource? regionUnload;
+    private readonly long[,] chunkVersions = new long[CubicRegionSize, CubicRegionSize];
 
     // Read under FluidTickLock, which also orders registration/removal in the owning level.
     internal Task? RegionUnload => this.regionUnload?.Task;
+
+    internal bool StructureChangesSealed => this.structureChangesSealed;
+
+    internal bool UnloadFailed => this.regionUnload?.Task.IsFaulted == true;
 
     private bool HasUnsavedMarks => this.loadedChunks.OfType<Chunk>().Any(chunk => chunk.IsMarkedUnsaved);
 
@@ -172,13 +177,6 @@ public partial class Region : IRegion
 
         var x = NumericsHelper.Modulo(chunk.X, CubicRegionSize);
         var z = NumericsHelper.Modulo(chunk.Z, CubicRegionSize);
-        if (this.loadedChunks[x, z] is null && this.lightingRetired)
-        {
-            // A structure search may load an absent start chunk while the region's final save is in flight.
-            // Keep its metadata in the retired region for the next snapshot, without reattaching block access.
-            this.PublishChunk(x, z, chunk, allowRetired: true);
-        }
-
         if (!ReferenceEquals(this.loadedChunks[x, z], chunk))
             return false;
 
@@ -483,6 +481,61 @@ public partial class Region : IRegion
         return SavedStructureStart.Read(starts);
     }
 
+    /// <summary>
+    /// Loads metadata into an unsealed region, including during final-save I/O. Only a fresh load that still owns
+    /// the slot's version can publish into a retired region; a delayed notification cannot reinstall an old chunk.
+    /// Returns null when sealing requires the caller to wait for removal and retry with a new region.
+    /// </summary>
+    internal async ValueTask<Chunk?> GetStructureChunkAsync(int chunkX, int chunkZ)
+    {
+        var x = NumericsHelper.Modulo(chunkX, CubicRegionSize);
+        var z = NumericsHelper.Modulo(chunkZ, CubicRegionSize);
+        lock (this.FluidTickLock)
+        {
+            if (this.structureChangesSealed)
+                return null;
+            if (this.loadedChunks[x, z] is Chunk resident)
+                return resident;
+        }
+
+        await this.initialization.Value;
+        await this.chunkSlotLock.WaitAsync();
+        try
+        {
+            while (true)
+            {
+                long version;
+                lock (this.FluidTickLock)
+                {
+                    if (this.structureChangesSealed)
+                        return null;
+                    if (this.loadedChunks[x, z] is Chunk resident)
+                        return resident;
+                    version = this.chunkVersions[x, z];
+                }
+
+                var fromDisk = this.regionFile.HasChunk(x, z) ? await this.GetChunkFromFileAsync(x, z) : null;
+                var chunk = fromDisk ?? new Chunk(chunkX, chunkZ, this.minY, this.height, ChunkGenStage.structure_starts);
+                lock (this.FluidTickLock)
+                {
+                    if (this.structureChangesSealed)
+                        return null;
+                    if (this.loadedChunks[x, z] is Chunk resident)
+                        return resident;
+                    if (this.chunkVersions[x, z] != version)
+                        continue;
+
+                    this.PublishChunk(x, z, chunk, fromDisk is not null, allowRetired: true);
+                    return chunk;
+                }
+            }
+        }
+        finally
+        {
+            this.chunkSlotLock.Release();
+        }
+    }
+
     public async Task UnloadChunk(int x, int z)
     {
         var chunk = loadedChunks[x, z];
@@ -503,6 +556,9 @@ public partial class Region : IRegion
 
                 this.DetachLighting(chunk);
                 loadedChunks[x, z] = null;
+                var slotX = NumericsHelper.Modulo(x, CubicRegionSize);
+                var slotZ = NumericsHelper.Modulo(z, CubicRegionSize);
+                this.chunkVersions[slotX, slotZ]++;
                 this.retiredBlockAccess.Remove(chunk);
                 this.StructureChunkUnloaded?.Invoke(chunk);
                 return;
@@ -725,6 +781,12 @@ public partial class Region : IRegion
 
         // Pin the replacement before releasing the previous instance at this position.
         this.StructureChunkLoaded?.Invoke(chunk);
+        if (!ReferenceEquals(this.loadedChunks[x, z], chunk))
+        {
+            var slotX = NumericsHelper.Modulo(x, CubicRegionSize);
+            var slotZ = NumericsHelper.Modulo(z, CubicRegionSize);
+            this.chunkVersions[slotX, slotZ]++;
+        }
         if (this.loadedChunks[x, z] is IChunk previous && !ReferenceEquals(previous, chunk))
         {
             this.DetachLighting(previous);
