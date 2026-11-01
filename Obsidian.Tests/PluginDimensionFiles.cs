@@ -520,6 +520,72 @@ public sealed class PluginDimensionFiles : IDisposable
         GenerateShelf(resumed, 6);
     }
 
+    [Trait("Category", TestCategory.Worldgen)]
+    [Fact(DisplayName = "The 26.3 pipeline evaluates plugins' surface rules and conditions, and stops when they fail")]
+    public void GeneratesPluginSurfaceRulesInThe263Pipeline()
+    {
+        var noise = PluginNoise.Build(
+            [
+                PluginNoise.Parse(PluginNoise.NoiseSettings, "probe:ruled_world", "test", Bytes(RuledWorld26)),
+                PluginNoise.Parse(PluginNoise.NoiseSettings, "probe:failing_rules", "test", Bytes(FailingRules26)),
+                PluginNoise.Parse(PluginNoise.DensityFunction, "probe:ground", "test", Bytes(Ground26)),
+                PluginNoise.Parse(PluginNoise.Noise, "probe:bumps", "test", Bytes(Bumps26))
+            ],
+            ProbeTypes(),
+            NullLogger.Instance);
+        var data = PluginWorldgen.Layer(WorldgenData.Vanilla, [], noise.Files);
+        var stem = FixedStem
+            .Replace("\"settings\": \"minecraft:overworld\"", "\"settings\": \"probe:ruled_world\"")
+            .Replace(
+                """{ "type": "minecraft:fixed", "biome": "stemfiles:glade" }""",
+                """{ "type": "probe:halves", "west": "minecraft:desert", "east": "minecraft:plains" }""");
+        var plugin = ProbePlugin();
+
+        // Reading the stem finds the plugin's rule types its material rule names.
+        var read = Read26("stemfiles:ruled", stem, noise, data);
+        Assert.NotNull(read.MaterialTypes);
+
+        // The plugin's rules hold vanilla's, by identifier too, and its conditions, inside vanilla's.
+        var dimension = WithPlugin(read, plugin);
+        var terrain = BiomeTerrain.Create(dimension, 1234);
+        var chunk = NewChunk(terrain, 0);
+        terrain.Generate(chunk);
+
+        Assert.True(CountLayer(chunk, 39, BlockIds.GoldBlock) > 192, "The floor isn't gold.");
+        Assert.True(CountLayer(chunk, 25, BlockIds.Stone) > 192, "The middle isn't stone.");
+        Assert.True(CountLayer(chunk, 5, BlockIds.DiamondBlock) > 192, "The bottom isn't diamond.");
+
+        // A plugin's rule failing fails its own dimension's chunk, naming the plugin; other dimensions go on.
+        var failingStem = stem.Replace("probe:ruled_world", "probe:failing_rules");
+        var failingDimension = WithPlugin(Read26("stemfiles:failing_rules", failingStem, noise, data), plugin);
+        var failing = BiomeTerrain.Create(failingDimension, 1);
+        var error = Assert.Throws<PluginGenerationException>(() => failing.Generate(NewChunk(failing, 0)));
+
+        Assert.Same(plugin, Assert.Single(error.Plugins));
+        terrain.Generate(NewChunk(terrain, 1));
+
+        // Releasing drops the rule types with the rest.
+        dimension.Release();
+        Assert.Throws<InvalidOperationException>(() => dimension.MaterialTypes);
+    }
+
+    // How many of a layer's blocks are the block: carvers may cut into any layer.
+    private static int CountLayer(Chunk chunk, int y, int block)
+    {
+        var count = 0;
+
+        for (var x = 0; x < 16; x++)
+        {
+            for (var z = 0; z < 16; z++)
+            {
+                if (chunk.GetBlock(x, y, z).Is(block))
+                    count++;
+            }
+        }
+
+        return count;
+    }
+
     // The worldgen types a plugin registers, here from the test's own load context.
     private static List<WorldgenTypeRegistration> ProbeTypes()
     {
@@ -539,6 +605,26 @@ public sealed class PluginDimensionFiles : IDisposable
             "probe:failing",
             typeof(IDensityFunction),
             typeof(FailingFunction)));
+        types.Add(WorldgenTypeRegistration.Create(
+            types,
+            "probe:top",
+            typeof(ISurfaceRule),
+            typeof(TopRule)));
+        types.Add(WorldgenTypeRegistration.Create(
+            types,
+            "probe:unless",
+            typeof(ISurfaceRule),
+            typeof(UnlessRule)));
+        types.Add(WorldgenTypeRegistration.Create(
+            types,
+            "probe:below",
+            typeof(ISurfaceCondition),
+            typeof(BelowCondition)));
+        types.Add(WorldgenTypeRegistration.Create(
+            types,
+            "probe:failing_rule",
+            typeof(ISurfaceRule),
+            typeof(FailingRule)));
 
         return types;
     }
@@ -570,7 +656,8 @@ public sealed class PluginDimensionFiles : IDisposable
         read.Layout,
         read.DensityTypes,
         [plugin],
-        () => regions.IsDefault ? [] : regions);
+        () => regions.IsDefault ? [] : regions,
+        read.MaterialTypes);
 
     private static Chunk NewChunk(BiomeTerrain terrain, int chunkX) =>
         new(chunkX, 0, terrain.MinY, terrain.Height);
@@ -635,6 +722,35 @@ public sealed class PluginDimensionFiles : IDisposable
           "material_rule": { "type": "minecraft:sequence", "sequence": [] }
         }
         """;
+
+    // The shelf, gold on its floor and diamond below y 10, from plugins' rules and conditions holding vanilla's.
+    private static readonly string RuledWorld26 = ShelfWorld26.Replace(
+        "\"material_rule\": { \"type\": \"minecraft:sequence\", \"sequence\": [] }",
+        """
+        "material_rule": {
+          "type": "minecraft:sequence",
+          "sequence": [
+            {
+              "type": "probe:unless",
+              "unless": { "type": "probe:below", "y": 20 },
+              "then": {
+                "type": "minecraft:condition",
+                "if_true": "minecraft:on_floor",
+                "then_run": { "type": "minecraft:block", "result_state": "minecraft:gold_block" }
+              }
+            },
+            {
+              "type": "minecraft:condition",
+              "if_true": { "type": "probe:below", "y": 10 },
+              "then_run": { "type": "probe:top", "block": "minecraft:diamond_block", "depth": 100 }
+            }
+          ]
+        }
+        """);
+
+    private static readonly string FailingRules26 = ShelfWorld26.Replace(
+        "\"material_rule\": { \"type\": \"minecraft:sequence\", \"sequence\": [] }",
+        "\"material_rule\": { \"type\": \"probe:failing_rule\" }");
 
     private static readonly string FailingWorld26 = ShelfWorld26.Replace(
         """{ "type": "probe:shelf", "y": 40, "argument": "probe:ground" }""",
@@ -766,6 +882,36 @@ public sealed class PluginDimensionFiles : IDisposable
 
         public IBlock? Apply(ISurfaceContext context) =>
             context.StoneDepthAbove <= this.Depth ? this.Block.ToBlock() : null;
+    }
+
+    // A plugin's surface rule holding a rule and a condition: the rule, unless the condition holds.
+    public sealed class UnlessRule : ICustomSurfaceRule
+    {
+        public string Type => "probe:unless";
+
+        public required ISurfaceCondition Unless { get; init; }
+
+        public required ISurfaceRule Then { get; init; }
+
+        public IBlock? Apply(ISurfaceContext context) => context.Test(this.Unless) ? null : context.Apply(this.Then);
+    }
+
+    // A plugin's surface condition: whether the block is below a height.
+    public sealed class BelowCondition : ICustomSurfaceCondition
+    {
+        public string Type => "probe:below";
+
+        public required int Y { get; init; }
+
+        public bool Test(ISurfaceContext context) => context.BlockY < this.Y;
+    }
+
+    // A plugin's surface rule whose code fails.
+    public sealed class FailingRule : ICustomSurfaceRule
+    {
+        public string Type => "probe:failing_rule";
+
+        public IBlock? Apply(ISurfaceContext context) => throw new InvalidOperationException("probe failed");
     }
 
     // A plugin's biome source: one biome west of x 0, another east.

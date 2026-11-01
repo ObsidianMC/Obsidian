@@ -63,6 +63,15 @@ internal sealed partial class WorldgenReader
         if (target == typeof(IDensityFunction))
             return this.ReadDensityFunction(json, path);
 
+        if (target == typeof(ISurfaceRule) && this.SurfaceRules is Func<JsonElement, string, ISurfaceRule> rule)
+            return rule(json, path);
+
+        if (target == typeof(ISurfaceCondition)
+            && this.SurfaceConditions is Func<JsonElement, string, ISurfaceCondition> condition)
+        {
+            return condition(json, path);
+        }
+
         if (target == typeof(INoise) || target == typeof(BaseNoise))
         {
             return json.ValueKind == JsonValueKind.Object

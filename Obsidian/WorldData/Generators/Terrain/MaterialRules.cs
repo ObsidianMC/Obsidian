@@ -14,6 +14,7 @@ namespace Obsidian.WorldData.Generators.Terrain;
 internal sealed partial class MaterialRules
 {
     private readonly TerrainGenerator generator;
+    private readonly IMaterialTypes? types;
     private readonly Dictionary<string, Func<MaterialContext, IBlock?>> rules = [];
     private readonly Dictionary<string, Func<MaterialContext, bool>> conditions = [];
     private readonly Func<MaterialContext, IBlock?> root;
@@ -28,12 +29,18 @@ internal sealed partial class MaterialRules
     private readonly Dictionary<NoiseStack, int> noiseSlots = new(ReferenceEqualityComparer.Instance);
     private readonly Dictionary<DensityFunction, int> densitySlots = new(ReferenceEqualityComparer.Instance);
 
-    public MaterialRules(TerrainGenerator generator)
+    /// <param name="types">The rule and condition types beyond vanilla's the settings' rule may name, such as
+    /// plugins' (see <see cref="PluginMaterialTypes"/>); none by default.</param>
+    public MaterialRules(TerrainGenerator generator, IMaterialTypes? types = null)
     {
         this.generator = generator;
+        this.types = types;
         this.bands = GenerateBands(generator.Compiler.Random.FromHashOf("minecraft:clay_bands"));
         this.root = this.CompileRule(generator.Settings.MaterialRule);
     }
+
+    /// <summary>The generator's density compiler, which compiles the density functions rules hold.</summary>
+    public DensityCompiler Compiler => this.generator.Compiler;
 
     private NoiseStack SurfaceNoise => field ??= this.generator.Compiler.Noise("minecraft:surface");
 
@@ -200,7 +207,9 @@ internal sealed partial class MaterialRules
             return rule;
         }
 
-        switch (json.GetProperty("type").GetString())
+        var type = json.GetProperty("type").GetString()!;
+
+        switch (type)
         {
             case "minecraft:block":
                 var block = ReadBlock(json.GetProperty("result_state"));
@@ -238,7 +247,8 @@ internal sealed partial class MaterialRules
             case "minecraft:ore_vein":
                 return this.CompileOre(json);
             default:
-                throw new InvalidDataException($"Unknown 26.3 material rule {json.GetProperty("type")}.");
+                return this.CompilePluginRule(type, json)
+                    ?? throw new InvalidDataException($"Unknown 26.3 material rule {type}.");
         }
     }
 
@@ -300,7 +310,9 @@ internal sealed partial class MaterialRules
             return condition;
         }
 
-        switch (json.GetProperty("type").GetString())
+        var type = json.GetProperty("type").GetString()!;
+
+        switch (type)
         {
             case "minecraft:biome":
                 var names = json.GetProperty("biome_is");
@@ -346,11 +358,12 @@ internal sealed partial class MaterialRules
             case "minecraft:hole":
                 return context => context.SurfaceDepth <= 0;
             case "minecraft:steep":
-                return context => context.GradientX <= -4 || context.GradientZ >= 4;
+                return context => context.Steep;
             case "minecraft:temperature":
                 return context => this.Temperature(context.Biome, context.X, context.Y, context.Z) < 0.15f;
             default:
-                throw new InvalidDataException($"Unknown 26.3 material condition {json.GetProperty("type")}.");
+                return this.CompilePluginCondition(type, json)
+                    ?? throw new InvalidDataException($"Unknown 26.3 material condition {type}.");
         }
     }
 

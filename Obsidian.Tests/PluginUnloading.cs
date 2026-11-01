@@ -187,20 +187,66 @@ public sealed class PluginUnloading : IDisposable
         AppContext.SetData(ProbeOreDensity.SampledKey, null);
 
         // Only the ore rule names the plugin's function, which a chunk samples.
-        var (loadContext, dimension, terrain) = await GenerateOreWorldAsync(manager, path);
+        var (loadContext, dimension, terrain) = await GenerateProbeWorldAsync(
+            manager,
+            path,
+            "probe:ore_world",
+            BlockIds.DiamondBlock);
 
         Assert.Equal(true, AppContext.GetData(ProbeOreDensity.SampledKey));
 
-        // Unloading releases the dimension, whose generator stops.
-        await UnloadAllAsync(manager);
-
-        Assert.True(dimension.IsReleased);
-        var next = new Chunk(1, 0, terrain!.MinY, terrain.Height);
-        Assert.Throws<GeneratorStoppedException>(() => terrain.Generate(next));
+        await AssertStopsOnUnloadAsync(manager, dimension, terrain!);
 
         // Once the generator goes, nothing holds the plugin's code.
         terrain = null;
+        await AssertCollectedAsync(loadContext);
+    }
 
+    [Trait("Category", TestCategory.Worldgen)]
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task Unload_ReleasesThe263DimensionsMadeOfItsSurfaceRules()
+    {
+        await using var context = TestServerFactory.CreateServer($"probe-crust-{Guid.NewGuid():N}");
+        await using var manager = CreateManager(context);
+        var path = Path.Join(this.folder, "probe.obby");
+        var files = new Dictionary<string, byte[]>
+        {
+            [ProbeCrustRule.SettingsFile] = Encoding.UTF8.GetBytes(CrustWorld)
+        };
+        await File.WriteAllBytesAsync(path, PluginLoading.ProbeArchive("1.0.0", files));
+        AppContext.SetData(ProbeCrustRule.AppliedKey, null);
+
+        // Only the material rule names the plugin's surface rule, which a chunk applies.
+        var (loadContext, dimension, terrain) = await GenerateProbeWorldAsync(
+            manager,
+            path,
+            "probe:crust_world",
+            BlockIds.GoldBlock);
+
+        Assert.Equal(true, AppContext.GetData(ProbeCrustRule.AppliedKey));
+
+        await AssertStopsOnUnloadAsync(manager, dimension, terrain!);
+
+        // Once the generator goes, nothing holds the plugin's code.
+        terrain = null;
+        await AssertCollectedAsync(loadContext);
+    }
+
+    // Unloads the plugins, and checks that the dimension was released and its generator stopped.
+    private static async Task AssertStopsOnUnloadAsync(
+        PluginManager manager,
+        WorldgenDimension dimension,
+        BiomeTerrain terrain)
+    {
+        await UnloadAllAsync(manager);
+
+        Assert.True(dimension.IsReleased);
+        var next = new Chunk(1, 0, terrain.MinY, terrain.Height);
+        Assert.Throws<GeneratorStoppedException>(() => terrain.Generate(next));
+    }
+
+    private static async Task AssertCollectedAsync(WeakReference loadContext)
+    {
         for (var i = 0; loadContext.IsAlive && i < 100; i++)
         {
             GC.Collect();
@@ -212,10 +258,10 @@ public sealed class PluginUnloading : IDisposable
     }
 
     // Loads the plugin and generates a chunk of its noise settings with the 26.3 pipeline, out of the test method so
-    // that no local keeps the plugin alive.
+    // that no local keeps the plugin alive. The settings make a block below y 40 the expected one.
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static async Task<(WeakReference Context, WorldgenDimension Dimension, BiomeTerrain? Terrain)>
-        GenerateOreWorldAsync(PluginManager manager, string path)
+        GenerateProbeWorldAsync(PluginManager manager, string path, string settings, int expected)
     {
         var container = (await manager.LoadPluginAsync(path))!;
         var stem = """
@@ -223,14 +269,14 @@ public sealed class PluginUnloading : IDisposable
               "type": "minecraft:overworld",
               "generator": {
                 "type": "minecraft:noise",
-                "settings": "probe:ore_world",
+                "settings": "SETTINGS",
                 "biome_source": { "type": "minecraft:fixed", "biome": "minecraft:plains" }
               }
             }
             """;
         var dimension = PluginWorldgen.ReadDimension(
-            "probe:ore_world",
-            Encoding.UTF8.GetBytes(stem),
+            settings,
+            Encoding.UTF8.GetBytes(stem.Replace("SETTINGS", settings)),
             PluginNoise.Current,
             PluginWorldgen.Data);
 
@@ -240,13 +286,32 @@ public sealed class PluginUnloading : IDisposable
         var chunk = new Chunk(0, 0, terrain.MinY, terrain.Height);
         terrain.Generate(chunk);
 
-        Assert.True(chunk.GetBlock(3, 20, 5).Is(BlockIds.DiamondBlock));
+        Assert.True(chunk.GetBlock(3, 20, 5).Is(expected));
 
         return (new WeakReference(container.LoadContext), dimension, terrain);
     }
 
-    // Solid below y 40, where the ore rule makes every block a diamond block, in 26.3's schema.
-    private const string OreWorld = """
+    // Solid below y 40, where the ore rule makes every block a diamond block.
+    private static readonly string OreWorld = ProbeWorld("""
+        {
+          "type": "minecraft:ore_vein",
+          "density": { "type": "probe:ore_density" },
+          "richness": 1,
+          "filler_gap": -1,
+          "ore_block": "minecraft:diamond_block",
+          "raw_ore_block": "minecraft:diamond_block",
+          "filler_block": "minecraft:stone",
+          "raw_ore_chance": 0.5
+        }
+        """);
+
+    // Solid below y 40, where the plugin's surface rule makes every block a gold block.
+    private static readonly string CrustWorld = ProbeWorld("""
+        { "type": "probe:crust", "block": "minecraft:gold_block" }
+        """);
+
+    // Noise settings solid below y 40, with a material rule, in 26.3's schema.
+    private static string ProbeWorld(string materialRule) => $$"""
         {
           "sea_level": -64,
           "disable_mob_generation": false,
@@ -272,16 +337,7 @@ public sealed class PluginUnloading : IDisposable
             }
           },
           "spawn_target": [],
-          "material_rule": {
-            "type": "minecraft:ore_vein",
-            "density": { "type": "probe:ore_density" },
-            "richness": 1,
-            "filler_gap": -1,
-            "ore_block": "minecraft:diamond_block",
-            "raw_ore_block": "minecraft:diamond_block",
-            "filler_block": "minecraft:stone",
-            "raw_ore_chance": 0.5
-          }
+          "material_rule": {{materialRule}}
         }
         """;
 

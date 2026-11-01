@@ -116,6 +116,12 @@ internal sealed partial class MaterialRules
 
         public int GradientZ { get; private set; }
 
+        /// <summary>Whether the terrain rises by 4 or more blocks towards the north or east within the chunk.</summary>
+        public bool Steep => this.GradientX <= -4 || this.GradientZ >= 4;
+
+        /// <summary>The block as plugins' rules and conditions see it, made on first use.</summary>
+        public ISurfaceContext Surface => field ??= new PluginSurfaceContext(this);
+
         public string Biome => this.biome ??= this.onlyBiome ?? this.biomeAt(this.X, this.Y, this.Z);
 
         /// <summary>The <see cref="Biome"/>'s number among those biome conditions name, or -1.</summary>

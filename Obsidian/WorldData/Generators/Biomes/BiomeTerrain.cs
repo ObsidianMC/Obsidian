@@ -105,12 +105,18 @@ internal sealed class BiomeTerrain
         var settings = dimension.Settings;
         var biomeLayout = dimension.Layout;
         var densityTypes = dimension.DensityTypes;
+        var materialTypes = dimension.MaterialTypes;
 
         using var calls = GeneratorCalls.Enter(dimension.Identifier, dimension.Plugins);
 
         try
         {
-            var terrain = new TerrainGenerator(dimension.Data, seed, settings, types: densityTypes);
+            var terrain = new TerrainGenerator(
+                dimension.Data,
+                seed,
+                settings,
+                types: densityTypes,
+                materialTypes: materialTypes);
             var regions = dimension.FixRegions();
             var regionLayout = regions.IsDefaultOrEmpty
                 ? null

@@ -885,6 +885,28 @@ public sealed class ProbeOreDensity : IDensityFunction
 }
 
 /// <summary>
+/// The probe plugin's surface rule, which only its noise settings' material rule names: a block for every block it's
+/// evaluated for. It records that it was applied in <see cref="AppContext"/> data.
+/// </summary>
+public sealed class ProbeCrustRule : ICustomSurfaceRule
+{
+    /// <summary>The noise settings file that makes the plugin register the type.</summary>
+    public const string SettingsFile = "data/probe/worldgen/noise_settings/crust_world.json";
+
+    public const string AppliedKey = "Obsidian.Tests.ProbeCrustRule.Applied";
+
+    public string Type => "probe:crust";
+
+    public required SimpleBlockState Block { get; init; }
+
+    public IBlock? Apply(ISurfaceContext context)
+    {
+        AppContext.SetData(AppliedKey, true);
+        return this.Block.ToBlock();
+    }
+}
+
+/// <summary>
 /// The plugin that <see cref="PluginLoading"/> loads from the test assembly. It counts its event handler's calls in
 /// <see cref="AppContext"/> data, since its static fields belong to its own copy of the assembly. Its injected services
 /// have types from its own assembly, which mustn't be cached outside it.
@@ -952,6 +974,9 @@ public sealed class ProbePlugin : PluginBase
 
         if (this.Container.GetFileData(ProbeOreDensity.SettingsFile) is not null)
             pluginRegistry.RegisterWorldgenType<IDensityFunction, ProbeOreDensity>("probe:ore_density");
+
+        if (this.Container.GetFileData(ProbeCrustRule.SettingsFile) is not null)
+            pluginRegistry.RegisterWorldgenType<ISurfaceRule, ProbeCrustRule>("probe:crust");
 
         pluginRegistry.MapEvent<ServerStatusRequestEventArgs>(_ =>
         {
