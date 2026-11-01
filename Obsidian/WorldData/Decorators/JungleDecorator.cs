@@ -8,9 +8,9 @@ public class JungleDecorator : BaseDecorator
 {
     public JungleDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, DecoratorFeatures.VanillaTree("oak")));
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(4, DecoratorFeatures.VanillaTree("jungle_tree")));
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(7, DecoratorFeatures.VanillaTree("mega_jungle_tree")));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, "minecraft:oak"));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(4, "minecraft:jungle_tree"));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(7, "minecraft:mega_jungle_tree"));
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(16, typeof(LargeFernFlora), 6, 4));
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(16, typeof(FernFlora), 6, 4));
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(1, typeof(MelonFlora), 6, 5));

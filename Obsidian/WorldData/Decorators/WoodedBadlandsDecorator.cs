@@ -7,8 +7,8 @@ public class WoodedBadlandsDecorator : BaseDecorator
 {
     public WoodedBadlandsDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(2, DecoratorFeatures.VanillaTree("oak")));
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(7, DecoratorFeatures.VanillaTree("dark_oak")));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(2, "minecraft:oak"));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(7, "minecraft:dark_oak"));
     }
 
     public override void Decorate()

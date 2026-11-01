@@ -8,7 +8,7 @@ public class PlainsDecorator : BaseDecorator
 {
     public PlainsDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, DecoratorFeatures.VanillaTree("oak")));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, "minecraft:oak"));
 
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(DandelionFlora), 4, 3));
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(PoppyFlora), 4, 3));

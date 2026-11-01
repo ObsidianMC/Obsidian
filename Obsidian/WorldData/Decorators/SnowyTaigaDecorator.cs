@@ -7,7 +7,7 @@ public class SnowyTaigaDecorator : BaseDecorator
 {
     public SnowyTaigaDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(3, DecoratorFeatures.VanillaTree("spruce")));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(3, "minecraft:spruce"));
     }
 
     public override void Decorate()

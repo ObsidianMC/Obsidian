@@ -12,13 +12,6 @@ public class DecoratorFeatures
     /// </summary>
     public List<FloraInfo> Flora { get; set; } = new List<FloraInfo>();
 
-    /// <summary>
-    /// One of vanilla's configured tree features, like <c>oak</c>, as the running worldgen registry holds it, files
-    /// overriding it included.
-    /// </summary>
-    internal static ConfiguredFeatureBase VanillaTree(string name) =>
-        Registries.PluginFeatures.CurrentRegistry.ConfiguredAdapter($"minecraft:{name}");
-
     public class TreeInfo
     {
         /// <summary>
@@ -29,11 +22,12 @@ public class DecoratorFeatures
         public int Frequency { get; set; }
 
         /// <summary>
-        /// The configured tree feature to place (usually a <c>minecraft:tree</c>).
+        /// The identifier of the configured tree feature to place, like <c>minecraft:oak</c>. It's looked up as it's
+        /// placed, so plugins' and data packs' files overriding it apply.
         /// </summary>
-        public ConfiguredFeatureBase? Feature { get; set; }
+        public string Feature { get; set; }
 
-        public TreeInfo(int frequency, ConfiguredFeatureBase feature)
+        public TreeInfo(int frequency, string feature)
         {
             Frequency = frequency;
             Feature = feature;

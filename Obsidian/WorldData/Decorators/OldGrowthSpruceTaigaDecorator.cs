@@ -10,8 +10,8 @@ public class OldGrowthSpruceTaigaDecorator : BaseDecorator
         BlocksRegistry.Get(new SweetBerryBushStateBuilder().WithAge(3).Build().Id);
     public OldGrowthSpruceTaigaDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, DecoratorFeatures.VanillaTree("spruce")));
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(4, DecoratorFeatures.VanillaTree("mega_spruce")));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, "minecraft:spruce"));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(4, "minecraft:mega_spruce"));
     }
 
     public override void Decorate()

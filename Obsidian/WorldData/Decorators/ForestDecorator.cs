@@ -14,9 +14,9 @@ public class ForestDecorator : BaseDecorator
 
     public ForestDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(4, DecoratorFeatures.VanillaTree("oak")));
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, DecoratorFeatures.VanillaTree("birch")));
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(2, DecoratorFeatures.VanillaTree("fancy_oak")));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(4, "minecraft:oak"));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, "minecraft:birch"));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(2, "minecraft:fancy_oak"));
 
     }
 
