@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using Obsidian.API;
 using Obsidian.API.Registries;
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.Registry.Codecs.Dimensions;
@@ -8,6 +9,7 @@ using Obsidian.Plugins;
 using Obsidian.Registries;
 using Obsidian.Registries.Codecs;
 using Obsidian.Tests.Fakes;
+using Obsidian.WorldData;
 using Obsidian.WorldData.Generators;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Biomes;
@@ -19,6 +21,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using Xunit;
 
@@ -53,6 +56,46 @@ public sealed class WorldgenOverrides : IDisposable
     {
         if (Directory.Exists(this.folder))
             Directory.Delete(this.folder, recursive: true);
+    }
+
+    [Trait("Category", TestCategory.Worldgen)]
+    [Fact]
+    public void NativeRegistryAppliesCannotChangeLegacyReplays()
+    {
+        var legacy = new ChunkBuilder(MojangDimension.Overworld, 12345L, generateStructures: false);
+        Assert.True(PluginFeatures.Apply([], [], [], new HashSet<string>(), NullLogger.Instance));
+        PluginStructures.Apply([], [], PluginFeatures.CurrentRegistry.FeatureSet!, [], NullLogger.Instance);
+
+        var carved = Generate(-5, -5);
+        var reference = VanillaWorldgenCaptures.Cases("decoratedChunks")
+            .First(entry => entry.GetProperty("seed").GetInt64() == 12345L);
+        var x = reference.GetProperty("chunkX").GetInt32();
+        var z = reference.GetProperty("chunkZ").GetInt32();
+        var area = new Dictionary<(int X, int Z), IChunk>();
+        for (var dx = -1; dx <= 1; dx++)
+        {
+            for (var dz = -1; dz <= 1; dz++)
+                area[(x + dx, z + dz)] = Generate(x + dx, z + dz);
+        }
+
+        // A retained builder must keep legacy carvers and feature adapters after the live snapshots change.
+        legacy.Decorate(area, x, z);
+        Assert.Equal(VanillaWorldgenCaptures.Chunk("carvedChunks", 12345L, -5, -5)
+            .GetProperty("blocks").GetString(), Hash(carved));
+        Assert.Equal(reference.GetProperty("blocks").GetString(), Hash(area[(x, z)]));
+
+        Chunk Generate(int cx, int cz)
+        {
+            var chunk = new Chunk(cx, cz);
+            legacy.PopulateBiomes(chunk);
+            legacy.Generate3DTerrain(chunk);
+            legacy.ApplySurfaceRules(chunk);
+            legacy.ApplyCarvers(chunk);
+            return chunk;
+        }
+
+        static string Hash(IChunk chunk) => Convert.ToHexStringLower(SHA256.HashData(
+            Encoding.UTF8.GetBytes(VanillaWorldGeneration.BlockNames(chunk))));
     }
 
     [Trait("Category", TestCategory.Worldgen)]

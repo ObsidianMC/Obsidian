@@ -72,11 +72,11 @@ internal sealed class ChunkBuilder
     /// <param name="seed">World seed; see <see cref="RandomState.ParseSeed"/> for level seed strings.</param>
     /// <param name="generateStructures">Whether structures generate, like vanilla's <c>generate-structures</c> option.</param>
     /// <param name="features">The biomes' features, read before each chunk is decorated;
-    /// <see cref="PluginFeatures.Current"/> by default.</param>
+    /// the retained 1.21.11 features by default, independent of live registry applies.</param>
     /// <param name="startCache">The structure starts of the builder this one replaces, generated with the same seed
     /// and dimension, so the state of their placed pieces carries over; new ones by default.</param>
     /// <param name="structures">The structures and structure sets, read as structures start;
-    /// <see cref="PluginStructures.Current"/> by default.</param>
+    /// the retained 1.21.11 structures by default.</param>
     public ChunkBuilder(MojangDimension dimension, long seed, bool generateStructures = true,
         Func<WorldgenFeatureSet>? features = null, StructureStartCache? startCache = null,
         Func<WorldgenStructures>? structures = null)
@@ -93,7 +93,7 @@ internal sealed class ChunkBuilder
         this.biomeSource = dimension.CreateBiomeSource(this.RandomState);
         this.surfaceBuilder = new SurfaceBuilder(this.RandomState, this.biomeSource);
         this.carverStep = new CarverStep(this.RandomState, this.surfaceBuilder, this.biomeSource);
-        this.features = features ?? (static () => PluginFeatures.Current);
+        this.features = features ?? (static () => WorldgenFeatureSet.Vanilla);
         this.decoration = this.CreateDecoration(this.features());
         this.regionRandom = this.RandomState.Random.FromHashOf("minecraft:worldgen_region_random").ForkPositional();
         this.rentNoiseChunk = this.RentNoiseChunk;

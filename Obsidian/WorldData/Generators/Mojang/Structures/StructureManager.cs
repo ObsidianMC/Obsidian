@@ -99,7 +99,7 @@ internal sealed class StructureManager : IStructurePlacementState
     /// <param name="startCache">Starts created before with the same seed and terrain, to keep; new ones by
     /// default.</param>
     /// <param name="structures">The structures and sets, read as structures start;
-    /// <see cref="PluginStructures.Current"/> by default.</param>
+    /// the retained 1.21.11 structures by default; native generators supply their own source.</param>
     public StructureManager(
         RandomState randomState,
         IClimateBiomeSource biomeSource,
@@ -133,7 +133,7 @@ internal sealed class StructureManager : IStructurePlacementState
         this.Seed = world.Seed;
         this.Templates = templates;
 
-        this.structures = structures ?? (static () => PluginStructures.Current);
+        this.structures = structures ?? (static () => WorldgenStructures.Vanilla);
         this.layout = new StructureLayout(this.structures(), world.PossibleBiomes);
     }
 
