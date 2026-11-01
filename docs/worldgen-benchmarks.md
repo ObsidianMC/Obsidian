@@ -169,11 +169,10 @@ Every change kept the output identical; the bench hashes and the worldgen replay
 
 ### What's left
 
-- The 26.3 pipeline allocates more per chunk than the live generator, mostly in the biome fill (170 KB vs 1 KB per
-  call) and noise (122 KB vs 81 KB).
+- The 26.3 pipeline still allocates more per chunk than the live generator (527 KB vs 354 KB in the overworld),
+  mostly in noise (122 KB vs 81 KB per call; much of it is the structure starts the beardifier looks up) and
+  features (129 KB per call). The biome fill is down to 9 KB per call, from 170 KB.
 - Carvers are still about 0.15 ms per chunk slower than the live generator's.
-- `WorldGenRegion.MayHaveBlockEntities` uses `ConcurrentDictionary.IsEmpty`, which takes every lock in the
-  dictionary; that costs both generators about 0.15 ms per chunk in decoration.
 
 ## Caveats
 

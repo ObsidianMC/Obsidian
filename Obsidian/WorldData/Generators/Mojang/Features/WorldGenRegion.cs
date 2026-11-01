@@ -40,7 +40,7 @@ internal sealed class WorldGenRegion : IWorldGenLevel
 
     // The writable chunks that may hold block entities, a bit per AreaIndex, valid for the chunks in checkedBlockEntityAreas.
     // Writes of blocks without one remove any block entity, which chunks without them can skip; asking a chunk whether it
-    // has any is slow, so each is asked once.
+    // has any isn't free, so each is asked once.
     private int blockEntityAreas;
     private int checkedBlockEntityAreas;
 
@@ -432,7 +432,7 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         if ((this.checkedBlockEntityAreas >> index & 1) == 0)
         {
             this.checkedBlockEntityAreas |= 1 << index;
-            if (chunk is not Chunk generated || !generated.BlockEntities.IsEmpty)
+            if (chunk is not Chunk generated || generated.HasAnyBlockEntity)
                 this.blockEntityAreas |= 1 << index;
         }
 
