@@ -205,6 +205,10 @@ internal static partial class PluginFeatures
                 return false;
             }
 
+            // Native carvers resolve global carver, biome and uncarvable tags while building. Finish that work
+            // before publishing, so a later rejected reload cannot supply tags to this successful snapshot.
+            _ = snapshot.Registry.Value;
+
             Volatile.Write(ref current, features);
             Volatile.Write(ref inputs, snapshot);
             return true;

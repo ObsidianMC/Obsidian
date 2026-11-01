@@ -578,6 +578,80 @@ public class PluginFeatureFiles
         }
     }
 
+    [Fact]
+    public void RejectedReloadKeepsTheSuccessfulCarverAndUncarvableTagsBeforeFirstRead()
+    {
+        var modifier = Parse(PluginFeatures.BiomeModifier, "featurefiles:tagged_carvers", """
+            { "biomes": "minecraft:plains", "add": { "carvers": "#featurefiles:carvers" } }
+            """);
+        FeatureFile[] cyclicFiles =
+        [
+            modifier,
+            Parse(PluginFeatures.PlacedFeature, "featurefiles:cycle_a", NoOp),
+            Parse(PluginFeatures.PlacedFeature, "featurefiles:cycle_b", NoOp)
+        ];
+        CodecFile[] cyclicBiomes =
+        [
+            CyclicBiome("minecraft:plains", "featurefiles:cycle_a", "featurefiles:cycle_b"),
+            CyclicBiome("minecraft:forest", "featurefiles:cycle_b", "featurefiles:cycle_a")
+        ];
+
+        try
+        {
+            ApplyTags("minecraft:cave", "minecraft:stone");
+            Assert.True(PluginFeatures.Apply([modifier], [], [], new HashSet<string>(), NullLogger.Instance));
+            var previous = PluginFeatures.Current;
+
+            // Do not read the native registry until after the next apply fails: it must retain the tags from
+            // the successful apply even though the global tag registry already contains the rejected reload's.
+            ApplyTags("minecraft:canyon", "minecraft:deepslate");
+            Assert.False(PluginFeatures.Apply(cyclicFiles, cyclicBiomes, [],
+                new HashSet<string> { "minecraft:overworld" }, NullLogger.Instance));
+            Assert.Same(previous, PluginFeatures.Current);
+
+            var retained = PluginFeatures.CurrentCarvers;
+            Assert.Equal(("minecraft:cave", true, false), TagsOf(retained));
+
+            // A subsequent successful apply takes the new tags, while the retained registry stays unchanged.
+            Assert.True(PluginFeatures.Apply([modifier], [], [], new HashSet<string>(), NullLogger.Instance));
+            var replacement = PluginFeatures.CurrentCarvers;
+            Assert.NotSame(retained, replacement);
+            Assert.Equal(("minecraft:canyon", false, true), TagsOf(replacement));
+            Assert.Equal(("minecraft:cave", true, false), TagsOf(retained));
+        }
+        finally
+        {
+            PluginTags.Apply([], NullLogger.Instance);
+            PluginFeatures.Apply([], [], [], new HashSet<string>(), NullLogger.Instance);
+        }
+
+        static CodecFile CyclicBiome(string biome, string first, string second) => PluginCodecs.Parse(
+            PluginCodecs.Biome, biome, "reload-plugin", Encoding.UTF8.GetBytes($$"""
+                {
+                  "has_precipitation": true,
+                  "temperature": 0.5,
+                  "downfall": 0.5,
+                  "effects": { "water_color": "#3f76e4" },
+                  "carvers": [],
+                  "features": [["{{first}}", "{{second}}"]]
+                }
+                """), _ => true);
+
+        static void ApplyTags(string carver, string block)
+        {
+            var carvers = PluginTags.Parse(PluginTags.ConfiguredCarver, "featurefiles:carvers", "reload-plugin",
+                Encoding.UTF8.GetBytes($$"""{ "replace": true, "values": ["{{carver}}"] }"""));
+            var uncarvable = PluginTags.Parse("block", "minecraft:uncarvable", "reload-plugin",
+                Encoding.UTF8.GetBytes($$"""{ "replace": true, "values": ["{{block}}"] }"""));
+            PluginTags.Apply([carvers, uncarvable], NullLogger.Instance);
+        }
+
+        static (string Carver, bool Stone, bool Deepslate) TagsOf(CarverRegistry carvers) =>
+            (carvers.BiomeCarvers("minecraft:plains")[^1],
+                carvers.Uncarvable!.Contains(BlocksRegistry.Stone.RegistryId),
+                carvers.Uncarvable.Contains(BlocksRegistry.Deepslate.RegistryId));
+    }
+
     // The air in chunk (0, 0) below Y 60 after the full 26.3 terrain status, including mask application.
     private static int CarvedAir(BiomeTerrain terrain)
     {
