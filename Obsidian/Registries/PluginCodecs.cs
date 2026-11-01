@@ -52,6 +52,14 @@ internal static partial class PluginCodecs
 
     private static int revision;
 
+    private static IReadOnlyList<CodecFile> applied = [];
+
+    /// <summary>
+    /// The files whose entries apply, from the last <see cref="Apply"/>: the 26.3 pipeline reads their biomes and
+    /// dimension types from them (see <see cref="PluginWorldgen"/>).
+    /// </summary>
+    public static IReadOnlyList<CodecFile> Applied => Volatile.Read(ref applied);
+
     // Gson reads data packs leniently, so comments and trailing commas are fine.
     private static readonly JsonDocumentOptions documentOptions = new()
     {
@@ -157,6 +165,7 @@ internal static partial class PluginCodecs
         lock (applying)
         {
             var kept = Winners(files, logger);
+            Volatile.Write(ref applied, kept.ToArray());
 
             var changed = CodecRegistry.Biomes.Table.Apply(
                 Entries<BiomeElement>(kept, Biome),

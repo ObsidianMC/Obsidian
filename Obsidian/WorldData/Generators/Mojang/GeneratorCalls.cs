@@ -16,10 +16,16 @@ internal readonly struct GeneratorCalls : IDisposable
     /// Enters every plugin, or none.
     /// </summary>
     /// <exception cref="GeneratorStoppedException">A plugin is unloading.</exception>
-    public static GeneratorCalls Enter(MojangDimension dimension)
+    public static GeneratorCalls Enter(MojangDimension dimension) => Enter(dimension.Identifier, dimension.Plugins);
+
+    /// <summary>
+    /// Enters every plugin a dimension generates with, or none.
+    /// </summary>
+    /// <param name="identifier">The dimension's identifier, for the message.</param>
+    /// <exception cref="GeneratorStoppedException">A plugin is unloading.</exception>
+    public static GeneratorCalls Enter(string identifier, ImmutableArray<PluginContainer> plugins)
     {
-        var plugins = dimension.Plugins;
-        if (plugins.IsEmpty)
+        if (plugins.IsDefaultOrEmpty)
             return default;
 
         var calls = new PluginCall[plugins.Length];
@@ -36,7 +42,7 @@ internal readonly struct GeneratorCalls : IDisposable
                 calls[entered].Dispose();
 
             throw new GeneratorStoppedException(
-                $"{dimension.Identifier} can't generate: {plugins[i].Info.Name}, which it generates with, unloaded.");
+                $"{identifier} can't generate: {plugins[i].Info.Name}, which it generates with, unloaded.");
         }
 
         return new GeneratorCalls(calls);

@@ -16,10 +16,14 @@ using Obsidian.Plugins.ServiceProviders;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Generators.Biomes;
+using Obsidian.WorldData.Generators.Mojang;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -167,6 +171,119 @@ public sealed class PluginUnloading : IDisposable
         foreach (var plugin in manager.Plugins.ToArray())
             await manager.UnloadPluginAsync(plugin);
     }
+
+    [Trait("Category", TestCategory.Worldgen)]
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task Unload_ReleasesThe263DimensionsMadeOfItsDensityFunctions()
+    {
+        await using var context = TestServerFactory.CreateServer($"probe-density-{Guid.NewGuid():N}");
+        await using var manager = CreateManager(context);
+        var path = Path.Join(this.folder, "probe.obby");
+        var files = new Dictionary<string, byte[]>
+        {
+            [ProbeOreDensity.SettingsFile] = Encoding.UTF8.GetBytes(OreWorld)
+        };
+        await File.WriteAllBytesAsync(path, PluginLoading.ProbeArchive("1.0.0", files));
+        AppContext.SetData(ProbeOreDensity.SampledKey, null);
+
+        // Only the ore rule names the plugin's function, which a chunk samples.
+        var (loadContext, dimension, terrain) = await GenerateOreWorldAsync(manager, path);
+
+        Assert.Equal(true, AppContext.GetData(ProbeOreDensity.SampledKey));
+
+        // Unloading releases the dimension, whose generator stops.
+        await UnloadAllAsync(manager);
+
+        Assert.True(dimension.IsReleased);
+        var next = new Chunk(1, 0, terrain!.MinY, terrain.Height);
+        Assert.Throws<GeneratorStoppedException>(() => terrain.Generate(next));
+
+        // Once the generator goes, nothing holds the plugin's code.
+        terrain = null;
+
+        for (var i = 0; loadContext.IsAlive && i < 100; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            await Task.Delay(20);
+        }
+
+        Assert.False(loadContext.IsAlive, "The unloaded plugin's load context is still referenced.");
+    }
+
+    // Loads the plugin and generates a chunk of its noise settings with the 26.3 pipeline, out of the test method so
+    // that no local keeps the plugin alive.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<(WeakReference Context, WorldgenDimension Dimension, BiomeTerrain? Terrain)>
+        GenerateOreWorldAsync(PluginManager manager, string path)
+    {
+        var container = (await manager.LoadPluginAsync(path))!;
+        var stem = """
+            {
+              "type": "minecraft:overworld",
+              "generator": {
+                "type": "minecraft:noise",
+                "settings": "probe:ore_world",
+                "biome_source": { "type": "minecraft:fixed", "biome": "minecraft:plains" }
+              }
+            }
+            """;
+        var dimension = PluginWorldgen.ReadDimension(
+            "probe:ore_world",
+            Encoding.UTF8.GetBytes(stem),
+            PluginNoise.Current,
+            PluginWorldgen.Data);
+
+        Assert.Same(container, Assert.Single(dimension.Plugins));
+
+        var terrain = BiomeTerrain.Create(dimension, 1234);
+        var chunk = new Chunk(0, 0, terrain.MinY, terrain.Height);
+        terrain.Generate(chunk);
+
+        Assert.True(chunk.GetBlock(3, 20, 5).Is(BlockIds.DiamondBlock));
+
+        return (new WeakReference(container.LoadContext), dimension, terrain);
+    }
+
+    // Solid below y 40, where the ore rule makes every block a diamond block, in 26.3's schema.
+    private const string OreWorld = """
+        {
+          "sea_level": -64,
+          "disable_mob_generation": false,
+          "legacy_random_source": false,
+          "default_block": "minecraft:stone",
+          "default_fluid": "minecraft:water",
+          "noise": { "min_y": -64, "height": 384 },
+          "noise_router": {
+            "temperature": 0,
+            "vegetation": 0,
+            "continents": 0,
+            "erosion": 0,
+            "depth": 0,
+            "ridges": 0,
+            "chunk_surface_level": 0,
+            "final_density": {
+              "type": "minecraft:gradient",
+              "axis": "y",
+              "from_coordinate": 0,
+              "to_coordinate": 80,
+              "from_value": 1,
+              "to_value": -1
+            }
+          },
+          "spawn_target": [],
+          "material_rule": {
+            "type": "minecraft:ore_vein",
+            "density": { "type": "probe:ore_density" },
+            "richness": 1,
+            "filler_gap": -1,
+            "ore_block": "minecraft:diamond_block",
+            "raw_ore_block": "minecraft:diamond_block",
+            "filler_block": "minecraft:stone",
+            "raw_ore_chance": 0.5
+          }
+        }
+        """;
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task Reload_InsidePluginCall_PreservesOldGenerationState()

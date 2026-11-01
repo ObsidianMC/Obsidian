@@ -18,6 +18,13 @@ internal sealed class BiomeParameters
     // 26.3 changed the branching factor from 6 to 19. It affects equal-distance winners.
     public BiomeParameterTree<string> Tree { get; }
 
+    /// <summary>
+    /// A parameter list given as its entries, like a level stem's inline <c>biomes</c>.
+    /// </summary>
+    /// <param name="entries">The entries in their order, which decides ties; mustn't be empty.</param>
+    public static BiomeParameters FromEntries(IReadOnlyList<(ParameterPoint Point, string Biome)> entries) =>
+        new(entries);
+
     public static BiomeParameters Read(WorldgenData data, string preset)
     {
         var report = data.Read("biome_parameters", preset);

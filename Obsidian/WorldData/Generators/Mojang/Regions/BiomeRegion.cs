@@ -12,7 +12,7 @@ namespace Obsidian.WorldData.Generators.Mojang.Regions;
 /// <param name="identifier">The region's identifier, its file's, which orders regions.</param>
 /// <param name="dimension">The level stem identifier of the dimension the region is for.</param>
 /// <param name="weight">How often the region is picked, against the other regions' weights and
-/// <see cref="RegionBiomeSource.DimensionWeight"/>.</param>
+/// <see cref="RegionLayout.DimensionWeight"/>.</param>
 internal abstract class BiomeRegion(string identifier, string dimension, int weight)
 {
     public string Identifier { get; } = identifier;
@@ -37,6 +37,19 @@ internal abstract class BiomeRegion(string identifier, string dimension, int wei
         int quartX,
         int quartY,
         int quartZ);
+
+    /// <summary>
+    /// Whether <see cref="Select"/> reads the climate rather than the dimension's own biome.
+    /// </summary>
+    public abstract bool ReadsClimate { get; }
+
+    /// <summary>
+    /// Gets the region's biome in the 26.3 pipeline (see <see cref="Biomes.ClimateSource"/>).
+    /// </summary>
+    /// <param name="dimensionBiome">The biome the dimension's own layout gives there, or null when the region
+    /// <see cref="ReadsClimate"/>.</param>
+    /// <param name="climate">The quantized climate there, when the region <see cref="ReadsClimate"/>.</param>
+    public abstract BiomeCodec Select(BiomeCodec? dimensionBiome, in TargetPoint climate);
 
     /// <summary>
     /// The region with the biome tags it names resolved to their biomes as they are now, to generate with.
@@ -110,6 +123,11 @@ internal sealed class ReplacingRegion(
 
         return this.Replacements.GetValueOrDefault(biome.Name) ?? biome;
     }
+
+    public override bool ReadsClimate => false;
+
+    public override BiomeCodec Select(BiomeCodec? dimensionBiome, in TargetPoint climate) =>
+        this.Replacements.GetValueOrDefault(dimensionBiome!.Name) ?? dimensionBiome;
 }
 
 /// <summary>
@@ -127,6 +145,10 @@ internal sealed class ParameterListRegion(
     // Built when the region first generates, like a level stem's parameter list.
     private readonly Lazy<BiomeParameterTree<BiomeCodec>> tree = new(() => new BiomeParameterTree<BiomeCodec>(values));
 
+    // 26.3's trees have 19 children a node, which decides exact ties (see BiomeParameters).
+    private readonly Lazy<BiomeParameterTree<BiomeCodec>> tree26 =
+        new(() => new BiomeParameterTree<BiomeCodec>(values, childrenPerNode: 19));
+
     public override IEnumerable<BiomeCodec> Biomes(IReadOnlyList<BiomeCodec> dimensionBiomes) => this.biomes;
 
     public override BiomeCodec GetNoiseBiome(
@@ -135,4 +157,9 @@ internal sealed class ParameterListRegion(
         int quartX,
         int quartY,
         int quartZ) => this.tree.Value.Search(sampler.Sample(quartX, quartY, quartZ));
+
+    public override bool ReadsClimate => true;
+
+    public override BiomeCodec Select(BiomeCodec? dimensionBiome, in TargetPoint climate) =>
+        this.tree26.Value.Search(climate);
 }
