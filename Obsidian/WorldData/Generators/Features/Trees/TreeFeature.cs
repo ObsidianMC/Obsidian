@@ -18,13 +18,13 @@ internal sealed class TreeConfig
         this.FoliageProvider = registry.Provider(json.GetProperty("foliage_provider"));
         this.BelowTrunkProvider = registry.Provider(json.GetProperty("below_trunk_provider"));
         this.Trunk = TrunkPlacer.Read(registry, json.GetProperty("trunk_placer"));
-        this.Foliage = FoliagePlacer.Read(json.GetProperty("foliage_placer"));
-        this.MinimumSize = FeatureSize.Read(json.GetProperty("minimum_size"));
+        this.Foliage = FoliagePlacer.Read(registry, json.GetProperty("foliage_placer"));
+        this.MinimumSize = FeatureSize.Read(registry, json.GetProperty("minimum_size"));
         this.IgnoreVines = json.TryGetProperty("ignore_vines", out var ignoreVines) && ignoreVines.GetBoolean();
 
         if (json.TryGetProperty("root_placer", out var rootPlacer))
         {
-            this.Roots = MangroveRootPlacer.Read(registry, rootPlacer);
+            this.Roots = RootPlacer.Read(registry, rootPlacer);
         }
 
         var decorators = json.TryGetProperty("decorators", out var decoratorList)
@@ -45,7 +45,7 @@ internal sealed class TreeConfig
 
     public FoliagePlacer Foliage { get; }
 
-    public MangroveRootPlacer? Roots { get; }
+    public RootPlacer? Roots { get; }
 
     public FeatureSize MinimumSize { get; }
 
@@ -242,6 +242,9 @@ internal sealed class TreePlacement(TreeConfig config, DecorationContext context
     public VanillaBlockPosSet Foliage { get; } = new();
 
     public VanillaBlockPosSet Decorations { get; } = new();
+
+    /// <summary>The tree as plugins' tree parts see it, made for the first that asks.</summary>
+    public PluginTreeContext PluginContext => field ??= new PluginTreeContext(this);
 
     public void SetLog(Vector position, IBlock block)
     {

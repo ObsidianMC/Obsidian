@@ -35,7 +35,7 @@ internal sealed partial class FeatureRegistry
         switch (type)
         {
             case "minecraft:count":
-                return Repeat(ValueProviders.Int(json.GetProperty("count")));
+                return Repeat(this.Int(json.GetProperty("count")));
             case "minecraft:in_square":
                 return static (_, random, position, output) =>
                 {
@@ -63,7 +63,7 @@ internal sealed partial class FeatureRegistry
                 return Filter((_, random, _) => random.NextFloat() < probability);
             }
             case "minecraft:height_range":
-                return HeightRange(json);
+                return this.HeightRange(json);
             case "minecraft:surface_water_depth_filter":
             {
                 var maxDepth = json.GetProperty("max_water_depth").GetInt32();
@@ -79,9 +79,9 @@ internal sealed partial class FeatureRegistry
                 return SurfaceRelativeThreshold(json);
             case "minecraft:offset":
             {
-                var x = ValueProviders.Int(json.GetProperty("x"));
-                var y = ValueProviders.Int(json.GetProperty("y"));
-                var z = ValueProviders.Int(json.GetProperty("z"));
+                var x = this.Int(json.GetProperty("x"));
+                var y = this.Int(json.GetProperty("y"));
+                var z = this.Int(json.GetProperty("z"));
                 return (_, random, position, output) =>
                 {
                     // Java evaluates the offset's arguments in order: x, y, then z.
@@ -100,11 +100,11 @@ internal sealed partial class FeatureRegistry
             case "minecraft:fixed_placement":
                 return FixedPlacement(json);
             case "minecraft:count_on_every_layer":
-                return CountOnEveryLayer(json);
+                return this.CountOnEveryLayer(json);
             case "minecraft:randomly_selected":
                 return this.RandomlySelectedPlacement(json);
             case "minecraft:cuboid":
-                return CuboidPlacement(json);
+                return this.CuboidPlacement(json);
             default:
                 throw new NotSupportedException($"The 26.3 placement modifier {type} isn't implemented yet.");
         }
@@ -157,9 +157,9 @@ internal sealed partial class FeatureRegistry
         }
     }
 
-    private static PlacementModifier HeightRange(JsonElement json)
+    private PlacementModifier HeightRange(JsonElement json)
     {
-        var height = ValueProviders.Height(json.GetProperty("height"));
+        var height = this.Height(json.GetProperty("height"));
 
         return (context, random, position, output) =>
         {

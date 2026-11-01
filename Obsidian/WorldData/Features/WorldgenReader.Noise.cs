@@ -74,8 +74,11 @@ internal sealed partial class WorldgenReader
 
         // The hook sees every noise-typed property, including a plugin's own BaseNoise subclass, which would otherwise
         // fall through to plain deserialization and build a noise no generator seeds.
-        if (this.Noises is Func<JsonElement, string, BaseNoise> readNoise && typeof(INoise).IsAssignableFrom(target))
-            return readNoise(json, path);
+        if (this.Noises is Func<JsonElement, Type, string, BaseNoise> readNoise
+            && typeof(INoise).IsAssignableFrom(target))
+        {
+            return readNoise(json, target, path);
+        }
 
         if (target == typeof(INoise) || target == typeof(BaseNoise))
         {

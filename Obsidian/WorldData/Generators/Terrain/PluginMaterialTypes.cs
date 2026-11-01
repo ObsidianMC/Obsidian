@@ -126,7 +126,7 @@ internal sealed class PluginMaterialTypes(WorldgenTypes types) : IMaterialTypes
         throw new InvalidDataException($"{identifier}: features can't be used here");
 
     // Named and inline noises alike: a 1.21.11 noise would sample unseeded here.
-    private static BaseNoise NoNoise(JsonElement json, string path) =>
+    private static BaseNoise NoNoise(JsonElement json, Type target, string path) =>
         throw new InvalidDataException(
             $"{path}: a plugin's surface rule or condition can't hold a noise in 26.3; take a density function, such "
             + "as a minecraft:noise, or a minecraft:noise_threshold condition, instead");

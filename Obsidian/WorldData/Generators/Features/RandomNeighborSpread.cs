@@ -10,9 +10,9 @@ internal sealed partial class FeatureRegistry
         var provider = this.Provider(json.GetProperty("block"));
         var neighbors = this.Blocks(json.GetProperty("accepted_neighbors"));
         var canReplace = this.Predicate(json.GetProperty("can_replace"));
-        var attempts = ValueProviders.Int(json.GetProperty("attempts"));
-        var xzOffset = ValueProviders.Int(json.GetProperty("xz_offset"));
-        var yOffset = ValueProviders.Int(json.GetProperty("y_offset"));
+        var attempts = this.Int(json.GetProperty("attempts"));
+        var xzOffset = this.Int(json.GetProperty("xz_offset"));
+        var yOffset = this.Int(json.GetProperty("y_offset"));
 
         return (context, random, origin) =>
         {

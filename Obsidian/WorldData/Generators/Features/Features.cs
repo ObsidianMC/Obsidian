@@ -145,7 +145,7 @@ internal sealed partial class FeatureRegistry
 
         foreach (var layer in json.GetProperty("layers").EnumerateArray())
         {
-            layers.Add((ValueProviders.Int(layer.GetProperty("height")), this.Provider(layer.GetProperty("provider"))));
+            layers.Add((this.Int(layer.GetProperty("height")), this.Provider(layer.GetProperty("provider"))));
         }
 
         return (context, random, origin) =>
@@ -208,7 +208,7 @@ internal sealed partial class FeatureRegistry
     {
         var provider = this.Provider(json.GetProperty("state_provider"));
         var target = this.Predicate(json.GetProperty("target"));
-        var radiusProvider = ValueProviders.Int(json.GetProperty("radius"));
+        var radiusProvider = this.Int(json.GetProperty("radius"));
         var halfHeight = json.GetProperty("half_height").GetInt32();
 
         return (context, random, origin) =>

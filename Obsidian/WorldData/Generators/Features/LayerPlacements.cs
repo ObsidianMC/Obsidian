@@ -23,9 +23,9 @@ internal sealed partial class FeatureRegistry
         };
     }
 
-    private static PlacementModifier CountOnEveryLayer(JsonElement json)
+    private PlacementModifier CountOnEveryLayer(JsonElement json)
     {
-        var count = ValueProviders.Int(json.GetProperty("count"));
+        var count = this.Int(json.GetProperty("count"));
 
         return (context, random, origin, output) =>
         {

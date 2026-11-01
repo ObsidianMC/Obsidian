@@ -23,7 +23,7 @@ internal sealed class FallenTreeFeature
     {
         this.tags = new TreeTags(registry);
         this.trunkProvider = registry.Provider(json.GetProperty("trunk_provider"));
-        this.logLength = ValueProviders.Int(json.GetProperty("log_length"));
+        this.logLength = registry.Int(json.GetProperty("log_length"));
         this.stumpDecorators = Decorators(registry, json, "stump_decorators");
         this.logDecorators = Decorators(registry, json, "log_decorators");
     }

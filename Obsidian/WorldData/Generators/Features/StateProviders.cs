@@ -2,6 +2,7 @@ using Obsidian.API.World.Features;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Features;
+using System.IO;
 using System.Text.Json;
 
 namespace Obsidian.WorldData.Generators.Features;
@@ -15,6 +16,7 @@ internal delegate IBlock? StateProvider(IWorldGenLevel level, IRandomSource rand
 internal sealed partial class FeatureRegistry
 {
     private readonly Dictionary<string, StateProvider> providers = [];
+    private readonly HashSet<string> readingProviders = [];
 
     /// <summary>
     /// A provider: a reference into the <c>block_state_provider</c> registry, a typed provider, or a block state, which
@@ -28,11 +30,12 @@ internal sealed partial class FeatureRegistry
 
             if (!this.providers.TryGetValue(id, out var provider))
             {
-                provider = this.Provider(this.Data.Read("block_state_provider", id));
+                provider = this.NamedProvider(id);
                 this.providers.Add(id, provider);
             }
 
-            return provider;
+            // Its plugins own every entry using it, not only the first one.
+            return this.dependencies.Used(provider);
         }
 
         if (!json.TryGetProperty("type", out var typeJson))
@@ -72,7 +75,23 @@ internal sealed partial class FeatureRegistry
             case "minecraft:random_block":
                 return this.RandomBlockProvider(json);
             default:
-                throw new NotSupportedException($"The 26.3 block state provider {type} isn't implemented yet.");
+                return this.PluginProvider(json, type);
+        }
+    }
+
+    // A provider of the block_state_provider registry, which may be made of plugins' types and could name itself.
+    private StateProvider NamedProvider(string id)
+    {
+        if (!this.readingProviders.Add(id))
+            throw new InvalidDataException($"The block state provider {id} refers back to itself.");
+
+        try
+        {
+            return this.dependencies.Track(() => this.Provider(this.Data.Read("block_state_provider", id)));
+        }
+        finally
+        {
+            this.readingProviders.Remove(id);
         }
     }
 
@@ -130,7 +149,7 @@ internal sealed partial class FeatureRegistry
     {
         var source = this.Provider(json.GetProperty("source"));
         var property = json.GetProperty("property").GetString()!;
-        var values = ValueProviders.Int(json.GetProperty("values"));
+        var values = this.Int(json.GetProperty("values"));
 
         return (level, random, position) =>
         {

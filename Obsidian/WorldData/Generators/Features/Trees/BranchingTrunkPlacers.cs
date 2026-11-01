@@ -185,14 +185,14 @@ internal sealed class FancyTrunkPlacer(JsonElement json) : TrunkPlacer(json)
 }
 
 /// <summary>Cherry: one to three branches curving out and up from a short trunk.</summary>
-internal sealed class CherryTrunkPlacer(JsonElement json) : TrunkPlacer(json)
+internal sealed class CherryTrunkPlacer(FeatureRegistry registry, JsonElement json) : TrunkPlacer(json)
 {
-    private readonly IntProvider branchCount = ValueProviders.Int(json.GetProperty("branch_count"));
+    private readonly IntProvider branchCount = registry.Int(json.GetProperty("branch_count"));
     private readonly IntProvider branchHorizontalLength =
-        ValueProviders.Int(json.GetProperty("branch_horizontal_length"));
+        registry.Int(json.GetProperty("branch_horizontal_length"));
 
 
-    private readonly IntProvider branchEndOffset = ValueProviders.Int(json.GetProperty("branch_end_offset_from_top"));
+    private readonly IntProvider branchEndOffset = registry.Int(json.GetProperty("branch_end_offset_from_top"));
 
     // The start offset is a bare uniform range (no type): the second branch draws from one less than its range.
     private readonly int startMin = json.GetProperty("branch_start_offset_from_top")
@@ -316,8 +316,8 @@ internal sealed class CherryTrunkPlacer(JsonElement json) : TrunkPlacer(json)
 /// <summary>Mangrove: a trunk with branches that climb diagonally away from it.</summary>
 internal sealed class UpwardsBranchingTrunkPlacer(FeatureRegistry registry, JsonElement json) : TrunkPlacer(json)
 {
-    private readonly IntProvider extraBranchSteps = ValueProviders.Int(json.GetProperty("extra_branch_steps"));
-    private readonly IntProvider extraBranchLength = ValueProviders.Int(json.GetProperty("extra_branch_length"));
+    private readonly IntProvider extraBranchSteps = registry.Int(json.GetProperty("extra_branch_steps"));
+    private readonly IntProvider extraBranchLength = registry.Int(json.GetProperty("extra_branch_length"));
     private readonly HashSet<int> canGrowThrough = registry.Blocks(json.GetProperty("can_grow_through"));
 
     private readonly float placeBranchPerLogProbability =

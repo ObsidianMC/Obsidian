@@ -15,10 +15,10 @@ internal sealed partial class FeatureRegistry
         };
     }
 
-    private static PlacementModifier CuboidPlacement(JsonElement json)
+    private PlacementModifier CuboidPlacement(JsonElement json)
     {
-        var xz = ValueProviders.Int(json.GetProperty("xz_size"));
-        var ySize = ValueProviders.Int(json.GetProperty("y_size"));
+        var xz = this.Int(json.GetProperty("xz_size"));
+        var ySize = this.Int(json.GetProperty("y_size"));
         var edges = !json.TryGetProperty("include_edges", out var edgeJson) || edgeJson.GetBoolean();
         var interior = !json.TryGetProperty("include_interior", out var insideJson) || insideJson.GetBoolean();
 

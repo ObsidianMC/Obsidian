@@ -1,5 +1,5 @@
-using System.IO;
 using System.Text.Json;
+using ApiFeatureSize = Obsidian.API.World.Features.Trees.FeatureSize;
 
 namespace Obsidian.WorldData.Generators.Features.Trees;
 
@@ -13,7 +13,7 @@ internal abstract class FeatureSize(int? minClippedHeight)
 
     public abstract int SizeAtHeight(int height, int y);
 
-    public static FeatureSize Read(JsonElement json)
+    public static FeatureSize Read(FeatureRegistry registry, JsonElement json)
     {
         var type = json.GetProperty("type").GetString();
         int? minClippedHeight = json.TryGetProperty("min_clipped_height", out var clipped) ? clipped.GetInt32() : null;
@@ -32,7 +32,7 @@ internal abstract class FeatureSize(int? minClippedHeight)
                 Field(json, "middle_size", 1),
                 Field(json, "upper_size", 1),
                 minClippedHeight),
-            _ => throw new InvalidDataException($"Unknown feature size {type}.")
+            _ => new PluginFeatureSize(registry.PluginValue<ApiFeatureSize>(json, type, "feature size"))
         };
     }
 

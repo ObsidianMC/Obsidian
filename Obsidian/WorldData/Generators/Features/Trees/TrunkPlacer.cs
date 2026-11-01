@@ -1,8 +1,8 @@
 using Obsidian.API.World.Features;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Features;
-using System.IO;
 using System.Text.Json;
+using ApiTrunkPlacer = Obsidian.API.World.Features.Trees.TrunkPlacer;
 
 namespace Obsidian.WorldData.Generators.Features.Trees;
 
@@ -28,13 +28,13 @@ internal abstract class TrunkPlacer(JsonElement json)
             "minecraft:giant_trunk_placer" => new GiantTrunkPlacer(json),
             "minecraft:mega_jungle_trunk_placer" => new MegaJungleTrunkPlacer(json),
             "minecraft:forking_trunk_placer" => new ForkingTrunkPlacer(json),
-            "minecraft:bending_trunk_placer" => new BendingTrunkPlacer(json),
+            "minecraft:bending_trunk_placer" => new BendingTrunkPlacer(registry, json),
             "minecraft:dark_oak_trunk_placer" => new DarkOakTrunkPlacer(json),
-            "minecraft:poplar_trunk_placer" => new PoplarTrunkPlacer(json),
+            "minecraft:poplar_trunk_placer" => new PoplarTrunkPlacer(registry, json),
             "minecraft:fancy_trunk_placer" => new FancyTrunkPlacer(json),
-            "minecraft:cherry_trunk_placer" => new CherryTrunkPlacer(json),
+            "minecraft:cherry_trunk_placer" => new CherryTrunkPlacer(registry, json),
             "minecraft:upwards_branching_trunk_placer" => new UpwardsBranchingTrunkPlacer(registry, json),
-            _ => throw new InvalidDataException($"Unknown trunk placer {type}.")
+            _ => new PluginTrunkPlacer(registry.PluginValue<ApiTrunkPlacer>(json, type, "trunk placer"), json)
         };
     }
 
@@ -250,13 +250,13 @@ internal sealed class ForkingTrunkPlacer(JsonElement json) : TrunkPlacer(json)
 }
 
 /// <summary>Azalea: a trunk that bends sideways near its top, with foliage along the bend.</summary>
-internal sealed class BendingTrunkPlacer(JsonElement json) : TrunkPlacer(json)
+internal sealed class BendingTrunkPlacer(FeatureRegistry registry, JsonElement json) : TrunkPlacer(json)
 {
     private readonly int minHeightForLeaves = json.TryGetProperty("min_height_for_leaves", out var min)
         ? min.GetInt32()
         : 1;
 
-    private readonly IntProvider bendLength = ValueProviders.Int(json.GetProperty("bend_length"));
+    private readonly IntProvider bendLength = registry.Int(json.GetProperty("bend_length"));
 
     public override List<FoliageAttachment> PlaceTrunk(TreePlacement tree, int freeTreeHeight, Vector origin)
     {
@@ -381,7 +381,7 @@ internal sealed class DarkOakTrunkPlacer(JsonElement json) : TrunkPlacer(json)
 /// sits. Every log redraws a shuffle of the six directions (vanilla's <c>Direction.allShuffled</c>), so the draws
 /// match even where no branch grows.
 /// </summary>
-internal sealed class PoplarTrunkPlacer(JsonElement json) : TrunkPlacer(json)
+internal sealed class PoplarTrunkPlacer(FeatureRegistry registry, JsonElement json) : TrunkPlacer(json)
 {
     private static readonly BlockFace[] directions =
     [
@@ -394,9 +394,9 @@ internal sealed class PoplarTrunkPlacer(JsonElement json) : TrunkPlacer(json)
     ];
 
     private readonly IntProvider trunkHeightAboveBranches =
-        ValueProviders.Int(json.GetProperty("trunk_height_above_branches"));
+        registry.Int(json.GetProperty("trunk_height_above_branches"));
 
-    private readonly IntProvider branchAmount = ValueProviders.Int(json.GetProperty("branch_amount"));
+    private readonly IntProvider branchAmount = registry.Int(json.GetProperty("branch_amount"));
 
     public override List<FoliageAttachment> PlaceTrunk(TreePlacement tree, int freeTreeHeight, Vector origin)
     {
