@@ -131,9 +131,6 @@ internal static class BlockSurvival
     private static bool IsLowerHalfOf(IBlock below, IBlock block) =>
         below.RegistryId == block.RegistryId && below.GetProperty("half") == "lower";
 
-    private static bool SeagrassMayPlaceOn(IBlock below) =>
-        below.IsFaceSturdy(BlockFace.Up) && !below.Is(BlockIds.MagmaBlock);
-
     private static bool TallSeagrassCanSurvive(IBlock block, IWorldGenLevel level, Vector position)
     {
         if (block.GetProperty("half") == "upper")
@@ -164,6 +161,14 @@ internal static class BlockSurvival
         return rawBrightness < 13 && below.IsSolid() && below.IsCollisionShapeFullBlock();
     }
 
+    internal static bool KelpMayPlaceOn(IBlock below) =>
+        (below.IsFaceSturdy(BlockFace.Up) 
+        || below.Is(BlockIds.Kelp) || below.Is(BlockIds.KelpPlant))
+        && !below.Is(BlockIds.MagmaBlock);
+
+    internal static bool SeagrassMayPlaceOn(IBlock below) =>
+        below.IsFaceSturdy(BlockFace.Up) && !below.Is(BlockIds.MagmaBlock);
+
     /// <summary>Vanilla <c>CactusBlock.canSurvive</c>, reading blocks through <paramref name="blockAt"/> (worldgen or a live level).</summary>
     internal static bool CactusMayStay(Func<Vector, IBlock> blockAt, Vector position)
     {
@@ -188,14 +193,15 @@ internal static class BlockSurvival
     /// <summary>Vanilla <c>SugarCaneBlock.canSurvive</c>, reading blocks through <paramref name="blockAt"/> (worldgen or a live level).</summary>
     internal static bool SugarCaneMayStay(Func<Vector, IBlock> blockAt, Vector position)
     {
-        var below = blockAt(position + Vector.Down);
+        Vector belowPosition = position + Vector.Down;
+
+        var below = blockAt(belowPosition);
         if (below.Is(BlockIds.SugarCane))
             return true;
 
         if (!dirt.Contains(below) && !sand.Contains(below))
             return false;
 
-        var belowPosition = position + Vector.Down;
         foreach (var face in FeatureHelpers.Horizontal)
         {
             var neighbor = blockAt(belowPosition.Offset(face));

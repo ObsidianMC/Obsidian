@@ -26,7 +26,10 @@ internal static partial class BlockBehaviors
     public static IBlock? GetStateForPlacement(BlockPlaceContext context, ILogger logger)
     {
         if (!TryEnter(context.Block, out var behavior, out var call))
-            return PlacementBehaviors.For(context.Block)?.GetStateForPlacement(context) ?? context.Block;
+        {
+            var vanillaBehavior = PlacementBehaviors.For(context.Block);
+            return vanillaBehavior == null ? context.Block : vanillaBehavior.GetStateForPlacement(context);
+        }
 
         using (call)
         {
