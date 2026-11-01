@@ -17,12 +17,9 @@ internal static class VanillaStructures
     {
         using var httpClient = new HttpClient();
         var cache = Path.Combine(Path.GetTempPath(), "obsidian-tests", "cache");
-        var directory = VanillaServerJar.ExtractStructuresAsync(httpClient, cache, ServerConstants.LegacyVersion, NullLogger.Instance)
-            .GetAwaiter().GetResult();
 
         // A directory, not a delegate that extracts lazily: test plugins are copies of this assembly, whose module
         // initializer runs again in their load contexts, and a delegate into one would keep it from unloading.
-        StructureRegistry.Initialize(directory);
         var current = VanillaServerJar.ExtractStructuresAsync(httpClient, cache,
             ServerConstants.ProtocolDescription, NullLogger.Instance).GetAwaiter().GetResult();
         StructureRegistry.InitializeCurrent(current);

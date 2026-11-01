@@ -8,16 +8,8 @@ internal static class AssetPaths
     private const string AssetsFolder = "/Assets/";
 
     /// <summary>
-    /// The prefix of the folder holding an older vanilla version's loot and worldgen assets (<c>Assets/legacy-1.21.11/</c>),
-    /// which stand in for the current version's until Obsidian's models read those. Temporary: Phase 4 (loot) and
-    /// Phase 5 (worldgen) of <c>docs/porting-26.3-plan.md</c> remove it.
-    /// </summary>
-    private const string LegacyFolderPrefix = "legacy-";
-
-    /// <summary>
     /// Gets a file's path relative to <c>Assets/</c> with forward slashes and its extension kept
-    /// (e.g. <c>loot_table/chests.json</c>), or null when the file isn't an asset. A legacy asset's path is relative to
-    /// its legacy folder (see <see cref="LegacyFolderPrefix"/>), like the current version's asset it stands in for.
+    /// (e.g. <c>loot_table/chests.json</c>), or null when the file isn't an asset.
     /// </summary>
     /// <remarks>
     /// Anchored on the last <c>/Assets/</c> segment, so a checkout whose own path contains one still resolves the
@@ -30,12 +22,7 @@ internal static class AssetPaths
         if (index < 0)
             return null;
 
-        var relative = normalized.Substring(index + AssetsFolder.Length);
-        if (!relative.StartsWith(LegacyFolderPrefix, StringComparison.Ordinal))
-            return relative;
-
-        var separator = relative.IndexOf('/');
-        return separator < 0 ? null : relative.Substring(separator + 1);
+        return normalized.Substring(index + AssetsFolder.Length);
     }
 
     /// <summary>

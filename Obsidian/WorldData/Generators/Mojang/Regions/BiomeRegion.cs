@@ -6,7 +6,7 @@ namespace Obsidian.WorldData.Generators.Mojang.Regions;
 
 /// <summary>
 /// A plugin's alternative biome layout for a dimension, read from a <c>biome_region</c> file (see
-/// <see cref="Registries.PluginBiomeRegions"/>). Where a <see cref="RegionBiomeSource"/> picks the region, its biomes
+/// <see cref="Registries.PluginBiomeRegions"/>). Where <see cref="RegionLayout"/> places the region, its biomes
 /// generate instead of the dimension's own.
 /// </summary>
 /// <param name="identifier">The region's identifier, its file's, which orders regions.</param>
@@ -25,18 +25,6 @@ internal abstract class BiomeRegion(string identifier, string dimension, int wei
     /// The biomes the region can give, given those the dimension's own biome source can.
     /// </summary>
     public abstract IEnumerable<BiomeCodec> Biomes(IReadOnlyList<BiomeCodec> dimensionBiomes);
-
-    /// <summary>
-    /// Gets the region's biome at quart coordinates.
-    /// </summary>
-    /// <param name="dimension">The dimension's own biome source.</param>
-    /// <param name="sampler">The climate sampler to read.</param>
-    public abstract BiomeCodec GetNoiseBiome(
-        IClimateBiomeSource dimension,
-        ClimateSampler sampler,
-        int quartX,
-        int quartY,
-        int quartZ);
 
     /// <summary>
     /// Whether <see cref="Select"/> reads the climate rather than the dimension's own biome.
@@ -111,21 +99,9 @@ internal sealed class ReplacingRegion(
         return new ReplacingRegion(this.Identifier, this.Dimension, this.Weight, resolved.ToFrozenDictionary());
     }
 
-    // Swapping biomes leaves the parameter list's points as they are, so the nearest point is the dimension's own.
-    public override BiomeCodec GetNoiseBiome(
-        IClimateBiomeSource dimension,
-        ClimateSampler sampler,
-        int quartX,
-        int quartY,
-        int quartZ)
-    {
-        var biome = dimension.GetNoiseBiome(sampler, quartX, quartY, quartZ);
-
-        return this.Replacements.GetValueOrDefault(biome.Name) ?? biome;
-    }
-
     public override bool ReadsClimate => false;
 
+    // Swapping biomes leaves the parameter list's points as they are, so the nearest point is the dimension's own.
     public override BiomeCodec Select(BiomeCodec? dimensionBiome, in TargetPoint climate) =>
         this.Replacements.GetValueOrDefault(dimensionBiome!.Name) ?? dimensionBiome;
 }
@@ -142,21 +118,11 @@ internal sealed class ParameterListRegion(
 {
     private readonly BiomeCodec[] biomes = [.. values.Select(value => value.Biome).DistinctBy(biome => biome.Name)];
 
-    // Built when the region first generates, like a level stem's parameter list.
-    private readonly Lazy<BiomeParameterTree<BiomeCodec>> tree = new(() => new BiomeParameterTree<BiomeCodec>(values));
-
-    // 26.3's trees have 19 children a node, which decides exact ties (see BiomeParameters).
+    // Built when the region first generates, like a level stem's parameter list. 26.3's trees have 19 children a node, which decides exact ties (see BiomeParameters).
     private readonly Lazy<BiomeParameterTree<BiomeCodec>> tree26 =
         new(() => new BiomeParameterTree<BiomeCodec>(values, childrenPerNode: 19));
 
     public override IEnumerable<BiomeCodec> Biomes(IReadOnlyList<BiomeCodec> dimensionBiomes) => this.biomes;
-
-    public override BiomeCodec GetNoiseBiome(
-        IClimateBiomeSource dimension,
-        ClimateSampler sampler,
-        int quartX,
-        int quartY,
-        int quartZ) => this.tree.Value.Search(sampler.Sample(quartX, quartY, quartZ));
 
     public override bool ReadsClimate => true;
 

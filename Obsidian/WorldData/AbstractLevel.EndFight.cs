@@ -261,7 +261,7 @@ public abstract partial class AbstractLevel
 
     private async ValueTask RebuildResurrectionSpikeAsync(int spikeTick, EndCrystal[] ritual)
     {
-        var spike = EndSpikeFeature.GetSpikesForLevel(RandomState.ParseSeed(Seed))[spikeTick / 40];
+        var spike = EndSpikeFeature.GetSpikesForLevel(WorldSeed.Parse(Seed))[spikeTick / 40];
         if (spikeTick % 40 == 0)
         {
             var spikeTop = new Vector(spike.CenterX, spike.Height + 1, spike.CenterZ);
@@ -535,7 +535,7 @@ public abstract partial class AbstractLevel
     // The order vanilla places the 20 gateways in, seeded by the world.
     private List<int> ShuffledGatewayOrder()
     {
-        var random = new LegacyRandomSource(RandomState.ParseSeed(Seed));
+        var random = new LegacyRandomSource(WorldSeed.Parse(Seed));
         return FeatureHelpers.ShuffledCopy(Enumerable.Range(0, 20), random);
     }
 

@@ -14,15 +14,14 @@ namespace Obsidian.Registries;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The files are those <see cref="PluginCodecs"/> and <see cref="PluginNoise"/> applied last, read as written: the
-/// 26.3 pipeline reads 26.3's schemas, which changed from 1.21.11's for noise settings (<c>material_rule</c>, the
-/// <c>aquifers</c> object), density functions (<c>left</c> and <c>right</c> operands, new types) and noises. A file
-/// in 1.21.11's schema fails the dimensions naming it here, and one in 26.3's is left out of the 1.21.11 pipeline
-/// with a warning, until the live generator switches.
+/// The files are those <see cref="PluginCodecs"/> and <see cref="PluginNoise"/> applied last, read as written in
+/// 26.3's schemas, which changed from 1.21.11's for noise settings (<c>material_rule</c>, the <c>aquifers</c> object),
+/// density functions (<c>left</c> and <c>right</c> operands, new types) and noises. A file in 1.21.11's schema fails
+/// the dimensions naming it.
 /// </para>
 /// <para>
-/// A dimension keeps the data it was read with, like the 1.21.11 pipeline's; a plugin unloading releases those made of
-/// its types or carvers (see <see cref="Release"/>), whose generators stop as it unloads.
+/// A dimension keeps the data it was read with; a plugin unloading releases those made of its types or carvers (see
+/// <see cref="Release"/>), whose generators stop as it unloads.
 /// </para>
 /// </remarks>
 internal static class PluginWorldgen

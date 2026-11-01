@@ -151,7 +151,6 @@ internal static partial class PluginDimensions
             // read with its other files, which the stem names instead.
             var (stem, _) = LevelStemInline.Extract(identifier, bytes);
             using var document = JsonDocument.Parse(stem, documentOptions);
-            var entries = new HashSet<object>(ReferenceEqualityComparer.Instance);
             var dependencies = new SortedDictionary<string, string>(StringComparer.Ordinal);
             var data = PluginWorldgen.Layer(WorldData.Generators.Density.WorldgenData.Vanilla,
                 PluginCodecs.Applied, noise.Files).TraceReads((registry, id, json) =>
@@ -159,7 +158,7 @@ internal static partial class PluginDimensions
             var generator = document.RootElement.GetProperty("generator").GetProperty("type").GetString();
             var dimension = WorldData.Generators.Density.WorldgenData.Qualify(generator!) == "minecraft:noise"
                 ? (LevelStem)PluginWorldgen.ReadDimension(identifier, stem, noise, data)
-                : LevelStemData.Read(identifier, document.RootElement, noise, entries);
+                : LevelStemData.Read(identifier, document.RootElement);
 
             // Obsidian creates vanilla's levels with vanilla's noise generator, which the overrides configure, and
             // with vanilla's dimension types; a stem can change those types' data.
@@ -187,7 +186,7 @@ internal static partial class PluginDimensions
             var biomes = string.Join(' ', dimension.SourceBiomes.Select(biome => biome.Name));
             data.StopTracing();
             var nativeSources = string.Join('\n', dependencies.Select(entry => $"{entry.Key}\n{entry.Value}"));
-            var text = $"{Encoding.UTF8.GetString(bytes)}\n{biomes}\n{noise.Sources(entries)}\n{nativeSources}";
+            var text = $"{Encoding.UTF8.GetString(bytes)}\n{biomes}\n{nativeSources}";
 
             return new DimensionFile(identifier, source, text, bytes, dimension);
         }

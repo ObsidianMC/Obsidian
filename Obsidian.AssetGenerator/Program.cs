@@ -2,18 +2,16 @@ using Obsidian.AssetGenerator;
 using Obsidian.AssetGenerator.Datagen;
 using System.Diagnostics;
 
-// Usage: Obsidian.AssetGenerator <minecraft version> <legacy version> <cache directory> <scratch directory>
-//            <assets directory>
+// Usage: Obsidian.AssetGenerator <minecraft version> <cache directory> <scratch directory> <assets directory>
 //        Obsidian.AssetGenerator capture-worldgen <minecraft version> <cache directory> <scratch directory>
 //            <fixture directory> [--sections <patterns>] [--cases <patterns>]
 //        Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory> <scratch directory>
 //            <test assets directory> [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces] [case names]
 //
 // Downloads the vanilla server jar of the version, runs its data generators and the Java dumper against it, and writes
-// the assets the source generators and the server read into the assets directory (replacing what's there). The worldgen
-// assets come from the legacy version's data generators instead, into legacy-<legacy version> (temporary,
-// until Phase 5 of docs/porting-26.3-plan.md; see DatagenAssets.WriteLegacy). The jars and data generator output are
-// cached per version in the cache directory, which checkouts share; this checkout's runs work in the scratch directory.
+// the assets the source generators and the server read into the assets directory (replacing what's there). The jars
+// and data generator output are cached per version in the cache directory, which checkouts share; this checkout's runs
+// work in the scratch directory.
 //
 // capture-worldgen instead re-records the vanilla worldgen references in the fixture directory (in place) with the
 // version's server, or only the sections and cases the patterns select; see docs/vanilla-captures.md.
@@ -51,10 +49,10 @@ if (args is ["capture-scenarios", var scenarioVersion, var scenarioCache, var sc
     return 0;
 }
 
-if (args.Length != 5)
+if (args.Length != 4)
 {
-    Console.Error.WriteLine("Usage: Obsidian.AssetGenerator <minecraft version> <legacy version> <cache directory>");
-    Console.Error.WriteLine("           <scratch directory> <assets directory>");
+    Console.Error.WriteLine("Usage: Obsidian.AssetGenerator <minecraft version> <cache directory> <scratch directory>");
+    Console.Error.WriteLine("           <assets directory>");
     Console.Error.WriteLine("       Obsidian.AssetGenerator capture-worldgen <minecraft version> <cache directory>");
     Console.Error.WriteLine("           <scratch directory> <fixture directory>");
     Console.Error.WriteLine("           [--sections <patterns>] [--cases <patterns>]");
@@ -65,15 +63,13 @@ if (args.Length != 5)
     return 1;
 }
 
-var (version, legacyVersion) = (args[0], args[1]);
-var cacheDirectory = Path.GetFullPath(args[2]);
-var scratchDirectory = Path.GetFullPath(args[3]);
-var assetsDirectory = Path.GetFullPath(args[4]);
+var version = args[0];
+var cacheDirectory = Path.GetFullPath(args[1]);
+var scratchDirectory = Path.GetFullPath(args[2]);
+var assetsDirectory = Path.GetFullPath(args[3]);
 
 var server = await VanillaServer.PrepareAsync(httpClient, version,
     Path.Combine(cacheDirectory, version), Path.Combine(scratchDirectory, version));
-var legacy = await VanillaServer.PrepareAsync(httpClient, legacyVersion,
-    Path.Combine(cacheDirectory, legacyVersion), Path.Combine(scratchDirectory, legacyVersion));
 
 // Written next to the assets and moved in place once complete, so a failed run leaves the previous assets alone.
 var staging = assetsDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + ".tmp";
@@ -86,8 +82,6 @@ await JavaDumper.RunAsync(server, staging);
 
 Console.WriteLine("Writing data generator assets...");
 DatagenAssets.Write(server.GeneratedDirectory, JavaDumper.PacketFieldsPath(server), staging);
-DatagenAssets.WriteLegacy(legacy.GeneratedDirectory, JavaDumper.WorldgenGroupsPath(server),
-    Path.Combine(staging, $"legacy-{legacyVersion}"));
 WorldgenAssets.WriteRouterData(
     Path.Combine(server.GeneratedDirectory, "data", "minecraft"),
     Path.Combine(staging, "worldgen_26_3"));

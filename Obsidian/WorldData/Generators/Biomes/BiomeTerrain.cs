@@ -263,10 +263,9 @@ internal sealed class BiomeTerrain
             this.columns,
             this.MinY,
             this.Height,
-            startCache: this.startCache,
-            structures: source,
-            templates: features.CaptureTemplates(
-                System.Collections.Frozen.FrozenDictionary<string, StructureTemplate>.Empty));
+            source,
+            features.CaptureTemplates(System.Collections.Frozen.FrozenDictionary<string, StructureTemplate>.Empty),
+            this.startCache);
 
         static InvalidOperationException Unknown(string biome) => new($"Unknown biome '{biome}'.");
     }
@@ -495,9 +494,40 @@ internal sealed class BiomeTerrain
                     Generation = generation
                 };
 
-                FeatureDecorator.PlaceStructure(reaching.Of(stepStructures[index]), context);
+                PlaceStructure(reaching.Of(stepStructures[index]), context);
             }
         };
+    }
+
+    // Places the starts of a structure reaching the chunk. A start made of plugins' types runs their code, so placing
+    // it is a call into the plugins it started with: one whose plugins are unloading is left out, like their features,
+    // and its failing is theirs.
+    private static void PlaceStructure(List<StructureStart> starts, StructurePieceContext context)
+    {
+        foreach (var start in starts)
+        {
+            var owners = start.Owners;
+            if (!GeneratorCalls.TryEnter(owners, out var calls))
+                continue;
+
+            using (calls)
+            {
+                try
+                {
+                    start.PlaceInChunk(context);
+                }
+                catch (Exception exception) when (exception is not OutOfMemoryException)
+                {
+                    var message = $"Failed to place structure '{start.Structure.Identifier}' in chunk "
+                        + $"({context.ChunkX}, {context.ChunkZ}).";
+
+                    if (owners.IsEmpty)
+                        throw new InvalidOperationException(message, exception);
+
+                    throw new PluginGenerationException(owners, message, exception);
+                }
+            }
+        }
     }
 
     /// <summary>A block's biome over uncached climate searches, as carving's top materials read it.</summary>
@@ -602,7 +632,7 @@ internal sealed class BiomeTerrain
             this.BeardifierFor(chunk.X, chunk.Z),
             carvers);
 
-        // Chunk storage keeps the legacy enum until the live pipeline switches; carvers saves as 26.3 terrain.
+        // Chunk storage keeps the internal carvers stage, which saves as 26.3's terrain status.
         chunk.SetChunkStatus(ChunkGenStage.carvers);
     }
 

@@ -33,14 +33,12 @@ internal static class RegistryIds
         "investigate", "roar", "emerge", "dig"
     }.Select(name => $"minecraft:{name}").ToFrozenSet();
 
-    // Vanilla's placed features, the keys of Obsidian's placed feature assets.
-    private static readonly Lazy<FrozenSet<string>> placedFeatures = new(() => AssetNames("worldgen.placed_features")
-        .SelectMany(Keys)
-        .Concat(CurrentReferences("placed_feature"))
-        .ToFrozenSet());
+    // Vanilla's placed features and configured carvers.
+    private static readonly Lazy<FrozenSet<string>> placedFeatures =
+        new(() => CurrentReferences("placed_feature").ToFrozenSet());
 
-    // Vanilla's configured carvers, one asset each.
-    private static readonly Lazy<FrozenSet<string>> configuredCarvers = new(ReadConfiguredCarvers);
+    private static readonly Lazy<FrozenSet<string>> configuredCarvers =
+        new(() => CurrentReferences("carver").ToFrozenSet());
 
     public static bool IsSoundEvent(string identifier) => soundEvents.Value.Contains(identifier);
 
@@ -54,8 +52,7 @@ internal static class RegistryIds
 
     public static bool IsConfiguredCarver(string identifier) => configuredCarvers.Value.Contains(identifier);
 
-    // Terrain still uses legacy feature assets during Phase 5. Format-121 readers also recognize the current
-    // registry's identifiers, including entries not referenced by vanilla biomes.
+    // The identifiers of one of vanilla's registries, including entries vanilla's biomes don't reference.
     private static IEnumerable<string> CurrentReferences(string registry)
     {
         var resource = $"Obsidian.Assets.data_pack.{registry}_ids.json";
@@ -79,11 +76,6 @@ internal static class RegistryIds
         .Select(name => $"minecraft:{name.ToSnakeCase()}")
         .ToFrozenSet();
 
-    private static FrozenSet<string> ReadConfiguredCarvers() => AssetNames("configured_carver")
-        .Select(resource => $"minecraft:{Path.GetFileNameWithoutExtension(resource).Split('.')[^1]}")
-        .Concat(CurrentReferences("carver"))
-        .ToFrozenSet();
-
     // The keys of a JSON object asset, like the identifiers of sounds.json.
     private static FrozenSet<string> Keys(string resource)
     {
@@ -95,15 +87,5 @@ internal static class RegistryIds
             .EnumerateObject()
             .Select(property => property.Name)
             .ToFrozenSet();
-    }
-
-    private static IEnumerable<string> AssetNames(string folder)
-    {
-        var prefix = $"Obsidian.Assets.{folder}.";
-
-        return Assembly.GetExecutingAssembly()
-            .GetManifestResourceNames()
-            .Where(name => name.StartsWith(prefix, StringComparison.Ordinal))
-            .Where(name => name.EndsWith(".json", StringComparison.Ordinal));
     }
 }

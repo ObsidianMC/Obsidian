@@ -13,7 +13,7 @@ namespace Obsidian.Registries;
 /// <summary>
 /// Plugins' biome regions, from their <c>data/&lt;namespace&gt;/biome_region/&lt;path&gt;.json</c> files (see
 /// <see cref="BiomeRegionData"/>): alternative biome layouts that several plugins add to the same dimension, such as
-/// the overworld, without overriding each other (see <see cref="RegionBiomeSource"/>).
+/// the overworld, without overriding each other (see <see cref="RegionLayout"/>).
 /// </summary>
 /// <remarks>
 /// Regions are part of a dimension's generator: a dimension's regions are fixed when its biome source is first
@@ -132,16 +132,6 @@ internal static partial class PluginBiomeRegions
     }
 
     /// <summary>
-    /// Wraps a dimension's biome source factory so that the sources it creates generate the dimension's regions.
-    /// Creating one fixes the dimension's regions until the server stops.
-    /// </summary>
-    /// <param name="dimension">The dimension's identifier, its level stem's.</param>
-    public static Func<RandomState, IClimateBiomeSource> Wrap(
-        string dimension,
-        Func<RandomState, IClimateBiomeSource> create) =>
-        randomState => RegionBiomeSource.Create(dimension, create(randomState), Fix(dimension), randomState);
-
-    /// <summary>
     /// A dimension's possible biomes with those of its regions: its fixed ones once it generates, or else the loaded
     /// plugins' ones.
     /// </summary>
@@ -153,7 +143,7 @@ internal static partial class PluginBiomeRegions
             ? fixedSet
             : loaded.GetValueOrDefault(dimension);
 
-        return RegionBiomeSource.GetPossibleBiomes(biomes, regions?.Regions ?? []);
+        return RegionLayout.PossibleBiomes(biomes, regions?.Regions ?? []);
     }
 
     /// <summary>

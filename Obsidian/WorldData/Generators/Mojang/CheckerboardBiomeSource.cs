@@ -35,7 +35,4 @@ internal sealed class CheckerboardBiomeSource : IClimateBiomeSource
 
         return this.biomes[index];
     }
-
-    public BiomeCodec GetNoiseBiome(ClimateSampler sampler, int quartX, int quartY, int quartZ) =>
-        this.GetNoiseBiome(quartX, quartY, quartZ);
 }

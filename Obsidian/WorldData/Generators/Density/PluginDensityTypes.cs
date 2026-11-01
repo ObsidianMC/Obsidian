@@ -30,9 +30,8 @@ internal interface IDensityTypes
 /// </summary>
 /// <remarks>
 /// <para>
-/// The 1.21.11 pipeline gives plugins' functions 1.21.11 functions and noises, which it seeds through
-/// <see cref="IDensityFunction.MapAll"/>. Here the functions a plugin's function holds are already seeded 26.3 ones,
-/// so nothing is mapped. Its <see cref="INoise"/> and <see cref="BaseNoise"/> properties name 26.3 noises, which are
+/// The functions a plugin's function holds are already seeded 26.3 ones, so nothing is mapped through
+/// <see cref="IDensityFunction.MapAll"/>. Its <see cref="INoise"/> and <see cref="BaseNoise"/> properties name 26.3 noises, which are
 /// seeded for the compiler's world from their identifiers, as vanilla seeds the noises its own functions name (see
 /// <see cref="SeededNoise"/>). Noises written inline aren't: vanilla doesn't seed those, and 1.21.11's have the old
 /// schema. Nor is a property typed as the plugin's own noise class, which can't sample a 26.3 noise. Those are refused

@@ -36,8 +36,7 @@ public sealed class PaleMossDecorator : TreeDecorator
         if (random.NextFloat() < this.GroundProbability)
         {
             // By identifier, like vanilla's registry lookup, so a file overriding the patch applies.
-            var features = WorldgenTags.IsLegacy
-                ? WorldgenFeatureSet.Vanilla : PluginFeatures.CurrentRegistry.FeatureSet!;
+            var features = PluginFeatures.CurrentRegistry.FeatureSet!;
             features.PlaceConfigured("minecraft:pale_moss_patch", new FeatureContext
             {
                 Level = context.Level,

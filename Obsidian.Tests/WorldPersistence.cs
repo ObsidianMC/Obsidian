@@ -119,8 +119,8 @@ public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) 
     /// a fresh region and structure manager.
     /// </summary>
     /// <remarks>
-    /// The chunk builders aren't <see cref="WorldgenFixture"/>'s: the hut's state is changed, and the restart needs a structure
-    /// manager that never saw it, while the shared builders' hut is placed by other tests.
+    /// The chunk builders are its own: the hut's state is changed, and the restart needs a structure manager that never
+    /// saw it.
     /// </remarks>
     public sealed class RestartedChunk : IAsyncLifetime
     {

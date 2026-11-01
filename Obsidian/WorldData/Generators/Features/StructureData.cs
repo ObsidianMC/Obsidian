@@ -33,21 +33,12 @@ internal static class StructureData
                 $"vanilla's {id}",
                 features.Data.Read(registry, id))))
             .ToArray();
-        var empty = new WorldgenStructures
-        {
-            Version = 0,
-            Structures = FrozenDictionary<string, Structure>.Empty,
-            Sets = FrozenDictionary<string, StructureSet>.Empty,
-            Pools = FrozenDictionary<string, StructureTemplatePool>.Empty,
-            Templates = FrozenDictionary<string, StructureTemplate>.Empty,
-            Owners = FrozenDictionary<Structure, ImmutableArray<PluginContainer>>.Empty,
-            LegacyPools = false
-        };
         var featureSet = features.AsFeatureSet();
         var registrations = types.ToArray();
         var pluginFiles = files.ToArray();
         var vanilla = PluginStructures.Build(
-            vanillaFiles, [], featureSet, registrations, logger, empty, FeatureRegistry.TemplateProcessorStates);
+            vanillaFiles, [], featureSet, registrations, logger, WorldgenStructures.Empty,
+            FeatureRegistry.TemplateProcessorStates);
         var structures = pluginFiles.Length == 0
             ? vanilla with { Templates = LastTemplates(templates, logger) }
             : PluginStructures.Build(

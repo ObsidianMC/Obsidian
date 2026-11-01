@@ -90,9 +90,8 @@ internal sealed class EndLayout : BiomeLayout
 }
 
 /// <summary>
-/// A biome source that doesn't read the climate, such as vanilla's <c>fixed</c> and <c>checkerboard</c>, which the
-/// 1.21.11 pipeline's sources (<see cref="FixedBiomeSource"/>, <see cref="CheckerboardBiomeSource"/>) implement for
-/// both pipelines.
+/// A biome source that doesn't read the climate, such as vanilla's <c>fixed</c> and <c>checkerboard</c>
+/// (<see cref="FixedBiomeSource"/>, <see cref="CheckerboardBiomeSource"/>).
 /// </summary>
 /// <param name="source">The source; its climate sampler is never read.</param>
 internal sealed class PositionalLayout(IClimateBiomeSource source) : BiomeLayout

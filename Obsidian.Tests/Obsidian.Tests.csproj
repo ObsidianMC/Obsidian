@@ -17,7 +17,6 @@
 		<None Remove="Assets\daylight_detector.json" />
 		<None Remove="Assets\fluid_scenarios.json" />
 		<None Remove="Assets\redstone_scenarios.json" />
-		<None Remove="Assets\vanilla_worldgen.json" />
 		<None Remove="Assets\vanilla_worldgen_26.3\**" />
 	</ItemGroup>
 
@@ -32,7 +31,6 @@
 		<EmbeddedResource Include="Assets\saved_heightmaps.json" />
 		<EmbeddedResource Include="Assets\structure_pieces.json" />
 		<EmbeddedResource Include="Assets\redstone_scenarios.json" />
-		<EmbeddedResource Include="Assets\vanilla_worldgen.json" />
 		<!-- A folder of files, embedded by their paths in it (VanillaWorldgenCaptures). -->
 		<EmbeddedResource Include="Assets\vanilla_worldgen_26.3\**\*.json">
 			<LogicalName>Obsidian.Tests.Assets.vanilla_worldgen_26.3/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
@@ -65,19 +63,6 @@
 		<ProjectReference Include="..\Obsidian\Obsidian.csproj" />
 		<ProjectReference Include="..\Obsidian.Porting\Obsidian.Porting.csproj" />
 	</ItemGroup>
-
-	<!-- Temporary until Phase 5 re-records vanilla_worldgen.json on 26.3. Include after asset generation so a clean
-	     checkout works too; the table is embedded only in the test assembly. -->
-	<Target Name="IncludeLegacyBlockStates" AfterTargets="ResolveProjectReferences">
-		<XmlPeek XmlInputPath="$(MSBuildThisFileDirectory)..\Obsidian\Obsidian.csproj"
-		         Query="/Project/PropertyGroup/LegacyMinecraftVersion/text()">
-			<Output TaskParameter="Result" PropertyName="LegacyMinecraftVersion" />
-		</XmlPeek>
-		<ItemGroup>
-			<EmbeddedResource Include="..\Obsidian\Assets\legacy-$(LegacyMinecraftVersion)\block_states.json"
-			                  LogicalName="Obsidian.Tests.Assets.legacy_block_states.json" />
-		</ItemGroup>
-	</Target>
 
 	<!-- The probe plugin is a plugin project too: its data folder is generated from, like a plugin's, and packed into
 	     its archive by the tests. -->

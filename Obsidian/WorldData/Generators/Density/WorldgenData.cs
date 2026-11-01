@@ -11,9 +11,7 @@ namespace Obsidian.WorldData.Generators.Density;
 /// carvers, biome inputs and block tags, read by registry and identifier.
 /// </summary>
 /// <remarks>
-/// <see cref="Vanilla"/> reads the files Obsidian.AssetGenerator copies to <c>Assets/worldgen_26_3</c>. Temporary
-/// beside the legacy worldgen assets, which the live generator still reads (Phase 5 of
-/// <c>docs/porting-26.3-plan.md</c>).
+/// <see cref="Vanilla"/> reads the files Obsidian.AssetGenerator copies to <c>Assets/worldgen_26_3</c>.
 /// </remarks>
 /// <param name="open">Opens an entry's JSON by registry and identifier, or gives <c>null</c>.</param>
 /// <param name="list">The identifiers of a registry's entries; none by default.</param>

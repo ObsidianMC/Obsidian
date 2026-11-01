@@ -72,7 +72,7 @@ internal sealed class PotentSulfurBlockEntity : BlockEntity
         {
             if (this.Countdown <= 0)
             {
-                var seed = RandomState.ParseSeed(level.Seed) ^ -904011478L;
+                var seed = WorldSeed.Parse(level.Seed) ^ -904011478L;
                 var random = new XoroshiroRandomSource(seed).ForkPositional()
                     .At(this.BlockPosition.X, this.BlockPosition.Y, this.BlockPosition.Z);
                 var depth = source.Y - this.BlockPosition.Y - 1;

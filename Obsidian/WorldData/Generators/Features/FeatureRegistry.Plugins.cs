@@ -31,7 +31,6 @@ internal sealed partial class FeatureRegistry
         new(ReferenceEqualityComparer.Instance);
     private readonly Dictionary<string, LegacyPlacedFeature> placedAdapters = [];
     private readonly Dictionary<string, StructureProcessorList> processors = [];
-    private readonly Dictionary<string, BiomeCodec[]> sourceBiomes = [];
     private int inlineIds;
     private WorldgenReader? reader;
 
@@ -89,7 +88,7 @@ internal sealed partial class FeatureRegistry
             if (WorldgenDependencies<PluginContainer>.Owner(type) is PluginContainer owner)
                 this.dependencies.Add(owner);
         },
-        structures: StructureLookups.Vanilla with { FindProcessorList = this.Processors },
+        structures: StructureLookups.None with { FindProcessorList = this.Processors },
         inlineConfiguredFeature: this.ConfiguredAdapter,
         inlinePlacedFeature: this.PlacedAdapter);
 
@@ -322,35 +321,6 @@ internal sealed partial class FeatureRegistry
             biome => (IReadOnlyList<IReadOnlyList<LegacyPlacedFeature>>)this.BiomeSteps(biome)
                 .Select(step => (IReadOnlyList<LegacyPlacedFeature>)step.Select(this.PlacedAdapter).ToArray())
                 .ToArray());
-
-    // Modifier cycle checks must include 26.3's new biomes. Custom sources keep the possible biomes registered
-    // with their dimension, rather than having a vanilla parameter list imposed on them.
-    internal IEnumerable<BiomeCodec> SourceBiomes(LevelStem dimension)
-    {
-        if (dimension is not MojangDimension)
-            return dimension.PossibleBiomes;
-
-        string? preset = null;
-        if (ReferenceEquals(dimension, MojangDimension.Overworld))
-            preset = "minecraft:overworld";
-        else if (ReferenceEquals(dimension, MojangDimension.Nether))
-            preset = "minecraft:nether";
-
-        if (preset is null)
-            return dimension.PossibleBiomes;
-
-        if (!this.sourceBiomes.TryGetValue(preset, out var biomes))
-        {
-            biomes = this.Data.Read("biome_parameters", preset).GetProperty("biomes").EnumerateArray()
-                .Select(entry => entry.GetProperty("biome").GetString()!).Distinct()
-                .Select(id => CodecRegistry.TryGetBiome(id, out var biome)
-                    ? biome! : throw new InvalidDataException($"Unknown biome {id}."))
-                .ToArray();
-            this.sourceBiomes.Add(preset, biomes);
-        }
-
-        return biomes;
-    }
 
     internal bool Place(object entry, Func<bool> place) =>
         WorldgenFeatureSet.Place(this.OwnersOf(entry), "a 26.3 feature", place);

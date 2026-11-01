@@ -315,15 +315,16 @@ public sealed class PluginLoading : IDisposable
             "probe:add_pillar",
             "test",
             Encoding.UTF8.GetBytes(AddPillar));
-        var features = PluginFeatures.Build(
+        var features = PluginFeatures.BuildRegistry(
             [.. reloaded.FeatureFiles, addPillar],
             [],
             reloaded.WorldgenTypes,
-            NullLogger.Instance);
+            NullLogger.Instance).FeatureSet!;
         var pillar = features.PlacedFeatures["probe:pillar"];
 
-        Assert.Same(reloaded.LoadContext, AssemblyLoadContext.GetLoadContext(pillar.Feature.GetType().Assembly));
-        Assert.Same(reloaded.LoadContext, AssemblyLoadContext.GetLoadContext(pillar.Placement[0].GetType().Assembly));
+        var pillarFeature = features.FindConfigured("probe:pillar")!;
+
+        Assert.Same(reloaded.LoadContext, AssemblyLoadContext.GetLoadContext(pillarFeature.GetType().Assembly));
         Assert.Same(reloaded, Assert.Single(features.Owners[pillar]));
 
         // What it added through the host's services is the reloaded plugin's: unloading removed the old plugin's

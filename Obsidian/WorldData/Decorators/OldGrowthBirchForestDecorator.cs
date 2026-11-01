@@ -8,8 +8,8 @@ public class OldGrowthBirchForestDecorator : BaseDecorator
 {
     public OldGrowthBirchForestDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(6, Registries.ConfiguredFeatures.Trees.Birch));
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, Registries.ConfiguredFeatures.Trees.SuperBirchBees));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(6, DecoratorFeatures.VanillaTree("birch")));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, DecoratorFeatures.VanillaTree("super_birch_bees")));
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(DandelionFlora), 4, 3));
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(PoppyFlora), 4, 3));
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(1, typeof(LilyFlora), 4, 3));

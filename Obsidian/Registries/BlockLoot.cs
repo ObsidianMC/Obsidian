@@ -5,7 +5,7 @@ using Obsidian.API.World.Generator.RandomSources;
 using System.Reflection;
 using System.Text.Json;
 using System.Runtime.CompilerServices;
-using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData;
 
 namespace Obsidian.Registries;
 
@@ -17,7 +17,7 @@ internal static partial class BlockLoot
     private static readonly ConditionalWeakTable<ILevel, RandomSequences> sequences = [];
 
     internal static RandomSequences SequencesFor(ILevel level) => sequences.GetValue(level,
-        current => new RandomSequences(RandomState.ParseSeed(current.Seed)));
+        current => new RandomSequences(WorldSeed.Parse(current.Seed)));
 
     public static List<ItemStack> GetDrops(
         IBlock block,

@@ -27,8 +27,7 @@ internal sealed record DecorationContext(
 
 /// <summary>
 /// Compiles 26.3's <c>feature</c> and <c>placed_feature</c> registries (config at the root, not under <c>config</c>),
-/// their placement modifiers, block predicates, rule tests and block-state providers, beside the legacy 1.21.11
-/// features the live generator still uses (Phase 5 of <c>docs/porting-26.3-plan.md</c>).
+/// their placement modifiers, block predicates, rule tests and block-state providers.
 /// </summary>
 /// <remarks>
 /// Entries compile on first use and are cached by identifier; the biome filter compares registered placed features

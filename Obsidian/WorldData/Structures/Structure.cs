@@ -184,7 +184,7 @@ internal sealed class StructureGenerationContext
     /// Looks a template pool up by identifier, or gives <c>null</c>: vanilla's, or plugins' and data packs' (see
     /// <see cref="Registries.PluginStructures"/>).
     /// </summary>
-    public Func<string, StructureTemplatePool?> Pools { get; init; } = StructureTemplatePool.Get;
+    public required Func<string, StructureTemplatePool?> Pools { get; init; }
 
     /// <summary>
     /// Vanilla's <c>WorldGenerationContext</c> for height providers: the build range limited to the generator's noise range

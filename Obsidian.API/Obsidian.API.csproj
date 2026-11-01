@@ -49,8 +49,6 @@
 
 			<AdditionalFiles Include="..\Obsidian\Assets\Codecs\**\*.json" LinkBase="Assets\Codecs\" />
 
-			<!-- Temporary: worldgen comes from the legacy version (LegacyMinecraftVersion in Obsidian.csproj). -->
-			<AdditionalFiles Include="..\Obsidian\Assets\legacy-*\worldgen\**\*.*" LinkBase="Assets\worldgen\" />
 			<AdditionalFiles Include="..\Obsidian\Assets\enums.json" Link="Assets\enums.json" />
 			<AdditionalFiles Include="..\Obsidian\Assets\item_components.json" Link="Assets\item_components.json" />
 			<EmbeddedResource Include="..\Obsidian\Assets\registry_ids.json"

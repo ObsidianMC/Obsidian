@@ -1164,7 +1164,8 @@ public sealed class PluginDimensionFiles : IDisposable
             Modifier("stemfiles:no_x", "remove", "stemfiles:roll_a", "stemfiles:x")
         ];
 
-        var features = PluginFeatures.Build(files, biomes, [], logger, [first, second]);
+        var registry = PluginFeatures.BuildRegistry(files, biomes, [], logger);
+        var features = PluginFeatures.Build(files, biomes, logger, registry, [first, second]);
 
         Assert.Empty(features.Unordered);
 

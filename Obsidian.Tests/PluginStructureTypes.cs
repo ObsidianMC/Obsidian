@@ -105,12 +105,11 @@ public class PluginStructureTypes
         }
         """;
 
-    [Theory(DisplayName = "A plugin's structure type starts and places its pieces, and goes with the plugin")]
-    [InlineData(true)]
-    public void GeneratesPluginStructureTypes(bool current)
+    [Fact(DisplayName = "A plugin's structure type starts and places its pieces, and goes with the plugin")]
+    public void GeneratesPluginStructureTypes()
     {
         var logger = new PluginFeatureFiles.ListLogger();
-        var built = Build(SpireFiles(), Types(), logger, current);
+        var built = Build(SpireFiles(), Types(), logger);
         Assert.Empty(logger.Messages);
 
         // Obsidian reads the fields every structure has, and the plugin's type the rest.
@@ -131,7 +130,7 @@ public class PluginStructureTypes
 
         // The plugin unloads: its type is gone, so its structure is left out like a file naming any missing type,
         // with the set naming it, and chunks generated later don't get it.
-        structures = Only(Build(SpireFiles(), [], logger, current));
+        structures = Only(Build(SpireFiles(), [], logger));
 
         Assert.Contains(logger.Messages, message => message.Contains("structuretest:spire isn't a structure type"));
         Assert.False(structures.Structures.ContainsKey(Spire));
@@ -159,7 +158,7 @@ public class PluginStructureTypes
         var files = SpireFiles();
         files[0] = Parse(PluginStructures.Structure, Spire,
             SpireStructure.Replace("\"height\": 5", "\"height\": 5, \"fail\": true"));
-        var built = Only(Build(files, Types(), new PluginFeatureFiles.ListLogger(), true), "structuretest:spires");
+        var built = Only(Build(files, Types(), new PluginFeatureFiles.ListLogger()), "structuretest:spires");
         var structures = built with
         {
             Owners = new Dictionary<Structure, ImmutableArray<PluginContainer>>
@@ -193,12 +192,11 @@ public class PluginStructureTypes
         }
     }
 
-    [Theory(DisplayName = "A plugin's pool element types are placed by template pools, and connect by their jigsaws")]
-    [InlineData(true)]
-    public void PlacesPluginPoolElements(bool current)
+    [Fact(DisplayName = "A plugin's pool element types are placed by template pools, and connect by their jigsaws")]
+    public void PlacesPluginPoolElements()
     {
         var logger = new PluginFeatureFiles.ListLogger();
-        var built = Build(PillarFiles(), Types(), logger, current);
+        var built = Build(PillarFiles(), Types(), logger);
         Assert.Empty(logger.Messages);
 
         var element = Assert.IsType<PluginPoolElement>(Assert.Single(built.Pools["structuretest:pillar/start"].Elements)
@@ -218,7 +216,7 @@ public class PluginStructureTypes
         Assert.Equal(1, Count(chunk, BlockIds.EmeraldBlock));
 
         // Without the plugin's types, the pools naming them are left out, with the structure starting from them.
-        built = Build(PillarFiles(), [], logger, current);
+        built = Build(PillarFiles(), [], logger);
 
         Assert.Contains(logger.Messages, message => message.Contains("structuretest:pillar isn't a type"));
         Assert.False(built.Structures.ContainsKey(Pillar));
@@ -227,10 +225,8 @@ public class PluginStructureTypes
     private static WorldgenStructures Build(
         StructureFile[] files,
         List<WorldgenTypeRegistration> types,
-        PluginFeatureFiles.ListLogger logger,
-        bool current) => current
-            ? StructureData.Read(new FeatureRegistry(WorldgenData.Vanilla), files, [], types, logger)
-            : PluginStructures.Build(files, [], WorldgenFeatureSet.Vanilla, types, logger);
+        PluginFeatureFiles.ListLogger logger) =>
+        StructureData.Read(new FeatureRegistry(WorldgenData.Vanilla), files, [], types, logger);
 
     internal static List<WorldgenTypeRegistration> Types()
     {

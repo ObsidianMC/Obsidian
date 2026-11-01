@@ -28,7 +28,7 @@ public class StructureLocating
     [Fact(DisplayName = "/locate structure finds vanilla's structures where vanilla does, by identifier and tag")]
     public void LocatesVanillaStructures()
     {
-        // Vanilla's plains village starts in chunk (-9, -52) of seed 12345 (see VanillaStructureGeneration), the only
+        // Vanilla's plains village starts in chunk (-9, -52) of seed 12345, the only
         // start chunk of the villages' placement region around the origin, which vanilla's search looks at first.
         var structures = PluginStructureTypes.Only(
             Obsidian.WorldData.Generators.Features.StructureData.Read(

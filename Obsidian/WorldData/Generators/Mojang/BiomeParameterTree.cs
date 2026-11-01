@@ -26,7 +26,7 @@ internal sealed class BiomeParameterTree<T>
     [ThreadStatic]
     private static SearchState? lastSearched;
 
-    /// <param name="childrenPerNode">6 for the live legacy pipeline, 19 for 26.3.</param>
+    /// <param name="childrenPerNode">The children of each node, which decides exact ties: 19 in 26.3, 6 before.</param>
     public BiomeParameterTree(IReadOnlyList<(ParameterPoint Point, T Value)> values, int childrenPerNode = 6)
     {
         if (values.Count == 0)

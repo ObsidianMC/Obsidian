@@ -221,7 +221,7 @@ internal static class VanillaLevelData
     /// <summary>
     /// A new level's seed, by vanilla's rule: none picks a random one, a number is used as-is, other text is hashed.
     /// </summary>
-    public static long ParseSeed(string? seed) => string.IsNullOrWhiteSpace(seed) ? Random.Shared.NextInt64() : RandomState.ParseSeed(seed);
+    public static long ParseSeed(string? seed) => string.IsNullOrWhiteSpace(seed) ? Random.Shared.NextInt64() : WorldSeed.Parse(seed);
 
     /// <summary>
     /// The level data of a new world, as vanilla writes it for a world created with these settings. The fields Obsidian

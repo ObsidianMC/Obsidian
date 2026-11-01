@@ -24,7 +24,6 @@ internal static class DatagenAssets
     /// <param name="generatedDirectory">The data generators' output (<c>data</c> and <c>reports</c>).</param>
     /// <param name="packetFieldsPath">The Java dumper's fields of each packet (see <see cref="JavaDumper.PacketFieldsPath"/>).</param>
     /// <param name="outputDirectory">The assets directory to write into.</param>
-    /// <remarks>Worldgen comes from the legacy version for now (see <see cref="WriteLegacy"/>).</remarks>
     public static void Write(string generatedDirectory, string packetFieldsPath, string outputDirectory)
     {
         var reports = Path.Combine(generatedDirectory, "reports");
@@ -94,59 +93,6 @@ internal static class DatagenAssets
 
             WriteJson(Path.Combine(outputDirectory, "loot_table", $"{category}.json"), tables);
         }
-    }
-
-    /// <summary>
-    /// Writes the worldgen assets from an older vanilla version's data generators into
-    /// <paramref name="outputDirectory"/> (<c>Assets/legacy-1.21.11</c>), in the layout the current version's would have:
-    /// <c>worldgen</c> (see <see cref="WorldgenAssets"/>), <c>configured_carver</c> and <c>biome_parameters</c>.
-    /// Natural spawning reads the current version's biomes' spawn attributes instead.
-    /// </summary>
-    /// <remarks>
-    /// Temporary: the current version's worldgen data doesn't fit Obsidian's models yet, so worldgen runs on
-    /// the older version's. Phase 5 (worldgen) of <c>docs/porting-26.3-plan.md</c> moves it to the
-    /// current version and removes this. LegacyTags keeps worldgen tag references (including the worldgen helpers' tags)
-    /// in the temporary obsidian_legacy namespace, with legacy contents and current registry ids, excluded from client
-    /// sync. Remove that bridge with LegacyMinecraftVersion when Phase 5 is complete.
-    /// </remarks>
-    /// <param name="generatedDirectory">The legacy data generators' output (<c>data</c> and <c>reports</c>).</param>
-    /// <param name="worldgenGroupsPath">
-    /// The Java dumper's vanilla classes declaring each feature, of the current version: the legacy jar is obfuscated,
-    /// so the dumper can't read it (see <see cref="WorldgenAssets"/>).
-    /// </param>
-    public static void WriteLegacy(string generatedDirectory, string worldgenGroupsPath,
-        string outputDirectory)
-    {
-        var reports = Path.Combine(generatedDirectory, "reports");
-        var data = Path.Combine(generatedDirectory, "data", "minecraft");
-
-        CopyDirectory(Path.Combine(reports, "biome_parameters", "minecraft"), Path.Combine(outputDirectory, "biome_parameters"));
-
-        // Test-only ids for the 1.21.11 worldgen captures. Phase 5 re-records them on the current version and removes
-        // this table with the legacy assets. --all already includes the legacy blocks report.
-        var states = ReadObject(Path.Combine(reports, "blocks.json"))
-            .SelectMany(block => block.Value!["states"]!.AsArray().Select(state =>
-            {
-                var properties = state!["properties"]?.AsObject();
-                var key = properties is null || properties.Count == 0 ? block.Key
-                    : $"{block.Key}[{string.Join(',', properties.OrderBy(property => property.Key, StringComparer.Ordinal)
-                        .Select(property => $"{property.Key}={property.Value!.GetValue<string>()}"))}]";
-                return (Id: state["id"]!.GetValue<int>(), Key: key);
-            }))
-            .OrderBy(state => state.Id).ToArray();
-        for (var id = 0; id < states.Length; id++)
-        {
-            if (states[id].Id != id)
-                throw new InvalidDataException($"Legacy block state ids are not contiguous at {id}.");
-        }
-
-        WriteJson(Path.Combine(outputDirectory, "block_states.json"), new JsonArray([.. states.Select(state => (JsonNode?)state.Key)]));
-
-        foreach (var (path, carver) in ReadAll(Path.Combine(data, "worldgen", "configured_carver")))
-            WriteJson(Path.Combine(outputDirectory, "configured_carver", path + ".json"), carver);
-
-        WorldgenAssets.Write(data, reports, worldgenGroupsPath, outputDirectory);
-        LegacyTags.Write(data, outputDirectory);
     }
 
     /// <summary>A resource location of the <c>minecraft</c> namespace from its path.</summary>

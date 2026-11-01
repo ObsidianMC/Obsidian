@@ -8,9 +8,9 @@ namespace Obsidian.WorldData.Features;
 /// </summary>
 public abstract class HugeMushroomFeatureBase : ConfiguredFeatureBase
 {
-    private static readonly BlockSet mushroomGrowBlock = LegacyWorldgenTags.Blocks("mushroom_grow_block");
-    private static readonly BlockSet leaves = LegacyWorldgenTags.Blocks("leaves");
-    private static readonly BlockSet replaceableByMushrooms = LegacyWorldgenTags.Blocks("replaceable_by_mushrooms");
+    private static readonly BlockSet mushroomGrowBlock = WorldgenTags.Blocks("mushroom_grow_block").Selected;
+    private static readonly BlockSet leaves = WorldgenTags.Blocks("leaves").Selected;
+    private static readonly BlockSet replaceableByMushrooms = WorldgenTags.Blocks("replaceable_by_mushrooms").Selected;
 
     public required IBlockStateProvider CapProvider { get; init; }
 

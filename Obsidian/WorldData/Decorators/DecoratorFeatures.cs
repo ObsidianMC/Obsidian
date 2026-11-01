@@ -12,6 +12,13 @@ public class DecoratorFeatures
     /// </summary>
     public List<FloraInfo> Flora { get; set; } = new List<FloraInfo>();
 
+    /// <summary>
+    /// One of vanilla's configured tree features, like <c>oak</c>, as the running worldgen registry holds it, files
+    /// overriding it included.
+    /// </summary>
+    internal static ConfiguredFeatureBase VanillaTree(string name) =>
+        Registries.PluginFeatures.CurrentRegistry.ConfiguredAdapter($"minecraft:{name}");
+
     public class TreeInfo
     {
         /// <summary>

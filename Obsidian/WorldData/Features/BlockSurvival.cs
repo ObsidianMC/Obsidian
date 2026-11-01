@@ -95,7 +95,7 @@ internal static class BlockSurvival
 
     private static bool IsWater(IBlock block) => block.GetFluid() is FluidKind.Water or FluidKind.FlowingWater;
 
-    // Current vegetation uses its support tag; legacy replays retain their older dirt set.
+    // Vegetation uses 26.3's support tag (see dirt).
     private static bool MayPlaceOnVegetation(IBlock below) => dirt.Contains(below) || below.Is(BlockIds.Farmland);
 
     private static bool WitherRoseMayPlaceOn(IBlock below) =>
