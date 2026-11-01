@@ -27,7 +27,10 @@ internal sealed partial class FeatureRegistry
 
     public PlacementModifier Modifier(JsonElement json)
     {
-        var type = json.GetProperty("type").GetString();
+        var type = WorldgenData.Qualify(json.GetProperty("type").GetString()!);
+
+        if (this.Types.FindRegistered(type, typeof(PlacementModifierBase)) is not null)
+            return this.PluginModifier(json);
 
         switch (type)
         {

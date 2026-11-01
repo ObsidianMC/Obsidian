@@ -1,6 +1,7 @@
 using Obsidian.API.World.Generator.DensityFunctions;
 using Obsidian.API.World.Generator.Noise;
 using Obsidian.API.World.Structures;
+using Obsidian.Plugins;
 using Obsidian.WorldData.Structures;
 using Obsidian.WorldData.Structures.Pools;
 using System.Globalization;
@@ -49,6 +50,8 @@ namespace Obsidian.WorldData.Features;
 /// default.</param>
 /// <param name="structures">Looks up processor lists, template pools, structures and structure sets by identifier;
 /// vanilla's by default.</param>
+/// <param name="inlineConfiguredFeature">Reads inline configured children with the generator's schema, when given.</param>
+/// <param name="inlinePlacedFeature">Reads inline placed children with the generator's schema, when given.</param>
 internal sealed partial class WorldgenReader(
     WorldgenTypes types,
     Func<string, ConfiguredFeatureBase> configuredFeature,
@@ -56,7 +59,9 @@ internal sealed partial class WorldgenReader(
     Action<Type>? created = null,
     Func<string, IDensityFunction>? densityFunction = null,
     Func<string, BaseNoise>? noise = null,
-    StructureLookups? structures = null)
+    StructureLookups? structures = null,
+    Func<JsonElement, ConfiguredFeatureBase>? inlineConfiguredFeature = null,
+    Func<JsonElement, PlacedFeature>? inlinePlacedFeature = null)
 {
     private static readonly string[] discriminators = ["type", "predicate_type", "processor_type", "element_type"];
 
@@ -126,6 +131,9 @@ internal sealed partial class WorldgenReader(
 
     private PlacedFeature ReadPlacedFeatureCore(JsonElement json, string? identifier, string path)
     {
+        if (inlinePlacedFeature is not null)
+            return inlinePlacedFeature(json);
+
         Object(json, path);
 
         var feature = Required(json, path, "feature");
@@ -239,10 +247,12 @@ internal sealed partial class WorldgenReader(
 
     private ConfiguredFeatureBase ReadConfiguredFeatureValue(Type target, JsonElement json, string path)
     {
-        if (json.ValueKind != JsonValueKind.String)
+        if (json.ValueKind != JsonValueKind.String && inlineConfiguredFeature is null)
             return this.ReadConfiguredFeature(json, target, null, path);
 
-        var feature = this.Configured(json, path);
+        var feature = json.ValueKind == JsonValueKind.String
+            ? this.Configured(json, path)
+            : inlineConfiguredFeature!(json);
         return feature.GetType().IsAssignableTo(target)
             ? feature
             : throw Error(path, $"{feature.Identifier} is a {feature.Type} feature{Expecting(target)}");
@@ -291,6 +301,11 @@ internal sealed partial class WorldgenReader(
     /// <param name="identifier">The registry identifier to set, for a named entry.</param>
     private object ReadObject(Type type, JsonElement json, string? discriminator, string? identifier, string path)
     {
+        var owner = WorldgenDependencies<PluginContainer>.Owner(type);
+        using var call = owner?.TryEnter();
+        if (owner is not null && call is null)
+            throw Error(path, $"{owner.Info.Name} is unloading");
+
         var instance = Create(type, path);
 
         var assigned = new HashSet<string>();
@@ -403,14 +418,24 @@ internal sealed partial class WorldgenReader(
 
     private static SimpleBlockState ReadBlockState(JsonElement json, string path)
     {
+        if (json.ValueKind == JsonValueKind.String)
+        {
+            var identifier = Reference(json, path);
+            if (!BlocksRegistry.TryGetDefault(identifier, out _))
+                throw Error(path, $"{identifier} isn't a block");
+
+            return new SimpleBlockState { Name = identifier };
+        }
+
         Object(json, path);
 
-        var name = Reference(Required(json, path, "Name"), Field(path, "Name"));
+        var nameField = json.TryGetProperty("id", out _) ? "id" : "Name";
+        var name = Reference(Required(json, path, nameField), Field(path, nameField));
         if (!BlocksRegistry.TryGetDefault(name, out _))
-            throw Error(Field(path, "Name"), $"{name} isn't a block");
+            throw Error(Field(path, nameField), $"{name} isn't a block");
 
         var properties = new Dictionary<string, string>();
-        if (json.TryGetProperty("Properties", out var values))
+        if (json.TryGetProperty("properties", out var values) || json.TryGetProperty("Properties", out values))
         {
             foreach (var property in Object(values, Field(path, "Properties")).EnumerateObject())
                 properties[property.Name] = String(property.Value, Field(Field(path, "Properties"), property.Name));

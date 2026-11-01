@@ -13,6 +13,7 @@ using System.Collections.Frozen;
 using System.IO;
 using System.Text.Json;
 using System.Threading;
+using FeatureRegistry26 = Obsidian.WorldData.Generators.Features.FeatureRegistry;
 
 namespace Obsidian.Registries;
 
@@ -42,6 +43,8 @@ internal static partial class PluginFeatures
 {
     public const string ConfiguredFeature = "worldgen/configured_feature";
 
+    public const string Feature = "worldgen/feature";
+
     public const string PlacedFeature = "worldgen/placed_feature";
 
     public const string ConfiguredCarver = "worldgen/configured_carver";
@@ -57,7 +60,7 @@ internal static partial class PluginFeatures
     /// The folders of plugins' feature, carver, processor list and biome modifier files.
     /// </summary>
     public static FrozenSet<string> Registries { get; } =
-        FrozenSet.Create(ConfiguredFeature, PlacedFeature, ConfiguredCarver, BiomeModifier, ProcessorList);
+        FrozenSet.Create(ConfiguredFeature, Feature, PlacedFeature, ConfiguredCarver, BiomeModifier, ProcessorList);
 
     private static readonly Lock applying = new();
 
@@ -147,7 +150,7 @@ internal static partial class PluginFeatures
             var modifier = registry switch
             {
                 BiomeModifier => BiomeModifierData.Read(root),
-                ConfiguredFeature or PlacedFeature or ConfiguredCarver or ProcessorList => null,
+                ConfiguredFeature or Feature or PlacedFeature or ConfiguredCarver or ProcessorList => null,
                 _ => throw new ArgumentException($"{registry} isn't read from plugins' files.", nameof(registry))
             };
 
@@ -181,7 +184,8 @@ internal static partial class PluginFeatures
     {
         lock (applying)
         {
-            var features = Build(files, biomes, types, logger);
+            var snapshot = new FeatureInputs([.. files], [.. biomes], [.. types], logger);
+            var features = Build(snapshot.Files, snapshot.Biomes, snapshot.Types, logger);
             var broken = features.Unordered.FirstOrDefault(generating.Contains);
 
             if (broken is not null)
@@ -191,6 +195,7 @@ internal static partial class PluginFeatures
             }
 
             Volatile.Write(ref current, features);
+            Volatile.Write(ref inputs, snapshot);
             return true;
         }
     }
@@ -207,7 +212,8 @@ internal static partial class PluginFeatures
         IEnumerable<CodecFile> biomes,
         IEnumerable<WorldgenTypeRegistration> types,
         ILogger logger,
-        IEnumerable<MojangDimension>? dimensions = null)
+        IEnumerable<MojangDimension>? dimensions = null,
+        FeatureRegistry26? registry = null)
     {
         var kept = VanillaOverrides.LastWins(
             files,
@@ -215,16 +221,18 @@ internal static partial class PluginFeatures
             file => file.Source,
             logger);
 
-        kept.AddRange(VanillaDependents(kept));
+        if (registry is null)
+            kept.AddRange(VanillaDependents(kept));
 
-        var resolver = new FeatureResolver(kept, WorldgenTypes.With(types));
+        var resolver = new FeatureResolver(kept, WorldgenTypes.With(types), registry);
         var carvers = ReadCarvers(kept, logger);
 
-        foreach (var file in kept.Where(file => file.Registry is ConfiguredFeature or PlacedFeature or ProcessorList))
+        foreach (var file in kept.Where(file =>
+            file.Registry is ConfiguredFeature or Feature or PlacedFeature or ProcessorList))
         {
             try
             {
-                if (file.Registry == ConfiguredFeature)
+                if (file.Registry is ConfiguredFeature or Feature)
                     resolver.Configured(file.Identifier);
                 else if (file.Registry == PlacedFeature)
                     resolver.Placed(file.Identifier);
@@ -237,12 +245,14 @@ internal static partial class PluginFeatures
             }
         }
 
-        var biomeFeatures = new BiomeFeatureLists();
+        var biomeFeatures = new BiomeFeatureLists(registry?.VanillaBiomeFeatures()
+            ?? global::Obsidian.Registries.BiomeFeatures.All, registry is null ? null : registry.SourceBiomes);
         var biomeCarvers = new BiomeCarverLists();
 
         // Vanilla's biomes place the overridden features and carvers, and the vanilla features read again.
         var vanillaPlaced = global::Obsidian.Registries.PlacedFeatures.All;
-        biomeFeatures.Replace(Overrides(resolver.PlacedFeatures, vanillaPlaced.ContainsKey, id => vanillaPlaced[id]));
+        if (registry is null)
+            biomeFeatures.Replace(Overrides(resolver.PlacedFeatures, vanillaPlaced.ContainsKey, id => vanillaPlaced[id]));
         biomeCarvers.Replace(Overrides(carvers.Plugins, RegistryIds.IsConfiguredCarver, ConfiguredCarvers.Vanilla));
 
         foreach (var biome in PluginBiomes(biomes))
@@ -322,7 +332,13 @@ internal static partial class PluginFeatures
             ConfiguredCarvers = carvers.Plugins.ToFrozenDictionary(),
             BiomeCarvers = biomeCarvers.Result,
             ProcessorLists = resolver.ProcessorLists.ToFrozenDictionary(),
-            EntryOwners = resolver.Owners.ToFrozenDictionary(ReferenceEqualityComparer.Instance)
+            EntryOwners = resolver.Owners.ToFrozenDictionary(ReferenceEqualityComparer.Instance),
+            ConfiguredLookup = registry is null ? null : registry.FindConfigured,
+            PlacedLookup = registry is null ? null : registry.FindPlaced,
+            ProcessorLookup = registry is null ? null : registry.Processors,
+            OwnerLookup = registry is null ? null : registry.OwnersOf,
+            InlineConfiguredLookup = registry is null ? null : registry.ConfiguredAdapter,
+            InlinePlacedLookup = registry is null ? null : registry.PlacedAdapter
         };
     }
 
@@ -466,12 +482,14 @@ internal static partial class PluginFeatures
         private readonly Dictionary<FeatureFile, string> failed = new(ReferenceEqualityComparer.Instance);
         private readonly HashSet<FeatureFile> reading = new(ReferenceEqualityComparer.Instance);
         private readonly WorldgenReader reader;
+        private readonly FeatureRegistry26? registry;
 
         // The plugins whose types each feature is made of.
         private readonly WorldgenDependencies<PluginContainer> owners = new();
 
-        public FeatureResolver(List<FeatureFile> files, WorldgenTypes types)
+        public FeatureResolver(List<FeatureFile> files, WorldgenTypes types, FeatureRegistry26? registry = null)
         {
+            this.registry = registry;
             this.configuredFiles = files
                 .Where(file => file.Registry == ConfiguredFeature)
                 .ToDictionary(file => file.Identifier);
@@ -506,6 +524,9 @@ internal static partial class PluginFeatures
 
         public ConfiguredFeatureBase Configured(string identifier)
         {
+            if (this.registry is not null)
+                return this.FromRegistry(identifier, this.ConfiguredFeatures, this.registry.ConfiguredAdapter);
+
             if (!this.configuredFiles.ContainsKey(identifier)
                 && global::Obsidian.Registries.ConfiguredFeatures.All.TryGetValue(identifier, out var vanilla))
             {
@@ -528,6 +549,9 @@ internal static partial class PluginFeatures
 
         public PlacedFeature Placed(string identifier)
         {
+            if (this.registry is not null)
+                return this.FromRegistry(identifier, this.PlacedFeatures, this.registry.PlacedAdapter);
+
             if (!this.placedFiles.ContainsKey(identifier)
                 && global::Obsidian.Registries.PlacedFeatures.All.TryGetValue(identifier, out var vanilla))
             {
@@ -550,6 +574,9 @@ internal static partial class PluginFeatures
 
         public StructureProcessorList Processors(string identifier)
         {
+            if (this.registry is not null)
+                return this.FromRegistry(identifier, this.ProcessorLists, this.registry.Processors);
+
             if (!this.processorListFiles.ContainsKey(identifier)
                 && global::Obsidian.Registries.ProcessorLists.All.TryGetValue(identifier, out var vanilla))
             {
@@ -603,10 +630,34 @@ internal static partial class PluginFeatures
         /// <summary>
         /// A placed feature given as JSON: an identifier, or one defined inline, which is a new feature each time.
         /// </summary>
-        public PlacedFeature Placed(JsonElement json, string path) =>
-            json.ValueKind == JsonValueKind.String
-                ? this.Placed(json.GetString()!)
-                : this.Used(this.owners.Track(() => this.reader.ReadPlacedFeature(json, null, path)));
+        public PlacedFeature Placed(JsonElement json, string path)
+        {
+            if (json.ValueKind == JsonValueKind.String)
+                return this.Placed(json.GetString()!);
+
+            if (this.registry is not null)
+            {
+                var placed = this.registry.PlacedAdapter(json);
+                this.CopyOwners(placed);
+                return placed;
+            }
+
+            return this.Used(this.owners.Track(() => this.reader.ReadPlacedFeature(json, null, path)));
+        }
+
+        private T FromRegistry<T>(string id, Dictionary<string, T> entries, Func<string, T> find) where T : class
+        {
+            var entry = find(id);
+            entries[id] = entry;
+            this.CopyOwners(entry);
+            return entry;
+        }
+
+        private void CopyOwners(object entry)
+        {
+            if (this.registry!.EntryOwners.TryGetValue(entry, out var plugins))
+                this.owners.Of[entry] = plugins;
+        }
 
         /// <summary>
         /// The features of a plugin biome's steps, given as identifiers or inline features' JSON text.
@@ -695,15 +746,17 @@ internal static partial class PluginFeatures
     /// The biomes' features per decoration step, starting from vanilla's <c>BiomeFeatures.All</c>, which stays
     /// the result as long as nothing changes it.
     /// </summary>
-    private sealed class BiomeFeatureLists
+    private sealed class BiomeFeatureLists(
+        IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> vanilla,
+        Func<MojangDimension, IEnumerable<BiomeCodec>>? sourceBiomes = null)
     {
         private readonly Dictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> lists =
-            new(global::Obsidian.Registries.BiomeFeatures.All);
+            new(vanilla);
 
         private bool changed;
 
         public IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> Result =>
-            this.changed ? this.lists.ToFrozenDictionary() : global::Obsidian.Registries.BiomeFeatures.All;
+            this.changed ? this.lists.ToFrozenDictionary() : vanilla;
 
         /// <summary>
         /// Whether any biome's features differ from vanilla's.
@@ -811,7 +864,8 @@ internal static partial class PluginFeatures
         {
             try
             {
-                FeatureSorter.Build(dimension.PossibleBiomes, biome => this.lists.GetValueOrDefault(biome.Name) ?? []);
+                var biomes = sourceBiomes?.Invoke(dimension) ?? dimension.PossibleBiomes;
+                FeatureSorter.Build(biomes.ToArray(), biome => this.lists.GetValueOrDefault(biome.Name) ?? []);
                 return false;
             }
             catch (InvalidOperationException)
@@ -873,7 +927,7 @@ internal static partial class PluginFeatures
         {
             var changed = false;
 
-            foreach (var biome in dimension.PossibleBiomes)
+            foreach (var biome in sourceBiomes?.Invoke(dimension) ?? dimension.PossibleBiomes)
             {
                 var current = this.lists.GetValueOrDefault(biome.Name);
                 var steps = snapshot.GetValueOrDefault(biome.Name);
@@ -1088,6 +1142,21 @@ internal sealed record WorldgenFeatureSet(
     IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> BiomeFeatures,
     FrozenDictionary<PlacedFeature, ImmutableArray<PluginContainer>> Owners)
 {
+    internal Func<string, ConfiguredFeatureBase?>? ConfiguredLookup { get; init; }
+
+    internal Func<string, PlacedFeature?>? PlacedLookup { get; init; }
+
+    internal Func<JsonElement, ConfiguredFeatureBase>? InlineConfiguredLookup { get; init; }
+
+    internal Func<JsonElement, PlacedFeature>? InlinePlacedLookup { get; init; }
+
+    internal Func<string, StructureProcessorList>? ProcessorLookup { get; init; }
+
+    internal Func<object, ImmutableArray<PluginContainer>>? OwnerLookup { get; init; }
+
+    internal ImmutableArray<PluginContainer> OwnersOf(object entry) =>
+        this.OwnerLookup?.Invoke(entry) ?? this.EntryOwners.GetValueOrDefault(entry, []);
+
     /// <summary>
     /// Vanilla's features alone.
     /// </summary>
@@ -1141,7 +1210,8 @@ internal sealed record WorldgenFeatureSet(
     /// </summary>
     /// <returns>The feature, or null when there's none of that identifier.</returns>
     public ConfiguredFeatureBase? FindConfigured(string identifier) =>
-        this.ConfiguredFeatures.GetValueOrDefault(identifier)
+        this.ConfiguredLookup is not null ? this.ConfiguredLookup(identifier)
+        : this.ConfiguredFeatures.GetValueOrDefault(identifier)
         ?? global::Obsidian.Registries.ConfiguredFeatures.All.GetValueOrDefault(identifier);
 
     /// <summary>
@@ -1150,7 +1220,8 @@ internal sealed record WorldgenFeatureSet(
     /// </summary>
     /// <returns>The feature, or null when there's none of that identifier.</returns>
     public PlacedFeature? FindPlaced(string identifier) =>
-        this.PlacedFeatures.GetValueOrDefault(identifier)
+        this.PlacedLookup is not null ? this.PlacedLookup(identifier)
+        : this.PlacedFeatures.GetValueOrDefault(identifier)
         ?? global::Obsidian.Registries.PlacedFeatures.All.GetValueOrDefault(identifier);
 
     /// <summary>
@@ -1187,10 +1258,15 @@ internal sealed record WorldgenFeatureSet(
     // Runs a placement holding a call into the plugins whose types the entry is made of.
     private bool Place(object entry, string name, Func<bool> place)
     {
-        var owners = this.EntryOwners.GetValueOrDefault(entry, []);
+        var owners = this.OwnersOf(entry);
         if (owners.IsEmpty && entry is PlacedFeature placed)
             owners = this.Owners.GetValueOrDefault(placed, []);
 
+        return Place(owners, name, place);
+    }
+
+    internal static bool Place(ImmutableArray<PluginContainer> owners, string name, Func<bool> place)
+    {
         if (!GeneratorCalls.TryEnter(owners, out var calls))
             return false;
 
@@ -1200,7 +1276,8 @@ internal sealed record WorldgenFeatureSet(
             {
                 return place();
             }
-            catch (Exception exception) when (!owners.IsEmpty && exception is not OutOfMemoryException)
+            catch (Exception exception) when (!owners.IsEmpty
+                && exception is not (GeneratorStoppedException or PluginGenerationException or OutOfMemoryException))
             {
                 throw new PluginGenerationException(owners, $"Failed to place {name}.", exception);
             }

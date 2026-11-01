@@ -19,7 +19,10 @@ internal sealed record DecorationContext(
     IWorldGenLevel Level,
     Func<Vector, string> BiomeAt,
     int GeneratorMinY,
-    int GeneratorHeight);
+    int GeneratorHeight)
+{
+    internal Obsidian.API.World.Features.PlacedFeature? TopFeature { get; init; }
+}
 
 /// <summary>
 /// Compiles 26.3's <c>feature</c> and <c>placed_feature</c> registries (config at the root, not under <c>config</c>),
@@ -28,9 +31,9 @@ internal sealed record DecorationContext(
 /// </summary>
 /// <remarks>
 /// Entries compile on first use and are cached by identifier; the biome filter compares registered placed features
-/// by identifier, like vanilla compares holders, without compiling the biome's other features. Compiling isn't
-/// thread-safe; compile what a generator needs before sharing the registry. Types that aren't implemented yet throw
-/// <see cref="NotSupportedException"/> when compiled. <see cref="BiomeDecoration"/> supplies the per-biome step
+/// by identifier, like vanilla compares holders, without compiling the biome's other features. Feature and adapter
+/// lookups serialize compilation, including lookups from plant growth after a registry is shared. Unsupported
+/// types fail when compiled. <see cref="BiomeDecoration"/> supplies the per-biome step
 /// lists and the feature index order across the biome source.
 /// </remarks>
 internal sealed partial class FeatureRegistry(WorldgenData data)
@@ -45,20 +48,27 @@ internal sealed partial class FeatureRegistry(WorldgenData data)
     /// <summary>A placed feature: a reference into the <c>placed_feature</c> registry or an inline one.</summary>
     public PlacedFeature Placed(JsonElement json)
     {
+        lock (this.compiling)
+            return this.PlacedCore(json);
+    }
+
+    private PlacedFeature PlacedCore(JsonElement json)
+    {
         if (json.ValueKind != JsonValueKind.String)
         {
-            return this.CompilePlaced(json, id: null);
+            return this.dependencies.Used(this.dependencies.Track(() => this.CompilePlaced(json, id: null)));
         }
 
         var id = WorldgenData.Qualify(json.GetString()!);
 
         if (!this.placedFeatures.TryGetValue(id, out var placed))
         {
-            placed = this.CompilePlaced(this.Data.Read("placed_feature", id), id);
+            placed = this.Resolve("placed_feature", id,
+                () => this.CompilePlaced(this.Entry("placed_feature", id), id));
             this.placedFeatures.Add(id, placed);
         }
 
-        return placed;
+        return this.dependencies.Used(placed);
     }
 
     public PlacedFeature Placed(string id) => this.Placed(JsonSerializer.SerializeToElement(id));
@@ -66,20 +76,26 @@ internal sealed partial class FeatureRegistry(WorldgenData data)
     /// <summary>A feature: a reference into the <c>feature</c> registry or an inline one.</summary>
     public Feature Feature(JsonElement json)
     {
+        lock (this.compiling)
+            return this.FeatureCore(json);
+    }
+
+    private Feature FeatureCore(JsonElement json)
+    {
         if (json.ValueKind != JsonValueKind.String)
         {
-            return this.CompileFeature(json);
+            return this.dependencies.Used(this.Guard(this.dependencies.Track(() => this.CompileFeature(json))));
         }
 
         var id = WorldgenData.Qualify(json.GetString()!);
 
         if (!this.features.TryGetValue(id, out var feature))
         {
-            feature = this.CompileFeature(this.Data.Read("feature", id));
+            feature = this.Guard(this.Resolve("feature", id, () => this.CompileFeature(this.Entry("feature", id), id)));
             this.features.Add(id, feature);
         }
 
-        return feature;
+        return this.dependencies.Used(feature);
     }
 
     /// <summary>The registry ids of a block tag's blocks, including nested tags.</summary>
@@ -91,6 +107,13 @@ internal sealed partial class FeatureRegistry(WorldgenData data)
         }
 
         blocks = [];
+
+        if (this.pluginLookups && TagsRegistry.TryGet("block", id, out var tag))
+        {
+            blocks.UnionWith(tag.Entries);
+            this.blockTags.Add(id, blocks);
+            return blocks;
+        }
 
         foreach (var entry in this.Data.Read("block_tag", id).GetProperty("values").EnumerateArray())
         {
@@ -119,11 +142,11 @@ internal sealed partial class FeatureRegistry(WorldgenData data)
         {
             placed = [];
 
-            foreach (var step in this.Data.Read("biome", biome).GetProperty("features").EnumerateArray())
+            foreach (var step in this.BiomeSteps(biome))
             {
-                foreach (var entry in step.EnumerateArray())
+                foreach (var entry in step)
                 {
-                    placed.Add(WorldgenData.Qualify(entry.GetString()!));
+                    placed.Add(entry);
                 }
             }
 
@@ -133,19 +156,40 @@ internal sealed partial class FeatureRegistry(WorldgenData data)
         return feature.Id is not null && placed.Contains(feature.Id);
     }
 
-    internal static IBlock ReadBlock(JsonElement json) => MaterialRules.ReadBlock(json);
+    internal static IBlock ReadBlock(JsonElement json)
+    {
+        if (json.ValueKind == JsonValueKind.Object && json.TryGetProperty("Name", out var name))
+        {
+            var properties = json.TryGetProperty("Properties", out var values)
+                ? values.EnumerateObject().ToDictionary(property => property.Name, property => property.Value.GetString()!)
+                : [];
+            return BlocksRegistry.GetFromSimpleState(new SimpleBlockState
+            {
+                Name = name.GetString()!,
+                Properties = properties
+            });
+        }
+
+        return MaterialRules.ReadBlock(json);
+    }
 
     private PlacedFeature CompilePlaced(JsonElement json, string? id)
     {
         var feature = this.Feature(json.GetProperty("feature"));
-        var modifiers = json.GetProperty("placement").EnumerateArray().Select(this.Modifier).ToArray();
+        var modifiers = json.TryGetProperty("placement", out var placement)
+            ? placement.EnumerateArray().Select(this.Modifier).ToArray()
+            : [];
 
         return new PlacedFeature(id, feature, modifiers);
     }
 
-    private Feature CompileFeature(JsonElement json)
+    private Feature CompileFeature(JsonElement json, string? id = null)
     {
-        var type = json.GetProperty("type").GetString();
+        json = FlattenFeature(json);
+        var type = WorldgenData.Qualify(json.GetProperty("type").GetString()!);
+
+        if (this.Types.FindRegistered(type, typeof(ConfiguredFeatureBase)) is not null)
+            return this.PluginFeature(json, id);
 
         return type switch
         {
@@ -231,6 +275,17 @@ internal sealed class PlacedFeature(string? id, Feature feature, PlacementModifi
 
     private bool Place(DecorationContext context, IRandomSource random, Vector origin, PlacedFeature? top)
     {
+        if (!context.Registry.HasOwners(this))
+            return this.PlaceCore(context, random, origin, top);
+
+        return context.Registry.Place(this, () => this.PlaceCore(context, random, origin, top));
+    }
+
+    private bool PlaceCore(DecorationContext context, IRandomSource random, Vector origin, PlacedFeature? top)
+    {
+        if (top is not null && context.Registry.HasOwners(this))
+            context = context with { TopFeature = context.Registry.PlacedAdapter(top) };
+
         if (modifiers.Length == 0)
         {
             return this.Feature(context, random, origin);
