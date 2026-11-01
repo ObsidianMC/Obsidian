@@ -36,8 +36,8 @@ Find out about plugin development [here](https://docs.obsidianmc.net/articles/co
 
 ## 🔥 Development builds
 Very early development builds are available over at the [GitHub Actions](https://github.com/ObsidianMC/Obsidian/actions) page for this repository.
-- Ensure you have the latest [.NET Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/9.0) installed
-- Find the latest `.NET Build` [action](https://github.com/ObsidianMC/Obsidian/actions?query=branch%3Amaster) and scroll to the bottom of the page to find the artifacts.
+- Ensure you have the latest [.NET 10 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) installed
+- Find the latest `.NET Build` [action](https://github.com/ObsidianMC/Obsidian/actions?query=branch%3A26.3.x) and scroll to the bottom of the page to find the artifacts.
 - Unzip the artifact and run `dotnet ObsidianApp.dll` to start the server.
 - On first run, a config file is generated. Fill this file with your preferenced values and run the previous command again.
 - The first start needs internet access: Obsidian downloads the vanilla server jar from Mojang to extract the structure templates it can't ship, and caches them in `cache/`.
