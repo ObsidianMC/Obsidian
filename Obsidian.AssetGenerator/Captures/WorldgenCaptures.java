@@ -801,8 +801,19 @@ class WorldgenCaptures {
             var level = level(entry.get("dimension").getAsString());
             int x = entry.get("chunkX").getAsInt();
             int z = entry.get("chunkZ").getAsInt();
-            level.getChunkSource().getChunk(x, z, ChunkStatus.SPAWN, true);
+            var centerBefore = level.getChunkSource().getChunk(x, z, ChunkStatus.SPAWN, true);
+            // Optional inherited ticks exercise distinct source/flowing registry keys at the same position.
+            if (entry.has("scheduledFluids")) {
+                for (var element : entry.getAsJsonArray("scheduledFluids")) {
+                    var row = element.getAsJsonArray();
+                    var position = new BlockPos(row.get(0).getAsInt(), row.get(1).getAsInt(), row.get(2).getAsInt());
+                    var fluid = BuiltInRegistries.FLUID.getValue(Identifier.parse(row.get(3).getAsString()));
+                    centerBefore.getFluidTicks().schedule(new net.minecraft.world.ticks.ScheduledTick<>(
+                        fluid, position, level.getGameTime(), 0L));
+                }
+            }
             var inputs = new JsonArray();
+            var mushroomPositions = new ArrayList<BlockPos>();
             for (int dz = -1; dz <= 1; dz++) {
                 for (int dx = -1; dx <= 1; dx++) {
                     var before = level.getChunkSource().getChunk(x + dx, z + dz, ChunkStatus.FEATURES, true);
@@ -815,30 +826,47 @@ class WorldgenCaptures {
                     for (int section = 0; section < sections.length; section++) {
                         if (sections[section] != null) {
                             for (short packed : sections[section]) {
-                                marks.add(coordinates(ProtoChunk.unpackOffsetCoordinates(
-                                    packed, before.getSectionYFromSectionIndex(section), before.getPos())));
+                                var position = ProtoChunk.unpackOffsetCoordinates(
+                                    packed, before.getSectionYFromSectionIndex(section), before.getPos());
+                                marks.add(coordinates(position));
+                                if (dx == 0 && dz == 0 && before.getBlockState(position).getBlock()
+                                    instanceof net.minecraft.world.level.block.MushroomBlock) {
+                                    mushroomPositions.add(position.immutable());
+                                }
                             }
                         }
                     }
                     input.add("marks", marks);
-                    completionTicks(input, before, level.getGameTime(), false);
+                    completionTicks(input, before, level.getGameTime());
                     inputs.add(input);
                 }
             }
             entry.add("inputs", inputs);
+            entry.add("mushroomLightBefore", completionLight(level, mushroomPositions));
             var chunk = (LevelChunk) level.getChunkSource().getChunk(x, z, ChunkStatus.FULL, true);
             chunk.postProcessGeneration(level);
+            entry.add("mushroomLightAfter", completionLight(level, mushroomPositions));
             entry.addProperty("status", chunk.getPersistedStatus().getName());
             entry.addProperty("minY", level.getMinY());
             entry.addProperty("height", level.getHeight());
             entry.add("blocks", blocks(chunk, level.getMinY(), level.getHeight()));
-            completionTicks(entry, chunk, level.getGameTime(), true);
+            completionTicks(entry, chunk, level.getGameTime());
         } catch (Exception exception) {
             throw new RuntimeException(exception);
         }
     }
 
-    static void completionTicks(JsonObject entry, ChunkAccess chunk, long time, boolean normalizeLava) {
+    static JsonArray completionLight(ServerLevel level, List<BlockPos> positions) {
+        var light = new JsonArray();
+        for (var position : positions) {
+            var row = coordinates(position);
+            row.add(level.getRawBrightness(position, 0));
+            light.add(row);
+        }
+        return light;
+    }
+
+    static void completionTicks(JsonObject entry, ChunkAccess chunk, long time) {
         var ticks = chunk.getTicksForSerialization(time);
         var blockTicks = new JsonArray();
         for (var tick : ticks.blocks()) {
@@ -852,10 +880,8 @@ class WorldgenCaptures {
         for (var tick : ticks.fluids()) {
             var row = coordinates(tick.pos());
             row.add(BuiltInRegistries.FLUID.getKey(tick.type()).toString());
-            // Lava's spread delay uses the live level's independent random; water's delay is deterministic.
-            boolean lava = tick.type() == net.minecraft.world.level.material.Fluids.LAVA
-                || tick.type() == net.minecraft.world.level.material.Fluids.FLOWING_LAVA;
-            row.add(normalizeLava && lava ? -1 : tick.delay());
+            // These cases have no random lava level increases. Inherited and new deterministic ticks stay exact.
+            row.add(tick.delay());
             row.add(tick.priority().getValue());
             fluidTicks.add(row);
         }

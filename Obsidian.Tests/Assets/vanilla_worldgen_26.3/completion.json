@@ -7,6 +7,14 @@
       "dimension": "minecraft:overworld",
       "chunkX": 4,
       "chunkZ": 24,
+      "scheduledFluids": [
+        [
+          77,
+          -42,
+          398,
+          "minecraft:flowing_water"
+        ]
+      ],
       "status": "minecraft:full",
       "minY": -64,
       "height": 384,
@@ -90,7 +98,15 @@
           -10,
           390,
           "minecraft:lava",
-          -1,
+          0,
+          0
+        ],
+        [
+          77,
+          -42,
+          398,
+          "minecraft:flowing_water",
+          0,
           0
         ],
         [
@@ -1346,6 +1362,14 @@
               "minecraft:lava",
               0,
               0
+            ],
+            [
+              77,
+              -42,
+              398,
+              "minecraft:flowing_water",
+              0,
+              0
             ]
           ]
         },
@@ -2142,7 +2166,9 @@
           "blockTicks": [],
           "fluidTicks": []
         }
-      ]
+      ],
+      "mushroomLightBefore": [],
+      "mushroomLightAfter": []
     },
     {
       "name": "nether_marked_mushrooms",
@@ -4199,6 +4225,82 @@
             ]
           ]
         }
+      ],
+      "mushroomLightBefore": [
+        [
+          -253,
+          46,
+          261,
+          0
+        ],
+        [
+          -254,
+          46,
+          262,
+          0
+        ],
+        [
+          -255,
+          48,
+          259,
+          0
+        ],
+        [
+          -254,
+          49,
+          260,
+          0
+        ],
+        [
+          -256,
+          48,
+          263,
+          0
+        ],
+        [
+          -241,
+          77,
+          265,
+          13
+        ]
+      ],
+      "mushroomLightAfter": [
+        [
+          -253,
+          46,
+          261,
+          0
+        ],
+        [
+          -254,
+          46,
+          262,
+          0
+        ],
+        [
+          -255,
+          48,
+          259,
+          0
+        ],
+        [
+          -254,
+          49,
+          260,
+          0
+        ],
+        [
+          -256,
+          48,
+          263,
+          0
+        ],
+        [
+          -241,
+          77,
+          265,
+          13
+        ]
       ]
     }
   ]

@@ -3,7 +3,11 @@ using Obsidian.WorldData.Features;
 
 namespace Obsidian.WorldData.Generators.Biomes;
 
-/// <summary>Reads the light threshold mushroom survival needs before the final lighting pass.</summary>
+/// <summary>Approximates mushroom survival's light threshold before the final lighting pass.</summary>
+/// <remarks>
+/// Reads changing blocks, whereas vanilla FULL reads stored LIGHT data. Completion's lava changes can cross
+/// the threshold earlier here; see docs/known-gaps/completion-reads-light-from-changing-blocks.md.
+/// </remarks>
 internal sealed class CompletionLight(IReadOnlyDictionary<(int X, int Z), IChunk> area, bool hasSky)
 {
     private readonly Dictionary<(int X, int Z), int> sky = [];

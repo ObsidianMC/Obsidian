@@ -466,9 +466,17 @@ actual pre-FULL neighboring blocks, ordered marks and scheduled ticks, then the 
 and fluid ticks after `LevelChunk.postProcessGeneration`. `VanillaCompletion.FullChunksMatchVanilla` replays native
 completion from those inputs, rather than feeding captured final blocks into the heightmap updater. This isolates
 completion from neighboring feature execution order. Completion uses a separate one-worker server so its FULL
-neighbor writes reproduce without changing older captures. Light arrays are omitted; lava's independently randomized
-spread delays are normalized, while water delays and tick identities/priorities are compared.
+neighbor writes reproduce without changing older captures. Full light arrays are omitted; raw light at every marked
+mushroom is recorded before and after FULL, and the replay checks its survival threshold against those stored values.
+Fluid registry identities (including source versus flowing), priorities and every scheduled delay are compared exactly.
+The ocean case also seeds an inherited flowing-water tick beside its existing source-water tick at the same position,
+so conflating the two registry identities fails the replay.
+The current cases have no qualifying non-falling lava level increase that draws a random spread delay. If adding such
+a case, allow only its base delay or four times that delay at the specific new tick, while retaining exact inherited
+ticks and other deterministic delays. Do not normalize all lava delays.
 
 The new beach population case records successful turtles and the population-random tail. Native completion checks
 mushroom survival against the light engine's emission, attenuation and face occlusion at its light-13 threshold,
-including nearby lava, and ticks marked source water into bubble columns with their scheduled block checks.
+including nearby lava, and ticks marked source water into bubble columns with their scheduled block checks. The
+reconstructed threshold reads changing blocks rather than vanilla's stored pre-FULL light; see the
+[completion light timing gap](known-gaps/completion-reads-light-from-changing-blocks.md) for its precise limit.

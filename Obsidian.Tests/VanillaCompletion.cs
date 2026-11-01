@@ -47,13 +47,15 @@ public sealed class VanillaCompletion
                 chunk.BlockTicks.Schedule(Position(tick), tick[3].GetString()!, tick[4].GetInt32(), tick[5].GetInt32());
             foreach (var tick in input.GetProperty("fluidTicks").EnumerateArray())
             {
-                var kind = tick[3].GetString()!.Contains("water") ? FluidKind.Water : FluidKind.Lava;
+                var kind = FluidNames.Parse(tick[3].GetString());
                 chunk.FluidTicks.Schedule(Position(tick), kind, tick[4].GetInt32(), tick[5].GetInt32());
             }
             area[(cx, cz)] = chunk;
         }
 
+        AssertMushroomLight("mushroomLightBefore");
         pipeline.PostProcess(area, x, z);
+        AssertMushroomLight("mushroomLightAfter");
         var center = (Chunk)area[(x, z)];
         pipeline.CompleteHeightmaps(center);
         VanillaTerrainGeneration.AssertBlocks(entry.GetProperty("blocks"), center);
@@ -61,15 +63,27 @@ public sealed class VanillaCompletion
         var blocks = center.BlockTicks.Pack().Select(tick =>
             Row(tick.Position, tick.Block, tick.Delay, tick.Priority)).Order().ToArray();
         var fluids = center.FluidTicks.Pack().Select(tick =>
-            Row(tick.Position, tick.Type == FluidKind.Water ? "minecraft:water" : "minecraft:lava",
-                tick.Type == FluidKind.Water ? tick.Delay : -1, tick.Priority)).Order().ToArray();
+            Row(tick.Position, tick.Type.Name(), tick.Delay, tick.Priority)).Order().ToArray();
         Assert.Equal(Ticks(entry, "blockTicks"), blocks);
         Assert.Equal(Ticks(entry, "fluidTicks"), fluids);
+
+        void AssertMushroomLight(string field)
+        {
+            var light = new CompletionLight(area, dimension.DimensionType.Element.HasSkylight);
+            foreach (var sample in entry.GetProperty(field).EnumerateArray())
+            {
+                var position = Position(sample);
+                var stored = sample[3].GetInt32();
+                // CompletionLight only resolves survival's light-13 boundary, not the complete light value.
+                Assert.True((stored >= 13) == (light.MushroomBrightness(position) >= 13),
+                    $"{field} at {position}: vanilla stored {stored}, completion threshold differs");
+            }
+        }
     }
 
     private static string[] Ticks(JsonElement entry, string field) => entry.GetProperty(field).EnumerateArray()
         .Select(tick => Row(new Vector(tick[0].GetInt32(), tick[1].GetInt32(), tick[2].GetInt32()),
-            tick[3].GetString()!.Replace("flowing_", ""), tick[4].GetInt32(), tick[5].GetInt32())).Order().ToArray();
+            tick[3].GetString()!, tick[4].GetInt32(), tick[5].GetInt32())).Order().ToArray();
 
     private static Vector Position(JsonElement row) =>
         new(row[0].GetInt32(), row[1].GetInt32(), row[2].GetInt32());
