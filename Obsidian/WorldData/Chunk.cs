@@ -230,6 +230,12 @@ public sealed class Chunk : IChunk
     /// <summary>Whether <see cref="BlockEntities"/> holds any, read without locking (see <see cref="HasAny"/>).</summary>
     internal bool HasBlockEntities => Volatile.Read(ref this.mayHoldBlockEntities) && HasAny(this.BlockEntities);
 
+    /// <summary>
+    /// Whether <see cref="BlockEntities"/> holds any, read without locking and without trusting the flag
+    /// <see cref="HasBlockEntities"/> checks first: plugins can add to the public dictionary directly, which skips it.
+    /// </summary>
+    internal bool HasAnyBlockEntity => HasAny(this.BlockEntities);
+
     // Set before a block entity is first stored: most chunks never hold one, and telling an empty dictionary apart
     // means walking it, which the level and its spawner did for every chunk each tick.
     private bool mayHoldBlockEntities;

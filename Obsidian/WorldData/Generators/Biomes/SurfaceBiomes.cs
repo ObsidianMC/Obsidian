@@ -25,8 +25,8 @@ internal sealed class SurfaceBiomes
     private const int QuartWidth = 6;
     private const int CellWidth = QuartWidth - 1;
 
-    // A cell whose corners hold different biomes.
-    private const byte Mixed = byte.MaxValue;
+    // A cell whose corners hold different biomes. The tables hold fewer entries than this, so no biome needs it.
+    private const ushort Mixed = ushort.MaxValue;
 
     private readonly long zoomSeed;
     private readonly int minQuartX;
@@ -34,17 +34,18 @@ internal sealed class SurfaceBiomes
     private readonly int minQuartY;
     private readonly int quartHeight;
 
-    // The distinct biomes of the quarts, which the tables below index: a chunk reaches a few, so the tables take a
-    // byte per entry rather than a reference.
+    // The distinct biomes of the quarts, which the tables below index: a chunk usually reaches a few, so the tables
+    // take two bytes per entry rather than a reference. Two bytes, not one, because plugin-edited neighbours can
+    // hold any number of biomes.
     private readonly List<BiomeCodec> palette = [];
 
     // By (x * QuartWidth + z) * quartHeight + y from the minimum quarts.
-    private readonly byte[] quarts;
+    private readonly ushort[] quarts;
 
     // The biome all eight corners of a cell share, or Mixed, by (x * CellWidth + z) * cellHeight + y. A cell's y runs
     // from one below the lowest quart to the highest: lower cells clamp both corners to the lowest quart, higher
     // ones to the highest.
-    private readonly byte[] cells;
+    private readonly ushort[] cells;
     private readonly int cellHeight;
 
     /// <param name="source">The stored quart biomes, with y within the chunk's storage.</param>
@@ -57,8 +58,8 @@ internal sealed class SurfaceBiomes
         this.minQuartY = minY >> 2;
         this.quartHeight = height >> 2;
         this.cellHeight = this.quartHeight + 1;
-        this.quarts = new byte[QuartWidth * QuartWidth * this.quartHeight];
-        this.cells = new byte[CellWidth * CellWidth * this.cellHeight];
+        this.quarts = new ushort[QuartWidth * QuartWidth * this.quartHeight];
+        this.cells = new ushort[CellWidth * CellWidth * this.cellHeight];
 
         var names = new List<string>();
 
@@ -85,24 +86,20 @@ internal sealed class SurfaceBiomes
 
     // The biome's index in the palette, adding it, and its name to names, the first time it's seen. Neighboring quarts
     // mostly hold the biome just seen, so the search starts from the latest.
-    private byte PaletteIndex(BiomeCodec biome, List<string> names)
+    private ushort PaletteIndex(BiomeCodec biome, List<string> names)
     {
         for (var index = this.palette.Count - 1; index >= 0; index--)
         {
             if (ReferenceEquals(this.palette[index], biome))
-                return (byte)index;
+                return (ushort)index;
         }
 
         if (!names.Contains(biome.Name))
             names.Add(biome.Name);
 
-        // Mixed marks cells, so it can't number a biome.
-        if (this.palette.Count == Mixed)
-            throw new InvalidOperationException("A chunk's surface reaches more biomes than its tables can number.");
-
         this.palette.Add(biome);
 
-        return (byte)(this.palette.Count - 1);
+        return (ushort)(this.palette.Count - 1);
     }
 
     private void FillCells()
@@ -121,7 +118,7 @@ internal sealed class SurfaceBiomes
         }
     }
 
-    private byte SharedBiome(int x, int lowY, int highY, int z)
+    private ushort SharedBiome(int x, int lowY, int highY, int z)
     {
         var shared = this.quarts[this.QuartIndex(x, lowY, z)];
 

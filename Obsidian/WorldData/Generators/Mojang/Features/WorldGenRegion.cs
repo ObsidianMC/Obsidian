@@ -432,7 +432,7 @@ internal sealed class WorldGenRegion : IWorldGenLevel
         if ((this.checkedBlockEntityAreas >> index & 1) == 0)
         {
             this.checkedBlockEntityAreas |= 1 << index;
-            if (chunk is not Chunk generated || generated.HasBlockEntities)
+            if (chunk is not Chunk generated || generated.HasAnyBlockEntity)
                 this.blockEntityAreas |= 1 << index;
         }
 
