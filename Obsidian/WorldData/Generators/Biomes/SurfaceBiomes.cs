@@ -25,19 +25,26 @@ internal sealed class SurfaceBiomes
     private const int QuartWidth = 6;
     private const int CellWidth = QuartWidth - 1;
 
+    // A cell whose corners hold different biomes.
+    private const byte Mixed = byte.MaxValue;
+
     private readonly long zoomSeed;
     private readonly int minQuartX;
     private readonly int minQuartZ;
     private readonly int minQuartY;
     private readonly int quartHeight;
 
-    // By (x * QuartWidth + z) * quartHeight + y from the minimum quarts.
-    private readonly BiomeCodec[] quarts;
+    // The distinct biomes of the quarts, which the tables below index: a chunk reaches a few, so the tables take a
+    // byte per entry rather than a reference.
+    private readonly List<BiomeCodec> palette = [];
 
-    // The biome all eight corners of a cell share, or null, by (x * CellWidth + z) * cellHeight + y. A cell's y runs
+    // By (x * QuartWidth + z) * quartHeight + y from the minimum quarts.
+    private readonly byte[] quarts;
+
+    // The biome all eight corners of a cell share, or Mixed, by (x * CellWidth + z) * cellHeight + y. A cell's y runs
     // from one below the lowest quart to the highest: lower cells clamp both corners to the lowest quart, higher
     // ones to the highest.
-    private readonly BiomeCodec?[] cells;
+    private readonly byte[] cells;
     private readonly int cellHeight;
 
     /// <param name="source">The stored quart biomes, with y within the chunk's storage.</param>
@@ -50,8 +57,8 @@ internal sealed class SurfaceBiomes
         this.minQuartY = minY >> 2;
         this.quartHeight = height >> 2;
         this.cellHeight = this.quartHeight + 1;
-        this.quarts = new BiomeCodec[QuartWidth * QuartWidth * this.quartHeight];
-        this.cells = new BiomeCodec?[CellWidth * CellWidth * this.cellHeight];
+        this.quarts = new byte[QuartWidth * QuartWidth * this.quartHeight];
+        this.cells = new byte[CellWidth * CellWidth * this.cellHeight];
 
         var names = new List<string>();
 
@@ -62,10 +69,7 @@ internal sealed class SurfaceBiomes
                 for (var y = 0; y < this.quartHeight; y++)
                 {
                     var biome = source.GetNoiseBiome(this.minQuartX + x, this.minQuartY + y, this.minQuartZ + z);
-                    this.quarts[this.QuartIndex(x, y, z)] = biome;
-
-                    if (!names.Contains(biome.Name))
-                        names.Add(biome.Name);
+                    this.quarts[this.QuartIndex(x, y, z)] = this.PaletteIndex(biome, names);
                 }
             }
         }
@@ -78,6 +82,28 @@ internal sealed class SurfaceBiomes
     public IReadOnlyList<string> Names { get; }
 
     private int QuartIndex(int x, int y, int z) => (x * QuartWidth + z) * this.quartHeight + y;
+
+    // The biome's index in the palette, adding it, and its name to names, the first time it's seen. Neighboring quarts
+    // mostly hold the biome just seen, so the search starts from the latest.
+    private byte PaletteIndex(BiomeCodec biome, List<string> names)
+    {
+        for (var index = this.palette.Count - 1; index >= 0; index--)
+        {
+            if (ReferenceEquals(this.palette[index], biome))
+                return (byte)index;
+        }
+
+        if (!names.Contains(biome.Name))
+            names.Add(biome.Name);
+
+        // Mixed marks cells, so it can't number a biome.
+        if (this.palette.Count == Mixed)
+            throw new InvalidOperationException("A chunk's surface reaches more biomes than its tables can number.");
+
+        this.palette.Add(biome);
+
+        return (byte)(this.palette.Count - 1);
+    }
 
     private void FillCells()
     {
@@ -95,7 +121,7 @@ internal sealed class SurfaceBiomes
         }
     }
 
-    private BiomeCodec? SharedBiome(int x, int lowY, int highY, int z)
+    private byte SharedBiome(int x, int lowY, int highY, int z)
     {
         var shared = this.quarts[this.QuartIndex(x, lowY, z)];
 
@@ -105,8 +131,8 @@ internal sealed class SurfaceBiomes
             var cornerY = (corner & 2) == 0 ? lowY : highY;
             var cornerZ = z + (corner & 1);
 
-            if (!ReferenceEquals(this.quarts[this.QuartIndex(cornerX, cornerY, cornerZ)], shared))
-                return null;
+            if (this.quarts[this.QuartIndex(cornerX, cornerY, cornerZ)] != shared)
+                return Mixed;
         }
 
         return shared;
@@ -125,12 +151,15 @@ internal sealed class SurfaceBiomes
 
         var cellY = Math.Clamp(((y - 2) >> 2) - this.minQuartY + 1, 0, this.cellHeight - 1);
 
-        if (this.cells[(cellX * CellWidth + cellZ) * this.cellHeight + cellY] is BiomeCodec shared)
-            return shared;
+        var shared = this.cells[(cellX * CellWidth + cellZ) * this.cellHeight + cellY];
+
+        if (shared != Mixed)
+            return this.palette[shared];
 
         var quart = BiomeManager.QuartAtBlock(this.zoomSeed, x, y, z);
         var quartY = Math.Clamp(quart.Y - this.minQuartY, 0, this.quartHeight - 1);
+        var picked = this.quarts[this.QuartIndex(quart.X - this.minQuartX, quartY, quart.Z - this.minQuartZ)];
 
-        return this.quarts[this.QuartIndex(quart.X - this.minQuartX, quartY, quart.Z - this.minQuartZ)];
+        return this.palette[picked];
     }
 }

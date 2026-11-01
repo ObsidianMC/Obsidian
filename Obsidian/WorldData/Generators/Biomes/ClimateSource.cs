@@ -1,6 +1,7 @@
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Generators.Mojang;
+using System.Buffers;
 using System.Threading;
 
 namespace Obsidian.WorldData.Generators.Biomes;
@@ -170,8 +171,40 @@ internal sealed class ClimateSource : IBiomeSource
     private StoredBiomes Fill(int chunkX, int chunkZ, int minY, int height)
     {
         var volume = new DensityVolume(4, height >> 2, 4, chunkX << 4, minY, chunkZ << 4, 4, 4, 4);
-        var samples = this.parameters is null ? [] : this.SampleVolume(volume);
         var indices = new byte[StoredBiomes.Size(height)];
+
+        // Every chunk samples its climate once; renting the fields keeps that from allocating them each time.
+        var climate = this.parameters is null
+            ? null
+            : ArrayPool<float>.Shared.Rent(this.functions.Length * volume.Size);
+
+        try
+        {
+            if (climate is not null)
+                this.SampleClimate(climate, volume);
+
+            this.FillIndices(indices, climate, volume, chunkX, chunkZ, minY, height);
+        }
+        finally
+        {
+            if (climate is not null)
+                ArrayPool<float>.Shared.Return(climate);
+        }
+
+        return new StoredBiomes(this.palette, indices, minY, height);
+    }
+
+    // Searches each quart's biome in vanilla's order (see Fill) into indices, from the sampled climate, or for the
+    // end, from its own rule.
+    private void FillIndices(
+        byte[] indices,
+        float[]? climate,
+        in DensityVolume volume,
+        int chunkX,
+        int chunkZ,
+        int minY,
+        int height)
+    {
         var run = new BiomeParameterTree<string>.SearchRun();
 
         for (var sectionY = 0; sectionY < height; sectionY += 16)
@@ -184,44 +217,43 @@ internal sealed class ClimateSource : IBiomeSource
 
                     for (var z = 0; z < 4; z++)
                     {
-                        var biome = this.parameters is null
-                            ? this.GetNoiseBiome((chunkX << 2) + x, (minY >> 2) + quartY, (chunkZ << 2) + z)
-                            : this.Codec(this.parameters.Tree.Search(samples[volume.Index(x, quartY, z)], ref run));
+                        BiomeCodec biome;
+
+                        if (climate is null)
+                        {
+                            biome = this.GetNoiseBiome((chunkX << 2) + x, (minY >> 2) + quartY, (chunkZ << 2) + z);
+                        }
+                        else
+                        {
+                            var target = Target(climate, volume.Size, volume.Index(x, quartY, z));
+                            biome = this.Codec(this.parameters!.Tree.Search(target, ref run));
+                        }
 
                         indices[StoredBiomes.Index(x, quartY, z)] = this.paletteIndices[biome];
                     }
                 }
             }
         }
-
-        return new StoredBiomes(this.palette, indices, minY, height);
     }
 
-    private TargetPoint[] SampleVolume(DensityVolume volume)
+    // Samples each climate field over the volume into climate, one field after another (see Target).
+    private void SampleClimate(float[] climate, in DensityVolume volume)
     {
-        var values = new float[this.functions.Length][];
-
         for (var field = 0; field < this.functions.Length; field++)
         {
-            values[field] = new float[volume.Size];
-            SampleField(this.functions[field], values[field], volume);
+            var values = climate.AsSpan(field * volume.Size, volume.Size);
+            SampleField(this.functions[field], values, volume);
         }
-
-        var targets = new TargetPoint[volume.Size];
-
-        for (var index = 0; index < targets.Length; index++)
-        {
-            targets[index] = new TargetPoint(
-                Climate.Quantize(values[0][index]),
-                Climate.Quantize(values[1][index]),
-                Climate.Quantize(values[2][index]),
-                Climate.Quantize(values[3][index]),
-                Climate.Quantize(values[4][index]),
-                Climate.Quantize(values[5][index]));
-        }
-
-        return targets;
     }
+
+    // The quantized climate at a volume index of the fields SampleClimate sampled.
+    private static TargetPoint Target(float[] climate, int size, int index) => new(
+        Climate.Quantize(climate[index]),
+        Climate.Quantize(climate[size + index]),
+        Climate.Quantize(climate[2 * size + index]),
+        Climate.Quantize(climate[3 * size + index]),
+        Climate.Quantize(climate[4 * size + index]),
+        Climate.Quantize(climate[5 * size + index]));
 
     // A flat field, such as the overworld's uncached temperature and vegetation noises, has the same value at every y
     // of a column at a point and over a volume (see DensityFunction.IsFlat), so one layer is sampled and copied up.
