@@ -73,7 +73,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     internal BiomeTerrain? Builder => Volatile.Read(ref this.builder);
 
     // The builder's structure starts, kept once it's dropped so the state of the pieces placed is still saved.
-    private StructureStartCache? startCache;
+    private readonly StructureStartCache startCache = new();
 
     /// <summary>
     /// The noise settings' sea level, which mobs use.
@@ -106,7 +106,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         else
         {
             var current = this.Structures?.Invoke() ?? Registries.PluginStructures.CurrentRegistry;
-            this.startCache?.Prune(current);
+            this.startCache.Prune(current);
         }
 
         // Dropped starts change what their start chunks save, and the cache doesn't know which of those are loaded.
@@ -293,6 +293,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// blocks they place where their features meet are the same every time (the spawn search), rather than concurrently.</param>
     private async ValueTask<IChunk> GenerateChunkAsync(int cx, int cz, IChunk? chunk, ChunkGenStage stage, bool decorateInOrder)
     {
+        using var generation = this.startCache.BeginGeneration(cx, cz);
         chunk ??= new Chunk(cx, cz, this.Dimension.MinY, this.Dimension.Height);
 
         // Sanity checks
@@ -521,6 +522,8 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
     private async Task DecorateStepAsync(int cx, int cz)
     {
+        using var generation = this.startCache.BeginGeneration(cx, cz);
+
         // Carve the area first, each chunk under its own lock and in parallel, so other jobs aren't blocked on the whole area
         // during terrain generation.
         var carving = new Task[9];
@@ -534,26 +537,33 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         var starts = this.FindStartsReaching(cx, cz);
         await this.LoadStartChunksAsync(starts);
 
-        using (await this.LockAsync(cx, cz, 1))
+        var placed = false;
+        try
         {
-            var chunk = await this.GetChunkAsync(cx, cz);
-            if (chunk.ChunkStatus >= ChunkGenStage.features)
-                return;
-
-            var area = new Dictionary<(int X, int Z), IChunk>();
-            for (var dx = -1; dx <= 1; dx++)
+            using (await this.LockAsync(cx, cz, 1))
             {
-                for (var dz = -1; dz <= 1; dz++)
-                    area[(cx + dx, cz + dz)] = dx == 0 && dz == 0 ? chunk : await this.GetChunkAsync(cx + dx, cz + dz);
+                var chunk = await this.GetChunkAsync(cx, cz);
+                if (chunk.ChunkStatus >= ChunkGenStage.features)
+                    return;
+
+                var area = new Dictionary<(int X, int Z), IChunk>();
+                for (var dx = -1; dx <= 1; dx++)
+                {
+                    for (var dz = -1; dz <= 1; dz++)
+                        area[(cx + dx, cz + dz)] = dx == 0 && dz == 0 ? chunk : await this.GetChunkAsync(cx + dx, cz + dz);
+                }
+
+                placed = true;
+                this.Decorate(area, cx, cz, starts);
+                chunk.SetChunkStatus(ChunkGenStage.features);
             }
-
-            this.Decorate(area, cx, cz, starts);
-            chunk.SetChunkStatus(ChunkGenStage.features);
         }
-
-        // The pieces placed may have changed, and a start chunk may have been unloaded meanwhile: loading them again keeps
-        // each start's current state in a chunk that will be saved.
-        await this.LoadStartChunksAsync(starts, placed: true);
+        finally
+        {
+            // Keep the state of partial placements too, before releasing the generation lease.
+            if (placed)
+                await this.LoadStartChunksAsync(starts, placed: true);
+        }
     }
 
     /// <summary>
@@ -585,6 +595,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
         await this.RunStepAsync(cx, cz, ChunkGenStage.carvers, () => GenerationThreads.Run(async () =>
         {
+            using var generation = this.startCache.BeginGeneration(cx, cz);
             var chunk = await this.GetChunkAsync(cx, cz);
             var savedStarts = await this.ReadSavedStartsAsync(chunk, ChunkGenStage.carvers);
             using var chunkLock = await this.LockAsync(cx, cz, 0);
@@ -641,10 +652,14 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
         foreach (var start in starts.Starts)
         {
-            var startChunk = await this.world.GetChunkAsync(start.ChunkX, start.ChunkZ, scheduleGeneration: false) as Chunk;
-            StructureManager.RestoreStart(start, startChunk?.StructureStarts);
             if (placed)
-                startChunk?.MarkUnsaved();
+                this.startCache.Changed(start.ChunkX, start.ChunkZ);
+
+            var restored = start.HasRestoredState;
+            var startChunk = await this.GetStartChunkAsync(start.ChunkX, start.ChunkZ);
+            StructureManager.RestoreStart(start, startChunk?.StructureStarts);
+            if (placed || !restored)
+                await this.GetStartChunkAsync(start.ChunkX, start.ChunkZ, markUnsaved: true);
         }
     }
 
@@ -679,11 +694,26 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     // StructureManager.LoadStartChunk: structure searches run synchronously (explorer maps are made while loot is generated),
     // like vanilla's, which also wait for start chunks on the server thread. Getting a chunk takes no generation locks.
     private NbtCompound? LoadStartChunk(int chunkX, int chunkZ) =>
-        (this.world.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false).AsTask().GetAwaiter().GetResult() as Chunk)?.StructureStarts;
+        this.GetStartChunkAsync(chunkX, chunkZ).AsTask().GetAwaiter().GetResult()?.StructureStarts;
 
     // StructureManager.StartChanged: the start chunk LoadStartChunk loaded saves the start's new state.
-    private void MarkStartChunkUnsaved(int chunkX, int chunkZ) =>
-        (this.world.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false).AsTask().GetAwaiter().GetResult() as Chunk)?.MarkUnsaved();
+    private void MarkStartChunkUnsaved(int chunkX, int chunkZ)
+    {
+        this.startCache.Changed(chunkX, chunkZ);
+        this.GetStartChunkAsync(chunkX, chunkZ, markUnsaved: true).AsTask().GetAwaiter().GetResult();
+    }
+
+    private async ValueTask<Chunk?> GetStartChunkAsync(int chunkX, int chunkZ, bool markUnsaved = false)
+    {
+        if (this.world is AbstractLevel level)
+            return await level.GetStructureStartChunkAsync(chunkX, chunkZ, markUnsaved);
+
+        var chunk = await this.world.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false) as Chunk;
+        if (markUnsaved)
+            chunk?.MarkUnsaved();
+
+        return chunk;
+    }
 
     internal bool IsInsideFortress(Vector position)
     {
@@ -715,9 +745,11 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// The starts are saved after the generator stopped too, with the pieces steps placed until then.
     /// </remarks>
     public NbtCompound? SaveStructureStarts(int chunkX, int chunkZ, NbtCompound? loaded) =>
-        this.startCache is StructureStartCache cache
-            ? cache.Save(chunkX, chunkZ, loaded)
-            : loaded;
+        this.startCache.Save(chunkX, chunkZ, loaded);
+
+    public void TrackStructureChunk(IChunk chunk) => this.startCache.Track(chunk);
+
+    public void UntrackStructureChunk(IChunk chunk) => this.startCache.Untrack(chunk);
 
     /// <summary>
     /// Every feature that can reach the chunk has run: post-processes its marked blocks and fluids (which reads and may
@@ -856,7 +888,6 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         {
             structures.LoadStartChunk = this.LoadStartChunk;
             structures.StartChanged = this.MarkStartChunkUnsaved;
-            this.startCache = structures.StartCache;
         }
 
         Volatile.Write(ref this.builder, builder);

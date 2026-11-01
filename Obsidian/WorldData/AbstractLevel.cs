@@ -50,7 +50,7 @@ public abstract partial class AbstractLevel : ILevel
     // A failed background generation job, rethrown by the next ManageChunksAsync so failures still reach the server.
     private Exception? generationFailure;
 
-    // The generation jobs finished since the last FlushRegionsAsync started, so disposal knows whether to save again.
+    // Generation jobs finished since the last flush started, plus failed saves that disposal must retry.
     private int jobsSinceFlush;
 
     // The chunks generation jobs may write, counted per job, which aren't unloaded meanwhile: a job writes up to 2 chunks
@@ -309,10 +309,101 @@ public abstract partial class AbstractLevel : ILevel
             : null;
     }
 
-    internal ValueTask<SavedStructureStart[]> ReadSavedStructureStartsAsync(int chunkX, int chunkZ)
+    internal async ValueTask<SavedStructureStart[]> ReadSavedStructureStartsAsync(int chunkX, int chunkZ)
     {
-        var region = (Region)this.LoadRegionByChunk(chunkX, chunkZ);
-        return region.ReadSavedStructureStartsAsync(chunkX, chunkZ);
+        while (true)
+        {
+            var region = await this.GetStructureRegionAsync(chunkX, chunkZ);
+            try
+            {
+                return await region.ReadSavedStructureStartsAsync(chunkX, chunkZ);
+            }
+            catch (ObjectDisposedException)
+            {
+                Task? unloading;
+                lock (this.Fluids.TickLock)
+                    unloading = region.RegionUnload;
+                if (unloading is null)
+                    throw;
+
+                await unloading;
+            }
+        }
+    }
+
+    // Check sealing before file access, without holding the tick lock across I/O or acquiring regionLock under it.
+    private async ValueTask<Region> GetStructureRegionAsync(int chunkX, int chunkZ)
+    {
+        while (true)
+        {
+            var region = (Region)(this.GetRegionForChunk(chunkX, chunkZ) ?? this.LoadRegionByChunk(chunkX, chunkZ));
+            Task? unloading;
+            lock (this.Fluids.TickLock)
+            {
+                if (!ReferenceEquals(this.GetRegionForChunk(chunkX, chunkZ), region))
+                    continue;
+
+                unloading = region.StructureChangesSealed ? region.RegionUnload : null;
+            }
+
+            if (unloading is null)
+                return region;
+
+            await unloading;
+        }
+    }
+
+    // Tests pause a metadata notification between obtaining a chunk and validating its stored identity.
+    internal Func<Chunk, ValueTask>? StructureChunkObtained { get; set; }
+
+    /// <summary>
+    /// Gets the stored start chunk, retrying stale instances and reads overtaken by closure. Notifications during
+    /// final-save I/O force another snapshot; sealed regions are waited out before accessing their files.
+    /// </summary>
+    internal async ValueTask<Chunk?> GetStructureStartChunkAsync(int chunkX, int chunkZ, bool markUnsaved = false)
+    {
+        while (true)
+        {
+            var region = await this.GetStructureRegionAsync(chunkX, chunkZ);
+            Task? unloading = null;
+
+            Chunk? chunk;
+            try
+            {
+                chunk = await region.GetStructureChunkAsync(chunkX, chunkZ);
+            }
+            catch (ObjectDisposedException)
+            {
+                // A read admitted before sealing can resume after file closure. Only region unload makes that
+                // retryable; real storage failures and disposal outside this lifecycle still reach the caller.
+                lock (this.Fluids.TickLock)
+                    unloading = region.RegionUnload;
+                if (unloading is null)
+                    throw;
+
+                await unloading;
+                continue;
+            }
+
+            if (chunk is not null && this.StructureChunkObtained is not null)
+                await this.StructureChunkObtained(chunk);
+
+            lock (this.Fluids.TickLock)
+            {
+                if (ReferenceEquals(this.GetRegionForChunk(chunkX, chunkZ), region))
+                {
+                    if (chunk is not null && region.TryAccessStructureChunk(chunk, markUnsaved))
+                        return chunk;
+
+                    // A stale instance retries immediately while the region can still accept a fresh load.
+                    if (region.StructureChangesSealed)
+                        unloading = region.RegionUnload;
+                }
+            }
+
+            if (unloading is not null)
+                await unloading;
+        }
     }
 
     internal bool TryMoveEntity(IEntity entity, VectorD from, VectorD to)
@@ -1114,7 +1205,13 @@ public abstract partial class AbstractLevel : ILevel
                 BlockAccessUnloaded = this.Fluids.Untrack,
                 BlockEntityUnloaded = this.OnBlockEntityUnloaded,
                 EntitiesLoaded = this.QueueEntitySpawn,
-                SaveStructureStarts = this.Generator is IStructureStartStorage storage ? storage.SaveStructureStarts : null
+                SaveStructureStarts = this.Generator is IStructureStartStorage storage ? storage.SaveStructureStarts : null,
+                StructureChunkLoaded = this.Generator is IStructureStartStorage loading
+                    ? loading.TrackStructureChunk
+                    : null,
+                StructureChunkUnloaded = this.Generator is IStructureStartStorage unloading
+                    ? unloading.UntrackStructureChunk
+                    : null
             };
 
             if (this.Regions.TryAdd(value, region))
@@ -1134,44 +1231,76 @@ public abstract partial class AbstractLevel : ILevel
 
     public async Task UnloadRegionAsync(int regionX, int regionZ)
     {
-        long value = NumericsHelper.IntsToLong(regionX, regionZ);
         await simulationGate.WaitAsync();
         try
         {
             // The region's final save has its block entities' changes made since the last tick.
             this.TakeBlockEntityChanges();
-
-            IRegion? r;
-            lock (this.Fluids.TickLock)
-            {
-                if (!Regions.TryGetValue(value, out r))
-                    return;
-
-                if (this.HasRegionTickets(regionX, regionZ))
-                    return;
-
-                // Retire publication and detach lighting before another reader can create a replacement region.
-                if (r is Region concrete)
-                    concrete.RetireLighting();
-
-                if (Regions.TryRemove(KeyValuePair.Create(value, r)))
-                    Interlocked.Increment(ref this.regionsVersion);
-            }
-
-            if (r is not null)
-            {
-                await r.FlushAsync();
-                await r.DisposeAsync();
-
-                // The flush takes out the entities it saves; any it left (such as those in chunks never generated)
-                // go with the region, so they leave the entity index too.
-                foreach (var (_, entity) in r.Entities)
-                    EntityGrid.Leave(entity);
-            }
+            await this.UnloadRegionUnderGateAsync(regionX, regionZ);
         }
         finally
         {
             simulationGate.Release();
+        }
+    }
+
+    // The caller holds simulationGate. Autosave retries failed unloads through the same final-save lifecycle.
+    private async Task UnloadRegionUnderGateAsync(int regionX, int regionZ, bool retry = false)
+    {
+        var value = NumericsHelper.IntsToLong(regionX, regionZ);
+        IRegion? r;
+        lock (this.Fluids.TickLock)
+        {
+            if (!Regions.TryGetValue(value, out r))
+                return;
+
+            if (!retry && this.HasRegionTickets(regionX, regionZ))
+                return;
+
+            // A failed unload stays registered until autosave retries it. Once retired it must finish closing,
+            // even if a ticket arrived meanwhile; readers then acquire an ordinary fresh region.
+            if (r is Region concrete)
+                concrete.RetireLighting();
+        }
+
+        try
+        {
+            while (true)
+            {
+                lock (this.Fluids.TickLock)
+                {
+                    if (r is Region { StructureChangesSealed: true })
+                        break;
+                }
+
+                await r.FlushAsync();
+                lock (this.Fluids.TickLock)
+                {
+                    if (r is Region saving && !saving.TrySealStructureChanges())
+                        continue;
+
+                    break;
+                }
+            }
+
+            await r.DisposeAsync();
+            lock (this.Fluids.TickLock)
+            {
+                if (Regions.TryRemove(KeyValuePair.Create(value, r)))
+                    Interlocked.Increment(ref this.regionsVersion);
+            }
+
+            (r as Region)?.EndRegionUnload();
+
+            // The flush takes out the entities it saves; any it left (such as those in chunks never generated)
+            // go with the region, so they leave the entity index too.
+            foreach (var (_, entity) in r.Entities)
+                EntityGrid.Leave(entity);
+        }
+        catch (Exception failure)
+        {
+            (r as Region)?.EndRegionUnload(failure);
+            throw;
         }
     }
 
@@ -1440,6 +1569,8 @@ public abstract partial class AbstractLevel : ILevel
     public async virtual Task FlushRegionsAsync()
     {
         Region[] written = [];
+        var failures = new List<Exception>();
+        var jobsBeforeFlush = 0;
         try
         {
             await simulationGate.WaitAsync();
@@ -1447,14 +1578,41 @@ public abstract partial class AbstractLevel : ILevel
             {
                 this.TakeBlockEntityChanges();
 
-                Interlocked.Exchange(ref this.jobsSinceFlush, 0);
+                jobsBeforeFlush = Interlocked.Exchange(ref this.jobsSinceFlush, 0);
                 SavingEntities = true;
-                var regions = Regions.Values.ToArray();
+                var failedRetries = new HashSet<IRegion>();
+                foreach (var region in Regions.Values.OfType<Region>())
+                {
+                    bool retry;
+                    lock (this.Fluids.TickLock)
+                        retry = region.UnloadFailed;
+                    if (retry)
+                    {
+                        var failure = await CaptureRegionSaveFailureAsync(region,
+                            () => this.UnloadRegionUnderGateAsync(region.X, region.Z, retry: true));
+                        if (failure is not null)
+                        {
+                            failures.Add(failure);
+                            failedRetries.Add(region);
+                        }
+                    }
+                }
+
+                // Failed retries remain reachable for the next autosave. Their failures must not prevent unrelated
+                // regions from taking a snapshot, nor should they be attempted twice in this save.
+                var regions = Regions.Values.Where(region => !failedRetries.Contains(region)).ToArray();
                 written = [.. regions.OfType<Region>()];
-                await Task.WhenAll(regions.Select(region => region is Region concrete
-                    ? concrete.WriteChangesAsync()
-                    : region.FlushAsync()));
-                this.SavePluginData();
+                var saves = regions.Select(region => CaptureRegionSaveFailureAsync(region,
+                    () => region is Region concrete ? concrete.WriteChangesAsync() : region.FlushAsync()));
+                failures.AddRange((await Task.WhenAll(saves)).OfType<Exception>());
+                try
+                {
+                    this.SavePluginData();
+                }
+                catch (Exception failure)
+                {
+                    failures.Add(failure);
+                }
             }
             finally
             {
@@ -1464,6 +1622,7 @@ public abstract partial class AbstractLevel : ILevel
         }
         catch
         {
+            Interlocked.Add(ref this.jobsSinceFlush, Math.Max(1, jobsBeforeFlush));
             // What was written still reaches the disk when another region or the plugin data fails; that failure is
             // the one reported.
             await SyncToDiskAsync(written).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
@@ -1472,7 +1631,28 @@ public abstract partial class AbstractLevel : ILevel
 
         // Like vanilla's autosave, which leaves the disk to its IO workers, the level ticks again while the files
         // reach the disk; the flush still ends once they have.
-        await SyncToDiskAsync(written);
+        var syncs = written.Select(region => CaptureRegionSaveFailureAsync(region, region.SyncToDiskAsync));
+        failures.AddRange((await Task.WhenAll(syncs)).OfType<Exception>());
+        if (failures.Count != 0)
+        {
+            // Preserve jobs completed during this save too. A failed save with no jobs must still be retried on
+            // shutdown, since ordinary edits may have made chunks dirty after the last generation job finished.
+            Interlocked.Add(ref this.jobsSinceFlush, Math.Max(1, jobsBeforeFlush));
+            throw new AggregateException($"Could not save every region of level '{this.Name}'.", failures);
+        }
+    }
+
+    private static async Task<Exception?> CaptureRegionSaveFailureAsync(IRegion region, Func<Task> save)
+    {
+        try
+        {
+            await save();
+            return null;
+        }
+        catch (Exception failure)
+        {
+            return new InvalidOperationException($"Could not save region ({region.X}, {region.Z}).", failure);
+        }
     }
 
     private static Task SyncToDiskAsync(Region[] regions) => Task.WhenAll(regions.Select(region => region.SyncToDiskAsync()));

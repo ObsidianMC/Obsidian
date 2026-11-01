@@ -12,18 +12,22 @@ internal sealed class ReachingStarts
     // The starts with their start chunk's key, start chunk by start chunk (X, then Z).
     private readonly List<(long Key, StructureStart Start)> starts;
 
-    public ReachingStarts(StructureLayout layout, int chunkX, int chunkZ, List<(long Key, StructureStart Start)> starts)
+    public ReachingStarts(StructureLayout layout, int chunkX, int chunkZ,
+        List<(long Key, StructureStart Start)> starts, long cacheEpoch = 0)
     {
         this.Layout = layout;
         this.ChunkX = chunkX;
         this.ChunkZ = chunkZ;
         this.starts = starts;
+        this.CacheEpoch = cacheEpoch;
     }
 
     /// <summary>
     /// The layout the starts were made for, whose structures decoration places in its order.
     /// </summary>
     public StructureLayout Layout { get; }
+
+    internal long CacheEpoch { get; }
 
     public int ChunkX { get; }
 

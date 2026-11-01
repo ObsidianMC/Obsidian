@@ -8,7 +8,9 @@ namespace Obsidian.WorldData.Generators.Mojang.Structures;
 
 /// <summary>
 /// The structure starts a <see cref="StructureManager"/> created, by start chunk, with the state their pieces were
-/// placed with. A generator keeps this to save them after it stopped and dropped its builder. Thread-safe.
+/// placed with. Residents and generation leases keep starts within eight chunks; once none can use them, saved
+/// starts are evicted and later recomputed with state restored from disk. A stopped generator can still save them.
+/// Thread-safe.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -40,6 +42,121 @@ internal sealed class StructureStartCache
     private readonly Lock gate = new();
 
     private readonly ConcurrentDictionary<(int X, int Z), ChunkStarts> starts = new();
+
+    // Residents and generation leases pin every start chunk within the reference radius. Under the gate.
+    private readonly HashSet<IChunk> residents = [];
+    private readonly Dictionary<(int X, int Z), int> usage = [];
+    private long epoch;
+    private bool trackingResidents;
+
+    internal int Count => this.starts.Count;
+
+    // Invalidates managers' last-reaching shortcuts when an entry is evicted and can be recomputed.
+    internal long Epoch => Volatile.Read(ref this.epoch);
+
+    /// <summary>Retains starts needed by a published chunk, including unfinished chunks.</summary>
+    public void Track(IChunk chunk)
+    {
+        lock (this.gate)
+        {
+            // Standalone pipelines have no resident lifecycle or backing storage to restore evicted state from.
+            this.trackingResidents = true;
+            if (this.residents.Add(chunk))
+                this.ChangeUsage(chunk.X, chunk.Z, 1);
+        }
+    }
+
+    /// <summary>Releases a resident only after its final save and removal from chunk storage.</summary>
+    public void Untrack(IChunk chunk)
+    {
+        lock (this.gate)
+        {
+            if (this.residents.Remove(chunk))
+                this.ChangeUsage(chunk.X, chunk.Z, -1);
+        }
+    }
+
+    /// <summary>
+    /// Pins starts before finding them, through restoration, placement and marking their start chunks unsaved.
+    /// Placements invalidate earlier saves before releasing the lease, so eviction needs their final state.
+    /// </summary>
+    public IDisposable BeginGeneration(int chunkX, int chunkZ)
+    {
+        lock (this.gate)
+            this.ChangeUsage(chunkX, chunkZ, 1);
+
+        return new GenerationLease(this, chunkX, chunkZ);
+    }
+
+    /// <summary>A placement or search changed the state that the start chunk must save.</summary>
+    public void Changed(int chunkX, int chunkZ)
+    {
+        lock (this.gate)
+        {
+            if (this.starts.TryGetValue((chunkX, chunkZ), out var entry))
+            {
+                entry.Revision++;
+                entry.Saved = false;
+            }
+        }
+    }
+
+    private void EndGeneration(int chunkX, int chunkZ)
+    {
+        lock (this.gate)
+            this.ChangeUsage(chunkX, chunkZ, -1);
+    }
+
+    // Never calls pieces or waits for their locks: region publication may hold the level's tick lock.
+    private void ChangeUsage(int chunkX, int chunkZ, int change)
+    {
+        const int radius = StructureManager.ReferenceRadius;
+        for (var x = chunkX - radius; x <= chunkX + radius; x++)
+        {
+            for (var z = chunkZ - radius; z <= chunkZ + radius; z++)
+            {
+                var key = (x, z);
+                var count = this.usage.GetValueOrDefault(key) + change;
+                if (count == 0)
+                {
+                    this.usage.Remove(key);
+                    this.TryEvict(key);
+                }
+                else
+                {
+                    this.usage[key] = count;
+                }
+            }
+        }
+    }
+
+    // Under the gate. Unrestored starts have no session state to lose; restored and pruned state needs Save first.
+    private void TryEvict((int X, int Z) key)
+    {
+        if (!this.trackingResidents || this.usage.ContainsKey(key) || this.retiring.ContainsKey(key)
+            || !this.starts.TryGetValue(key, out var entry))
+        {
+            return;
+        }
+
+        var hasState = this.dropped.ContainsKey(key) || entry.Starts.Any(start => start.HasRestoredState);
+        if (hasState && !entry.Saved)
+            return;
+
+        foreach (var start in entry.Starts)
+            start.Retire();
+
+        this.starts.TryRemove(key, out _);
+        this.dropped.Remove(key);
+        Interlocked.Increment(ref this.epoch);
+    }
+
+    private sealed class GenerationLease(StructureStartCache cache, int chunkX, int chunkZ) : IDisposable
+    {
+        private StructureStartCache? owner = cache;
+
+        public void Dispose() => Interlocked.Exchange(ref this.owner, null)?.EndGeneration(chunkX, chunkZ);
+    }
 
     // The saved state of starts dropped, by start chunk and structure identifier. Under the gate.
     private readonly Dictionary<(int X, int Z), ImmutableDictionary<string, NbtCompound>> dropped = [];
@@ -117,6 +234,8 @@ internal sealed class StructureStartCache
                     continue;
 
                 // The previous starts are all of the layout's sets (see above), so the new ones keep every one.
+                made.Saved = previous?.Saved ?? false;
+                made.Revision = previous?.Revision ?? 0;
                 this.Adopt(key, made, previous);
                 this.starts[key] = made;
                 return made;
@@ -134,6 +253,8 @@ internal sealed class StructureStartCache
             if (!ReferenceEquals(current, previous) || version < this.prunedVersion)
                 return;
 
+            kept.Saved = previous.Saved;
+            kept.Revision = previous.Revision;
             this.Drop(key, previous, kept);
             this.starts[key] = kept;
         }
@@ -164,6 +285,8 @@ internal sealed class StructureStartCache
                 if (kept == entry)
                     continue;
 
+                kept.Saved = entry.Saved;
+                kept.Revision = entry.Revision;
                 this.Drop(key, entry, kept);
                 this.starts[key] = kept;
             }
@@ -228,6 +351,7 @@ internal sealed class StructureStartCache
         ImmutableDictionary<string, NbtCompound>? states;
         ImmutableList<Retirement>? pending;
         ChunkStarts? cached;
+        long revision;
 
         // Taken together, so that a start being dropped is in one of them.
         lock (this.gate)
@@ -235,6 +359,7 @@ internal sealed class StructureStartCache
             this.dropped.TryGetValue(key, out states);
             this.retiring.TryGetValue(key, out pending);
             this.starts.TryGetValue(key, out cached);
+            revision = cached?.Revision ?? 0;
         }
 
         // Outside the gate, since telling waits for a placement in progress.
@@ -243,7 +368,10 @@ internal sealed class StructureStartCache
             : [];
 
         if (restored.Length == 0 && states is null && pending is null)
+        {
+            this.Saved(key, cached, revision);
             return loaded;
+        }
 
         var result = new NbtCompound("starts");
         if (loaded is not null)
@@ -284,7 +412,23 @@ internal sealed class StructureStartCache
             }
         }
 
+        this.Saved(key, cached, revision);
         return result;
+    }
+
+    private void Saved((int X, int Z) key, ChunkStarts? cached, long revision)
+    {
+        lock (this.gate)
+        {
+            if (cached is null || !this.starts.TryGetValue(key, out var current)
+                || !ReferenceEquals(cached, current) || cached.Revision != revision)
+            {
+                return;
+            }
+
+            cached.Saved = true;
+            this.TryEvict(key);
+        }
     }
 
     // Puts a start's state in place of what the chunk was saved with.
@@ -372,6 +516,8 @@ internal sealed class StructureStartCache
                 var states = this.dropped.GetValueOrDefault(key) ?? ImmutableDictionary<string, NbtCompound>.Empty;
                 this.dropped[key] = states.SetItem(retirement.Start.Structure.Identifier, state);
             }
+
+            this.TryEvict(key);
         }
 
         retirement.Release();
@@ -433,6 +579,11 @@ internal sealed class StructureStartCache
     internal sealed class ChunkStarts
     {
         private readonly StructureStart?[] perSet;
+
+        // Persistence authorization, changed only under the cache gate.
+        internal long Revision { get; set; }
+
+        internal bool Saved { get; set; }
 
         private ChunkStarts(long version, StructureSet[] sets, StructureStart?[] perSet, bool complete)
         {

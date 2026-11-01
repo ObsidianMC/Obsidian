@@ -148,7 +148,8 @@ public sealed class StructureStart
         }
     }
 
-    // Reference discovery holds generation locks and must not wait for a placement or restoration to finish.
+    // Reference discovery and eviction must not wait for placement while holding generation locks or the cache gate.
+    // Generation leases prevent eviction while restoration and placement are in progress.
     internal bool HasRestoredState => Volatile.Read(ref this.stateRestored);
 
     /// <summary>
