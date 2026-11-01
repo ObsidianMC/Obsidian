@@ -417,6 +417,7 @@ internal sealed class StructureManager : IStructurePlacementState
             Math.Max(this.minY, this.world.NoiseMinY),
             Math.Min(this.height, this.world.NoiseHeight));
 
+        using var tags = WorldgenTags.UseLegacy(layout.Source.LegacyPools);
         using var templates = StructureRegistry.Use(this.Templates);
 
         return structure.Generate(new StructureGenerationContext

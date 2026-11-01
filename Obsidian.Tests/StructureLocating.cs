@@ -30,8 +30,11 @@ public class StructureLocating
     {
         // Vanilla's plains village starts in chunk (-9, -52) of seed 12345 (see VanillaStructureGeneration), the only
         // start chunk of the villages' placement region around the origin, which vanilla's search looks at first.
-        var structures = PluginStructureTypes.Only(WorldgenStructures.Vanilla, "minecraft:villages");
-        var manager = new ChunkBuilder(MojangDimension.Overworld, 12345L, structures: () => structures).Structures!;
+        var structures = PluginStructureTypes.Only(
+            Obsidian.WorldData.Generators.Features.StructureData.Read(
+                new Obsidian.WorldData.Generators.Features.FeatureRegistry(
+                    Obsidian.WorldData.Generators.Density.WorldgenData.Vanilla)), "minecraft:villages");
+        var manager = NativeChunks.Pipeline(12345L, () => structures).Structures!;
         var origin = new Vector(-100, 70, -800);
 
         var found = Locate("minecraft:village_plains");
@@ -62,16 +65,17 @@ public class StructureLocating
     [Fact(DisplayName = "Eyes of ender and /locate find a plugin's structures, through the eyes' tag")]
     public void LocatesPluginStructures()
     {
-        var built = PluginStructures.Build(
+        var built = Obsidian.WorldData.Generators.Features.StructureData.Read(
+            new Obsidian.WorldData.Generators.Features.FeatureRegistry(
+                Obsidian.WorldData.Generators.Density.WorldgenData.Vanilla),
             PluginStructureTypes.SpireFiles(),
             [],
-            WorldgenFeatureSet.Vanilla,
             PluginStructureTypes.Types(),
             NullLogger.Instance);
 
         var structures = PluginStructureTypes.Only(built, "structuretest:spires");
         var seed = PluginStructureTypes.Seed;
-        var builder = new ChunkBuilder(MojangDimension.Overworld, seed, structures: () => structures);
+        var builder = NativeChunks.Pipeline(seed, () => structures);
         var manager = builder.Structures!;
         var origin = new Vector(40, 64, 40);
 

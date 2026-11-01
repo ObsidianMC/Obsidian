@@ -16,19 +16,21 @@ internal static class ShapeUpdater
 {
     private static readonly IBlock air = BlockStateProperties.GetState("minecraft:air");
 
-    private static readonly BlockSet fences = LegacyWorldgenTags.Blocks("fences");
+    private static readonly WorldgenTags.BlockGroup fences = WorldgenTags.Blocks("fences");
 
-    private static readonly BlockSet woodenFences = LegacyWorldgenTags.Blocks("wooden_fences");
+    private static readonly WorldgenTags.BlockGroup woodenFences = WorldgenTags.Blocks("wooden_fences");
 
-    private static readonly BlockSet walls = LegacyWorldgenTags.Blocks("walls");
+    private static readonly WorldgenTags.BlockGroup walls = WorldgenTags.Blocks("walls");
 
-    private static readonly BlockSet wallPostOverride = LegacyWorldgenTags.Blocks("wall_post_override");
+    private static readonly WorldgenTags.BlockGroup wallPostOverride = WorldgenTags.Blocks("wall_post_override");
 
-    private static readonly BlockSet wallHangingSigns = LegacyWorldgenTags.Blocks("wall_hanging_signs");
+    private static readonly WorldgenTags.BlockGroup wallHangingSigns = WorldgenTags.Blocks("wall_hanging_signs");
 
     // Blocks fences and bars never connect to for having a sturdy face (Block.isExceptionForConnection, besides leaves).
     private static readonly BlockSet connectionExceptions = new("minecraft:barrier", "minecraft:carved_pumpkin", "minecraft:jack_o_lantern",
-        "minecraft:melon", "minecraft:pumpkin", $"#{LegacyWorldgenTags.Block("shulker_boxes").Identifier}");
+        "minecraft:melon", "minecraft:pumpkin");
+
+    private static readonly WorldgenTags.BlockGroup shulkerBoxes = WorldgenTags.Blocks("shulker_boxes");
 
     // Vanilla BlockBehaviour.UPDATE_SHAPE_ORDER.
     private static readonly BlockFace[] updateShapeOrder = [BlockFace.West, BlockFace.East, BlockFace.North,
@@ -288,7 +290,8 @@ internal static class ShapeUpdater
         || neighbor.BlockClass() is "IronBarsBlock" or "StainedGlassPaneBlock" or "WeatheringCopperBarsBlock"
         || walls.Contains(neighbor);
 
-    private static bool IsExceptionForConnection(IBlock block) => block.BlockClass().EndsWith("LeavesBlock") || connectionExceptions.Contains(block);
+    private static bool IsExceptionForConnection(IBlock block) =>
+        block.BlockClass().EndsWith("LeavesBlock") || connectionExceptions.Contains(block) || shulkerBoxes.Contains(block);
 
     /// <summary>
     /// Wall torches and ladders drop when the block behind them has no sturdy face, checked when that side is updated.

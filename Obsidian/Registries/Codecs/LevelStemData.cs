@@ -4,6 +4,7 @@ using Obsidian.API.World.Generator;
 using Obsidian.API.World.Generator.RandomSources;
 using NoiseSetting = Obsidian.API.World.Generator.Noise.NoiseSetting;
 using Obsidian.Plugins;
+using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Generators;
 using Obsidian.WorldData.Generators.Mojang;
 using System.IO;
@@ -335,9 +336,10 @@ internal static partial class LevelStemData
         string path,
         WorldgenNoise noise,
         HashSet<PluginContainer> plugins,
-        ISet<object>? entries)
+        ISet<object>? entries,
+        WorldgenReader? reader = null)
     {
-        var source = noise.Reader(plugins, entries).Read<BiomeSourceBase>(value, path);
+        var source = (reader ?? noise.Reader(plugins, entries)).Read<BiomeSourceBase>(value, path);
         var biomesPath = CodecJson.Field(path, "possible_biomes");
         IReadOnlyList<string> names;
 

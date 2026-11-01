@@ -191,7 +191,7 @@ internal static partial class PluginStructures
         lock (applying)
         {
             var snapshot = new StructureInputs([.. files], [.. templates], [.. types], logger);
-            var structures = Build(snapshot.Files, snapshot.Templates, features, snapshot.Types, logger);
+            var structures = snapshot.Read(PluginFeatures.CurrentRegistry);
 
             StructureRegistry.SetOverrides(structures.Templates);
             Volatile.Write(ref current, structures);

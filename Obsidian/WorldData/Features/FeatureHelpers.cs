@@ -1,3 +1,4 @@
+using Obsidian.WorldData.Generators;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Nbt;
 using System.Runtime.InteropServices;
@@ -10,8 +11,8 @@ namespace Obsidian.WorldData.Features;
 /// </summary>
 internal static class FeatureHelpers
 {
-    private static readonly BlockSet dirt = LegacyWorldgenTags.Blocks("dirt");
-    private static readonly BlockSet baseStoneOverworld = LegacyWorldgenTags.Blocks("base_stone_overworld");
+    private static readonly WorldgenTags.BlockGroup dirt = WorldgenTags.Blocks("dirt");
+    private static readonly WorldgenTags.BlockGroup baseStoneOverworld = WorldgenTags.Blocks("base_stone_overworld");
 
     // Block entity types of vanilla's RandomizableContainer implementations.
     private static readonly HashSet<string> randomizableContainers =

@@ -1,3 +1,4 @@
+using Obsidian.WorldData.Generators;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.API.World.Structures;
 using Obsidian.Nbt;
@@ -56,7 +57,7 @@ public sealed class OceanRuinPiece : TemplateStructurePiece
     private static readonly string[] bigCrackedRuins = Names("big_cracked_", 1, 2, 3, 8);
     private static readonly string[] bigWarmRuins = Names("big_warm_", 4, 5, 6, 7);
 
-    private static readonly BlockSet ice = LegacyWorldgenTags.Blocks("ice");
+    private static readonly WorldgenTags.BlockGroup ice = WorldgenTags.Blocks("ice");
 
     private readonly bool isLarge;
     private readonly float integrity;

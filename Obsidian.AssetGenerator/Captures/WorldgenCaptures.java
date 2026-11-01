@@ -76,6 +76,8 @@ class WorldgenCaptures {
         SECTIONS.put("biome_search", false);
         SECTIONS.put("biome_points", false);
         SECTIONS.put("spawn_attributes", false);
+        SECTIONS.put("spawn_search", false);
+        SECTIONS.put("population", false);
         SECTIONS.put("structures", true);
     }
 
@@ -295,6 +297,8 @@ class WorldgenCaptures {
                     case "biome_search" -> biomeSearch(entry);
                     case "biome_points" -> biomePoint(entry);
                     case "spawn_attributes" -> spawnAttributes(entry);
+                    case "spawn_search" -> spawnSearch(entry);
+                    case "population" -> population(entry);
                     case "structures" -> structures(entry);
                     default -> throw new IllegalArgumentException(section);
                 }
@@ -745,6 +749,59 @@ class WorldgenCaptures {
         var source = level.getChunkSource().getGenerator().getBiomeSource();
         var biome = source.createResolver(sampler).getNoiseBiome(x, y, z);
         entry.addProperty("biome", biome.unwrapKey().orElseThrow().identifier().toString());
+    }
+
+    // Initial creature packs in an otherwise controlled region, including the caller's random tail.
+    static void population(JsonObject entry) {
+        try {
+            populationChecked(entry);
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    static void populationChecked(JsonObject entry) throws Exception {
+        var level = server.overworld();
+        int chunkX = entry.get("chunkX").getAsInt();
+        int chunkZ = entry.get("chunkZ").getAsInt();
+        var biomeKey = ResourceKey.create(Registries.BIOME, Identifier.parse(entry.get("biome").getAsString()));
+        var biome = server.registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(biomeKey);
+        var layers = layers(entry);
+        var step = ChunkPyramid.GENERATION_PYRAMID.getStepTo(ChunkStatus.SPAWN);
+        var chunks = new HashMap<Long, ProtoChunk>();
+        var cache = StaticCache2D.<ChunkAccess>create(chunkX, chunkZ, 2, (x, z) -> {
+            var chunk = layeredChunk(level, new ChunkPos(x, z), layers, biome, entry);
+            chunks.put(ChunkPos.pack(x, z), chunk);
+            return chunk;
+        });
+        var center = chunks.get(ChunkPos.pack(chunkX, chunkZ));
+        var region = region(level, cache, step, center);
+        var random = new WorldgenRandom(new LegacyRandomSource(0L));
+        random.setDecorationSeed(entry.get("seed").getAsLong(), chunkX << 4, chunkZ << 4);
+        net.minecraft.world.level.NaturalSpawner.spawnMobsForChunkGeneration(
+            region, center.getPos().getWorldPosition().atY(level.getMaxY()), center.getPos(), random);
+        var compact = new JsonArray();
+        for (var entity : entities(chunks, chunkX, chunkZ)) {
+            var record = entity.getAsJsonArray();
+            record.remove(6);
+            compact.add(record);
+        }
+        entry.add("entities", compact);
+        entry.addProperty("nextRandom", random.nextInt());
+    }
+
+    static void spawnSearch(JsonObject entry) {
+        var settings = settings(entry);
+        var random = randomState(entry, settings);
+        var targets = settings.spawnTarget();
+        if (entry.has("targets")) {
+            var ops = RegistryOps.create(JsonOps.INSTANCE, server.registryAccess());
+            targets = SpawnTargetPoint.CODEC.listOf().parse(ops, entry.get("targets")).getOrThrow();
+        }
+        var sampler = random.samplersWithContext(
+            net.minecraft.world.level.levelgen.densityfunction.SamplerContext.EMPTY_UNCACHED);
+        var result = NoiseSpawnFinder.findSpawnPosition(targets, sampler);
+        entry.add("position", coordinates(result));
     }
 
     // Resolve the same attribute maps vanilla applies: default, dimension, biome. Custom maps exercise overlays.

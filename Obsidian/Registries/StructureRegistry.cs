@@ -59,9 +59,12 @@ internal static class StructureRegistry
         Volatile.Write(ref directory, new TemplateDirectory(extract));
 
     /// <summary>
-    /// Sets how the current version's templates (see <see cref="GetCurrent"/>) are extracted, or where they already
-    /// are: only when the first one is needed, unless <paramref name="extract"/> gives a finished task.
+    /// Sets the directory the current version's templates are read from, before any template is used.
     /// </summary>
+    public static void InitializeCurrent(string structureDirectory) =>
+        InitializeCurrent(() => Task.FromResult(structureDirectory));
+
+    /// <summary>Sets how the current version's templates are extracted when first needed.</summary>
     /// <param name="extract">Extracts the templates and gives their directory, like
     /// <see cref="VanillaServerJar.ExtractStructuresAsync"/>.</param>
     public static void InitializeCurrent(Func<Task<string>> extract) =>

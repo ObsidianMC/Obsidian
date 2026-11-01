@@ -26,7 +26,7 @@ internal sealed partial class FeatureRegistry
         id = WorldgenData.Qualify(id);
         var templates = this.TemplateOverrides;
         if (templates is null && this.UsesPluginFiles)
-            templates = PluginStructures.Current.Templates;
+            templates = PluginStructures.CurrentRegistry.Templates;
 
         return templates?.GetValueOrDefault(id) ?? this.vanillaTemplate(id);
     }

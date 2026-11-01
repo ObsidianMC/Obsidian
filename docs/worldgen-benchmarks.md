@@ -1,6 +1,7 @@
 # Worldgen benchmarks: Obsidian vs vanilla 1.21.11
 
-This compares Obsidian's Mojang generator (`minecraft:mojang_generator`) with the vanilla 1.21.11 server. Both generate the same world, and Obsidian's output matches vanilla's (see [Parity](#parity)), so the comparison is like for like.
+This historical comparison measures Obsidian's retained 1.21.11 generator against the vanilla 1.21.11 server.
+The live `minecraft:mojang_generator` now uses 26.3; the retained generator remains available in the benchmark.
 
 Measured on branch `worldgen-vanilla-parity` at commit `2b2345e3`. The single-threaded numbers were checked again at `9d922c39`: they were the same speed and gave the same hashes.
 
@@ -103,11 +104,16 @@ The speedups did not change the output:
 
 On the server, seed 12345 spawns at `96.5, 136.0, -31.5` in every run.
 
-## The 26.3 pipeline against the live generator
+## The 26.3 pipeline against the retained 1.21.11 generator
 
-Phase 5 of the [26.3 port](porting-26.3-plan.md) switches the live generator to the 26.3 pipeline
-(`BiomeTerrain`: biomes, terrain, structures and decoration on 26.3's data and templates) once it generates at least
-as fast as the live generator, which still runs 1.21.11's worldgen data. It now does, in every dimension.
+Phase 5 of the [26.3 port](porting-26.3-plan.md) now runs `BiomeTerrain` on the live path: biomes, terrain,
+structures and decoration on 26.3's data and templates, followed by fluid/shape post-processing, final heightmaps,
+lighting and initial creature population. `serial --generator 26.3` calls those same generation methods.
+
+The live switch re-recorded only the 26.3 Overworld and Nether hashes in `BenchOptions.cs`: post-processing now
+changes final blocks, lighting and scheduled ticks, and shared vegetation helpers select current support tags.
+The End and all 1.21.11 references are unchanged. Both generators still match in all three dimensions. The timings
+below predate these completion steps; they established that the 26.3 pipeline was faster before the switch.
 
 Neither has a server around it here: both run `Obsidian.WorldgenBench serial` on the same 1,024 chunks per dimension,
 on one thread.

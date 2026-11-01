@@ -97,7 +97,6 @@ public class PluginStructureFiles
 
     [Trait("Category", TestCategory.Worldgen)]
     [Theory(DisplayName = "A plugin's jigsaw structure places its template in a chunk, and goes with it")]
-    [InlineData(false)]
     [InlineData(true)]
     public void PlacesPluginJigsawStructures(bool current)
     {
@@ -110,8 +109,8 @@ public class PluginStructureFiles
         {
             StructureRegistry.SetOverrides(structures.Templates);
 
-            var builder = new ChunkBuilder(MojangDimension.Overworld, Seed, structures: () => structures);
-            var chunks = new FullChunks(builder, MojangDimension.Overworld);
+            var builder = NativeChunks.Pipeline(Seed, () => structures);
+            var chunks = new NativeChunks(builder);
 
             Assert.Contains(builder.Structures!.Sets, set => set.Identifier == "structuretest:towers");
 
@@ -138,7 +137,6 @@ public class PluginStructureFiles
 
     [Trait("Category", TestCategory.Worldgen)]
     [Theory(DisplayName = "A vanilla structure set override moves vanilla's structures, and reads vanilla's sets again")]
-    [InlineData(false)]
     [InlineData(true)]
     public void OverridesVanillaStructureSets(bool current)
     {
@@ -163,7 +161,7 @@ public class PluginStructureFiles
         Assert.NotEqual((-9, -52), villages.GetPotentialStructureChunk(villageSeed, -9, -52));
 
         var onlyVillages = Only(structures, "minecraft:villages");
-        var builder = new ChunkBuilder(MojangDimension.Overworld, villageSeed, structures: () => onlyVillages);
+        var builder = NativeChunks.Pipeline(villageSeed, () => onlyVillages);
         var manager = builder.Structures!;
         Assert.DoesNotContain(manager.GetStarts(-9, -52), IsVillage);
 
@@ -187,13 +185,12 @@ public class PluginStructureFiles
 
     [Trait("Category", TestCategory.Worldgen)]
     [Theory(DisplayName = "A start whose structure is gone is kept as saved, and its state comes back with it")]
-    [InlineData(false)]
     [InlineData(true)]
     public void KeepsStartsOfStructuresThatAreGone(bool current)
     {
         var files = TowerFiles();
         var structures = Only(Build(files, current), "structuretest:towers");
-        var manager = new ChunkBuilder(MojangDimension.Overworld, Seed, structures: () => structures).Structures!;
+        var manager = NativeChunks.Pipeline(Seed, () => structures).Structures!;
 
         // The tower is placed in this session, so its state is saved with its start chunk.
         var tower = manager.GetStarts(0, 0).Single(start => start.Structure.Identifier == Tower);
@@ -209,7 +206,7 @@ public class PluginStructureFiles
 
         // After a restart without the plugin, the chunk loads, and its saved start stays as it was.
         var vanilla = Only(Build([], current));
-        var restarted = new ChunkBuilder(MojangDimension.Overworld, Seed, structures: () => vanilla).Structures!;
+        var restarted = NativeChunks.Pipeline(Seed, () => vanilla).Structures!;
         foreach (var start in restarted.GetStarts(0, 0))
             StructureManager.RestoreStart(start, saved);
 
@@ -226,7 +223,6 @@ public class PluginStructureFiles
 
     [Trait("Category", TestCategory.Worldgen)]
     [Theory(DisplayName = "A start keeps its plugins: once they unload, it isn't placed, and is made again without them")]
-    [InlineData(false)]
     [InlineData(true)]
     public void DropsStartsOfUnloadingPlugins(bool current)
     {
@@ -255,7 +251,7 @@ public class PluginStructureFiles
         {
             StructureRegistry.SetOverrides(structures.Templates);
 
-            var builder = new ChunkBuilder(MojangDimension.Overworld, Seed, structures: () => structures);
+            var builder = NativeChunks.Pipeline(Seed, () => structures);
             var manager = builder.Structures!;
             var start = manager.GetStarts(0, 0).Single(candidate => candidate.Structure == tower);
             Assert.Equal(plugin, Assert.Single(start.Owners));
@@ -269,7 +265,7 @@ public class PluginStructureFiles
             Assert.Equal(1, ((NbtCompound)saved![Tower]).GetInt("references"));
             structures = built with { Version = built.Version + 1 };
 
-            Assert.Equal(0, DiamondBlocks(new FullChunks(builder, MojangDimension.Overworld).Get(0, 0)));
+            Assert.Equal(0, DiamondBlocks(new NativeChunks(builder).Get(0, 0)));
 
             // Once the generator moves on, it's made again without the plugin, and takes the state it had.
             manager.Refresh();
@@ -397,7 +393,7 @@ public class PluginStructureFiles
         }
     }
 
-    private static WorldgenStructures Build(StructureFile[] files, bool current = false) => current
+    private static WorldgenStructures Build(StructureFile[] files, bool current = true) => current
         ? StructureData.Read(
             new FeatureRegistry(WorldgenData.Vanilla),
             files,

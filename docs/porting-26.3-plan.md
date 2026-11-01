@@ -360,6 +360,19 @@ in the parts we model.
 
 ### Phase 5: world generation
 
+The live `minecraft:mojang_generator`, Nether and End IDs now run the 26.3 pipeline. Noise level stems build
+`WorldgenDimension` and `BiomeTerrain`; flat, debug and custom plugin generators retain their host dispatch.
+Chunk locks and pregeneration waves are retained, with fluid post-processing, final heightmaps, lighting and
+initial creature population before entity publication. Stored biomes feed weather and natural spawning.
+Structure persistence, searches and explorer-map biome previews use this same pipeline. Successful plugin feature
+and structure applies refresh running generators, and plant growth uses the native feature adapter. Plugins keep
+their per-dimension ownership, unload/reload and collectible-context behavior, including #657's value types.
+
+`spawn_search.json` and `population.json` add vanilla 26.3 evidence for the spawn-target search and initial creature
+packs, including the population random tail. See [capture details](vanilla-captures.md#spawn-search-and-initial-population).
+The legacy pipeline, replay tests and data remain for a separate removal PR; the live pipeline selects current tags
+in shared algorithms. `WorldgenBench --generator 26.3` calls the live terrain/decoration/completion methods.
+
 Re-capture with the Phase 0 harness first, then work in this order. Each step has its own fixture.
 
 1. **Read the new JSON.** Feature, carver and material-rule registries, the new noise and density-function schemas
@@ -376,10 +389,10 @@ Re-capture with the Phase 0 harness first, then work in this order. Each step ha
    - Replace the consolidated types with the general machinery.
    - Add the new feature and placement types and the block-state providers.
    - Speleothems, poplar trees, shelf mushrooms and red shrubs.
-   - Per-biome decoration is implemented beside the live generator in `BiomeTerrain.Decorate`. It collects
+   - Per-biome decoration runs in `BiomeTerrain.Decorate`. It collects
      section biomes from the surrounding 3x3 terrain chunks and runs the source's globally ordered features by
      generation step with 26.3 decoration and feature seeds. `BiomeDecoration.Generate` reserves a structure
-     placement hook before the placed features in each step; structure pieces remain step 6 work.
+     placement hook before the placed features in each step, which places reaching structure starts.
 6. **Structures.** Abandoned camps (jigsaw, so mostly data) and the changed templates. Structure starts are saved
    with vanilla's piece ids and fields, checked against starts vanilla saved (`VanillaStructureSaves`); what remains
    is in [known gaps](known-gaps/structure-pieces-in-saved-chunks.md).

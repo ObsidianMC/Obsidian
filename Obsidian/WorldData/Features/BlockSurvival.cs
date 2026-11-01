@@ -1,3 +1,4 @@
+using Obsidian.WorldData.Generators;
 namespace Obsidian.WorldData.Features;
 
 /// <summary>
@@ -12,17 +13,17 @@ namespace Obsidian.WorldData.Features;
 /// </remarks>
 internal static class BlockSurvival
 {
-    private static readonly BlockSet dirt = LegacyWorldgenTags.Blocks("dirt");
-    private static readonly BlockSet sand = LegacyWorldgenTags.Blocks("sand");
-    private static readonly BlockSet mushroomGrowBlock = LegacyWorldgenTags.Blocks("mushroom_grow_block");
-    private static readonly BlockSet dryVegetationMayPlaceOn = LegacyWorldgenTags.Blocks("dry_vegetation_may_place_on");
-    private static readonly BlockSet smallDripleafPlaceable = LegacyWorldgenTags.Blocks("small_dripleaf_placeable");
-    private static readonly BlockSet bigDripleafPlaceable = LegacyWorldgenTags.Blocks("big_dripleaf_placeable");
-    private static readonly BlockSet bambooPlantableOn = LegacyWorldgenTags.Blocks("bamboo_plantable_on");
-    internal static readonly BlockSet JungleLogs = LegacyWorldgenTags.Blocks("jungle_logs");
-    private static readonly BlockSet snowLayerCannotSurviveOn = LegacyWorldgenTags.Blocks("snow_layer_cannot_survive_on");
-    private static readonly BlockSet snowLayerCanSurviveOn = LegacyWorldgenTags.Blocks("snow_layer_can_survive_on");
-    private static readonly BlockSet nylium = LegacyWorldgenTags.Blocks("nylium");
+    private static readonly WorldgenTags.BlockGroup dirt = WorldgenTags.Blocks("dirt", "supports_vegetation");
+    private static readonly WorldgenTags.BlockGroup sand = WorldgenTags.Blocks("sand");
+    private static readonly WorldgenTags.BlockGroup mushroomGrowBlock = WorldgenTags.Blocks("mushroom_grow_block");
+    private static readonly WorldgenTags.BlockGroup dryVegetationMayPlaceOn = WorldgenTags.Blocks("dry_vegetation_may_place_on");
+    private static readonly WorldgenTags.BlockGroup smallDripleafPlaceable = WorldgenTags.Blocks("small_dripleaf_placeable");
+    private static readonly WorldgenTags.BlockGroup bigDripleafPlaceable = WorldgenTags.Blocks("big_dripleaf_placeable");
+    private static readonly WorldgenTags.BlockGroup bambooPlantableOn = WorldgenTags.Blocks("bamboo_plantable_on");
+    internal static readonly WorldgenTags.BlockGroup JungleLogs = WorldgenTags.Blocks("jungle_logs");
+    private static readonly WorldgenTags.BlockGroup snowLayerCannotSurviveOn = WorldgenTags.Blocks("snow_layer_cannot_survive_on");
+    private static readonly WorldgenTags.BlockGroup snowLayerCanSurviveOn = WorldgenTags.Blocks("snow_layer_can_survive_on");
+    private static readonly WorldgenTags.BlockGroup nylium = WorldgenTags.Blocks("nylium");
 
     /// <summary>
     /// Whether <paramref name="block"/> could stay at <paramref name="position"/>, like vanilla <c>BlockState.canSurvive</c>.
@@ -94,7 +95,7 @@ internal static class BlockSurvival
 
     private static bool IsWater(IBlock block) => block.GetFluid() is FluidKind.Water or FluidKind.FlowingWater;
 
-    // VegetationBlock.mayPlaceOn: dirt-tagged blocks and farmland.
+    // Current vegetation uses its support tag; legacy replays retain their older dirt set.
     private static bool MayPlaceOnVegetation(IBlock below) => dirt.Contains(below) || below.Is(BlockIds.Farmland);
 
     private static bool WitherRoseMayPlaceOn(IBlock below) =>

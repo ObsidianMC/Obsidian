@@ -35,7 +35,7 @@ public sealed class LocateCommandModule : CommandModuleBase
         var message = await MojangGenerator.RunSearchAsync(() => LocateStructure(
             structure.Trim(),
             origin,
-            PluginStructures.Current.Structures,
+            PluginStructures.CurrentRegistry.Structures,
             targets => generator?.LocateStructure(
                 locator => locator.Locate(targets, origin, SearchRadius, skipKnownStructures: false))));
 
@@ -138,9 +138,9 @@ public sealed class LocateCommandModule : CommandModuleBase
     {
         public override ValueTask<IEnumerable<CommandSuggestion>> GetSuggestionsAsync(CommandContext context)
         {
-            var suggestions = PluginStructures.Current.Structures.Keys
+            var suggestions = PluginStructures.CurrentRegistry.Structures.Keys
                 .Order(StringComparer.Ordinal)
-                .Concat(StructureTags.All.Keys.Order(StringComparer.Ordinal).Select(tag => $"#{tag}"))
+                .Concat(CurrentStructureTags.All.Keys.Order(StringComparer.Ordinal).Select(tag => $"#{tag}"))
                 .Select(text => new CommandSuggestion(text));
 
             return ValueTask.FromResult(suggestions);

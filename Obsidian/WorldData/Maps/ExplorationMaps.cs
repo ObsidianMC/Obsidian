@@ -2,7 +2,7 @@ using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Loot;
 using Obsidian.WorldData.Generators;
-using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Generators.Biomes;
 using Obsidian.WorldData.Generators.Mojang.Structures;
 
 namespace Obsidian.WorldData.Maps;
@@ -21,7 +21,7 @@ internal sealed class ExplorationMaps(AbstractLevel level, MojangGenerator gener
     public ItemStack? Create(ExplorationMapRequest request)
     {
         // Searching structures and drawing biomes runs the generator's plugins' code. A stopped generator makes none.
-        if (generator.Builder is not ChunkBuilder builder)
+        if (generator.Builder is not BiomeTerrain builder)
             return null;
 
         try
@@ -35,7 +35,7 @@ internal sealed class ExplorationMaps(AbstractLevel level, MojangGenerator gener
         }
     }
 
-    private ItemStack? Create(ExplorationMapRequest request, ChunkBuilder builder)
+    private ItemStack? Create(ExplorationMapRequest request, BiomeTerrain builder)
     {
         var structures = builder.Structures;
         var tag = request.Destination.StartsWith('#') ? request.Destination[1..] : request.Destination;

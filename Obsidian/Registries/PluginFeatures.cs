@@ -6,6 +6,7 @@ using Obsidian.Plugins;
 using Obsidian.Registries.Codecs;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Generators;
 using Obsidian.WorldData.Generators.Mojang.Carvers;
 using Obsidian.WorldData.Generators.Mojang.Features;
 using Obsidian.WorldData.Structures;
@@ -85,10 +86,9 @@ internal static partial class PluginFeatures
     /// Whether a placed feature is vanilla's or a loaded plugin's.
     /// </summary>
     public static bool IsPlacedFeature(string identifier) =>
-        RegistryIds.IsPlacedFeature(identifier)
-        || Current.PlacedFeatures.ContainsKey(identifier)
-        // A placed feature only the 26.3 registry builds, such as one in 26.3's schema, isn't in the legacy set.
-        // Later plugins' biome files can still name it; the 26.3 registry checks it and isolates what needs it.
+        WorldgenDataIds("placed_feature").Contains(identifier)
+        || CurrentRegistry.FeatureSet!.PlacedFeatures.ContainsKey(identifier)
+        // Later plugins' biomes can name file-only entries before those biomes join the next native snapshot.
         || Volatile.Read(ref inputs).Files.Any(file =>
             file.Registry == PlacedFeature && file.Identifier == identifier);
 
@@ -96,12 +96,13 @@ internal static partial class PluginFeatures
     /// Whether a configured carver is vanilla's or a loaded plugin's.
     /// </summary>
     public static bool IsConfiguredCarver(string identifier) =>
-        RegistryIds.IsConfiguredCarver(identifier)
-        || Current.ConfiguredCarvers.ContainsKey(identifier)
-        // A 26.3 carver is intentionally absent from the legacy set. Later plugins' biome files can still name it;
-        // schema validation and missing-dependency isolation belong to the native snapshot resolver.
+        WorldgenDataIds("carver").Contains(identifier)
+        // Schema validation and missing-dependency isolation belong to the native snapshot resolver.
         || Volatile.Read(ref inputs).Files.Any(file =>
             file.Registry == ConfiguredCarver && file.Identifier == identifier);
+
+    private static IEnumerable<string> WorldgenDataIds(string registry) =>
+        WorldData.Generators.Density.WorldgenData.Vanilla.Ids(registry);
 
     /// <summary>
     /// Finds the feature and biome modifier files in a plugin's files, by their paths.
@@ -201,7 +202,7 @@ internal static partial class PluginFeatures
         lock (applying)
         {
             var snapshot = new FeatureInputs([.. files], [.. biomes], [.. types], logger);
-            var features = Build(snapshot.Files, snapshot.Biomes, snapshot.Types, logger);
+            var features = snapshot.Registry.Value.FeatureSet!;
             var broken = features.Unordered.FirstOrDefault(generating.Contains);
 
             if (broken is not null)
@@ -232,7 +233,7 @@ internal static partial class PluginFeatures
         IEnumerable<CodecFile> biomes,
         IEnumerable<WorldgenTypeRegistration> types,
         ILogger logger,
-        IEnumerable<MojangDimension>? dimensions = null,
+        IEnumerable<LevelStem>? dimensions = null,
         FeatureRegistry26? registry = null)
     {
         var kept = VanillaOverrides.LastWins(
@@ -267,13 +268,15 @@ internal static partial class PluginFeatures
 
         var biomeFeatures = new BiomeFeatureLists(registry?.VanillaBiomeFeatures()
             ?? global::Obsidian.Registries.BiomeFeatures.All, registry is null ? null : registry.SourceBiomes);
-        var biomeCarvers = new BiomeCarverLists();
+        var biomeCarvers = new BiomeCarverLists(legacy: registry is null);
 
         // Vanilla's biomes place the overridden features and carvers, and the vanilla features read again.
-        var vanillaPlaced = global::Obsidian.Registries.PlacedFeatures.All;
         if (registry is null)
+        {
+            var vanillaPlaced = global::Obsidian.Registries.PlacedFeatures.All;
             biomeFeatures.Replace(Overrides(resolver.PlacedFeatures, vanillaPlaced.ContainsKey, id => vanillaPlaced[id]));
-        biomeCarvers.Replace(Overrides(carvers.Plugins, RegistryIds.IsConfiguredCarver, ConfiguredCarvers.Vanilla));
+            biomeCarvers.Replace(Overrides(carvers.Plugins, RegistryIds.IsConfiguredCarver, ConfiguredCarvers.Vanilla));
+        }
 
         foreach (var biome in PluginBiomes(biomes))
         {
@@ -774,7 +777,7 @@ internal static partial class PluginFeatures
     /// </summary>
     private sealed class BiomeFeatureLists(
         IReadOnlyDictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> vanilla,
-        Func<MojangDimension, IEnumerable<BiomeCodec>>? sourceBiomes = null)
+        Func<LevelStem, IEnumerable<BiomeCodec>>? sourceBiomes = null)
     {
         private readonly Dictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> lists =
             new(vanilla);
@@ -886,7 +889,7 @@ internal static partial class PluginFeatures
         /// Whether the dimension's generator can't order its biomes' features, like vanilla's FeatureSorter, which
         /// sorts the features of its biome source's possible biomes alone.
         /// </summary>
-        public bool HasCycle(MojangDimension dimension)
+        public bool HasCycle(LevelStem dimension)
         {
             try
             {
@@ -913,7 +916,7 @@ internal static partial class PluginFeatures
         /// only ever goes back to the unmodified lists, so this ends.
         /// </remarks>
         public ImmutableArray<string> Order(
-            List<MojangDimension> dimensions,
+            List<LevelStem> dimensions,
             Dictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> unmodified,
             ILogger logger)
         {
@@ -948,7 +951,7 @@ internal static partial class PluginFeatures
 
         // Gives the dimension's biomes back the features they had in the snapshot; whether any changed.
         private bool Revert(
-            MojangDimension dimension,
+            LevelStem dimension,
             Dictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>> snapshot)
         {
             var changed = false;
@@ -1033,15 +1036,16 @@ internal static partial class PluginFeatures
     /// The biomes' configured carvers, starting from vanilla's biomes', which stay the result as long as nothing
     /// changes them.
     /// </summary>
-    private sealed class BiomeCarverLists
+    private sealed class BiomeCarverLists(bool legacy = true)
     {
         private readonly Dictionary<string, ImmutableArray<IConfiguredCarver>> lists =
-            new(ConfiguredCarvers.VanillaBiomes);
+            new(legacy ? ConfiguredCarvers.VanillaBiomes
+                : FrozenDictionary<string, ImmutableArray<IConfiguredCarver>>.Empty);
 
         private bool changed;
 
         public IReadOnlyDictionary<string, ImmutableArray<IConfiguredCarver>> Result =>
-            this.changed ? this.lists.ToFrozenDictionary() : ConfiguredCarvers.VanillaBiomes;
+            legacy && !this.changed ? ConfiguredCarvers.VanillaBiomes : this.lists.ToFrozenDictionary();
 
         /// <summary>
         /// Gives a plugin's biome its carvers.

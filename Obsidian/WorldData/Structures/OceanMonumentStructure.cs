@@ -1,3 +1,4 @@
+using Obsidian.WorldData.Generators;
 using Obsidian.WorldData.Features;
 
 namespace Obsidian.WorldData.Structures;
@@ -8,7 +9,7 @@ namespace Obsidian.WorldData.Structures;
 [StructureType("minecraft:ocean_monument")]
 public sealed class OceanMonumentStructure : Structure
 {
-    private static readonly BiomeSet requiredSurrounding = LegacyWorldgenTags.Biomes("required_ocean_monument_surrounding");
+    private static readonly WorldgenTags.BiomeGroup requiredSurrounding = WorldgenTags.Biomes("required_ocean_monument_surrounding");
 
     internal override StructureStub? FindGenerationPoint(StructureGenerationContext context)
     {

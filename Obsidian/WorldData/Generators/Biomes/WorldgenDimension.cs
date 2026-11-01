@@ -1,4 +1,5 @@
 using Obsidian.Plugins;
+using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.Registries;
 using Obsidian.Registries.Codecs;
 using Obsidian.WorldData.Generators.Density;
@@ -15,12 +16,11 @@ namespace Obsidian.WorldData.Generators.Biomes;
 /// <see cref="PluginWorldgen"/>). <see cref="BiomeTerrain.Create"/> generates it for a world.
 /// </summary>
 /// <remarks>
-/// The 26.3 counterpart of <see cref="Mojang.MojangDimension"/>, with the same plugin lifecycle: the plugins whose
-/// types or carver files it uses are <see cref="Plugins"/>, which generating enters (unloading stops it), and
+/// The plugins whose types or carver files it uses are <see cref="LevelStem.Plugins"/>, which generating enters.
 /// <see cref="Release"/> drops their objects so that they can unload. Its biome regions are fixed when its first
-/// generator is created, like the 1.21.11 pipeline's (see <see cref="PluginBiomeRegions"/>).
+/// generator is created (see <see cref="PluginBiomeRegions"/>).
 /// </remarks>
-internal sealed class WorldgenDimension
+internal sealed class WorldgenDimension : LevelStem
 {
     // Gson reads data packs leniently, so comments and trailing commas are fine.
     private static readonly JsonDocumentOptions documentOptions = new()
@@ -62,26 +62,23 @@ internal sealed class WorldgenDimension
         Func<ImmutableArray<BiomeRegion>>? regions = null,
         IMaterialTypes? materialTypes = null,
         Func<Terrain.Carvers.CarverRegistry>? carvers = null)
+        : base(identifier, dimensionType, plugins)
     {
-        this.Identifier = identifier;
-        this.DimensionType = dimensionType;
+        this.DimensionTypeId = dimensionType;
         this.Data = data;
         this.SettingsId = settingsId;
         this.settings = settings;
         this.layout = layout;
         this.densityTypes = densityTypes;
         this.materialTypes = materialTypes;
-        this.Plugins = plugins.IsDefault ? [] : plugins;
         this.regions = regions ?? (() => []);
-        this.SourceBiomes = layout.PossibleBiomes;
+        this.SourceBiomeNames = layout.PossibleBiomes;
+        this.SeaLevel = settings.SeaLevel;
         this.Carvers = carvers;
     }
 
-    /// <summary>The level stem's identifier, which names its level.</summary>
-    public string Identifier { get; }
-
     /// <summary>The dimension type's identifier.</summary>
-    public string DimensionType { get; }
+    public string DimensionTypeId { get; }
 
     /// <summary>The 26.3 data the dimension is read from and generates with.</summary>
     public WorldgenData Data { get; }
@@ -91,13 +88,24 @@ internal sealed class WorldgenDimension
     /// <summary>The noise settings' identifier, vanilla's or a plugin's, or null for ones defined inline.</summary>
     public string? SettingsId { get; }
 
-    /// <summary>The plugins whose types the settings/source use, or whose carvers its biomes use.</summary>
-    public ImmutableArray<PluginContainer> Plugins { get; }
-
     /// <summary>
     /// The biome source's possible biomes, without those of biome regions; kept once the dimension is released.
     /// </summary>
-    public IReadOnlyList<string> SourceBiomes { get; }
+    public IReadOnlyList<string> SourceBiomeNames { get; }
+
+    public override IReadOnlyList<BiomeCodec> SourceBiomes =>
+        this.SourceBiomeNames.Select(id => CodecRegistry.TryGetBiome(id, out var biome)
+            ? biome! : throw new InvalidDataException($"Unknown biome {id}.")).ToArray();
+
+    public int MinY => this.DimensionType.Element.MinY;
+
+    public int Height => this.DimensionType.Element.Height;
+
+    public int SeaLevel { get; }
+
+    public bool HasSkyLight => this.DimensionType.Element.HasSkylight;
+
+    public override IStemGenerator CreateGenerator() => new LevelStemGenerator(this);
 
     /// <summary>The noise settings.</summary>
     /// <exception cref="InvalidOperationException">The dimension was released.</exception>
@@ -116,7 +124,7 @@ internal sealed class WorldgenDimension
     public IMaterialTypes? MaterialTypes => this.IsReleased ? throw this.Released() : this.materialTypes;
 
     /// <summary>Whether <see cref="Release"/> dropped the generator's parts.</summary>
-    public bool IsReleased => this.layout is null;
+    public override bool IsReleased => this.layout is null;
 
     /// <summary>
     /// The dimension's biome regions, fixed for the server's life as its first generator is created.
@@ -128,7 +136,7 @@ internal sealed class WorldgenDimension
     /// plugins can unload: the dimension cannot create generators any more, and existing ones stop
     /// as their plugins unload.
     /// </summary>
-    public void Release()
+    public override void Release()
     {
         this.settings = null;
         this.layout = null;
@@ -228,13 +236,19 @@ internal sealed class WorldgenDimension
             ? NoiseGeneratorSettings.Read(settingsValue.Clone(), "generator.settings")
             : NoiseGeneratorSettings.Read(data, settingsId);
 
+        CodecRegistry.TryGetDimension(dimensionType, out var dimensionCodec);
+        var range = dimensionCodec!.Element;
+        if (settings.MinY < range.MinY || settings.MinY + settings.Height > range.MinY + range.Height)
+            throw CodecJson.Error("generator.settings", "noise settings exceed the dimension build range");
+
         var plugins = new HashSet<PluginContainer>();
         var layout = LevelStemData.ReadLayout(
             CodecJson.Required(generator, "generator", "biome_source"),
             "generator.biome_source",
             noise,
             data,
-            plugins);
+            plugins,
+            settings.LegacyRandomSource);
 
         var (densityTypes, materialTypes) = FindPluginTypes(data, settings, noise);
         plugins.UnionWith(densityTypes?.Owners ?? []);
@@ -279,6 +293,14 @@ internal sealed class WorldgenDimension
 
         return (density.Narrowed(), materials.Narrowed());
     }
+
+    public static WorldgenDimension Overworld { get; } = Vanilla("minecraft:overworld");
+
+    public static WorldgenDimension Nether { get; } = Vanilla("minecraft:the_nether");
+
+    public static WorldgenDimension End { get; } = Vanilla("minecraft:the_end");
+
+    public static IReadOnlyList<WorldgenDimension> VanillaDimensions { get; } = [Overworld, Nether, End];
 
     private InvalidOperationException Released() =>
         new($"{this.Identifier} was released when a plugin it generates with unloaded.");

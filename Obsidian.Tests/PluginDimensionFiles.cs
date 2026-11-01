@@ -37,8 +37,7 @@ using SurfaceAnchor = Obsidian.API.World.Generator.SurfaceConditions.VerticalAnc
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Plugins' dimensions, from level stem files, generated with vanilla's noise generator: the live 1.21.11 pipeline,
-/// and the 26.3 pipeline that replaces it.
+/// Plugins' dimensions, from level stem files, generated with the live 26.3 noise generator.
 /// </summary>
 public sealed class PluginDimensionFiles : IDisposable
 {
@@ -188,20 +187,19 @@ public sealed class PluginDimensionFiles : IDisposable
         Assert.Same(CodecRegistry.Dimensions.All["minecraft:overworld"], dimension.DimensionType);
 
         // The biome's features are ordered across the dimension's biomes, as the server does for every dimension.
-        var features = PluginFeatures.Build(
+        var features = PluginFeatures.BuildRegistry(
             [
                 PluginFeatures.Parse(PluginFeatures.ConfiguredFeature, "stemfiles:ore_marker", "test", Bytes(Ore)),
                 PluginFeatures.Parse(PluginFeatures.PlacedFeature, "stemfiles:ore_marker", "test", Bytes(PlacedOre))
             ],
             [glade],
             [],
-            logger,
-            [dimension]);
+            logger);
 
         Assert.Empty(logger.Messages);
 
-        var builder = new ChunkBuilder(dimension, 1234, generateStructures: false, () => features);
-        var chunk = new FullChunks(builder, dimension).Get(0, 0);
+        var builder = BiomeTerrain.Create(dimension, 1234, features);
+        var chunk = new NativeChunks(builder).Get(0, 0);
 
         Assert.Same(gladeBiome, chunk.GetBiome(0, 0, 0));
         Assert.True(PluginFeatureFiles.HasDiamondBlocks(chunk));
@@ -232,209 +230,38 @@ public sealed class PluginDimensionFiles : IDisposable
     [Fact(DisplayName = "A dimension generates with plugins' noise settings and types, and stops when they unload")]
     public async Task GeneratesWithPluginNoiseSettingsAndTypes()
     {
-        // The types a plugin registers, here from the test's own load context.
-        List<WorldgenTypeRegistration> types = [];
-        types.Add(WorldgenTypeRegistration.Create(
-            types,
-            "probe:shelf",
-            typeof(IDensityFunction),
-            typeof(ShelfFunction)));
-        types.Add(WorldgenTypeRegistration.Create(
-            types,
-            "probe:top",
-            typeof(ISurfaceRule),
-            typeof(TopRule)));
-        types.Add(WorldgenTypeRegistration.Create(
-            types,
-            "probe:halves",
-            typeof(BiomeSourceBase),
-            typeof(HalvesSource)));
-        types.Add(WorldgenTypeRegistration.Create(
-            types,
-            "probe:failing",
-            typeof(IDensityFunction),
-            typeof(FailingFunction)));
-
-        // A density function with functions in it has to map them, or they'd stay unseeded without any error.
-        Assert.Throws<ArgumentException>(() => WorldgenTypeRegistration.Create(
-            types,
-            "probe:unmapped",
-            typeof(IDensityFunction),
-            typeof(UnmappedFunction)));
-
-        var logger = new PluginFeatureFiles.ListLogger();
         var noise = PluginNoise.Build(
             [
-                PluginNoise.Parse(PluginNoise.NoiseSettings, "probe:shelf_world", "test", Bytes(ShelfWorld)),
-                PluginNoise.Parse(PluginNoise.DensityFunction, "probe:ground", "test", Bytes(Ground)),
-                PluginNoise.Parse(PluginNoise.DensityFunction, "probe:loop", "test", Bytes("\"probe:loop\"")),
-                PluginNoise.Parse(PluginNoise.DensityFunction, "probe:stuck", "test", Bytes(Stuck)),
-                PluginNoise.Parse(PluginNoise.NoiseSettings, "probe:failing_world", "test", Bytes(FailingWorld)),
-                PluginNoise.Parse(PluginNoise.Noise, "probe:bumps", "test", Bytes(Bumps))
-            ],
-            types,
-            logger);
-
-        // A file referring back to itself, or with a value vanilla's codec refuses, is left out; the others load.
-        Assert.Collection(
-            logger.Messages,
-            message => Assert.Contains("probe:loop refers back to itself", message),
-            message => Assert.Contains("cell_height: 0 isn't positive", message));
-
-        var settings = noise.NoiseSettings["probe:shelf_world"];
-        var shelf = Assert.IsType<ShelfFunction>(settings.NoiseRouter.FinalDensity);
-        Assert.Same(noise.DensityFunctions["probe:ground"], shelf.Argument);
-
+                PluginNoise.Parse(PluginNoise.DensityFunction, "probe:ground", "test", Bytes(Ground26)),
+                PluginNoise.Parse(PluginNoise.Noise, "probe:bumps", "test", Bytes(Bumps26))
+            ], ProbeTypes(), NullLogger.Instance);
         var stem = FixedStem
-            .Replace("\"settings\": \"minecraft:overworld\"", "\"settings\": \"probe:shelf_world\"")
-            .Replace(
-                """{ "type": "minecraft:fixed", "biome": "stemfiles:glade" }""",
-                """{ "type": "probe:halves", "west": "minecraft:desert", "east": "minecraft:plains" }""");
-        var read = PluginDimensions.Parse("stemfiles:shelf", "test", Bytes(stem), noise).Dimension.Noise();
-
-        // The types are the test's, not a plugin's, so the plugin whose code the generator runs is given here.
-        var plugin = new PluginContainer
-        {
-            Info = new PluginInfo("probe"),
-            Archive = PluginArchive.Open(
-                "probe.obby",
-                PluginArchives.Zip(new Dictionary<string, byte[]>
-                {
-                    [PluginMetadata.FileName] = PluginArchives.Metadata("probe", "1.0.0", "Probe")
-                }))
-        };
-
-        var dimension = new MojangDimension(
-            read.Identifier,
-            "minecraft:overworld",
-            read.NoiseSettings,
-            read.Settings,
-            read.CreateBiomeSource,
-            () => read.PossibleBiomes,
-            [plugin]);
-
-        Assert.Equal(["minecraft:desert", "minecraft:plains"], dimension.PossibleBiomes.Select(biome => biome.Name));
-
-        // The plugin's function shapes a floor at y 40, which its rule tops with gold, in the source's biomes.
-        var builder = new ChunkBuilder(dimension, 1234, generateStructures: false, () => WorldgenFeatureSet.Vanilla);
-        var west = new Chunk(-1, 0);
-
-        builder.PopulateBiomes(west);
-        builder.Generate3DTerrain(west);
-        builder.ApplySurfaceRules(west);
-
-        Assert.Equal("minecraft:desert", west.GetBiome(0, 39, 0).Name);
-        Assert.True(west.GetBlock(3, 39, 5).Is(BlockIds.GoldBlock));
-        Assert.True(west.GetBlock(3, 38, 5).Is(BlockIds.Stone));
-        Assert.True(west.GetBlock(3, 40, 5).IsAir);
-
-        // The same settings defined inline generate the same, and the plugin entries they name count as changes.
-        var inlineFile = PluginDimensions.Parse(
-            "stemfiles:inline",
-            "test",
-            Bytes(stem.Replace("\"probe:shelf_world\"", ShelfWorld)),
-            noise);
-        Assert.Null(inlineFile.Dimension.Noise().NoiseSettings);
-        Assert.Contains($"{PluginNoise.DensityFunction} probe:ground", inlineFile.Json);
-
-        var inlineBuilder = new ChunkBuilder(
-            inlineFile.Dimension.Noise(),
-            1234,
-            generateStructures: false,
-            () => WorldgenFeatureSet.Vanilla);
-        var inlineWest = new Chunk(-1, 0);
-
-        inlineBuilder.PopulateBiomes(inlineWest);
-        inlineBuilder.Generate3DTerrain(inlineWest);
-        inlineBuilder.ApplySurfaceRules(inlineWest);
-
-        Assert.True(inlineWest.GetBlock(3, 39, 5).Is(BlockIds.GoldBlock));
-        Assert.True(inlineWest.GetBlock(3, 40, 5).IsAir);
-
-        // A plugin's code failing stops its level, rather than chunk management, and the chunk isn't generated.
-        var failing = new MojangDimension(
-            "stemfiles:failing",
-            "minecraft:overworld",
-            "probe:failing_world",
-            noise.NoiseSettings["probe:failing_world"],
-            read.CreateBiomeSource,
-            () => read.PossibleBiomes,
-            [plugin]);
-        await using (var failingLevel = CreateLevel(this.CreateWorld(), failing))
-        {
-            var failingGenerator = (LevelStemGenerator)failingLevel.Generator;
-
-            // The noise failed partway, so the chunk is rewound to replay its steps from scratch.
-            Assert.True((await failingGenerator.GenerateChunkAsync(0, 0)).ChunkStatus < ChunkGenStage.biomes);
-            Assert.Null(failingGenerator.Builder);
-        }
-
-        // A plugin's feature failing stops the level too, but its chunk counts as decorated: what was placed stays,
-        // and isn't placed again after a restart.
-        var failingFeature = new PlacedFeature
-        {
-            Identifier = "probe:failing",
-            Feature = new FailingFeature()
-        };
-        var features = new WorldgenFeatureSet(
-            FrozenDictionary<string, ConfiguredFeatureBase>.Empty,
-            FrozenDictionary<string, PlacedFeature>.Empty,
-            BiomeFeatures.All.ToDictionary(
-                entry => entry.Key,
-                entry => (IReadOnlyList<IReadOnlyList<PlacedFeature>>)[[failingFeature], .. entry.Value.Skip(1)]),
-            new Dictionary<PlacedFeature, ImmutableArray<PluginContainer>> { [failingFeature] = [plugin] }
-                .ToFrozenDictionary());
-        var decoratingGenerator = new LevelStemGenerator(dimension) { Features = () => features };
-        await using (CreateLevel(this.CreateWorld(), dimension, generator: decoratingGenerator))
-        {
-            var decorated = await decoratingGenerator.GenerateChunkAsync(0, 0, stage: ChunkGenStage.features);
-
-            Assert.Equal(ChunkGenStage.features, decorated.ChunkStatus);
-            Assert.True(decorated.GetBlock(1, 100, 1).Is(BlockIds.DiamondBlock));
-            Assert.Null(decoratingGenerator.Builder);
-        }
-
-        // Unloading: the generator holds the plugin while a level is created with it, then refuses to generate.
+            .Replace("\"settings\": \"minecraft:overworld\"", $"\"settings\": {ShelfWorld26}")
+            .Replace("stemfiles:glade", "minecraft:plains");
+        var data = PluginWorldgen.Layer(WorldgenData.Vanilla, [], noise.Files);
+        var plugin = ProbePlugin();
+        var read = Read26("stemfiles:live_shelf", stem, noise, data);
+        var dimension = WithPlugin(read, plugin);
         var world = this.CreateWorld();
         await using var level = CreateLevel(world, dimension);
         var generator = (LevelStemGenerator)level.Generator;
+        var chunk = await generator.GenerateChunkAsync(0, 0, stage: ChunkGenStage.carvers);
+
+        Assert.Equal(ChunkGenStage.carvers, chunk.ChunkStatus);
+        Assert.True(chunk.GetBlock(3, 38, 5).Is(BlockIds.Stone));
+        Assert.True(chunk.GetBlock(3, 40, 5).IsAir);
 
         plugin.Close();
-
-        Assert.Throws<GeneratorStoppedException>(() => builder.PopulateBiomes(new Chunk(2, 0)));
-
-        var refused = await generator.GenerateChunkAsync(4, 4);
-        Assert.False(refused.IsGenerated);
-
-        // Stopped, it lets go of the plugin's objects, and generates nothing.
         generator.Stop();
-
         Assert.Null(generator.Builder);
         Assert.True(dimension.IsReleased);
-        Assert.Equal(["minecraft:desert", "minecraft:plains"], dimension.PossibleBiomes.Select(biome => biome.Name));
-        Assert.False((await generator.GenerateChunkAsync(5, 5)).IsGenerated);
+        Assert.False((await generator.GenerateChunkAsync(4, 4)).IsGenerated);
 
-        // Once the plugin loads again, the dimension read again from its stem resumes the level from its next chunk.
-        var reloadedPlugin = new PluginContainer
-        {
-            Info = plugin.Info,
-            Archive = plugin.Archive
-        };
-        var rebuilt = new MojangDimension(
-            read.Identifier,
-            "minecraft:overworld",
-            read.NoiseSettings,
-            read.Settings,
-            read.CreateBiomeSource,
-            () => read.PossibleBiomes,
-            [reloadedPlugin]);
-
+        var rebuilt = WithPlugin(Read26(read.Identifier, stem, noise, data), ProbePlugin());
         Assert.True(generator.Resume(rebuilt));
-        Assert.Same(rebuilt, generator.Dimension);
-
-        var resumed = await generator.GenerateChunkAsync(6, 6, stage: ChunkGenStage.carvers);
-        Assert.True(resumed.ChunkStatus >= ChunkGenStage.surface);
-        Assert.True(resumed.GetBlock(3, 39, 5).Is(BlockIds.GoldBlock));
+        var resumed = await generator.GenerateChunkAsync(4, 4, stage: ChunkGenStage.carvers);
+        Assert.Equal(ChunkGenStage.carvers, resumed.ChunkStatus);
+        Assert.True(resumed.GetBlock(3, 38, 5).Is(BlockIds.Stone));
     }
 
     [Trait("Category", TestCategory.Worldgen)]
@@ -464,7 +291,7 @@ public sealed class PluginDimensionFiles : IDisposable
         var dimension = WithPlugin(Read26("stemfiles:shelf", stem, noise, data), plugin);
 
         Assert.Equal("probe:shelf_world", dimension.SettingsId);
-        Assert.Equal(["minecraft:desert", "minecraft:plains"], dimension.SourceBiomes);
+        Assert.Equal(["minecraft:desert", "minecraft:plains"], dimension.SourceBiomeNames);
 
         // The plugin's function shapes a floor at y 40, in the plugin's source's biomes.
         var terrain = BiomeTerrain.Create(dimension, 1234);
@@ -508,7 +335,7 @@ public sealed class PluginDimensionFiles : IDisposable
 
         dimension.Release();
         Assert.Throws<InvalidOperationException>(() => BiomeTerrain.Create(dimension, 1234));
-        Assert.Equal(["minecraft:desert", "minecraft:plains"], dimension.SourceBiomes);
+        Assert.Equal(["minecraft:desert", "minecraft:plains"], dimension.SourceBiomeNames);
 
         // Once the plugin is back, the stem read again generates, with the biome regions it's given.
         Assert.True(CodecRegistry.TryGetBiome("minecraft:badlands", out var badlands));
@@ -624,6 +451,48 @@ public sealed class PluginDimensionFiles : IDisposable
         var own = Json("""{ "type": "probe:own_noise", "noise": "probe:bumps" }""");
         var ownError = Assert.Throws<InvalidDataException>(() => first.Compile(own, "own"));
         Assert.Contains("its own class", ownError.Message);
+    }
+
+    [Trait("Category", TestCategory.Worldgen)]
+    [Fact(DisplayName = "A plugin biome source's density and noise properties use 26.3 data and each world's seed")]
+    public void SeedsPluginBiomeSourceValues()
+    {
+        var registrations = ProbeTypes();
+        registrations.Add(WorldgenTypeRegistration.Create(registrations,
+            "probe:noisy_source", typeof(BiomeSourceBase), typeof(NoisySource)));
+        var noise = PluginNoise.Build([], registrations, NullLogger.Instance);
+        var data = WorldgenData.Vanilla.With([
+            new("noise", "probe:bumps", Json(Bumps26)),
+            new("density_function", "probe:ground", Json(Ground26)),
+            new("density_function", "probe:split", Json("""
+                { "type": "minecraft:noise", "noise": "probe:bumps", "xz_scale": 0.5, "y_scale": 0.5 }
+                """))
+        ]);
+        var stem = ShelfStem(ShelfWorld26).Replace(
+            """{ "type": "probe:halves", "west": "minecraft:desert", "east": "minecraft:plains" }""",
+            """{ "type": "probe:noisy_source", "split": "probe:split", "noise": "probe:bumps" }""");
+        var dimension = Read26("stemfiles:seeded_source", stem, noise, data);
+        var results = new List<string[]>();
+
+        foreach (var seed in new[] { 1234L, 5678L })
+        {
+            var source = BiomeTerrain.Create(dimension, seed).Source;
+            var compiler = new DensityCompiler(data, seed, false);
+            var split = compiler.Function("probe:split");
+            var bumps = compiler.Noise("probe:bumps");
+            var names = new List<string>();
+            for (var x = -20; x <= 20; x++)
+            {
+                var expected = split.Sample(x << 2, 40, 0) + bumps.Get(x << 2, 40, 0) < 0
+                    ? "minecraft:desert" : "minecraft:plains";
+                var actual = source.GetNoiseBiome(x, 10, 0).Name;
+                Assert.Equal(expected, actual);
+                names.Add(actual);
+            }
+            results.Add([.. names]);
+        }
+
+        Assert.False(results[0].SequenceEqual(results[1]));
     }
 
     [Trait("Category", TestCategory.Worldgen)]
@@ -833,7 +702,7 @@ public sealed class PluginDimensionFiles : IDisposable
         PluginContainer plugin,
         ImmutableArray<BiomeRegion> regions = default) => new(
         read.Identifier,
-        read.DimensionType,
+        read.DimensionTypeId,
         read.Data,
         read.SettingsId,
         read.Settings,
@@ -1199,6 +1068,22 @@ public sealed class PluginDimensionFiles : IDisposable
         public IBlock? Apply(ISurfaceContext context) => null;
     }
 
+    public sealed class NoisySource : BiomeSourceBase
+    {
+        public override string Type => "probe:noisy_source";
+
+        public required IDensityFunction Split { get; init; }
+
+        public required Obsidian.API.World.Generator.Noise.BaseNoise Noise { get; init; }
+
+        public override IReadOnlyList<string> PossibleBiomes => ["minecraft:desert", "minecraft:plains"];
+
+        public override string GetBiome(int quartX, int quartY, int quartZ, IClimateSampler climate) =>
+            this.Split.GetValue(quartX << 2, quartY << 2, quartZ << 2)
+                + this.Noise.GetValue(quartX << 2, quartY << 2, quartZ << 2) < 0
+                    ? "minecraft:desert" : "minecraft:plains";
+    }
+
     // A plugin's biome source: one biome west of x 0, another east.
     public sealed class HalvesSource : BiomeSourceBase
     {
@@ -1351,7 +1236,7 @@ public sealed class PluginDimensionFiles : IDisposable
     // The level the server creates for a plugin's dimension (see WorldManager.AddPluginDimensionsAsync).
     private static Dimension CreateLevel(
         World world,
-        MojangDimension dimension,
+        WorldgenDimension dimension,
         LevelStemGenerator? generator = null)
     {
         var level = new Dimension(

@@ -96,7 +96,6 @@ public class PluginStructureTypes
         """;
 
     [Theory(DisplayName = "A plugin's structure type starts and places its pieces, and goes with the plugin")]
-    [InlineData(false)]
     [InlineData(true)]
     public void GeneratesPluginStructureTypes(bool current)
     {
@@ -110,8 +109,8 @@ public class PluginStructureTypes
         Assert.Equal(5, Assert.IsType<SpireType>(spire.Definition).Height);
 
         var structures = Only(built, "structuretest:spires");
-        var builder = new ChunkBuilder(MojangDimension.Overworld, Seed, structures: () => structures);
-        var chunks = new FullChunks(builder, MojangDimension.Overworld);
+        var builder = NativeChunks.Pipeline(Seed, () => structures);
+        var chunks = new NativeChunks(builder);
         var manager = builder.Structures!;
 
         var start = manager.GetStarts(0, 0).Single(candidate => candidate.Structure.Identifier == Spire);
@@ -129,7 +128,7 @@ public class PluginStructureTypes
         Assert.Equal(0, Count(chunks.Get(8, 8), BlockIds.EmeraldBlock));
 
         // After a restart without the plugin, the chunk's saved start loads and stays as it was saved.
-        var restarted = new ChunkBuilder(MojangDimension.Overworld, Seed, structures: () => structures).Structures!;
+        var restarted = NativeChunks.Pipeline(Seed, () => structures).Structures!;
         foreach (var candidate in restarted.GetStarts(0, 0))
             StructureManager.RestoreStart(candidate, saved);
 
@@ -137,7 +136,6 @@ public class PluginStructureTypes
     }
 
     [Theory(DisplayName = "A plugin's pool element types are placed by template pools, and connect by their jigsaws")]
-    [InlineData(false)]
     [InlineData(true)]
     public void PlacesPluginPoolElements(bool current)
     {
@@ -150,8 +148,8 @@ public class PluginStructureTypes
         Assert.Equal(4, Assert.IsType<PillarElement>(element.Element).Height);
 
         var structures = Only(built, "structuretest:pillars");
-        var builder = new ChunkBuilder(MojangDimension.Overworld, Seed, structures: () => structures);
-        var chunks = new FullChunks(builder, MojangDimension.Overworld);
+        var builder = NativeChunks.Pipeline(Seed, () => structures);
+        var chunks = new NativeChunks(builder);
 
         // The pillar, then the cap attached to its top jigsaw by the cap's default bottom one.
         var start = builder.Structures!.GetStarts(0, 0).Single(candidate => candidate.Structure.Identifier == Pillar);

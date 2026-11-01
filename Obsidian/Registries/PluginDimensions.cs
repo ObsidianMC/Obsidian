@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 using Obsidian.Plugins;
 using Obsidian.Registries.Codecs;
 using Obsidian.WorldData.Generators;
-using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Generators.Biomes;
 using System.Collections.Frozen;
 using System.IO;
 using System.Text;
@@ -31,9 +31,8 @@ namespace Obsidian.Registries;
 /// When files define the same dimension, the last in order wins.
 /// </para>
 /// <para>
-/// Vanilla's dimensions (<see cref="MojangDimension.Vanilla"/>) are built from compiled code, unless a file overrides
-/// their stem, or the noise settings or parameter list their stem names: then they're read at runtime, from the file
-/// or from vanilla's own stem. Like vanilla, which reads a data pack's stems over those saved in level.dat, the
+/// Vanilla's dimensions (<see cref="WorldgenDimension.VanillaDimensions"/>) are read from their 26.3 stems and data,
+/// with plugins' and data packs' overrides. Like vanilla, which reads a data pack's stems over those saved in level.dat, the
 /// overrides apply to every world when it loads, and to the chunks generated from then on, and once a level took a
 /// vanilla dimension, it's kept like a plugin's.
 /// </para>
@@ -51,7 +50,7 @@ internal static partial class PluginDimensions
         AllowTrailingCommas = true
     };
 
-    // Vanilla 1.21.11's world preset's level stems, by dimension, with the parameter list each names: what they name
+    // Vanilla's world preset's level stems, by dimension, with the parameter list each names: what they name
     // can be overridden, and they're read at runtime once it is.
     private static readonly FrozenDictionary<string, (string Stem, string? ParameterList)> vanillaStems =
         new Dictionary<string, (string Stem, string? ParameterList)>
@@ -92,10 +91,10 @@ internal static partial class PluginDimensions
     /// <summary>
     /// Every dimension generated with vanilla's noise generator: vanilla's, as overridden, and plugins'.
     /// </summary>
-    public static IEnumerable<MojangDimension> All =>
-        MojangDimension.Vanilla
-            .Select(dimension => Find(dimension.Identifier) as MojangDimension ?? dimension)
-            .Concat(Added.OfType<MojangDimension>());
+    public static IEnumerable<WorldgenDimension> All =>
+        WorldgenDimension.VanillaDimensions
+            .Select(dimension => Find(dimension.Identifier) as WorldgenDimension ?? dimension)
+            .Concat(Added.OfType<WorldgenDimension>());
 
     /// <summary>
     /// Whether a dimension is one of vanilla's world preset's.
@@ -153,11 +152,18 @@ internal static partial class PluginDimensions
             var (stem, _) = LevelStemInline.Extract(identifier, bytes);
             using var document = JsonDocument.Parse(stem, documentOptions);
             var entries = new HashSet<object>(ReferenceEqualityComparer.Instance);
-            var dimension = LevelStemData.Read(identifier, document.RootElement, noise, entries);
+            var dependencies = new SortedDictionary<string, string>(StringComparer.Ordinal);
+            var data = PluginWorldgen.Layer(WorldData.Generators.Density.WorldgenData.Vanilla,
+                PluginCodecs.Applied, noise.Files).TraceReads((registry, id, json) =>
+                    dependencies[$"{registry} {id}"] = json.GetRawText());
+            var generator = document.RootElement.GetProperty("generator").GetProperty("type").GetString();
+            var dimension = WorldData.Generators.Density.WorldgenData.Qualify(generator!) == "minecraft:noise"
+                ? (LevelStem)PluginWorldgen.ReadDimension(identifier, stem, noise, data)
+                : LevelStemData.Read(identifier, document.RootElement, noise, entries);
 
             // Obsidian creates vanilla's levels with vanilla's noise generator, which the overrides configure, and
             // with vanilla's dimension types; a stem can change those types' data.
-            if (vanillaStems.ContainsKey(identifier) && dimension is not MojangDimension)
+            if (vanillaStems.ContainsKey(identifier) && dimension is not WorldgenDimension)
             {
                 dimension.Release();
 
@@ -179,7 +185,9 @@ internal static partial class PluginDimensions
             // A change to what it reads from plugins' data is a change to the dimension too: the noise files its noise
             // settings and biome source read, and the biomes it names, which tags may resolve differently.
             var biomes = string.Join(' ', dimension.SourceBiomes.Select(biome => biome.Name));
-            var text = $"{Encoding.UTF8.GetString(bytes)}\n{biomes}\n{noise.Sources(entries)}";
+            data.StopTracing();
+            var nativeSources = string.Join('\n', dependencies.Select(entry => $"{entry.Key}\n{entry.Value}"));
+            var text = $"{Encoding.UTF8.GetString(bytes)}\n{biomes}\n{noise.Sources(entries)}\n{nativeSources}";
 
             return new DimensionFile(identifier, source, text, bytes, dimension);
         }
@@ -190,27 +198,15 @@ internal static partial class PluginDimensions
     }
 
     /// <summary>
-    /// Reads one of vanilla's dimensions from vanilla's stem at runtime when a file overrides the noise settings or
-    /// parameter list it names, or a noise its surface builder reads by name; otherwise its compiled dimension stays,
-    /// and this is null.
+    /// Reads one of vanilla's dimensions from its stem and the current noise entries, including plugin overrides.
     /// </summary>
     /// <param name="identifier">One of vanilla's dimensions, like <c>minecraft:overworld</c>.</param>
     /// <param name="noise">The noise entries files define.</param>
     /// <exception cref="InvalidDataException">The overrides it names can't generate it.</exception>
     public static DimensionFile? ReadVanilla(string identifier, WorldgenNoise noise)
     {
-        var (stem, parameterList) = vanillaStems[identifier];
-        var compiled = MojangDimension.Vanilla.First(dimension => dimension.Identifier == identifier);
-
-        // The surface builder's named noises aren't in vanilla's files, so overriding one doesn't read the noise
-        // settings again: the dimension is read at runtime to take the files' noises.
-        var overridden = noise.NoiseSettings.ContainsKey(compiled.NoiseSettings!)
-            || parameterList is not null && noise.ParameterLists.ContainsKey(parameterList)
-            || SurfaceBuilder.NamedNoises.Any(noise.Noises.ContainsKey);
-
-        return overridden
-            ? Parse(identifier, $"vanilla's {identifier}", Encoding.UTF8.GetBytes(stem), noise)
-            : null;
+        var (stem, _) = vanillaStems[identifier];
+        return Parse(identifier, $"vanilla's {identifier}", Encoding.UTF8.GetBytes(stem), noise);
     }
 
     /// <summary>
@@ -289,7 +285,7 @@ internal static partial class PluginDimensions
     /// </para>
     /// <para>
     /// The files' own dimensions, read as their plugins or packs loaded, are released (see
-    /// <see cref="MojangDimension.Release"/>), so that they don't keep the plugins they're made of loaded; their stems
+    /// <see cref="WorldgenDimension.Release"/>), so that they don't keep the plugins they're made of loaded; their stems
     /// are read again instead.
     /// </para>
     /// </remarks>
@@ -463,19 +459,15 @@ internal static partial class PluginDimensions
         {
             var misfits = new Dictionary<string, string>();
 
-            var untaken = MojangDimension.Vanilla.Where(dimension => !taken.ContainsKey(dimension.Identifier));
+            var untaken = WorldgenDimension.VanillaDimensions.Where(dimension => !taken.ContainsKey(dimension.Identifier));
             foreach (var compiled in untaken)
             {
-                var dimension = Find(compiled.Identifier) as MojangDimension ?? compiled;
+                var dimension = Find(compiled.Identifier) as WorldgenDimension ?? compiled;
                 if (dimension.IsReleased)
                     continue;
 
                 var type = dimension.DimensionType;
-                var settings = dimension.NoiseSettings is string name
-                    ? $"{dimension.Identifier}'s noise settings {name}"
-                    : $"{dimension.Identifier}'s inline noise settings";
-
-                if (LevelStemData.OutsideBuildRange(settings, dimension.Settings, type) is string outside)
+                if (OutsideBuildRange(dimension) is string outside)
                     misfits.TryAdd(type.Name, outside);
             }
 
@@ -538,7 +530,7 @@ internal static partial class PluginDimensions
 
     /// <summary>
     /// Releases the dimensions whose generators are made of an unloading plugin's types (see
-    /// <see cref="MojangDimension.Release"/>), so that they don't keep its code loaded: those added, and those of
+    /// <see cref="WorldgenDimension.Release"/>), so that they don't keep its code loaded: those added, and those of
     /// the files plugins hold that weren't.
     /// </summary>
     /// <param name="held">The files plugins and data packs hold, the unloading plugin's included.</param>
@@ -561,7 +553,7 @@ internal static partial class PluginDimensions
                     file.Dimension.Release();
             }
 
-            // The 26.3 pipeline's dimensions too, until it replaces the 1.21.11 one.
+            // Direct native pipelines also participate in release, including those outside registered levels.
             PluginWorldgen.Release(plugin);
 
             return released;
@@ -580,8 +572,14 @@ internal static partial class PluginDimensions
         }
         """;
 
+    private static string? OutsideBuildRange(WorldgenDimension dimension) =>
+        dimension.Settings.MinY < dimension.MinY
+        || dimension.Settings.MinY + dimension.Settings.Height > dimension.MinY + dimension.Height
+            ? "Noise settings exceed the dimension build range."
+            : null;
+
     private static string VanillaType(string identifier) =>
-        MojangDimension.Vanilla.First(dimension => dimension.Identifier == identifier).DimensionType.Name;
+        WorldgenDimension.VanillaDimensions.First(dimension => dimension.Identifier == identifier).DimensionType.Name;
 
     private static partial class Log
     {

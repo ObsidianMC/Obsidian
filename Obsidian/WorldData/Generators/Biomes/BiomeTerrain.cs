@@ -11,11 +11,14 @@ using Obsidian.WorldData.Generators.Terrain.Carvers;
 using Obsidian.WorldData.Structures;
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
+using System.Threading;
+using Obsidian.WorldData.Fluids;
+using Obsidian.WorldData.Features.Tree;
 using TerrainGenerator = Obsidian.WorldData.Generators.Terrain.TerrainGenerator;
 
 namespace Obsidian.WorldData.Generators.Biomes;
 
-/// <summary>Runs the 26.3 biome, terrain and features statuses without switching the live generator.</summary>
+/// <summary>Runs the live 26.3 biome, terrain and feature statuses.</summary>
 /// <remarks>
 /// A dimension using plugin worldgen (see <see cref="WorldgenDimension.Plugins"/>) enters them for each step that
 /// can run their code: a plugin unloading stops it with a <see cref="GeneratorStoppedException"/>, and their code
@@ -26,7 +29,12 @@ internal sealed class BiomeTerrain
 {
     private readonly TerrainGenerator terrain;
     private readonly BiomeManager manager;
-    private readonly FeatureRegistry? features;
+    private readonly Func<FeatureRegistry?> features;
+    private readonly Func<WorldgenStructures>? structures;
+    private readonly StructureStartCache? startCache;
+    private readonly Lock decorationLock = new();
+    private FeatureRegistry? decorationRegistry;
+    private readonly Lock biomeLock = new();
     private readonly int unlitBrightness;
     private readonly TerrainColumns columns;
     private readonly long zoomSeed;
@@ -65,10 +73,16 @@ internal sealed class BiomeTerrain
         ImmutableArray<PluginContainer> plugins,
         FeatureRegistry? features,
         bool structures,
-        Func<CarverRegistry>? carvers = null)
+        Func<CarverRegistry>? carvers = null,
+        Func<FeatureRegistry>? featureSource = null,
+        Func<WorldgenStructures>? structureSource = null,
+        StructureStartCache? startCache = null)
     {
         this.terrain = terrain;
-        this.features = features;
+        this.dimensionTypeId = dimension;
+        this.features = featureSource ?? (() => features);
+        this.structures = structureSource;
+        this.startCache = startCache;
         var fallback = new Lazy<CarverRegistry>(() => CarverRegistry.Build(
             [], [], terrain.Data, Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance));
         this.carvers = carvers ?? (() => features?.Carvers ?? fallback.Value);
@@ -105,7 +119,10 @@ internal sealed class BiomeTerrain
         WorldgenDimension dimension,
         long seed,
         FeatureRegistry? features = null,
-        bool structures = false)
+        bool structures = false,
+        Func<FeatureRegistry>? featureSource = null,
+        Func<WorldgenStructures>? structureSource = null,
+        StructureStartCache? startCache = null)
     {
         // Taken before entering the plugins, so that a released dimension says so, whether or not they unloaded.
         var settings = dimension.Settings;
@@ -127,17 +144,20 @@ internal sealed class BiomeTerrain
             var regionLayout = regions.IsDefaultOrEmpty
                 ? null
                 : new RegionLayout(dimension.Identifier, regions, terrain.Compiler.Random);
-            var source = new ClimateSource(terrain.Router, biomeLayout, regionLayout);
+            var source = new ClimateSource(terrain.Router, biomeLayout.ForWorld(seed), regionLayout);
 
             return new BiomeTerrain(
                 terrain,
                 dimension.Identifier,
-                dimension.DimensionType,
+                dimension.DimensionTypeId,
                 source,
                 dimension.Plugins,
                 features,
                 structures,
-                dimension.Carvers);
+                dimension.Carvers,
+                featureSource,
+                structureSource,
+                startCache);
         }
         catch (Exception ex) when (Contains(dimension.Plugins, ex))
         {
@@ -153,6 +173,55 @@ internal sealed class BiomeTerrain
 
     public ClimateSource Source { get; }
 
+    private Obsidian.API.Registry.Codecs.Dimensions.DimensionCodec DimensionCodec =>
+        CodecRegistry.TryGetDimension(this.dimensionTypeId, out var codec) ? codec!
+            : throw new InvalidOperationException($"Unknown dimension {this.dimensionTypeId}.");
+
+    private readonly string dimensionTypeId;
+
+    /// <summary>Ticks marked fluids and updates marked block shapes after neighboring decoration finishes.</summary>
+    public void PostProcess(IReadOnlyDictionary<(int X, int Z), IChunk> area, int chunkX, int chunkZ,
+        FluidRules? fluidRules = null)
+    {
+        if (area[(chunkX, chunkZ)] is not Chunk chunk || chunk.PostProcessing.Count == 0)
+            return;
+
+        using var calls = this.EnterGenerator();
+
+        var region = this.CreateRegion(area, chunkX, chunkZ, trackHeightmaps: false);
+        region.MarksPostProcessing = false;
+        var minY = this.MinY;
+
+        // Vanilla post-processes on the live level, whose random only varies lava's spread delay; any seed will do.
+        var rules = fluidRules ?? FluidRules.ForDimension(this.DimensionCodec);
+        var fluids = new FluidLevel(new WorldGenFluidAccess(region, rules, new Random(chunkX * 31 + chunkZ)));
+
+        // Vanilla walks the marks section by section, in the order they were added.
+        var marks = chunk.PostProcessing.OrderBy(position => (position.Y - minY) >> 4).ToList();
+        chunk.PostProcessing.Clear();
+
+        foreach (var position in marks)
+        {
+            // The fluid's tick may change blocks, but the shape update still starts from the block read before it.
+            var block = region.GetBlock(position);
+            if (block.HasFluid())
+                fluids.TickFluid(position);
+
+            if (block.IsLiquidBlock())
+                continue;
+
+            var updated = ShapeUpdater.UpdateFromNeighbourShapes(fluids.ShapeView, block, position);
+            if (!updated.IsSameState(block))
+                region.SetBlock(position, updated);
+
+            // The block's own updateShape override, if vanilla has one, runs after the neighbor shapes.
+            if (BlocksRegistry.GetShapeUpdateBehavior(block.RegistryId) is IPostProcessBehavior owner)
+                owner.PostProcess(region, position, block);
+        }
+
+        // Fluids may have spread into finished neighbors, whose heightmaps are already stored.
+        region.StoreFinishedHeightmaps();
+    }
     /// <summary>The dimension's build range, which its chunks have.</summary>
     public int MinY { get; }
 
@@ -163,7 +232,7 @@ internal sealed class BiomeTerrain
 
     private StructureManager CreateStructures()
     {
-        var features = this.features
+        var features = this.features()
             ?? throw new InvalidOperationException("Structures need a feature registry with a 26.3 template lookup.");
         var possible = this.Source.PossibleBiomes
             .Select(biome => CodecRegistry.TryGetBiome(biome, out var codec) ? codec! : throw Unknown(biome))
@@ -174,42 +243,112 @@ internal sealed class BiomeTerrain
             possible,
             this.terrain.Settings.MinY,
             this.terrain.Settings.Height);
-        var data = StructureData.Read(features);
+        var source = this.structures;
+        if (source is null)
+        {
+            var data = StructureData.Read(features);
+            source = () => data;
+        }
 
         return new StructureManager(
             world,
             this.columns,
             this.MinY,
             this.Height,
-            structures: () => data,
-            templates: features.Template);
+            startCache: this.startCache,
+            structures: source,
+            templates: this.Template);
 
         static InvalidOperationException Unknown(string biome) => new($"Unknown biome '{biome}'.");
     }
 
-    /// <summary>The decoration status. Throws before writing any block unless a feature registry was given.</summary>
-    public BiomeDecoration Decoration => this.decoration ??= this.CreateDecoration();
+    private StructureTemplate Template(string id) => this.features()!.Template(id);
 
-    private BiomeDecoration CreateDecoration()
+    /// <summary>The decoration status. Throws before writing any block unless a feature registry was given.</summary>
+    public BiomeDecoration Decoration
+    {
+        get
+        {
+            lock (this.decorationLock)
+            {
+                var features = this.features();
+                if (this.decoration is null || !ReferenceEquals(features, this.decorationRegistry))
+                {
+                    this.decoration = this.CreateDecoration(features);
+                    this.decorationRegistry = features;
+                }
+
+                return this.decoration;
+            }
+        }
+    }
+
+    public bool RefreshFeatures()
+    {
+        _ = this.Decoration;
+        return true;
+    }
+
+    public void RefreshStructures() => this.Structures?.Refresh();
+
+    public GeneratorCalls EnterGenerator() => GeneratorCalls.Enter(this.Identifier, this.Plugins);
+
+    public Obsidian.API.Registry.Codecs.Biomes.BiomeCodec GetBiome(int x, int y, int z)
+    {
+        using var calls = this.EnterGenerator();
+        lock (this.biomeLock)
+            return this.manager.GetBiome(x, y, z);
+    }
+
+    /// <summary>Adds initial creature packs to the completed chunk, before its entities are published.</summary>
+    public void Populate(IReadOnlyDictionary<(int X, int Z), IChunk> area, int chunkX, int chunkZ,
+        ILevel? host = null)
+    {
+        if (this.terrain.Settings.DisableMobGeneration || host?.LevelData.GetBooleanRule("spawn_mobs") == false)
+            return;
+
+        using var calls = this.EnterGenerator();
+        var chunk = area[(chunkX, chunkZ)];
+        var position = new Vector(chunkX << 4, chunk.MinY + chunk.Height - 1, chunkZ << 4);
+        var region = this.CreateRegion(area, chunkX, chunkZ, trackHeightmaps: false);
+        var spawns = PluginSpawns.Current;
+        var biome = chunk.GetBiome(position.X, position.Y, position.Z);
+        var probability = spawns.At(this.DimensionCodec, biome).CreatureProbability;
+        var settings = spawns.At(this.DimensionCodec, region.GetBiome(position)) with
+        {
+            CreatureProbability = probability
+        };
+        GenerationPopulation.Spawn(region, settings, chunkX, chunkZ,
+            this.DimensionCodec.Element.HasCeiling, GenerationPopulation.Random(this.terrain.Seed, chunkX, chunkZ), host);
+    }
+
+    public (int X, int Z) FindClimateSpawn()
+    {
+        using var calls = this.EnterGenerator();
+        return SpawnSearch.Find(this.terrain.Settings.SpawnTargets, this.terrain.Compiler);
+    }
+
+    private BiomeDecoration CreateDecoration(FeatureRegistry? features)
     {
         // The default registry's template lookup throws, which would stop decoration halfway through a chunk.
-        if (this.features is null)
+        if (features is null)
             throw new InvalidOperationException("Decorating needs a feature registry with a 26.3 template lookup.");
 
-        return new BiomeDecoration(this.features, this.Source.PossibleBiomes);
+        return new BiomeDecoration(features, this.Source.PossibleBiomes);
     }
 
     /// <summary>
     /// Decorates one terrain-status chunk. Its eight terrain-status neighbors must already exist, and all writes
-    /// are retained for later decoration. The live generator does not call this 26.3 pipeline yet.
+    /// are retained for later decoration.
     /// </summary>
-    public WorldGenRegion Decorate(IReadOnlyDictionary<(int X, int Z), IChunk> chunks, int chunkX, int chunkZ)
+    public WorldGenRegion Decorate(IReadOnlyDictionary<(int X, int Z), IChunk> chunks, int chunkX, int chunkZ,
+        ReachingStarts? structures = null)
     {
         using var calls = GeneratorCalls.Enter(this.Identifier, this.Plugins);
 
         try
         {
-            return this.DecorateEntered(chunks, chunkX, chunkZ);
+            return this.DecorateEntered(chunks, chunkX, chunkZ, structures);
         }
         catch (Exception ex) when (Contains(this.Plugins, ex))
         {
@@ -217,7 +356,8 @@ internal sealed class BiomeTerrain
         }
     }
 
-    private WorldGenRegion DecorateEntered(IReadOnlyDictionary<(int X, int Z), IChunk> chunks, int chunkX, int chunkZ)
+    private WorldGenRegion DecorateEntered(IReadOnlyDictionary<(int X, int Z), IChunk> chunks, int chunkX, int chunkZ,
+        ReachingStarts? structures)
     {
         var center = chunks[(chunkX, chunkZ)];
         var region = this.CreateRegion(chunks, chunkX, chunkZ);
@@ -237,7 +377,7 @@ internal sealed class BiomeTerrain
             neighbors,
             this.terrain.Settings.MinY,
             this.terrain.Settings.Height,
-            this.StructurePlacer(region, chunkX, chunkZ));
+            this.StructurePlacer(region, chunkX, chunkZ, structures));
 
         return region;
     }
@@ -289,14 +429,15 @@ internal sealed class BiomeTerrain
         return region;
     }
 
-    private WorldGenRegion CreateRegion(IReadOnlyDictionary<(int X, int Z), IChunk> chunks, int chunkX, int chunkZ)
+    private WorldGenRegion CreateRegion(IReadOnlyDictionary<(int X, int Z), IChunk> chunks, int chunkX, int chunkZ,
+        bool trackHeightmaps = true)
     {
         var center = chunks[(chunkX, chunkZ)];
         var random = this.terrain.Compiler.RandomFactory("minecraft:worldgen_region_random")
             .At(chunkX << 4, 0, chunkZ << 4);
 
         return new WorldGenRegion(chunks, chunkX, chunkZ, this.terrain.Seed, center.MinY, center.Height,
-            this.terrain.Settings.SeaLevel, this.Source, random, trackHeightmaps: true)
+            this.terrain.Settings.SeaLevel, this.Source, random, trackHeightmaps)
         {
             UnlitBrightness = this.unlitBrightness
         };
@@ -304,12 +445,13 @@ internal sealed class BiomeTerrain
 
     // Vanilla's applyBiomeDecoration: before each step's features, the step's structures in registry order, each
     // seeded by its index among them, place the starts reaching the chunk inside the chunk (getWritableArea).
-    private Action<int, long, WorldgenRandom>? StructurePlacer(WorldGenRegion region, int chunkX, int chunkZ)
+    private Action<int, long, WorldgenRandom>? StructurePlacer(WorldGenRegion region, int chunkX, int chunkZ,
+        ReachingStarts? saved = null)
     {
         if (this.Structures is not StructureManager structures)
             return null;
 
-        var reaching = structures.FindReaching(chunkX, chunkZ);
+        var reaching = saved ?? structures.FindReaching(chunkX, chunkZ);
         var writableArea = BlockBox.Create(
             chunkX << 4,
             region.MinY + 1,

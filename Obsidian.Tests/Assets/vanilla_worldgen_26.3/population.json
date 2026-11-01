@@ -1,0 +1,207 @@
+{
+  "version": "26.3",
+  "cases": [
+    {
+      "name": "plains_packs",
+      "seed": 12345,
+      "chunkX": -5,
+      "chunkZ": -1,
+      "biome": "minecraft:plains",
+      "layers": [
+        [
+          "minecraft:stone",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "entities": [
+        [
+          -73.0,
+          64.0,
+          -9.0,
+          193.17729,
+          0.0,
+          "minecraft:pig"
+        ],
+        [
+          -73.0,
+          64.0,
+          -11.0,
+          209.65381,
+          0.0,
+          "minecraft:pig"
+        ],
+        [
+          -71.0,
+          64.0,
+          -11.0,
+          93.74533,
+          0.0,
+          "minecraft:pig"
+        ],
+        [
+          -71.0,
+          64.0,
+          -11.0,
+          356.08884,
+          0.0,
+          "minecraft:pig"
+        ]
+      ],
+      "nextRandom": 2083765535
+    },
+    {
+      "name": "plains_rejected",
+      "seed": 12345,
+      "chunkX": -5,
+      "chunkZ": 0,
+      "biome": "minecraft:plains",
+      "layers": [
+        [
+          "minecraft:stone",
+          62
+        ],
+        [
+          "minecraft:stone",
+          63
+        ]
+      ],
+      "entities": [],
+      "nextRandom": 1530170377
+    },
+    {
+      "name": "savanna_packs",
+      "seed": 12345,
+      "chunkX": -5,
+      "chunkZ": 2,
+      "biome": "minecraft:savanna",
+      "layers": [
+        [
+          "minecraft:stone",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "entities": [
+        [
+          -74.0,
+          64.0,
+          36.0,
+          153.8966,
+          0.0,
+          "minecraft:cow"
+        ],
+        [
+          -71.0,
+          64.0,
+          36.0,
+          79.731,
+          0.0,
+          "minecraft:cow"
+        ],
+        [
+          -70.0,
+          64.0,
+          36.0,
+          55.684032,
+          0.0,
+          "minecraft:cow"
+        ],
+        [
+          -67.0,
+          64.0,
+          36.0,
+          182.57475,
+          0.0,
+          "minecraft:cow"
+        ]
+      ],
+      "nextRandom": -386282534
+    },
+    {
+      "name": "mushroom_packs",
+      "seed": 12345,
+      "chunkX": -3,
+      "chunkZ": 2,
+      "biome": "minecraft:mushroom_fields",
+      "layers": [
+        [
+          "minecraft:stone",
+          62
+        ],
+        [
+          "minecraft:mycelium",
+          63
+        ]
+      ],
+      "entities": [
+        [
+          -42.0,
+          64.0,
+          45.0,
+          221.79565,
+          0.0,
+          "minecraft:mooshroom"
+        ],
+        [
+          -44.0,
+          64.0,
+          47.0,
+          319.90552,
+          0.0,
+          "minecraft:mooshroom"
+        ],
+        [
+          -46.0,
+          64.0,
+          46.0,
+          223.04701,
+          0.0,
+          "minecraft:mooshroom"
+        ],
+        [
+          -44.0,
+          64.0,
+          41.0,
+          21.884293,
+          0.0,
+          "minecraft:mooshroom"
+        ],
+        [
+          -47.0,
+          64.0,
+          42.0,
+          2.1457887,
+          0.0,
+          "minecraft:mooshroom"
+        ]
+      ],
+      "nextRandom": -1345527679
+    },
+    {
+      "name": "empty_spawns",
+      "seed": 12345,
+      "chunkX": 5,
+      "chunkZ": 2,
+      "biome": "minecraft:the_void",
+      "layers": [
+        [
+          "minecraft:stone",
+          62
+        ],
+        [
+          "minecraft:grass_block",
+          63
+        ]
+      ],
+      "entities": [],
+      "nextRandom": -1206062260
+    }
+  ]
+}

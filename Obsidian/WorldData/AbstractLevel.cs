@@ -195,7 +195,8 @@ public abstract partial class AbstractLevel : ILevel
         {
             if (chunk is Chunk concrete)
                 RegisterChunkMusic(concrete);
-            (mobSpawner ??= new MobSpawner(this)).PopulateChunk(chunk);
+            if (this.Generator is not MojangGenerator)
+                (mobSpawner ??= new MobSpawner(this)).PopulateChunk(chunk);
         }
         return default;
     });

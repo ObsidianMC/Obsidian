@@ -12,10 +12,10 @@ using TerrainGenerator = Obsidian.WorldData.Generators.Terrain.TerrainGenerator;
 
 namespace WorldgenBench;
 
-internal enum SerialStage { Biomes, Noise, Surface, Carvers, StructureStarts, Features, PostProcess, Light }
+internal enum SerialStage { Biomes, Noise, Surface, Carvers, StructureStarts, Features, PostProcess, Light, Terrain }
 
 /// <summary>
-/// The generator pipeline a serial run times: the live 1.21.11 one, or the 26.3 one built beside it.
+/// The generator pipeline a serial run times: the retained 1.21.11 replay or the live 26.3 statuses.
 /// </summary>
 internal abstract class BenchGenerator
 {
@@ -84,49 +84,21 @@ internal abstract class BenchGenerator
     private sealed class CurrentGenerator : BenchGenerator
     {
         private readonly BiomeTerrain pipeline;
-        private readonly TerrainGenerator terrain;
 
         public CurrentGenerator(BenchDimension bench, long seed)
         {
-            var settings = bench.CurrentPreset == "minecraft:the_end" ? "minecraft:end" : bench.CurrentPreset;
-            this.terrain = new TerrainGenerator(WorldgenData.Vanilla, seed, settings);
-
-            // The registry's default template lookup reads the extracted 26.3 templates.
-            var features = new FeatureRegistry(WorldgenData.Vanilla);
-            this.pipeline = new BiomeTerrain(this.terrain, bench.CurrentPreset, features, structures: true);
+            var identifier = bench.CurrentPreset == "minecraft:nether"
+                ? "minecraft:the_nether" : bench.CurrentPreset;
+            this.pipeline = BiomeTerrain.Create(WorldgenDimension.Vanilla(identifier), seed,
+                new FeatureRegistry(WorldgenData.Vanilla), structures: true);
         }
 
         public override StructureManager? Structures => this.pipeline.Structures;
 
-        // BiomeTerrain.Generate's steps, one stage each.
         public override IChunk Carve(int x, int z, StageTimer<SerialStage> timer)
         {
             var chunk = new Chunk(x, z, this.pipeline.MinY, this.pipeline.Height);
-            TerrainContext? context = null;
-            TerrainBiomes biomes = default;
-
-            // The surface's biomes read the chunk's and its neighbors' stored biomes, filling neighbors not yet filled.
-            timer.Time(SerialStage.Biomes, () =>
-            {
-                this.pipeline.Source.FillBiomes(chunk);
-                biomes = this.pipeline.ChunkBiomes(chunk);
-            });
-            timer.Time(SerialStage.Noise, () =>
-            {
-                context = this.terrain.CreateContext(chunk, biomes, chunk.PostProcessing);
-                this.terrain.Fill(context, this.pipeline.BeardifierFor(x, z));
-            });
-            timer.Time(SerialStage.Surface, () =>
-            {
-                using var writes = chunk.BeginTerrainWrites();
-                this.terrain.Materials.Apply(context!);
-            });
-            timer.Time(SerialStage.Carvers, () =>
-            {
-                using var writes = chunk.BeginTerrainWrites();
-                TerrainCarvers.Apply(context!, this.pipeline.CarversAt);
-            });
-            chunk.SetChunkStatus(ChunkGenStage.carvers);
+            timer.Time(SerialStage.Terrain, () => this.pipeline.Generate(chunk));
             return chunk;
         }
 
@@ -136,14 +108,19 @@ internal abstract class BenchGenerator
         public override void PostProcess(IReadOnlyDictionary<(int X, int Z), IChunk> area, int x, int z,
             StageTimer<SerialStage> timer)
         {
-            timer.Time(SerialStage.PostProcess, () => this.pipeline.CompleteHeightmaps(area[(x, z)]));
+            timer.Time(SerialStage.PostProcess, () =>
+            {
+                this.pipeline.PostProcess(area, x, z);
+                this.pipeline.CompleteHeightmaps(area[(x, z)]);
+                this.pipeline.Populate(area, x, z);
+            });
         }
     }
 }
 
 internal enum BenchGeneratorKind
 {
-    /// <summary>The live generator, on 1.21.11's worldgen data.</summary>
+    /// <summary>The retained generator, on 1.21.11's worldgen data.</summary>
     Legacy,
 
     /// <summary>The 26.3 pipeline (<see cref="BiomeTerrain"/>).</summary>

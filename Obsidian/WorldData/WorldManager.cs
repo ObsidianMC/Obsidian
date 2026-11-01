@@ -81,16 +81,7 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
                 ServerConstants.ProtocolDescription,
                 this.logger,
                 stoppingToken);
-            StructureRegistry.InitializeCurrent(() => Task.FromResult(currentTemplates));
-
-            // The live generator still places the legacy version's, like the jigsaw pools and structures it reads.
-            // They're extracted once it first needs one, so a server that never places them doesn't download that jar.
-            StructureRegistry.Initialize(() => VanillaServerJar.ExtractStructuresAsync(
-                httpClientFactory.CreateClient(),
-                ServerConstants.VanillaCachePath,
-                ServerConstants.LegacyVersion,
-                this.logger,
-                stoppingToken));
+            StructureRegistry.InitializeCurrent(currentTemplates);
 
             await this.LoadWorldsAsync(stoppingToken);
 

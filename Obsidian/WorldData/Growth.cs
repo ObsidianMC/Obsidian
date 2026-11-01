@@ -229,7 +229,7 @@ internal static partial class Growth
         TreeGrower grower,
         IRandomSource random)
     {
-        var features = PluginFeatures.Current;
+        var features = PluginFeatures.CurrentRegistry.FeatureSet!;
 
         if (MegaTree(grower, random) is string mega && features.FindConfigured(mega) is not null)
         {
@@ -384,7 +384,7 @@ internal static partial class Growth
     /// </summary>
     private static void GrowGrass(AbstractLevel level, Vector position, IRandomSource random)
     {
-        var features = PluginFeatures.Current;
+        var features = PluginFeatures.CurrentRegistry.FeatureSet!;
         var live = new LiveFeatureLevel(level);
         var grass = features.FindPlaced(GrassBonemeal);
         var above = position + Vector.Up;

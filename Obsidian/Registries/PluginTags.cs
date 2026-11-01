@@ -263,8 +263,8 @@ internal static partial class PluginTags
                 {
                     if (entries is ImmutableArray<int> named)
                         byIdentifier[key] = [.. named.Select(ids.Identifier)];
-                    else if (key.Registry == Structure && StructureTags.All.TryGetValue(key.Identifier, out var own))
-                        byIdentifier[key] = [.. own.Select(structure => structure.Identifier)];
+                    else if (key.Registry == Structure && CurrentStructureTags.All.TryGetValue(key.Identifier, out var own))
+                        byIdentifier[key] = [.. own];
                 }
                 else if (TagsRegistry.TryGetVanilla(key.Registry, key.Identifier, out var vanilla))
                 {
@@ -459,18 +459,8 @@ internal static partial class PluginTags
             ?? throw new InvalidOperationException("Missing tags asset.");
         using var document = JsonDocument.Parse(stream);
 
-        // Temporary until Phase 5: structures run on legacy worldgen, so resolve their tags from the same data.
-        // Current tags name structures (e.g. abandoned camps) that aren't in the legacy registry. Keep normal missing
-        // entry errors for plugins/data packs; only the built-in structure definitions come from the legacy asset.
-        using var structureStream = typeof(PluginTags).Assembly.GetManifestResourceStream("Obsidian.Assets.worldgen.structure_tags.json")
-            ?? throw new InvalidOperationException("Missing legacy structure tags asset.");
-        using var structures = JsonDocument.Parse(structureStream);
-
         var files = new List<TagFile>();
-
-        var definitions = document.RootElement.EnumerateObject()
-            .Where(tag => !tag.Name.StartsWith($"{Structure}/", StringComparison.Ordinal))
-            .Concat(structures.RootElement.EnumerateObject());
+        var definitions = document.RootElement.EnumerateObject();
         foreach (var tag in definitions)
         {
             var registry = Registries.FirstOrDefault(name => tag.Name.StartsWith($"{name}/", StringComparison.Ordinal));
@@ -524,6 +514,15 @@ internal static partial class PluginTags
     /// Ids of registries' entries by identifier while tags are built. Registries without ids (placed features and
     /// configured carvers) get ones for the build, numbering entries as they're found.
     /// </summary>
+    private static readonly Lazy<HashSet<string>> nativePlaced = new(() =>
+        WorldData.Generators.Density.WorldgenData.Vanilla.Ids("placed_feature").ToHashSet());
+
+    private static readonly Lazy<HashSet<string>> nativeCarvers = new(() =>
+        WorldData.Generators.Density.WorldgenData.Vanilla.Ids("carver").ToHashSet());
+
+    private static readonly Lazy<HashSet<string>> nativeStructures = new(() =>
+        WorldData.Generators.Density.WorldgenData.Vanilla.Ids("structure").ToHashSet());
+
     private sealed class EntryIds(HashSet<(string Registry, string Identifier)> worldgenEntries)
     {
         private readonly Dictionary<string, int> numbered = [];
@@ -564,9 +563,9 @@ internal static partial class PluginTags
             var exists = worldgenEntries.Contains((registry, identifier))
                 || registry switch
                 {
-                    PlacedFeature => Codecs.RegistryIds.IsPlacedFeature(identifier),
-                    ConfiguredCarver => Codecs.RegistryIds.IsConfiguredCarver(identifier),
-                    Structure => Structures.All.ContainsKey(identifier),
+                    PlacedFeature => nativePlaced.Value.Contains(identifier),
+                    ConfiguredCarver => nativeCarvers.Value.Contains(identifier),
+                    Structure => nativeStructures.Value.Contains(identifier),
                     _ => false
                 };
 

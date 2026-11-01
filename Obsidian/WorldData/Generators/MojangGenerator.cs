@@ -4,6 +4,8 @@ using Obsidian.Nbt;
 using Obsidian.Plugins;
 using Obsidian.WorldData.Generators.Mojang.Features;
 using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Generators.Biomes;
+using Obsidian.WorldData.Generators.Features;
 using Obsidian.WorldData.Generators.Mojang.Structures;
 using Obsidian.WorldData.Lighting;
 using Obsidian.WorldData.Structures;
@@ -24,27 +26,27 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// Vanilla's overworld generator.
     /// </summary>
     public MojangGenerator()
-        : this(MojangDimension.Overworld)
+        : this(WorldgenDimension.Overworld)
     {
     }
 
     /// <summary>
     /// A generator of <paramref name="dimension"/>, which levels using it must have the build range of.
     /// </summary>
-    protected internal MojangGenerator(MojangDimension dimension)
+    protected internal MojangGenerator(WorldgenDimension dimension)
     {
         this.dimension = dimension;
     }
 
     public virtual string Id => "minecraft:mojang_generator";
 
-    private MojangDimension dimension;
+    private WorldgenDimension dimension;
 
     /// <summary>
     /// The dimension this generator builds; levels using it must have the dimension's build range. <see cref="Resume"/>
     /// replaces it with one rebuilt from the same level stem.
     /// </summary>
-    internal MojangDimension Dimension => Volatile.Read(ref this.dimension);
+    internal WorldgenDimension Dimension => Volatile.Read(ref this.dimension);
 
     /// <summary>
     /// Whether <see cref="Init"/> took the dimension for the level (see <see cref="PluginDimensions.Take"/>): false
@@ -62,13 +64,13 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// </summary>
     internal ImmutableArray<PluginContainer> FailedBy => this.failedBy;
 
-    private ChunkBuilder? builder;
+    private BiomeTerrain? builder;
 
     /// <summary>
     /// The builder generating the level's chunks, available once <see cref="Init"/> ran, and null once
     /// <see cref="Stop"/> did.
     /// </summary>
-    internal ChunkBuilder? Builder => Volatile.Read(ref this.builder);
+    internal BiomeTerrain? Builder => Volatile.Read(ref this.builder);
 
     // The builder's structure starts, kept once it's dropped so the state of the pieces placed is still saved.
     private StructureStartCache? startCache;
@@ -79,13 +81,13 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     internal int SeaLevel => this.Dimension.SeaLevel;
 
     /// <summary>
-    /// The biomes' features, read before each chunk is decorated; <see cref="Registries.PluginFeatures.Current"/> when
+    /// The biomes' features, read before each chunk is decorated; <see cref="Registries.PluginFeatures.CurrentRegistry"/> when
     /// null. Tests set them.
     /// </summary>
-    internal Func<Registries.WorldgenFeatureSet>? Features { get; init; }
+    internal Func<FeatureRegistry>? Features { get; init; }
 
     /// <summary>
-    /// The structures and structure sets, read as structures start; <see cref="Registries.PluginStructures.Current"/>
+    /// The structures and structure sets, read as structures start; <see cref="Registries.PluginStructures.CurrentRegistry"/>
     /// when null. Tests set them.
     /// </summary>
     internal Func<Registries.WorldgenStructures>? Structures { get; init; }
@@ -97,13 +99,13 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// </summary>
     internal void RefreshStructures()
     {
-        if (this.Builder is ChunkBuilder builder)
+        if (this.Builder is BiomeTerrain builder)
         {
             builder.RefreshStructures();
         }
         else
         {
-            var current = this.Structures?.Invoke() ?? Registries.PluginStructures.Current;
+            var current = this.Structures?.Invoke() ?? Registries.PluginStructures.CurrentRegistry;
             this.startCache?.Prune(current);
         }
 
@@ -112,7 +114,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     }
 
     // The builder, for the steps of generation.
-    private ChunkBuilder Running => this.Builder
+    private BiomeTerrain Running => this.Builder
         ?? throw new GeneratorStoppedException($"{this.Dimension.Identifier} stopped generating.");
 
     // Vanilla's dolphins look for the structures of this tag.
@@ -208,7 +210,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// </para>
     /// <para>
     /// A failure is plugins' when it's raised in a step of a dimension whose noise settings or biome source are made
-    /// of their types (<see cref="MojangDimension.Plugins"/>), or placing a feature made of their types: their
+    /// of their types (<see cref="WorldgenDimension.Plugins"/>), or placing a feature made of their types: their
     /// density functions run all through the noise, so where the failure was raised can't tell whose it is.
     /// Failures generating with Obsidian's types alone aren't contained.
     /// </para>
@@ -275,7 +277,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     /// </summary>
     /// <returns>Whether it generates again: building the generator runs plugins' code, which may fail (see
     /// <see cref="Contain"/>).</returns>
-    internal bool Resume(MojangDimension dimension)
+    internal bool Resume(WorldgenDimension dimension)
     {
         if (this.Builder is not null)
             return true;
@@ -333,8 +335,20 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
         if (ChunkGenStage.spawn <= stage && chunk.ChunkStatus < ChunkGenStage.spawn)
         {
-            // TODO: Implement spawn point calculation
-            chunk.SetChunkStatus(ChunkGenStage.spawn);
+            using var populationLock = await this.LockAsync(cx, cz, 0);
+            if (chunk.ChunkStatus < ChunkGenStage.spawn)
+            {
+                try
+                {
+                    this.Running.Populate(new Dictionary<(int X, int Z), IChunk> { [(cx, cz)] = chunk },
+                        cx, cz, this.world);
+                }
+                catch (Exception ex) when (ex is not GeneratorStoppedException && this.Contain(ex))
+                {
+                    // Partial packs are retained, like partial decoration; replaying would duplicate entities.
+                }
+                chunk.SetChunkStatus(ChunkGenStage.spawn);
+            }
         }
 
         if (stage < ChunkGenStage.full)
@@ -428,49 +442,11 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         }
     }
 
-    private static void RunStepsUpToCarvers(ChunkBuilder builder, IChunk chunk, ChunkGenStage stage)
+    private static void RunStepsUpToCarvers(BiomeTerrain builder, IChunk chunk, ChunkGenStage stage)
     {
-        chunk.SetChunkStatus(chunk.ChunkStatus == ChunkGenStage.empty ? ChunkGenStage.structure_references : chunk.ChunkStatus);
-
-        if (ChunkGenStage.structure_starts <= stage && chunk.ChunkStatus < ChunkGenStage.structure_starts)
-        {
-            // TODO: Implement structure starts
-            chunk.SetChunkStatus(ChunkGenStage.structure_starts);
-        }
-
-        if (ChunkGenStage.structure_references <= stage && chunk.ChunkStatus < ChunkGenStage.structure_references)
-        {
-            // TODO: Implement structure references
-            chunk.SetChunkStatus(ChunkGenStage.structure_references);
-        }
-
-        if (ChunkGenStage.biomes <= stage && chunk.ChunkStatus < ChunkGenStage.biomes)
-        {
-            // Use multi-noise biome selection based on climate parameters
-            builder.PopulateBiomes(chunk);
-            chunk.SetChunkStatus(ChunkGenStage.biomes);
-        }
-
-        if (ChunkGenStage.noise <= stage && chunk.ChunkStatus < ChunkGenStage.noise)
-        {
-            // Generate terrain using 3D density sampling with aquifer support
-            builder.Generate3DTerrain(chunk);
-            chunk.SetChunkStatus(ChunkGenStage.noise);
-        }
-
-        if (ChunkGenStage.surface <= stage && chunk.ChunkStatus < ChunkGenStage.surface)
-        {
-            // Apply surface rules to replace stone with grass, dirt, sand, etc.
-            builder.ApplySurfaceRules(chunk);
-            chunk.SetChunkStatus(ChunkGenStage.surface);
-        }
-
-        if (ChunkGenStage.carvers <= stage && chunk.ChunkStatus < ChunkGenStage.carvers)
-        {
-            // Carve classic caves and ravines
-            builder.ApplyCarvers(chunk);
-            chunk.SetChunkStatus(ChunkGenStage.carvers);
-        }
+        // 26.3 merges noise, surface and carving into the terrain status. The persisted enum still uses carvers.
+        if (stage >= ChunkGenStage.biomes && chunk.ChunkStatus < ChunkGenStage.carvers)
+            builder.Generate(chunk);
     }
 
     /// <summary>
@@ -735,7 +711,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         else
             builder.PostProcess(area, chunk.X, chunk.Z);
 
-        builder.UpdateFinalHeightmaps(chunk);
+        builder.CompleteHeightmaps(chunk);
         chunk.SetChunkStatus(ChunkGenStage.initialize_light);
     }
 
@@ -800,7 +776,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
         // A dimension generates as data packs and plugins define it when its level starts, and keeps that. One that
         // went since its level's creator read it can't generate: the creator leaves the level out (see IsTaken).
-        if (PluginDimensions.Take(this.Dimension) is not MojangDimension taken)
+        if (PluginDimensions.Take(this.Dimension) is not WorldgenDimension taken)
             return;
 
         Volatile.Write(ref this.dimension, taken);
@@ -825,16 +801,18 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     // noise runs plugins' code, which may fail: the generator then stays stopped.
     private bool Start()
     {
-        ChunkBuilder builder;
+        BiomeTerrain builder;
 
         try
         {
-            builder = new ChunkBuilder(
+            builder = BiomeTerrain.Create(
                 this.Dimension,
                 RandomState.ParseSeed(this.world.Seed),
-                features: this.Features,
-                startCache: this.startCache,
-                structures: this.Structures);
+                structures: true,
+                featureSource: this.Features ?? (static () => PluginFeatures.CurrentRegistry),
+                structureSource: this.Structures ?? (static () => PluginStructures.CurrentRegistry),
+                startCache: this.startCache);
+            _ = builder.Decoration;
         }
         catch (Exception ex) when (this.Contain(ex))
         {
@@ -878,7 +856,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
 /// <summary>
 /// Vanilla's nether generator, used by the <c>minecraft:the_nether</c> dimension.
 /// </summary>
-internal sealed class MojangNetherGenerator() : MojangGenerator(MojangDimension.Nether)
+internal sealed class MojangNetherGenerator() : MojangGenerator(WorldgenDimension.Nether)
 {
     public override string Id => "minecraft:the_nether";
 
@@ -889,7 +867,7 @@ internal sealed class MojangNetherGenerator() : MojangGenerator(MojangDimension.
 /// <summary>
 /// Vanilla's end generator, used by the <c>minecraft:the_end</c> dimension.
 /// </summary>
-internal sealed class MojangEndGenerator() : MojangGenerator(MojangDimension.End)
+internal sealed class MojangEndGenerator() : MojangGenerator(WorldgenDimension.End)
 {
     public override string Id => "minecraft:the_end";
 
@@ -905,7 +883,7 @@ internal sealed class MojangEndGenerator() : MojangGenerator(MojangDimension.End
 /// Its spawn is searched like the overworld's, with the dimension type's ceiling, so players sent there without a
 /// position land on the ground; vanilla doesn't search spawns outside the overworld.
 /// </remarks>
-internal sealed class LevelStemGenerator(MojangDimension dimension) : MojangGenerator(dimension), IStemGenerator
+internal sealed class LevelStemGenerator(WorldgenDimension dimension) : MojangGenerator(dimension), IStemGenerator
 {
     public override string Id => this.Dimension.Identifier;
 

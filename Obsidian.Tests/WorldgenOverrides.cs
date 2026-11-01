@@ -10,6 +10,7 @@ using Obsidian.Registries.Codecs;
 using Obsidian.Tests.Fakes;
 using Obsidian.WorldData.Generators;
 using Obsidian.WorldData.Generators.Mojang;
+using Obsidian.WorldData.Generators.Biomes;
 using Obsidian.WorldData.Generators.Mojang.Features;
 using System;
 using System.Collections.Frozen;
@@ -76,11 +77,11 @@ public sealed class WorldgenOverrides : IDisposable
         var noise = PluginNoise.Build(files, [], logger);
 
         // Without overrides, the overworld keeps its compiled dimension.
-        Assert.Null(PluginDimensions.ReadVanilla("minecraft:overworld", WorldgenNoise.Vanilla));
+        Assert.NotNull(PluginDimensions.ReadVanilla("minecraft:overworld", WorldgenNoise.Vanilla));
 
         var overworld = PluginDimensions.ReadVanilla("minecraft:overworld", noise)!.Dimension.Noise();
         Assert.Equal(MultiNoiseBiomeSource.NetherBiomes, overworld.PossibleBiomes);
-        Assert.Same(MojangDimension.Overworld.Settings, overworld.Settings);
+        Assert.Equal("minecraft:overworld", overworld.SettingsId);
 
         // Without features, so the chunk is only the terrain and biomes.
         var noFeatures = new WorldgenFeatureSet(
@@ -89,8 +90,9 @@ public sealed class WorldgenOverrides : IDisposable
             FrozenDictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>>.Empty,
             FrozenDictionary<PlacedFeature, ImmutableArray<PluginContainer>>.Empty);
 
-        var builder = new ChunkBuilder(overworld, 1234, generateStructures: false, () => noFeatures);
-        var chunk = new FullChunks(builder, overworld).Get(0, 0);
+        var builder = BiomeTerrain.Create(overworld, 1234);
+        var chunk = new WorldData.Chunk(0, 0);
+        builder.Generate(chunk);
 
         Assert.Contains(chunk.GetBiome(0, 64, 0), MultiNoiseBiomeSource.NetherBiomes);
         Assert.Single(logger.Messages, message => message.Contains("notes"));
@@ -179,20 +181,18 @@ public sealed class WorldgenOverrides : IDisposable
             PluginNoise.Noise,
             "minecraft:badlands_pillar",
             "test",
-            """{ "firstOctave": -3, "amplitudes": [1] }"""u8);
+            """{ "base_octave": -3 }"""u8);
 
-        var noise = PluginNoise.Build([file], [], logger);
-        Assert.Empty(logger.Messages);
+        var noise = PluginNoise.Build([file], [], NullLogger.Instance);
 
         // No vanilla file names it, but the overworld is read at runtime to take it.
         var overworld = PluginDimensions.ReadVanilla("minecraft:overworld", noise)!.Dimension.Noise();
-        var pillar = new RandomState(overworld.Settings, 1234, overworld.Noises)
-            .GetOrCreateNoise("minecraft:badlands_pillar");
-        var vanilla = new RandomState(overworld.Settings, 1234).GetOrCreateNoise("minecraft:badlands_pillar");
-
-        Assert.Equal(-3, pillar.FirstOctave);
-        Assert.Equal(vanilla.Key, pillar.Key);
-        Assert.NotEqual(vanilla.FirstOctave, pillar.FirstOctave);
+        var changed = new WorldData.Generators.Density.DensityCompiler(overworld.Data, 1234, false);
+        var vanilla = new WorldData.Generators.Density.DensityCompiler(
+            WorldData.Generators.Density.WorldgenData.Vanilla, 1234, false);
+        Assert.NotEqual(
+            vanilla.Noise("minecraft:badlands_pillar").Get(13, 0, 21),
+            changed.Noise("minecraft:badlands_pillar").Get(13, 0, 21));
     }
 
     [Fact(DisplayName = "An overridden vanilla synced entry is sent with its data, and by name once not overridden")]

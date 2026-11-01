@@ -9,7 +9,7 @@ using System.Threading;
 namespace Obsidian.WorldData.Generators.Biomes;
 
 /// <summary>
-/// 26.3 biome selection over the float router, separate from the live legacy biome source: a dimension's
+/// Live 26.3 biome selection over the float router: a dimension's
 /// <see cref="BiomeLayout"/>, with plugins' biome regions over it (see <see cref="RegionLayout"/>).
 /// </summary>
 /// <remarks>

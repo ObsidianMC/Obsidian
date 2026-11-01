@@ -59,7 +59,7 @@ internal sealed class MojangDimension : LevelStem
     /// plugins' biome regions add (see <see cref="PluginBiomeRegions"/>). Its generator orders the features of these
     /// biomes, and only these, together.
     /// </summary>
-    public IReadOnlyList<BiomeCodec> PossibleBiomes =>
+    public override IReadOnlyList<BiomeCodec> PossibleBiomes =>
         PluginBiomeRegions.PossibleBiomes(this.Identifier, this.possibleBiomes());
 
     /// <summary>
@@ -169,7 +169,8 @@ internal sealed class MojangDimension : LevelStem
         createBiomeSource,
         possibleBiomes);
 
-    public override IStemGenerator CreateGenerator() => new LevelStemGenerator(this);
+    public override IStemGenerator CreateGenerator() =>
+        throw new NotSupportedException("Legacy dimensions are only available for replay and benchmarks.");
 
     private InvalidOperationException Released() =>
         new($"{this.Identifier} was released when a plugin it generates with unloaded.");

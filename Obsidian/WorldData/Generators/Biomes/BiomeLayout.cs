@@ -18,6 +18,9 @@ internal abstract class BiomeLayout
     /// </summary>
     public abstract IReadOnlyList<string> PossibleBiomes { get; }
 
+    /// <summary>Binds a plugin source's density and noise properties to the world's seed.</summary>
+    public virtual BiomeLayout ForWorld(long seed) => this;
+
     /// <summary>
     /// The biome at quart coordinates.
     /// </summary>
@@ -106,12 +109,16 @@ internal sealed class PositionalLayout(IClimateBiomeSource source) : BiomeLayout
 /// </summary>
 /// <param name="source">The plugin's source.</param>
 /// <param name="possibleBiomes">Its possible biomes, read once when its level stem was read.</param>
-internal sealed class PluginLayout(BiomeSourceBase source, IReadOnlyList<BiomeCodec> possibleBiomes) : BiomeLayout
+internal sealed class PluginLayout(BiomeSourceBase source, IReadOnlyList<BiomeCodec> possibleBiomes,
+    Func<long, BiomeSourceBase>? bind = null) : BiomeLayout
 {
     private readonly FrozenDictionary<string, BiomeCodec> biomes =
         possibleBiomes.ToFrozenDictionary(biome => biome.Name);
 
     public override IReadOnlyList<string> PossibleBiomes { get; } = [.. possibleBiomes.Select(biome => biome.Name)];
+
+    public override BiomeLayout ForWorld(long seed) => bind is null
+        ? this : new PluginLayout(bind(seed), possibleBiomes);
 
     public override BiomeCodec GetBiome(ClimateSource climate, int quartX, int quartY, int quartZ)
     {

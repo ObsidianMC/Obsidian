@@ -1,3 +1,4 @@
+using Obsidian.WorldData.Generators;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Nbt;
 using Obsidian.WorldData.Features;
@@ -130,7 +131,7 @@ internal static class MineshaftPieces
 /// </summary>
 public abstract class MineshaftPiece : StructurePiece
 {
-    private static readonly BiomeSet blockingBiomes = LegacyWorldgenTags.Biomes("mineshaft_blocking");
+    private static readonly WorldgenTags.BiomeGroup blockingBiomes = WorldgenTags.Biomes("mineshaft_blocking");
 
     protected static readonly IBlock caveAir = BlocksRegistry.CaveAir;
 

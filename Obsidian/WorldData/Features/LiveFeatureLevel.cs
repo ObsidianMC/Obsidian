@@ -248,12 +248,12 @@ internal sealed class LiveFeatureLevel(AbstractLevel level) : IWorldGenLevel
 
     private IChunk? ChunkAt(Vector position) => level.GetLoadedChunk(position.X >> 4, position.Z >> 4);
 
-    // Vanilla's heightmap predicates, as the legacy generator's tree level approximates them with block physics.
+    // Vanilla's heightmap predicates, with motion and leaves determined from current block physics and tags.
     private static bool MatchesHeightmap(HeightmapType type, IBlock block) => type switch
     {
         HeightmapType.WorldSurface or HeightmapType.WorldSurfaceWG => !block.IsAir,
         HeightmapType.OceanFloor or HeightmapType.OceanFloorWG => block.BlocksMotion(),
         HeightmapType.MotionBlocking => block.BlocksMotion() || block.HasFluid(),
-        _ => (block.BlocksMotion() || block.HasFluid()) && !LegacyWorldgenTags.Block("leaves").Entries.Contains(block.RegistryId)
+        _ => (block.BlocksMotion() || block.HasFluid()) && !Tree.TreeBlocks.Leaves.Contains(block)
     };
 }
