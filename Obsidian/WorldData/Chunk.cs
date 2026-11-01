@@ -316,7 +316,7 @@ public sealed class Chunk : IChunk
     }
 
     /// <summary>
-    /// The structure references saved in the chunk (vanilla's <c>structures.References</c>), as loaded, or <c>null</c>.
+    /// The generated or loaded structure references (vanilla's <c>structures.References</c>), or <c>null</c>.
     /// Obsidian finds references from the starts around the chunk, but vanilla reads them from the save.
     /// </summary>
     internal NbtCompound? StructureReferences

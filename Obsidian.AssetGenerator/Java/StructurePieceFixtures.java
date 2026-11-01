@@ -16,6 +16,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
+import net.minecraft.world.level.chunk.storage.SerializableChunkData;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.level.levelgen.structure.pieces.StructurePieceSerializationContext;
 
@@ -75,6 +76,9 @@ public final class StructurePieceFixtures {
         if (start == null || !start.isValid())
             throw new IllegalStateException("No " + key + " starts in chunk " + chunkX + ", " + chunkZ);
 
+        if (entry.has("captureReferences") && entry.get("captureReferences").getAsBoolean())
+            captureReferences(entry, level, start);
+
         entry.add("fresh", describe(level, start));
         entry.remove("placed");
         entry.remove("reloaded");
@@ -92,6 +96,26 @@ public final class StructurePieceFixtures {
 
         entry.add("placed", describe(level, start));
         reload(entry, level, start);
+    }
+
+    // Save the reference compounds through vanilla's chunk serializer, including a border of non-reaching chunks.
+    private static void captureReferences(JsonObject entry, ServerLevel level, StructureStart start) {
+        var box = start.getBoundingBox();
+        var chunks = new JsonArray();
+        for (int x = (box.minX() >> 4) - 1; x <= (box.maxX() >> 4) + 1; x++) {
+            for (int z = (box.minZ() >> 4) - 1; z <= (box.maxZ() >> 4) + 1; z++) {
+                var chunk = level.getChunk(x, z, ChunkStatus.STRUCTURE_REFERENCES, true);
+                var saved = SerializableChunkData.copyOf(level, chunk).write();
+                var references = saved.getCompoundOrEmpty("structures").getCompoundOrEmpty("References");
+                var sample = new JsonObject();
+                sample.addProperty("chunkX", x);
+                sample.addProperty("chunkZ", z);
+                sample.addProperty("references", references.toString());
+                chunks.add(sample);
+            }
+        }
+
+        entry.add("referenceChunks", chunks);
     }
 
     // What a chunk saves of the start after it was loaded from its last save, when that changes it.

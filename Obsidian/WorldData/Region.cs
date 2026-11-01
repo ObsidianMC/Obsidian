@@ -1460,8 +1460,7 @@ public partial class Region : IRegion
             writer.WriteListTag(EntityNbt.ToNbt(entity));
         writer.EndList();
 
-        // Vanilla's structures.starts. Obsidian follows references from the starts, which are recomputed from the seed,
-        // so it only keeps the references a chunk was loaded with, for vanilla to read.
+        // Vanilla reads the generated or loaded references alongside the starts saved in their start chunks.
         var structureReferences = (chunk as Chunk)?.StructureReferences;
         {
             writer.WriteCompoundStart("structures");

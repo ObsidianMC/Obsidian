@@ -622,6 +622,9 @@ internal sealed class BiomeTerrain
         CarverRegistry carvers)
     {
         using var writes = (chunk as Chunk)?.BeginTerrainWrites();
+        if (chunk is Chunk generated)
+            this.Structures?.RecordReferences(generated);
+
         this.Source.FillBiomes(chunk);
         fluidUpdates ??= (chunk as Chunk)?.PostProcessing;
         this.terrain.Generate(

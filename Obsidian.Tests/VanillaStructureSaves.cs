@@ -78,6 +78,52 @@ public class VanillaStructureSaves
         });
     }
 
+    [Fact]
+    public void GeneratedChunksSaveVanillaReferences()
+    {
+        var cases = fixture.GetProperty("cases").EnumerateArray()
+            .Where(entry => entry.TryGetProperty("referenceChunks", out _)).ToArray();
+        Assert.NotEmpty(cases);
+        var seed = fixture.GetProperty("seed").GetInt64();
+
+        WorldgenPipelines.AssertAllInSlices(cases, Name, (entry, pipelines) =>
+        {
+            var pipeline = pipelines.Structures(Dimension(entry), seed);
+            var samples = entry.GetProperty("referenceChunks").EnumerateArray().ToArray();
+            Assert.NotEmpty(samples);
+            FixtureCases.AssertAll(samples,
+                sample => $"chunk {sample.GetProperty("chunkX")}, {sample.GetProperty("chunkZ")}", sample =>
+            {
+                var x = sample.GetProperty("chunkX").GetInt32();
+                var z = sample.GetProperty("chunkZ").GetInt32();
+                var chunk = new Chunk(x, z, pipeline.MinY, pipeline.Height);
+                pipeline.Generate(chunk);
+
+                using var bytes = new MemoryStream();
+                using (var writer = new NbtWriterStream(bytes, NbtCompression.None, ""))
+                {
+                    Region.SerializeChunk(writer, chunk, null);
+                    writer.EndCompound();
+                    writer.TryFinish();
+                }
+
+                var saved = (NbtCompound)new NbtReader(new MemoryStream(bytes.ToArray())).ReadNextTag()!;
+                var structures = (NbtCompound)saved["structures"];
+                var expected = SnbtReader.ReadCompound(sample.GetProperty("references").GetString()!);
+                Assert.Equal(Snbt.Write(expected), Snbt.Write(structures["References"]));
+
+                // A loaded compound is kept even if it contains a structure the generator doesn't know.
+                var loaded = new NbtCompound("References")
+                {
+                    new NbtArray<long>("missing:structure", [123L])
+                };
+                chunk.StructureReferences = loaded;
+                pipeline.Structures!.RecordReferences(chunk);
+                Assert.Same(loaded, chunk.StructureReferences);
+            });
+        });
+    }
+
     // Vanilla's save of the placed swamp hut, changed so that it's of other pieces, is rejected: the chunk saves it
     // again as it was, and the start isn't placed nor takes references. Obsidian's older saves, without piece ids,
     // are restored.

@@ -226,6 +226,27 @@ internal sealed class StructureManager : IStructurePlacementState
     }
 
     /// <summary>
+    /// Records vanilla's STRUCTURE_REFERENCES result before placement can move a piece's bounding box.
+    /// Loaded references are retained, including structures not available to this generator.
+    /// </summary>
+    public void RecordReferences(Chunk chunk)
+    {
+        if (chunk.StructureReferences is not null)
+            return;
+
+        var references = new NbtCompound("References");
+        var groups = this.FindReaching(chunk.X, chunk.Z).Starts.GroupBy(start => start.Structure.Identifier);
+        foreach (var group in groups)
+        {
+            var keys = group.Select(start => ChunkKey(start.ChunkX, start.ChunkZ));
+            var positions = LongHashSetOrder.Order(keys).ToArray();
+            references.Add(new NbtArray<long>(group.Key, positions));
+        }
+
+        chunk.StructureReferences = references;
+    }
+
+    /// <summary>
     /// Loads a start chunk, waiting for it, and returns the structure starts saved in it (or <c>null</c>); set by the
     /// generator. Without it, starts are restored without saved state.
     /// </summary>
