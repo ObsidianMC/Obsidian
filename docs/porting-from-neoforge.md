@@ -51,7 +51,7 @@ Every NeoForge biome modifier type converts to an Obsidian modifier (see
 | `neoforge:remove_features` (`features`, optional `steps`) | `remove.features`, of the steps or of every step |
 | `neoforge:add_spawns` (`spawners`) | `add.spawners` |
 | `neoforge:remove_spawns` (`entity_types`) | `remove.spawners` |
-| `neoforge:add_carvers`, `remove_carvers` (`carvers`) | `add.carvers`, `remove.carvers`; a carving `step` is ignored, as 1.21.11 has none |
+| `neoforge:add_carvers`, `remove_carvers` (`carvers`) | `add.carvers`, `remove.carvers`; a carving `step` is ignored, as 26.3 has none |
 | `neoforge:add_spawn_costs` (`entity_types`, `spawn_cost`) | `add.spawn_costs`, by entity type |
 | `neoforge:remove_spawn_costs` (`entity_types`) | `remove.spawn_costs` |
 | `neoforge:none` | Left out: it does nothing |

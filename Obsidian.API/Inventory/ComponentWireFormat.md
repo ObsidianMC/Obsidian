@@ -1,4 +1,4 @@
-# Item components (Java 26.3 port)
+# Item components (Java Edition 26.3)
 
 The `NetworkBuffer` implementation frames all 122 component wire shapes in Minecraft 26.3. The component enum is generated from the vanilla registry, and the golden test verifies every ID and identifier. A small wire walker handles framing independently of the public models. Modeled components retain typed values; remaining types use `OpaqueDataComponent(Type, Data)` with their complete encoded payload.
 
@@ -26,7 +26,14 @@ DataComponent ReadDataComponent(DataComponentType type);
 void WriteDataComponent(DataComponent component);
 ```
 
-Use the optional codec for container content/slot, cursor, player inventory and equipment. Empty stacks are `null`. The list codec includes its VarInt length and permits empty entries. Use the untrusted codec for creative slot packets: each added component has a VarInt payload length after its type ID. Required stacks use the same nonempty wire format but reject empty values. Nested component values use the template codec: item ID, then count, then patch. Bundles, charged projectiles, use remainders and sulfur-cube contents use nonempty templates; container slots and the four pot faces use a presence Boolean before each template. These differ from packet item stacks, which put count first and use count zero for an empty slot. `PotDecorations.Value` has four entries (back, left, right, front), with null for an absent face. Fuel and compost values retain either constants or context-provider keys; their gameplay evaluation is Phase 4.
+Use the optional codec for container content/slot, cursor, player inventory and equipment. Empty stacks are `null`. The
+list codec includes its VarInt length and permits empty entries. Use the untrusted codec for creative slot packets: each
+added component has a VarInt payload length after its type ID. Required stacks use the same nonempty wire format but
+reject empty values. Nested component values use the template codec: item ID, then count, then patch. Bundles, charged
+projectiles, use remainders and sulfur-cube contents use nonempty templates; container slots and the four pot faces use
+a presence Boolean before each template. These differ from packet item stacks, which put count first and use count zero
+for an empty slot. `PotDecorations.Value` has four entries (back, left, right, front), with null for an absent face.
+Fuel and compost values retain either constants or context-provider keys.
 
 `NetworkBuffer` additionally exposes `ReadItemStack(bool delimitedComponents)` and `WriteItemStack(ItemStack? itemStack, bool delimitedComponents)`; prefer the named methods above. Merchant helpers are `TradeItem ReadItemCost()`, `void WriteItemCost(TradeItem value)`, `TradeEntry ReadMerchantOffer()` and `void WriteMerchantOffer(TradeEntry value)`. An offers list is a VarInt count followed by these entries.
 
@@ -58,7 +65,10 @@ To recapture 26.3 from PowerShell in the repository root (build the asset genera
 
 ```powershell
 $root = (Get-Location).Path
-$cache = Join-Path $root 'Obsidian.AssetGenerator/obj/vanilla/26.3'
+$cacheRoot = if ($env:VanillaWorkDirectory) { $env:VanillaWorkDirectory } else {
+    Join-Path $env:LOCALAPPDATA 'Obsidian/vanilla'
+}
+$cache = Join-Path $cacheRoot '26.3'
 $cp = ((Get-ChildItem "$cache/versions", "$cache/libraries" -Filter *.jar -Recurse).FullName -join ';')
 Push-Location $cache
 try {
@@ -66,4 +76,9 @@ try {
 } finally { Pop-Location }
 ```
 
-The source generator distinguishes optional, required and untrusted item codecs. Existing handwritten packet serializers must select the right helper themselves. In particular, `SetCreativeModeSlotPacket.Deserialize` still needs its existing `ReadItemStack()` call replaced with `ReadUntrustedItemStack()`, and the handwritten merchant offer serializer should call the new merchant helper. Those packet files are outside this implementation's ownership. Recipe display polymorphic codecs remain outside this change (Phase 4); their item-stack displays now use templates. Decorated-pot block-entity storage still uses the legacy item-name sherd list until Phase 3, so placement loses per-face stack patches. The item component named `recipes` itself is fully framed and preserved.
+The source generator distinguishes optional, required and untrusted item codecs. Handwritten packet serializers
+must select the right helper themselves: `SetCreativeModeSlotPacket.Populate` uses `ReadUntrustedItemStack()`, and
+`MerchantOffersPacket.Serialize` uses `WriteMerchantOffer`. Recipe displays use item-stack templates. Decorated-pot
+block entities save each face as an item stack, preserving its component patch. The item component named `recipes`
+itself is fully framed and preserved. See [open protocol decisions](../../docs/protocol-open-decisions.md) for
+validation still needed on components players send.

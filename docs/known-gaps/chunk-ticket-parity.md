@@ -8,10 +8,10 @@
 ring. Natural spawning still needs players. Plugin tickets are bounded, automatically released on unload and not
 saved; a mod can store coordinates with `RegisterSavedData` and reacquire handles when it starts.
 
-Vanilla 1.21.11's `TicketType.FORCED` persists and loads/simulates without a timeout; `PORTAL` expires after 300
+Vanilla 26.3's `TicketType.FORCED` persists and loads/simulates without a timeout; `PORTAL` expires after 300
 ticks, while `PLAYER_SPAWN` is a temporary loading ticket. `TicketStorage.TYPE` saves persistent ticket entries in
-the level's `data/chunks.dat`, including forced chunks changed by `/forceload`; this is no longer the older
-`ForcedChunks` long array in `chunks.dat`. Obsidian does not import those tickets or provide `/forceload` yet.
+the level's `data/minecraft/chunk_tickets.dat`, including forced chunks changed by `/forceload`; this is no longer
+the older `ForcedChunks` long array in `chunks.dat`. Obsidian does not import those tickets or provide `/forceload` yet.
 
-**Where to start:** capture a 1.21.11 forced-ticket save and replay it through an engine-owned saved-data codec;
+**Where to start:** capture a 26.3 forced-ticket save and replay it through an engine-owned saved-data codec;
 add `/forceload` and the separate block-ticking border when a concrete user needs vanilla interoperability.

@@ -40,5 +40,5 @@ Progress item from being marked done:
 
 Continue in `Obsidian/Progress`, `Player.Progress.cs`, and the three registries for advancements, triggers and
 custom statistics. Existing gameplay files only contain small calls into that runtime. The three tests in
-`Obsidian.Tests/Progress.cs` replay captured vanilla 1.21.11 packet/save fixtures and exercise reward idempotence
+`Obsidian.Tests/Progress.cs` replay captured vanilla 26.3 packet/save fixtures and exercise reward idempotence
 and plugin unload/reload.

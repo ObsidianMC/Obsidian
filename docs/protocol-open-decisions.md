@@ -1,7 +1,7 @@
 # Open protocol decisions
 
-Decisions deferred until the server's protocol work is finished. Each entry says what's open, why it matters and
-where to start.
+Decisions still open for the server's Minecraft 26.3 protocol implementation. Each entry says what's open, why it
+matters and where to start.
 
 ## Validate item components that players send
 

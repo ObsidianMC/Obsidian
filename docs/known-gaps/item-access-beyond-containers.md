@@ -16,8 +16,8 @@ hoppers, droppers and dispensers; the rest of vanilla's item movers aren't model
 - **Hopper timing.** A hopper takes in item entities on its own tick, not also as they move into it (vanilla's
   `entityInside`), and takes them in entity id order rather than vanilla's entity section order. Hoppers tick in
   their chunk's block entity order, not vanilla's level-wide list; the cooldown rules make chains independent of
-  it, but contraptions that race separate hoppers may differ. The timings are reasoned from the 1.21.11 jar's
-  `HopperBlockEntity`, not checked against a vanilla capture.
+  it, but contraptions that race separate hoppers may differ. The timings are reasoned from the jar's `HopperBlockEntity`
+  (checked against 1.21.11), not checked against a vanilla capture.
 - **Inside block hooks**, which hold the level's tick lock, a container a player's click holds at that moment, or
   one still waiting for its loot table, takes and gives nothing for that call, where vanilla's single thread never
   meets either case.

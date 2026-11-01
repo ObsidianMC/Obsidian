@@ -1,7 +1,8 @@
 # Vanilla worldgen captures
 
 The worldgen parity tests replay references recorded from vanilla. Each entry holds a case's inputs (seed, position,
-noise...) and the values vanilla produced for them, and each entry is one test case.
+noise...) and the values vanilla produced for them, and each entry is one test case. The current baseline is
+Minecraft 26.3, pinned by `MinecraftVersion` in `Obsidian/Obsidian.csproj`.
 
 - `Obsidian.Tests/Assets/vanilla_worldgen_26.3/` holds the 26.3 references, which `VanillaDensityFunctions` replays:
   noise samples (`noises`), the value of every noise router and aquifer function of each dimension's noise settings

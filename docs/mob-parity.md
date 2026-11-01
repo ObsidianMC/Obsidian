@@ -1,8 +1,11 @@
-# Mob parity gaps — Java Edition 1.21.11
+# Mob parity gaps — Java Edition 26.3
 
 This document inventories missing and approximate mob behavior in the current source, including shared systems and older mobs. A concrete factory implementation does not imply vanilla parity. **Missing** means no corresponding behavior was found in the audited implementation; **approximate** means behavior exists but uses a reduced model; **unverified** means equivalence still needs a targeted comparison or runtime validation. Shared gaps apply to every relevant mob, even when not repeated in its entry.
 
-The audit covers `Obsidian/Entities`, mob spawning/storage, village/raid systems, game events, explosions and End-fight handling. It is not an exhaustive comparison of every vanilla code path. Focused automated checks cover the implemented changes below; in-game equivalence is still unverified. Unknown defects and unlisted edge cases remain possible.
+The audit covers `Obsidian/Entities`, mob spawning/storage, village/raid systems, game events, explosions and End-fight
+handling. The gameplay audit is retained from the previous baseline (checked against 1.21.11). It is not an exhaustive
+comparison of every vanilla code path. Focused automated checks cover the implemented changes below; in-game equivalence
+is still unverified. Unknown defects and unlisted edge cases remain possible.
 
 ## Implemented corrections
 
@@ -154,7 +157,7 @@ Source: `Entities/Villager*.cs`, `Entities/ZombieVillager.cs`, `Entities/Wanderi
 | Strider | Approximate lava pathfinding, cold movement and riding/boost rules; missing full jockey spawning and interaction combinations. |
 | Turtle | Approximate home/migration/egg-laying navigation, breeding and conditional drops; complete egg hatching/trampling predicates and presentation need comparison. |
 
-The mount and imitation requirements above use the [official Java Edition 1.21.11 release notes](https://www.minecraft.net/en-us/article/minecraft-java-edition-1-21-11) as their version baseline. Other entries follow the species implementation and the shared source references above.
+The mount and imitation requirements above use the [official Java Edition 1.21.11 release notes](https://www.minecraft.net/en-us/article/minecraft-java-edition-1-21-11) as their original version baseline. Other entries follow the species implementation and the shared source references above.
 
 ## Aquatic mobs and golems
 
