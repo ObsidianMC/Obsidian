@@ -26,6 +26,11 @@ namespace Obsidian.Tests;
 /// </summary>
 public sealed class PluginParticlesAndMenus
 {
+    // How long work the test waits for may take: a plugin's calls ending, which WaitForCallsAsync polls with
+    // Task.Delay, or a Task.Run. Both need the thread pool, which only adds threads slowly while the whole suite
+    // runs at once, so a second isn't enough on a busy machine. The limit only has to tell a hang from a slow pool.
+    private static readonly TimeSpan PoolWait = TimeSpan.FromSeconds(20);
+
     [Fact(DisplayName = "A plugin's particle and menu types get ids after vanilla's, are synced and sent by id")]
     public void IdsFollowVanillasAndAreSynced()
     {
@@ -130,7 +135,7 @@ public sealed class PluginParticlesAndMenus
         using (await BaseContainer.LockWindowAsync(original, player.Inventory))
             Assert.Throws<InvalidOperationException>(() => MainEventHandler.MenuClick.Start(player, original));
 
-        await plugin.WaitForCallsAsync().WaitAsync(TimeSpan.FromSeconds(1));
+        await plugin.WaitForCallsAsync().WaitAsync(PoolWait);
         original.ThrowValidity = false;
 
         // Like unloading: the plugin takes no more calls, but its close handler still sees its menu close.
@@ -150,12 +155,12 @@ public sealed class PluginParticlesAndMenus
             using (ExecutionContext.SuppressFlow())
                 fallback = Task.Run(player.RunMenusClosed);
 
-            await fallback.WaitAsync(TimeSpan.FromSeconds(1));
+            await fallback.WaitAsync(PoolWait);
             Assert.Equal(0, original.Closes);
             Assert.False(plugin.WaitForCallsAsync().IsCompleted);
         }
 
-        await plugin.WaitForCallsAsync().WaitAsync(TimeSpan.FromSeconds(1));
+        await plugin.WaitForCallsAsync().WaitAsync(PoolWait);
 
         Assert.Equal(1, closes);
         Assert.Equal(1, original.Closes);

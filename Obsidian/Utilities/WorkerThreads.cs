@@ -31,13 +31,16 @@ internal sealed class WorkerThreads
 
     private WorkerThreads(string name, int threadCount)
     {
+        // UnsafeStart doesn't capture the caller's execution context: these threads live for the whole process, so a
+        // captured context would keep whatever AsyncLocal values the first caller had, a plugin's objects included,
+        // alive forever and stop that plugin unloading.
         for (var i = 0; i < threadCount; i++)
         {
             new Thread(this.Work)
             {
                 IsBackground = true,
                 Name = $"{name} {i + 1}"
-            }.Start();
+            }.UnsafeStart();
         }
     }
 
