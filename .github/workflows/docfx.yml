@@ -3,7 +3,7 @@ name: Update Docs
 on:
   workflow_dispatch:
   push:
-    branches: [1.21.x]
+    branches: [26.3.x]
     paths:
       - "Obsidian.API/**/*.cs"
       - "Obsidian.API/*.csproj"
