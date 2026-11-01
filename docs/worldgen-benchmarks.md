@@ -107,80 +107,73 @@ On the server, seed 12345 spawns at `96.5, 136.0, -31.5` in every run.
 
 Phase 5 of the [26.3 port](porting-26.3-plan.md) switches the live generator to the 26.3 pipeline
 (`BiomeTerrain`: biomes, terrain, structures and decoration on 26.3's data and templates) once it generates at least
-as fast as the live generator, which still runs 1.21.11's worldgen data. Neither has a server around it here: both run
-`Obsidian.WorldgenBench serial` on the same 1,024 chunks per dimension, on one thread.
+as fast as the live generator, which still runs 1.21.11's worldgen data. It now does, in every dimension.
+
+Neither has a server around it here: both run `Obsidian.WorldgenBench serial` on the same 1,024 chunks per dimension,
+on one thread.
 
 | | |
 |---|---|
 | Machine | AMD Ryzen 9 9950X, 64 GB, Windows 11 Pro 23H2, .NET SDK 10.0.403, Release build |
-| Command | `serial --dimension <name> --generator 1.21.11` or `--generator 26.3`, seed 12345, radius 16 (1,024 chunks), warm |
+| Build | origin/26.3.x `a7230826` |
+| Command | `serial --dimension all --generator 26.3` or `--generator 1.21.11`, seed 12345, radius 16 (1,024 chunks), warm |
 | Chunks | Overworld around (6, -2), Nether around (0, 0), End around (6, 0); 1,296 carved and 1,156 decorated |
-| Runs | The two generators alternated; the table shows medians of 2–3 runs |
+| Runs | Three of each, the two generators alternating; the table shows medians |
 
-Other jobs shared the machine during these runs, so a single run can be up to 30% slower; compare medians.
+| Dimension | 26.3: ms per chunk (chunks/s) | 1.21.11: ms per chunk (chunks/s) | 26.3: KB allocated per chunk | 1.21.11: KB allocated per chunk |
+|---|---:|---:|---:|---:|
+| Overworld | **9.14 (109)** | 10.14 (99) | 730 | 353 |
+| Nether | **3.49 (286)** | 6.03 (166) | 382 | 234 |
+| End | **0.63 (1,595)** | 0.73 (1,363) | 205 | 119 |
 
-| Dimension | Generator | Before: ms per chunk (chunks/s) | After: ms per chunk (chunks/s) | Before: KB allocated per chunk | After: KB allocated per chunk |
-|---|---|---:|---:|---:|---:|
-| Overworld | 1.21.11 | 8.8 (114) | 8.7 (115) | 206 | 206 |
-| | 26.3 | 73.2 (14) | **22.2 (45)** | 8,195 | **1,763** |
-| Nether | 1.21.11 | 3.9 (254) | 3.8 (261) | 132 | 133 |
-| | 26.3 | 7.5 (133) | **6.9 (145)** | 648 | **512** |
-| End | 1.21.11 | 0.61 (1,636) | 0.62 (1,608) | 17 | 16 |
-| | 26.3 | 1.67 (598) | **1.50 (667)** | 187 | **170** |
+Both generators' hashes match their references in every run (see `Obsidian.WorldgenBench/BenchOptions.cs`), and the
+26.3 pipeline's output matches vanilla 26.3 in every worldgen replay.
 
-- "Before" is origin/26.3.x `80555196`, one run each; "after" is this branch. Allocations are the stages' (the stage
-  table's total), without the run's own bookkeeping.
-- The 26.3 pipeline has no post-processing stage yet; the live generator spends 0.05–0.07 ms per chunk on it.
-- Both generators' hashes are unchanged (the bench checks them), and so is the 26.3 pipeline's output in every
-  worldgen replay.
+### Where the overworld spends its time
 
-### Where the 26.3 overworld spends its time
+One run near the median, in ms per chunk (each stage includes the neighbouring chunks it needs):
 
-One run near the median, in ms per chunk:
-
-| Stage | 1.21.11 | 26.3 before | 26.3 after |
+| Stage | 1.21.11 | 26.3 at `80555196` | 26.3 now |
 |---|---:|---:|---:|
-| Biomes | 0.49 | 6.08 | 0.82 |
-| Noise (terrain density, aquifers, beardifier) | 2.98 | 37.13 | 8.90 |
-| Surface (material rules, ore veins) | 1.59 | 24.41 | 7.67 |
-| Carvers | 0.42 | 1.74 | 1.08 |
-| Structure starts | 0.01 | 0.04 | 0.04 |
-| Features | 2.72 | 3.34 | 3.39 |
-| Post-processing | 0.05 | — | — |
-| Light | 0.45 | 0.44 | 0.47 |
-| **Total** | **8.70** | **73.18** | **22.36** |
+| Biomes | 0.58 | 6.08 | 0.48 |
+| Noise (terrain density, aquifers, beardifier) | 2.86 | 37.13 | 2.51 |
+| Surface (material rules, ore veins) | 3.11 | 24.41 | 2.29 |
+| Carvers | 0.44 | 1.74 | 0.60 |
+| Structure starts | 0.01 | 0.04 | 0.01 |
+| Features | 2.68 | 3.34 | 2.70 |
+| Post-processing | 0.05 | — | 0.01 |
+| Light | 0.44 | 0.44 | 0.43 |
+| **Total** | **10.16** | **73.18** | **9.01** |
 
-What changed, each without changing a value:
+### How it got there
 
-- **`cache` density functions remember values.** They were transparent, so every 3D point re-evaluated the 2D
-  noises and splines under it (continentalness, erosion, the terrain splines) and every reference re-evaluated shared
-  functions (sloped cheese, cave entrances, the ore vein toggle). A cache whose input doesn't change with y now samples
-  one layer of a volume and copies it down each column; any cache remembers the last point and volume it sampled, per
-  thread. Points and volumes are remembered apart, since their paths can round differently.
-- **Biome searches are remembered per target.** Material rules look a biome up for every block, and the climate tree
-  search starts from the previous result, which decides exact ties. The search returns the previous result when it
-  is at the smallest distance and otherwise the first leaf at that distance in tree order, whatever the previous
-  result was. So each thread keeps, per target, the smallest distance and that first leaf, and answers from them.
-- **Smaller per-block costs:** the jitter of a cell's corners is reused for its blocks, biome conditions compare
-  numbers instead of hashing names, `range_choice` and `lerp` skip a branch no point takes, noise layers are
-  enumerated without allocating, Perlin lookups skip bounds checks, material density buffers are pooled, and
-  decoration writes look for a block entity before taking the lock that removing one needs.
+Every change kept the output identical; the bench hashes and the worldgen replays check that.
+
+- **Density functions** (#640, #641, #646): `cache` functions remember values, and those that don't vary with y fill
+  one layer and copy it down. `range_choice` and `lerp` sample a branch only where points take it, and interpolation
+  samples only the cell corners it needs. Arithmetic loops pick their operation once, and noise octaves sample eight
+  points at a time with AVX2, in exactly the scalar path's operation order (`VectorizedNoise` checks the two agree bit
+  for bit).
+- **Noise fill** (#641, #646): blocks are decided into one byte each and written a layer at a time, seeding each
+  section's palette in the order per-block writes would have met the blocks. The beardifier looks only at nearby
+  pieces, and positions above the aquifers' range take the global fluid without asking them.
+- **Biomes and surfaces** (#642, #645, #648): material rules read the chunk's stored biomes, as vanilla's do, from a
+  table filled once per chunk; biome conditions naming nothing in reach are false without a lookup. Temperature and
+  vegetation are sampled once per column when they don't vary with height.
+- **Writes** (#644, #647): terrain writes to chunks no other thread can see yet are batched under one lock, and
+  heightmap upkeep on every write no longer allocates. #647 also sped up the live generator, which #638's per-write
+  heightmap upkeep had slowed from 8.85 to 11.56 ms per chunk.
+- **Features and carvers** (#642, #646, #648): placements reuse per-thread position lists, ore blobs stamp visits
+  instead of clearing a buffer per blob, tag tests use lookup tables, and carver settings are parsed once instead of
+  per chunk.
 
 ### What's left
 
-The 26.3 overworld is still about 2.5 times slower than the live generator, and the Nether about 1.8 times, so the
-live generator shouldn't switch yet. The rest of the gap is structural:
-
-- **Biome lookups per block (about 3 ms).** Material rules ask the router for each block's biome (33,000 lookups per
-  chunk), because remembering a quart's biome would skip the tree search that later exact ties start from. The live
-  generator reads the chunk's stored biomes instead. Reading stored biomes needs a capture showing vanilla 26.3 does
-  the same.
-- **Density as passes over buffers (about 4 ms of noise).** Each density function fills a whole buffer, and
-  `range_choice` and `lerp` sample both branches wherever points take both. Sampling only the points a branch serves
-  needs a sparse path through every function, and interpolation's rounding depends on where a volume starts.
-- **Ore veins over the material volume (about 2 ms).** Their nested `range_choice` functions fill buffers the size of
-  the chunk's every block.
-- **Features allocate about 1.2 MB per chunk,** spread over many features (ores, vines, sculk, lichen).
+- The 26.3 pipeline allocates more per chunk than the live generator, mostly in the biome fill (170 KB vs 1 KB per
+  call) and noise (122 KB vs 81 KB).
+- Carvers are still about 0.15 ms per chunk slower than the live generator's.
+- `WorldGenRegion.MayHaveBlockEntities` uses `ConcurrentDictionary.IsEmpty`, which takes every lock in the
+  dictionary; that costs both generators about 0.15 ms per chunk in decoration.
 
 ## Caveats
 
