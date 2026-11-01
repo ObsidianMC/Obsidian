@@ -74,6 +74,9 @@ internal sealed partial class WorldgenReader
 
         if (target == typeof(INoise) || target == typeof(BaseNoise))
         {
+            if (this.Noises is Func<JsonElement, string, BaseNoise> readNoise)
+                return readNoise(json, path);
+
             return json.ValueKind == JsonValueKind.Object
                 ? ReadInlineNoise(json, path)
                 : Lookup(this.noise, Reference(json, path), path);

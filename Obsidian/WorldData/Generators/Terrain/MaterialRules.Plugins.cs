@@ -28,11 +28,18 @@ internal sealed partial class MaterialRules
     /// </summary>
     /// <remarks>
     /// The rules and conditions a plugin's object holds were compiled for 26.3 as it was read (see
-    /// <see cref="CompiledSurfaceRule"/>), and evaluate with this context; one the plugin made itself evaluates
-    /// when it's one of the plugin's types.
+    /// <see cref="CompiledSurfaceRule"/>), and evaluate with this context; one the plugin made itself evaluates as a
+    /// plugin's type, or as vanilla's class translated (see <see cref="Translate(ISurfaceRule)"/>).
     /// </remarks>
-    private sealed class PluginSurfaceContext(MaterialContext context) : ISurfaceContext
+    private sealed class PluginSurfaceContext(MaterialRules rules, MaterialContext context) : ISurfaceContext
     {
+        // How deep rules may evaluate others through contexts. Rules nest a few levels; one evaluating itself, or a
+        // rule that leads back to it, would recurse until the stack overflows, ending the process rather than
+        // failing the dimension, so it's stopped well before.
+        private const int MaxDepth = 128;
+
+        private int depth;
+
         public int BlockX => context.X;
 
         public int BlockY => context.Y;
@@ -53,22 +60,54 @@ internal sealed partial class MaterialRules
 
         public int MinSurfaceLevel => context.MinSurface;
 
-        public IBlock? Apply(ISurfaceRule rule) => rule switch
+        public IBlock? Apply(ISurfaceRule rule)
         {
-            CompiledSurfaceRule compiled => compiled.Rule(context),
-            ICustomSurfaceRule custom => custom.Apply(this),
-            _ => throw Unsupported(rule)
-        };
+            this.Enter(rule);
 
-        public bool Test(ISurfaceCondition condition) => condition switch
+            try
+            {
+                return rule switch
+                {
+                    CompiledSurfaceRule compiled => compiled.Rule(context),
+                    ICustomSurfaceRule custom => custom.Apply(this),
+                    _ => rules.Translate(rule)(context)
+                };
+            }
+            finally
+            {
+                this.depth--;
+            }
+        }
+
+        public bool Test(ISurfaceCondition condition)
         {
-            CompiledSurfaceCondition compiled => compiled.Condition(context),
-            ICustomSurfaceCondition custom => custom.Test(this),
-            _ => throw Unsupported(condition)
-        };
+            this.Enter(condition);
 
-        private static NotSupportedException Unsupported(IRegistryResource value) =>
-            new($"{value.Type} wasn't read for the 26.3 material rules; only the rules and conditions read in a "
-                + "plugin's rule or condition, and plugins' own types, evaluate there.");
+            try
+            {
+                return condition switch
+                {
+                    CompiledSurfaceCondition compiled => compiled.Condition(context),
+                    ICustomSurfaceCondition custom => custom.Test(this),
+                    _ => rules.Translate(condition)(context)
+                };
+            }
+            finally
+            {
+                this.depth--;
+            }
+        }
+
+        private void Enter(IRegistryResource value)
+        {
+            if (this.depth >= MaxDepth)
+            {
+                throw new InvalidOperationException(
+                    $"Rules evaluated {MaxDepth} others deep through their context, at {value.Type}: does a plugin's "
+                    + "rule or condition evaluate itself?");
+            }
+
+            this.depth++;
+        }
     }
 }

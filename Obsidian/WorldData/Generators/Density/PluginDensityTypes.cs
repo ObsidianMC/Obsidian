@@ -33,7 +33,7 @@ internal interface IDensityTypes
 /// The 1.21.11 pipeline gives plugins' functions 1.21.11 functions and noises, which it seeds through
 /// <see cref="IDensityFunction.MapAll"/>. Here the functions a plugin's function holds are already seeded 26.3 ones,
 /// so nothing is mapped. A 26.3 noise can't be a 1.21.11 <see cref="BaseNoise"/> (26.3 changed the noise schema), so
-/// a plugin's function can't name a noise here: it takes a density function, such as a <c>minecraft:noise</c>.
+/// a plugin's function can't hold a noise here, named or inline: it takes a density function, such as a <c>minecraft:noise</c>.
 /// </para>
 /// <para>
 /// The plugins whose code the functions run are collected in <see cref="Owners"/>, which the dimension holds while it
@@ -63,10 +63,10 @@ internal sealed class PluginDensityTypes(WorldgenTypes types) : IDensityTypes
             types,
             NoFeature<ConfiguredFeatureBase>,
             NoFeature<PlacedFeature>,
-            this.OnCreated,
-            noise: NoNoise)
+            this.OnCreated)
         {
-            DensityFunctions = (value, valuePath) => new CompiledDensityFunction(compiler.Compile(value, valuePath))
+            DensityFunctions = (value, valuePath) => new CompiledDensityFunction(compiler.Compile(value, valuePath)),
+            Noises = NoNoise
         };
 
         var function = reader.ReadTyped<IDensityFunction>(json, path);
@@ -104,10 +104,11 @@ internal sealed class PluginDensityTypes(WorldgenTypes types) : IDensityTypes
     private static T NoFeature<T>(string identifier) =>
         throw new InvalidDataException($"{identifier}: features can't be used here");
 
-    private static BaseNoise NoNoise(string identifier) =>
+    // Named and inline noises alike: a 1.21.11 noise would sample unseeded here.
+    private static BaseNoise NoNoise(JsonElement json, string path) =>
         throw new InvalidDataException(
-            $"{identifier}: a plugin's density function can't name a noise in 26.3; take a density function, such as "
-            + "a minecraft:noise, instead");
+            $"{path}: a plugin's density function can't hold a noise in 26.3; take a density function, such as a "
+            + "minecraft:noise, instead");
 }
 
 /// <summary>

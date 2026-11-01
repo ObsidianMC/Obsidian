@@ -3100,9 +3100,12 @@ generates with that plugin, as with its density functions. Limits, until the swi
 - A plugin's surface rule or condition type gets 26.3 rules and conditions in its `ISurfaceRule` and
   `ISurfaceCondition` properties, read in 26.3's schema (`material_rule` and `material_condition` identifiers, like
   `minecraft:on_floor`, included), and 26.3 density functions in its `IDensityFunction` ones; it can't hold a noise,
-  for the same reason. Its context evaluates those properties, and rules and conditions of plugins' own types the
-  plugin made itself; vanilla's rule and condition classes the plugin made in code (a `new BlockSurfaceRule`, say)
-  aren't 26.3 rules, and throw a `NotSupportedException` there.
+  named or inline, for the same reason. Its context evaluates those properties, plugins' own types, and vanilla's rule
+  and condition classes, whether the plugin made them in code (a cached `new BlockSurfaceRule`, say) or they were
+  read for a property of that class: they evaluate as 26.3's rules do. A `NoiseThresholdSurfaceCondition` made in code
+  samples the 26.3 noise of its noise's identifier.
+- A named rule or condition that refers back to itself fails the dimension naming it, and so does a plugin's rule or
+  condition evaluating itself through its context (more than 128 levels deep), as a failure of the plugin's code.
 
 ### Noise types
 

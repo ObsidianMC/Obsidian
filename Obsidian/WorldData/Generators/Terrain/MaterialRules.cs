@@ -17,6 +17,9 @@ internal sealed partial class MaterialRules
     private readonly IMaterialTypes? types;
     private readonly Dictionary<string, Func<MaterialContext, IBlock?>> rules = [];
     private readonly Dictionary<string, Func<MaterialContext, bool>> conditions = [];
+
+    // The named rules and conditions being compiled, outermost first (see CompileEntry).
+    private readonly List<(string Registry, string Id)> compilingEntries = [];
     private readonly Func<MaterialContext, IBlock?> root;
     private readonly IBlock[] bands;
 
@@ -198,13 +201,7 @@ internal sealed partial class MaterialRules
         {
             var id = WorldgenData.Qualify(json.GetString()!);
 
-            if (!this.rules.TryGetValue(id, out var rule))
-            {
-                rule = this.CompileRule(this.generator.Data.Read("material_rule", id));
-                this.rules.Add(id, rule);
-            }
-
-            return rule;
+            return this.CompileEntry(this.rules, "material_rule", id, this.CompileRule);
         }
 
         var type = json.GetProperty("type").GetString()!;
@@ -215,21 +212,7 @@ internal sealed partial class MaterialRules
                 var block = ReadBlock(json.GetProperty("result_state"));
                 return _ => block;
             case "minecraft:sequence":
-                var sequence = json.GetProperty("sequence").EnumerateArray().Select(this.CompileRule).ToArray();
-                return context =>
-                {
-                    foreach (var rule in sequence)
-                    {
-                        var result = rule(context);
-
-                        if (result is not null)
-                        {
-                            return result;
-                        }
-                    }
-
-                    return null;
-                };
+                return Sequence(json.GetProperty("sequence").EnumerateArray().Select(this.CompileRule).ToArray());
             case "minecraft:condition":
                 var condition = this.CompileCondition(json.GetProperty("if_true"));
                 var then = this.CompileRule(json.GetProperty("then_run"));
@@ -250,6 +233,37 @@ internal sealed partial class MaterialRules
                 return this.CompilePluginRule(type, json)
                     ?? throw new InvalidDataException($"Unknown 26.3 material rule {type}.");
         }
+    }
+
+    // A named rule or condition, compiled once. Entries are only cached once compiled, so one that refers back to
+    // itself, which data can write (through a plugin's rule too), would recurse until the stack overflows: it's
+    // refused instead, naming the chain.
+    private T CompileEntry<T>(Dictionary<string, T> cache, string registry, string id, Func<JsonElement, T> compile)
+    {
+        if (cache.TryGetValue(id, out var compiled))
+            return compiled;
+
+        var start = this.compilingEntries.IndexOf((registry, id));
+
+        if (start >= 0)
+        {
+            var chain = this.compilingEntries.Skip(start).Select(entry => entry.Id);
+            throw new InvalidDataException($"{id} refers back to itself: {string.Join(" -> ", chain)} -> {id}");
+        }
+
+        this.compilingEntries.Add((registry, id));
+
+        try
+        {
+            compiled = compile(this.generator.Data.Read(registry, id));
+        }
+        finally
+        {
+            this.compilingEntries.RemoveAt(this.compilingEntries.Count - 1);
+        }
+
+        cache.Add(id, compiled);
+        return compiled;
     }
 
     private Func<MaterialContext, IBlock?> CompileOre(JsonElement json)
@@ -301,13 +315,7 @@ internal sealed partial class MaterialRules
         {
             var id = WorldgenData.Qualify(json.GetString()!);
 
-            if (!this.conditions.TryGetValue(id, out var condition))
-            {
-                condition = this.CompileCondition(this.generator.Data.Read("material_condition", id));
-                this.conditions.Add(id, condition);
-            }
-
-            return condition;
+            return this.CompileEntry(this.conditions, "material_condition", id, this.CompileCondition);
         }
 
         var type = json.GetProperty("type").GetString()!;

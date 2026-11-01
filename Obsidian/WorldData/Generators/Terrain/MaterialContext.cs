@@ -120,7 +120,7 @@ internal sealed partial class MaterialRules
         public bool Steep => this.GradientX <= -4 || this.GradientZ >= 4;
 
         /// <summary>The block as plugins' rules and conditions see it, made on first use.</summary>
-        public ISurfaceContext Surface => field ??= new PluginSurfaceContext(this);
+        public ISurfaceContext Surface => field ??= new PluginSurfaceContext(this.owner, this);
 
         public string Biome => this.biome ??= this.onlyBiome ?? this.biomeAt(this.X, this.Y, this.Z);
 

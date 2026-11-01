@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.Noise;
+using Obsidian.API.World.Generator.SurfaceRules;
 using Obsidian.Plugins;
 using Obsidian.Registries;
 using Obsidian.WorldData.Features;
@@ -42,7 +43,9 @@ internal interface IMaterialTypes
 /// <para>
 /// The rules and conditions a plugin's object holds are compiled 26.3 ones, which its context evaluates
 /// (<see cref="ISurfaceContext.Apply"/>, <see cref="ISurfaceContext.Test"/>); its density functions are seeded 26.3
-/// ones, as a plugin's density function's are (see <see cref="PluginDensityTypes"/>), so it can't name a noise.
+/// ones, as a plugin's density function's are (see <see cref="PluginDensityTypes"/>), so it can't hold a noise. Vanilla's
+/// rule and condition classes it holds or makes, such as a <see cref="BlockSurfaceRule"/>, evaluate as 26.3's (see
+/// <see cref="MaterialRules"/>' translations).
 /// </para>
 /// <para>
 /// The plugins whose code the rules run are collected in <see cref="Owners"/>, which the dimension holds while it
@@ -81,12 +84,12 @@ internal sealed class PluginMaterialTypes(WorldgenTypes types) : IMaterialTypes
             types,
             NoFeature<ConfiguredFeatureBase>,
             NoFeature<PlacedFeature>,
-            this.OnCreated,
-            noise: NoNoise)
+            this.OnCreated)
         {
             DensityFunctions = (value, path) => new CompiledDensityFunction(compiler.Compile(value, path)),
             SurfaceRules = (value, _) => new CompiledSurfaceRule(rules.CompileRule(value)),
-            SurfaceConditions = (value, _) => new CompiledSurfaceCondition(rules.CompileCondition(value))
+            SurfaceConditions = (value, _) => new CompiledSurfaceCondition(rules.CompileCondition(value)),
+            Noises = NoNoise
         };
 
         return reader.ReadTyped<T>(json, identifier);
@@ -122,10 +125,11 @@ internal sealed class PluginMaterialTypes(WorldgenTypes types) : IMaterialTypes
     private static T NoFeature<T>(string identifier) =>
         throw new InvalidDataException($"{identifier}: features can't be used here");
 
-    private static BaseNoise NoNoise(string identifier) =>
+    // Named and inline noises alike: a 1.21.11 noise would sample unseeded here.
+    private static BaseNoise NoNoise(JsonElement json, string path) =>
         throw new InvalidDataException(
-            $"{identifier}: a plugin's surface rule or condition can't name a noise in 26.3; take a density function, "
-            + "such as a minecraft:noise, or a minecraft:noise_threshold condition, instead");
+            $"{path}: a plugin's surface rule or condition can't hold a noise in 26.3; take a density function, such "
+            + "as a minecraft:noise, or a minecraft:noise_threshold condition, instead");
 }
 
 /// <summary>
