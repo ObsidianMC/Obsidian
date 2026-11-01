@@ -617,6 +617,12 @@ public sealed class PluginDimensionFiles : IDisposable
         var noiseError = Assert.Throws<InvalidDataException>(() => Read26("stemfiles:noisy", noisyStem, noise, data));
         Assert.Contains("can't hold a noise", noiseError.Message);
 
+        // Nor a property typed as a plugin's own noise class, which plain deserialization would leave unseeded.
+        var subclassStem = ShelfStem(ShelfWith(SubclassNoisyRuleJson));
+        var subclassError = Assert.Throws<InvalidDataException>(
+            () => Read26("stemfiles:subclass_noisy", subclassStem, noise, data));
+        Assert.Contains("can't hold a noise", subclassError.Message);
+
         // A plugin's rule evaluating itself fails its dimension's chunk, naming the plugin, rather than the process.
         var plugin = ProbePlugin();
         var selfStem = ShelfStem(ShelfWith("""{ "type": "probe:self" }"""));
@@ -669,6 +675,10 @@ public sealed class PluginDimensionFiles : IDisposable
 
     private const string LoopConditionRule = """
         { "type": "minecraft:condition", "if_true": "probe:loop", "then_run": "minecraft:bedrock_floor" }
+        """;
+
+    private const string SubclassNoisyRuleJson = """
+        { "type": "probe:subclass_noisy", "noise": { "key": "probe:own", "first_octave": -4, "amplitudes": [1.0] } }
         """;
 
     private const string NoisyRuleJson = """
@@ -746,6 +756,11 @@ public sealed class PluginDimensionFiles : IDisposable
             "probe:noisy",
             typeof(ISurfaceRule),
             typeof(NoisyRule)));
+        types.Add(WorldgenTypeRegistration.Create(
+            types,
+            "probe:subclass_noisy",
+            typeof(ISurfaceRule),
+            typeof(SubclassNoisyRule)));
 
         return types;
     }
@@ -1072,6 +1087,19 @@ public sealed class PluginDimensionFiles : IDisposable
         public string Type => "probe:self";
 
         public IBlock? Apply(ISurfaceContext context) => context.Apply(this);
+    }
+
+    // A plugin's own noise class.
+    public sealed class OwnNoise : Obsidian.API.World.Generator.Noise.BaseNoise;
+
+    // A plugin's surface rule holding its own noise class.
+    public sealed class SubclassNoisyRule : ICustomSurfaceRule
+    {
+        public string Type => "probe:subclass_noisy";
+
+        public required OwnNoise Noise { get; init; }
+
+        public IBlock? Apply(ISurfaceContext context) => null;
     }
 
     // A plugin's surface rule holding a 1.21.11 noise.
