@@ -1308,10 +1308,18 @@ public abstract partial class AbstractLevel : ILevel
     /// Whether the server paused chunk management (see <see cref="WorldManager.PauseChunkManagementAsync"/>): the
     /// generation jobs running finish, but don't start the queued ones.
     /// </summary>
+    /// <remarks>
+    /// Set under the lock jobs are taken with (see <see cref="TryTakeNearestJob"/>), which checks it again: once the
+    /// pause is set, no job starts, not even from a finishing job that passed <see cref="StartQueuedJobs"/>' check.
+    /// </remarks>
     internal bool ChunkManagementPaused
     {
         get => Volatile.Read(ref this.chunkManagementPaused);
-        set => Volatile.Write(ref this.chunkManagementPaused, value);
+        set
+        {
+            lock (this.waitingJobs)
+                Volatile.Write(ref this.chunkManagementPaused, value);
+        }
     }
 
     private bool chunkManagementPaused;
@@ -1394,13 +1402,20 @@ public abstract partial class AbstractLevel : ILevel
         this.Generator is MojangGenerator ? Generators.GenerationThreads.Run(job) : Task.Run(job);
 
     /// <summary>
-    /// Takes the queued chunk nearest to a player, or the oldest one when no player is in the level.
+    /// Takes the queued chunk nearest to a player, or the oldest one when no player is in the level. Takes none while
+    /// chunk management is paused (see <see cref="ChunkManagementPaused"/>).
     /// </summary>
     private bool TryTakeNearestJob(out long job)
     {
         lock (this.chunkTicketLock)
         lock (this.waitingJobs)
         {
+            if (this.ChunkManagementPaused)
+            {
+                job = 0;
+                return false;
+            }
+
             this.DiscardUnneededGeneration(moveToWaiting: true);
 
             if (this.waitingJobs.Count == 0)
