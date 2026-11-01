@@ -6,6 +6,7 @@ using Obsidian.WorldData.Generators.Biomes;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Generators.Features;
 using Obsidian.WorldData.Structures;
+using Obsidian.WorldData.Structures.Pools;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -49,7 +50,7 @@ public class VanillaStructurePlacement
 
     private static void AssertPieces(JsonElement entry, StructureStart start)
     {
-        var lines = start.Pieces.Select(VanillaStructureGeneration.Describe);
+        var lines = start.Pieces.Select(Describe);
         var hash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('\n', lines))));
 
         Assert.Equal(entry.GetProperty("pieceCount").GetInt32(), start.Pieces.Count);
@@ -228,4 +229,62 @@ public class VanillaStructurePlacement
 
         return pipeline.Structures!.GetStarts(chunkX, chunkZ).Single(start => start.Structure.Identifier == structure);
     }
+
+    // A piece as the references describe it: its type, box and what places it.
+    private static string Describe(StructurePiece piece)
+    {
+        static string Box(BlockBox box) => $"{box.MinX},{box.MinY},{box.MinZ},{box.MaxX},{box.MaxY},{box.MaxZ}";
+        static string Position(Vector position) => $"{position.X},{position.Y},{position.Z}";
+
+        // Vanilla's generated fortress start keeps BridgeCrossing's piece type (NeBCr), which the references name.
+        var type = piece is NetherFortressPieces.StartPiece ? "BridgeCrossing" : piece.GetType().Name;
+        var parts = new List<string> { type, "box " + Box(piece.BoundingBox) };
+        switch (piece)
+        {
+            case PoolElementStructurePiece pool:
+                parts.Add(DescribeElement(pool.Element));
+                parts.Add(pool.Element.Projection == Projection.Rigid ? "rigid" : "terrain_matching");
+                parts.Add("pos " + Position(pool.Position));
+                parts.Add(Rotation(pool.ElementRotation));
+                parts.Add("ground " + pool.GroundLevelDelta);
+                parts.Add("junctions " + string.Join(";", pool.Junctions.Select(junction =>
+                    $"{junction.SourceX},{junction.SourceGroundY},{junction.SourceZ},{junction.DeltaY},{(junction.DestinationRigid ? 1 : 0)}")));
+                break;
+            case TemplateStructurePiece template:
+                parts.Add(template.TemplateName);
+                parts.Add("pos " + Position(template.TemplatePosition));
+                parts.Add(Rotation(template.PlaceSettings.Rotation));
+                parts.Add(template.PlaceSettings.Mirror switch
+                {
+                    StructureMirror.LeftRight => "LEFT_RIGHT",
+                    StructureMirror.FrontBack => "FRONT_BACK",
+                    _ => "NONE"
+                });
+                parts.Add("pivot " + Position(template.PlaceSettings.RotationPivot));
+                break;
+            default:
+                parts.Add(piece.Orientation?.ToString().ToLowerInvariant() ?? "none");
+                parts.Add("depth " + piece.GenDepth);
+                break;
+        }
+
+        return string.Join(" | ", parts);
+    }
+
+    private static string DescribeElement(StructurePoolElement element) => element switch
+    {
+        LegacySinglePoolElement legacy => "legacy:" + legacy.Location,
+        SinglePoolElement single => "single:" + single.Location,
+        ListPoolElement list => "list:[" + string.Join(",", list.Elements.Select(DescribeElement)) + "]",
+        FeaturePoolElement feature => "feature:" + feature.Feature.Identifier,
+        _ => "empty"
+    };
+
+    private static string Rotation(StructureRotation rotation) => rotation switch
+    {
+        StructureRotation.Clockwise90 => "CLOCKWISE_90",
+        StructureRotation.Clockwise180 => "CLOCKWISE_180",
+        StructureRotation.CounterClockwise90 => "COUNTERCLOCKWISE_90",
+        _ => "NONE"
+    };
 }

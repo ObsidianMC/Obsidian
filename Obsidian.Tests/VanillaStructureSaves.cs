@@ -8,6 +8,8 @@ using Obsidian.Registries;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Generators.Biomes;
+using Obsidian.WorldData.Generators.Density;
+using Obsidian.WorldData.Generators.Features;
 using Obsidian.WorldData.Generators.Mojang.Structures;
 using Obsidian.WorldData.Structures;
 using Obsidian.WorldData.Structures.Pools;
@@ -246,10 +248,11 @@ public class VanillaStructureSaves
 
     private static StructurePoolElement FeatureElement(string feature)
     {
+        var features = new FeatureRegistry(WorldgenData.Vanilla);
         var reader = new WorldgenReader(
             WorldgenTypes.BuiltIn,
-            id => ConfiguredFeatures.All.GetValueOrDefault(id) ?? throw new InvalidDataException(id),
-            id => PlacedFeatures.All.GetValueOrDefault(id) ?? throw new InvalidDataException(id));
+            id => features.ConfiguredAdapter(id),
+            id => features.PlacedAdapter(id));
         var json = $$"""
             {"element_type": "minecraft:feature_pool_element", "projection": "rigid", "feature": {{feature}}}
             """;

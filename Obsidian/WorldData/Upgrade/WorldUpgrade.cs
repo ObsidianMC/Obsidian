@@ -31,6 +31,13 @@ namespace Obsidian.WorldData.Upgrade;
 /// Until the upgrade finishes, a marker file in the world names its backup, so an upgrade that stopped partway is
 /// redone from the backup the next time the world loads.
 /// </para>
+/// <para>
+/// Before anything is backed up or moved, every file the conversion reads (region and entity chunks, structure
+/// templates and Obsidian's level.dat of a dimension) is read and upgraded in memory the same way. A world with chunks
+/// that an Obsidian build before its vanilla-format saves (#539) wrote (see
+/// <see cref="LegacyChunkUpgrade.HasPaletteIds"/>), or with a file the conversion couldn't read, is refused with a
+/// <see cref="WorldLoadException"/>. It's left as it was, apart from <c>session.lock</c>, which loading takes first.
+/// </para>
 /// </remarks>
 internal static partial class WorldUpgrade
 {
@@ -99,6 +106,8 @@ internal static partial class WorldUpgrade
     /// </summary>
     /// <param name="rootDimension">The dimension of the world's own level, whose chunks are in the world's folder.</param>
     /// <exception cref="IOException">The upgrade can't go on; the world is left for the next load to try again.</exception>
+    /// <exception cref="WorldLoadException">The world can't be upgraded: an Obsidian build from before its vanilla-format
+    /// saves wrote its chunks, or a file the conversion reads can't be read. Nothing was written.</exception>
     public static async Task UpgradeAsync(string folder, string rootDimension, ILogger logger,
         CancellationToken cancellationToken = default)
     {
@@ -106,16 +115,18 @@ internal static partial class WorldUpgrade
             return;
 
         var marker = Path.Combine(folder, MarkerFile);
-        string backup;
-        if (File.Exists(marker))
+        var backup = File.Exists(marker) ? File.ReadAllText(marker).Trim() : null;
+        if (backup is not null && !Directory.Exists(backup))
         {
-            backup = File.ReadAllText(marker).Trim();
-            if (!Directory.Exists(backup))
-            {
-                throw new IOException($"An upgrade of the world in {folder} stopped partway, and its backup {backup} is "
-                    + "missing. Restore the world from a backup of your own, then remove " + MarkerFile + ".");
-            }
+            throw new IOException($"An upgrade of the world in {folder} stopped partway, and its backup {backup} is "
+                + "missing. Restore the world from a backup of your own, then remove " + MarkerFile + ".");
+        }
 
+        // Checked before anything is written. A redone upgrade restores from the backup, so that's what's checked.
+        await CheckAsync(backup ?? folder, folder, cancellationToken);
+
+        if (backup is not null)
+        {
             Log.Redoing(logger, folder, backup);
             Restore(backup, folder);
         }
@@ -136,6 +147,169 @@ internal static partial class WorldUpgrade
             File.WriteAllText(marker, backup);
             throw new IOException($"The upgrade of the world in {folder} left files in 1.21.11's layout. Move them out of "
                 + $"the world, or restore it from {backup} and remove {MarkerFile}.");
+        }
+    }
+
+    // The folders a level keeps its chunks in, in either layout.
+    private static readonly string[] regionFolders = ["region", "regions"];
+
+    // Establishes that the world in source (the world, or the backup a stopped upgrade is redone from) can be upgraded,
+    // before anything is written: every file the conversion reads is read and upgraded in memory, with the same code.
+    private static async Task CheckAsync(string source, string folder, CancellationToken cancellationToken)
+    {
+        // The world's own level, vanilla's nether and end, and Obsidian's and 26.3's levels in dimensions/.
+        var levels = new[] { source, Path.Combine(source, "DIM-1"), Path.Combine(source, "DIM1") }
+            .Concat(LevelFolders(Path.Combine(source, "dimensions")));
+        var scratch = Directory.CreateTempSubdirectory("obsidian-upgrade-check-");
+
+        try
+        {
+            foreach (var level in levels)
+            {
+                foreach (var name in regionFolders)
+                {
+                    await CheckRegionsAsync(Path.Combine(level, name), LegacyChunkUpgrade.UpgradeChunk, source, folder,
+                        scratch.FullName, cancellationToken);
+                }
+
+                await CheckRegionsAsync(Path.Combine(level, "entities"), LegacyChunkUpgrade.UpgradeEntityChunk, source,
+                    folder, scratch.FullName, cancellationToken);
+            }
+        }
+        finally
+        {
+            scratch.Delete(recursive: true);
+        }
+
+        foreach (var level in LegacyLevelFolders(Path.Combine(source, "dimensions")))
+            Check(Path.Combine(level, WorldLayout.LevelDataFile), path => ReadRoot(path), source, folder);
+
+        var generated = Path.Combine(source, "generated");
+        if (Directory.Exists(generated))
+        {
+            foreach (var template in Directory.EnumerateFiles(generated, "*.nbt", SearchOption.AllDirectories))
+            {
+                Check(template, path => ReadTemplate(path) is NbtCompound read
+                    ? LegacyChunkUpgrade.UpgradeStructureTemplate(read)
+                    : null, source, folder);
+            }
+        }
+    }
+
+    // Reads and upgrades a level's region files like UpgradeRegionsAsync, from a copy of their folder (opening a region
+    // file can repair it and reclaim its temporary files, which mustn't happen to the world before it's backed up).
+    private static async Task CheckRegionsAsync(string regions, Func<NbtCompound, NbtCompound> upgrade, string source,
+        string folder, string scratch, CancellationToken cancellationToken)
+    {
+        if (!Directory.Exists(regions))
+            return;
+
+        var copy = Path.Combine(scratch, Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(copy);
+
+        try
+        {
+            foreach (var file in Directory.EnumerateFiles(regions))
+                File.Copy(file, Path.Combine(copy, Path.GetFileName(file)));
+
+            foreach (var path in Directory.GetFiles(copy, "r.*.mca"))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var original = Path.Combine(regions, Path.GetFileName(path));
+                try
+                {
+                    await CheckRegionAsync(path, upgrade);
+                }
+                catch (WorldLoadException)
+                {
+                    throw Refused(folder, source, original);
+                }
+                catch (Exception ex) when (ex is not (OutOfMemoryException or OperationCanceledException))
+                {
+                    throw Unreadable(folder, source, original, ex);
+                }
+            }
+        }
+        finally
+        {
+            Directory.Delete(copy, recursive: true);
+        }
+    }
+
+    private static async Task CheckRegionAsync(string path, Func<NbtCompound, NbtCompound> upgrade)
+    {
+        await using var file = new RegionFile(path, NbtCompression.ZLib);
+        await file.InitializeAsync();
+
+        for (var x = 0; x < 32; x++)
+        {
+            for (var z = 0; z < 32; z++)
+            {
+                if (!file.HasChunk(x, z) || await file.GetChunkBytesAsync(x, z) is not Memory<byte> bytes)
+                    continue;
+
+                if (NbtReader.ReadTag(bytes.Span, true, out _) is not NbtCompound chunk)
+                    continue;
+
+                if (LegacyChunkUpgrade.HasPaletteIds(chunk))
+                    throw new WorldLoadException("The chunk's palettes name block states by 1.21.11 state id.");
+
+                upgrade(chunk);
+            }
+        }
+    }
+
+    // Reads and upgrades one file in memory, refusing the world when it can't be.
+    private static void Check(string path, Func<string, NbtCompound?> read, string source, string folder)
+    {
+        if (!File.Exists(path))
+            return;
+
+        try
+        {
+            read(path);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            throw Unreadable(folder, source, path, ex);
+        }
+    }
+
+    private static WorldLoadException Refused(string folder, string source, string path) =>
+        new($"The world in {folder} was saved by an Obsidian build from before Obsidian saved chunks in vanilla's "
+            + "format, and can't be upgraded to Minecraft 26.3: its chunks (such as in "
+            + $"{Path.GetRelativePath(source, path)}) name block states by 1.21.11 state ids, without the properties "
+            + "those states need. Such worlds aren't supported. The world was left unchanged.");
+
+    private static WorldLoadException Unreadable(string folder, string source, string path, Exception exception) =>
+        new($"The world in {folder} can't be upgraded to Minecraft 26.3: {Path.GetRelativePath(source, path)} can't be "
+            + $"read ({exception.Message}). Repair or remove that file, or restore the world from a backup of your own. "
+            + "The world was left unchanged.", exception);
+
+    /// <summary>
+    /// The folders of the levels in <paramref name="folder"/> and below: ones with a level.dat or a folder a level keeps
+    /// its data in. A level's data folders aren't searched, as only levels nest in a level, so what a plugin keeps in
+    /// them (an archived <c>region</c> folder, say) is left alone.
+    /// </summary>
+    private static IEnumerable<string> LevelFolders(string folder)
+    {
+        if (!Directory.Exists(folder))
+            yield break;
+
+        var isLevel = File.Exists(Path.Combine(folder, WorldLayout.LevelDataFile))
+            || levelFolders.Any(name => Directory.Exists(Path.Combine(folder, name)));
+
+        if (isLevel)
+            yield return folder;
+
+        foreach (var child in Directory.EnumerateDirectories(folder))
+        {
+            if (isLevel && levelFolders.Contains(Path.GetFileName(child)))
+                continue;
+
+            foreach (var nested in LevelFolders(child))
+                yield return nested;
         }
     }
 
@@ -194,11 +368,14 @@ internal static partial class WorldUpgrade
 
         if (Directory.Exists(dimensions))
         {
-            foreach (var regions in Directory.GetDirectories(dimensions, "region", SearchOption.AllDirectories))
-                await UpgradeRegionsAsync(regions, LegacyChunkUpgrade.UpgradeChunk, cancellationToken);
-
-            foreach (var entities in Directory.GetDirectories(dimensions, "entities", SearchOption.AllDirectories))
-                await UpgradeRegionsAsync(entities, LegacyChunkUpgrade.UpgradeEntityChunk, cancellationToken);
+            // The levels' own folders, as CheckAsync read them: not what a level keeps in its data folders.
+            foreach (var level in LevelFolders(dimensions).ToArray())
+            {
+                await UpgradeRegionsAsync(Path.Combine(level, WorldLayout.RegionFolder), LegacyChunkUpgrade.UpgradeChunk,
+                    cancellationToken);
+                await UpgradeRegionsAsync(Path.Combine(level, "entities"), LegacyChunkUpgrade.UpgradeEntityChunk,
+                    cancellationToken);
+            }
 
             DeleteEmptyFolders(dimensions);
         }
@@ -547,6 +724,9 @@ internal static partial class WorldUpgrade
     private static async Task UpgradeRegionsAsync(string folder, Func<NbtCompound, NbtCompound> upgrade,
         CancellationToken cancellationToken)
     {
+        if (!Directory.Exists(folder))
+            return;
+
         foreach (var path in Directory.GetFiles(folder, "r.*.mca"))
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -584,14 +764,8 @@ internal static partial class WorldUpgrade
 
     private static void UpgradeTemplate(string path)
     {
-        NbtCompound template;
-        using (var stream = File.OpenRead(path))
-        {
-            if (new NbtReader(stream, NbtCompression.GZip).ReadNextTag() is not NbtCompound read)
-                return;
-
-            template = read;
-        }
+        if (ReadTemplate(path) is not NbtCompound template)
+            return;
 
         var upgraded = LegacyChunkUpgrade.UpgradeStructureTemplate(template);
         var temporary = $"{path}.tmp";
@@ -734,6 +908,12 @@ internal static partial class WorldUpgrade
         StringComparison.OrdinalIgnoreCase);
 
     // A gzipped root compound, or null when there's no file.
+    private static NbtCompound? ReadTemplate(string path)
+    {
+        using var stream = File.OpenRead(path);
+        return new NbtReader(stream, NbtCompression.GZip).ReadNextTag() as NbtCompound;
+    }
+
     private static NbtCompound? ReadRoot(string path)
     {
         if (!File.Exists(path))

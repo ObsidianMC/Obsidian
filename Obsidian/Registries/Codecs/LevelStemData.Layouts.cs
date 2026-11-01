@@ -76,7 +76,7 @@ internal static partial class LevelStemData
             if (WorldgenDependencies<PluginContainer>.Owner(type) is PluginContainer owner)
                 plugins.Add(owner);
         });
-        var (source, biomes) = ReadPluginSource(value, path, noise, plugins, null, reader);
+        var (source, biomes) = ReadPluginSource(value, path, reader);
         plugins.UnionWith(density.Owners);
 
         var factory = SourceFactory(value.Clone(), path, data, noise.Types.Narrow(used),

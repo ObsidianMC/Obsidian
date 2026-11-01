@@ -165,7 +165,7 @@ internal sealed partial class MaterialRules
         };
     }
 
-    // An anchor with none of its heights set is y 0, as the 1.21.11 surface builder resolves it.
+    // An anchor with none of its heights set is y 0, as vanilla's resolves it.
     private static JsonObject AnchorJson(SurfaceAnchor anchor)
     {
         if (anchor.AboveBottom is int aboveBottom)

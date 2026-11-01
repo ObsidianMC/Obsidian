@@ -30,8 +30,8 @@ import java.util.stream.Collectors;
  *
  * <p>Usage, with the unbundled server jar and its libraries on the class path:
  * {@code java -cp <server + libraries> VanillaDumper.java <assets directory> <work directory>}.
- * The assets go to the assets directory; {@code worldgen_groups.json} and {@code packet_fields.json}, which only the
- * generator itself uses, go to the work directory.
+ * The assets go to the assets directory; {@code packet_fields.json}, which only the generator itself uses, goes to
+ * the work directory.
  *
  * <p>Everything vanilla is reached through reflection by name (see {@link Vanilla}). The values come from calling
  * vanilla's own methods on every block
@@ -174,7 +174,6 @@ public final class VanillaDumper {
         dumper.dumpEntities();
         dumper.dumpCreativeTabs();
         dumper.dumpStatistics();
-        dumper.dumpWorldgenGroups(work);
         dumper.dumpPacketFields(work);
         System.out.printf("Dumped vanilla data in %.1fs%n", (System.nanoTime() - started) / 1e9);
     }
@@ -1780,51 +1779,6 @@ public final class VanillaDumper {
         }
 
         return classes;
-    }
-
-    /**
-     * {@code worldgen_groups.json} in the work directory: the vanilla class that declares each configured and placed
-     * feature's key (e.g. {@code minecraft:oak} in {@code TreeFeatures}, {@code minecraft:oak_checked} in
-     * {@code TreePlacements}), from the {@code ResourceKey} constants of the classes in vanilla's
-     * {@code data.worldgen.features} and {@code data.worldgen.placement} packages, so features can be grouped like
-     * vanilla's bootstrap classes.
-     */
-    private void dumpWorldgenGroups(Path work) throws IOException {
-        var json = new LinkedHashMap<String, Object>();
-        json.put("feature", featureGroups("FEATURE", "net.minecraft.data.worldgen.features"));
-        json.put("placed_feature", featureGroups("PLACED_FEATURE", "net.minecraft.data.worldgen.placement"));
-        Json.write(work.resolve("worldgen_groups.json"), json, true);
-    }
-
-    /** The keys of one registry ({@code Registries} field name) declared in a package's classes, by declaring class. */
-    private Map<String, String> featureGroups(String registryName, String packageName) {
-        var registry = Vanilla.get("net.minecraft.core.registries.Registries", registryName);
-        var resourceKey = "net.minecraft.resources.ResourceKey";
-        var keyType = Vanilla.type(resourceKey);
-        var isFor = Vanilla.method(resourceKey, "isFor", resourceKey);
-        var identifier = Vanilla.method(resourceKey, "identifier");
-        var groups = new TreeMap<String, String>(); // String's natural order is ordinal
-        for (var className : Vanilla.classesIn(packageName)) {
-            var declaring = Vanilla.type(className);
-            for (var field : declaring.getDeclaredFields()) {
-                if (!Modifier.isStatic(field.getModifiers()) || field.getType() != keyType) {
-                    continue;
-                }
-                var key = Vanilla.getStatic(field);
-                if (!(boolean) Vanilla.call(isFor, key, registry)) {
-                    continue;
-                }
-
-                var id = Vanilla.call(identifier, key).toString();
-                var group = Vanilla.simpleName(declaring);
-                var previous = groups.put(id, group);
-                if (previous != null && !previous.equals(group)) {
-                    throw new IllegalStateException(id + " is declared in both " + previous + " and " + group);
-                }
-            }
-        }
-
-        return groups;
     }
 
     /**

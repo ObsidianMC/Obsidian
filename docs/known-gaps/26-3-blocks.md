@@ -16,7 +16,7 @@ but storage, quick swapping and connections are not implemented for shelves of a
 All 16 colors of wool and concrete stairs/slabs have captured placement, waterlogging, slab merging and stair
 corner updates/placement. Red, orange and yellow poplar leaves have captured persistent placement, waterlogging,
 live distance scheduling and recomputation against poplar logs and other leaves. The live leaf and fence paths
-use current tags; this does not change the legacy worldgen helpers. Decay and loot use the existing leaf/loot
+use current tags, as the worldgen helpers do. Decay and loot use the existing leaf/loot
 paths; per-color decay drops and client ambient leaf particles have not been separately captured here.
 
 Note blocks derive their instrument on placement and vertical neighbor updates from generated 26.3 instrument

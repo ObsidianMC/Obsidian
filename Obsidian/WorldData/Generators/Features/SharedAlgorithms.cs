@@ -49,8 +49,7 @@ internal sealed partial class FeatureRegistry
             if (placed && context.Level.GetBlockEntity(origin) is DataBlockEntity spawner
                 && spawner.Id == "minecraft:mob_spawner")
             {
-                // BaseSpawner.save writes these defaults even before its first tick. Keep this in the 26.3
-                // adapter: the legacy generator's captures intentionally retain its earlier sparse data.
+                // BaseSpawner.save writes these defaults even before its first tick.
                 foreach (var (name, value) in spawnerDefaults)
                 {
                     if (!spawner.Data.HasTag(name))

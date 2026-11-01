@@ -1,7 +1,9 @@
 # Worldgen benchmarks: Obsidian vs vanilla 1.21.11
 
-This historical comparison measures Obsidian's retained 1.21.11 generator against the vanilla 1.21.11 server.
-The live `minecraft:mojang_generator` now uses 26.3; the retained generator remains available in the benchmark.
+This historical comparison measures Obsidian's 1.21.11 generator against the vanilla 1.21.11 server. Obsidian now
+generates with the 26.3 pipeline. The 1.21.11 generator was removed once the 26.3 pipeline outran it (see
+[below](#the-263-pipeline-against-the-12111-generator)), so the numbers here are history: the current branch can't
+reproduce them.
 
 Measured on branch `worldgen-vanilla-parity` at commit `2b2345e3`. The single-threaded numbers were checked again at `9d922c39`: they were the same speed and gave the same hashes.
 
@@ -104,16 +106,21 @@ The speedups did not change the output:
 
 On the server, seed 12345 spawns at `96.5, 136.0, -31.5` in every run.
 
-## The 26.3 pipeline against the retained 1.21.11 generator
+## The 26.3 pipeline against the 1.21.11 generator
 
-Phase 5 of the [26.3 port](porting-26.3-plan.md) now runs `BiomeTerrain` on the live path: biomes, terrain,
-structures and decoration on 26.3's data and templates, followed by fluid/shape post-processing, final heightmaps,
-lighting and initial creature population. `serial --generator 26.3` calls those same generation methods.
+Phase 5 of the [26.3 port](porting-26.3-plan.md) runs `BiomeTerrain` on the live path: biomes, terrain, structures
+and decoration on 26.3's data and templates, followed by fluid/shape post-processing, final heightmaps, lighting and
+initial creature population. `Obsidian.WorldgenBench serial` calls those same generation methods.
 
-The live switch re-recorded only the 26.3 Overworld and Nether hashes in `BenchOptions.cs`: post-processing now
-changes final blocks, lighting and scheduled ticks, and shared vegetation helpers select current support tags.
-The End and all 1.21.11 references are unchanged. Both generators still match in all three dimensions. The timings
-below predate these completion steps; they established that the 26.3 pipeline was faster before the switch.
+This comparison retired the 1.21.11 generator. With the 26.3 pipeline faster in every dimension, the 1.21.11
+generator, its data and the bench's `--generator 1.21.11` mode (and the `pipeline` mode, which only ran it) were
+removed; the bench now runs the 26.3 pipeline alone, with no `--generator` option. The figures below are kept as
+history.
+
+The live switch re-recorded only the 26.3 Overworld and Nether hashes in `BenchOptions.cs`: post-processing changes
+final blocks, lighting and scheduled ticks, and shared vegetation helpers select current support tags. Both
+generators matched their references in all three dimensions until the 1.21.11 one was removed. The timings below
+predate these completion steps; they established that the 26.3 pipeline was faster before the switch.
 
 Neither has a server around it here: both run `Obsidian.WorldgenBench serial` on the same 1,024 chunks per dimension,
 on one thread.
@@ -132,8 +139,8 @@ on one thread.
 | Nether | **3.49 (286)** | 6.03 (166) | 382 | 234 |
 | End | **0.63 (1,595)** | 0.73 (1,363) | 205 | 119 |
 
-Both generators' hashes match their references in every run (see `Obsidian.WorldgenBench/BenchOptions.cs`), and the
-26.3 pipeline's output matches vanilla 26.3 in every worldgen replay.
+Both generators' hashes matched their references in every run, and the 26.3 pipeline's output matches vanilla 26.3 in
+every worldgen replay.
 
 ### Where the overworld spends its time
 
@@ -175,10 +182,10 @@ Every change kept the output identical; the bench hashes and the worldgen replay
 
 ### What's left
 
-- The 26.3 pipeline still allocates more per chunk than the live generator (527 KB vs 354 KB in the overworld),
-  mostly in noise (122 KB vs 81 KB per call; much of it is the structure starts the beardifier looks up) and
-  features (129 KB per call). The biome fill is down to 9 KB per call, from 170 KB.
-- Carvers are still about 0.15 ms per chunk slower than the live generator's.
+- The 26.3 pipeline still allocated more per chunk than the 1.21.11 generator did (527 KB vs 354 KB in the
+  overworld), mostly in noise (122 KB vs 81 KB per call; much of it is the structure starts the beardifier looks up)
+  and features (129 KB per call). The biome fill is down to 9 KB per call, from 170 KB.
+- Carvers were still about 0.15 ms per chunk slower than the 1.21.11 generator's.
 
 ## Caveats
 

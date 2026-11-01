@@ -1,5 +1,9 @@
 # Overworld worldgen performance plan
 
+> Historical: this plan measured the 1.21.11 generator, which was removed once the 26.3 pipeline replaced and outran
+> it (see [worldgen-benchmarks.md](worldgen-benchmarks.md)). The bench's `pipeline` mode went with it, and `serial`
+> now times the 26.3 pipeline, so the steps below no longer reproduce these numbers.
+
 Benchmarks of Obsidian's Mojang generator against vanilla 1.21.11 in all three dimensions, and a plan to bring the
 overworld down to the nether's speed. Measured on 2026-10-09 at `origin/1.21.x` `e2c0e005`, on the setup described in
 [worldgen-benchmarks.md](worldgen-benchmarks.md) (Ryzen 9 9950X, Windows 11, .NET 10 workstation GC, Temurin 25 `-Xmx6G`).

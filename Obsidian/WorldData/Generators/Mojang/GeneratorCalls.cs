@@ -3,29 +3,16 @@ using Obsidian.Plugins;
 namespace Obsidian.WorldData.Generators.Mojang;
 
 /// <summary>
-/// Calls into the plugins a dimension's generator is made of (see <see cref="MojangDimension.Plugins"/>), held while
-/// a step of generation runs, which keeps them from being released until it ends.
+/// Calls into the plugins a dimension's generator is made of (see <see cref="LevelStem.Plugins"/>), held while a step
+/// of generation runs, which keeps them from being released until it ends.
 /// </summary>
 internal readonly struct GeneratorCalls : IDisposable
 {
     private readonly PluginCall[]? calls;
 
-    private readonly WorldgenTags.Scope? tags;
-
-    private GeneratorCalls(PluginCall[]? calls, WorldgenTags.Scope? tags = null)
+    private GeneratorCalls(PluginCall[]? calls)
     {
         this.calls = calls;
-        this.tags = tags;
-    }
-
-    /// <summary>
-    /// Enters every plugin, or none.
-    /// </summary>
-    /// <exception cref="GeneratorStoppedException">A plugin is unloading.</exception>
-    public static GeneratorCalls Enter(MojangDimension dimension)
-    {
-        var calls = Enter(dimension.Identifier, dimension.Plugins);
-        return new GeneratorCalls(calls.calls, WorldgenTags.UseLegacy(true));
     }
 
     /// <summary>
@@ -90,7 +77,6 @@ internal readonly struct GeneratorCalls : IDisposable
 
     public void Dispose()
     {
-        this.tags?.Dispose();
         if (this.calls is null)
             return;
 

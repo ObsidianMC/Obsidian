@@ -807,7 +807,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         {
             builder = BiomeTerrain.Create(
                 this.Dimension,
-                RandomState.ParseSeed(this.world.Seed),
+                WorldSeed.Parse(this.world.Seed),
                 structures: true,
                 featureSource: this.Features ?? (static () => PluginFeatures.CurrentRegistry),
                 structureSource: this.Structures ?? (static () => PluginStructures.CurrentRegistry),

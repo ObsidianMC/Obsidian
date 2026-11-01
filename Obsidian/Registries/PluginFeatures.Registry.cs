@@ -39,13 +39,13 @@ internal static partial class PluginFeatures
         var registrations = types.ToArray();
         var registry = new FeatureRegistry(data ?? WorldgenData.Vanilla);
         registry.ConfigurePlugins(kept, registrations);
-        var resolver = new FeatureResolver(kept, WorldgenTypes.With(registrations), registry);
+        var resolver = new FeatureResolver(registry);
         registry.Carvers = CarverRegistry.Build(kept, biomes, registry.Data, logger, modifier =>
         {
             resolver.StepFeatures(modifier.Add.Features, "add.features");
             resolver.StepFeatures(modifier.Remove.Features, "remove.features");
         }, usePluginBlockTags: true);
-        registry.FeatureSet = Build(kept, biomes, registrations, logger, registry: registry);
+        registry.FeatureSet = Build(kept, biomes, logger, registry);
         return registry;
     }
 

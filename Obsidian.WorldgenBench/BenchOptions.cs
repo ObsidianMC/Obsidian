@@ -1,12 +1,10 @@
-using Obsidian.WorldData.Generators.Mojang;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace WorldgenBench;
 
-internal sealed record BenchOptions(IReadOnlyList<BenchDimension> Dimensions, int Radius, long Seed, bool Cold,
-    BenchGeneratorKind Generator)
+internal sealed record BenchOptions(IReadOnlyList<BenchDimension> Dimensions, int Radius, long Seed, bool Cold)
 {
     public const int DefaultRadius = 16;
     public const long DefaultSeed = 12345L;
@@ -22,7 +20,6 @@ internal sealed record BenchOptions(IReadOnlyList<BenchDimension> Dimensions, in
         var radius = DefaultRadius;
         var seed = DefaultSeed;
         var cold = false;
-        var generator = BenchGeneratorKind.Legacy;
 
         for (var i = 0; i < args.Length; i++)
         {
@@ -44,48 +41,32 @@ internal sealed record BenchOptions(IReadOnlyList<BenchDimension> Dimensions, in
                 case "--cold":
                     cold = true;
                     break;
-                case "--generator":
-                    generator = args[++i] switch
-                    {
-                        "1.21.11" => BenchGeneratorKind.Legacy,
-                        "26.3" => BenchGeneratorKind.Current,
-                        var unknown => throw new ArgumentException($"Unknown generator '{unknown}'.")
-                    };
-                    break;
                 default:
                     throw new ArgumentException($"Unknown option '{args[i]}'.");
             }
         }
 
-        return new BenchOptions(dimensions, radius, seed, cold, generator);
+        return new BenchOptions(dimensions, radius, seed, cold);
     }
 }
 
 /// <summary>
-/// A dimension, the chunk its square is centred on, and the hashes of the square's chunks for the default seed and
-/// radius: the legacy generator's, and the live 26.3 pipeline's (<see cref="CurrentPreset"/> is its biome preset).
+/// A dimension (its level stem), the chunk its square is centred on, and the hashes of the square's chunks for the
+/// default seed and radius.
 /// </summary>
-internal sealed record BenchDimension(string Name, MojangDimension Dimension, int CenterX, int CenterZ, string ExpectedHash,
-    string ExpectedNbtHash, string CurrentPreset, string CurrentHash, string CurrentNbtHash)
+internal sealed record BenchDimension(string Name, string Identifier, int CenterX, int CenterZ, string ExpectedHash,
+    string ExpectedNbtHash)
 {
-    // Optimizations must not change them. The legacy generator's were recorded on origin/26.3.x 80555196, whose block
-    // states and saved chunks differ from 1.21.x's (on 1.21.x they were c73225baaf86c6fe and 0525f8628623dc64 for the
-    // overworld). The 26.3 references include BiomeTerrain.CompleteHeightmaps: decoration's final maps are handed
-    // to chunk storage after all neighboring decoration, before lighting and saving. Its surfaces read the biomes
-    // stored in the chunk and its neighbors, like vanilla's, rather than fresh climate searches, which resolve some
-    // exact ties differently (the End's biomes take no search, so that only moved the overworld's and Nether's).
-    // The live switch adds fluid/shape post-processing before heightmaps and lighting. Only the 26.3 Overworld
-    // and Nether hashes were re-recorded for those final blocks, light and scheduled ticks; legacy hashes stay fixed.
-    // Shared vegetation support now selects 26.3's supports_vegetation tag; legacy replays keep their own dirt tag.
-    // Completion now retains dark Nether mushrooms (while checking nearby emission), and ticks marked water into
-    // bubble columns with block checks. FULL completion captures back these final-block/tick reference changes.
+    // Optimizations must not change them. They include BiomeTerrain.CompleteHeightmaps: decoration's final maps are
+    // handed to chunk storage after all neighboring decoration, before lighting and saving. Its surfaces read the
+    // biomes stored in the chunk and its neighbors, like vanilla's, rather than fresh climate searches, which resolve
+    // some exact ties differently. Fluid/shape post-processing runs before heightmaps and lighting. Completion retains
+    // dark Nether mushrooms (while checking nearby emission), and ticks marked water into bubble columns with block
+    // checks; FULL completion captures back these final blocks and ticks.
     public static IReadOnlyList<BenchDimension> All { get; } =
     [
-        new("overworld", MojangDimension.Overworld, 6, -2, "6f824c2e873bca90", "869a5df6644e5d41",
-            "minecraft:overworld", "2d54ff3885c4051e", "549e4efa115c90f3"),
-        new("nether", MojangDimension.Nether, 0, 0, "2880fa86ca3c5e6c", "fec88678179d32d9",
-            "minecraft:nether", "3ef4470d0a7794b8", "d7a5b14aeb9f4477"),
-        new("end", MojangDimension.End, 6, 0, "5c34c3f5867f27ac", "d940fd5e665d6164",
-            "minecraft:the_end", "5c34c3f5867f27ac", "762ccf03eda84ce2"),
+        new("overworld", "minecraft:overworld", 6, -2, "2d54ff3885c4051e", "549e4efa115c90f3"),
+        new("nether", "minecraft:the_nether", 0, 0, "3ef4470d0a7794b8", "d7a5b14aeb9f4477"),
+        new("end", "minecraft:the_end", 6, 0, "5c34c3f5867f27ac", "762ccf03eda84ce2"),
     ];
 }

@@ -7,10 +7,7 @@ using System.Text.Json;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// The vanilla worldgen and structure references the parity tests replay: the 1.21.11 references of the legacy
-/// generator (<see cref="VanillaWorldGeneration"/>, <see cref="VanillaStructureGeneration"/>) from
-/// <c>Assets/vanilla_worldgen.json</c>, and the 26.3 references (<see cref="VanillaDensityFunctions"/>) from
-/// <c>Assets/vanilla_worldgen_26.3</c>.
+/// The vanilla worldgen and structure references the parity tests replay, from <c>Assets/vanilla_worldgen_26.3</c>.
 /// </summary>
 /// <remarks>
 /// A fixture holds each case's inputs and the values vanilla produced for them. Obsidian.AssetGenerator re-records
@@ -18,28 +15,16 @@ namespace Obsidian.Tests;
 /// vanilla's own world generation (see <c>docs/vanilla-captures.md</c>); add a case by adding its inputs and
 /// re-recording. The 26.3 fixture is a folder with a file per section (<c>noises.json</c>) or a folder of files per
 /// section (<c>features/02-ores.json</c>), each holding <c>{ "version": ..., "cases": [...] }</c>; a section's cases are
-/// its files' cases in ordinal order of their names, so a capture can rewrite one file alone. Phase 5 of <c>docs/porting-26.3-plan.md</c> moves the 1.21.11 sections to the 26.3 fixture as the new
-/// generator replaces the legacy one.
+/// its files' cases in ordinal order of their names, so a capture can rewrite one file alone.
 /// </remarks>
 internal static class VanillaWorldgenCaptures
 {
-    private static readonly Lazy<JsonElement> Fixture = new(() => Load("vanilla_worldgen.json"));
     private const string CurrentFixtureFolder = "vanilla_worldgen_26.3";
 
     private static readonly Lazy<Dictionary<string, List<JsonElement>>> CurrentFixture = new(LoadCurrent);
 
-    /// <summary>The cases of a section of the 1.21.11 fixture, in its order.</summary>
-    public static IEnumerable<JsonElement> Cases(string section) => Fixture.Value.GetProperty(section).EnumerateArray();
-
     /// <summary>The cases of a section of the 26.3 fixture, in its order.</summary>
     public static IEnumerable<JsonElement> CurrentCases(string section) => CurrentFixture.Value[section];
-
-    /// <summary>The case of a section for a seed's chunk.</summary>
-    public static JsonElement Chunk(string section, long seed, int chunkX, int chunkZ) => Cases(section).Single(entry =>
-        entry.GetProperty("seed").GetInt64() == seed && entry.GetProperty("chunkX").GetInt32() == chunkX &&
-        entry.GetProperty("chunkZ").GetInt32() == chunkZ);
-
-    private static JsonElement Load(string name) => LoadResource($"Obsidian.Tests.Assets.{name}");
 
     private static JsonElement LoadResource(string resource)
     {

@@ -12,6 +12,7 @@ and where to start.
 - [Lakes, features and structures in flat dimensions](lakes-features-and-structures-in-flat-dimensions.md)
 - [Seams between 1.21.11 and 26.3 terrain](seams-between-1-21-11-and-26-3-terrain.md)
 - [Structure pieces in saved chunks](structure-pieces-in-saved-chunks.md)
+- [World upgrade drops and refusals](world-upgrade-drops-and-refusals.md)
 
 ## Blocks and redstone
 

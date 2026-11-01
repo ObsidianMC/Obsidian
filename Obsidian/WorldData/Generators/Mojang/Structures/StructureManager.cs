@@ -96,33 +96,20 @@ internal sealed class StructureManager : IStructurePlacementState
         }
     }
 
+    /// <param name="world">The seed, biomes and noise range structures start against.</param>
     /// <param name="startCache">Starts created before with the same seed and terrain, to keep; new ones by
     /// default.</param>
-    /// <param name="structures">The structures and sets, read as structures start;
-    /// the retained 1.21.11 structures by default; native generators supply their own source.</param>
-    public StructureManager(
-        RandomState randomState,
-        IClimateBiomeSource biomeSource,
-        IStructureTerrain terrain,
-        int minY,
-        int height,
-        StructureStartCache? startCache = null,
-        Func<WorldgenStructures>? structures = null)
-        : this(StructureWorld.Of(randomState, biomeSource), terrain, minY, height, startCache, structures)
-    {
-    }
-
-    /// <param name="world">The seed, biomes and noise range structures start against.</param>
-    /// <param name="templates">The templates the structures start and place with, for structures of another
-    /// version's data (see <see cref="StructureRegistry.Use"/>); the legacy ones by default.</param>
+    /// <param name="structures">The structures and sets, read as structures start.</param>
+    /// <param name="templates">The templates the structures start and place with where the structures' own template
+    /// files don't override them (see <see cref="StructureRegistry.Use"/>).</param>
     public StructureManager(
         StructureWorld world,
         IStructureTerrain terrain,
         int minY,
         int height,
-        StructureStartCache? startCache = null,
-        Func<WorldgenStructures>? structures = null,
-        Func<string, StructureTemplate>? templates = null)
+        Func<WorldgenStructures> structures,
+        Func<string, StructureTemplate> templates,
+        StructureStartCache? startCache = null)
     {
         this.StartCache = startCache ?? new();
         this.createStart = this.CreateStart;
@@ -133,14 +120,15 @@ internal sealed class StructureManager : IStructurePlacementState
         this.Seed = world.Seed;
         this.Templates = templates;
 
-        this.structures = structures ?? (static () => WorldgenStructures.Vanilla);
+        this.structures = structures;
         this.layout = new StructureLayout(this.structures(), world.PossibleBiomes);
     }
 
     /// <summary>
-    /// The templates the structures start and place with, or <c>null</c> for the legacy ones.
+    /// The templates the structures start and place with where the structures' own template files don't override
+    /// them.
     /// </summary>
-    public Func<string, StructureTemplate>? Templates { get; }
+    public Func<string, StructureTemplate> Templates { get; }
 
     /// <summary>
     /// The structures that start in a chunk (vanilla's structure starts status), at most one per structure set.
@@ -417,16 +405,11 @@ internal sealed class StructureManager : IStructurePlacementState
             Math.Max(this.minY, this.world.NoiseMinY),
             Math.Min(this.height, this.world.NoiseHeight));
 
-        using var tags = WorldgenTags.UseLegacy(layout.Source.LegacyPools);
-        var lookup = this.Templates;
-        if (!layout.Source.LegacyPools)
-        {
-            var overrides = layout.Source.Templates;
-            var fallback = lookup ?? StructureRegistry.GetCurrent;
-            lookup = id => overrides.GetValueOrDefault(id) ?? fallback(id);
-        }
+        var overrides = layout.Source.Templates;
+        var fallback = this.Templates;
+        Func<string, StructureTemplate> lookup = id => overrides.GetValueOrDefault(id) ?? fallback(id);
         using var templates = StructureRegistry.Use(lookup);
-        using var featureTemplates = lookup is null ? default : Generators.Features.FeatureRegistry.UseTemplates(lookup);
+        using var featureTemplates = Generators.Features.FeatureRegistry.UseTemplates(lookup);
 
         return structure.Generate(new StructureGenerationContext
         {
@@ -537,21 +520,4 @@ internal sealed record StructureWorld(
     IBiomeSource Biomes,
     IReadOnlyCollection<BiomeCodec> PossibleBiomes,
     int NoiseMinY,
-    int NoiseHeight)
-{
-    /// <summary>
-    /// The legacy generator's: its biome source over the random state's climate sampler.
-    /// </summary>
-    public static StructureWorld Of(RandomState randomState, IClimateBiomeSource biomeSource) => new(
-        randomState.Seed,
-        new SampledBiomes(biomeSource, randomState.ClimateSampler),
-        biomeSource.PossibleBiomes,
-        randomState.Settings.Noise.MinY,
-        randomState.Settings.Noise.Height);
-
-    private sealed class SampledBiomes(IClimateBiomeSource source, ClimateSampler sampler) : IBiomeSource
-    {
-        public BiomeCodec GetNoiseBiome(int quartX, int quartY, int quartZ) =>
-            source.GetNoiseBiome(sampler, quartX, quartY, quartZ);
-    }
-}
+    int NoiseHeight);

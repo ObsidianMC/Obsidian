@@ -1,10 +1,9 @@
 # Vanilla worldgen captures
 
 The worldgen parity tests replay references recorded from vanilla. Each entry holds a case's inputs (seed, position,
-noise...) and the values vanilla produced for them, and each entry is one test case. There are two fixtures while
-Phase 5 of `docs/porting-26.3-plan.md` builds the 26.3 generator beside the legacy one:
+noise...) and the values vanilla produced for them, and each entry is one test case.
 
-- `Obsidian.Tests/Assets/vanilla_worldgen_26.3/` holds 26.3 references, which `VanillaDensityFunctions` replays:
+- `Obsidian.Tests/Assets/vanilla_worldgen_26.3/` holds the 26.3 references, which `VanillaDensityFunctions` replays:
   noise samples (`noises`), the value of every noise router and aquifer function of each dimension's noise settings
   at block positions (`router`), and inline density functions at block positions (`functions`), for what no router
   reaches. 26.3 evaluates noise and density in single precision, so the values are floats and must match bit for bit;
@@ -13,10 +12,8 @@ Phase 5 of `docs/porting-26.3-plan.md` builds the 26.3 generator beside the lega
   cases, `aquifers` holds single aquifer positions and `carvers` holds carving masks alone.
   `VanillaTerrainGeneration` and `VanillaMaterialRules` replay those sections; see below. `biomes`, `biome_points`,
   `biome_search` and `spawn_attributes` cover Phase 5 step 4's biome sources and natural spawning.
-- `Obsidian.Tests/Assets/vanilla_worldgen.json` holds the 1.21.11 references of the legacy generator, which
-  `VanillaWorldGeneration` and `VanillaStructureGeneration` replay: noise router values, biomes, chunks after the
-  surface, carver and decoration steps, full chunks, the spawn, light, structure piece lists, structure blocks and a
-  treasure map. They can't be re-recorded on 26.3; Phase 5 replaces them section by section with 26.3 captures.
+- The references of the removed 1.21.11 generator (`vanilla_worldgen.json`, replayed by
+  `VanillaWorldGeneration` and `VanillaStructureGeneration`) were deleted with it; they're in git history.
 
 ## Fixture files
 
@@ -54,7 +51,7 @@ placement results and random consumption.
 The recursive feature-data inventory contains 56 feature types, all implemented in the 26.3 registry.
 `VanillaFeatureRegistration.EveryVanillaFeatureCanBeCompiled` compiles every shipped feature, including nested
 features and their providers/modifiers, so missing implementations and incompatible data shapes fail in CI.
-These implementations remain beside the legacy live generator until the later Phase 5 pipeline switch.
+The live generator places them.
 
 ## Re-recording
 
@@ -159,7 +156,7 @@ template structure, mineshafts, the monument, the stronghold and the mansion), f
 nether fossil and nether ruined portal) and the end city. A case names a structure and a search origin
 (`searchX`, `searchZ`, `searchRadius` in chunks); vanilla's `findNearestMapStructure` finds the start chunk, which
 later captures keep. Each case records `pieceCount` and `pieces`, the SHA-256 of one line per piece in the shape
-`VanillaStructureGeneration.Describe` writes (piece types map to Obsidian's class names; a generated fortress start
+`VanillaStructurePlacement` describes pieces in (piece types map to Obsidian's class names; a generated fortress start
 keeps `BridgeCrossing`'s type, as vanilla's does).
 
 Cases with `blocks` also record blocks: in `chunkList`, the chunks the pieces reach nearest the start chunk (at most
@@ -255,7 +252,7 @@ density, applies materials, then generates and applies the temporary carving mas
 lookups explicitly. `Generators/Biomes/BiomeTerrain` now supplies them from the 26.3 biome source, while these
 stage-isolation replays continue supplying vanilla's captured inputs.
 `DensityCompiler` accepts a beardifier function; terrain defaults it to its neutral contextual value until structures
-are implemented. None of this switches the live generator or changes its 1.21.11 data.
+are implemented.
 
 Chunk replays have `Category=Worldgen` and stay out of CI. The 79 small material-rule replays run in CI alongside the
 density tests. Features, structures, the remaining Nether/End pipeline and performance work remain
@@ -263,10 +260,10 @@ for the later Phase 5 steps. The noise-input point-sampling allocations noted in
 
 ## Biome and spawn references
 
-The 26.3 biome pipeline lives in `WorldData/Generators/Biomes`, beside the live 1.21.11 pipeline. Its overworld and
+The 26.3 biome pipeline lives in `WorldData/Generators/Biomes`. Its overworld and
 Nether parameter lists are copied from `reports/biome_parameters/minecraft` to `Assets/worldgen_26_3/biome_parameters`;
 they contain 7,594 and 5 entries respectively. The original report order and integer endpoints are retained. The
-shared search tree keeps its legacy branching factor of 6 by default; the new source selects 26.3's factor of 19.
+search tree uses 26.3's branching factor of 19.
 Stable sorting and the previous winning leaf on each thread decide equal-distance searches.
 
 - `biome_search` records ordered searches through both complete preset lists and small trees with 1, 6, 19, 20
@@ -298,14 +295,13 @@ post-processing with the independent terrain captures.
 
 `BiomeTerrain.Generate` fills BIOMES before terrain and supplies seeded full-resolution material lookups and
 source-biome carver lists. Storage still represents the new terrain status with the internal legacy `carvers`
-enum value, which already serializes as `minecraft:terrain`. It does not activate this pipeline on live worlds.
+enum value, which serializes as `minecraft:terrain`. The live generator runs this pipeline.
 
 Natural spawning now reads the 26.3 environment attributes at each spawn or charge position, with dimension
 defaults and biome overlays before plugin spawn modifiers. Vanilla marks `natural_mob_spawns` for full-resolution
 biomes, so it uses the seeded border lookup over loaded sections; population probability uses the quart biome.
 Count providers retain their distributions. The old flattened spawn tables remain for the legacy plugin API
-during Phase 5, while spawning reads the resolved `BiomeSpawns.At` snapshot. Features, structures and the final
-live-generator switch remain later Phase 5 work.
+during Phase 5, while spawning reads the resolved `BiomeSpawns.At` snapshot.
 
 ## Carver references
 
@@ -326,8 +322,8 @@ the global lava level at `y = -55` and `-54`, on seed `12345` and on a second se
 replays their fluid statuses together with the terrain cases' `aquiferFluids`, and `AquiferSubstanceMatchesVanilla`
 replays their blocks and scheduling decisions. They have `Category=Worldgen` too.
 
-The 1.21.11 probe also captured lit/full chunks, structure pieces and blocks, the spawn and a treasure map (in git
-history before Phase 5). The feature and structure steps adapt those captures to 26.3 as they need them.
+The 1.21.11 probe also captured lit/full chunks, structure pieces and blocks, the spawn and a treasure map, which
+the removed 1.21.11 generator's replays read; they're in git history.
 
 ## Feature references
 
@@ -340,7 +336,7 @@ radius for the features step) and `changes`: `[x, y, z, state]` for each block o
 differs from the layers, in z, x, y order.
 
 `VanillaFeaturePlacement` replays them with `WorldData/Generators/Features/FeatureRegistry`, the 26.3 feature
-machinery built beside the legacy features. It builds the layered chunks two chunks around the decorated one; the
+machinery, and post-processes with `BiomeTerrain.PostProcess`. It builds the layered chunks two chunks around the decorated one; the
 features replayed so far read no further. Cases whose feature types aren't implemented yet are captured and
 listed as pending in the test. Complete per-biome decoration is captured separately in `decoration/`, as
 described above. The replays have `Category=Worldgen`.
@@ -396,7 +392,7 @@ The `non_tree_` cases (`features/05-non-tree`) form a separate group of 26.3 ref
 lakes, dripstone and sulfur speleothems and clusters, vegetation patches (including waterlogged interiors), neighbor
 spreading, overlays, multiface growth, templates, replacement blobs, deltas, pillars, stepped columns, End islands,
 gateways and chorus plants. Additional references cover block piles, freezing, coral branches, root systems and the
-unchanged algorithms shared with the legacy generator. Actual vanilla entries exercise basalt columns and pillars,
+unchanged algorithms shared with the built-in configured features. Actual vanilla entries exercise basalt columns and pillars,
 glowstone, twisting and weeping vines, sulfur springs, desert wells and warm-ocean coral. These references verify
 blocks, placement results and the next placement-random value; multiface and sulfur template cases also verify the
 ordered post-processing marks. Multiface cases with `postProcess` additionally verify the resulting neighbor shapes.
@@ -427,7 +423,7 @@ references cover `fixed_placement`, `count_on_every_layer`, `cuboid` and `random
 outputs and count resampling. Predicate references add `height_range` and `volume_match` boundaries.
 
 Template features require an explicit 26.3 template resolver. The replay extracts templates from the cached
-26.3 server jar instead of using the legacy structure cache; NBT templates are not checked into the repository.
+26.3 server jar; NBT templates are not checked into the repository.
 Processor lists are read from the 26.3 worldgen assets, adapting compact block states at the feature compiler
 boundary before invoking the shared processor algorithms. These additions are now used by the live generator.
 
@@ -455,8 +451,8 @@ also use region/per-entity randomness; these captures do not establish parity fo
 appearance or initialization NBT.
 
 Record only these sections with `CaptureSections=spawn_search` or `CaptureSections=population` on the existing
-`CaptureVanillaWorldgen` target. No other captures were re-recorded for the live switch. The retained 1.21.11
-replays select legacy tags only within their generation scope; live shared helpers and plant growth use current tags.
+`CaptureVanillaWorldgen` target. No other captures were re-recorded for the live switch. Shared helpers and plant
+growth use current tags.
 
 ### Chunk completion
 

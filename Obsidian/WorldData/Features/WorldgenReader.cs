@@ -72,19 +72,19 @@ internal sealed partial class WorldgenReader(
 
     private readonly Func<string, BaseNoise> noise = noise ?? VanillaNoise;
 
-    private readonly StructureLookups structures = structures ?? StructureLookups.Vanilla;
+    private readonly StructureLookups structures = structures ?? StructureLookups.None;
 
     /// <summary>
     /// Reads every density function value instead of this reader, numbers and identifiers included, such as the
     /// 26.3 compiler reading those of a plugin's density function (see
-    /// <see cref="Generators.Density.PluginDensityTypes"/>); null to read them as 1.21.11's.
+    /// <see cref="Generators.Density.PluginDensityTypes"/>); null to read them as the API's density function objects.
     /// </summary>
     public Func<JsonElement, string, IDensityFunction>? DensityFunctions { get; init; }
 
     /// <summary>
     /// Reads every surface rule value instead of this reader, identifiers included, such as the 26.3 material rules
     /// reading those of a plugin's surface rule (see <see cref="Generators.Terrain.PluginMaterialTypes"/>); null to
-    /// read them as 1.21.11's.
+    /// read them as the API's surface rule objects.
     /// </summary>
     public Func<JsonElement, string, ISurfaceRule>? SurfaceRules { get; init; }
 
@@ -97,7 +97,7 @@ internal sealed partial class WorldgenReader(
     /// Reads every noise value instead of this reader, identifiers and inline noises alike, given the value, the type
     /// of the property it's for (<see cref="INoise"/>, <see cref="BaseNoise"/> or a plugin's subclass) and its path:
     /// such as the 26.3 pipeline seeding them for its world, or refusing them where it can't; null to read them as
-    /// 1.21.11's.
+    /// unseeded noises.
     /// </summary>
     public Func<JsonElement, Type, string, BaseNoise>? Noises { get; init; }
 

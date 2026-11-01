@@ -106,6 +106,11 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         {
             // Stopping, possibly while the worlds were still loading or generating.
         }
+        catch (WorldLoadException ex)
+        {
+            // A world the operator has to deal with, such as one the upgrade refuses: not a crash.
+            await this.serverEnvironment.OnWorldLoadFailedAsync(ex.Message);
+        }
         catch (Exception ex)
         {
             await this.serverEnvironment.OnServerCrashAsync(ex);
@@ -238,7 +243,7 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
                 await WorldUpgrade.UpgradeAsync(folder, rootDimension, this.logger, cancellationToken);
         }
 
-        var seed = RandomState.ParseSeed(serverWorld.Seed);
+        var seed = WorldSeed.Parse(serverWorld.Seed);
         await this.LoadWorldAsync(world, serverWorld,
             createLevel: newWorld => newWorld.CreateLevel(VanillaLevelData.Create(new NewWorldConfiguration(),
                 serverWorld.Name, seed, serverWorld.Generator)),

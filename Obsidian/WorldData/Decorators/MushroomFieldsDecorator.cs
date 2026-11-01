@@ -7,8 +7,8 @@ public class MushroomFieldsDecorator : BaseDecorator
 {
     public MushroomFieldsDecorator(BiomeCodec biome, IChunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, Registries.ConfiguredFeatures.Trees.Oak));
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, Registries.ConfiguredFeatures.Trees.Acacia));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, "minecraft:oak"));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, "minecraft:acacia"));
     }
 
     public override void Decorate()

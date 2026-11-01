@@ -1,6 +1,4 @@
 using Obsidian.API;
-using Obsidian.WorldData;
-using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Mojang.Structures;
 using Obsidian.WorldData.Lighting;
 using System;
@@ -21,14 +19,14 @@ internal static class SerialRun
         if (!options.Cold)
             Warm(bench, options);
 
-        var builder = BenchGenerator.Create(options.Generator, bench, options.Seed);
+        var builder = new BenchGenerator(bench, options.Seed);
 
         // Stronghold rings are placed on first use, in parallel; placing them first keeps them out of the stages.
         var setup = Stopwatch.StartNew();
         builder.PrepareStructures(bench.CenterX, bench.CenterZ);
         setup.Stop();
 
-        var generator = new SerialGenerator(builder, bench.Dimension);
+        var generator = new SerialGenerator(builder);
         var order = new List<(int X, int Z)>();
         var gcCounts = (GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2));
         var gcPause = GC.GetTotalPauseDuration();
@@ -48,7 +46,7 @@ internal static class SerialRun
         allocated = GC.GetAllocatedBytesForCurrentThread() - allocated;
 
         var full = order.Count;
-        Console.WriteLine($"== {bench.Name} {GeneratorName(options.Generator)} serial, seed {options.Seed}, " +
+        Console.WriteLine($"== {bench.Name} serial, seed {options.Seed}, " +
             $"{full} chunks around ({bench.CenterX}, {bench.CenterZ}): " +
             $"{generator.CarvedCount} carved, {generator.DecoratedCount} decorated");
         Console.WriteLine($"generation {total.Elapsed.TotalSeconds:F2} s = " +
@@ -69,25 +67,20 @@ internal static class SerialRun
             return true;
         }
 
-        var (expectedHash, expectedNbtHash) = options.Generator == BenchGeneratorKind.Current
-            ? (bench.CurrentHash, bench.CurrentNbtHash)
-            : (bench.ExpectedHash, bench.ExpectedNbtHash);
+        var (expectedHash, expectedNbtHash) = (bench.ExpectedHash, bench.ExpectedNbtHash);
         var matches = hasher.Hash == expectedHash && hasher.NbtHash == expectedNbtHash;
         Console.WriteLine($"hash {hasher.Hash} nbt {hasher.NbtHash}: " +
             (matches ? "match" : $"MISMATCH, expected hash {expectedHash} nbt {expectedNbtHash}"));
         return matches;
     }
 
-    private static string GeneratorName(BenchGeneratorKind generator) =>
-        generator == BenchGeneratorKind.Current ? "26.3" : "1.21.11";
-
     /// <summary>
     /// Runs every stage on a few chunks of another world, so the measured run starts with optimized code.
     /// </summary>
     private static void Warm(BenchDimension bench, BenchOptions options)
     {
-        var builder = BenchGenerator.Create(options.Generator, bench, options.Seed + 1);
-        var generator = new SerialGenerator(builder, bench.Dimension);
+        var builder = new BenchGenerator(bench, options.Seed + 1);
+        var generator = new SerialGenerator(builder);
         for (var x = 500; x < 503; x++)
         {
             for (var z = 500; z < 503; z++)
@@ -99,7 +92,7 @@ internal static class SerialRun
     /// Completes chunks the way a server does: a chunk's neighbors are decorated once their own neighbors are carved, then
     /// the chunk is post-processed and lit, with the light of its neighbors lit before it.
     /// </summary>
-    private sealed class SerialGenerator(BenchGenerator builder, MojangDimension dimension)
+    private sealed class SerialGenerator(BenchGenerator builder)
     {
         private readonly Dictionary<(int X, int Z), IChunk> carved = [];
         private readonly HashSet<(int X, int Z)> decorated = [];
@@ -126,7 +119,7 @@ internal static class SerialRun
             builder.PostProcess(area, x, z, this.Timer);
 
             var neighbors = area.Where(entry => entry.Key != (x, z) && this.lit.Contains(entry.Key)).Select(entry => entry.Value).ToList();
-            this.Timer.Time(SerialStage.Light, () => LightEngine.LightChunk(chunk, neighbors, dimension.HasSkyLight));
+            this.Timer.Time(SerialStage.Light, () => LightEngine.LightChunk(chunk, neighbors, builder.HasSkyLight));
             this.lit.Add((x, z));
         }
 

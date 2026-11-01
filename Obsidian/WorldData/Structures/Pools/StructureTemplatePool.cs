@@ -60,12 +60,6 @@ public sealed class StructureTemplatePool
     public StructurePoolElement GetRandomTemplate(IRandomSource random) =>
         this.Templates.Length == 0 ? EmptyPoolElement.Instance : this.Templates[random.NextInt(this.Templates.Length)];
 
-    /// <summary>
-    /// Vanilla's pool with the id, or <c>null</c>. Generation looks pools up through
-    /// <see cref="StructureGenerationContext.Pools"/>, which has plugins' and data packs' pools too.
-    /// </summary>
-    public static StructureTemplatePool? Get(string id) => TemplatePools.All.GetValueOrDefault(id);
-
     private sealed record MaxSizeCache(long Version, int Value);
 }
 

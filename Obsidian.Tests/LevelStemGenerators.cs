@@ -48,8 +48,7 @@ public sealed class LevelStemGenerators
             {
                 var error = Assert.Throws<InvalidDataException>(() => LevelStemData.Read(
                     "format121:stem",
-                    dimension.Value,
-                    WorldgenNoise.Vanilla));
+                    dimension.Value));
 
                 Assert.Contains("structure_overrides", error.Message);
                 continue;

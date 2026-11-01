@@ -8,7 +8,7 @@ using static Obsidian.Registries.Codecs.CodecJson;
 
 namespace Obsidian.WorldData.Features;
 
-// Structures, structure sets, template pools and processor lists, read like vanilla 1.21.11's codecs read a data
+// Structures, structure sets, template pools and processor lists, read like vanilla's codecs read a data
 // pack's entries, with the ranges their codecs check.
 internal sealed partial class WorldgenReader
 {
@@ -340,16 +340,15 @@ internal sealed record StructureLookups(
     Func<string, StructureSet> FindSet)
 {
     /// <summary>
-    /// Vanilla's compiled entries.
+    /// No entries: every lookup throws. Readers that may name structure entries are given their own lookups (see
+    /// <see cref="Registries.PluginStructures"/>).
     /// </summary>
-    public static StructureLookups Vanilla { get; } = new(
-        id => Find(ProcessorLists.All, id, "processor list"),
-        id => Find(TemplatePools.All, id, "template pool"),
-        id => Find(global::Obsidian.Registries.Structures.All, id, "structure"),
-        id => Find(StructureSets.All, id, "structure set"));
+    public static StructureLookups None { get; } = new(
+        id => throw Unknown(id, "processor list"),
+        id => throw Unknown(id, "template pool"),
+        id => throw Unknown(id, "structure"),
+        id => throw Unknown(id, "structure set"));
 
-    private static T Find<T>(IReadOnlyDictionary<string, T> entries, string identifier, string kind) =>
-        entries.TryGetValue(identifier, out var entry)
-            ? entry
-            : throw new InvalidDataException($"{identifier} isn't a {kind}");
+    private static InvalidDataException Unknown(string identifier, string kind) =>
+        new($"{identifier} isn't a {kind}");
 }

@@ -45,15 +45,6 @@ public static class ServerConstants
     /// </summary>
     public static (int Major, int Minor) DataPackFormat { get; } = (121, 0);
 
-    /// <summary>
-    /// The older Minecraft version whose worldgen and structure templates the live generator runs on for now, since
-    /// its models don't read the implemented version's yet (<c>LegacyMinecraftVersion</c> in Obsidian.csproj).
-    /// Temporary: Phase 5 (worldgen) of <c>docs/porting-26.3-plan.md</c> removes it.
-    /// </summary>
-    public static readonly string LegacyVersion = typeof(ServerConstants).Assembly
-        .GetCustomAttributes<AssemblyMetadataAttribute>()
-        .Single(attribute => attribute.Key == "LegacyMinecraftVersion").Value!;
-
     public const int MaxPayloadLength = 1048576;
 
     // Overrides of the cache, log, plugin and data pack folders; null keeps them under the root.

@@ -47,14 +47,8 @@
 			<Output TaskParameter="Result" PropertyName="MinecraftVersion" />
 		</XmlPeek>
 		<Error Condition="'$(MinecraftVersion)' == ''" Text="Obsidian.csproj doesn't set MinecraftVersion." />
-		<XmlPeek XmlInputPath="$(MSBuildThisFileDirectory)..\Obsidian\Obsidian.csproj"
-		         Query="/Project/PropertyGroup/LegacyMinecraftVersion/text()">
-			<Output TaskParameter="Result" PropertyName="LegacyMinecraftVersion" />
-		</XmlPeek>
-		<Error Condition="'$(LegacyMinecraftVersion)' == ''" Text="Obsidian.csproj doesn't set LegacyMinecraftVersion." />
 		<PropertyGroup>
-			<VanillaAssetsStamp>$(VanillaAssetsDirectory).generated-$(MinecraftVersion)-legacy-$(LegacyMinecraftVersion)</VanillaAssetsStamp>
-			<VanillaLegacyAssetsDirectory>$(VanillaAssetsDirectory)legacy-$(LegacyMinecraftVersion)\</VanillaLegacyAssetsDirectory>
+			<VanillaAssetsStamp>$(VanillaAssetsDirectory).generated-$(MinecraftVersion)</VanillaAssetsStamp>
 		</PropertyGroup>
 		<ItemGroup>
 			<VanillaAssetsOutput Include="$(VanillaAssetsStamp)" />
@@ -85,7 +79,6 @@
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)context_int_provider.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)commands-$(MinecraftVersion).json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)context_float_provider.json" />
-			<VanillaAssetsOutput Include="$(VanillaLegacyAssetsDirectory)block_states.json" />
 		</ItemGroup>
 	</Target>
 
@@ -95,7 +88,7 @@
 	        Inputs="$(MSBuildProjectFullPath);@(VanillaGeneratorInput);@(VanillaDumperInput)"
 	        Outputs="@(VanillaAssetsOutput)">
 		<PropertyGroup>
-			<VanillaAssetsCommand>dotnet &quot;$(TargetPath)&quot; $(MinecraftVersion) $(LegacyMinecraftVersion)</VanillaAssetsCommand>
+			<VanillaAssetsCommand>dotnet &quot;$(TargetPath)&quot; $(MinecraftVersion)</VanillaAssetsCommand>
 			<VanillaAssetsCommand>$(VanillaAssetsCommand) &quot;$(VanillaWorkDirectory).&quot;</VanillaAssetsCommand>
 			<VanillaAssetsCommand>$(VanillaAssetsCommand) &quot;$(VanillaScratchDirectory).&quot;</VanillaAssetsCommand>
 			<VanillaAssetsCommand>$(VanillaAssetsCommand) &quot;$(VanillaAssetsDirectory).&quot;</VanillaAssetsCommand>

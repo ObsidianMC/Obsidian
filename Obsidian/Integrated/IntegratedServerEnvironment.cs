@@ -5,8 +5,8 @@ using Obsidian.Hosting;
 namespace Obsidian.Integrated;
 
 /// <summary>
-/// The <see cref="IServerEnvironment"/> of an integrated server: a crash is reported to the client as an event, and the
-/// process then stops with exit code 1.
+/// The <see cref="IServerEnvironment"/> of an integrated server: a crash, or a world it can't load, is reported to the
+/// client as an event, and the process then stops with exit code 1.
 /// </summary>
 internal sealed partial class IntegratedServerEnvironment(
     IntegratedEventWriter events,
@@ -26,9 +26,23 @@ internal sealed partial class IntegratedServerEnvironment(
         return default;
     }
 
+    public ValueTask OnWorldLoadFailedAsync(string message)
+    {
+        Log.WorldLoadFailed(logger, message);
+        events.Write(IntegratedEvent.LoadFailed(message));
+
+        Environment.ExitCode = 1;
+        lifetime.StopApplication();
+
+        return default;
+    }
+
     private static partial class Log
     {
         [LoggerMessage(Level = LogLevel.Critical, Message = "The integrated server crashed")]
         public static partial void Crashed(ILogger logger, Exception exception);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "The world can't be loaded: {Message}")]
+        public static partial void WorldLoadFailed(ILogger logger, string message);
     }
 }

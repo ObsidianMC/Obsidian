@@ -315,7 +315,10 @@ load test bot is updated to match.
    - moving files to the new layout;
    - splitting `level.dat`;
    - rewriting block-state NBT, in palettes, block entities and templates;
-   - mapping the chunk status.
+   - mapping the chunk status;
+   - dropping moving pistons, whose moved block 1.21.11 saved by numeric state: they become air;
+   - refusing, unchanged, worlds whose chunk palettes an Obsidian build before its vanilla-format saves wrote by
+     numeric state (see [the gap](known-gaps/world-upgrade-drops-and-refusals.md)).
 
    It only runs on a copy, and it leaves a backup. It does not try to be a general vanilla data fixer.
 5. **Round-trip tests** with a vanilla-26.3-written world fixture: open it, save it, and compare what we model.
@@ -358,7 +361,7 @@ in the parts we model.
 
 **Exit:** the loot, recipe, progress and plugin-codec tests pass against 26.3 captures.
 
-### Phase 5: world generation
+### Phase 5: world generation — complete
 
 The live `minecraft:mojang_generator`, Nether and End IDs now run the 26.3 pipeline. Noise level stems build
 `WorldgenDimension` and `BiomeTerrain`; flat, debug and custom plugin generators retain their host dispatch.
@@ -370,8 +373,9 @@ their per-dimension ownership, unload/reload and collectible-context behavior, i
 
 `spawn_search.json` and `population.json` add vanilla 26.3 evidence for the spawn-target search and initial creature
 packs, including the population random tail. See [capture details](vanilla-captures.md#spawn-search-and-initial-population).
-The legacy pipeline, replay tests and data remain for a separate removal PR; the live pipeline selects current tags
-in shared algorithms. `WorldgenBench --generator 26.3` calls the live terrain/decoration/completion methods.
+The 1.21.11 generator was then removed with its data, replay tests and benchmark mode, once the 26.3 pipeline
+outran it (see [worldgen benchmarks](worldgen-benchmarks.md)). `WorldgenBench` calls the live
+terrain/decoration/completion methods.
 
 Re-capture with the Phase 0 harness first, then work in this order. Each step has its own fixture.
 
@@ -405,11 +409,13 @@ Re-capture with the Phase 0 harness first, then work in this order. Each step ha
 8. **Performance.** Re-record `WorldgenBench` and compare with the 1.21.x numbers in `worldgen-benchmarks.md`. Single
    precision may make generation faster.
 
-**Exit:** all re-captured `VanillaWorldGeneration` and `VanillaStructureGeneration` fixtures pass, the 1.21.11 data is
-gone (`LegacyMinecraftVersion`, `Assets/legacy-1.21.11`, the `obsidian_legacy` tags and the legacy state table), and
-throughput is no worse than on 1.21.x. The world upgrade (Phase 3) also reads the legacy state table, to convert
-moving pistons that 1.21.11 saved by numeric state; keep that one table for it, or have the upgrade drop those
-pistons.
+**Exit — met:** the re-captured 26.3 worldgen and structure fixtures pass (`VanillaTerrainGeneration`,
+`VanillaBiomeGeneration`, `VanillaFeaturePlacement`, `VanillaStructurePlacement`, `VanillaStructureSaves` and the
+other 26.3 replays), the 1.21.11 data is gone (`LegacyMinecraftVersion`, `Assets/legacy-1.21.11`, the
+`obsidian_legacy` tags and the legacy state table), and throughput is no worse than on 1.21.x. The world upgrade
+(Phase 3) drops moving pistons that 1.21.11 saved by numeric state, and refuses worlds whose palettes pre-#539
+Obsidian saved by numeric state, rather than keeping that table for them (see
+[the gap](known-gaps/world-upgrade-drops-and-refusals.md)).
 
 ### Phase 6: content and gameplay
 
@@ -485,9 +491,9 @@ Phase 2.
 2. **`1.21.x` is frozen.** It takes only critical fixes from now on, and we merge those forward into `26.3.x`.
 3. **26.3 comes first.** 26.4 is in snapshots and probably ships in December. We finish 26.3, then start `26.4.x` from
    it. Phase 0 is meant to make later version bumps mostly regeneration.
-4. **Live worldgen uses 26.3 data.** Legacy builders, registries, tags and replay/benchmark support remain for the
-   removal PR. Startup extracts only current structure templates. Legacy state data needed for saved-world upgrades
-   must remain available until that upgrade no longer needs it.
+4. **Worldgen uses 26.3 data only.** The 1.21.11 generator, its registries, tags, replays and benchmark mode are
+   removed, and startup extracts only current structure templates. No 1.21.11 state table is kept: the world upgrade
+   drops the moving pistons that needed it and refuses worlds saved before Obsidian's vanilla-format saves.
 
 ## Risks
 

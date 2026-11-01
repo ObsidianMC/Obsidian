@@ -5,6 +5,7 @@ using Obsidian.Nbt;
 using Obsidian.Registries;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Fluids;
+using Obsidian.WorldData.Generators.Biomes;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Generators.Features;
 using Obsidian.WorldData.Generators.Mojang;
@@ -70,12 +71,12 @@ public class VanillaFeaturePlacement
 
     /// <summary>
     /// Replays the cases one at a time, sharing what they would each build alike: a chunk of each layering, which a
-    /// case's chunks are copies of, and the legacy builders that post-process.
+    /// case's chunks are copies of, and the pipelines that post-process.
     /// </summary>
     private sealed class Replay
     {
         private readonly Dictionary<(string Layers, int MinY, int Height), Chunk> layered = [];
-        private readonly Dictionary<(MojangDimension Dimension, long Seed), ChunkBuilder> builders = [];
+        private readonly Dictionary<(WorldgenDimension Dimension, long Seed), BiomeTerrain> pipelines = [];
 
         public void Assert(JsonElement entry)
         {
@@ -99,17 +100,17 @@ public class VanillaFeaturePlacement
             return (Chunk)template.Clone(chunkX, chunkZ);
         }
 
-        public ChunkBuilder Builder(JsonElement entry)
+        public BiomeTerrain Pipeline(JsonElement entry)
         {
             var key = (Dimension(entry), entry.GetProperty("seed").GetInt64());
 
-            if (!this.builders.TryGetValue(key, out var builder))
+            if (!this.pipelines.TryGetValue(key, out var pipeline))
             {
-                builder = new ChunkBuilder(key.Item1, key.Item2, generateStructures: false);
-                this.builders.Add(key, builder);
+                pipeline = BiomeTerrain.Create(key.Item1, key.Item2);
+                this.pipelines.Add(key, pipeline);
             }
 
-            return builder;
+            return pipeline;
         }
     }
 
@@ -152,7 +153,7 @@ public class VanillaFeaturePlacement
             AssertMarks(entry, expectedMarks, chunks, region.MinY);
 
         if (entry.TryGetProperty("postProcess", out _))
-            AssertPostProcessing(entry, replay.Builder(entry), region, chunks, layers);
+            AssertPostProcessing(entry, replay.Pipeline(entry), region, chunks, layers);
     }
 
     // A case can require that both vanilla and the replay change blocks, or that neither does.
@@ -224,10 +225,10 @@ public class VanillaFeaturePlacement
         Assert.Equal(expected, actual);
     }
 
-    // The writable chunks' blocks once the legacy builder post-processes them (shape updates).
+    // The writable chunks' blocks once the pipeline post-processes them (fluid ticks and shape updates).
     private static void AssertPostProcessing(
         JsonElement entry,
-        ChunkBuilder builder,
+        BiomeTerrain pipeline,
         WorldGenRegion region,
         Dictionary<(int X, int Z), IChunk> chunks,
         (IBlock Block, int Top)[] layers)
@@ -238,7 +239,7 @@ public class VanillaFeaturePlacement
         for (var z = chunkZ - 1; z <= chunkZ + 1; z++)
         {
             for (var x = chunkX - 1; x <= chunkX + 1; x++)
-                builder.PostProcess(chunks, x, z);
+                pipeline.PostProcess(chunks, x, z);
         }
 
         var expected = entry.GetProperty("postChanges").EnumerateArray().Select(ExpectedChange).ToList();
@@ -355,20 +356,20 @@ public class VanillaFeaturePlacement
 
     private static DecorationContext Context(JsonElement entry, WorldGenRegion region, string biome)
     {
-        var noise = Dimension(entry).Settings.Noise;
+        var settings = Dimension(entry).Settings;
 
-        return new DecorationContext(registry, region, _ => biome, noise.MinY, noise.Height);
+        return new DecorationContext(registry, region, _ => biome, settings.MinY, settings.Height);
     }
 
-    private static MojangDimension Dimension(JsonElement entry)
+    private static WorldgenDimension Dimension(JsonElement entry)
     {
         var dimension = entry.TryGetProperty("dimension", out var value) ? value.GetString() : "minecraft:overworld";
 
         return dimension switch
         {
-            "minecraft:overworld" => MojangDimension.Overworld,
-            "minecraft:the_nether" => MojangDimension.Nether,
-            "minecraft:the_end" => MojangDimension.End,
+            "minecraft:overworld" => WorldgenDimension.Overworld,
+            "minecraft:the_nether" => WorldgenDimension.Nether,
+            "minecraft:the_end" => WorldgenDimension.End,
             _ => throw new InvalidOperationException($"Unknown feature capture dimension {dimension}.")
         };
     }

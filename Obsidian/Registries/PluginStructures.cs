@@ -21,14 +21,14 @@ namespace Obsidian.Registries;
 /// <list type="bullet">
 /// <item><c>data/&lt;namespace&gt;/worldgen/structure/&lt;path&gt;.json</c>, <c>worldgen/structure_set/...</c> and
 /// <c>worldgen/template_pool/...</c> are the entries <c>&lt;namespace&gt;:&lt;path&gt;</c>, read with
-/// <see cref="WorldgenReader"/> into the same objects as vanilla's compiled ones. Processor lists are read with
+/// <see cref="WorldgenReader"/> into the same objects as vanilla's. Processor lists are read with
 /// features (see <see cref="PluginFeatures.ProcessorList"/>), as fossils name them too.</item>
 /// <item><c>data/&lt;namespace&gt;/structure/&lt;path&gt;.nbt</c> is the template
 /// <c>&lt;namespace&gt;:&lt;path&gt;</c>, vanilla's gzipped NBT.</item>
 /// </list>
-/// A file for one of vanilla's entries overrides it, and vanilla's entries naming it, or naming an overridden
-/// placed feature or processor list, are read again from vanilla's files (see <see cref="VanillaOverrides"/>); when
-/// files define the same entry, the last in order wins. Like features, structures aren't sent to clients, so they
+/// A file for one of vanilla's entries overrides it, and vanilla's entries are read with it (see
+/// <see cref="StructureData"/>); when files define the same entry, the last in order wins (see
+/// <see cref="VanillaOverrides"/>). Like features, structures aren't sent to clients, so they
 /// come and go with their plugin: each <see cref="Apply"/> reads the loaded plugins' and data packs' files into a new
 /// <see cref="WorldgenStructures"/>. Starts are saved by their structure's identifier, and kept as saved when it's
 /// gone.
@@ -52,8 +52,6 @@ internal static partial class PluginStructures
 
     private static readonly Lock applying = new();
 
-    private static WorldgenStructures? current;
-
     // Each structure set built has a later version than the ones before, so caches keep the latest.
     private static long versions;
 
@@ -63,11 +61,6 @@ internal static partial class PluginStructures
         CommentHandling = JsonCommentHandling.Skip,
         AllowTrailingCommas = true
     };
-
-    /// <summary>
-    /// The structures chunk generation places: vanilla's with the loaded plugins' and data packs' files applied.
-    /// </summary>
-    public static WorldgenStructures Current => Volatile.Read(ref current) ?? WorldgenStructures.Vanilla;
 
     /// <summary>
     /// Finds the structure, structure set and template pool files in a plugin's files, by their paths.
@@ -174,8 +167,8 @@ internal static partial class PluginStructures
     }
 
     /// <summary>
-    /// Makes the structures of the loaded plugins' and data packs' files the <see cref="Current"/> ones, and their
-    /// templates the ones <see cref="StructureRegistry"/> gives.
+    /// Makes the structures and templates of the loaded plugins' and data packs' files the ones generators read
+    /// next (see <see cref="CurrentRegistry"/>).
     /// </summary>
     /// <param name="files">The loaded plugins' structure files in load order, then data packs'.</param>
     /// <param name="templates">The loaded plugins' template files in load order, then data packs'.</param>
@@ -193,8 +186,7 @@ internal static partial class PluginStructures
             var snapshot = new StructureInputs([.. files], [.. templates], [.. types], logger);
             var structures = snapshot.Read(PluginFeatures.CurrentRegistry);
 
-            StructureRegistry.SetOverrides(structures.Templates);
-            Volatile.Write(ref current, structures);
+            StructureRegistry.OverridesChanged();
             Volatile.Write(ref inputs, snapshot);
             return structures;
         }
@@ -204,13 +196,14 @@ internal static partial class PluginStructures
     /// Reads plugins' files into a structure set, without making it the current one. Files that can't be read are
     /// logged and left out, with the entries that need them.
     /// </summary>
+    /// <param name="vanilla">The entries the files' entries add to and override, and fall back to.</param>
     public static WorldgenStructures Build(
         IEnumerable<StructureFile> files,
         IEnumerable<TemplateFile> templates,
         WorldgenFeatureSet features,
         IEnumerable<WorldgenTypeRegistration> types,
         ILogger logger,
-        WorldgenStructures? vanilla = null,
+        WorldgenStructures vanilla,
         Func<JsonElement, JsonElement>? normalize = null)
     {
         var kept = VanillaOverrides.LastWins(
@@ -218,9 +211,6 @@ internal static partial class PluginStructures
             file => (file.Registry, file.Identifier),
             file => file.Source,
             logger);
-
-        if (vanilla is null)
-            kept.AddRange(VanillaDependents(kept, features));
 
         var keptTemplates = VanillaOverrides.LastWins(
             templates,
@@ -242,19 +232,17 @@ internal static partial class PluginStructures
             }
         }
 
-        var structures = new Dictionary<string, WorldData.Structures.Structure>(
-            vanilla?.Structures ?? global::Obsidian.Registries.Structures.All);
+        var structures = new Dictionary<string, WorldData.Structures.Structure>(vanilla.Structures);
 
         foreach (var (identifier, structure) in resolver.Structures)
             structures[identifier] = structure;
 
-        var sets = new Dictionary<string, WorldData.Structures.StructureSet>(vanilla?.Sets ?? StructureSets.All);
+        var sets = new Dictionary<string, WorldData.Structures.StructureSet>(vanilla.Sets);
 
         foreach (var (identifier, set) in resolver.Sets)
             sets[identifier] = set;
 
-        var pools = new Dictionary<string, StructureTemplatePool>(
-            vanilla?.Pools ?? FrozenDictionary<string, StructureTemplatePool>.Empty);
+        var pools = new Dictionary<string, StructureTemplatePool>(vanilla.Pools);
         foreach (var (identifier, pool) in resolver.Pools)
             pools[identifier] = pool;
 
@@ -265,18 +253,17 @@ internal static partial class PluginStructures
             Sets = sets.ToFrozenDictionary(),
             Pools = pools.ToFrozenDictionary(),
             Templates = keptTemplates.ToFrozenDictionary(file => file.Identifier, file => file.Template),
-            Owners = Owners(structures.Values, resolver, vanilla),
-            LegacyPools = vanilla?.LegacyPools ?? true
+            Owners = Owners(structures.Values, resolver, vanilla)
         };
     }
 
     // The plugins each structure calls into while it starts and is placed: those whose types it's made of, through
     // the entries it names too. A jigsaw structure's pieces name pools by identifier, so any of them may reach any
-    // pool: jigsaw structures, vanilla's compiled ones too, call into every plugin a pool read from files needs.
+    // pool: jigsaw structures, vanilla's too, call into every plugin a pool read from files needs.
     private static FrozenDictionary<WorldData.Structures.Structure, ImmutableArray<PluginContainer>> Owners(
         IEnumerable<WorldData.Structures.Structure> structures,
         StructureResolver resolver,
-        WorldgenStructures? vanilla = null)
+        WorldgenStructures vanilla)
     {
         var pools = resolver.Pools.Values
             .SelectMany(pool => resolver.Owners.GetValueOrDefault(pool, []))
@@ -287,7 +274,7 @@ internal static partial class PluginStructures
 
         foreach (var structure in structures)
         {
-            var previous = vanilla?.Owners.GetValueOrDefault(structure, []) ?? [];
+            var previous = vanilla.Owners.GetValueOrDefault(structure, []);
             var plugins = resolver.Owners.GetValueOrDefault(structure, previous).ToHashSet();
             if (structure is JigsawStructure)
                 plugins.UnionWith(pools);
@@ -297,29 +284,6 @@ internal static partial class PluginStructures
         }
 
         return owners.ToFrozenDictionary(ReferenceEqualityComparer.Instance);
-    }
-
-    // Vanilla's entries naming an overridden one, read again from vanilla's files so that they use the override.
-    // Features and processor lists are overridden with features (see PluginFeatures), so those read from files
-    // count too. Templates are looked up by identifier as they're used, so naming one doesn't count.
-    private static IEnumerable<StructureFile> VanillaDependents(List<StructureFile> files, WorldgenFeatureSet features)
-    {
-        var overridden = files
-            .Select(file => (file.Registry, file.Identifier))
-            .Concat(features.PlacedFeatures.Keys.Select(id => (PluginFeatures.PlacedFeature, id)))
-            .Concat(features.ProcessorLists.Keys.Select(id => (PluginFeatures.ProcessorList, id)))
-            .Where(entry => entry.Item2.StartsWith("minecraft:", StringComparison.Ordinal))
-            .ToHashSet();
-
-        if (overridden.Count == 0)
-            return [];
-
-        return VanillaOverrides.Dependents([Structure, StructureSet, TemplatePool], overridden)
-            .Select(entry => new StructureFile(
-                entry.Registry,
-                entry.Identifier,
-                $"vanilla's {entry.Identifier}",
-                entry.Json));
     }
 
     /// <summary>
@@ -343,11 +307,11 @@ internal static partial class PluginStructures
             List<StructureFile> files,
             WorldgenTypes types,
             WorldgenFeatureSet features,
-            WorldgenStructures? vanilla = null,
+            WorldgenStructures vanilla,
             Func<JsonElement, JsonElement>? normalize = null)
         {
             this.normalize = normalize;
-            this.vanilla = vanilla ?? WorldgenStructures.Vanilla;
+            this.vanilla = vanilla;
             this.files = files.ToDictionary(file => (file.Registry, file.Identifier));
             this.features = features;
 
@@ -413,7 +377,7 @@ internal static partial class PluginStructures
             TemplatePool,
             identifier,
             this.Pools,
-            this.vanilla.LegacyPools ? TemplatePools.All : this.vanilla.Pools,
+            this.vanilla.Pools,
             this.ReadPool);
 
         // Fallbacks are looked up by identifier as structures generate, since pools may fall back to each other, so
@@ -442,8 +406,7 @@ internal static partial class PluginStructures
         private StructureProcessorList ProcessorListOf(string identifier) => this.FromFeatures(
             this.features.ProcessorLookup is not null
                 ? this.features.ProcessorLookup(identifier)
-                : this.features.ProcessorLists.GetValueOrDefault(identifier)
-                    ?? ProcessorLists.All.GetValueOrDefault(identifier),
+                : this.features.ProcessorLists.GetValueOrDefault(identifier),
             identifier,
             "processor list");
 
@@ -548,13 +511,13 @@ internal sealed record TemplateFile(string Identifier, string Source, StructureT
 internal sealed record WorldgenStructures
 {
     /// <summary>
-    /// Vanilla's structures alone.
+    /// No structures, which vanilla's are read over (see <see cref="StructureData"/>).
     /// </summary>
-    public static WorldgenStructures Vanilla { get; } = new()
+    public static WorldgenStructures Empty { get; } = new()
     {
         Version = 0,
-        Structures = global::Obsidian.Registries.Structures.All,
-        Sets = StructureSets.All,
+        Structures = FrozenDictionary<string, WorldData.Structures.Structure>.Empty,
+        Sets = FrozenDictionary<string, WorldData.Structures.StructureSet>.Empty,
         Pools = FrozenDictionary<string, StructureTemplatePool>.Empty,
         Templates = FrozenDictionary<string, StructureTemplate>.Empty,
         Owners = FrozenDictionary<WorldData.Structures.Structure, ImmutableArray<PluginContainer>>.Empty
@@ -576,7 +539,7 @@ internal sealed record WorldgenStructures
     public required IReadOnlyDictionary<string, WorldData.Structures.StructureSet> Sets { get; init; }
 
     /// <summary>
-    /// The template pools of files, by identifier; vanilla's others are in <c>TemplatePools</c>.
+    /// The template pools, by identifier.
     /// </summary>
     public required FrozenDictionary<string, StructureTemplatePool> Pools { get; init; }
 
@@ -596,19 +559,7 @@ internal sealed record WorldgenStructures
     }
 
     /// <summary>
-    /// Whether <see cref="Pool"/> falls back to vanilla's compiled pools; the 26.3 structures hold all of theirs.
-    /// </summary>
-    public bool LegacyPools { get; init; } = true;
-
-    /// <summary>
     /// A template pool by identifier, a file's or vanilla's, or <c>null</c>.
     /// </summary>
-    public StructureTemplatePool? Pool(string identifier)
-    {
-        var pool = this.Pools.GetValueOrDefault(identifier);
-        if (pool is not null || !this.LegacyPools)
-            return pool;
-
-        return TemplatePools.All.GetValueOrDefault(identifier);
-    }
+    public StructureTemplatePool? Pool(string identifier) => this.Pools.GetValueOrDefault(identifier);
 }

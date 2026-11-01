@@ -4,9 +4,8 @@ using Obsidian.API.World.Generator.RandomSources;
 namespace Obsidian.WorldData.Generators.Mojang.Regions;
 
 /// <summary>
-/// Where a dimension's biome regions are: each column belongs to one region, or to the dimension's own layout. Both
-/// the 1.21.11 biome source (<see cref="RegionBiomeSource"/>) and the 26.3 one (<see cref="Biomes.ClimateSource"/>)
-/// place regions with it, so a world's regions are in the same places in both.
+/// Where a dimension's biome regions are: each column belongs to one region, or to the dimension's own layout (see
+/// <see cref="Biomes.ClimateSource"/>).
 /// </summary>
 /// <remarks>
 /// Regions are spread over a grid of cells <see cref="CellSize"/> quarts wide. Each cell has a point at a random

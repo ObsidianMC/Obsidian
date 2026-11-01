@@ -2365,10 +2365,10 @@ The other attributes change what clients show and play.
 
 ## World generation features
 
-The live generator still reads 1.21.11 features during the 26.3 migration. The 26.3 pipeline also accepts plugin
-feature types, placed features, biome modifiers, processor lists, structure types, structure sets, pools and templates.
-Its native configured-feature folder is `worldgen/feature`, with configuration fields beside `type`. The old
-`worldgen/configured_feature` folder and `config` envelope remain accepted there; when both folders define the same
+The generator reads 26.3's features, and plugins' feature types, placed features, biome modifiers, processor lists,
+structure types, structure sets, pools and templates. Its configured-feature folder is `worldgen/feature`, with
+configuration fields beside `type`. The older `worldgen/configured_feature` folder and `config` envelope remain
+accepted; when both folders define the same
 identifier, the last file in load order wins. Types removed or redesigned by vanilla still need 26.3 data. The public
 `Obsidian.API` registration and placement interfaces are unchanged. Block states in plugin types may use the old
 `Name`/`Properties` form or 26.3's bare identifier and `id`/`properties` forms.
@@ -2388,9 +2388,9 @@ For the server integration, `PluginFeatures.CurrentRegistry` supplies the 26.3 f
 supplies the existing plant-growth interface. `PluginStructures.CurrentRegistry` supplies its structure layout;
 `StructureData.Read(features)` reads that layout for a particular feature registry. Both snapshots follow the existing
 apply/load/unload lifecycle, retain dependency owners, refuse calls into unloading plugins and report plugin placement
-failures through `PluginGenerationException`. The live-generator switch still needs to select these providers, refresh
-decoration and structure layouts when plugins change, and route plant growth's `PluginFeatures.Current` to the native
-feature set. Standalone parity replays can continue to construct a vanilla `FeatureRegistry` directly.
+failures through `PluginGenerationException`. Running generators refresh their decoration and structure layouts when
+plugins change them, and plant growth places from the same feature set. Standalone parity replays can construct a
+vanilla `FeatureRegistry` directly.
 
 The 26.3 terrain pipeline resolves carvers through `PluginFeatures.CurrentCarvers`, refreshed on that same successful
 apply. Both `worldgen/carver` and `worldgen/configured_carver` files are accepted, using 26.3 geometry: configuration
@@ -2410,8 +2410,9 @@ Plugins add configured and placed features, and change what biomes place and spa
 - `data/<namespace>/worldgen/configured_carver/<path>.json` is a configured carver;
 - `data/<namespace>/biome_modifier/<path>.json` is a biome modifier.
 
-Features are vanilla 1.21.11's format, read into the same objects as vanilla's features: a configured feature is
-`{"type": ..., "config": {...}}` and a placed feature `{"feature": ..., "placement": [...]}`. Every feature, placement
+Features are compiled like vanilla's own: a configured feature is `{"type": ..., "config": {...}}` in
+`worldgen/configured_feature` (or, in `worldgen/feature`, 26.3's form with the fields beside `type`) and a placed
+feature `{"feature": ..., "placement": [...]}`. Every feature, placement
 modifier, provider, predicate and placer type vanilla's own features use is available, and `minecraft:no_op`, as
 are the types plugins register (see [Feature types](#feature-types)). A
 feature refers to vanilla's or plugins' features by identifier, or defines one inline. An ore that replaces stone
@@ -2818,7 +2819,7 @@ list, which fossils and template pools name by identifier, like vanilla's (see [
 
 ## Structures
 
-Plugins add structures like a data pack, in vanilla 1.21.11's formats:
+Plugins add structures like a data pack, in vanilla 26.3's formats:
 
 - `data/<namespace>/worldgen/structure/<path>.json` is the structure `<namespace>:<path>`;
 - `data/<namespace>/worldgen/structure_set/<path>.json` is a structure set, the structures that share a placement;
@@ -3054,31 +3055,31 @@ Plugins add the data a dimension's terrain is made of, like a data pack:
 
 - `data/<namespace>/worldgen/noise_settings/<path>.json` is the noise settings `<namespace>:<path>`;
 - `data/<namespace>/worldgen/density_function/<path>.json` is a density function;
-- `data/<namespace>/worldgen/noise/<path>.json` is a noise, `{"firstOctave": ..., "amplitudes": [...]}`;
+- `data/<namespace>/worldgen/noise/<path>.json` is a noise, `{"base_octave": ..., "octave_count": ...}`;
 - `data/<namespace>/worldgen/multi_noise_biome_source_parameter_list/<path>.json` is a multi-noise parameter list,
-  which in vanilla 1.21.11 only names a built-in preset: `{"preset": "minecraft:overworld"}` or `minecraft:nether`.
+  which in vanilla only names a built-in preset: `{"preset": "minecraft:overworld"}` or `minecraft:nether`.
 
-They're vanilla 1.21.11's formats, read into the same objects as vanilla's own (a parity test reads all of vanilla's
-files at runtime, compares them with the generated ones, and generates vanilla's chunks with them). Noise settings
-have every field vanilla's have: `sea_level`, `default_block`, `default_fluid`, `noise` (the cells' `min_y`, `height`,
-`size_horizontal`, `size_vertical`, checked like vanilla), the 15 functions of the `noise_router`, `spawn_target`,
-the flags and `surface_rule`, whose rules and conditions are inline as in vanilla. A density function is a number (a
-constant), an identifier, or an object with a `type`; a noise is an identifier or defined inline (see below). A spline
-function's `spline` is a multipoint spline or a number, for a constant one, and a spawn target's parameters, its
-`depth` included, are a number or a range, as in a multi-noise biome source. Plugins' dimensions use plugins' noise settings (see [Dimensions](#dimensions)). Ground rolling
-around y 64 with a plugin's noise:
+They're read as written, in vanilla 26.3's schemas: noise settings have a `material_rule`, the 8 functions of the
+`noise_router` (`chunk_surface_level` included) and an optional `aquifers` object; density functions take 26.3's types
+and operands (`add` with `left` and `right`, `gradient` along an `axis`); noises are
+`{"base_octave": ..., "octave_count": ...}`. A file in 1.21.11's schema fails the dimensions naming it. Plugins'
+dimensions use plugins' noise settings (see [Dimensions](#dimensions)), and plugins' biome sources and biome regions
+generate with them. Plugins' surface rule and condition types are read in `material_rule`, inline or inside
+vanilla's rules, and a dimension whose material rule alone names a plugin's type generates with that plugin, as with
+its density functions. Ground rolling around y 64 with a plugin's noise:
 
 ```json
 // data/ruby/worldgen/noise/bumps.json
-{ "firstOctave": -4, "amplitudes": [1.0, 0.5] }
+{ "base_octave": -4, "octave_count": 2 }
 ```
 
 ```json
 // data/ruby/worldgen/density_function/ground.json
 {
   "type": "minecraft:add",
-  "argument1": { "type": "minecraft:y_clamped_gradient", "from_y": 0, "to_y": 128, "from_value": 1, "to_value": -1 },
-  "argument2": { "type": "minecraft:noise", "noise": "ruby:bumps", "xz_scale": 0.25, "y_scale": 0 }
+  "left": { "type": "minecraft:gradient", "axis": "y", "from_coordinate": 0, "to_coordinate": 128, "from_value": 1,
+    "to_value": -1 },
+  "right": { "type": "minecraft:noise", "noise": "ruby:bumps", "xz_scale": 0.25, "y_scale": 0 }
 }
 ```
 
@@ -3088,34 +3089,14 @@ The rules:
 
 - Files for vanilla's entries override them (see
   [Data packs and overriding vanilla](#data-packs-and-overriding-vanilla)), and when files define the same entry, the
-  last in order wins. A file that can't be read is logged and left out, with the entries that need it; the plugin
-  loads without them. Unknown types, fields and blocks, missing fields and values out of vanilla's ranges are
-  errors, such as a `find_top_surface` whose `cell_height` isn't positive or an `old_blended_noise` scale out of
-  0.001 to 1000.
-- Entries refer to vanilla's or plugins' entries by identifier, in any order and across plugins; one that refers
-  back to itself is left out. Each is read once and shared, like vanilla's registry entries, so a density function
-  named twice is one function, whose caches are shared.
+  last in order wins. A file that can't be read fails the dimensions naming it, which are left out with the reason
+  logged; the plugin loads without them.
+- Entries refer to vanilla's or plugins' entries by identifier, in any order and across plugins.
 - A dimension keeps the noise settings it was created with until the server stops: a reload that changes them, or
   the density functions and noises they use, keeps the dimension as it was, with a warning, and the change applies
   after a restart.
-- Vanilla seeds a noise from its identifier, so its codec reads a noise defined inline, like
-  `"noise": { "firstOctave": -4, "amplitudes": [1, 0.5] }`, but generating with it fails. Obsidian seeds an inline
-  noise from its parameters instead: inline noises with the same `firstOctave` and `amplitudes` are the same noise,
-  like noises of one identifier, so name a noise file to have two different noises of the same parameters. Noise
-  settings may be defined inline in a level stem (see [Dimensions](#dimensions)).
-
-### In the 26.3 generator
-
-The live generator still reads 1.21.11's formats above. The 26.3 generator that replaces it in Phase 5 of the
-[26.3 port](porting-26.3-plan.md) reads the same files, as written, in vanilla 26.3's schemas: noise settings have a
-`material_rule` instead of `surface_rule`, the 8 functions of 26.3's `noise_router` (`chunk_surface_level` included)
-and an optional `aquifers` object; density functions take 26.3's types and operands (`add` with `left` and `right`);
-noises are `{"base_octave": ..., "octave_count": ...}`. Until the switch, a file in 1.21.11's schema fails the 26.3
-dimensions naming it, and one in 26.3's is left out of the live generator with a warning. Plugins' biome sources, biome regions and dimensions generate in both, with the same
-lifecycle, and regions land in the same places in both. Plugins' surface rule and condition types are read in
-`material_rule`, inline or inside vanilla's rules, and a dimension whose material rule alone names a plugin's type
-generates with that plugin, as with its density functions. Limits, until the switch:
-
+- Vanilla seeds a noise from its identifier, so a density function's noise is named: one defined inline fails the
+  dimension. Noise settings may be defined inline in a level stem (see [Dimensions](#dimensions)).
 - A plugin's density function type gets 26.3 density functions in its `IDensityFunction` properties, already seeded,
   so `MapAll` isn't called. Its `INoise` and `BaseNoise` properties name 26.3 noises
   (`"noise": "minecraft:cave_layer"`), seeded for the world from their identifiers as vanilla seeds the noises its

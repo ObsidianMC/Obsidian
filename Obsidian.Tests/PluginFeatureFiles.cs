@@ -213,14 +213,13 @@ public class PluginFeatureFiles
             id => id == "featurefiles:ore_marker" || PluginFeatures.IsPlacedFeature(id));
 
         var logger = new ListLogger();
-        var current = PluginFeatures.Build(files, [marsh], [], logger);
+        var current = PluginFeatures.BuildRegistry(files, [marsh], [], logger).FeatureSet!;
         Assert.Empty(logger.Messages);
 
         var ore = current.PlacedFeatures["featurefiles:ore_marker"];
-        var coal = PlacedFeatures.All["minecraft:ore_coal_upper"];
+        var coal = current.FindPlaced("minecraft:ore_coal_upper");
         var ores = (int)DecorationStep.UndergroundOres;
 
-        Assert.Same(current.ConfiguredFeatures["featurefiles:ore_marker"], ore.Feature);
         Assert.Contains(ore, current.BiomeFeatures["minecraft:plains"][ores]);
         Assert.Contains(ore, current.BiomeFeatures["minecraft:dripstone_caves"][ores]);
         Assert.DoesNotContain(ore, current.BiomeFeatures["minecraft:nether_wastes"][ores]);
@@ -229,8 +228,9 @@ public class PluginFeatureFiles
         Assert.DoesNotContain(coal, current.BiomeFeatures["minecraft:plains"][ores]);
         Assert.Contains(coal, current.BiomeFeatures["minecraft:forest"][ores]);
 
+        // The marsh's inline feature, then the plugin's ore by identifier.
         var marshSteps = current.BiomeFeatures["featurefiles:marsh"];
-        Assert.Equal("minecraft:no_op", marshSteps[1][0].Feature.Type);
+        Assert.Equal(2, marshSteps[1].Count);
         Assert.Same(ore, marshSteps[1][1]);
 
         // Features are ordered once every modifier ran, and per dimension: removing a from forest resolves the
@@ -244,7 +244,7 @@ public class PluginFeatureFiles
         Assert.Equal([b, a], current.BiomeFeatures["minecraft:nether_wastes"][vegetal].TakeLast(2));
 
         // Without the removal, the overworld can't be ordered and is generated without the modifiers.
-        var cycle = PluginFeatures.Build(files[..^1], [], [], logger);
+        var cycle = PluginFeatures.BuildRegistry(files[..^1], [], [], logger).FeatureSet!;
         var cycleA = cycle.PlacedFeatures["featurefiles:a"];
 
         Assert.Single(logger.Messages);
@@ -258,10 +258,9 @@ public class PluginFeatureFiles
         Assert.True(HasDiamondBlocks(chunks.Get(0, 0)));
 
         // Once the plugin is gone, vanilla's features are back, and the builder places them in new chunks.
-        current = PluginFeatures.Build([], [], [], NullLogger.Instance);
         native = PluginFeatures.BuildRegistry([], [], [], NullLogger.Instance);
+        current = native.FeatureSet!;
 
-        Assert.Same(BiomeFeatures.All, current.BiomeFeatures);
         Assert.Empty(current.PlacedFeatures);
         Assert.False(HasDiamondBlocks(chunks.Get(8, 8)));
     }
@@ -290,31 +289,28 @@ public class PluginFeatureFiles
         ];
 
         var logger = new ListLogger();
-        var current = PluginFeatures.Build(files, [], types, logger);
+        var native = PluginFeatures.BuildRegistry(files, [], types, logger);
+        var current = native.FeatureSet!;
         Assert.Empty(logger.Messages);
 
         // Their properties are read like vanilla types': a number is a constant int provider, and a block set a list
-        // of blocks and tags.
-        var pillar = current.PlacedFeatures["probe:pillar"];
-        var feature = Assert.IsType<ProbePillarFeature>(pillar.Feature);
+        // of blocks and tags. The placement modifier places the pillar where it generates.
+        var feature = Assert.IsType<ProbePillarFeature>(current.FindConfigured("probe:pillar"));
 
         Assert.Equal(8, feature.Height.MaxValue);
         Assert.Equal(["minecraft:stone", "#minecraft:deepslate_ore_replaceables"], feature.Replaceable.Entries);
-        Assert.Equal(-4, Assert.IsType<ProbeAtHeight>(pillar.Placement[0]).Y);
 
-        var native = PluginFeatures.BuildRegistry(files, [], types, NullLogger.Instance);
         var builder = BiomeTerrain.Create(WorldgenDimension.Overworld, 1234,
             featureSource: () => native);
         var chunks = new NativeChunks(builder);
         Assert.True(HasDiamondBlocks(chunks.Get(0, 0)));
 
         // Once the plugin is gone, so are its types and the features made of them.
-        current = PluginFeatures.Build(files, [], [], logger);
-        native = PluginFeatures.BuildRegistry(files, [], [], NullLogger.Instance);
+        native = PluginFeatures.BuildRegistry(files, [], [], logger);
+        current = native.FeatureSet!;
 
-        Assert.Contains(logger.Messages, message => message.Contains("probe:pillar isn't a feature type"));
+        Assert.Contains(logger.Messages, message => message.Contains("probe:pillar isn't a valid feature"));
         Assert.Empty(current.PlacedFeatures);
-        Assert.Same(BiomeFeatures.All, current.BiomeFeatures);
         Assert.False(HasDiamondBlocks(chunks.Get(8, 8)));
     }
 

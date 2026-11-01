@@ -1,40 +1,6 @@
 namespace Obsidian.WorldData.Generators.Mojang;
 
 /// <summary>
-/// Decides which fluid (or air) fills a non-solid position during terrain fill.
-/// </summary>
-internal interface IAquifer
-{
-    /// <summary>
-    /// Gets the block for a position with the given final density, or <c>null</c> to keep it solid
-    /// (which lets ore veins or the default block fill it).
-    /// </summary>
-    public IBlock? ComputeSubstance(int x, int y, int z, double density);
-
-    /// <summary>
-    /// Whether the last <see cref="ComputeSubstance"/> call produced a fluid that needs a tick to settle.
-    /// </summary>
-    public bool ShouldScheduleFluidUpdate { get; }
-
-    /// <summary>
-    /// Clears <see cref="ShouldScheduleFluidUpdate"/>, as if no position had been computed yet.
-    /// </summary>
-    public void ResetFluidUpdate();
-
-    /// <summary>
-    /// Above this Y, <see cref="ComputeSubstance"/> gives non-solid positions the global fluid picker's block and schedules
-    /// nothing.
-    /// </summary>
-    public int GlobalFluidAboveY { get; }
-
-    /// <summary>
-    /// Makes the aquifer serve chunk (<paramref name="chunkX"/>, <paramref name="chunkZ"/>) as if it were new; its noise
-    /// chunk must have moved there already.
-    /// </summary>
-    public void MoveTo(int chunkX, int chunkZ);
-}
-
-/// <summary>
 /// A fluid surface: <see cref="FluidType"/> below <see cref="FluidLevel"/>, air at or above it.
 /// </summary>
 internal readonly record struct FluidStatus(int FluidLevel, IBlock FluidType)
@@ -73,35 +39,5 @@ internal static class Aquifers
         var lavaCeiling = Math.Min(-54, seaLevel);
 
         return (_, y, _) => y < lavaCeiling ? lava : sea;
-    }
-
-    /// <summary>
-    /// Creates the aquifer for a chunk, or a sea-level-only aquifer when the settings disable aquifers.
-    /// </summary>
-    public static IAquifer Create(NoiseChunk noiseChunk, int chunkX, int chunkZ, FluidPicker fluidPicker) =>
-        noiseChunk.RandomState.Settings.AquifersEnabled
-            ? new NoiseBasedAquifer(noiseChunk, chunkX, chunkZ, fluidPicker)
-            : new DisabledAquifer(fluidPicker);
-
-    private sealed class DisabledAquifer : IAquifer
-    {
-        private readonly FluidPicker fluidPicker;
-
-        public bool ShouldScheduleFluidUpdate => false;
-
-        public int GlobalFluidAboveY => int.MinValue;
-
-        public DisabledAquifer(FluidPicker fluidPicker) => this.fluidPicker = fluidPicker;
-
-        public void ResetFluidUpdate()
-        {
-        }
-
-        public void MoveTo(int chunkX, int chunkZ)
-        {
-        }
-
-        public IBlock? ComputeSubstance(int x, int y, int z, double density) =>
-            density > 0.0 ? null : this.fluidPicker(x, y, z).At(y);
     }
 }

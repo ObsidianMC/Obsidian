@@ -28,7 +28,7 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Data packs' and plugins' files overriding vanilla's entries, like vanilla's data packs. The golden chunk tests check
+/// Data packs' and plugins' files overriding vanilla's entries, like vanilla's data packs. The vanilla replays check
 /// that worlds without overrides generate as before.
 /// </summary>
 /// <remarks>
@@ -59,46 +59,6 @@ public sealed class WorldgenOverrides : IDisposable
     }
 
     [Trait("Category", TestCategory.Worldgen)]
-    [Fact]
-    public void NativeRegistryAppliesCannotChangeLegacyReplays()
-    {
-        var legacy = new ChunkBuilder(MojangDimension.Overworld, 12345L, generateStructures: false);
-        Assert.True(PluginFeatures.Apply([], [], [], new HashSet<string>(), NullLogger.Instance));
-        PluginStructures.Apply([], [], PluginFeatures.CurrentRegistry.FeatureSet!, [], NullLogger.Instance);
-
-        var carved = Generate(-5, -5);
-        var reference = VanillaWorldgenCaptures.Cases("decoratedChunks")
-            .First(entry => entry.GetProperty("seed").GetInt64() == 12345L);
-        var x = reference.GetProperty("chunkX").GetInt32();
-        var z = reference.GetProperty("chunkZ").GetInt32();
-        var area = new Dictionary<(int X, int Z), IChunk>();
-        for (var dx = -1; dx <= 1; dx++)
-        {
-            for (var dz = -1; dz <= 1; dz++)
-                area[(x + dx, z + dz)] = Generate(x + dx, z + dz);
-        }
-
-        // A retained builder must keep legacy carvers and feature adapters after the live snapshots change.
-        legacy.Decorate(area, x, z);
-        Assert.Equal(VanillaWorldgenCaptures.Chunk("carvedChunks", 12345L, -5, -5)
-            .GetProperty("blocks").GetString(), Hash(carved));
-        Assert.Equal(reference.GetProperty("blocks").GetString(), Hash(area[(x, z)]));
-
-        Chunk Generate(int cx, int cz)
-        {
-            var chunk = new Chunk(cx, cz);
-            legacy.PopulateBiomes(chunk);
-            legacy.Generate3DTerrain(chunk);
-            legacy.ApplySurfaceRules(chunk);
-            legacy.ApplyCarvers(chunk);
-            return chunk;
-        }
-
-        static string Hash(IChunk chunk) => Convert.ToHexStringLower(SHA256.HashData(
-            Encoding.UTF8.GetBytes(VanillaWorldGeneration.BlockNames(chunk))));
-    }
-
-    [Trait("Category", TestCategory.Worldgen)]
     [Fact(DisplayName = "A data pack overriding the overworld's parameter list generates the nether's biomes there")]
     public void DataPackOverridesTheOverworldsParameterList()
     {
@@ -123,69 +83,16 @@ public sealed class WorldgenOverrides : IDisposable
         Assert.NotNull(PluginDimensions.ReadVanilla("minecraft:overworld", WorldgenNoise.Vanilla));
 
         var overworld = PluginDimensions.ReadVanilla("minecraft:overworld", noise)!.Dimension.Noise();
-        Assert.Equal(MultiNoiseBiomeSource.NetherBiomes, overworld.PossibleBiomes);
+        Assert.Equal(WorldgenDimension.Nether.PossibleBiomes, overworld.PossibleBiomes);
         Assert.Equal("minecraft:overworld", overworld.SettingsId);
 
         // Without features, so the chunk is only the terrain and biomes.
-        var noFeatures = new WorldgenFeatureSet(
-            FrozenDictionary<string, ConfiguredFeatureBase>.Empty,
-            FrozenDictionary<string, PlacedFeature>.Empty,
-            FrozenDictionary<string, IReadOnlyList<IReadOnlyList<PlacedFeature>>>.Empty,
-            FrozenDictionary<PlacedFeature, ImmutableArray<PluginContainer>>.Empty);
-
         var builder = BiomeTerrain.Create(overworld, 1234);
         var chunk = new WorldData.Chunk(0, 0);
         builder.Generate(chunk);
 
-        Assert.Contains(chunk.GetBiome(0, 64, 0), MultiNoiseBiomeSource.NetherBiomes);
+        Assert.Contains(chunk.GetBiome(0, 64, 0), WorldgenDimension.Nether.PossibleBiomes);
         Assert.Single(logger.Messages, message => message.Contains("notes"));
-    }
-
-    [Fact(DisplayName = "Overriding a vanilla configured feature changes the vanilla placed features biomes place")]
-    public void OverridesReachVanillaFeaturesNamingThem()
-    {
-        const string emeraldOre = """
-            {
-              "type": "minecraft:ore",
-              "config": {
-                "size": 4,
-                "discard_chance_on_air_exposure": 0,
-                "targets": [
-                  {
-                    "target": { "predicate_type": "minecraft:tag_match", "tag": "minecraft:stone_ore_replaceables" },
-                    "state": { "Name": "minecraft:emerald_block" }
-                  }
-                ]
-              }
-            }
-            """;
-
-        var logger = new PluginFeatureFiles.ListLogger();
-        var file = PluginFeatures.Parse(
-            PluginFeatures.ConfiguredFeature,
-            "minecraft:ore_diamond_small",
-            "test",
-            Encoding.UTF8.GetBytes(emeraldOre));
-
-        var features = PluginFeatures.Build([file], [], [], logger, [MojangDimension.Overworld]);
-        Assert.Empty(logger.Messages);
-
-        var placed = features.BiomeFeatures["minecraft:plains"]
-            .SelectMany(step => step)
-            .Single(feature => feature.Identifier == "minecraft:ore_diamond");
-
-        // The vanilla placed feature naming it is read again around the override; unrelated ones stay compiled.
-        Assert.NotSame(PlacedFeatures.All["minecraft:ore_diamond"], placed);
-        Assert.Same(features.ConfiguredFeatures["minecraft:ore_diamond_small"], placed.Feature);
-        Assert.Contains(
-            PlacedFeatures.All["minecraft:ore_coal_upper"],
-            features.BiomeFeatures["minecraft:plains"].SelectMany(step => step));
-
-        // What places a feature by identifier, like the pale oak's moss decorator, finds the override too.
-        Assert.Same(placed.Feature, features.FindConfigured("minecraft:ore_diamond_small"));
-        Assert.Same(
-            ConfiguredFeatures.All["minecraft:pale_moss_patch"],
-            features.FindConfigured("minecraft:pale_moss_patch"));
     }
 
     [Trait("Category", TestCategory.Worldgen)]
@@ -407,7 +314,7 @@ public sealed class WorldgenOverrides : IDisposable
             PluginNoise.Apply([pluginList, packList], [], logger);
             PluginDimensions.Apply([file], logger);
 
-            Assert.Equal(MultiNoiseBiomeSource.NetherBiomes, PluginDimensions.Find(identifier).Noise().PossibleBiomes);
+            Assert.Equal(WorldgenDimension.Nether.PossibleBiomes, PluginDimensions.Find(identifier).Noise().PossibleBiomes);
 
             // Another plugin's stem wins, then that plugin unloads: the first stem wins again, read from its bytes.
             var fixedStem = stem.Replace(
@@ -423,7 +330,7 @@ public sealed class WorldgenOverrides : IDisposable
             var dimension = PluginDimensions.Find(identifier).Noise();
 
             Assert.False(dimension.IsReleased);
-            Assert.Equal(MultiNoiseBiomeSource.NetherBiomes, dimension.PossibleBiomes);
+            Assert.Equal(WorldgenDimension.Nether.PossibleBiomes, dimension.PossibleBiomes);
         }
         finally
         {

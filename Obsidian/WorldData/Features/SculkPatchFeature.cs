@@ -91,7 +91,8 @@ public sealed class SculkPatchFeature : ConfiguredFeatureBase
 /// World generation settings: replaceable tag <c>sculk_replaceable_world_gen</c>, growth spawn cost 50, no-growth radius 1,
 /// charge decay rate 5, additional decay rate 10; cursors never merge. The 26.3 caller supplies current tags,
 /// confines cursor candidates to 12 horizontal blocks, discharges stranded cursors and marks vein spreads.
-/// The live 1.21.11 caller retains its legacy movement and marking rules.
+/// The built-in configured feature (<see cref="SculkPatchFeature"/>), which only plugins' features still read, keeps
+/// 1.21.11's movement and marking rules.
 /// </remarks>
 internal sealed class SculkSpreader
 {
@@ -136,8 +137,8 @@ internal sealed class SculkSpreader
 
     public SculkSpreader()
         : this(
-            LegacyWorldgenTags.Blocks("sculk_replaceable_world_gen").ContainsRegistryId,
-            LegacyWorldgenTags.Blocks("sculk_replaceable").ContainsRegistryId, currentWorldgen: false)
+            WorldgenTags.Blocks("sculk_replaceable_world_gen").Selected.ContainsRegistryId,
+            WorldgenTags.Blocks("sculk_replaceable").Selected.ContainsRegistryId, currentWorldgen: false)
     {
     }
 

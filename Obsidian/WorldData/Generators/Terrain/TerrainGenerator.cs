@@ -6,8 +6,8 @@ using Obsidian.WorldData.Generators.Terrain.Carvers;
 namespace Obsidian.WorldData.Generators.Terrain;
 
 /// <summary>
-/// The 26.3 terrain status, built alongside the live 1.21.11 generator. Biomes and structure density are explicit
-/// inputs: their Phase 5 steps can supply them without changing the order of terrain's fill, materials and carving.
+/// The 26.3 terrain status. Biomes and structure density are explicit inputs, which <see cref="Biomes.BiomeTerrain"/>
+/// supplies without changing the order of terrain's fill, materials and carving.
 /// </summary>
 internal sealed class TerrainGenerator
 {

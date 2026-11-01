@@ -1,40 +1,25 @@
-using Obsidian.API.Registries;
-
 namespace Obsidian.API.World.Features;
 
-/// <summary>Version-specific tags in algorithms shared with the retained 1.21.11 replay pipeline.</summary>
+/// <summary>
+/// The block and biome tags worldgen code reads by name, under the names 26.3 gives them.
+/// </summary>
 internal static class WorldgenTags
 {
-    [ThreadStatic]
-    private static bool legacy;
-
-    public static bool IsLegacy => legacy;
-
-    public static Scope UseLegacy(bool enabled) => new(enabled);
-
-    public readonly struct Scope : IDisposable
-    {
-        private readonly bool previous;
-
-        public Scope(bool enabled)
-        {
-            this.previous = legacy;
-            legacy = enabled;
-        }
-
-        public void Dispose() => legacy = this.previous;
-    }
-
+    /// <summary>
+    /// A block tag by its worldgen name, which 26.3 may have renamed (see <see cref="CurrentName"/>).
+    /// </summary>
+    /// <param name="path">The tag's name, under <c>minecraft</c>.</param>
+    /// <param name="current">The tag's 26.3 name, when it isn't <paramref name="path"/> or its usual renaming.</param>
     public static BlockGroup Blocks(string path, string? current = null) => new(path, current);
 
+    /// <summary>
+    /// A biome tag by name.
+    /// </summary>
     public static BiomeGroup Biomes(string path) => new(path);
 
     internal sealed class BlockGroup(string path, string? currentPath = null)
     {
-        private readonly BlockSet current = new($"#minecraft:{currentPath ?? CurrentName(path)}");
-        private readonly Lazy<BlockSet> previous = new(() => LegacyWorldgenTags.Blocks(path));
-
-        public BlockSet Selected => legacy ? this.previous.Value : this.current;
+        public BlockSet Selected { get; } = new($"#minecraft:{currentPath ?? CurrentName(path)}");
 
         public bool Contains(IBlock block) => this.Selected.Contains(block);
     }
@@ -42,10 +27,8 @@ internal static class WorldgenTags
     internal sealed class BiomeGroup(string path)
     {
         private readonly BiomeSet current = new($"#minecraft:{path}");
-        private readonly Lazy<BiomeSet> previous = new(() => LegacyWorldgenTags.Biomes(path));
 
-        public bool Contains(Obsidian.API.Registry.Codecs.Biomes.BiomeCodec biome) =>
-            (legacy ? this.previous.Value : this.current).Contains(biome);
+        public bool Contains(Obsidian.API.Registry.Codecs.Biomes.BiomeCodec biome) => this.current.Contains(biome);
     }
 
     private static string CurrentName(string path) => path switch

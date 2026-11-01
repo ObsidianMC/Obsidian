@@ -109,4 +109,5 @@ public sealed record IntegratedEvent(string Event)
     public static IntegratedEvent Stats(double tickMs) => new("stats") { TickMs = Math.Round(tickMs, 1) };
     public static IntegratedEvent Stopping() => new("stopping");
     public static IntegratedEvent Crashed(string message) => new("crashed") { Message = message };
+    public static IntegratedEvent LoadFailed(string message) => new("loadFailed") { Message = message };
 }

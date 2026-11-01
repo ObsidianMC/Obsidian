@@ -58,21 +58,20 @@ jobs:
       with:
         distribution: temurin
         java-version: 25
-    - name: Read the Minecraft versions
+    - name: Read the Minecraft version
       id: versions
       run: |
         project=Obsidian/Obsidian.csproj
         echo "current=$(sed -nE 's|.*<MinecraftVersion>([^<]+)<.*|\1|p' "$project")" >> "$GITHUB_OUTPUT"
-        echo "legacy=$(sed -nE 's|.*<LegacyMinecraftVersion>([^<]+)<.*|\1|p' "$project")" >> "$GITHUB_OUTPUT"
     - name: Cache the vanilla downloads
       # The server jars, Mojang's generated data (the asset generator's cache) and the structure templates the tests
-      # extract only change with the versions, so later runs skip downloading them and running the data generators.
+      # extract only change with the version, so later runs skip downloading them and running the data generators.
       uses: actions/cache@v4
       with:
         path: |
           ~/.cache/obsidian
           /tmp/obsidian-tests/cache
-        key: vanilla-v1-${{ runner.os }}-${{ steps.versions.outputs.current }}-${{ steps.versions.outputs.legacy }}
+        key: vanilla-v1-${{ runner.os }}-${{ steps.versions.outputs.current }}
     - name: Build
       run: dotnet build --configuration Release
     - name: Test

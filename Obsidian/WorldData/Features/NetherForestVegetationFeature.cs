@@ -6,7 +6,7 @@ namespace Obsidian.WorldData.Features;
 [ConfiguredFeatureClass("minecraft:nether_forest_vegetation")]
 public sealed class NetherForestVegetationFeature : ConfiguredFeatureBase
 {
-    private static readonly BlockSet nylium = LegacyWorldgenTags.Blocks("nylium");
+    private static readonly BlockSet nylium = WorldgenTags.Blocks("nylium").Selected;
 
     public override string Type => "minecraft:nether_forest_vegetation";
 

@@ -360,13 +360,10 @@ internal sealed partial class WorldgenReader
         return min <= max ? [min, max] : throw Error(path, $"min {min} is above max {max}");
     }
 
+    // Without a reader's own lookups, there are no named entries: the 26.3 pipeline gives its readers theirs.
     private static IDensityFunction VanillaDensityFunction(string identifier) =>
-        NoiseRegistry.DensityFunctions.All.TryGetValue(identifier, out var function)
-            ? function
-            : throw new InvalidDataException($"{identifier} isn't a density function");
+        throw new InvalidDataException($"{identifier} isn't a density function");
 
     private static BaseNoise VanillaNoise(string identifier) =>
-        NoiseRegistry.Noises.All.TryGetValue(identifier, out var noise)
-            ? noise
-            : throw new InvalidDataException($"{identifier} isn't a noise");
+        throw new InvalidDataException($"{identifier} isn't a noise");
 }

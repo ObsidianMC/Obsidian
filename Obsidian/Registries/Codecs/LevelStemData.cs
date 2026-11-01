@@ -18,15 +18,16 @@ namespace Obsidian.Registries.Codecs;
 /// </summary>
 /// <remarks>
 /// <para>
-/// A stem is <c>{"type": dimension type, "generator": {...}}</c>. The generator is one of vanilla's:
-/// <c>minecraft:noise</c>, with vanilla's or plugins' noise settings and any of vanilla's biome sources
-/// (<c>minecraft:multi_noise</c>, an inline <c>biomes</c> list or a <c>preset</c>, <c>minecraft:fixed</c>,
-/// <c>minecraft:checkerboard</c> and <c>minecraft:the_end</c>) or the biome source types plugins registered;
-/// <c>minecraft:flat</c>, with its layers and biome; or <c>minecraft:debug</c>. As Obsidian's extension, it may also
-/// name a loaded plugin's level generator (see <see cref="PluginGenerators"/>).
+/// A stem is <c>{"type": dimension type, "generator": {...}}</c>. <see cref="Read"/> takes the generators other than
+/// <c>minecraft:noise</c>: <c>minecraft:flat</c>, with its layers and biome; <c>minecraft:debug</c>; or, as Obsidian's
+/// extension, a loaded plugin's level generator (see <see cref="PluginGenerators"/>). A <c>minecraft:noise</c>
+/// generator is read by the 26.3 pipeline (<see cref="WorldgenDimension.Read"/>), with its biome source read here
+/// (see <see cref="ReadLayout"/>): <c>minecraft:multi_noise</c> (an inline <c>biomes</c> list or a <c>preset</c>),
+/// <c>minecraft:fixed</c>, <c>minecraft:checkerboard</c>, <c>minecraft:the_end</c> or the biome source types plugins
+/// registered.
 /// </para>
 /// <para>
-/// Noise settings and parameter lists may be named or defined inline. Dimension types and biomes are named here:
+/// Parameter lists may be named or defined inline. Dimension types and biomes are named here:
 /// those a stem defines inline are entries of their own, named for the stem (see <see cref="LevelStemInline"/>).
 /// Values are checked like vanilla's codecs check them, and references must exist; a stem vanilla would accept but
 /// Obsidian can't generate is rejected with a message saying so.
@@ -41,18 +42,13 @@ internal static partial class LevelStemData
     private const int MaxLayerHeight = 4064;
 
     /// <summary>
-    /// Reads a level stem.
+    /// Reads a level stem whose generator isn't <c>minecraft:noise</c>.
     /// </summary>
     /// <param name="identifier">The stem's identifier, which names its dimension.</param>
-    /// <param name="noise">The noise settings and worldgen types the stem can name.</param>
-    /// <param name="entries">Gets the noise entries the stem reads: its noise settings, and the density functions
-    /// and noises its biome source and inline noise settings name.</param>
     /// <exception cref="InvalidDataException">The stem isn't valid, or Obsidian can't generate it.</exception>
-    public static LevelStem Read(
-        string identifier,
-        JsonElement root,
-        WorldgenNoise noise,
-        ISet<object>? entries = null)
+    /// <exception cref="ArgumentException">The stem's generator is <c>minecraft:noise</c>, which
+    /// <see cref="WorldgenDimension.Read"/> reads.</exception>
+    public static LevelStem Read(string identifier, JsonElement root)
     {
         CodecJson.Object(root, "");
 
@@ -62,7 +58,9 @@ internal static partial class LevelStemData
 
         return type switch
         {
-            "minecraft:noise" => Noise(identifier, dimensionType, generator, noise, entries),
+            "minecraft:noise" => throw new ArgumentException(
+                "minecraft:noise stems are read by WorldgenDimension.Read",
+                nameof(root)),
             "minecraft:flat" => new FlatStem(identifier, dimensionType, Flat(generator)),
             "minecraft:debug" => new DebugStem(identifier, dimensionType),
             _ when PluginGenerators.Find(type) is not null =>
@@ -163,101 +161,6 @@ internal static partial class LevelStemData
         return CodecRegistry.Biomes.Plains;
     }
 
-    private static MojangDimension Noise(
-        string identifier,
-        string dimensionType,
-        JsonElement generator,
-        WorldgenNoise noise,
-        ISet<object>? entries)
-    {
-        const string settingsPath = "generator.settings";
-
-        // The plugins whose code generating runs: those whose types the settings and the biome source are made of.
-        var plugins = new HashSet<PluginContainer>();
-        var (settingsId, settings) = NoiseSettings(CodecJson.Required(generator, "generator", "settings"));
-        entries?.Add(settings);
-
-        // The noises the surface builder reads by name are read too, as the dimension keeps the files' ones.
-        foreach (var name in SurfaceBuilder.NamedNoises)
-        {
-            if (noise.Noises.TryGetValue(name, out var named))
-                entries?.Add(named);
-        }
-
-        var (createSource, possibleBiomes) = BiomeSource(
-            CodecJson.Required(generator, "generator", "biome_source"),
-            "generator.biome_source",
-            noise,
-            plugins,
-            entries);
-
-        CodecRegistry.TryGetDimension(dimensionType, out var codec);
-        if (OutsideBuildRange(settingsId ?? "the inline noise settings", settings, codec!) is string outside)
-            throw CodecJson.Error(settingsPath, outside);
-
-        return new MojangDimension(
-            identifier,
-            dimensionType,
-            settingsId,
-            settings,
-            createSource,
-            possibleBiomes,
-            [.. plugins],
-            noise.Noises);
-
-        // Noise settings by identifier, vanilla's or a plugin's, or defined inline like vanilla's registry file codec
-        // allows: read like a plugin's noise_settings file, whose density functions may be named or inline too.
-        (string? Identifier, NoiseSetting Settings) NoiseSettings(JsonElement value)
-        {
-            if (value.ValueKind == JsonValueKind.Object)
-                return (null, noise.Reader(plugins, entries).Read<NoiseSetting>(value, settingsPath));
-
-            var id = CodecJson.Identifier(value, settingsPath);
-            if (noise.TryGetNoiseSettings(id, out var found))
-            {
-                plugins.UnionWith(noise.Owners(found));
-                return (id, found);
-            }
-
-            var vanilla = string.Join(", ", NoiseRegistry.NoiseSettings.All.Keys.Order());
-
-            throw CodecJson.Error(
-                settingsPath,
-                $"{id} isn't one of vanilla's noise settings ({vanilla}) or a loaded plugin's");
-        }
-    }
-
-    /// <summary>
-    /// Says how noise settings generate outside a dimension type's build range, or gives null when they fit.
-    /// </summary>
-    /// <remarks>
-    /// Obsidian's terrain generator fills every cell of the noise settings, so they must lie in the build range;
-    /// vanilla clamps generation to it instead. Like vanilla's, the lowest cell is the one holding <c>min_y</c>, so a
-    /// <c>min_y</c> that isn't a multiple of the cell height (<c>size_vertical</c> * 4) fills from below it: with
-    /// <c>size_vertical</c> 3, overworld settings fill from y -72. Vanilla's own pairings all fit.
-    /// </remarks>
-    /// <param name="name">The noise settings' name, for the message.</param>
-    public static string? OutsideBuildRange(string name, NoiseSetting settings, DimensionCodec type)
-    {
-        var noise = settings.Noise;
-        var range = type.Element;
-
-        // The lowest filled block, as NoiseChunk.CellNoiseMinY rounds it; the highest is at most the noise's top.
-        var cellHeight = noise.SizeVertical * 4;
-        var lowest = Mth.FloorDiv(noise.MinY, cellHeight) * cellHeight;
-        var top = noise.MinY + noise.Height;
-
-        if (lowest >= range.MinY && top <= range.MinY + range.Height)
-            return null;
-
-        var rounded = lowest < noise.MinY
-            ? $" (min_y {noise.MinY} rounded down to a whole cell of {cellHeight} blocks)"
-            : "";
-
-        return $"{name} generate from y {lowest}{rounded} to {top - 1}, outside the build range of "
-            + $"{type.Name} ({range.MinY} to {range.MinY + range.Height - 1})";
-    }
-
     // A dimension type by identifier: vanilla's or a plugin's, or one the stem defined inline (see LevelStemInline).
     internal static string DimensionType(JsonElement value, string path)
     {
@@ -268,78 +171,13 @@ internal static partial class LevelStemData
             : throw CodecJson.Error(path, $"{identifier} isn't a dimension type");
     }
 
-    /// <param name="plugins">Gets the plugins whose types a plugin's biome source is made of.</param>
-    /// <param name="entries">Gets the density functions and noises a plugin's biome source names.</param>
-    private static (Func<RandomState, IClimateBiomeSource> Create, Func<IReadOnlyList<BiomeCodec>> PossibleBiomes)
-        BiomeSource(
-            JsonElement value,
-            string path,
-            WorldgenNoise noise,
-            HashSet<PluginContainer> plugins,
-            ISet<object>? entries)
-    {
-        CodecJson.Object(value, path);
-        var typePath = CodecJson.Field(path, "type");
-        var type = CodecJson.Identifier(CodecJson.Required(value, path, "type"), typePath);
-
-        switch (type)
-        {
-            case "minecraft:fixed":
-            {
-                var biome = Biome(CodecJson.Required(value, path, "biome"), CodecJson.Field(path, "biome"));
-                var source = new FixedBiomeSource(biome);
-                return (_ => source, () => source.PossibleBiomes);
-            }
-            case "minecraft:checkerboard":
-            {
-                var biomes = BiomeList(CodecJson.Required(value, path, "biomes"), CodecJson.Field(path, "biomes"));
-                var scale = CodecJson.TryGet(value, "scale", out var scaleValue) ? scaleValue : (JsonElement?)null;
-                var source = new CheckerboardBiomeSource(biomes, Scale(scale));
-                return (_ => source, () => source.PossibleBiomes);
-            }
-            case "minecraft:multi_noise":
-                return MultiNoise(value, path, noise, entries);
-            case "minecraft:the_end":
-                return (randomState => new TheEndBiomeSource(randomState), () => TheEndBiomeSource.Biomes);
-            default:
-                if (noise.Types.Find(type, typeof(BiomeSourceBase)) is null)
-                {
-                    throw CodecJson.Error(
-                        typePath,
-                        $"{type} isn't a biome source type: expected minecraft:multi_noise, minecraft:fixed, "
-                        + "minecraft:checkerboard, minecraft:the_end or a type a plugin registered");
-                }
-
-                return PluginSource(value, path, noise, plugins, entries);
-        }
-    }
-
-    // A biome source type a plugin registered, read like its other worldgen types. Its possible biomes are read
-    // here, so that ordering features doesn't call the plugin. The plugins it's made of, counting those of the
-    // density functions and noises it names, are added to the dimension's.
-    private static (Func<RandomState, IClimateBiomeSource> Create, Func<IReadOnlyList<BiomeCodec>> PossibleBiomes)
-        PluginSource(
-            JsonElement value,
-            string path,
-            WorldgenNoise noise,
-            HashSet<PluginContainer> plugins,
-            ISet<object>? entries)
-    {
-        var (source, biomes) = ReadPluginSource(value, path, noise, plugins, entries);
-
-        return (randomState => new PluginBiomeSource(source, biomes, randomState), () => biomes);
-    }
-
     // A plugin's biome source with its possible biomes, read here so that ordering features doesn't call the plugin.
     private static (BiomeSourceBase Source, List<BiomeCodec> Biomes) ReadPluginSource(
         JsonElement value,
         string path,
-        WorldgenNoise noise,
-        HashSet<PluginContainer> plugins,
-        ISet<object>? entries,
-        WorldgenReader? reader = null)
+        WorldgenReader reader)
     {
-        var source = (reader ?? noise.Reader(plugins, entries)).Read<BiomeSourceBase>(value, path);
+        var source = reader.Read<BiomeSourceBase>(value, path);
         var biomesPath = CodecJson.Field(path, "possible_biomes");
         IReadOnlyList<string> names;
 
@@ -365,55 +203,6 @@ internal static partial class LevelStemData
             throw CodecJson.Error(biomesPath, $"{source.Type} has no possible biomes");
 
         return (source, biomes);
-    }
-
-    // Like vanilla's Codec.mapEither: an inline biomes list, or else a parameter list (a preset's).
-    private static (Func<RandomState, IClimateBiomeSource> Create, Func<IReadOnlyList<BiomeCodec>> PossibleBiomes)
-        MultiNoise(JsonElement value, string path, WorldgenNoise noise, ISet<object>? entries)
-    {
-        InvalidDataException? listError = null;
-
-        if (CodecJson.TryGet(value, "biomes", out var list))
-        {
-            try
-            {
-                var create = MultiNoiseBiomeSource.FromList(
-                    ParameterList(list, CodecJson.Field(path, "biomes")),
-                    out var possibleBiomes);
-
-                return (create, () => possibleBiomes);
-            }
-            catch (InvalidDataException ex)
-            {
-                listError = ex;
-            }
-        }
-
-        if (!CodecJson.TryGet(value, "preset", out var preset))
-            throw listError ?? CodecJson.Error(path, "expected a biomes list or a preset");
-
-        // A parameter list by identifier, vanilla's or a file's, or defined inline as vanilla's {"preset": ...}; either
-        // way it names a built-in preset.
-        var presetPath = CodecJson.Field(path, "preset");
-        ParameterListPreset parameters;
-
-        if (preset.ValueKind == JsonValueKind.Object)
-        {
-            parameters = ParameterListPreset.Read(preset, presetPath);
-        }
-        else
-        {
-            var identifier = CodecJson.Identifier(preset, presetPath);
-            if (!noise.TryGetParameterList(identifier, out var named))
-                throw CodecJson.Error(presetPath, $"{identifier} isn't a multi-noise parameter list");
-
-            parameters = named;
-            entries?.Add(parameters);
-        }
-
-        return parameters.Preset == "minecraft:nether"
-            ? (MultiNoiseBiomeSource.Nether, () => MultiNoiseBiomeSource.NetherBiomes)
-            : (MultiNoiseBiomeSource.Overworld, () => MultiNoiseBiomeSource.OverworldBiomes);
     }
 
     // Vanilla's Climate.ParameterList codec: a non-empty list of {"parameters": point, "biome": biome}.

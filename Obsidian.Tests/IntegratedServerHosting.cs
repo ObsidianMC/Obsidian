@@ -183,6 +183,37 @@ public sealed class IntegratedServerHosting : IDisposable
     }
 
     /// <summary>
+    /// A world the upgrade refuses, here one saved before Obsidian's vanilla-format saves, is a load failure the client is
+    /// told about, not a crash, and the server stops.
+    /// </summary>
+    [Fact]
+    public async Task RefusedWorldIsALoadFailure()
+    {
+        var world = Path.Combine(this.root, "saves", "Old");
+        await WorldFolders.WriteRegionAsync(Path.Combine(world, "region", "r.0.0.mca"), WorldFolders.Pre539Sections());
+
+        try
+        {
+            using var server = this.StartServer(world);
+
+            var failed = await server.WaitForEventAsync(
+                line => line.StartsWith("@obsidian:{\"event\":\"loadFailed\"", StringComparison.Ordinal));
+            await server.Run.WaitAsync(TimeSpan.FromMinutes(1));
+
+            using var document = JsonDocument.Parse(failed["@obsidian:".Length..]);
+            Assert.Contains(world, document.RootElement.GetProperty("message").GetString());
+            Assert.DoesNotContain(
+                server.DrainEvents(),
+                line => line.Contains("\"event\":\"crashed\"", StringComparison.Ordinal));
+        }
+        finally
+        {
+            // The failure sets the process's exit code, which the test run's own mustn't inherit.
+            Environment.ExitCode = 0;
+        }
+    }
+
+    /// <summary>
     /// Logs in over the loopback listener: a stranger is turned away before the world is open to LAN, the local player
     /// is asked for the join secret, and only the right secret logs them in with their own UUID.
     /// </summary>

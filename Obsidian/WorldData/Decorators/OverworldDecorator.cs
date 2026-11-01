@@ -104,7 +104,7 @@ public static class OverworldDecorator
         {
             var tree = features.Trees[i];
 
-            if (tree.Frequency == 0 || tree.Feature is null)
+            if (tree.Frequency == 0)
                 continue;
 
             // Use a different noisemap for each tree type by setting another Y value.
@@ -113,8 +113,9 @@ public static class OverworldDecorator
             bool isTree = noiseVal > 0.8 && noiseVal <= freq + 0.8;
             if (!isTree) { continue; }
 
-            // Vanilla tree features start at the first block above the ground.
-            tree.Feature.Place(new FeatureContext
+            // Vanilla tree features start at the first block above the ground. Placing through the feature set holds
+            // a call into the plugins a file overriding the tree is made of, and names them when it fails.
+            Registries.PluginFeatures.Current.PlaceConfigured(tree.Feature, new FeatureContext
             {
                 Level = level,
                 Origin = pos + Vector.Up,

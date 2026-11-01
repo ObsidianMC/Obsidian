@@ -22,11 +22,12 @@ public class DecoratorFeatures
         public int Frequency { get; set; }
 
         /// <summary>
-        /// The configured tree feature to place (usually a <c>minecraft:tree</c>).
+        /// The identifier of the configured tree feature to place, like <c>minecraft:oak</c>. It's looked up as it's
+        /// placed, so plugins' and data packs' files overriding it apply.
         /// </summary>
-        public ConfiguredFeatureBase? Feature { get; set; }
+        public string Feature { get; set; }
 
-        public TreeInfo(int frequency, ConfiguredFeatureBase feature)
+        public TreeInfo(int frequency, string feature)
         {
             Frequency = frequency;
             Feature = feature;

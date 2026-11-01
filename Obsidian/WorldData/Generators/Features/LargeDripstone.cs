@@ -8,7 +8,8 @@ internal sealed partial class FeatureRegistry
 {
     private Feature LargeDripstone(JsonElement json)
     {
-        // The cones are shared with the 1.21.11 feature, which takes the API's providers: plugins' types included.
+        // The cones are shared with the built-in configured feature, which takes the API's providers: plugins' types
+        // included.
         var reader = this.Reader;
         var cones = new DripstoneCones(
             this.Blocks(json.GetProperty("replaceable_blocks")), this.BlockTag("minecraft:base_stone_overworld"))

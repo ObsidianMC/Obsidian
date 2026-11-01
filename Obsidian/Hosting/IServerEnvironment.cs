@@ -24,4 +24,12 @@ public interface IServerEnvironment
     /// <returns></returns>
     public ValueTask OnServerCrashAsync(Exception e);
 
+    /// <summary>
+    /// Called when a world can't be loaded for a reason the server's operator can act on, such as a save the world
+    /// upgrade doesn't support: <paramref name="message"/> says why. The server should stop. By default, it's reported
+    /// like a crash.
+    /// </summary>
+    public ValueTask OnWorldLoadFailedAsync(string message) =>
+        this.OnServerCrashAsync(new InvalidOperationException(message));
+
 }

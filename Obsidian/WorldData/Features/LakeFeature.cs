@@ -16,8 +16,8 @@ public sealed class LakeFeature : ConfiguredFeatureBase
 
     public required IBlockStateProvider Barrier { get; init; }
 
-    private static readonly BlockSet featuresCannotReplace = LegacyWorldgenTags.Blocks("features_cannot_replace");
-    private static readonly BlockSet lavaPoolStoneCannotReplace = LegacyWorldgenTags.Blocks("lava_pool_stone_cannot_replace");
+    private static readonly BlockSet featuresCannotReplace = WorldgenTags.Blocks("features_cannot_replace").Selected;
+    private static readonly BlockSet lavaPoolStoneCannotReplace = WorldgenTags.Blocks("lava_pool_stone_cannot_replace").Selected;
 
     private static IBlock CaveAir => field ??= BlocksRegistry.CaveAir;
 

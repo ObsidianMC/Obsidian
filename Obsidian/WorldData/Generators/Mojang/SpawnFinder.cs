@@ -1,8 +1,9 @@
 namespace Obsidian.WorldData.Generators.Mojang;
 
 /// <summary>
-/// Vanilla's initial world spawn search (MinecraftServer.setInitialSpawn): a climate search for the spawn chunk, then
-/// a spiral over the chunks around it for a block a player can stand on.
+/// The second half of vanilla's initial world spawn search (MinecraftServer.setInitialSpawn): once the climate search
+/// (<see cref="Biomes.SpawnSearch"/>) picks the spawn chunk, a spiral over the chunks around it for a block a player
+/// can stand on.
 /// </summary>
 internal static class SpawnFinder
 {
@@ -15,21 +16,6 @@ internal static class SpawnFinder
     /// Half the side of the square of chunks searched around the climate spawn chunk.
     /// </summary>
     public const int ChunkSearchRadius = 5;
-
-    /// <summary>
-    /// Vanilla's <c>Climate.findSpawnPosition</c>: the block (with Y 0) whose climate best fits a spawn target, preferring
-    /// positions near the origin.
-    /// </summary>
-    public static (int X, int Z) FindClimateSpawn(IReadOnlyList<ParameterPoint> targets, ClimateSampler sampler)
-    {
-        if (targets.Count == 0)
-            return (0, 0);
-
-        var best = Evaluate(targets, sampler, 0, 0);
-        best = RadialSearch(targets, sampler, best, 2048.0f, 512.0f);
-        best = RadialSearch(targets, sampler, best, 512.0f, 32.0f);
-        return (best.X, best.Z);
-    }
 
     /// <summary>
     /// The chunk offsets vanilla visits around the climate spawn chunk, spiraling outwards over an 11x11 square.
@@ -109,46 +95,4 @@ internal static class SpawnFinder
 
         return chunk.MinY;
     }
-
-    private static Candidate RadialSearch(IReadOnlyList<ParameterPoint> targets, ClimateSampler sampler, Candidate best, float maxRadius,
-        float step)
-    {
-        // The float math matches vanilla's SpawnFinder.radialSearch.
-        var angle = 0.0f;
-        var radius = step;
-        var originX = best.X;
-        var originZ = best.Z;
-
-        while (radius <= maxRadius)
-        {
-            var x = originX + (int)(Math.Sin(angle) * radius);
-            var z = originZ + (int)(Math.Cos(angle) * radius);
-            var candidate = Evaluate(targets, sampler, x, z);
-            if (candidate.Fitness < best.Fitness)
-                best = candidate;
-
-            angle += step / radius;
-            if (angle > Math.PI * 2)
-            {
-                angle = 0.0f;
-                radius += step;
-            }
-        }
-
-        return best;
-    }
-
-    private static Candidate Evaluate(IReadOnlyList<ParameterPoint> targets, ClimateSampler sampler, int x, int z)
-    {
-        var sample = sampler.Sample(x >> 2, 0, z >> 2);
-        var point = sample with { Depth = 0L };
-        var fitness = long.MaxValue;
-
-        foreach (var target in targets)
-            fitness = Math.Min(fitness, target.Fitness(point));
-
-        return new Candidate(x, z, fitness * 2048L * 2048L + (long)x * x + (long)z * z);
-    }
-
-    private readonly record struct Candidate(int X, int Z, long Fitness);
 }
