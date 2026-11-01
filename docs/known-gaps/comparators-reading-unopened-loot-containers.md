@@ -3,7 +3,7 @@
 
 **Status:** deliberately narrowed to stored inventory contents.
 
-Vanilla 1.21.11's `AbstractContainerMenu.getRedstoneSignalFromContainer` reads slots via `getItem`, and
+Vanilla 26.3's `AbstractContainerMenu.getRedstoneSignalFromContainer` reads slots via `getItem`, and
 `RandomizableContainerBlockEntity.getItem` calls `RandomizableContainer.unpackLootTable(null)`. Obsidian's
 comparators instead read stored contents without rolling pending loot. Loot functions such as exploration maps
 can synchronously load structure chunks; doing that under the level's tick lock can deadlock chunk publication.

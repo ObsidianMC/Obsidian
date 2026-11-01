@@ -156,11 +156,10 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      extensible at runtime: plugins' entries get ids after vanilla's in the order they were first added, keep their id
      and instance across reloads (a reload replaces their data) and stay until the server stops, like items and
      blocks. The global biome palette's bits follow the registry's size, like vanilla's. Plugins' files are read and
-     checked like vanilla 1.21.11's codecs read a data pack's entries, environment attributes included (except
-     particles with options and rich bed rule messages), and are sent as vanilla's network codecs write what was read,
-     so vanilla clients always accept them; vanilla's entries are sent by name from the `minecraft:core` pack. A
-     change to these entries sends connected players back through configuration. Plugin biomes generate in plugins'
-     dimensions (slice 4a). The server applies only a dimension type's `monsters_burn` attribute and timelines tag
+     checked like vanilla 26.3's codecs read a data pack's entries, environment attributes, particle options and rich
+     bed rule messages included, and are sent as vanilla's network codecs write what was read, so vanilla clients
+     accept them; vanilla's entries are sent by name from the `minecraft:core` pack. A change to these entries sends
+     connected players back through configuration. Plugin biomes generate in plugins' dimensions (slice 4a). The server applies only a dimension type's `monsters_burn` attribute and timelines tag
      itself, for undead mobs burning by day.
    - Done: worldgen features. Plugins' `data/<namespace>/worldgen/configured_feature` and `placed_feature` files are
      read at runtime into the same objects the source generator makes of vanilla's features (a parity test reads all
@@ -344,7 +343,7 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
    - Worldgen gaps (done): what places a configured feature by identifier, like the pale oak's moss decorator,
      finds it through the current features, overrides included, as vanilla's registry lookups do (as do sapling
      growth and bone meal, since). The surface builder's named noises follow
-     overrides. Data packs' `overlays` for vanilla 1.21.11's format apply over their root, and their `filter` blocks
+     overrides. Data packs' `overlays` for vanilla 26.3's format apply over their root, and their `filter` blocks
      earlier packs' files, like vanilla. A vanilla world made with a data pack changing its overworld opens as an
      integrated server when the same overworld stem is loaded, with a clear error otherwise. Biome regions can be
      registered in code (`IPluginRegistry.RegisterBiomeRegion`, read like a region file), and take biome tags as
@@ -623,7 +622,7 @@ inventories, menus, rendering and more) is in [engine-foundations.md](engine-fou
      fields, and vanilla's `component` predicates and selects, `bundle/selected_item`, `compass`, `cooldown`,
      `crossbow/pull`, `use_cycle` and other GUI or input properties in the general evaluator. See
    - Done, engine phase 4 dimension effects: the client draws a dimension's sky, clouds and fog from its dimension
-     type's data, as vanilla 1.21.11 does, instead of its name: `skybox` (with the End's flashes and light tint for
+     type's data, as vanilla 26.3 does, instead of its name: `skybox` (with the End's flashes and light tint for
      `end`), the day timeline when its `timelines` tag holds it, and the `minecraft:visual/` attributes, clouds
      showing where `cloud_color`'s alpha isn't 0, at `cloud_height`. Types a server sends by name only use the
      client jar's data. `IClientRegistry.RegisterDimensionEffects` adds a cloud texture, and `IDimensionEffects` code

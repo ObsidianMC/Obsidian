@@ -672,7 +672,7 @@ rather than failing the whole save it's part of. The unmodeled vanilla types are
 Vanilla defines no persistent codec for `creative_slot_lock` or `map_post_processing`; like vanilla, saves leave
 those transient values out. Entity hover text needs a live entity in the current API and cannot be reconstructed
 as a modeled value from NBT; a component containing it stays as saved NBT. Legacy UUID and tooltip flags on component
-models have no fields in the 1.21.11 component format.
+models have no fields in the 26.3 component format.
 
 ### Creative tabs
 
@@ -1225,7 +1225,7 @@ a placement a mob follows its spawn list's rules, as above.
 Set `EntityProperties.SpawnEgg = true` when registering a mob to register `<namespace>:<path>_spawn_egg` too.
 `EntityDefinition.SpawnEgg` is its item; put it in a `CreativeTabProperties.Items` list. Both sides register it, so
 its item id and default `minecraft:entity_data` component agree. Supply `assets/<ns>/items/<path>_spawn_egg.json`,
-its model and its texture, just as for any item: vanilla 1.21.11 eggs have individual textures. ObsidianMod's
+its model and its texture, just as for any item: vanilla 26.3 eggs have individual textures. ObsidianMod's
 moth demonstrates all three and a creative tab. For an explicitly registered item, `ItemProperties.EntityData`
 sets the same component; its `RegistryId` is the mob type's id and `Data` holds additional saved fields.
 
@@ -1638,7 +1638,7 @@ await player.SendSoundAsync(effect);
 The identifier must be in the plugin's namespace. A fixed range is a finite, nonnegative number; null means variable
 range. Unloading removes the declaration and registering it on reload replaces its range under the same identifier.
 The returned value is a snapshot: obtain it again during each load. No numeric ids are assigned or synced. Vanilla
-1.21.11's sound holders permit zero followed by the identifier and optional range, and both positional and entity
+26.3's sound holders permit zero followed by the identifier and optional range, and both positional and entity
 sound packets already use this inline form. A sound-only plugin therefore allows vanilla clients, which hear the
 event if their resource packs provide it, and otherwise ignore it. Unlike this path, NeoForge registers and syncs
 `minecraft:sound_event` to send registry references; see `NeoForgeRegistriesSetup.java` in its
@@ -2129,7 +2129,7 @@ result each tick rather than retaining recipe values across reloads. Registratio
 plugin; unloading removes the serializer and its recipes, and refuses new calls while callbacks already running
 drain. Plugin recipe JSON is kept as host-owned data, so rebuilding snapshots never keeps an unloaded serializer alive.
 
-Custom types are server-side processing rules. Vanilla's 1.21.11 `UpdateRecipes` carries fixed input property sets
+Custom types are server-side processing rules. Vanilla's 26.3 `UpdateRecipes` carries fixed input property sets
 and stonecutter result displays; it has no field for arbitrary recipe types, serializers or matching. Custom types
 are therefore omitted from that packet, do not create a synced client registry and do not require modded clients
 on their own. A plugin with a custom screen can send its own display data over a negotiated payload channel, or as
@@ -2317,7 +2317,7 @@ accepts it and left out where vanilla would fail, with a message naming the fiel
 - A dimension type's `timelines` can only be a timeline tag, like `"#minecraft:in_overworld"`: the server sends clients
   the timeline tags but not the timelines.
 
-In 1.21.11 most of a biome's and dimension type's looks and rules moved into environment `attributes`: sky and fog
+In 26.3 most of a biome's and dimension type's looks and rules are in environment `attributes`: sky and fog
 colours, particles, music and ambient sounds, and rules like `gameplay/water_evaporates`, `gameplay/piglins_zombify`
 or `gameplay/bed_rule`. Older fields such as `effects.sky_color` or a dimension type's `ultrawarm` are unknown and
 ignored, as vanilla ignores them. Plugins can set all of vanilla's attributes, as a value or as
@@ -3361,7 +3361,7 @@ overworld instead of vanilla's. The data comes from two places:
   structure templates, noise settings, density functions, noises, parameter lists, level stems and tags (blocks,
   items, entity types, biomes, placed features and configured carvers), and loot tables. Other files, like recipes, are
   left out unread, and how many is logged. Like vanilla, a pack's `overlays` whose formats include vanilla
-  1.21.11's data pack format (94.1) are applied over its root, the last listed winning, with vanilla's checks of
+  26.3's data pack format (121.0) are applied over its root, the last listed winning, with vanilla's checks of
   `min_format`, `max_format` and `formats` (an overlays section that fails them is logged and not applied), and its
   `filter` blocks the files of the packs before it whose namespace and path match its patterns (vanilla's rule: any
   pattern's `namespace` and any pattern's `path`, matched anywhere in the text). Patterns are Java regular
