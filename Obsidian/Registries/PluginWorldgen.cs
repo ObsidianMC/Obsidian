@@ -36,8 +36,9 @@ internal static class PluginWorldgen
 
     private static readonly Lock reading = new();
 
-    // The data built from the files applied last, with the files it was built from.
-    private static (IReadOnlyList<CodecFile> Codecs, WorldgenNoise Noise, WorldgenData Data)? current;
+    // The data built from the files applied last, with the files it was built from: files hold data alone, unlike
+    // the WorldgenNoise they're from, whose plugins' types would stay loaded.
+    private static (IReadOnlyList<CodecFile> Codecs, IReadOnlyList<NoiseFile> Noise, WorldgenData Data)? current;
 
     // The dimensions read, which a plugin unloading releases; collected ones are dropped as they're found.
     private static ImmutableList<WeakReference<WorldgenDimension>> dimensions = [];
@@ -51,14 +52,14 @@ internal static class PluginWorldgen
         get
         {
             var codecs = PluginCodecs.Applied;
-            var noise = PluginNoise.Current;
+            var noise = PluginNoise.Current.Files;
 
             lock (reading)
             {
                 if (current is var (builtCodecs, builtNoise, built) && builtCodecs == codecs && builtNoise == noise)
                     return built;
 
-                var data = Layer(WorldgenData.Vanilla, codecs, noise.Files);
+                var data = Layer(WorldgenData.Vanilla, codecs, noise);
                 current = (codecs, noise, data);
 
                 return data;
@@ -153,6 +154,10 @@ internal static class PluginWorldgen
     /// </summary>
     public static void Release(PluginContainer plugin)
     {
+        // The data holds no plugin's code, but is built again from the files applied once the plugin is gone.
+        lock (reading)
+            current = null;
+
         foreach (var reference in Volatile.Read(ref dimensions))
         {
             if (reference.TryGetTarget(out var dimension) && dimension.Plugins.Contains(plugin))

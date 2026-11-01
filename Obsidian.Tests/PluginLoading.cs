@@ -861,6 +861,30 @@ public sealed class PluginLoading : IDisposable
 }
 
 /// <summary>
+/// The probe plugin's density function, which its noise settings' ore rule names: ore everywhere. It records that it
+/// was sampled in <see cref="AppContext"/> data.
+/// </summary>
+public sealed class ProbeOreDensity : IDensityFunction
+{
+    /// <summary>The noise settings file that makes the plugin register the type.</summary>
+    public const string SettingsFile = "data/probe/worldgen/noise_settings/ore_world.json";
+
+    public const string SampledKey = "Obsidian.Tests.ProbeOreDensity.Sampled";
+
+    public string Type => "probe:ore_density";
+
+    public double MinValue => 1.0;
+
+    public double MaxValue => 1.0;
+
+    public double GetValue(double x, double y, double z)
+    {
+        AppContext.SetData(SampledKey, true);
+        return 1.0;
+    }
+}
+
+/// <summary>
 /// The plugin that <see cref="PluginLoading"/> loads from the test assembly. It counts its event handler's calls in
 /// <see cref="AppContext"/> data, since its static fields belong to its own copy of the assembly. Its injected services
 /// have types from its own assembly, which mustn't be cached outside it.
@@ -925,6 +949,9 @@ public sealed class ProbePlugin : PluginBase
 
         if (this.Container.GetFileData("data/probe/recipe/press.json") is not null)
             this.PressType = pluginRegistry.RegisterRecipeType("probe:press", new ProbePressSerializer());
+
+        if (this.Container.GetFileData(ProbeOreDensity.SettingsFile) is not null)
+            pluginRegistry.RegisterWorldgenType<IDensityFunction, ProbeOreDensity>("probe:ore_density");
 
         pluginRegistry.MapEvent<ServerStatusRequestEventArgs>(_ =>
         {

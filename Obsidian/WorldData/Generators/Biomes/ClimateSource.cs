@@ -30,6 +30,13 @@ internal sealed class ClimateSource : IBiomeSource, IClimateSampler
     [ThreadStatic]
     private static CachedClimate[]? climateCache;
 
+    // Hands out each source's identity (see identity).
+    private static long lastIdentity;
+
+    // Tells this source's cached samples apart. Threads' caches hold it rather than the source, so that an idle
+    // thread's cache doesn't keep a discarded source, and the plugins' functions it samples, loaded.
+    private readonly long identity = Interlocked.Increment(ref lastIdentity);
+
     private readonly DensityFunction[] functions;
 
     private readonly BiomeLayout layout;
@@ -108,13 +115,13 @@ internal sealed class ClimateSource : IBiomeSource, IClimateSampler
         var slot = (int)(QuartHash(quartX, quartY, quartZ) & (ClimateCacheSize - 1));
         ref var entry = ref cache[slot];
 
-        if (entry.Source == this && entry.X == quartX && entry.Y == quartY && entry.Z == quartZ)
+        if (entry.Identity == this.identity && entry.X == quartX && entry.Y == quartY && entry.Z == quartZ)
         {
             return entry.Point;
         }
 
         var point = this.Sample(quartX, quartY, quartZ);
-        entry = new CachedClimate(this, quartX, quartY, quartZ, point);
+        entry = new CachedClimate(this.identity, quartX, quartY, quartZ, point);
 
         return point;
     }
@@ -411,7 +418,8 @@ internal sealed class ClimateSource : IBiomeSource, IClimateSampler
         return erosion < -0.21875f ? "minecraft:small_end_islands" : "minecraft:end_barrens";
     }
 
-    private readonly record struct CachedClimate(ClimateSource? Source, int X, int Y, int Z, TargetPoint Point);
+    // Identity 0 is no source's, so an empty slot never matches.
+    private readonly record struct CachedClimate(long Identity, int X, int Y, int Z, TargetPoint Point);
 
     private static BiomeCodec GetBiome(string name) => CodecRegistry.TryGetBiome(name, out var biome)
         ? biome!

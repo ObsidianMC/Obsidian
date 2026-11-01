@@ -67,6 +67,13 @@ internal sealed class WorldgenTypes
     }
 
     /// <summary>
+    /// The built-in types and only those of these registered types that are in <paramref name="used"/>, so that what
+    /// keeps the result doesn't keep the other plugins' types loaded.
+    /// </summary>
+    public WorldgenTypes Narrow(IReadOnlySet<Type> used) =>
+        With(this.registered.Values.SelectMany(list => list).Where(registration => used.Contains(registration.Type)));
+
+    /// <summary>
     /// The type a plugin registered with the identifier for exactly <paramref name="target"/>, or null; Obsidian's
     /// own types aren't looked at.
     /// </summary>

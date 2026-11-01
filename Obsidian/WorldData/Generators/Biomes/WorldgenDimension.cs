@@ -151,8 +151,10 @@ internal sealed class WorldgenDimension
     /// source types and parameter lists, <paramref name="noise"/>'s.
     /// </summary>
     /// <remarks>
-    /// Its noise settings are built once for a placeholder seed, which checks them like generating would and finds
-    /// the plugins whose density function types they're made of.
+    /// Its terrain is built once for a placeholder seed, which checks the noise settings like generating would and
+    /// finds the plugins whose density function types any of their functions are made of: the router's, the aquifers',
+    /// the material rules' and the spawn targets'. It keeps only those types (see
+    /// <see cref="PluginDensityTypes.Narrowed"/>).
     /// </remarks>
     /// <param name="identifier">The level stem's identifier.</param>
     /// <param name="stem">The stem file's bytes.</param>
@@ -212,10 +214,8 @@ internal sealed class WorldgenDimension
             data,
             plugins);
 
-        var densityTypes = new PluginDensityTypes(noise.Types);
-        var check = new DensityCompiler(data, 0L, settings.LegacyRandomSource, types: densityTypes);
-        DensityRouter.Create(settings, check);
-        plugins.UnionWith(densityTypes.Owners);
+        var densityTypes = FindDensityTypes(data, settings, noise);
+        plugins.UnionWith(densityTypes?.Owners ?? []);
 
         return new WorldgenDimension(
             identifier,
@@ -227,6 +227,25 @@ internal sealed class WorldgenDimension
             densityTypes,
             [.. plugins],
             regions);
+    }
+
+    // Builds every density function the dimension's terrain generator builds, for a placeholder seed, and gives the
+    // plugins' types they're made of, or null for none.
+    private static PluginDensityTypes? FindDensityTypes(
+        WorldgenData data,
+        NoiseGeneratorSettings settings,
+        WorldgenNoise noise)
+    {
+        var all = new PluginDensityTypes(noise.Types);
+        var terrain = new Terrain.TerrainGenerator(data, 0L, settings, types: all);
+
+        foreach (var target in settings.SpawnTargets)
+        {
+            foreach (var function in target.Keys)
+                terrain.Compiler.Function(function);
+        }
+
+        return all.Narrowed();
     }
 
     private InvalidOperationException Released() =>

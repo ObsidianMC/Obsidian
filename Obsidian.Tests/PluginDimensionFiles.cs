@@ -443,6 +443,8 @@ public sealed class PluginDimensionFiles : IDisposable
                 PluginNoise.Parse(PluginNoise.NoiseSettings, "probe:shelf_world", "test", Bytes(ShelfWorld26)),
                 PluginNoise.Parse(PluginNoise.NoiseSettings, "probe:failing_world", "test", Bytes(FailingWorld26)),
                 PluginNoise.Parse(PluginNoise.DensityFunction, "probe:ground", "test", Bytes(Ground26)),
+                PluginNoise.Parse(PluginNoise.DensityFunction, "probe:loop", "test", Bytes(Loop26)),
+                PluginNoise.Parse(PluginNoise.DensityFunction, "probe:loop_back", "test", Bytes("\"probe:loop\"")),
                 PluginNoise.Parse(PluginNoise.Noise, "probe:bumps", "test", Bytes(Bumps26))
             ],
             ProbeTypes(),
@@ -471,6 +473,18 @@ public sealed class PluginDimensionFiles : IDisposable
         var inline = Read26("stemfiles:inline", stem.Replace("\"probe:shelf_world\"", ShelfWorld26), noise, data);
         Assert.Null(inline.SettingsId);
         GenerateShelf(BiomeTerrain.Create(inline, 1234), 3);
+
+        // A dimension made of none of the plugins' types, like vanilla's own overworld, keeps none of them.
+        var overworldStem = PluginDimensions.VanillaStem("minecraft:overworld")!;
+        var overworld = PluginWorldgen.ReadDimension("minecraft:overworld", overworldStem, noise, data);
+        Assert.Empty(overworld.Plugins);
+        Assert.Null(overworld.DensityTypes);
+
+        // A function referring back to itself fails the dimension naming it, saying how, rather than the process.
+        var loopWorld = ShelfWorld26.Replace("\"probe:ground\"", "\"probe:loop\"");
+        var loopStem = stem.Replace("\"probe:shelf_world\"", loopWorld);
+        var loop = Assert.Throws<InvalidDataException>(() => Read26("stemfiles:loop", loopStem, noise, data));
+        Assert.Contains("probe:loop -> probe:loop_back -> probe:loop", loop.Message);
 
         // Settings in 1.21.11's schema don't read in 26.3's.
         Assert.Throws<InvalidDataException>(
@@ -586,6 +600,9 @@ public sealed class PluginDimensionFiles : IDisposable
     }
 
     private const string Bumps26 = """{ "base_octave": -4, "octave_count": 2 }""";
+
+    // Names probe:loop_back, which names it back.
+    private const string Loop26 = """{ "type": "minecraft:abs", "input": "probe:loop_back" }""";
 
     // Solid, from a plugin noise, at least 2.5 everywhere, in 26.3's schema.
     private const string Ground26 = """

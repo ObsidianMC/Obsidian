@@ -45,6 +45,9 @@ internal sealed class PluginDensityTypes(WorldgenTypes types) : IDensityTypes
 {
     private readonly ConcurrentDictionary<PluginContainer, byte> owners = new();
 
+    // Every type the functions built so far created, plugins' and Obsidian's.
+    private readonly ConcurrentDictionary<Type, byte> created = new();
+
     /// <summary>
     /// The plugins whose types the functions built so far are made of.
     /// </summary>
@@ -71,9 +74,30 @@ internal sealed class PluginDensityTypes(WorldgenTypes types) : IDensityTypes
         return new PluginDensityFunction(function);
     }
 
-    private void OnCreated(Type created)
+    /// <summary>
+    /// The types the functions built so far are made of, without the other types plugins registered, or null when
+    /// they're made of none: what a dimension keeps once it's read, so that it only keeps its own plugins' code
+    /// loaded. It builds the same functions from the same data.
+    /// </summary>
+    public PluginDensityTypes? Narrowed()
     {
-        if (WorldgenDependencies<PluginContainer>.Owner(created) is PluginContainer owner)
+        var used = types.Narrow(this.created.Keys.ToHashSet());
+        if (used == WorldgenTypes.BuiltIn)
+            return null;
+
+        var narrowed = new PluginDensityTypes(used);
+
+        foreach (var owner in this.owners.Keys)
+            narrowed.owners.TryAdd(owner, 0);
+
+        return narrowed;
+    }
+
+    private void OnCreated(Type type)
+    {
+        this.created.TryAdd(type, 0);
+
+        if (WorldgenDependencies<PluginContainer>.Owner(type) is PluginContainer owner)
             this.owners.TryAdd(owner, 0);
     }
 

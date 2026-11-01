@@ -30,6 +30,11 @@ internal sealed partial class DensityCompiler
     private readonly ConcurrentDictionary<string, NoiseStack> noises = new();
     private readonly ConcurrentDictionary<string, DensityFunction> functions = new();
 
+    // The registered functions this thread is compiling, outermost first (see EnterFunction). Entries leave as their
+    // compile ends, so it holds no compiler once a compile is done.
+    [ThreadStatic]
+    private static List<(DensityCompiler Compiler, string Id)>? compilingFunctions;
+
     /// <param name="legacyRandomSource">The noise settings' <c>legacy_random_source</c>.</param>
     /// <param name="types">The density function types beyond vanilla's that the JSON may name, such as plugins'
     /// (see <see cref="PluginDensityTypes"/>); none by default.</param>
@@ -56,15 +61,44 @@ internal sealed partial class DensityCompiler
     public IPositionalRandomFactory RandomFactory(string id) => this.random.FromHashOf(id).ForkPositional();
 
     /// <summary>A registered density function, such as <c>minecraft:overworld/continents</c>.</summary>
+    /// <exception cref="InvalidDataException">It isn't valid, or refers back to itself.</exception>
     public DensityFunction Function(string id)
     {
         if (this.functions.TryGetValue(id, out var function))
             return function;
 
         var json = this.data.Read("density_function", id);
-        function = this.Compile(json, id);
+        var qualified = WorldgenData.Qualify(id);
+        var compiling = this.EnterFunction(qualified);
+
+        try
+        {
+            function = this.Compile(json, id);
+        }
+        finally
+        {
+            compiling.RemoveAt(compiling.Count - 1);
+        }
 
         return this.functions.GetOrAdd(id, function);
+    }
+
+    // Notes that this thread compiles a registered function, inside those it's compiling already. Functions are only
+    // cached once compiled, so one that refers back to itself, which data packs can write, would recurse until the
+    // stack overflows: it's refused instead, naming the chain.
+    private List<(DensityCompiler Compiler, string Id)> EnterFunction(string id)
+    {
+        var compiling = compilingFunctions ??= [];
+        var start = compiling.FindIndex(entry => entry.Compiler == this && entry.Id == id);
+
+        if (start >= 0)
+        {
+            var chain = compiling.Skip(start).Where(entry => entry.Compiler == this).Select(entry => entry.Id);
+            throw new InvalidDataException($"{id} refers back to itself: {string.Join(" -> ", chain)} -> {id}");
+        }
+
+        compiling.Add((this, id));
+        return compiling;
     }
 
     /// <summary>A registered noise, seeded for this world.</summary>
