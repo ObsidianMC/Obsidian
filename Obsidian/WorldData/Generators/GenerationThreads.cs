@@ -28,6 +28,10 @@ internal sealed class GenerationThreads : TaskScheduler
     private GenerationThreads(int threadCount)
     {
         this.threadCount = threadCount;
+
+        // UnsafeStart doesn't capture the caller's execution context: these threads live for the whole process, so a
+        // captured context would keep whatever AsyncLocal values the first caller had, a plugin's objects included,
+        // alive forever and stop that plugin unloading.
         for (var i = 0; i < threadCount; i++)
         {
             new Thread(this.Work)
@@ -35,7 +39,7 @@ internal sealed class GenerationThreads : TaskScheduler
                 IsBackground = true,
                 Priority = ThreadPriority.BelowNormal,
                 Name = $"Chunk generation {i + 1}"
-            }.Start();
+            }.UnsafeStart();
         }
     }
 
