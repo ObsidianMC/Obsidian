@@ -315,8 +315,11 @@ internal sealed partial class PluginLevelGenerator(string identifier, PluginGene
     /// empty and ungenerated instead, without what it wrote, and replaces the given one where its level stores it.
     /// </para>
     /// <para>
-    /// A chunk the plugin's generator completes is finished like the host's generators finish theirs: its final
-    /// heightmaps are written and it's lit (see <see cref="FinishAsync"/>), since plugins can't reach the light engine.
+    /// A chunk the plugin's generator marks full is finished like the host's generators finish theirs before they
+    /// complete them, since plugins can't reach the light engine (see <see cref="FinishAsync"/>). Until it's finished,
+    /// its being marked full is held back (see <see cref="Chunk.HoldCompletion"/>), so it isn't published, sent to
+    /// players or saved unlit. When finishing fails, the error is the host's and is thrown, and the chunk is replaced
+    /// with an empty, ungenerated one, as when the plugin's generator fails, so it can be generated again.
     /// </para>
     /// </remarks>
     public async ValueTask<IChunk> GenerateChunkAsync(int x, int z, IChunk? chunk = null,
@@ -331,16 +334,56 @@ internal sealed partial class PluginLevelGenerator(string identifier, PluginGene
             if (running is not Instance current)
                 return chunk;
 
-            if (await this.CallGeneratorAsync(current, x, z, chunk, stage) is not IChunk generated)
+            var held = chunk as Chunk;
+            if (held is not null)
+                held.HoldCompletion = true;
+
+            IChunk? generated;
+            try
+            {
+                generated = await this.CallGeneratorAsync(current, x, z, chunk, stage);
+            }
+            finally
+            {
+                if (held is not null)
+                    held.HoldCompletion = false;
+            }
+
+            if (generated is null)
                 return chunk;
+
+            if (!WasCompleted(generated, held))
+                return generated;
 
             // Finished after the call into the plugin has ended: host work it starts, like loading a neighbor's
             // region, would otherwise capture the call's async-local state and keep the plugin from unloading.
-            if (generated.IsGenerated)
+            try
+            {
                 await this.FinishAsync(generated);
+            }
+            catch
+            {
+                this.ReplaceWithEmpty(generated, x, z);
+                throw;
+            }
+
+            generated.SetChunkStatus(ChunkGenStage.full);
 
             return generated;
         }
+    }
+
+    // Whether the plugin's generator completed the chunk it returned: marked it full while that was held back, or
+    // marked full a chunk the host didn't hold.
+    private static bool WasCompleted(IChunk generated, Chunk? held)
+    {
+        if (held is null || !ReferenceEquals(generated, held))
+            return generated.IsGenerated;
+
+        var requested = held.CompletionRequested;
+        held.CompletionRequested = false;
+
+        return requested;
     }
 
     // Runs the plugin's generator in a call into its plugin. It's an async method of its own so that the call's
@@ -363,19 +406,24 @@ internal sealed partial class PluginLevelGenerator(string identifier, PluginGene
         }
         catch (Exception ex) when (this.Contain(current, ex))
         {
-            // Stored while the chunk's lock is still held, so a save waiting for it serializes the empty chunk
-            // rather than what the generator wrote into the given one.
-            var empty = this.EmptyChunk(x, z);
-            if (this.level is AbstractLevel level && level.GetRegionForChunk(x, z) is Region region)
-                region.ReplaceChunk(chunk, empty);
-
-            return empty;
+            return this.ReplaceWithEmpty(chunk, x, z);
         }
     }
 
-    // Writes a completed chunk's final heightmaps and lights it, as the host's generators do before they mark a chunk
-    // full. It runs under the chunk's lock, so a save, which takes that lock before the tick lock lighting takes, never
-    // captures the chunk complete but unlit.
+    // Stores an empty, ungenerated chunk in place of the given one and returns it. It's stored while the chunk's lock
+    // is still held, so a save waiting for it serializes the empty chunk rather than what the generator wrote.
+    private Chunk ReplaceWithEmpty(IChunk chunk, int x, int z)
+    {
+        var empty = this.EmptyChunk(x, z);
+        if (this.level is AbstractLevel level && level.GetRegionForChunk(x, z) is Region region)
+            region.ReplaceChunk(chunk, empty);
+
+        return empty;
+    }
+
+    // Writes a completed chunk's final heightmaps, lights it, and sends the light it spread into neighbors players may
+    // already have, as the host's generators do before they mark a chunk full. It runs under the chunk's lock, which a
+    // save takes before the tick lock lighting takes, so a save never captures the chunk half lit.
     private async ValueTask FinishAsync(IChunk chunk)
     {
         WorldgenHeightmaps.UpdateFinal(chunk, chunk.MinY, chunk.Height);
@@ -385,6 +433,30 @@ internal sealed partial class PluginLevelGenerator(string identifier, PluginGene
 
         var hasSkyLight = level.DimensionType.Element.HasSkylight;
         await LightEngine.LightChunkAsync(chunk, level, hasSkyLight);
+
+        if (chunk.ChunkStatus < ChunkGenStage.light)
+            chunk.SetChunkStatus(ChunkGenStage.light);
+
+        if (level is AbstractLevel live)
+            await SendNeighborLightAsync(live, chunk);
+    }
+
+    // Light spreads into lit neighbors, and complete ones may already be on clients, as MojangGenerator's lighting
+    // sends too. The chunk itself is sent with its light once it's complete.
+    private static async ValueTask SendNeighborLightAsync(AbstractLevel level, IChunk chunk)
+    {
+        for (var dz = -1; dz <= 1; dz++)
+        {
+            for (var dx = -1; dx <= 1; dx++)
+            {
+                if (dx == 0 && dz == 0)
+                    continue;
+
+                var neighbor = await level.GetChunkAsync(chunk.X + dx, chunk.Z + dz, scheduleGeneration: false);
+                if (neighbor is { IsGenerated: true })
+                    level.SendLightUpdate(neighbor);
+            }
+        }
     }
 
     public async ValueTask<VectorD?> FindSpawnPointAsync()
