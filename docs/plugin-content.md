@@ -3626,6 +3626,11 @@ The rules:
   registered identifier as its generator (`generatorName` in its `level.dat`); the instance's own `Id` isn't used.
 - Every call into the generator (creating it, `Init`, `GenerateChunkAsync`, `FindSpawnPointAsync`, `LockChunkAsync`)
   is a call into the plugin, a chunk at a time, so unloading the plugin waits for chunks being generated.
+- A generator only places blocks and biomes. When it marks a chunk generated (`full`), the host finishes it like its
+  own generators' chunks, still under the chunk's lock: it writes the chunk's final heightmaps from its blocks, lights
+  it together with its lit neighbors, and sends players the light that spread into neighbors they have. Marking the
+  chunk full is held back until then, so the chunk isn't sent to players or saved unlit. If finishing fails, the error
+  is the host's: the chunk is left empty and ungenerated, to be generated again, and the generator keeps running.
 - Generating a chunk and saving it hold the level's own lock on that chunk, so a save never captures a chunk
   mid-write, even while the generator stops or is replaced. A save also takes the generator's `LockChunkAsync` lock
   while it's the level's generator: lock with it any chunk the generator writes into besides the one it generates.

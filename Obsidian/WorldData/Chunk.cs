@@ -23,6 +23,19 @@ public sealed class Chunk : IChunk
     // The region completes generation and attaches lighting under the tick lock after validating slot identity.
     internal Action<Chunk>? CompleteGeneration { get; set; }
 
+    /// <summary>
+    /// While set, marking the chunk full only records the request in <see cref="CompletionRequested"/>, leaving its
+    /// status as it was. A plugin's generator marks the chunks it generates full itself, before the host has lit them;
+    /// the host holds that back so the chunk isn't published, sent or saved complete until it's finished (see
+    /// <see cref="Generators.PluginLevelGenerator"/>).
+    /// </summary>
+    internal bool HoldCompletion { get; set; }
+
+    /// <summary>
+    /// Whether the chunk was marked full while <see cref="HoldCompletion"/> was set.
+    /// </summary>
+    internal bool CompletionRequested { get; set; }
+
     /// <summary>Attaches live section writes together with the chunk's runtime light hook.</summary>
     internal void AttachRuntimeLight(RuntimeLightEngine? light)
     {
@@ -790,6 +803,12 @@ public sealed class Chunk : IChunk
 
     public void SetChunkStatus(ChunkGenStage status)
     {
+        if (status == ChunkGenStage.full && this.HoldCompletion)
+        {
+            this.CompletionRequested = true;
+            return;
+        }
+
         if (status == ChunkGenStage.full && this.CompleteGeneration is Action<Chunk> complete)
         {
             complete(this);

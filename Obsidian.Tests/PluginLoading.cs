@@ -182,7 +182,25 @@ public sealed class PluginLoading : IDisposable
         var read = PluginDimensions.Parse("probe:configured", "test", Encoding.UTF8.GetBytes(stemFile)).Dimension;
         Assert.Equal(7, Assert.IsType<PluginGeneratorStem>(read).Settings.GetProperty("marker").GetInt32());
         Assert.Same(reloaded.LoadContext, AssemblyLoadContext.GetLoadContext(generator.Generator!.GetType().Assembly));
-        Assert.True((await generator.GenerateChunkAsync(1, 0)).IsGenerated);
+
+        // The host lights a chunk the plugin's generator completes, as it lights its own generators' chunks.
+        var generated = await generator.GenerateChunkAsync(1, 0);
+        Assert.True(generated.IsGenerated);
+        Assert.Equal(15, generated.GetLightLevel(0, 0, 0, LightType.Sky));
+
+        // A stored chunk is published complete, so sent to players, only once it's lit, though the plugin's generator
+        // marks it full before the host lights it.
+        var stored = new Chunk(2, 0);
+        var lightWhenPublished = -1;
+        stored.CompleteGeneration = published =>
+        {
+            lightWhenPublished = published.GetLightLevel(0, 0, 0, LightType.Sky);
+            published.SetChunkStatusCore(ChunkGenStage.full);
+        };
+
+        Assert.Same(stored, await generator.GenerateChunkAsync(stored.X, stored.Z, stored));
+        Assert.True(stored.IsGenerated);
+        Assert.Equal(15, lightWhenPublished);
 
         var failing = new Chunk(ProbeGenerator.FailingChunk, 0);
         var failed = await generator.GenerateChunkAsync(failing.X, failing.Z, failing);
