@@ -182,7 +182,11 @@ public sealed class PluginLoading : IDisposable
         var read = PluginDimensions.Parse("probe:configured", "test", Encoding.UTF8.GetBytes(stemFile)).Dimension;
         Assert.Equal(7, Assert.IsType<PluginGeneratorStem>(read).Settings.GetProperty("marker").GetInt32());
         Assert.Same(reloaded.LoadContext, AssemblyLoadContext.GetLoadContext(generator.Generator!.GetType().Assembly));
-        Assert.True((await generator.GenerateChunkAsync(1, 0)).IsGenerated);
+
+        // The host lights a chunk the plugin's generator completes, as it lights its own generators' chunks.
+        var generated = await generator.GenerateChunkAsync(1, 0);
+        Assert.True(generated.IsGenerated);
+        Assert.Equal(15, generated.GetLightLevel(0, 0, 0, LightType.Sky));
 
         var failing = new Chunk(ProbeGenerator.FailingChunk, 0);
         var failed = await generator.GenerateChunkAsync(failing.X, failing.Z, failing);
