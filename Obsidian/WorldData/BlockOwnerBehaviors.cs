@@ -79,6 +79,8 @@ internal static class TickBehaviors
 
     internal static IScheduledTickBehavior BambooStalkBlock { get; } = new BambooStalkBlockBehavior();
 
+    internal static IScheduledTickBehavior GrowingPlantBlock { get; } = new KelpBlockBehavior();
+
     internal static IScheduledTickBehavior ComposterBlock { get; } = new ComposterBlockBehavior();
 }
 
@@ -115,6 +117,10 @@ internal static class ShapeUpdateBehaviors
     internal static IShapeUpdateBehavior BambooStalkBlock { get; } = new BambooStalkBlockBehavior();
 
     internal static IShapeUpdateBehavior BambooSaplingBlock { get; } = new BambooSaplingBlockBehavior();
+
+    internal static IShapeUpdateBehavior GrowingPlantHeadBlock { get; } = new KelpBlockBehavior();
+
+    internal static IShapeUpdateBehavior GrowingPlantBodyBlock { get; } = new KelpBlockBehavior();
 
     internal static IShapeUpdateBehavior IronBarsBlock { get; } = new IronBarsShapeUpdateBehavior();
 }
