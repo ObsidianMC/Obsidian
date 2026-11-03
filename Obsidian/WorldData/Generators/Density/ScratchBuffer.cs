@@ -1,5 +1,4 @@
 using System.Buffers;
-using System.Runtime.CompilerServices;
 
 namespace Obsidian.WorldData.Generators.Density;
 
@@ -14,7 +13,7 @@ namespace Obsidian.WorldData.Generators.Density;
 /// </remarks>
 internal readonly ref struct ScratchBuffer<T> where T : unmanaged
 {
-    // The stack that lent the array, or null when it came from ArrayPool<T>.Shared (see ScratchStack.Rent).
+    // The stack that lent the array, or null for a default buffer or an array nothing owns (see ScratchStack.Rent).
     private readonly ScratchStack<T>? owner;
     private readonly T[] array;
     private readonly int length;
@@ -35,20 +34,7 @@ internal readonly ref struct ScratchBuffer<T> where T : unmanaged
     /// <summary>Borrows a buffer of <paramref name="length"/> elements from the current thread.</summary>
     public static ScratchBuffer<T> Rent(int length) => ScratchStack<T>.Current.Rent(length);
 
-    public void Dispose()
-    {
-        // A default buffer has nothing to give back.
-        if (this.array is null)
-            return;
-
-        if (this.owner is null)
-        {
-            ArrayPool<T>.Shared.Return(this.array);
-            return;
-        }
-
-        this.owner.Release(this.slot, this.lease);
-    }
+    public void Dispose() => this.owner?.Release(this.slot, this.lease);
 }
 
 /// <summary>
@@ -64,60 +50,69 @@ internal readonly ref struct ScratchBuffer<T> where T : unmanaged
 /// <para>
 /// Generation threads live for the whole process, and so do their stacks. They hold only arrays of unmanaged
 /// elements, never a density function, so they can't keep a plugin's objects alive. They're bounded: past
-/// <see cref="MaxDepth"/> buffers, or once their arrays would hold more than <see cref="MaxRetainedBytes"/>, a rent
-/// falls back to <see cref="ArrayPool{T}.Shared"/>.
+/// <see cref="MaxDepth"/> buffers, or once their arrays would hold more than <see cref="MaxRetainedElements"/>, a rent
+/// falls back to <see cref="ArrayPool{T}.Shared"/>. An idle generation thread drops its arrays (see
+/// <see cref="ScratchStacks.TrimCurrentThread"/>).
 /// </para>
 /// <para>
-/// Each rent gets a new lease number, and a buffer gives its array back only while its slot still holds its lease, so
-/// disposing a copy twice or in the wrong order can't free another buffer's array. A buffer disposed while others
-/// rented after it are still out gives those back too, and their arrays are dropped from the stack rather than
-/// handed out again, in case they're still in use.
+/// Every buffer gives its array back at most once, however often it or a copy of it is disposed: each rent gets a new
+/// lease number, and only the lease the stack still records for the buffer gives its array back. A buffer disposed
+/// while others rented after it are still out gives those back too, and their arrays are dropped from the stack
+/// rather than handed out again, in case they're still in use.
 /// </para>
 /// </remarks>
 internal sealed class ScratchStack<T> where T : unmanaged
 {
-    /// <summary>The most buffers a thread lends at once before falling back to the shared pool.</summary>
-    /// <remarks>The overworld's density trees nest about 18 deep.</remarks>
-    public const int MaxDepth = 32;
+    /// <summary>The most buffers a thread lends from its own arrays at once.</summary>
+    /// <remarks>The overworld's density trees nest 18 deep.</remarks>
+    public const int MaxDepth = 24;
 
-    /// <summary>The most bytes a thread's stack keeps across all its arrays.</summary>
-    /// <remarks>
-    /// The overworld keeps about 3 MB of floats and 1 MB of ints per thread, a few material volumes of 16 by 16 by 384
-    /// blocks and the ore veins' selections over them; taller dimensions keep more.
-    /// </remarks>
-    public const int MaxRetainedBytes = 8 << 20;
+    // The most shared-pool buffers a thread tracks at once. Further fallbacks get new arrays nothing returns.
+    private const int MaxPooled = 8;
 
     // Array lengths are rounded up to this, so slightly longer volumes, such as the next chunk's ore vein selections,
     // usually fit the array already there.
     private const int GrowthStep = 1024;
-
-    private static readonly int maxRetained = MaxRetainedBytes / Unsafe.SizeOf<T>();
 
     [ThreadStatic]
     private static ScratchStack<T>? current;
 
     private readonly T[]?[] arrays = new T[]?[MaxDepth];
     private readonly int[] leases = new int[MaxDepth];
+    private readonly T[]?[] pooledArrays = new T[]?[MaxPooled];
+    private readonly int[] pooledLeases = new int[MaxPooled];
     private int depth;
     private int nextLease;
     private int retained;
 
+    /// <summary>The most elements a thread's stack keeps across all its arrays.</summary>
+    /// <remarks>
+    /// Sized from the overworld with about a third to spare: a thread keeps about 750,000 floats, a few material
+    /// volumes of 16 by 16 by 384 blocks, and 190,000 ints for the ore veins' selections over them. The nether and the
+    /// end keep a tenth of that. Taller dimensions fall back to the shared pool for their largest volumes.
+    /// </remarks>
+    public static int MaxRetainedElements { get; } = typeof(T) == typeof(float)
+        ? 1 << 20
+        : typeof(T) == typeof(int)
+            ? 1 << 18
+            : 1 << 16;
+
     /// <summary>The current thread's stack.</summary>
     public static ScratchStack<T> Current => current ??= new ScratchStack<T>();
 
-    /// <summary>How many buffers are lent out.</summary>
-    public int Depth => this.depth;
+    /// <summary>The current thread's stack, if it has made one.</summary>
+    public static ScratchStack<T>? CurrentIfCreated => current;
 
-    /// <summary>How many elements the stack's arrays hold.</summary>
-    public int Retained => this.retained;
+    /// <summary>How many buffers are lent from the stack's own arrays.</summary>
+    public int Depth => this.depth;
 
     /// <summary>Lends a buffer of <paramref name="length"/> elements on top of the stack.</summary>
     public ScratchBuffer<T> Rent(int length)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(length);
 
-        if (this.depth == MaxDepth || length > maxRetained)
-            return Pooled(length);
+        if (this.depth == MaxDepth || length > MaxRetainedElements)
+            return this.RentPooled(length);
 
         var slot = this.depth;
         var array = this.arrays[slot];
@@ -127,7 +122,7 @@ internal sealed class ScratchStack<T> where T : unmanaged
             array = this.Grow(slot, length);
 
             if (array is null)
-                return Pooled(length);
+                return this.RentPooled(length);
         }
 
         this.nextLease++;
@@ -137,9 +132,28 @@ internal sealed class ScratchStack<T> where T : unmanaged
         return new ScratchBuffer<T>(this, array, length, slot, this.nextLease);
     }
 
-    /// <summary>Gives back the buffer lent at <paramref name="slot"/>, and any lent after it.</summary>
+    /// <summary>Drops the stack's arrays while it lends none of them, so an idle thread keeps no scratch.</summary>
+    public void Trim()
+    {
+        if (this.depth != 0)
+            return;
+
+        Array.Clear(this.arrays);
+        this.retained = 0;
+    }
+
+    /// <summary>
+    /// Gives back the buffer lent at <paramref name="slot"/> and any lent after it, or, when <paramref name="slot"/>
+    /// is negative, the shared-pool buffer lent under <paramref name="lease"/>.
+    /// </summary>
     internal void Release(int slot, int lease)
     {
+        if (slot < 0)
+        {
+            this.ReleasePooled(lease);
+            return;
+        }
+
         // Already given back, by this buffer or by one rented before it.
         if (slot >= this.depth || this.leases[slot] != lease)
             return;
@@ -164,10 +178,10 @@ internal sealed class ScratchStack<T> where T : unmanaged
         var needed = (length + GrowthStep - 1) / GrowthStep * GrowthStep;
         var size = Math.Max(needed, old / 2 * 3);
 
-        if (others + size > maxRetained)
+        if (others + size > MaxRetainedElements)
             size = needed;
 
-        if (others + size > maxRetained)
+        if (others + size > MaxRetainedElements)
             return null;
 
         var array = new T[size];
@@ -177,6 +191,48 @@ internal sealed class ScratchStack<T> where T : unmanaged
         return array;
     }
 
-    private static ScratchBuffer<T> Pooled(int length) =>
-        new(null, ArrayPool<T>.Shared.Rent(length), length, slot: -1, lease: 0);
+    // Lends an array from the shared pool, recorded under its lease so that only one disposal returns it. Past
+    // MaxPooled such buffers, the array is a new one that nothing returns.
+    private ScratchBuffer<T> RentPooled(int length)
+    {
+        var entry = Array.IndexOf(this.pooledArrays, null);
+
+        if (entry < 0)
+            return new ScratchBuffer<T>(null, new T[length], length, slot: -1, lease: 0);
+
+        var array = ArrayPool<T>.Shared.Rent(length);
+        this.nextLease++;
+        this.pooledArrays[entry] = array;
+        this.pooledLeases[entry] = this.nextLease;
+
+        return new ScratchBuffer<T>(this, array, length, slot: -1, this.nextLease);
+    }
+
+    private void ReleasePooled(int lease)
+    {
+        var entry = Array.IndexOf(this.pooledLeases, lease);
+
+        // Already returned, by this buffer or a copy of it.
+        if (entry < 0 || this.pooledArrays[entry] is not T[] array)
+            return;
+
+        this.pooledArrays[entry] = null;
+        this.pooledLeases[entry] = 0;
+        ArrayPool<T>.Shared.Return(array);
+    }
+}
+
+/// <summary>The scratch stacks density sampling uses (see <see cref="ScratchStack{T}"/>).</summary>
+internal static class ScratchStacks
+{
+    /// <summary>
+    /// Drops the current thread's scratch arrays, which it regrows when it next samples. Generation threads call it
+    /// when they run out of work.
+    /// </summary>
+    public static void TrimCurrentThread()
+    {
+        ScratchStack<float>.CurrentIfCreated?.Trim();
+        ScratchStack<int>.CurrentIfCreated?.Trim();
+        ScratchStack<byte>.CurrentIfCreated?.Trim();
+    }
 }

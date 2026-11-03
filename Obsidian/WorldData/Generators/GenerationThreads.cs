@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Obsidian.WorldData.Generators.Density;
 using System.Threading;
 
 namespace Obsidian.WorldData.Generators;
@@ -18,6 +19,10 @@ internal sealed class GenerationThreads : TaskScheduler
     /// The threads every level generates on.
     /// </summary>
     public static GenerationThreads Shared { get; } = new(Math.Max(1, Environment.ProcessorCount - 1));
+
+    // How long a thread waits for work before it drops its scratch buffers (see Work). A constant, since Shared starts
+    // the threads before later static fields are initialized.
+    private const int IdleTrimMilliseconds = 10_000;
 
     [ThreadStatic]
     private static bool isGenerationThread;
@@ -76,7 +81,20 @@ internal sealed class GenerationThreads : TaskScheduler
     private void Work()
     {
         isGenerationThread = true;
-        foreach (var task in this.queue.GetConsumingEnumerable())
+
+        while (!this.queue.IsCompleted)
+        {
+            if (!this.queue.TryTake(out var task, IdleTrimMilliseconds))
+            {
+                // Out of work for a while: give back the density scratch, which a busy overworld thread keeps a few
+                // megabytes of, rather than hold it for the whole process.
+                ScratchStacks.TrimCurrentThread();
+
+                if (!this.queue.TryTake(out task, Timeout.Infinite))
+                    break;
+            }
+
             this.TryExecuteTask(task);
+        }
     }
 }

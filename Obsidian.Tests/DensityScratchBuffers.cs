@@ -5,8 +5,8 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Guards the generation threads' scratch stacks, which every density sample borrows from: a throw or a misordered
-/// disposal must never leave a buffer that's still in use free to be lent again.
+/// Guards the generation threads' scratch stacks, which every density sample borrows from: a throw or a misordered,
+/// repeated or stale disposal must never leave a buffer that's still in use free to be lent again.
 /// </summary>
 public class DensityScratchBuffers
 {
@@ -22,12 +22,12 @@ public class DensityScratchBuffers
         Assert.Throws<InvalidOperationException>(() => SampleOnce(new ThrowingFunction()));
         Assert.Equal(depth, stack.Depth);
 
-        // The arrays it borrowed are lent again, rather than dropped and regrown.
-        var retained = stack.Retained;
-        SampleOnce(new ConstantFunction(1.0f));
+        // Buffers rented afterwards are still distinct.
+        using var outer = ScratchBuffer<float>.Rent(Volume.Size);
+        using var inner = ScratchBuffer<float>.Rent(Volume.Size);
 
-        Assert.Equal(depth, stack.Depth);
-        Assert.Equal(retained, stack.Retained);
+        Assert.Equal(depth + 2, stack.Depth);
+        Assert.False(outer.Span.Overlaps(inner.Span));
     }
 
     [Fact]
@@ -38,25 +38,44 @@ public class DensityScratchBuffers
         // The outer buffer is given back first, while the inner one is still in use.
         var outer = stack.Rent(16);
         var inner = stack.Rent(16);
-        inner.Span.Fill(7);
         outer.Dispose();
 
-        // Neither new buffer may share the inner one's array.
+        // Giving back the stale buffer again, or the inner one late, must not free the new ones.
         var first = stack.Rent(16);
         var second = stack.Rent(16);
-        first.Span.Fill(1);
-        second.Span.Fill(2);
-
-        // Giving back the stale buffer again, or the inner one late, must not free the new ones.
         outer.Dispose();
         inner.Dispose();
         var third = stack.Rent(16);
-        third.Span.Fill(3);
 
         Assert.Equal(3, stack.Depth);
-        Assert.All(inner.Span.ToArray(), value => Assert.Equal(7, value));
-        Assert.All(first.Span.ToArray(), value => Assert.Equal(1, value));
-        Assert.All(second.Span.ToArray(), value => Assert.Equal(2, value));
+        Assert.False(inner.Span.Overlaps(first.Span));
+        Assert.False(inner.Span.Overlaps(second.Span));
+        Assert.False(inner.Span.Overlaps(third.Span));
+        Assert.False(first.Span.Overlaps(second.Span));
+        Assert.False(second.Span.Overlaps(third.Span));
+    }
+
+    [Fact]
+    public void StaleCopyOfAPooledBufferNeverReturnsItsArrayAgain()
+    {
+        // Longer than a stack keeps, so these come from the shared pool.
+        var stack = new ScratchStack<int>();
+        var length = ScratchStack<int>.MaxRetainedElements + 1;
+
+        var first = stack.Rent(length);
+        var staleCopy = first;
+        first.Dispose();
+
+        // The pool may hand the returned array out again, but the stale copy must not return it a second time.
+        var second = stack.Rent(length);
+        staleCopy.Dispose();
+        var third = stack.Rent(length);
+
+        Assert.Equal(0, stack.Depth);
+        Assert.False(second.Span.Overlaps(third.Span));
+
+        second.Dispose();
+        third.Dispose();
     }
 
     private static void SampleOnce(DensityFunction function)
