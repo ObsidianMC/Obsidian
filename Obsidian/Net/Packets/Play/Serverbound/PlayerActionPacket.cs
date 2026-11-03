@@ -84,6 +84,7 @@ public partial class PlayerActionPacket
                     break;
                 }
             case PlayerActionStatus.StartedDigging:
+            case PlayerActionStatus.ChangeDestroyDirection:
             case PlayerActionStatus.CancelledDigging:
                 player.Client.SendPacket(new BlockChangedAckPacket
                 {
@@ -137,6 +138,7 @@ public readonly record struct PlayerActionStore
 public enum PlayerActionStatus : int
 {
     StartedDigging,
+    ChangeDestroyDirection,
     CancelledDigging,
     FinishedDigging,
 
