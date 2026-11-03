@@ -343,6 +343,43 @@ public sealed class RegionFiles : IDisposable
     }
 
     [Fact]
+    public async Task BatchUnloadKeepsTheChunkWhoseSaveFailed()
+    {
+        // Two changed chunks unloaded together, one failing to write: the other unloads with its change, and the
+        // failed one stays loaded with its change, which the next save writes.
+        var regionFolder = Path.Join(this.folder, "world");
+        await using (var region = new Region(0, 0, regionFolder))
+        {
+            await region.InitAsync();
+            var failing = Complete(0, 0);
+            var unloading = Complete(1, 0);
+            region.SetChunk(failing);
+            region.SetChunk(unloading);
+            await region.FlushAsync();
+
+            failing.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+            unloading.SetBlock(17, 64, 1, BlocksRegistry.Stone);
+            region.ChunkFile.Observe = step => step is { Step: RegionFile.Step.PayloadWritten, ChunkX: 0, ChunkZ: 0 }
+                ? ValueTask.FromException(new IOException("Crashed."))
+                : ValueTask.CompletedTask;
+
+            await Assert.ThrowsAsync<IOException>(() => region.UnloadChunksAsync([(0, 0), (1, 0)]));
+            Assert.Same(failing, Assert.Single(region.ResidentChunks()));
+
+            region.ChunkFile.Observe = null;
+            await region.FlushAsync();
+        }
+
+        await using var reloaded = new Region(0, 0, regionFolder);
+        await reloaded.InitAsync();
+
+        var failed = await reloaded.GetChunkAsync(0, 0);
+        var unloaded = await reloaded.GetChunkAsync(1, 0);
+        Assert.Equal(BlocksRegistry.Stone, failed.GetBlock(1, 64, 1));
+        Assert.Equal(BlocksRegistry.Stone, unloaded.GetBlock(17, 64, 1));
+    }
+
+    [Fact]
     public async Task RegionSavesWaitForTheWritesBeforeThem()
     {
         (string Name, Func<string, Task> Check)[] cases =
