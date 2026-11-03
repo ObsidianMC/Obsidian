@@ -303,32 +303,58 @@ public partial class Region : IRegion
 
     private async Task WriteChangesUnderLockAsync(List<ChunkSave> taken)
     {
-        // Like vanilla, only chunks that changed since their last save are written, and only chunks with entities, or
-        // that had some, write their entities. A removed region's final save still retires every chunk. Pending light
-        // goes in first, so a chunk it reaches counts as changed.
+        // Pending light goes in first, so a chunk it reaches counts as changed.
         lock (this.FluidTickLock)
             this.FlushLight?.Invoke();
 
-        // Snapshots are taken one at a time, in order, each holding the tick lock only while the chunk is serialized;
-        // compressing and staging them runs in parallel, while the next ones are taken. They're committed together,
-        // for two flushes per file however many chunks changed.
         var entityChunks = this.ChunksWithEntities();
+        await this.SaveTogetherAsync(this.ChunksToFlush(entityChunks), unloading: this.lightingRetired, taken);
+    }
+
+    /// <summary>
+    /// The chunks a flush saves, with whether it saves their entities, each decided just before its snapshot. Like
+    /// vanilla, only chunks that changed since their last save are written, and only chunks with entities, or that had
+    /// some, write their entities. A removed region's final save still retires every chunk.
+    /// </summary>
+    private IEnumerable<(IChunk Chunk, bool Entities)> ChunksToFlush(HashSet<(int X, int Z)> entityChunks)
+    {
+        foreach (Chunk chunk in this.loadedChunks.Cast<Chunk>())
+        {
+            var entities = this.MayHaveEntitiesToSave(chunk, entityChunks);
+            if (!this.lightingRetired && !entities && !chunk.IsUnsaved)
+                continue;
+
+            yield return (chunk, entities);
+        }
+    }
+
+    /// <summary>
+    /// Saves <paramref name="chunks"/> as one batch, adding each save to <paramref name="taken"/> as it's taken: the
+    /// snapshots are taken one at a time, in order, each holding the tick lock only while its chunk is serialized;
+    /// compressing and staging them runs in parallel, while the next ones are taken. They're committed together, for
+    /// two flushes per file however many chunks changed.
+    /// </summary>
+    /// <remarks>
+    /// Called holding <see cref="flushLock"/>: staging holds one of the <see cref="flushSlots"/> while it waits for its
+    /// chunk's turn, so two batches of one region taking turns of the same chunks could each wait for slots the other
+    /// holds until its commit.
+    /// </remarks>
+    /// <param name="unloading">Whether the chunks unload (see <see cref="SnapshotChunkAsync"/>).</param>
+    private async Task SaveTogetherAsync(IEnumerable<(IChunk Chunk, bool Entities)> chunks, bool unloading,
+        List<ChunkSave> taken)
+    {
         var staging = new List<Task>();
         Task completing = Task.CompletedTask;
         try
         {
-            foreach (Chunk c in loadedChunks.Cast<Chunk>())
+            foreach (var (chunk, entities) in chunks)
             {
-                var entities = this.MayHaveEntitiesToSave(c, entityChunks);
-                if (!this.lightingRetired && !entities && !c.IsUnsaved)
-                    continue;
-
                 await flushSlots.WaitAsync();
-                var save = NewSave(c);
+                var save = NewSave(chunk);
                 taken.Add(save);
                 try
                 {
-                    await this.SnapshotChunkAsync(save, unloading: this.lightingRetired, saveEntities: entities);
+                    await this.SnapshotChunkAsync(save, unloading, saveEntities: entities);
                 }
                 catch
                 {
@@ -547,23 +573,102 @@ public partial class Region : IRegion
             await SerializeChunkAsync(chunk, unloading: true);
             lock (this.FluidTickLock)
             {
-                if (!ReferenceEquals(loadedChunks[x, z], chunk))
+                if (this.TryDetachUnloaded(chunk))
                     return;
-
-                // A structure search/placement can mark the start chunk during the final snapshot's I/O.
-                if (chunk is Chunk { IsMarkedUnsaved: true })
-                    continue;
-
-                this.DetachLighting(chunk);
-                loadedChunks[x, z] = null;
-                var slotX = NumericsHelper.Modulo(x, CubicRegionSize);
-                var slotZ = NumericsHelper.Modulo(z, CubicRegionSize);
-                this.chunkVersions[slotX, slotZ]++;
-                this.retiredBlockAccess.Remove(chunk);
-                this.StructureChunkUnloaded?.Invoke(chunk);
-                return;
             }
         }
+    }
+
+    /// <summary>
+    /// Unloads the chunks at the local coordinates like <see cref="UnloadChunk"/>, but together: they're saved as one
+    /// batch (see <see cref="SaveTogetherAsync"/>), so however many unload, each file is committed once, and not at all
+    /// when none of them has anything to write. A chunk whose save fails stays loaded; the others unload, then the
+    /// failure is thrown.
+    /// </summary>
+    internal async Task UnloadChunksAsync(IEnumerable<(int X, int Z)> positions)
+    {
+        // Each chunk once: a second save of a chunk in the batch would wait for the first's commit, which waits for it.
+        var unloading = positions
+            .Distinct()
+            .Select(position => this.loadedChunks[position.X, position.Z])
+            .OfType<IChunk>()
+            .ToList();
+
+        while (unloading.Count > 0)
+        {
+            await this.initialization.Value;
+
+            var admitted = this.AdmitSave();
+            var taken = new List<ChunkSave>();
+            ExceptionDispatchInfo? failure = null;
+            try
+            {
+                await this.flushLock.WaitAsync();
+                try
+                {
+                    var chunks = unloading.Select(chunk => (chunk, true));
+                    await this.SaveTogetherAsync(chunks, unloading: true, taken);
+                }
+                finally
+                {
+                    this.flushLock.Release();
+                }
+            }
+            catch (Exception exception)
+            {
+                failure = ExceptionDispatchInfo.Capture(exception);
+            }
+            finally
+            {
+                // After the save ends, like a flush's (see WriteChangesAsync).
+                this.EndSave(admitted);
+
+                foreach (var save in taken)
+                {
+                    save.Dispose();
+                    await this.ReleaseRetiredAsync(save);
+                }
+            }
+
+            var marked = new List<IChunk>();
+            lock (this.FluidTickLock)
+            {
+                foreach (var save in taken)
+                {
+                    if (save.Saved && !this.TryDetachUnloaded(save.Chunk))
+                        marked.Add(save.Chunk);
+                }
+            }
+
+            failure?.Throw();
+            unloading = marked;
+        }
+    }
+
+    /// <summary>
+    /// Takes a chunk whose unloading save completed out of its slot, unless another chunk is stored there now. Called
+    /// under <see cref="FluidTickLock"/>.
+    /// </summary>
+    /// <returns>
+    /// False when the chunk was marked unsaved during the save's I/O, as a structure search or placement can mark a
+    /// start chunk: it stays, and needs another unloading save.
+    /// </returns>
+    private bool TryDetachUnloaded(IChunk chunk)
+    {
+        var x = NumericsHelper.Modulo(chunk.X, CubicRegionSize);
+        var z = NumericsHelper.Modulo(chunk.Z, CubicRegionSize);
+        if (!ReferenceEquals(this.loadedChunks[x, z], chunk))
+            return true;
+
+        if (chunk is Chunk { IsMarkedUnsaved: true })
+            return false;
+
+        this.DetachLighting(chunk);
+        this.loadedChunks[x, z] = null;
+        this.chunkVersions[x, z]++;
+        this.retiredBlockAccess.Remove(chunk);
+        this.StructureChunkUnloaded?.Invoke(chunk);
+        return true;
     }
 
     /// <summary>Validates a captured chunk under FluidTickLock, including an unloading save still doing I/O.</summary>
@@ -1023,6 +1128,8 @@ public partial class Region : IRegion
 
             if (save.Entities is not null)
                 await this.StageEntitiesAsync(save);
+
+            save.Staged = true;
         }
         catch
         {
@@ -1075,6 +1182,8 @@ public partial class Region : IRegion
 
         if ((chunkFailure ?? entityFailure) is Exception failure)
             ExceptionDispatchInfo.Throw(failure);
+
+        save.Completed = true;
     }
 
     /// <summary>
@@ -1777,6 +1886,15 @@ public partial class Region : IRegion
         public NbtList? Entities { get; set; }
 
         public RegionFile.ChunkWrite? EntityWrite { get; set; }
+
+        // Whether the snapshot was staged in full (see StageSaveAsync), and whether its writes then ended without
+        // failing (see CompleteSaveAsync). A save failing before it's staged gives its writes up, which don't fail.
+        public bool Staged { get; set; }
+
+        public bool Completed { get; set; }
+
+        // Whether the chunk is saved as the snapshot took it.
+        public bool Saved => this.Staged && this.Completed;
 
         public List<BaseContainer> Retired { get; } = [];
 
