@@ -19,7 +19,7 @@ internal sealed class GenerationThreads : TaskScheduler
     /// <summary>
     /// The threads every level generates on.
     /// </summary>
-    public static GenerationThreads Shared { get; } = new(ThreadCount());
+    public static GenerationThreads Shared { get; } = new(ThreadCount(Environment.ProcessorCount, PhysicalCores.Count()));
 
     // How long a thread waits for work before it drops its scratch buffers (see Work). A constant, since Shared starts
     // the threads before later static fields are initialized.
@@ -51,11 +51,14 @@ internal sealed class GenerationThreads : TaskScheduler
 
     public override int MaximumConcurrencyLevel => this.threadCount;
 
-    // One per logical processor but one, and at most one per physical core.
-    private static int ThreadCount()
+    /// <summary>
+    /// How many generation threads run: one per logical processor but one, and at most one per physical core, when
+    /// <paramref name="physicalCores"/> is known (see <see cref="PhysicalCores.Count"/>).
+    /// </summary>
+    internal static int ThreadCount(int processorCount, int? physicalCores)
     {
-        var logical = Math.Max(1, Environment.ProcessorCount - 1);
-        if (PhysicalCores.Count() is not int cores)
+        var logical = Math.Max(1, processorCount - 1);
+        if (physicalCores is not int cores)
             return logical;
 
         return Math.Clamp(cores, 1, logical);

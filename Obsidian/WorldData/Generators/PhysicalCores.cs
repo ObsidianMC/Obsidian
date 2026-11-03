@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace Obsidian.WorldData.Generators;
@@ -15,35 +16,102 @@ internal static partial class PhysicalCores
     private const int RelationProcessorCore = 0;
 
     /// <summary>
-    /// The physical cores holding at least one of the logical processors the process's affinity allows, or null when
-    /// that can't be told: on systems other than Windows and Linux, with more than 64 logical processors, or when the
-    /// topology can't be read.
+    /// The physical cores holding at least one of the logical processors the process may run on, or null when that
+    /// can't be told for sure: on systems other than Windows and Linux, when the topology can't be read, or when fewer
+    /// logical processors are visible than <see cref="Environment.ProcessorCount"/> counts.
     /// </summary>
     public static int? Count()
     {
         try
         {
-            if (Environment.ProcessorCount > 64)
-                return null;
-
-            using var process = Process.GetCurrentProcess();
-            if (OperatingSystem.IsWindows())
-                return CountOnWindows((ulong)process.ProcessorAffinity);
-
             if (OperatingSystem.IsLinux())
-                return CountOnLinux((ulong)process.ProcessorAffinity);
+                return CountOnLinux();
+
+            if (OperatingSystem.IsWindows())
+                return CountOnWindows();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException
-            or System.ComponentModel.Win32Exception or FormatException)
+            or System.ComponentModel.Win32Exception or FormatException or OverflowException)
         {
         }
 
         return null;
     }
 
-    // Each core entry lists the logical processors of the core, as a mask in a processor group.
-    private static unsafe int? CountOnWindows(ulong affinity)
+    /// <summary>
+    /// The CPU IDs of a Linux CPU list, such as <c>0-3,8,10-11</c>, or null when it isn't one.
+    /// </summary>
+    internal static List<int>? ParseCpuList(string list)
     {
+        var cpus = new List<int>();
+        foreach (var part in list.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+        {
+            var bounds = part.Split('-');
+            if (bounds.Length > 2
+                || !int.TryParse(bounds[0], out var first)
+                || !int.TryParse(bounds[^1], out var last)
+                || first < 0
+                || last < first)
+            {
+                return null;
+            }
+
+            for (var cpu = first; cpu <= last; cpu++)
+                cpus.Add(cpu);
+        }
+
+        return cpus.Count > 0 ? cpus : null;
+    }
+
+    /// <summary>
+    /// The physical cores of <paramref name="cpus"/>, given each logical processor's list of the logical processors
+    /// sharing its core (<paramref name="siblings"/>), or null when one of them has none or fewer than
+    /// <paramref name="processorCount"/> processors are allowed.
+    /// </summary>
+    internal static int? CountCores(IReadOnlyCollection<int> cpus, int processorCount, Func<int, string?> siblings)
+    {
+        // Fewer allowed processors than the runtime counts means some aren't seen: counting cores from the rest would
+        // throttle generation, so the caller keeps to the logical count instead.
+        if (cpus.Count < processorCount)
+            return null;
+
+        var cores = new HashSet<string>();
+        foreach (var cpu in cpus)
+        {
+            if (siblings(cpu) is not string core)
+                return null;
+
+            cores.Add(core);
+        }
+
+        return cores.Count > 0 ? cores.Count : null;
+    }
+
+    // The allowed CPUs come from the scheduler's own list, as Process.ProcessorAffinity only shows CPU IDs below 64.
+    private static int? CountOnLinux()
+    {
+        var allowed = File.ReadLines("/proc/self/status")
+            .FirstOrDefault(line => line.StartsWith("Cpus_allowed_list:", StringComparison.Ordinal));
+        if (allowed is null || ParseCpuList(allowed["Cpus_allowed_list:".Length..]) is not List<int> cpus)
+            return null;
+
+        return CountCores(cpus, Environment.ProcessorCount, cpu =>
+        {
+            var path = $"/sys/devices/system/cpu/cpu{cpu}/topology/thread_siblings_list";
+            return File.Exists(path) ? File.ReadAllText(path).Trim() : null;
+        });
+    }
+
+    // Each core entry lists the logical processors of the core, as a mask in a processor group.
+    private static unsafe int? CountOnWindows()
+    {
+        using var process = Process.GetCurrentProcess();
+        var affinity = (ulong)process.ProcessorAffinity;
+
+        // The mask is that of the process's processor group alone; one spanning groups shows fewer processors.
+        if (BitOperations.PopCount(affinity) < Environment.ProcessorCount)
+            return null;
+
         uint length = 0;
         GetLogicalProcessorInformationEx(RelationProcessorCore, null, ref length);
         if (length == 0)
@@ -77,26 +145,7 @@ internal static partial class PhysicalCores
             offset += size;
         }
 
-        return cores;
-    }
-
-    // Each logical processor lists the logical processors of its core; a core is counted once per distinct list.
-    private static int? CountOnLinux(ulong affinity)
-    {
-        var cores = new HashSet<string>();
-        for (var cpu = 0; cpu < 64; cpu++)
-        {
-            if ((affinity & (1UL << cpu)) == 0)
-                continue;
-
-            var siblings = $"/sys/devices/system/cpu/cpu{cpu}/topology/thread_siblings_list";
-            if (!File.Exists(siblings))
-                return null;
-
-            cores.Add(File.ReadAllText(siblings).Trim());
-        }
-
-        return cores.Count > 0 ? cores.Count : null;
+        return cores > 0 ? cores : null;
     }
 
     [LibraryImport("kernel32.dll", SetLastError = true)]
