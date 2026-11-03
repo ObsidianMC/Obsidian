@@ -21,6 +21,12 @@ internal sealed class ChunkBlockTicks
     private BlockTickScheduler? scheduler;
     private bool changed;
 
+    // The game tick the last save packed the ticks at (see TakeUnsaved), or NotSaved: saved delays are relative to
+    // it, so they're still those on disk while the game time hasn't moved, as during pregeneration.
+    private long savedAt = NotSaved;
+
+    private const long NotSaved = long.MinValue;
+
     /// <summary>
     /// The number of scheduled ticks.
     /// </summary>
@@ -35,14 +41,14 @@ internal sealed class ChunkBlockTicks
 
     /// <summary>
     /// Whether the saved ticks differ from the chunk's last save: ticks were added or removed since, or a level ticks
-    /// them, so the delays saved relative to now change every game tick.
+    /// them and the game time moved since, so the delays saved relative to it changed.
     /// </summary>
     public bool IsUnsaved
     {
         get
         {
             lock (this.sync)
-                return this.changed || this.scheduler is not null && this.queue.Count > 0;
+                return this.HasUnsavedTicks();
         }
     }
 
@@ -53,11 +59,17 @@ internal sealed class ChunkBlockTicks
     {
         lock (this.sync)
         {
-            var unsaved = this.changed || this.scheduler is not null && this.queue.Count > 0;
+            var unsaved = this.HasUnsavedTicks();
             this.changed = false;
+            this.savedAt = this.scheduler?.GameTime ?? NotSaved;
             return unsaved;
         }
     }
+
+    // Called under the lock. The game time only grows, so a save that packs the ticks after TakeUnsaved can only make
+    // the next save write them again.
+    private bool HasUnsavedTicks() =>
+        this.changed || this.scheduler is not null && this.queue.Count > 0 && this.scheduler.GameTime != this.savedAt;
 
     /// <summary>
     /// Whether a level ticks the chunk (its ticks are due at absolute game ticks).
@@ -218,8 +230,10 @@ internal sealed class ChunkBlockTicks
             if (this.scheduler is null)
                 return;
 
+            // Taken back in the order the last save packed them, the ticks are saved as that save wrote them unless
+            // the game time moved since (an unloading chunk stops ticking as its final save starts).
             var now = this.scheduler.GameTime;
-            this.changed = true;
+            this.changed |= this.queue.Count > 0 && now != this.savedAt;
             while (this.queue.TryDequeue(out var tick, out _))
                 this.pending.Add(new SavedBlockTick(tick.Position, tick.Block, (int)(tick.TriggerTick - now), tick.Priority));
 

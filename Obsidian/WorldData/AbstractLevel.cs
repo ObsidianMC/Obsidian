@@ -2186,7 +2186,8 @@ public abstract partial class AbstractLevel : ILevel
     /// </summary>
     /// <remarks>
     /// The level hasn't ticked yet, so the entity work it does for complete chunks (populating them with mobs, spawning
-    /// the entities generation placed) runs first, as the tick would before they could unload.
+    /// the entities generation placed) runs first, as the tick would before they could unload. Each region unloads its
+    /// chunks together (see <see cref="Region.UnloadChunksAsync"/>), so its files are committed once at most.
     /// </remarks>
     private async Task UnloadPregeneratedAsync(HashSet<long> remaining, HashSet<long> kept)
     {
@@ -2195,19 +2196,28 @@ public abstract partial class AbstractLevel : ILevel
         {
             await this.RunEntityActionsAsync();
             this.TakeBlockEntityChanges();
+
+            var unloading = new Dictionary<Region, List<(int X, int Z)>>();
             foreach (var chunk in this.LoadedChunks.ToArray())
             {
                 NumericsHelper.LongToInts(chunk, out var cx, out var cz);
                 if (kept.Contains(chunk) || Needed(cx, cz) || !this.TryReleaseUnneededChunk(chunk))
                     continue;
 
-                if (GetRegionForChunk(cx, cz) is Region region)
+                if (GetRegionForChunk(cx, cz) is not Region region)
+                    continue;
+
+                if (!unloading.TryGetValue(region, out var positions))
                 {
-                    await region.UnloadChunk(
-                        NumericsHelper.Modulo(cx, Region.CubicRegionSize),
-                        NumericsHelper.Modulo(cz, Region.CubicRegionSize));
+                    positions = [];
+                    unloading.Add(region, positions);
                 }
+
+                positions.Add((NumericsHelper.Modulo(cx, Region.CubicRegionSize),
+                    NumericsHelper.Modulo(cz, Region.CubicRegionSize)));
             }
+
+            await Task.WhenAll(unloading.Select(entry => entry.Key.UnloadChunksAsync(entry.Value)));
         }
         finally
         {

@@ -7,7 +7,9 @@ using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Registries;
+using Obsidian.Utilities;
 using Obsidian.WorldData;
+using Obsidian.WorldData.BlockTicks;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -132,6 +134,67 @@ public sealed class ChunkSaves
         }
     }
 
+    // Pregeneration unloads the chunks it just saved before the level first ticks: their ticks, saved with delays
+    // relative to the game time, are on disk as they are until the game time moves.
+    [Fact]
+    public async Task UnloadWritesOnlyChunksChangedSinceTheirSave()
+    {
+        var folder = Path.Join(Path.GetTempPath(), $"obsidian-chunk-saves-{Guid.NewGuid():N}");
+        try
+        {
+            var written = new List<(int X, int Z)>();
+            var scheduler = new BlockTickScheduler();
+            var region = new Region(0, 0, folder)
+            {
+                SaveStructureStarts = (x, z, loaded) =>
+                {
+                    written.Add((x, z));
+                    return loaded;
+                },
+
+                // Like the level's, which stops an unloading chunk's ticks as its final save starts.
+                BlockAccessUnloaded = chunk => ((Chunk)chunk).BlockTicks.StopTicking(),
+            };
+
+            await using (region)
+            {
+                await region.InitAsync();
+                var chunks = Enumerable.Range(0, 3).Select(x => Ticking(x, scheduler)).ToArray();
+                foreach (var chunk in chunks)
+                    region.SetChunk(chunk);
+
+                await region.FlushAsync();
+                written.Clear();
+
+                // Unloaded together, only the chunk changed since is written again.
+                chunks[0].SetBlock(2, 70, 3, BlocksRegistry.Stone);
+                await region.UnloadChunksAsync([(0, 0), (1, 0)]);
+                Assert.Equal([(0, 0)], written);
+
+                // Once the game time moves, the saved delays are a tick too long.
+                written.Clear();
+                scheduler.Tick(_ => false, _ => { });
+                await region.UnloadChunksAsync([(2, 0)]);
+                Assert.Equal([(2, 0)], written);
+                Assert.Empty(region.ResidentChunks());
+            }
+
+            await using (var reloaded = new Region(0, 0, folder))
+            {
+                await reloaded.InitAsync();
+                var changed = await reloaded.GetChunkAsync(0, 0);
+                Assert.Equal(BlockIds.Stone, changed.GetBlock(2, 70, 3).RegistryId);
+
+                var late = (Chunk)await reloaded.GetChunkAsync(2, 0);
+                Assert.Equal(4, Assert.Single(late.BlockTicks.Pack()).Delay);
+            }
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task EntitiesThatLeftAreSavedAsGone()
     {
@@ -178,6 +241,15 @@ public sealed class ChunkSaves
     {
         var chunk = new Chunk(x, z);
         chunk.SetChunkStatus(ChunkGenStage.full);
+        return chunk;
+    }
+
+    // A complete chunk a level ticks, with a block tick due in 5 game ticks.
+    private static Chunk Ticking(int x, BlockTickScheduler scheduler)
+    {
+        var chunk = Complete(x, 0);
+        chunk.BlockTicks.Schedule(new Vector(x * 16 + 1, 64, 1), "minecraft:stone", 5);
+        chunk.BlockTicks.StartTicking(scheduler, NumericsHelper.IntsToLong(x, 0));
         return chunk;
     }
 
