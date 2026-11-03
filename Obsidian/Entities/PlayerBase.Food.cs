@@ -314,9 +314,11 @@ public partial class PlayerBase
         }
 
         // Contact with cactus and wither rose
-        // Player Dimension is zero by default, so scan with the standing player's size (matches PickupReach fallback).
+        // Player Dimension is zero by default: fall back to the standing size, or the swimming body while the head is in liquid.
         var scanWidth = Dimension.Width > 0 ? Dimension.Width : 0.6;
-        var scanHeight = Dimension.Height > 0 ? Dimension.Height : 1.8;
+        var headBlock = terrain.GetBlock((Vector)new VectorD(Position.X, HeadY, Position.Z).Floor());
+        var scanHeight = Dimension.Height > 0 ? Dimension.Height
+            : Swimming && headBlock?.IsLiquid == true ? 0.6 : 1.8;
         var scanBounds = new BoundingBox(
             new VectorD(Position.X - scanWidth / 2, Position.Y, Position.Z - scanWidth / 2),
             new VectorD(Position.X + scanWidth / 2, Position.Y + scanHeight, Position.Z + scanWidth / 2));
@@ -383,7 +385,7 @@ public partial class PlayerBase
         }
 
         // Suffocation handling
-        var width = Dimension.Width * 0.8 / 2;
+        var width = scanWidth * 0.8 / 2;
         var eye = new BoundingBox(EyePosition(this) - new VectorD(width, 0.0000005, width),
             EyePosition(this) + new VectorD(width, 0.0000005, width));
         if (terrain.ContainsSuffocatingBlock(eye))
