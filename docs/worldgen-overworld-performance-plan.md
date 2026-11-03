@@ -74,7 +74,7 @@ The mod system (#553) changed them again:
   which `TallSeagrassBlock` extends. Chunk (-9, 2)'s seagrass reaches into chunk (-9, 3) before (-9, 3)'s shipwreck
   replaces the upper half with a plank, and the shipwreck's edge update now removes the lower half. The serial run
   decorates in that order. Vanilla's server decorated (-9, 3) first, so it has water there. This is the border-order
-  caveat in [worldgen-benchmarks.md](worldgen-benchmarks.md#caveats), not a generation change.
+  caveat in [worldgen-benchmarks.md](worldgen-benchmarks.md#caveats-of-the-vanilla-comparison), not a generation change.
 - **`nbt` → `0525f8628623dc64`, `badbc176a6e2a3fd` and `9fbd717769bfb03a`.** Every saved chunk gained two empty lists:
   `block_ticks`, which vanilla writes too, and `ObsidianPortalTypes`. The nether and end block hashes were unchanged.
 
