@@ -247,7 +247,7 @@ public partial class PlayerBase
     /// </summary>
     /// <param name="feet"></param>
     /// <returns></returns>
-    private async ValueTask TickFreezingAsync(IBlock? feet)
+    private async ValueTask TickFreezingAsync(IBlock? feet, bool applyDamage = true)
     {
         var previousFrozenTicks = PowderedSnowTicks;
 
@@ -277,7 +277,7 @@ public partial class PlayerBase
 
         if (previousFrozenTicks != PowderedSnowTicks)
         {
-            PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, 
+            PacketBroadcaster.QueuePacketToLevelInRange(Level, Position,
                 new SetEntityDataPacket
                 {
                     EntityId = EntityId,
@@ -285,17 +285,22 @@ public partial class PlayerBase
                 });
         }
 
-        if (PowderedSnowTicks >= 140 && Level.LevelData.Time % 40 == 0)
+        if (applyDamage && PowderedSnowTicks >= 140 && Level.LevelData.Time % 40 == 0)
             await DamageCombatAsync(this, 1, CombatDamageKind.Freezing);
     }
 
     private async ValueTask TickEnvironmentAsync()
     {
+        var terrain = new MobTerrain(Level);
+
         if (GameMode is GameMode.Creative or GameMode.Spectator
             || Abilities.HasFlag(PlayerAbility.Invulnerable))
-                return;
+        {
+            // Protected players cannot take freeze damage, but frozen ticks must still decay.
+            await TickFreezingAsync(terrain.GetBlock((Vector)Position.Floor()), applyDamage: false);
+            return;
+        }
 
-        var terrain = new MobTerrain(Level);
         var bounds = Dimension.CreateBBFromPosition(Position);
 
         // Contact with lava
@@ -309,9 +314,16 @@ public partial class PlayerBase
         }
 
         // Contact with cactus and wither rose
-        for (var x = (int)Math.Floor(bounds.Min.X + 0.001); x <= (int)Math.Floor(bounds.Max.X - 0.001); x++)
-            for (var y = (int)Math.Floor(bounds.Min.Y + 0.001); y <= (int)Math.Floor(bounds.Max.Y - 0.001); y++)
-                for (var z = (int)Math.Floor(bounds.Min.Z + 0.001); z <= (int)Math.Floor(bounds.Max.Z - 0.001); z++)
+        // Player Dimension is zero by default, so scan with the standing player's size (matches PickupReach fallback).
+        var scanWidth = Dimension.Width > 0 ? Dimension.Width : 0.6;
+        var scanHeight = Dimension.Height > 0 ? Dimension.Height : 1.8;
+        var scanBounds = new BoundingBox(
+            new VectorD(Position.X - scanWidth / 2, Position.Y, Position.Z - scanWidth / 2),
+            new VectorD(Position.X + scanWidth / 2, Position.Y + scanHeight, Position.Z + scanWidth / 2));
+
+        for (var x = (int)Math.Floor(scanBounds.Min.X + 0.001); x <= (int)Math.Floor(scanBounds.Max.X - 0.001); x++)
+            for (var y = (int)Math.Floor(scanBounds.Min.Y + 0.001); y <= (int)Math.Floor(scanBounds.Max.Y - 0.001); y++)
+                for (var z = (int)Math.Floor(scanBounds.Min.Z + 0.001); z <= (int)Math.Floor(scanBounds.Max.Z - 0.001); z++)
                 {
                     var block = terrain.GetBlock(new Vector(x, y, z));
 
@@ -322,7 +334,7 @@ public partial class PlayerBase
                         if (!Alive || Respawning)
                             return;
                     }
-                    if (Level.LevelData.Difficulty != Difficulty.Peaceful 
+                    if (Level.LevelData.Difficulty != Difficulty.Peaceful
                         && block?.RegistryId == BlockIds.WitherRose)
                             AddPotionEffect((int)PotionEffect.Wither - 1, 40);
                 }
@@ -354,7 +366,7 @@ public partial class PlayerBase
         if (feet?.RegistryId is BlockIds.Fire or BlockIds.SoulFire && !IsFireImmune)
         {
             Ignite(8);
-            await DamageCombatAsync(this, 1, CombatDamageKind.FireContact);
+            await DamageCombatAsync(this, feet.RegistryId == BlockIds.SoulFire ? 2 : 1, CombatDamageKind.FireContact);
 
             if (!Alive || Respawning)
                 return;
