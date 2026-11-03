@@ -1,5 +1,6 @@
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
+using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
 using System.Text.Json;
 
@@ -241,6 +242,164 @@ public partial class PlayerBase
             await this.QueuePacketAsync(new SetEntityDataPacket { EntityId = EntityId, Entity = this });
     }
 
+    /// <summary>
+    /// Player freezing handling
+    /// </summary>
+    /// <param name="feet"></param>
+    /// <returns></returns>
+    private async ValueTask TickFreezingAsync(IBlock? feet, bool applyDamage = true)
+    {
+        var previousFrozenTicks = PowderedSnowTicks;
+
+        var hasFreezeProtection = false;
+
+        for (var slot = 5; slot <= 8; slot++)
+        {
+            var item = Inventory.GetItem(slot);
+
+            if (item is { Count: > 0 }
+                && TagsRegistry.Item.FreezeImmuneWearables.Entries.Contains(item.Holder.Id))
+            {
+                hasFreezeProtection = true;
+                break;
+            }
+        }
+
+        var canFreeze = GameMode is GameMode.Survival or GameMode.Adventure
+            && feet?.RegistryId == BlockIds.PowderSnow
+            && !TagsRegistry.EntityType.FreezeImmuneEntityTypes.Entries.Contains(TypeId)
+            && !hasFreezeProtection;
+
+        if (canFreeze)
+            PowderedSnowTicks = Math.Min(140, PowderedSnowTicks + 1);
+        else
+            PowderedSnowTicks = Math.Max(0, PowderedSnowTicks - 2);
+
+        if (previousFrozenTicks != PowderedSnowTicks)
+        {
+            PacketBroadcaster.QueuePacketToLevelInRange(Level, Position,
+                new SetEntityDataPacket
+                {
+                    EntityId = EntityId,
+                    Entity = this
+                });
+        }
+
+        if (applyDamage && PowderedSnowTicks >= 140 && Level.LevelData.Time % 40 == 0)
+            await DamageCombatAsync(this, 1, CombatDamageKind.Freezing);
+    }
+
+    private async ValueTask TickEnvironmentAsync()
+    {
+        var terrain = new MobTerrain(Level);
+
+        if (GameMode is GameMode.Creative or GameMode.Spectator
+            || Abilities.HasFlag(PlayerAbility.Invulnerable))
+        {
+            // Protected players cannot take freeze damage, but frozen ticks must still decay.
+            await TickFreezingAsync(terrain.GetBlock((Vector)Position.Floor()), applyDamage: false);
+            return;
+        }
+
+        var bounds = Dimension.CreateBBFromPosition(Position);
+
+        // Contact with lava
+        if (!IsFireImmune && terrain.ContainsFluid(bounds, false))
+        {
+            Ignite(15);
+            await DamageCombatAsync(this, 4, CombatDamageKind.FireContact);
+
+            if (!Alive || Respawning)
+                return;
+        }
+
+        // Contact with cactus and wither rose
+        // Player Dimension is zero by default: fall back to the standing size, or the swimming body while the head is in liquid.
+        var scanWidth = Dimension.Width > 0 ? Dimension.Width : 0.6;
+        var headBlock = terrain.GetBlock((Vector)new VectorD(Position.X, HeadY, Position.Z).Floor());
+        var scanHeight = Dimension.Height > 0 ? Dimension.Height
+            : Swimming && headBlock?.IsLiquid == true ? 0.6 : 1.8;
+        var scanBounds = new BoundingBox(
+            new VectorD(Position.X - scanWidth / 2, Position.Y, Position.Z - scanWidth / 2),
+            new VectorD(Position.X + scanWidth / 2, Position.Y + scanHeight, Position.Z + scanWidth / 2));
+
+        for (var x = (int)Math.Floor(scanBounds.Min.X + 0.001); x <= (int)Math.Floor(scanBounds.Max.X - 0.001); x++)
+            for (var y = (int)Math.Floor(scanBounds.Min.Y + 0.001); y <= (int)Math.Floor(scanBounds.Max.Y - 0.001); y++)
+                for (var z = (int)Math.Floor(scanBounds.Min.Z + 0.001); z <= (int)Math.Floor(scanBounds.Max.Z - 0.001); z++)
+                {
+                    var block = terrain.GetBlock(new Vector(x, y, z));
+
+                    if (block?.RegistryId == BlockIds.Cactus)
+                    {
+                        await DamageCombatAsync(this, 1, CombatDamageKind.Melee); // TODO CombatDamageKind currently don't have cactus damage type
+
+                        if (!Alive || Respawning)
+                            return;
+                    }
+                    if (Level.LevelData.Difficulty != Difficulty.Peaceful
+                        && block?.RegistryId == BlockIds.WitherRose)
+                            AddPotionEffect((int)PotionEffect.Wither - 1, 40);
+                }
+
+        // Contact with magma block
+        var floorBlock = terrain.GetBlock((Vector)(Position - new VectorD(0, 0.01f, 0)).Floor());
+        if (floorBlock?.RegistryId == BlockIds.MagmaBlock
+            && !IsFireImmune
+            && !Sneaking
+            && !HasPotionEffect((int)PotionEffect.FireResistance - 1))
+        {
+            await DamageCombatAsync(this, 1, CombatDamageKind.FireContact);
+
+            if (!Alive || Respawning)
+                return;
+        }
+
+        // Void handling
+        var minimumY = Level is WorldData.AbstractLevel level ? level.MinY : -64;
+        if (Position.Y < minimumY - 64)
+        {
+            await DamageCombatAsync(this, 4, CombatDamageKind.Void);
+            if (!Alive || Respawning)
+                return;
+        }
+
+        // Contact with fire and soulfire
+        var feet = terrain.GetBlock((Vector)Position.Floor());
+        if (feet?.RegistryId is BlockIds.Fire or BlockIds.SoulFire && !IsFireImmune)
+        {
+            Ignite(8);
+            await DamageCombatAsync(this, feet.RegistryId == BlockIds.SoulFire ? 2 : 1, CombatDamageKind.FireContact);
+
+            if (!Alive || Respawning)
+                return;
+        }
+
+        // Contact with sweet berry
+        if (feet?.RegistryId == BlockIds.SweetBerryBush &&
+            (LastPosition - Position).MagnitudeSquared() > 0.000025f)
+        {
+            await DamageCombatAsync(this, 1, CombatDamageKind.Melee);
+
+            if (!Alive || Respawning)
+                return;
+        }
+
+        // Suffocation handling
+        var width = scanWidth * 0.8 / 2;
+        var eye = new BoundingBox(EyePosition(this) - new VectorD(width, 0.0000005, width),
+            EyePosition(this) + new VectorD(width, 0.0000005, width));
+        if (terrain.ContainsSuffocatingBlock(eye))
+        {
+            await DamageCombatAsync(this, 1, CombatDamageKind.Suffocation);
+
+            if (!Alive || Respawning)
+                return;
+        }
+
+        // Freezing handling
+        await TickFreezingAsync(feet);
+    }
+
     private async ValueTask TickPlayerAsync()
     {
         Obsidian.Commands.CommandSpam.Tick(this);
@@ -268,7 +427,9 @@ public partial class PlayerBase
             CancelWeaponUse();
             return;
         }
-
+        await TickEnvironmentAsync();
+        if (!Alive)
+            return;
         await TickInventoryItemsAsync();
         await TickAirSupplyAsync();
         if (!Alive)
