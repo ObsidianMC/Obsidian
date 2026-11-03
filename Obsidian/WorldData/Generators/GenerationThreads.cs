@@ -7,7 +7,8 @@ namespace Obsidian.WorldData.Generators;
 /// <summary>
 /// The threads chunk generation runs on: dedicated ones below normal priority, so generating never takes the thread
 /// pool from the network and the levels' ticks, which run on it, and the operating system runs those first when cores
-/// are short. One core is left to them.
+/// are short. One logical processor is left to them, and no more threads run than there are physical cores: a core's
+/// second hardware thread (SMT) adds CPU time per chunk without generating any faster.
 /// </summary>
 /// <remarks>
 /// Work started here continues here after awaiting, since awaits resume on the scheduler they ran on, unless awaited
@@ -18,7 +19,7 @@ internal sealed class GenerationThreads : TaskScheduler
     /// <summary>
     /// The threads every level generates on.
     /// </summary>
-    public static GenerationThreads Shared { get; } = new(Math.Max(1, Environment.ProcessorCount - 1));
+    public static GenerationThreads Shared { get; } = new(ThreadCount(Environment.ProcessorCount, PhysicalCores.Count()));
 
     // How long a thread waits for work before it drops its scratch buffers (see Work). A constant, since Shared starts
     // the threads before later static fields are initialized.
@@ -51,6 +52,19 @@ internal sealed class GenerationThreads : TaskScheduler
     public override int MaximumConcurrencyLevel => this.threadCount;
 
     /// <summary>
+    /// How many generation threads run: one per logical processor but one, and at most one per physical core, when
+    /// <paramref name="physicalCores"/> is known (see <see cref="PhysicalCores.Count"/>).
+    /// </summary>
+    internal static int ThreadCount(int processorCount, int? physicalCores)
+    {
+        var logical = Math.Max(1, processorCount - 1);
+        if (physicalCores is not int cores)
+            return logical;
+
+        return Math.Clamp(cores, 1, logical);
+    }
+
+    /// <summary>
     /// Runs <paramref name="work"/> on the generation threads, its continuations too.
     /// </summary>
     public static Task Run(Func<Task> work) =>
@@ -59,16 +73,6 @@ internal sealed class GenerationThreads : TaskScheduler
     /// <inheritdoc cref="Run(Func{Task})"/>
     public static Task Run(Action work) =>
         Task.Factory.StartNew(work, CancellationToken.None, TaskCreationOptions.DenyChildAttach, Shared);
-
-    /// <summary>
-    /// Options running parallel loops on the generation threads, as many at once as there are threads.
-    /// </summary>
-    public static ParallelOptions Parallel(CancellationToken cancellationToken = default) => new()
-    {
-        TaskScheduler = Shared,
-        MaxDegreeOfParallelism = Shared.threadCount,
-        CancellationToken = cancellationToken
-    };
 
     protected override void QueueTask(Task task) => this.queue.Add(task);
 

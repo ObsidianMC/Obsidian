@@ -19,8 +19,11 @@ namespace Obsidian.WorldData.Generators;
 /// </summary>
 internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
 {
-    // Chunk locks are striped so their number stays bounded; stripes are always taken in ascending order.
-    private const int LockStripeCount = 4096;
+    // Chunk locks are striped so their number stays bounded; stripes are always taken in ascending order. A chunk's
+    // stripe is its position modulo LockStripeWidth on both axes, so chunks closer than that never share one: steps
+    // running at once in an area (see PrepareAsync) don't wait on each other for locks of chunks they don't share.
+    private const int LockStripeWidth = 64;
+    private const int LockStripeCount = LockStripeWidth * LockStripeWidth;
 
     /// <summary>
     /// Vanilla's overworld generator.
@@ -315,6 +318,12 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         // Like vanilla, a chunk is only complete once its neighbors are decorated too, since their features can reach into
         // it. The decorations run concurrently; those whose areas overlap wait on each other's locks.
         var radius = ChunkGenStage.features < stage ? 1 : 0;
+
+        // Decorating in order would otherwise carve each decoration's new neighbors only as it starts, a few at a time;
+        // carving writes only its own chunk, so the whole area is carved at once first.
+        if (decorateInOrder)
+            await this.CarveAroundAsync(cx, cz, radius + 1);
+
         var decorations = new List<Task>((2 * radius + 1) * (2 * radius + 1));
         for (var dx = -radius; dx <= radius; dx++)
         {
@@ -454,60 +463,6 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
     }
 
     /// <summary>
-    /// Generates <paramref name="chunks"/> up to their light, along with the neighbors they need, staged so that steps
-    /// running at once never wait on each other's locks. Completing the chunks afterwards only marks them complete.
-    /// Pregeneration stages its area a tile at a time, and the level stages the chunks players wait for in batches.
-    /// </summary>
-    /// <remarks>
-    /// Every chunk is carved in parallel first. Decorating, post-processing and lighting then each run in 9 waves, one per
-    /// class of a 3 by 3 colouring of chunk positions: chunks of a wave are 3 apart, so the areas they lock never overlap.
-    /// Completing chunks one by one instead keeps most concurrent jobs waiting on their neighbors' locks. The colouring
-    /// is of world positions, so stages of different batches agree on it. Light doesn't depend on the order chunks are
-    /// lit in, and decorations meeting at borders already ran in any order. Chunks done already are skipped. Cancelling
-    /// stops new chunks from starting; steps already running finish.
-    /// </remarks>
-    internal async Task PrepareAsync(IReadOnlyCollection<(int X, int Z)> chunks, CancellationToken cancellationToken = default)
-    {
-        // Completing a chunk decorates its neighbors, and decorating a chunk carves its neighbors.
-        var decorated = Around(chunks);
-        await Parallel.ForEachAsync(Around(decorated), GenerationThreads.Parallel(cancellationToken),
-            async (position, _) => await this.CarveAsync(position.X, position.Z));
-
-        await InWavesAsync(decorated, position => this.DecorateAsync(position.X, position.Z));
-        await InWavesAsync(chunks, async position => await this.FinishBlocksAsync(await this.GetChunkAsync(position.X, position.Z)));
-        await InWavesAsync(chunks, async position => await this.LightAsync(await this.GetChunkAsync(position.X, position.Z)));
-
-        async Task InWavesAsync(IEnumerable<(int X, int Z)> positions, Func<(int X, int Z), Task> step)
-        {
-            var all = positions.ToList();
-            for (var wave = 0; wave < 9; wave++)
-            {
-                await Parallel.ForEachAsync(all.Where(position => Mod3(position.X) * 3 + Mod3(position.Z) == wave),
-                    GenerationThreads.Parallel(cancellationToken),
-                    async (position, _) => await step(position));
-            }
-        }
-
-        static int Mod3(int value) => (value % 3 + 3) % 3;
-
-        // The chunks and their neighbors.
-        static HashSet<(int X, int Z)> Around(IEnumerable<(int X, int Z)> chunks)
-        {
-            var around = new HashSet<(int X, int Z)>();
-            foreach (var (x, z) in chunks)
-            {
-                for (var dx = -1; dx <= 1; dx++)
-                {
-                    for (var dz = -1; dz <= 1; dz++)
-                        around.Add((x + dx, z + dz));
-                }
-            }
-
-            return around;
-        }
-    }
-
-    /// <summary>
     /// Places the features of a chunk (trees, ores, etc.), carving its neighbors first since features write into them.
     /// </summary>
     private async Task DecorateAsync(int cx, int cz)
@@ -526,11 +481,7 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
 
         // Carve the area first, each chunk under its own lock and in parallel, so other jobs aren't blocked on the whole area
         // during terrain generation.
-        var carving = new Task[9];
-        for (var i = 0; i < carving.Length; i++)
-            carving[i] = this.CarveAsync(cx + i / 3 - 1, cz + i % 3 - 1);
-
-        await Task.WhenAll(carving);
+        await this.CarveAroundAsync(cx, cz, 1);
 
         // Found once, and placed as found, so that the starts placed are those restored, even if plugins change the
         // structures meanwhile, and as the generator may have stopped by the time the pieces placed are kept.
@@ -601,6 +552,19 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
             using var chunkLock = await this.LockAsync(cx, cz, 0);
             this.GenerateUpToCarvers(await this.GetChunkAsync(cx, cz), ChunkGenStage.carvers, savedStarts);
         }));
+    }
+
+    // Carves every chunk within radius of (cx, cz) that isn't yet, in parallel.
+    private Task CarveAroundAsync(int cx, int cz, int radius)
+    {
+        var carving = new List<Task>((2 * radius + 1) * (2 * radius + 1));
+        for (var dx = -radius; dx <= radius; dx++)
+        {
+            for (var dz = -radius; dz <= radius; dz++)
+                carving.Add(this.CarveAsync(cx + dx, cz + dz));
+        }
+
+        return Task.WhenAll(carving);
     }
 
     /// <summary>
@@ -770,11 +734,21 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
                 area[(chunk.X + dx, chunk.Z + dz)] = dx == 0 && dz == 0 ? chunk : await this.GetChunkAsync(chunk.X + dx, chunk.Z + dz);
         }
 
-        // Post-processing ticks fluids, which may flow into complete neighbors that the level is ticking.
+        // Post-processing ticks fluids, which may flow into complete neighbors that the level is ticking, so it keeps
+        // the level's ticks out then. The level only ticks complete chunks, and none of the area completes while its
+        // locks are held, so an area without one is the generation's alone and post-processes alongside others.
         if (this.world is AbstractLevel level)
-            level.Fluids.RunExclusive(() => builder.PostProcess(area, chunk.X, chunk.Z, level.Fluids.Rules));
+        {
+            var rules = level.Fluids.Rules;
+            if (area.Values.Any(neighbor => neighbor.IsGenerated))
+                level.Fluids.RunExclusive(() => builder.PostProcess(area, chunk.X, chunk.Z, rules));
+            else
+                builder.PostProcess(area, chunk.X, chunk.Z, rules);
+        }
         else
+        {
             builder.PostProcess(area, chunk.X, chunk.Z);
+        }
 
         builder.CompleteHeightmaps(chunk);
         chunk.SetChunkStatus(ChunkGenStage.initialize_light);
@@ -824,13 +798,21 @@ internal partial class MojangGenerator : ILevelGenerator, IStructureStartStorage
         for (var dx = -radius; dx <= radius; dx++)
         {
             for (var dz = -radius; dz <= radius; dz++)
-                stripes.Add((int)((uint)HashCode.Combine(cx + dx, cz + dz) % LockStripeCount));
+                stripes.Add(LockStripe(cx + dx, cz + dz));
         }
 
         foreach (var stripe in stripes)
             await this.chunkLocks[stripe].WaitAsync();
 
         return new ChunkLocks(this.chunkLocks, stripes);
+    }
+
+    private static int LockStripe(int cx, int cz)
+    {
+        var x = NumericsHelper.Modulo(cx, LockStripeWidth);
+        var z = NumericsHelper.Modulo(cz, LockStripeWidth);
+
+        return x * LockStripeWidth + z;
     }
 
     public async ValueTask<IDisposable?> LockChunkAsync(int x, int z) => await this.LockAsync(x, z, 0);
