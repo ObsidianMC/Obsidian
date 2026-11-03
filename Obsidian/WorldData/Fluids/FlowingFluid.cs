@@ -1,5 +1,6 @@
 using Obsidian.API.Blocks;
 using Obsidian.WorldData.Features;
+using System.Runtime.CompilerServices;
 
 namespace Obsidian.WorldData.Fluids;
 
@@ -263,10 +264,10 @@ internal abstract class FlowingFluid
     /// Vanilla <c>getSpread</c>: the fluid for each side the fluid flows to, indexed by <see cref="BlockFace"/>. Only the
     /// sides with the shortest way down (within the slope distance) are kept; on flat ground that's every open side.
     /// </summary>
-    private FluidState?[] GetSpread(FluidLevel level, Vector position, IBlock block)
+    private SpreadSides GetSpread(FluidLevel level, Vector position, IBlock block)
     {
         var best = 1000;
-        var spread = new FluidState?[6];
+        var spread = new SpreadSides();
         SpreadContext? context = null;
 
         foreach (var face in horizontal)
@@ -287,7 +288,7 @@ internal abstract class FlowingFluid
                 : this.GetSlopeDistance(level, neighborPosition, 1, face.Opposite(), neighbor, context);
 
             if (distance < best)
-                Array.Clear(spread);
+                ((Span<FluidState?>)spread).Clear();
 
             if (distance <= best)
             {
@@ -299,6 +300,13 @@ internal abstract class FlowingFluid
         }
 
         return spread;
+    }
+
+    // The fluid for each side, indexed by BlockFace, without an array for every spread.
+    [InlineArray(6)]
+    private struct SpreadSides
+    {
+        private FluidState? side;
     }
 
     /// <summary>

@@ -20,6 +20,7 @@ internal static class TerrainCarvers
     {
         var context = GenerateMask(terrain, carversAt, carvers);
         ApplyMask(terrain, context.Mask, carvers?.Uncarvable);
+        context.Release();
     }
 
     public static CarvingContext GenerateMask(

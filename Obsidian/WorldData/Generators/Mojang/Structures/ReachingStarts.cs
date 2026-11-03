@@ -41,7 +41,17 @@ internal sealed class ReachingStarts
     /// <summary>
     /// Whether a start of the structure reaches the chunk.
     /// </summary>
-    public bool Reaches(Structure structure) => this.starts.Exists(entry => entry.Start.Structure == structure);
+    public bool Reaches(Structure structure)
+    {
+        // A loop rather than Exists, whose predicate would capture the structure on every call.
+        foreach (var (_, start) in this.starts)
+        {
+            if (start.Structure == structure)
+                return true;
+        }
+
+        return false;
+    }
 
     /// <summary>
     /// The starts of <paramref name="structure"/>, in the order vanilla places them.

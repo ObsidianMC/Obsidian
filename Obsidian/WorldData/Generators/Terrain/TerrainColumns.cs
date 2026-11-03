@@ -14,7 +14,7 @@ internal sealed class TerrainColumns(TerrainGenerator generator) : IStructureTer
     public int SeaLevel => generator.Settings.SeaLevel;
 
     public int GetBaseHeight(int x, int z, HeightmapType heightmap) =>
-        this.Iterate(x, z, block => WorldgenHeightmaps.Matches(heightmap, block), null) ?? generator.Settings.MinY;
+        this.Iterate(x, z, heightmap, null) ?? generator.Settings.MinY;
 
     public NoiseColumn GetBaseColumn(int x, int z)
     {
@@ -24,13 +24,15 @@ internal sealed class TerrainColumns(TerrainGenerator generator) : IStructureTer
         return new NoiseColumn(generator.Settings.MinY, blocks);
     }
 
-    // Stops at the first block matching stopAt and gives the Y above it; fills blocks from the noise's min Y.
-    private int? Iterate(int x, int z, Predicate<IBlock>? stopAt, IBlock[]? blocks)
+    // Stops at the first block that stopAt's heightmap counts and gives the Y above it; fills blocks from the noise's
+    // min Y.
+    private int? Iterate(int x, int z, HeightmapType? stopAt, IBlock[]? blocks)
     {
         var settings = generator.Settings;
         var volume = new DensityVolume(1, settings.Height, 1, x, settings.MinY, z);
         var aquifer = new TerrainAquifer(generator, volume);
         using var density = DensityBuffer.Sample(generator.Router.FinalDensity, volume);
+        int? top = null;
 
         for (var y = volume.SizeY - 1; y >= 0; y--)
         {
@@ -43,12 +45,14 @@ internal sealed class TerrainColumns(TerrainGenerator generator) : IStructureTer
                 blocks[y] = block;
             }
 
-            if (stopAt is not null && stopAt(block))
+            if (stopAt is HeightmapType heightmap && WorldgenHeightmaps.Matches(heightmap, block))
             {
-                return blockY + 1;
+                top = blockY + 1;
+                break;
             }
         }
 
-        return null;
+        aquifer.Release();
+        return top;
     }
 }

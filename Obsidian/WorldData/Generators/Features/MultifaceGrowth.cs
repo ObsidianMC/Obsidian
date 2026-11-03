@@ -33,6 +33,8 @@ internal sealed partial class FeatureRegistry
             valid.AddRange(FeatureHelpers.Horizontal);
         }
 
+        var validFaces = valid.ToArray();
+
         return (context, random, origin) =>
         {
             var level = context.Level;
@@ -42,18 +44,21 @@ internal sealed partial class FeatureRegistry
                 return false;
             }
 
-            var directions = valid.ToArray();
-            FeatureHelpers.Shuffle(directions.AsSpan(), random);
+            // At most the six faces, so both lists live on the stack.
+            Span<BlockFace> directions = stackalloc BlockFace[validFaces.Length];
+            validFaces.CopyTo(directions);
+            FeatureHelpers.Shuffle(directions, random);
 
             if (PlaceMultiface(level, random, origin, directions, spreader, supports, spreadChance))
             {
                 return true;
             }
 
+            Span<BlockFace> othersBuffer = stackalloc BlockFace[validFaces.Length];
             foreach (var direction in directions)
             {
-                var others = valid.Where(face => face != direction.Opposite()).ToArray();
-                FeatureHelpers.Shuffle(others.AsSpan(), random);
+                var others = OtherFaces(validFaces, direction.Opposite(), othersBuffer);
+                FeatureHelpers.Shuffle(others, random);
 
                 for (var i = 0; i < searchRange; i++)
                 {
@@ -77,11 +82,24 @@ internal sealed partial class FeatureRegistry
         };
     }
 
+    // The faces other than the excluded one, in their order, written to the start of the buffer.
+    private static Span<BlockFace> OtherFaces(BlockFace[] faces, BlockFace excluded, Span<BlockFace> buffer)
+    {
+        var count = 0;
+        foreach (var face in faces)
+        {
+            if (face != excluded)
+                buffer[count++] = face;
+        }
+
+        return buffer[..count];
+    }
+
     private static bool PlaceMultiface(
         IWorldGenLevel level,
         IRandomSource random,
         Vector position,
-        BlockFace[] directions,
+        ReadOnlySpan<BlockFace> directions,
         MultifaceSpreader spreader,
         HashSet<int> supports,
         float spreadChance)

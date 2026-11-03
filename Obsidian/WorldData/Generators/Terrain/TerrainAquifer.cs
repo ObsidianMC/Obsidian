@@ -21,6 +21,9 @@ internal sealed class TerrainAquifer
 
     private static readonly double flowingUpdateSimilarity = Similarity(10 * 10, 12 * 12);
 
+    // What an aquifer without aquifer functions has; they're never read or written.
+    private static readonly Dictionary<(int X, int Z), int> NoSurfaceLevels = [];
+
     // Chunk offsets, in chunks, of the preliminary surface samples around an aquifer center.
     private static readonly (int X, int Z)[] surfaceSamplingOffsets =
     [
@@ -38,10 +41,14 @@ internal sealed class TerrainAquifer
     private readonly DensityFunction? spread;
     private readonly DensityFunction? lava;
     private readonly IPositionalRandomFactory random;
-    private readonly Dictionary<(int X, int Z), int> surfaceLevels = [];
     private readonly FluidPicker globalFluidPicker;
+
+    // The caches below, from the thread's last released aquifer when it has one; null without aquifer functions.
+    private readonly Tables? tables;
+    private readonly Dictionary<(int X, int Z), int> surfaceLevels = NoSurfaceLevels;
     private readonly FluidStatus?[] aquiferCache = [];
     private readonly (int X, int Y, int Z)?[] aquiferLocationCache = [];
+    private readonly int cacheSize;
     private readonly int minGridY;
     private readonly int gridSizeX;
     private readonly int gridSizeZ;
@@ -100,8 +107,11 @@ internal sealed class TerrainAquifer
         this.gridSizeX = maxGridX - this.minGridX + 1;
         this.gridSizeZ = maxGridZ - this.minGridZ + 1;
         var size = this.gridSizeX * (maxGridY - this.minGridY + 1) * this.gridSizeZ;
-        this.aquiferCache = new FluidStatus?[size];
-        this.aquiferLocationCache = new (int, int, int)?[size];
+        this.tables = Tables.Take(size);
+        this.cacheSize = size;
+        this.surfaceLevels = this.tables.SurfaceLevels;
+        this.aquiferCache = this.tables.Statuses;
+        this.aquiferLocationCache = this.tables.Locations;
 
         var maxSurface = this.MaxSurfaceLevel(
             FromGridX(this.minGridX, 0),
@@ -113,6 +123,11 @@ internal sealed class TerrainAquifer
         // 26.3 skips sampling above the lowest candidate grid layer beyond the maximum surface.
         this.skipSamplingAboveY = FromGridY(GridY(surface + 12) - 1, 11) - 1;
     }
+
+    /// <summary>
+    /// Hands the aquifer's caches to the thread's next aquifer, emptied. The aquifer must not be used afterwards.
+    /// </summary>
+    public void Release() => this.tables?.Return(this.cacheSize);
 
     private int SurfaceLevel(int x, int z)
     {
@@ -358,6 +373,42 @@ internal sealed class TerrainAquifer
 
         (this.candidatesGridX, this.candidatesGridY, this.candidatesGridZ) = (gridX, gridY, gridZ);
         return this.candidates;
+    }
+
+    /// <summary>An aquifer's caches, which a thread reuses for its next aquifer once one is released.</summary>
+    private sealed class Tables
+    {
+        // Emptied when returned, so a thread doesn't keep the blocks of the statuses alive.
+        [ThreadStatic]
+        private static Tables? free;
+
+        private Tables(int size)
+        {
+            this.Statuses = new FluidStatus?[size];
+            this.Locations = new (int, int, int)?[size];
+        }
+
+        public Dictionary<(int X, int Z), int> SurfaceLevels { get; } = [];
+
+        public FluidStatus?[] Statuses { get; }
+
+        public (int X, int Y, int Z)?[] Locations { get; }
+
+        public static Tables Take(int size)
+        {
+            var tables = free;
+            free = null;
+
+            return tables is not null && tables.Statuses.Length >= size ? tables : new Tables(size);
+        }
+
+        public void Return(int size)
+        {
+            this.SurfaceLevels.Clear();
+            Array.Clear(this.Statuses, 0, size);
+            Array.Clear(this.Locations, 0, size);
+            free = this;
+        }
     }
 
     private int GetIndex(int gridX, int gridY, int gridZ) =>

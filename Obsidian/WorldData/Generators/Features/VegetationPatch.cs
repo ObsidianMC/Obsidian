@@ -30,7 +30,9 @@ internal sealed partial class FeatureRegistry
 
             if (waterlogged)
             {
-                ground = PatchWater(level, ground);
+                var land = ground;
+                ground = PatchWater(level, land);
+                ReturnPatchList(land);
             }
 
             foreach (var position in ground)
@@ -61,9 +63,30 @@ internal sealed partial class FeatureRegistry
                 }
             }
 
-            return ground.Count > 0;
+            var any = ground.Count > 0;
+            ReturnPatchList(ground);
+            return any;
         };
     }
+
+    // Position lists no patch is using, per thread: a patch's vegetation may place another patch inside it.
+    [ThreadStatic]
+    private static Stack<List<Vector>>? freePatchLists;
+
+    private static List<Vector> RentPatchList()
+    {
+        var free = freePatchLists ??= new Stack<List<Vector>>();
+        return free.TryPop(out var positions) ? positions : [];
+    }
+
+    private static void ReturnPatchList(List<Vector> positions)
+    {
+        positions.Clear();
+        freePatchLists!.Push(positions);
+    }
+
+    private static readonly BlockFace[] waterWalls =
+        [BlockFace.North, BlockFace.East, BlockFace.South, BlockFace.West, BlockFace.Down];
 
     private static List<Vector> PatchGround(
         IWorldGenLevel level,
@@ -73,7 +96,7 @@ internal sealed partial class FeatureRegistry
         int radiusZ,
         PatchSettings settings)
     {
-        var ground = new List<Vector>();
+        var ground = RentPatchList();
         var away = settings.Toward.Opposite();
 
         for (var dx = -radiusX; dx <= radiusX; dx++)
@@ -127,7 +150,10 @@ internal sealed partial class FeatureRegistry
             }
         }
 
-        return FeatureHelpers.JavaHashSetOrder(ground);
+        var ordered = RentPatchList();
+        FeatureHelpers.JavaHashSetOrder(ground, ordered);
+        ReturnPatchList(ground);
+        return ordered;
     }
 
     private static bool PatchColumn(
@@ -158,18 +184,19 @@ internal sealed partial class FeatureRegistry
 
     private static List<Vector> PatchWater(IWorldGenLevel level, List<Vector> ground)
     {
-        BlockFace[] faces = [BlockFace.North, BlockFace.East, BlockFace.South, BlockFace.West, BlockFace.Down];
-        var retained = new List<Vector>();
+        var enclosed = RentPatchList();
 
         foreach (var position in ground)
         {
-            if (faces.All(face => level.GetBlock(position.Offset(face)).IsFaceSturdy(face.Opposite())))
+            if (IsWalledIn(level, position))
             {
-                retained.Add(position);
+                enclosed.Add(position);
             }
         }
 
-        retained = FeatureHelpers.JavaHashSetOrder(retained);
+        var retained = RentPatchList();
+        FeatureHelpers.JavaHashSetOrder(enclosed, retained);
+        ReturnPatchList(enclosed);
 
         foreach (var position in retained)
         {
@@ -177,6 +204,17 @@ internal sealed partial class FeatureRegistry
         }
 
         return retained;
+    }
+
+    private static bool IsWalledIn(IWorldGenLevel level, Vector position)
+    {
+        foreach (var face in waterWalls)
+        {
+            if (!level.GetBlock(position.Offset(face)).IsFaceSturdy(face.Opposite()))
+                return false;
+        }
+
+        return true;
     }
 
     private sealed record PatchSettings(
