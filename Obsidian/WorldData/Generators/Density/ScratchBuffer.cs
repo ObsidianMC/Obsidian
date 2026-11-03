@@ -18,9 +18,9 @@ internal readonly ref struct ScratchBuffer<T> where T : unmanaged
     private readonly T[] array;
     private readonly int length;
     private readonly int slot;
-    private readonly int lease;
+    private readonly long lease;
 
-    internal ScratchBuffer(ScratchStack<T>? owner, T[] array, int length, int slot, int lease)
+    internal ScratchBuffer(ScratchStack<T>? owner, T[] array, int length, int slot, long lease)
     {
         this.owner = owner;
         this.array = array;
@@ -78,11 +78,13 @@ internal sealed class ScratchStack<T> where T : unmanaged
     private static ScratchStack<T>? current;
 
     private readonly T[]?[] arrays = new T[]?[MaxDepth];
-    private readonly int[] leases = new int[MaxDepth];
+    private readonly long[] leases = new long[MaxDepth];
     private readonly T[]?[] pooledArrays = new T[]?[MaxPooled];
-    private readonly int[] pooledLeases = new int[MaxPooled];
+    private readonly long[] pooledLeases = new long[MaxPooled];
     private int depth;
-    private int nextLease;
+    // Leases count up from 1 and never wrap in practice, so 0 marks a free pooled entry and a stale lease never
+    // matches a newer buffer's.
+    private long nextLease;
     private int retained;
 
     /// <summary>The most elements a thread's stack keeps across all its arrays.</summary>
@@ -91,11 +93,7 @@ internal sealed class ScratchStack<T> where T : unmanaged
     /// volumes of 16 by 16 by 384 blocks, and 190,000 ints for the ore veins' selections over them. The nether and the
     /// end keep a tenth of that. Taller dimensions fall back to the shared pool for their largest volumes.
     /// </remarks>
-    public static int MaxRetainedElements { get; } = typeof(T) == typeof(float)
-        ? 1 << 20
-        : typeof(T) == typeof(int)
-            ? 1 << 18
-            : 1 << 16;
+    public static int MaxRetainedElements { get; } = RetainedElements();
 
     /// <summary>The current thread's stack.</summary>
     public static ScratchStack<T> Current => current ??= new ScratchStack<T>();
@@ -146,7 +144,7 @@ internal sealed class ScratchStack<T> where T : unmanaged
     /// Gives back the buffer lent at <paramref name="slot"/> and any lent after it, or, when <paramref name="slot"/>
     /// is negative, the shared-pool buffer lent under <paramref name="lease"/>.
     /// </summary>
-    internal void Release(int slot, int lease)
+    internal void Release(int slot, long lease)
     {
         if (slot < 0)
         {
@@ -191,6 +189,17 @@ internal sealed class ScratchStack<T> where T : unmanaged
         return array;
     }
 
+    private static int RetainedElements()
+    {
+        if (typeof(T) == typeof(float))
+            return 1 << 20;
+
+        if (typeof(T) == typeof(int))
+            return 1 << 18;
+
+        return 1 << 16;
+    }
+
     // Lends an array from the shared pool, recorded under its lease so that only one disposal returns it. Past
     // MaxPooled such buffers, the array is a new one that nothing returns.
     private ScratchBuffer<T> RentPooled(int length)
@@ -208,7 +217,7 @@ internal sealed class ScratchStack<T> where T : unmanaged
         return new ScratchBuffer<T>(this, array, length, slot: -1, this.nextLease);
     }
 
-    private void ReleasePooled(int lease)
+    private void ReleasePooled(long lease)
     {
         var entry = Array.IndexOf(this.pooledLeases, lease);
 
