@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Threading;
 
 namespace Obsidian.WorldData.Generators.Density;
@@ -56,36 +55,30 @@ internal sealed class CacheFunction(DensityFunction input) : DensityFunction
 
         var last = this.remembered.Value!;
         last.PrepareVolume(volume);
-        var missing = ArrayPool<int>.Shared.Rent(indices.Length);
+        using var buffer = ScratchBuffer<int>.Rent(indices.Length);
+        var missing = buffer.Span;
+        var count = 0;
 
-        try
+        foreach (var index in indices)
         {
-            var count = 0;
-            foreach (var index in indices)
-            {
-                if (!last.HasVolume && !last.Filled[index])
-                    missing[count++] = index;
-            }
-
-            if (count > 0)
-            {
-                using var values = new DensityBuffer(count);
-                input.SampleSelected(values.Span, volume, missing.AsSpan(0, count));
-
-                for (var i = 0; i < count; i++)
-                {
-                    last.Values[missing[i]] = values.Span[i];
-                    last.Filled[missing[i]] = true;
-                }
-            }
-
-            for (var i = 0; i < indices.Length; i++)
-                output[i] = last.Values[indices[i]];
+            if (!last.HasVolume && !last.Filled[index])
+                missing[count++] = index;
         }
-        finally
+
+        if (count > 0)
         {
-            ArrayPool<int>.Shared.Return(missing);
+            using var values = new DensityBuffer(count);
+            input.SampleSelected(values.Span, volume, missing[..count]);
+
+            for (var i = 0; i < count; i++)
+            {
+                last.Values[missing[i]] = values.Span[i];
+                last.Filled[missing[i]] = true;
+            }
         }
+
+        for (var i = 0; i < indices.Length; i++)
+            output[i] = last.Values[indices[i]];
     }
 
     public override void SampleVolume(Span<float> output, in DensityVolume volume)

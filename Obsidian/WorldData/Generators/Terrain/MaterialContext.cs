@@ -276,6 +276,9 @@ internal sealed partial class MaterialRules
 
             if (this.densities[slot] is not float[] values)
             {
+                // These live as long as the context rather than a sampling scope, so they come from the shared pool,
+                // not the density functions' last-in, first-out scratch (see ScratchStack). A chunk rents
+                // only a few.
                 values = ArrayPool<float>.Shared.Rent(this.volume.Size);
                 function.SampleVolume(values.AsSpan(0, this.volume.Size), this.volume);
                 this.densities[slot] = values;

@@ -1,11 +1,9 @@
-using System.Buffers;
-
 namespace Obsidian.WorldData.Generators.Density;
 
 /// <summary>A branch's volume indices and their destinations in its caller's compact buffer.</summary>
 internal readonly ref struct DensitySelection : IDisposable
 {
-    private readonly int[] storage;
+    private readonly ScratchBuffer<int> storage;
     private readonly int capacity;
     private readonly int count;
 
@@ -17,7 +15,8 @@ internal readonly ref struct DensitySelection : IDisposable
         float max = 0.0f)
     {
         this.capacity = controls.Length;
-        this.storage = ArrayPool<int>.Shared.Rent(this.capacity * 2);
+        this.storage = ScratchBuffer<int>.Rent(this.capacity * 2);
+        var storage = this.storage.Span;
         var count = 0;
 
         for (var i = 0; i < controls.Length; i++)
@@ -36,8 +35,8 @@ internal readonly ref struct DensitySelection : IDisposable
             if (!selected)
                 continue;
 
-            this.storage[count] = parentIndices.IsEmpty ? i : parentIndices[i];
-            this.storage[this.capacity + count] = i;
+            storage[count] = parentIndices.IsEmpty ? i : parentIndices[i];
+            storage[this.capacity + count] = i;
             count++;
         }
 
@@ -58,7 +57,7 @@ internal readonly ref struct DensitySelection : IDisposable
 
         if (function is ConstantFunction constant)
         {
-            foreach (var destination in this.storage.AsSpan(this.capacity, this.count))
+            foreach (var destination in this.storage.Span.Slice(this.capacity, this.count))
                 output[destination] = constant.Value;
 
             return;
@@ -66,14 +65,14 @@ internal readonly ref struct DensitySelection : IDisposable
 
         using var values = new DensityBuffer(this.count);
         var sampled = values.Span;
-        var destinations = this.storage.AsSpan(this.capacity, this.count);
-        function.SampleSelected(sampled, volume, this.storage.AsSpan(0, this.count));
+        var destinations = this.storage.Span.Slice(this.capacity, this.count);
+        function.SampleSelected(sampled, volume, this.storage.Span.Slice(0, this.count));
 
         for (var i = 0; i < destinations.Length; i++)
             output[destinations[i]] = sampled[i];
     }
 
-    public void Dispose() => ArrayPool<int>.Shared.Return(this.storage);
+    public void Dispose() => this.storage.Dispose();
 }
 
 internal enum DensitySelectionKind

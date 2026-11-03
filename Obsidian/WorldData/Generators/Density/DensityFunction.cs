@@ -1,5 +1,3 @@
-using System.Buffers;
-
 namespace Obsidian.WorldData.Generators.Density;
 
 /// <summary>
@@ -95,29 +93,37 @@ internal abstract class DensityFunction
 }
 
 /// <summary>
-/// A pooled scratch buffer for one volume's values, returned to the pool when disposed.
+/// A scratch buffer for one volume's values, borrowed from the thread's <see cref="ScratchStack{T}"/> and given back
+/// when disposed. Rent it in a <c>using</c> declaration.
 /// </summary>
-internal readonly struct DensityBuffer : IDisposable
+internal readonly ref struct DensityBuffer : IDisposable
 {
-    private readonly float[] array;
-    private readonly int length;
+    private readonly ScratchBuffer<float> buffer;
 
     public DensityBuffer(int length)
     {
-        this.array = ArrayPool<float>.Shared.Rent(length);
-        this.length = length;
+        this.buffer = ScratchBuffer<float>.Rent(length);
     }
 
-    public Span<float> Span => this.array.AsSpan(0, this.length);
+    public Span<float> Span => this.buffer.Span;
 
     /// <summary>Rents a buffer and fills it with <paramref name="function"/>'s values over the volume.</summary>
     public static DensityBuffer Sample(DensityFunction function, in DensityVolume volume)
     {
         var buffer = new DensityBuffer(volume.Size);
-        function.SampleVolume(buffer.Span, volume);
+
+        try
+        {
+            function.SampleVolume(buffer.Span, volume);
+        }
+        catch
+        {
+            buffer.Dispose();
+            throw;
+        }
 
         return buffer;
     }
 
-    public void Dispose() => ArrayPool<float>.Shared.Return(this.array);
+    public void Dispose() => this.buffer.Dispose();
 }

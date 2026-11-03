@@ -189,24 +189,20 @@ internal sealed class SplineFunction : DensityFunction
         sampled.Fill(true);
         var input = new SplineInput(this.coordinates, values, sampled, 0, 0, 0);
 
-        var buffers = new DensityBuffer[count];
-        try
+        // One buffer holds every coordinate's values over the volume, one coordinate after another.
+        var size = volume.Size;
+        using var buffer = new DensityBuffer(count * size);
+        var coordinateValues = buffer.Span;
+
+        for (var i = 0; i < count; i++)
+            this.coordinates[i].SampleVolume(coordinateValues.Slice(i * size, size), volume);
+
+        for (var index = 0; index < output.Length; index++)
         {
             for (var i = 0; i < count; i++)
-                buffers[i] = DensityBuffer.Sample(this.coordinates[i], volume);
+                values[i] = coordinateValues[i * size + index];
 
-            for (var index = 0; index < output.Length; index++)
-            {
-                for (var i = 0; i < count; i++)
-                    values[i] = buffers[i].Span[index];
-
-                output[index] = this.spline.Evaluate(input);
-            }
-        }
-        finally
-        {
-            foreach (var buffer in buffers)
-                buffer.Dispose();
+            output[index] = this.spline.Evaluate(input);
         }
     }
 }

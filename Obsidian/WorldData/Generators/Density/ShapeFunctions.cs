@@ -1,4 +1,3 @@
-using System.Buffers;
 
 namespace Obsidian.WorldData.Generators.Density;
 
@@ -429,57 +428,50 @@ internal sealed class InterpolatedFunction(DensityFunction input, int cellSizeXz
         in DensityVolume corners,
         ReadOnlySpan<int> indices)
     {
-        var marked = ArrayPool<byte>.Shared.Rent(corners.Size);
-        var selected = ArrayPool<int>.Shared.Rent(corners.Size);
+        using var markedBuffer = ScratchBuffer<byte>.Rent(corners.Size);
+        using var selectedBuffer = ScratchBuffer<int>.Rent(corners.Size);
+        var marked = markedBuffer.Span;
+        var selected = selectedBuffer.Span;
+        marked.Clear();
 
-        try
+        foreach (var index in indices)
         {
-            marked.AsSpan(0, corners.Size).Clear();
+            volume.Position(index, out var x, out var y, out var z);
+            var cellX = (x - corners.MinBlockX) / cellSizeXz;
+            var cellY = (y - corners.MinBlockY) / cellSizeY;
+            var cellZ = (z - corners.MinBlockZ) / cellSizeXz;
+            var nextX = Math.Min(cellX + 1, corners.SizeX - 1);
+            var nextY = Math.Min(cellY + 1, corners.SizeY - 1);
+            var nextZ = Math.Min(cellZ + 1, corners.SizeZ - 1);
 
-            foreach (var index in indices)
-            {
-                volume.Position(index, out var x, out var y, out var z);
-                var cellX = (x - corners.MinBlockX) / cellSizeXz;
-                var cellY = (y - corners.MinBlockY) / cellSizeY;
-                var cellZ = (z - corners.MinBlockZ) / cellSizeXz;
-                var nextX = Math.Min(cellX + 1, corners.SizeX - 1);
-                var nextY = Math.Min(cellY + 1, corners.SizeY - 1);
-                var nextZ = Math.Min(cellZ + 1, corners.SizeZ - 1);
-
-                marked[corners.Index(cellX, cellY, cellZ)] = 1;
-                marked[corners.Index(cellX, nextY, cellZ)] = 1;
-                marked[corners.Index(nextX, cellY, cellZ)] = 1;
-                marked[corners.Index(nextX, nextY, cellZ)] = 1;
-                marked[corners.Index(cellX, cellY, nextZ)] = 1;
-                marked[corners.Index(cellX, nextY, nextZ)] = 1;
-                marked[corners.Index(nextX, cellY, nextZ)] = 1;
-                marked[corners.Index(nextX, nextY, nextZ)] = 1;
-            }
-
-            var count = 0;
-            for (var i = 0; i < corners.Size; i++)
-            {
-                if (marked[i] != 0)
-                    selected[count++] = i;
-            }
-
-            if (count == corners.Size)
-            {
-                input.SampleVolume(output, corners);
-                return;
-            }
-
-            using var values = new DensityBuffer(count);
-            input.SampleSelected(values.Span, corners, selected.AsSpan(0, count));
-
-            for (var i = 0; i < count; i++)
-                output[selected[i]] = values.Span[i];
+            marked[corners.Index(cellX, cellY, cellZ)] = 1;
+            marked[corners.Index(cellX, nextY, cellZ)] = 1;
+            marked[corners.Index(nextX, cellY, cellZ)] = 1;
+            marked[corners.Index(nextX, nextY, cellZ)] = 1;
+            marked[corners.Index(cellX, cellY, nextZ)] = 1;
+            marked[corners.Index(cellX, nextY, nextZ)] = 1;
+            marked[corners.Index(nextX, cellY, nextZ)] = 1;
+            marked[corners.Index(nextX, nextY, nextZ)] = 1;
         }
-        finally
+
+        var count = 0;
+        for (var i = 0; i < corners.Size; i++)
         {
-            ArrayPool<byte>.Shared.Return(marked);
-            ArrayPool<int>.Shared.Return(selected);
+            if (marked[i] != 0)
+                selected[count++] = i;
         }
+
+        if (count == corners.Size)
+        {
+            input.SampleVolume(output, corners);
+            return;
+        }
+
+        using var values = new DensityBuffer(count);
+        input.SampleSelected(values.Span, corners, selected[..count]);
+
+        for (var i = 0; i < count; i++)
+            output[selected[i]] = values.Span[i];
     }
 
     private static DensityVolume BlockVolume(in DensityVolume volume) => new(

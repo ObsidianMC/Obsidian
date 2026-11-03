@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
@@ -51,51 +50,43 @@ internal sealed class NoiseStack(IReadOnlyList<NoiseStack.Layer> layers)
         double yScale)
     {
         var count = indices.Length;
-        var positions = ArrayPool<int>.Shared.Rent(count * 3);
+        using var positions = ScratchBuffer<int>.Rent(count * 3);
+        var xs = positions.Span[..count];
+        var ys = positions.Span.Slice(count, count);
+        var zs = positions.Span.Slice(count * 2, count);
 
-        try
+        for (var i = 0; i < count; i++)
+            volume.Position(indices[i], out xs[i], out ys[i], out zs[i]);
+
+        var values = output[..count];
+        values.Clear();
+
+        foreach (var layer in this.layers)
         {
-            var xs = positions.AsSpan(0, count);
-            var ys = positions.AsSpan(count, count);
-            var zs = positions.AsSpan(count * 2, count);
+            // Vanilla multiplies scale by frequency first over a volume; point sampling rounds differently.
+            var layerXzScale = xzScale * layer.Frequency;
+            var layerYScale = yScale * layer.Frequency;
+            var amplitude = layer.Amplitude;
+            var noise = layer.Noise;
+            var i = 0;
 
-            for (var i = 0; i < count; i++)
-                volume.Position(indices[i], out xs[i], out ys[i], out zs[i]);
-
-            var values = output[..count];
-            values.Clear();
-
-            foreach (var layer in this.layers)
+            if (PerlinNoise.CanSampleEight)
             {
-                // Vanilla multiplies scale by frequency first over a volume; point sampling rounds differently.
-                var layerXzScale = xzScale * layer.Frequency;
-                var layerYScale = yScale * layer.Frequency;
-                var amplitude = layer.Amplitude;
-                var noise = layer.Noise;
-                var i = 0;
-
-                if (PerlinNoise.CanSampleEight)
+                for (; i + 8 <= values.Length; i += 8)
                 {
-                    for (; i + 8 <= values.Length; i += 8)
-                    {
-                        var sampled = noise.Get8(
-                            Scale(xs, i, layerXzScale, upper: false),
-                            Scale(xs, i, layerXzScale, upper: true),
-                            Scale(ys, i, layerYScale, upper: false),
-                            Scale(ys, i, layerYScale, upper: true),
-                            Scale(zs, i, layerXzScale, upper: false),
-                            Scale(zs, i, layerXzScale, upper: true));
-                        Accumulate(values, i, amplitude, sampled);
-                    }
+                    var sampled = noise.Get8(
+                        Scale(xs, i, layerXzScale, upper: false),
+                        Scale(xs, i, layerXzScale, upper: true),
+                        Scale(ys, i, layerYScale, upper: false),
+                        Scale(ys, i, layerYScale, upper: true),
+                        Scale(zs, i, layerXzScale, upper: false),
+                        Scale(zs, i, layerXzScale, upper: true));
+                    Accumulate(values, i, amplitude, sampled);
                 }
-
-                for (; i < values.Length; i++)
-                    values[i] += amplitude * noise.Get(xs[i] * layerXzScale, ys[i] * layerYScale, zs[i] * layerXzScale);
             }
-        }
-        finally
-        {
-            ArrayPool<int>.Shared.Return(positions);
+
+            for (; i < values.Length; i++)
+                values[i] += amplitude * noise.Get(xs[i] * layerXzScale, ys[i] * layerYScale, zs[i] * layerXzScale);
         }
     }
 
