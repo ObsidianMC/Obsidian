@@ -302,15 +302,19 @@ public sealed class ChunkSection : IChunkSection
     internal byte[] GetLightStorage(LightType lt)
     {
         ref var slot = ref lt == LightType.Sky ? ref this.skyLight : ref this.blockLight;
-        var storage = Volatile.Read(ref slot);
-        if (storage is not null && !ReferenceEquals(storage, FullSkyLight))
-            return storage;
 
-        var created = storage is null ? new byte[2048] : (byte[])storage.Clone();
+        // Writers of a section are serialized, but the exchange keeps a write from landing in a second array, and the
+        // retry from ever handing out the shared full sky light should a racing writer have just installed it.
+        while (true)
+        {
+            var storage = Volatile.Read(ref slot);
+            if (storage is not null && !ReferenceEquals(storage, FullSkyLight))
+                return storage;
 
-        // Writers of a section are serialized, but a reader racing a write must not lose it to a second array.
-        var current = Interlocked.CompareExchange(ref slot, created, storage);
-        return ReferenceEquals(current, storage) ? created : current!;
+            var created = storage is null ? new byte[2048] : (byte[])storage.Clone();
+            if (ReferenceEquals(Interlocked.CompareExchange(ref slot, created, storage), storage))
+                return created;
+        }
     }
 
     /// <summary>
