@@ -175,7 +175,7 @@ internal sealed class LightEngine
             if (this.storageSections is not null)
             {
                 var storage = this.storageSections[4 * this.sectionCount + sectionIndex]!;
-                Array.Clear(storage.GetLightStorage(LightType.Block));
+                storage.ClearLight(LightType.Block);
                 storage.MarkUnsaved();
             }
             else
@@ -281,6 +281,26 @@ internal sealed class LightEngine
         {
             var bottom = this.minY + (sectionIndex << 4);
             var section = this.sections[4 * this.sectionCount + sectionIndex]!;
+
+            // A stored section that every column's sources cover shares full sky light, and one they're all above starts
+            // dark without storage. Spreading only raises light, so the full one is never written, and the dark one only
+            // gets storage if light spreads into it.
+            if (this.storageSections?[4 * this.sectionCount + sectionIndex] is ChunkSection stored)
+            {
+                if (highestSource <= bottom)
+                {
+                    stored.ShareFullSkyLight();
+                    continue;
+                }
+
+                if (lowestSource >= bottom + 16)
+                {
+                    stored.ClearLight(LightType.Sky);
+                    stored.MarkUnsaved();
+                    continue;
+                }
+            }
+
             var light = this.storageSections is null
                 ? new byte[2048]
                 : this.storageSections[4 * this.sectionCount + sectionIndex]!.GetLightStorage(LightType.Sky);
@@ -515,7 +535,7 @@ internal sealed class LightEngine
 
         var index = SectionIndex(position);
         var shift = (index & 1) << 2;
-        return (this.storageSections[this.SectionSlot(position)]!.GetLightStorage(lightType)[index >> 1] >> shift) & 15;
+        return (this.storageSections[this.SectionSlot(position)]!.ReadLightStorage(lightType)[index >> 1] >> shift) & 15;
     }
 
     private void SetLight(int position, LightType lightType, int level)

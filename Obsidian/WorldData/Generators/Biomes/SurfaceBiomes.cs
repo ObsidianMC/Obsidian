@@ -48,6 +48,13 @@ internal sealed class SurfaceBiomes
     private readonly ushort[] cells;
     private readonly int cellHeight;
 
+    // A released table's arrays, which the thread's next table overwrites: every entry is written before it's read.
+    [ThreadStatic]
+    private static ushort[]? freeQuarts;
+
+    [ThreadStatic]
+    private static ushort[]? freeCells;
+
     /// <param name="source">The stored quart biomes, with y within the chunk's storage.</param>
     /// <param name="zoomSeed">The obfuscated seed (<see cref="BiomeManager.ObfuscateSeed"/>).</param>
     public SurfaceBiomes(IBiomeSource source, long zoomSeed, int chunkX, int chunkZ, int minY, int height)
@@ -58,8 +65,8 @@ internal sealed class SurfaceBiomes
         this.minQuartY = minY >> 2;
         this.quartHeight = height >> 2;
         this.cellHeight = this.quartHeight + 1;
-        this.quarts = new ushort[QuartWidth * QuartWidth * this.quartHeight];
-        this.cells = new ushort[CellWidth * CellWidth * this.cellHeight];
+        this.quarts = Take(ref freeQuarts, QuartWidth * QuartWidth * this.quartHeight);
+        this.cells = Take(ref freeCells, CellWidth * CellWidth * this.cellHeight);
 
         var names = new List<string>();
 
@@ -81,6 +88,21 @@ internal sealed class SurfaceBiomes
 
     /// <summary>The distinct biomes the chunk's block lookups can return.</summary>
     public IReadOnlyList<string> Names { get; }
+
+    /// <summary>Hands the table's arrays to the thread's next table. The table must not be used afterwards.</summary>
+    public void Release()
+    {
+        freeQuarts = this.quarts;
+        freeCells = this.cells;
+    }
+
+    private static ushort[] Take(ref ushort[]? free, int length)
+    {
+        var array = free;
+        free = null;
+
+        return array is not null && array.Length >= length ? array : new ushort[length];
+    }
 
     private int QuartIndex(int x, int y, int z) => (x * QuartWidth + z) * this.quartHeight + y;
 

@@ -254,6 +254,17 @@ internal static class FeatureHelpers
     /// </remarks>
     public static List<Vector> JavaHashSetOrder(List<Vector> insertionOrder)
     {
+        var ordered = new List<Vector>(insertionOrder.Count);
+        JavaHashSetOrder(insertionOrder, ordered);
+        return ordered;
+    }
+
+    /// <summary>
+    /// Like <see cref="JavaHashSetOrder(List{Vector})"/>, into <paramref name="ordered"/>, which is emptied first and
+    /// must be another list.
+    /// </summary>
+    public static void JavaHashSetOrder(List<Vector> insertionOrder, List<Vector> ordered)
+    {
         // A stable counting sort by bucket. Duplicates share a bucket, so they're dropped from each bucket's run; the table
         // size depends on how many positions are distinct, so with duplicates it may have to be sorted again.
         var source = CollectionsMarshal.AsSpan(insertionOrder);
@@ -267,7 +278,7 @@ internal static class FeatureHelpers
         for (var bucket = 1; bucket <= capacity; bucket++)
             starts[bucket] += starts[bucket - 1];
 
-        var ordered = new List<Vector>(source.Length);
+        ordered.Clear();
         CollectionsMarshal.SetCount(ordered, source.Length);
         var target = CollectionsMarshal.AsSpan(ordered);
 
@@ -289,13 +300,16 @@ internal static class FeatureHelpers
         }
 
         if (distinct == source.Length)
-            return ordered;
+            return;
 
         if (JavaHashSetCapacity(distinct) != capacity)
-            return JavaHashSetOrderOfDistinct(insertionOrder);
+        {
+            ordered.Clear();
+            ordered.AddRange(JavaHashSetOrderOfDistinct(insertionOrder));
+            return;
+        }
 
         CollectionsMarshal.SetCount(ordered, distinct);
-        return ordered;
     }
 
     private static List<Vector> JavaHashSetOrderOfDistinct(List<Vector> insertionOrder)

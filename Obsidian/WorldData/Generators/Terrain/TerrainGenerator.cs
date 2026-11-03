@@ -77,6 +77,7 @@ internal sealed class TerrainGenerator
         this.Fill(context, beardifier);
         this.Materials.Apply(context);
         TerrainCarvers.Apply(context, carversAt, carvers);
+        context.Aquifer.Release();
     }
 
     /// <summary>Runs the entire terrain status, with one biome lookup for both the surface and carving.</summary>

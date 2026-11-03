@@ -199,10 +199,18 @@ internal sealed class BiomeTerrain
             light.MushroomBrightness));
 
         // Vanilla walks the marks section by section, in the order they were added.
-        var marks = chunk.PostProcessing.OrderBy(position => (position.Y - minY) >> 4).ToList();
-        chunk.PostProcessing.Clear();
+        var marks = PostProcessMarks.SortBySection(chunk.PostProcessing, minY);
 
-        foreach (var position in marks)
+        // The chunk is complete after this, so it needn't keep the list's storage.
+        chunk.PostProcessing.Clear();
+        chunk.PostProcessing.TrimExcess();
+
+        // Made once rather than for every mark.
+        Func<Vector, IBlock, bool> storeWater = (point, state) =>
+            fluids.SetBlock(point, state, Obsidian.API.Blocks.BlockUpdateFlags.Clients);
+        Action<Vector, IBlock, int> scheduleTick = region.ScheduleBlockTick;
+
+        foreach (var position in marks.Positions)
         {
             // The fluid's tick may change blocks, but the shape update still starts from the block read before it.
             var block = region.GetBlock(position);
@@ -211,14 +219,13 @@ internal sealed class BiomeTerrain
 
             if (block.BlockClass() == "LiquidBlock")
             {
-                BubbleColumns.PostProcessWater(region, position, block,
-                    (point, state) => fluids.SetBlock(point, state, Obsidian.API.Blocks.BlockUpdateFlags.Clients));
+                BubbleColumns.PostProcessWater(region, position, block, storeWater);
                 continue;
             }
 
             var updated = ShapeUpdater.UpdateFromNeighbourShapes(fluids.ShapeView, block, position,
                 block.BlockClass() == "MushroomBlock" ? light.MushroomBrightness(position) : region.UnlitBrightness,
-                region.ScheduleBlockTick);
+                scheduleTick);
             if (!updated.IsSameState(block))
                 region.SetBlock(position, updated);
 
@@ -226,6 +233,8 @@ internal sealed class BiomeTerrain
             if (BlocksRegistry.GetShapeUpdateBehavior(block.RegistryId) is IPostProcessBehavior owner)
                 owner.PostProcess(region, position, block);
         }
+
+        marks.Return();
 
         // Fluids may have spread into finished neighbors, whose heightmaps are already stored.
         region.StoreFinishedHeightmaps();
@@ -543,16 +552,21 @@ internal sealed class BiomeTerrain
     /// from its own storage, whatever filled it; the biomes of any other neighbor are filled as its biomes status would
     /// fill them (<see cref="ClimateSource.Stored"/>).
     /// </param>
-    public TerrainBiomes ChunkBiomes(IChunk chunk, Func<int, int, IChunk?>? neighbors = null)
+    public TerrainBiomes ChunkBiomes(IChunk chunk, Func<int, int, IChunk?>? neighbors = null) =>
+        this.ChunkBiomes(chunk, neighbors, out _);
+
+    /// <param name="table">The table answering the chunk's blocks, which may be released once they're no longer read.
+    /// </param>
+    private TerrainBiomes ChunkBiomes(IChunk chunk, Func<int, int, IChunk?>? neighbors, out SurfaceBiomes table)
     {
         var source = new SurfaceBiomeSource(this.Source, chunk, neighbors);
-        var table = new SurfaceBiomes(source, this.zoomSeed, chunk.X, chunk.Z, chunk.MinY, chunk.Height);
+        var surface = table = new SurfaceBiomes(source, this.zoomSeed, chunk.X, chunk.Z, chunk.MinY, chunk.Height);
         BiomeManager? outside = null;
 
         // The table answers the chunk's own blocks; any other block goes through a manager over the same quarts.
         string SurfaceAt(int x, int y, int z)
         {
-            if (table.Get(x, y, z) is BiomeCodec biome)
+            if (surface.Get(x, y, z) is BiomeCodec biome)
                 return biome.Name;
 
             if (outside is null)
@@ -570,7 +584,7 @@ internal sealed class BiomeTerrain
             return outside.GetBiome(x, y, z).Name;
         }
 
-        return new TerrainBiomes(Surface: SurfaceAt, Carving: this.BiomeAt) { SurfaceNames = table.Names };
+        return new TerrainBiomes(Surface: SurfaceAt, Carving: this.BiomeAt) { SurfaceNames = surface.Names };
     }
 
     /// <summary>The carvers of the biome a chunk's carvers start in. Callers mustn't change the list.</summary>
@@ -581,6 +595,11 @@ internal sealed class BiomeTerrain
     {
         var biome = this.Source.GetNoiseBiome(chunkX << 2, 0, chunkZ << 2);
         var cache = this.carversByBiome.GetValue(carvers, static _ => new());
+
+        // Looked up first, since adding makes a delegate for the factory.
+        if (cache.TryGetValue(biome.Name, out var known))
+            return known;
+
         return cache.GetOrAdd(biome.Name, carvers.BiomeCarvers);
     }
 
@@ -631,11 +650,12 @@ internal sealed class BiomeTerrain
         fluidUpdates ??= (chunk as Chunk)?.PostProcessing;
         this.terrain.Generate(
             chunk,
-            this.ChunkBiomes(chunk, neighbors),
+            this.ChunkBiomes(chunk, neighbors, out var surface),
             (x, z) => this.CarversAt(carvers, x, z),
             fluidUpdates,
             this.BeardifierFor(chunk.X, chunk.Z),
             carvers);
+        surface.Release();
 
         // Chunk storage keeps the internal carvers stage, which saves as 26.3's terrain status.
         chunk.SetChunkStatus(ChunkGenStage.carvers);

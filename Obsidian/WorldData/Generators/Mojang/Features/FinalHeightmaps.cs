@@ -17,7 +17,12 @@ internal sealed class FinalHeightmaps
     // One layer of 256 columns (z * 16 + x) per heightmap, in the order of WorldgenHeightmaps' mask bits.
     private const int LayerCount = 4;
 
-    private readonly int[] heights = new int[LayerCount * 256];
+    // A borrowed instance's released heights, which the thread's next borrowed instance overwrites: priming writes
+    // every height.
+    [ThreadStatic]
+    private static int[]? freeHeights;
+
+    private readonly int[] heights;
     private readonly IChunk chunk;
     private readonly int minY;
 
@@ -25,11 +30,32 @@ internal sealed class FinalHeightmaps
     /// Computes the heights from the chunk's current blocks.
     /// </summary>
     public FinalHeightmaps(IChunk chunk, int minY, int height)
+        : this(chunk, minY, height, new int[LayerCount * 256])
     {
+    }
+
+    private FinalHeightmaps(IChunk chunk, int minY, int height, int[] heights)
+    {
+        this.heights = heights;
         this.chunk = chunk;
         this.minY = minY;
         this.Prime(height);
     }
+
+    /// <summary>
+    /// Computes the heights like the constructor, in storage the thread lends until <see cref="Release"/>, for heights
+    /// that are only read briefly.
+    /// </summary>
+    public static FinalHeightmaps Borrow(IChunk chunk, int minY, int height)
+    {
+        var heights = freeHeights ?? new int[LayerCount * 256];
+        freeHeights = null;
+
+        return new FinalHeightmaps(chunk, minY, height, heights);
+    }
+
+    /// <summary>Hands a borrowed instance's storage back to the thread. It must not be used afterwards.</summary>
+    public void Release() => freeHeights = this.heights;
 
     /// <summary>
     /// The first free Y above the highest block matching the heightmap at local column (<paramref name="x"/>,

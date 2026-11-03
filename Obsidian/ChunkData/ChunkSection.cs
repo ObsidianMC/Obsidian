@@ -16,10 +16,10 @@ public sealed class ChunkSection : IChunkSection
     public DataContainer<BiomeCodec> BiomeContainer { get; }
 
     public bool HasSkyLight { get; private set; }
-    public ReadOnlyMemory<byte> SkyLightArray => skyLight.AsMemory();
+    public ReadOnlyMemory<byte> SkyLightArray => this.ReadLightStorage(LightType.Sky).AsMemory();
 
     public bool HasBlockLight { get; private set; }
-    public ReadOnlyMemory<byte> BlockLightArray => blockLight.AsMemory();
+    public ReadOnlyMemory<byte> BlockLightArray => this.ReadLightStorage(LightType.Block).AsMemory();
 
     public bool IsEmpty { get; private set; } = true;
 
@@ -56,6 +56,9 @@ public sealed class ChunkSection : IChunkSection
 
     private static readonly byte[] FullSkyLight = new byte[2048];
 
+    // What a section without light storage of a type reads: all dark. Shared, so it's never written.
+    private static readonly byte[] NoLight = new byte[2048];
+
     // SetBlock counts a section empty until it holds a block other than air (only plain air).
     private static readonly int airStateId = BlocksRegistry.Air.GetHashCode();
 
@@ -64,9 +67,12 @@ public sealed class ChunkSection : IChunkSection
         Array.Fill(FullSkyLight, (byte)0xFF); // 0xFF = two 15s packed together
     }
 
-    private byte[] skyLight = new byte[2048];
+    // Each type's light, two levels per byte, or null while it's all dark. Most sections of a generating chunk get no
+    // light before they're lit, and most never get block light, so the storage is only made on the first write. Sky
+    // light that is full everywhere, as above the terrain, is the shared FullSkyLight until a write copies it.
+    private byte[]? skyLight;
 
-    private byte[] blockLight = new byte[2048];
+    private byte[]? blockLight;
 
     public ChunkSection(byte bitsPerBlock = 0, byte bitsPerBiome = 0, int? yBase = null)
     {
@@ -273,9 +279,13 @@ public sealed class ChunkSection : IChunkSection
         var index = (y << 8) | (z << 4) | x;
         int shift = (index & 1) << 2;
         index /= 2;
-        var data = lt == LightType.Sky ? skyLight : blockLight;
-        data[index] &= (byte)(0xF0 >> shift);
-        data[index] |= (byte)(level << shift);
+        if (level != 0 || this.PeekLightStorage(lt) is not null)
+        {
+            var data = this.GetLightStorage(lt);
+            data[index] &= (byte)(0xF0 >> shift);
+            data[index] |= (byte)(level << shift);
+        }
+
         HasSkyLight |= lt == LightType.Sky;
         HasBlockLight |= lt == LightType.Block;
         this.MarkUnsaved();
@@ -285,7 +295,54 @@ public sealed class ChunkSection : IChunkSection
     /// The section's light levels of a type, two per byte as <see cref="SetLightLevel(int, int, int, LightType, int)"/>
     /// stores them, for the light engine to read and write directly. Call <see cref="MarkLight"/> after writing.
     /// </summary>
-    internal byte[] GetLightStorage(LightType lt) => lt == LightType.Sky ? skyLight : blockLight;
+    /// <remarks>
+    /// Makes the section's own storage when it has none yet or shares full sky light; <see cref="ReadLightStorage"/>
+    /// only reads.
+    /// </remarks>
+    internal byte[] GetLightStorage(LightType lt)
+    {
+        ref var slot = ref lt == LightType.Sky ? ref this.skyLight : ref this.blockLight;
+        var storage = Volatile.Read(ref slot);
+        if (storage is not null && !ReferenceEquals(storage, FullSkyLight))
+            return storage;
+
+        var created = storage is null ? new byte[2048] : (byte[])storage.Clone();
+
+        // Writers of a section are serialized, but a reader racing a write must not lose it to a second array.
+        var current = Interlocked.CompareExchange(ref slot, created, storage);
+        return ReferenceEquals(current, storage) ? created : current!;
+    }
+
+    /// <summary>
+    /// The section's light levels of a type, like <see cref="GetLightStorage"/>, without making storage for a section
+    /// that has none or copying shared full sky light. The array may be shared, so it must not be written.
+    /// </summary>
+    internal byte[] ReadLightStorage(LightType lt) => this.PeekLightStorage(lt) ?? NoLight;
+
+    /// <summary>
+    /// Sets the section's sky light to 15 everywhere, like <see cref="FillSkyLight"/>, sharing the storage until a write.
+    /// Light written into <see cref="GetLightStorage"/> before this is dropped.
+    /// </summary>
+    internal void ShareFullSkyLight()
+    {
+        Volatile.Write(ref this.skyLight, FullSkyLight);
+        HasSkyLight = true;
+        this.MarkUnsaved();
+    }
+
+    /// <summary>Empties the section's light of a type, keeping its own storage if it has some.</summary>
+    internal void ClearLight(LightType lt)
+    {
+        ref var slot = ref lt == LightType.Sky ? ref this.skyLight : ref this.blockLight;
+        var storage = Volatile.Read(ref slot);
+        if (ReferenceEquals(storage, FullSkyLight))
+            Volatile.Write(ref slot, null);
+        else if (storage is not null)
+            Array.Clear(storage);
+    }
+
+    private byte[]? PeekLightStorage(LightType lt) =>
+        Volatile.Read(ref lt == LightType.Sky ? ref this.skyLight : ref this.blockLight);
 
     /// <summary>
     /// Records that light of a type was written into <see cref="GetLightStorage"/>, like
@@ -304,7 +361,7 @@ public sealed class ChunkSection : IChunkSection
         var shift = (index & 1) << 2;
         var mask = 0xF << shift;
         index /= 2;
-        return ((lt == LightType.Sky ? skyLight : blockLight)[index] & mask) >> shift;
+        return (this.ReadLightStorage(lt)[index] & mask) >> shift;
     }
 
     /// <remarks>
@@ -313,7 +370,7 @@ public sealed class ChunkSection : IChunkSection
     /// </remarks>
     public void SetLight(byte[] data, LightType lt)
     {
-        if (!ReferenceEquals(data, lt == LightType.Sky ? skyLight : blockLight))
+        if (!ReferenceEquals(data, this.PeekLightStorage(lt)) || ReferenceEquals(data, FullSkyLight))
             data = (byte[])data.Clone();
 
         foreach (var b in data)
@@ -343,29 +400,34 @@ public sealed class ChunkSection : IChunkSection
     /// <returns>False, with nothing changed, when <paramref name="data"/> isn't a section's worth of light.</returns>
     internal bool TryLoadLight(ReadOnlySpan<byte> data, LightType lt)
     {
-        var storage = lt == LightType.Sky ? skyLight : blockLight;
-        if (data.Length != storage.Length)
+        if (data.Length != NoLight.Length)
             return false;
 
-        data.CopyTo(storage);
+        // Dark light needs no storage, and full sky light shares it.
+        if (lt == LightType.Sky && !data.ContainsAnyExcept((byte)0xFF))
+        {
+            this.ShareFullSkyLight();
+            return true;
+        }
+
         if (data.ContainsAnyExcept((byte)0))
         {
+            data.CopyTo(this.GetLightStorage(lt));
             if (lt == LightType.Sky)
                 HasSkyLight = true;
             else
                 HasBlockLight = true;
+        }
+        else
+        {
+            this.ClearLight(lt);
         }
 
         this.MarkUnsaved();
         return true;
     }
 
-    public void FillSkyLight()
-    {
-        Array.Copy(FullSkyLight, skyLight, 2048);
-        HasSkyLight = true;
-        this.MarkUnsaved();
-    }
+    public void FillSkyLight() => this.ShareFullSkyLight();
 
     public IBlock GetBlock(Vector position) => this.GetBlock(position.X, position.Y, position.Z);
     public BiomeCodec GetBiome(Vector position) => this.GetBiome(position.X, position.Y, position.Z);
@@ -377,9 +439,15 @@ public sealed class ChunkSection : IChunkSection
     public IChunkSection Clone()
     {
         var clone = new ChunkSection(BlockStateContainer.Clone(), BiomeContainer.Clone(), YBase, IsEmpty);
-        // SetLight copies arrays that aren't the clone's own.
-        clone.SetLight(skyLight, LightType.Sky);
-        clone.SetLight(blockLight, LightType.Block);
+        // SetLight copies arrays that aren't the clone's own; dark light needs none.
+        var sky = this.PeekLightStorage(LightType.Sky);
+        if (ReferenceEquals(sky, FullSkyLight))
+            clone.ShareFullSkyLight();
+        else if (sky is not null)
+            clone.SetLight(sky, LightType.Sky);
+
+        if (this.PeekLightStorage(LightType.Block) is byte[] block)
+            clone.SetLight(block, LightType.Block);
         return clone;
     }
 }

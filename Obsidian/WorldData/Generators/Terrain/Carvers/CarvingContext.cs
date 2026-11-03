@@ -15,14 +15,27 @@ internal sealed class CarvingContext(TerrainContext terrain)
         terrain.Volume.MinBlockY + 1,
         terrain.Volume.MinBlockY + terrain.Volume.SizeY - 8);
 
-    public CarvingBuffers Buffers { get; } = new(terrain.Volume.SizeY);
+    public CarvingBuffers Buffers { get; } = CarvingBuffers.Take(terrain.Volume.SizeY);
+
+    /// <summary>
+    /// Hands the mask's and buffers' storage to the thread's next context. The context must not be used afterwards.
+    /// </summary>
+    public void Release()
+    {
+        this.Mask.Release();
+        this.Buffers.Release();
+    }
 }
 
 /// <summary>Temporary, x-major columns of carving bits, discarded when terrain finishes.</summary>
 internal sealed class CarvingMask(int minY, int maxY)
 {
+    // A released mask's words, which the thread's next mask clears and reuses.
+    [ThreadStatic]
+    private static ulong[]? freeWords;
+
     private readonly int height = maxY - minY + 1;
-    private readonly ulong[] words = new ulong[(256 * (maxY - minY + 1) + 63) >> 6];
+    private readonly ulong[] words = TakeWords((256 * (maxY - minY + 1) + 63) >> 6);
 
     public int MinY { get; } = minY;
 
@@ -74,13 +87,43 @@ internal sealed class CarvingMask(int minY, int maxY)
     }
 
     private int Bit(int x, int y, int z) => (x * 16 + z) * this.height + y - this.MinY;
+
+    /// <summary>Hands the mask's storage to the thread's next mask. The mask must not be used afterwards.</summary>
+    public void Release() => freeWords = this.words;
+
+    private static ulong[] TakeWords(int length)
+    {
+        var words = freeWords;
+        freeWords = null;
+
+        if (words is null || words.Length < length)
+            return new ulong[length];
+
+        Array.Clear(words, 0, length);
+        return words;
+    }
 }
 
 internal sealed class CarvingBuffers(int height)
 {
+    // Released buffers, which the thread's next context reuses: carvers write each width factor before reading it and
+    // reseed each random they take.
+    [ThreadStatic]
+    private static CarvingBuffers? free;
+
     private readonly List<LegacyRandomSource> randoms = [];
 
     public float[] WidthFactors { get; } = new float[height];
+
+    public static CarvingBuffers Take(int height)
+    {
+        var buffers = free;
+        free = null;
+
+        return buffers is not null && buffers.WidthFactors.Length == height ? buffers : new CarvingBuffers(height);
+    }
+
+    public void Release() => free = this;
 
     public LegacyRandomSource TunnelRandom(int depth, long seed)
     {

@@ -151,8 +151,13 @@ internal sealed partial class FeatureRegistry
         return (context, random, origin) =>
         {
             var level = context.Level;
-            var heights = layers.Select(layer => layer.Height(random)).ToArray();
-            var total = heights.Sum();
+            Span<int> heights = layers.Count <= 16 ? stackalloc int[layers.Count] : new int[layers.Count];
+            var total = 0;
+            for (var i = 0; i < heights.Length; i++)
+            {
+                heights[i] = layers[i].Height(random);
+                total += heights[i];
+            }
 
             if (total == 0)
             {
@@ -188,7 +193,7 @@ internal sealed partial class FeatureRegistry
         };
     }
 
-    private static void TruncateColumn(int[] heights, int total, int allowed, bool prioritizeTip)
+    private static void TruncateColumn(Span<int> heights, int total, int allowed, bool prioritizeTip)
     {
         var toRemove = total - allowed;
         var step = prioritizeTip ? 1 : -1;
@@ -346,8 +351,17 @@ internal sealed partial class FeatureRegistry
                 return false;
             }
 
-            var rocks = neighbours.Count(offset => validBlocks.Contains(level.GetBlock(origin + offset).RegistryId));
-            var holes = neighbours.Count(offset => level.GetBlock(origin + offset).IsAir);
+            var rocks = 0;
+            var holes = 0;
+            foreach (var offset in neighbours)
+            {
+                var neighbour = level.GetBlock(origin + offset);
+                if (validBlocks.Contains(neighbour.RegistryId))
+                    rocks++;
+
+                if (neighbour.IsAir)
+                    holes++;
+            }
 
             if (rocks != rockCount || holes != holeCount)
             {

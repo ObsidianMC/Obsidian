@@ -278,8 +278,12 @@ internal sealed class PlacedFeature(string? id, Feature feature, PlacementModifi
         if (!context.Registry.HasOwners(this))
             return this.PlaceCore(context, random, origin, top);
 
-        return context.Registry.Place(this, () => this.PlaceCore(context, random, origin, top));
+        return this.PlaceOwned(context, random, origin, top);
     }
+
+    // Kept apart from Place, whose every call would otherwise make this closure's captures.
+    private bool PlaceOwned(DecorationContext context, IRandomSource random, Vector origin, PlacedFeature? top) =>
+        context.Registry.Place(this, () => this.PlaceCore(context, random, origin, top));
 
     private bool PlaceCore(DecorationContext context, IRandomSource random, Vector origin, PlacedFeature? top)
     {
