@@ -1022,6 +1022,12 @@ public partial class Region : IRegion
         var save = NewSave(chunk);
         try
         {
+            // A save admitted before, still writing (an autosave goes on while the level ticks), puts back the
+            // chunk's unsaved marks if it fails, after its turn ended. An unloading snapshot that ran first would
+            // see the chunk as saved, and the chunk would be gone before the marks came back.
+            if (unloading)
+                await this.SavesAdmittedBeforeAsync(admitted).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+
             try
             {
                 await this.SnapshotChunkAsync(save, unloading, entities);
@@ -1118,6 +1124,15 @@ public partial class Region : IRegion
                 finishing.EndCompound();
                 finishing.TryFinish();
             }
+
+            // Entities may keep parts of their live NBT in what they save, which the level may change once the
+            // snapshot is taken (see AbstractLevel.FlushRegionsAsync), so they're serialized with it too.
+            if (save.Entities is NbtList entities)
+            {
+                save.EntityCount = entities.Count;
+                save.EntityNbt = SerializeEntities(chunk.X, chunk.Z, entities);
+                save.Entities = null;
+            }
         }
         catch
         {
@@ -1152,7 +1167,7 @@ public partial class Region : IRegion
                 await this.regionFile.StageAsync(save.ChunkWrite!, compressed.Written);
             }
 
-            if (save.Entities is not null)
+            if (save.EntityNbt is not null)
                 await this.StageEntitiesAsync(save);
 
             save.Staged = true;
@@ -1374,15 +1389,14 @@ public partial class Region : IRegion
     /// </summary>
     private async Task StageEntitiesAsync(ChunkSave save)
     {
-        var (chunkX, chunkZ) = (save.Chunk.X, save.Chunk.Z);
-        var entities = save.Entities!;
+        var nbt = save.EntityNbt!;
         var turn = save.EntityWrite!;
 
         await turn.TurnAsync;
 
         // Vanilla deletes the entry of a chunk left without entities; region files can't delete entries, so a chunk that had
         // entities keeps an empty list, and one that never had any gets no entry.
-        if (entities.Count == 0 && !this.entityRegionFile.HasChunk(save.X, save.Z))
+        if (save.EntityCount == 0 && !this.entityRegionFile.HasChunk(save.X, save.Z))
         {
             if (save.Chunk is Chunk empty)
                 empty.SavedEntityCount = 0;
@@ -1390,20 +1404,9 @@ public partial class Region : IRegion
             return;
         }
 
-        var nbt = new PooledBufferStream(4 * 1024);
         PooledBufferStream? compressed = null;
         try
         {
-            using (var writer = new NbtWriterStream(nbt, NbtCompression.None, ""))
-            {
-                writer.WriteInt("DataVersion", ServerConstants.DataVersion);
-                writer.WriteArray("Position", [chunkX, chunkZ]);
-                writer.WriteTag(entities);
-                writer.EndCompound();
-
-                writer.TryFinish();
-            }
-
             compressed = this.entityRegionFile.Compress(nbt.Written.Span);
             await this.entityRegionFile.StageAsync(turn, compressed.Written);
         }
@@ -1416,7 +1419,32 @@ public partial class Region : IRegion
         // In the turn, which passes only once this is committed: a failed commit makes it unknown again (see
         // CompleteSaveAsync).
         if (save.Chunk is Chunk saved)
-            saved.SavedEntityCount = entities.Count;
+            saved.SavedEntityCount = save.EntityCount;
+    }
+
+    // The entity file's entry for a chunk's entities, uncompressed.
+    private static PooledBufferStream SerializeEntities(int chunkX, int chunkZ, NbtList entities)
+    {
+        var nbt = new PooledBufferStream(4 * 1024);
+        try
+        {
+            using (var writer = new NbtWriterStream(nbt, NbtCompression.None, ""))
+            {
+                writer.WriteInt("DataVersion", ServerConstants.DataVersion);
+                writer.WriteArray("Position", [chunkX, chunkZ]);
+                writer.WriteTag(entities);
+                writer.EndCompound();
+
+                writer.TryFinish();
+            }
+
+            return nbt;
+        }
+        catch
+        {
+            nbt.Return();
+            throw;
+        }
     }
 
     /// <summary>
@@ -1908,8 +1936,13 @@ public partial class Region : IRegion
         // The chunk whose unsaved marks this save took, so a save failing before the chunk is written puts them back.
         public Chunk? Taken { get; set; }
 
-        // The entities to save, and their turn in the entity region file; null when they aren't saved.
+        // The entities to save, until the snapshot serializes them into EntityNbt, with their count; null when they
+        // aren't saved. Their turn in the entity region file follows.
         public NbtList? Entities { get; set; }
+
+        public PooledBufferStream? EntityNbt { get; set; }
+
+        public int EntityCount { get; set; }
 
         public RegionFile.ChunkWrite? EntityWrite { get; set; }
 
@@ -1929,6 +1962,7 @@ public partial class Region : IRegion
         public void Dispose()
         {
             this.Nbt?.Return();
+            this.EntityNbt?.Return();
             this.ChunkWrite?.Dispose();
             this.EntityWrite?.Dispose();
         }
