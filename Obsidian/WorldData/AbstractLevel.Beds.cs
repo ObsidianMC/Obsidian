@@ -59,9 +59,9 @@ public abstract partial class AbstractLevel
             && WorldTimelines.Markers.TryGetValue("minecraft:wake_up_from_sleep", out var marker)
             && marker.Clock == clockId
             && LevelData.WorldClocks.States.TryGetValue(clockId, out var clock)
-            && !marker.OccursAt(clock.TotalTicks))
+            // Levels sharing the clock can skip the night at once, so only the first to reach it moves it.
+            && clock.TrySetTime(time => marker.OccursAt(time) ? null : marker.Next(time)))
         {
-            clock.SetTime(marker.Next(clock.TotalTicks));
             this.BroadcastTime();
         }
 

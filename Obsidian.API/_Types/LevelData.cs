@@ -25,7 +25,15 @@ public sealed class LevelData
     private string? GetRule(string name)
     {
         name = name.StartsWith("minecraft:", StringComparison.Ordinal) ? name[10..] : name;
-        if (GameRules.TryGetValue(name, out var value) || GameRules.TryGetValue($"minecraft:{name}", out value)) return value;
+        // A command setting the rule writes its name before removing the namespaced one (see GameRuleSynchronization),
+        // so a lookup that missed both checks the name again: it finds the new value if the old one went meanwhile.
+        if (GameRules.TryGetValue(name, out var value)
+            || GameRules.TryGetValue($"minecraft:{name}", out value)
+            || GameRules.TryGetValue(name, out value))
+        {
+            return value;
+        }
+
         var legacy = name switch
         {
             "mob_griefing" => "mobGriefing", "mob_drops" => "doMobLoot", "spawn_mobs" => "doMobSpawning",

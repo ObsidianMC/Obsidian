@@ -86,10 +86,8 @@ public sealed class TimeCommandModule : CommandModuleBase
                 if (char.IsDigit(value[0]) || value[0] is '-' or '+' or '.')
                 {
                     var absolute = CommandInput.Ticks(value, 0);
-                    if (clock.TotalTicks == absolute)
+                    if (!clock.TrySetTime(time => time == absolute ? null : absolute))
                         throw new FormatException($"Clock {identifier} is already at {absolute}");
-
-                    clock.SetTime(absolute);
                     result = absolute;
                 }
                 else
@@ -98,10 +96,8 @@ public sealed class TimeCommandModule : CommandModuleBase
                     if (!WorldTimelines.Markers.TryGetValue(markerName, out var marker) || marker.Clock != identifier)
                         throw new FormatException($"No time marker {markerName} for clock {identifier}");
 
-                    if (marker.OccursAt(clock.TotalTicks))
+                    if (!clock.TrySetTime(time => marker.OccursAt(time) ? null : marker.Next(time)))
                         throw new FormatException($"Clock {identifier} is already at {markerName}");
-
-                    clock.SetTime(marker.Next(clock.TotalTicks));
                     result = Wrap(clock.TotalTicks);
                 }
 
@@ -112,8 +108,7 @@ public sealed class TimeCommandModule : CommandModuleBase
                     throw new FormatException("Expected a time");
 
                 var delta = CommandInput.Ticks(value, int.MinValue);
-                clock.TotalTicks = Math.Max(0, clock.TotalTicks + delta);
-                result = Wrap(clock.TotalTicks);
+                result = Wrap(clock.AddTicks(delta));
                 break;
 
             case "pause" or "resume":

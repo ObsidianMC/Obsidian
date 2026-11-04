@@ -17,11 +17,11 @@ public partial class ChangeDifficultyPacket
             return default;
         }
 
-        var level = world.LevelData;
-        if (level.DifficultyLocked)
+        // Not through a lock, which the change checks as it makes it.
+        var difficulty = world.LevelData.Hardcore ? Difficulty.Hard : this.Difficulty;
+        if (!world.SetDifficulty(difficulty, force: false))
             return default;
 
-        world.SetDifficulty(level.Hardcore ? Difficulty.Hard : this.Difficulty, locked: false);
         obsidian.BroadcastDifficulty();
         return default;
     }
