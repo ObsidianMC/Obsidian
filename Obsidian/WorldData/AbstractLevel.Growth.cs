@@ -125,6 +125,13 @@ public abstract partial class AbstractLevel
                 var y = bits >> 16 & 15;
                 var z = bits >> 8 & 15;
 
+                // Vanilla only ticks a state whose isRandomlyTicking holds (a grown crop or non-decaying leaves
+                // don't), and most picks land on stone, air or water, so the state is checked before its block and
+                // behaviours are looked up. Plugin states always pass (see BlockPhysics.IsRandomlyTicking).
+                var stateId = section.GetStateId(x, y, z);
+                if (!BlockPhysics.IsRandomlyTicking(stateId))
+                    continue;
+
                 var block = section.GetBlock(x, y, z);
                 var position = new Vector(chunk.X * 16 + x, chunk.MinY + index * 16 + y, chunk.Z * 16 + z);
 
