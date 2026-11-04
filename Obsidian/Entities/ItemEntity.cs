@@ -14,9 +14,9 @@ public partial class ItemEntity : Entity
     // Ticks since it was spawned or loaded, like vanilla's unsaved Entity.tickCount; it paces merging.
     private int ticksExisted;
     internal void SetExtendedLifetime() => age = -6000;
-    // Merges, pickups and removal check and set Removed under this lock, so a stack isn't transferred after its entity
-    // is removed, even when the removal comes from outside the level tick.
-    internal static readonly object TransferLock = new();
+    // Merges, pickups, hopper pulls and removal check and set it under the transfer lock of the level owning the item
+    // (see Entity.EnterOwningLevel), so a stack isn't transferred after its entity is removed, even when the removal
+    // comes from outside the level tick.
     internal bool Removed { get; set; }
     private int pickupDelay = 10;
 
@@ -182,7 +182,7 @@ public partial class ItemEntity : Entity
     {
         await base.TickAsync();
         this.ticksExisted++;
-        lock (TransferLock)
+        using (this.EnterOwningLevel(out _))
         {
             if (this.Removed)
                 return;
@@ -222,8 +222,11 @@ public partial class ItemEntity : Entity
                 continue;
 
             bool remove;
-            lock (TransferLock)
+            using (this.EnterOwningLevel(out var owner))
             {
+                // Both stacks are this level's only while the other item hasn't left it since the lookup.
+                if (itemEntity.Level != owner)
+                    continue;
                 if (this.Removed || itemEntity.Removed || this.Item.IsNullOrAir() || itemEntity.Item.IsNullOrAir() || this.Item != itemEntity.Item)
                     continue;
                 var count = Math.Min(this.Item.MaxStackSize - this.Item.Count, itemEntity.Item.Count);
@@ -269,7 +272,7 @@ public partial class ItemEntity : Entity
 
     public override async ValueTask RemoveAsync()
     {
-        lock (TransferLock)
+        using (this.EnterOwningLevel(out _))
             this.Removed = true;
         await base.RemoveAsync();
     }

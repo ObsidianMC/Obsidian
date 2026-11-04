@@ -184,7 +184,7 @@ internal static class Hoppers
     internal static async ValueTask<bool> TakeInAsync(IItemAccess own, ItemEntity entity)
     {
         bool all;
-        lock (ItemEntity.TransferLock)
+        using (entity.EnterOwningLevel(out _))
         {
             if (entity.Removed || entity.Item is not { IsAir: false, Count: > 0 } stack)
                 return false;

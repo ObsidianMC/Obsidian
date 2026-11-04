@@ -386,9 +386,11 @@ public partial class PlayerBase
             // contents (see MainEventHandler.OnInventoryClick).
             using (await this.Inventory.LockAsync())
             {
-                lock (ItemEntity.TransferLock)
+                using (itemEntity.EnterOwningLevel(out var level))
             {
-                if (itemEntity.Removed || !itemEntity.CanPickup || itemEntity.Item.Count <= 0)
+                // Found among the player's level's entities, the item is the player's to take only while it's still
+                // there: under its level's transfer lock it can't leave, be merged or be taken by anyone else.
+                if (level != this.Level || itemEntity.Removed || !itemEntity.CanPickup || itemEntity.Item.Count <= 0)
                     continue;
                 var originalCount = itemEntity.Item.Count;
                 var changed = AddToInventory(this.Inventory, this.CurrentHeldItemSlot, itemEntity.Item,

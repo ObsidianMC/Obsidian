@@ -460,14 +460,26 @@ public abstract partial class AbstractLevel : ILevel
         this.Generator.Init(this);
     }
 
+    /// <summary>
+    /// The lock that makes moving this level's items and entities atomic (see <see cref="EntityTransferLock"/>). Each
+    /// level has its own, so levels don't wait for each other's.
+    /// </summary>
+    internal EntityTransferLock TransferLock { get; } = new();
+
     public ValueTask<bool> DestroyEntityAsync(IEntity entity)
     {
-        lock (ItemEntity.TransferLock)
-            return ValueTask.FromResult(this.RemoveEntity(entity, transferring: false));
+        using (this.TransferLock.Enter())
+        {
+            // An entity on its way here is in no region yet: it's kept from arriving instead.
+            var removed = entity is Entity travelling && travelling.TryRemoveOnArrival(this)
+                || this.RemoveEntity(entity, transferring: false);
+
+            return ValueTask.FromResult(removed);
+        }
     }
 
     // Transfers reuse the instance and its attachment holder; only a real removal retires storage.
-    // The caller holds TransferLock, shared with transfer commits and the entity save snapshot.
+    // The caller holds the level's TransferLock, shared with transfer commits and the entity save snapshot.
     internal bool RemoveEntity(IEntity entity, bool transferring)
     {
         if (this.GetRegionForLocation(entity.Position) is not Region region || !region.TryRemoveEntity(entity))
@@ -1199,6 +1211,7 @@ public abstract partial class AbstractLevel : ILevel
                 Logger = this.Logger,
                 LockChunk = this.Generator.LockChunkAsync,
                 FluidTickLock = this.Fluids.TickLock,
+                EntityTransfers = this.TransferLock,
                 FlushLight = this.Lighting.Flush,
                 LightLoaded = this.TrackPublishedChunk,
                 LightUnloaded = this.Lighting.Untrack,

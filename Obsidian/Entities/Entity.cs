@@ -517,8 +517,8 @@ public partial class Entity : IEquatable<Entity>, IEntity
     public virtual async ValueTask RemoveAsync()
     {
         ValueTask<bool> removal;
-        lock (ItemEntity.TransferLock)
-            removal = this.Level.DestroyEntityAsync(this);
+        using (this.EnterOwningLevel(out var level))
+            removal = level.DestroyEntityAsync(this);
 
         await removal;
     }
