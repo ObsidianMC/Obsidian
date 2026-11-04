@@ -246,6 +246,7 @@ public abstract partial class AbstractLevel : ILevel
     // so that one who joined mid-tick is seen.
     private TickPlayerSnapshot? tickPlayers;
     private int playerChanges;
+    private readonly PlayerGrid playerGrid = new();
 
     private sealed record TickPlayerSnapshot(IPlayer[] Players, int Changes);
 
@@ -258,11 +259,16 @@ public abstract partial class AbstractLevel : ILevel
     // Called at the start of the level's tick, under the simulation gate.
     private void SnapshotPlayers()
     {
-        var changes = Volatile.Read(ref this.playerChanges);
-        var players = this.Players.Values.ToArray();
+        IPlayer[] players;
+        lock (PlayerGrid.Gate)
+        {
+            var changes = Volatile.Read(ref this.playerChanges);
+            players = this.Players.Values.ToArray();
+            this.playerGrid.Rebuild(players);
+            Volatile.Write(ref this.tickPlayers, new TickPlayerSnapshot(players, changes));
+        }
         this.simulation.Update(players.Where(player => player.GameMode != GameMode.Spectator), Configuration.SimulationDistance);
 
-        Volatile.Write(ref this.tickPlayers, new TickPlayerSnapshot(players, changes));
         Volatile.Write(ref this.simulationCurrent, true);
         Volatile.Write(ref this.currentTickId, ++this.lastTickId);
     }
@@ -273,17 +279,13 @@ public abstract partial class AbstractLevel : ILevel
     /// </summary>
     internal double NearestPlayerDistanceSquared(VectorD position)
     {
-        var nearest = double.MaxValue;
-        if (this.CurrentTickPlayers is IPlayer[] players)
+        lock (PlayerGrid.Gate)
         {
-            foreach (var player in players)
-            {
-                if (player.GameMode != GameMode.Spectator && this.Players.ContainsKey(player.Uuid))
-                    nearest = Math.Min(nearest, (player.Position - position).MagnitudeSquared());
-            }
-            return nearest;
+            if (this.CurrentTickPlayers is not null)
+                return this.playerGrid.NearestDistanceSquared(position, this.Players);
         }
 
+        var nearest = double.MaxValue;
         foreach (var (_, player) in this.Players)
         {
             if (player.GameMode != GameMode.Spectator)
@@ -823,19 +825,19 @@ public abstract partial class AbstractLevel : ILevel
 
         distance *= distance;
 
-        // During the tick, from its snapshot of the players: mobs ask this many times a tick, and going over the
-        // players' dictionary each time cost more than the checks. A player who left since isn't returned.
-        if (this.CurrentTickPlayers is IPlayer[] players)
+        // Snapshot order with live, atomically indexed positions. Outside a valid tick snapshot keep the original
+        // dictionary path: Players is publicly mutable, so it can change without TryAddPlayer/TryRemovePlayer.
+        IPlayer[]? indexed = null;
+        lock (PlayerGrid.Gate)
         {
-            foreach (var player in players)
-            {
-                var difference = player.Position - location;
-                if (difference.X * difference.X + difference.Z * difference.Z <= distance
-                    && this.Players.TryGetValue(player.Uuid, out var current) && ReferenceEquals(current, player))
-                {
-                    yield return player;
-                }
-            }
+            if (this.CurrentTickPlayers is not null)
+                indexed = this.playerGrid.InRange(location, distance, this.Players);
+        }
+
+        if (indexed is not null)
+        {
+            foreach (var player in indexed)
+                yield return player;
             yield break;
         }
 
@@ -853,21 +855,27 @@ public abstract partial class AbstractLevel : ILevel
 
     public bool TryAddPlayer(IPlayer player)
     {
-        if (!Players.TryAdd(player.Uuid, player))
-            return false;
+        lock (PlayerGrid.Gate)
+        {
+            if (!Players.TryAdd(player.Uuid, player))
+                return false;
 
-        Interlocked.Increment(ref this.playerChanges);
-        return true;
+            Interlocked.Increment(ref this.playerChanges);
+            return true;
+        }
     }
 
     // Matches the instance, not just the UUID, so a stale reference can't remove a newer player with the same UUID.
     public bool TryRemovePlayer(IPlayer player)
     {
-        if (!Players.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
-            return false;
+        lock (PlayerGrid.Gate)
+        {
+            if (!Players.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
+                return false;
 
-        Interlocked.Increment(ref this.playerChanges);
-        return true;
+            Interlocked.Increment(ref this.playerChanges);
+            return true;
+        }
     }
 
     public async virtual Task DoWorldTickAsync()

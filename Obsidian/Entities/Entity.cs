@@ -39,6 +39,16 @@ public partial class Entity : IEquatable<Entity>, IEntity
         get => this.position;
         set
         {
+            if (this is IPlayer player)
+            {
+                lock (PlayerGrid.Gate)
+                {
+                    this.position = value;
+                    this.PlayerQueryGrid?.Move(player, value);
+                }
+                return;
+            }
+
             this.position = value;
 
             // Racy outside the grid's lock, but Move checks again under it.
@@ -48,6 +58,9 @@ public partial class Entity : IEquatable<Entity>, IEntity
     }
 
     private VectorD position;
+
+    // Separate from non-player grid membership; position writes and player queries share PlayerGrid.Gate.
+    internal PlayerGrid? PlayerQueryGrid { get; set; }
 
     // The level's grid the entity is in and the chunk it's filed under there, both kept by the grid (see EntityGrid).
     internal EntityGrid? Grid { get; set; }
