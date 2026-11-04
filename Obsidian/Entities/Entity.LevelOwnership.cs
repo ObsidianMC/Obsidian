@@ -1,4 +1,5 @@
 using Obsidian.WorldData;
+using System.Threading;
 
 namespace Obsidian.Entities;
 
@@ -12,6 +13,46 @@ public partial class Entity
     // meanwhile. Both change under that level's transfer lock (see Depart and Arrive in Entity.Travel.cs).
     private ILevel? arrivingAt;
     private bool removedOnArrival;
+
+    // The level the entity last arrived in and the tick of it under way then (0 between ticks), which that level
+    // doesn't tick the entity in; and whether a travel call is still using the entity (see TeleportAsync).
+    private AbstractLevel? arrivedIn;
+    private long arrivedDuringTick;
+    private volatile bool travelling;
+
+    /// <summary>
+    /// Whether <paramref name="level"/>'s tick may tick the entity now. One that arrived from another level isn't ticked
+    /// by its new level during the tick under way when it arrived, which the level it left may be running alongside,
+    /// nor while the call that moved it is still moving it or its passengers: from then on, only its new level does.
+    /// </summary>
+    internal bool IsTickableIn(AbstractLevel level)
+    {
+        if (this.travelling)
+            return false;
+
+        return !ReferenceEquals(Volatile.Read(ref this.arrivedIn), level)
+            || level.CurrentTickId != Volatile.Read(ref this.arrivedDuringTick);
+    }
+
+    // Called by the level taking the entity in, before publishing it.
+    private void HoldFromTicking(ILevel level)
+    {
+        if (level is not AbstractLevel arriving)
+            return;
+
+        Volatile.Write(ref this.arrivedDuringTick, arriving.CurrentTickId);
+        Volatile.Write(ref this.arrivedIn, arriving);
+    }
+
+    /// <summary>
+    /// Whether the entity, this instance, is among the entities of <paramref name="level"/>'s regions: removal and
+    /// unloading take it out without changing its level. Call holding the level's transfer lock.
+    /// </summary>
+    internal bool IsMemberOf(ILevel level) =>
+        level is AbstractLevel owned
+        && owned.GetRegionForLocation(this.Position) is IRegion region
+        && region.Entities.TryGetValue(this.EntityId, out var resident)
+        && ReferenceEquals(resident, this);
 
     /// <summary>The transfer lock guarding the entities of <paramref name="level"/>.</summary>
     internal static EntityTransferLock TransferLockOf(ILevel level) =>

@@ -22,8 +22,9 @@ namespace Obsidian.WorldData;
 /// that locks the level an entity names and finds it still names that level owns it until it lets go (see
 /// <c>Entity.EnterOwningLevel</c>). Travel between levels is a handoff, never holding both levels' locks: the source
 /// lets the entity go under its own lock, and the destination takes it in under its own (see <c>Entity.Travel</c>).
-/// Travel that starts during the source's tick leaves the entity waiting in the destination's arrivals, which the
-/// destination takes in with its next tick's entity actions, or before it saves (see <c>AbstractLevel.Arrivals</c>).
+/// The destination publishes the entity at once but doesn't tick it before its next tick (see
+/// <c>Entity.IsTickableIn</c>), and the chunk it left stays pinned until it's settled (see
+/// <c>AbstractLevel.Travel</c>).
 /// </para>
 /// <para>
 /// A thread holds at most one level's transfer lock at a time; entering a second throws, as that is the way to a

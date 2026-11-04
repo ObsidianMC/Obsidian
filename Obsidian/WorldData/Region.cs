@@ -39,6 +39,12 @@ public partial class Region : IRegion
     internal EntityTransferLock EntityTransfers { get; init; } = new();
 
     /// <summary>
+    /// Whether the region is retiring, which no entity may leave it for another level from anymore (see
+    /// <see cref="AbstractLevel.TryPinForTravel"/>). Set under the level's transfer lock.
+    /// </summary>
+    internal bool TransfersClosed { get; set; }
+
+    /// <summary>
     /// Adds the entity to the region's entities. Only the region's level calls this: it also keeps the entity in its
     /// <see cref="EntityGrid"/>, which a move between regions of the level leaves alone.
     /// </summary>
@@ -715,8 +721,9 @@ public partial class Region : IRegion
     }
 
     /// <summary>
-    /// Keeps an entity that travelled but no level could take in as one waiting to spawn in its chunk, which saves it
-    /// and spawns it on the level's next tick. Call holding the level's transfer lock.
+    /// Keeps an entity that travelled but no level could take in, in its chunk, which saves it: as one waiting to
+    /// spawn on the level's next tick, or, while another entity in the level has its UUID (which would drop it there),
+    /// as one kept as saved until the chunk loads again. Call holding the level's transfer lock.
     /// </summary>
     /// <returns>Whether the chunk, loaded and with its entities not unloaded, keeps it.</returns>
     internal bool TryKeepUnplaced(Entity entity, AbstractLevel level)
@@ -737,7 +744,10 @@ public partial class Region : IRegion
                 return false;
             }
 
-            chunk.PendingEntities.Add(pending);
+            if (level.FindEntity(entity.Uuid) is null)
+                chunk.PendingEntities.Add(pending);
+            else
+                chunk.UnspawnableEntities.Add(saved);
         }
 
         API.Data.AttachmentStorage.For(entity).Retire();

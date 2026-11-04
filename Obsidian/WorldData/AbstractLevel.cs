@@ -978,6 +978,11 @@ public abstract partial class AbstractLevel : ILevel
         {
             if (entity is Mob { HasAi: true } or ItemEntity or ExperienceOrb && !IsMobTicking(entity.Position))
                 continue;
+
+            // One that arrived from another level during this tick, or whose travel is still moving it, ticks from
+            // the next (see Entity.IsTickableIn).
+            if (entity is Entity arrival && !arrival.IsTickableIn(this))
+                continue;
             if (GetRegionForLocation(entity.Position)?.Entities.ContainsKey(entity.EntityId) == true)
             {
                 this.tickingEntity = entity;
@@ -1247,9 +1252,7 @@ public abstract partial class AbstractLevel : ILevel
         await simulationGate.WaitAsync();
         try
         {
-            // The region's final save has its block entities' changes made since the last tick, and the entities
-            // waiting to arrive in it.
-            this.AdoptArrivals();
+            // The region's final save has its block entities' changes made since the last tick.
             this.TakeBlockEntityChanges();
             await this.UnloadRegionUnderGateAsync(regionX, regionZ);
         }
@@ -1270,6 +1273,10 @@ public abstract partial class AbstractLevel : ILevel
                 return;
 
             if (!retry && this.HasRegionTickets(regionX, regionZ))
+                return;
+
+            // Not while an entity that left it for another level may still come back or be kept there.
+            if (!retry && r is Region leaving && !this.TryCloseRegionToTravel(leaving))
                 return;
 
             // A failed unload stays registered until autosave retries it. Once retired it must finish closing,
@@ -1370,8 +1377,9 @@ public abstract partial class AbstractLevel : ILevel
                 await simulationGate.WaitAsync();
                 try
                 {
-                    // Recheck after entering the gate, against tickets acquired since the candidate snapshot.
-                    if (!this.TryReleaseUnneededChunk(chunk))
+                    // Recheck after entering the gate, against tickets acquired since the candidate snapshot, and
+                    // against entities that left the chunk for another level and may come back.
+                    if (!this.TryReleaseChunkClosedToTravel(chunk))
                         continue;
 
                     // The chunk's final save has its block entities' changes made since the last tick.
@@ -1388,6 +1396,7 @@ public abstract partial class AbstractLevel : ILevel
                 }
                 finally
                 {
+                    this.ReopenChunkToTravel(chunk);
                     simulationGate.Release();
                 }
             }
@@ -1612,7 +1621,10 @@ public abstract partial class AbstractLevel : ILevel
     /// <see cref="TakeBlockEntityChanges"/>), like the tick's end does, so that one changed between ticks (by plugin
     /// code off the tick, a command or a test) is saved with its own data as it is now, like its items.
     /// </remarks>
-    public async virtual Task FlushRegionsAsync()
+    public virtual Task FlushRegionsAsync() => this.FlushOwnRegionsAsync();
+
+    // The level's own flush, which disposal runs without the overrides that flush other levels too.
+    private async Task FlushOwnRegionsAsync()
     {
         Region[] written = [];
         var failures = new List<Exception>();
@@ -1622,8 +1634,13 @@ public abstract partial class AbstractLevel : ILevel
             await simulationGate.WaitAsync();
             try
             {
-                // Entities waiting to arrive are saved with the regions that take them in.
-                this.AdoptArrivals();
+                // A traveller no level could place yet fails the save, loudly, rather than it going ahead without it.
+                if (this.RetryUnplaced() is var unplacedLeft and > 0)
+                {
+                    failures.Add(new InvalidOperationException(
+                        $"{unplacedLeft} travelling entities could not be placed in {this.Name}."));
+                }
+
                 this.TakeBlockEntityChanges();
 
                 jobsBeforeFlush = Interlocked.Exchange(ref this.jobsSinceFlush, 0);
@@ -2445,9 +2462,10 @@ public abstract partial class AbstractLevel : ILevel
         if (Interlocked.Exchange(ref this.generationFailure, null) is Exception failure)
             Log.ChunkGenerationFailed(this.Logger, failure);
 
-        // A flush takes in the entities still waiting to arrive, which nothing else would save.
-        if (Volatile.Read(ref this.jobsSinceFlush) != 0 || this.PendingArrivalCount > 0)
-            await this.FlushRegionsAsync();
+        // The level's own: an override flushes other levels too, which may be disposed already. One with travellers
+        // still unplaced fails rather than discarding them.
+        if (Volatile.Read(ref this.jobsSinceFlush) != 0 || this.HasUnplacedTravellers)
+            await this.FlushOwnRegionsAsync();
 
         foreach (var region in Regions.Values)
         {
