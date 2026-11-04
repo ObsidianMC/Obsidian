@@ -265,7 +265,25 @@ public partial class Region : IRegion
     /// Writes the chunks that changed since their last save to the region's files, without waiting for the disk (see
     /// <see cref="SyncToDiskAsync"/>).
     /// </summary>
-    internal async Task WriteChangesAsync()
+    /// <param name="snapshotsTaken">
+    /// Completed once the save has taken its snapshots of the chunks, or failed before taking them all: from then on
+    /// it only compresses and writes what it took, so the level may tick again (see
+    /// <c>AbstractLevel.FlushRegionsAsync</c>).
+    /// </param>
+    internal async Task WriteChangesAsync(TaskCompletionSource? snapshotsTaken = null)
+    {
+        try
+        {
+            await this.WriteChangesCoreAsync(snapshotsTaken);
+        }
+        finally
+        {
+            // Also when it failed before taking them, so the level doesn't wait on it.
+            snapshotsTaken?.TrySetResult();
+        }
+    }
+
+    private async Task WriteChangesCoreAsync(TaskCompletionSource? snapshotsTaken)
     {
         await this.initialization.Value;
 
@@ -276,7 +294,7 @@ public partial class Region : IRegion
             await this.flushLock.WaitAsync();
             try
             {
-                await this.WriteChangesUnderLockAsync(taken);
+                await this.WriteChangesUnderLockAsync(taken, snapshotsTaken);
             }
             finally
             {
@@ -301,14 +319,18 @@ public partial class Region : IRegion
         await this.SavesAdmittedBeforeAsync(admitted).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
     }
 
-    private async Task WriteChangesUnderLockAsync(List<ChunkSave> taken)
+    private async Task WriteChangesUnderLockAsync(List<ChunkSave> taken, TaskCompletionSource? snapshotsTaken)
     {
         // Pending light goes in first, so a chunk it reaches counts as changed.
         lock (this.FluidTickLock)
             this.FlushLight?.Invoke();
 
         var entityChunks = this.ChunksWithEntities();
-        await this.SaveTogetherAsync(this.ChunksToFlush(entityChunks), unloading: this.lightingRetired, taken);
+        await this.SaveTogetherAsync(
+            this.ChunksToFlush(entityChunks),
+            unloading: this.lightingRetired,
+            taken,
+            snapshotsTaken);
     }
 
     /// <summary>
@@ -340,8 +362,9 @@ public partial class Region : IRegion
     /// holds until its commit.
     /// </remarks>
     /// <param name="unloading">Whether the chunks unload (see <see cref="SnapshotChunkAsync"/>).</param>
+    /// <param name="snapshotsTaken">Completed once every snapshot is taken (see <see cref="WriteChangesAsync"/>).</param>
     private async Task SaveTogetherAsync(IEnumerable<(IChunk Chunk, bool Entities)> chunks, bool unloading,
-        List<ChunkSave> taken)
+        List<ChunkSave> taken, TaskCompletionSource? snapshotsTaken = null)
     {
         var staging = new List<Task>();
         Task completing = Task.CompletedTask;
@@ -377,6 +400,9 @@ public partial class Region : IRegion
         }
         finally
         {
+            // Each snapshot holds what its chunk is written with, and its write turn orders later saves after it.
+            snapshotsTaken?.TrySetResult();
+
             // Every save taken is staged and committed even when a later snapshot fails, whose failure is then the
             // one reported. Commit failures reach each save's writes.
             await Task.WhenAll(staging).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);

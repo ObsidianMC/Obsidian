@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Obsidian.Tests.Fakes;
 using Obsidian.Tests.Utilities;
 using Xunit;
 
@@ -235,6 +236,49 @@ public sealed class ChunkSaves
         {
             Directory.Delete(folder, recursive: true);
         }
+    }
+
+    [Fact(DisplayName = "An autosave lets the level tick while it writes, and keeps changes made meanwhile")]
+    public async Task LevelTicksWhileTheSaveWrites()
+    {
+        await using var context = TestServerFactory.CreateServer($"chunk-saves-tick-{Guid.NewGuid():N}");
+        var world = context.World;
+        var chunk = Complete(0, 0);
+        var region = (Region)world.LoadRegionByChunk(0, 0);
+        region.SetChunk(chunk);
+        chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+
+        // The save's disk flush waits until released, after its snapshots are taken.
+        var writing = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        region.ChunkFile.Observe = async change =>
+        {
+            if (change.Step != RegionFile.Step.Flushed)
+                return;
+
+            writing.TrySetResult();
+            await release.Task;
+        };
+
+        var flush = world.FlushRegionsAsync();
+        try
+        {
+            await writing.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+            // While it writes, the level ticks, and a change made then is left for the next save.
+            await world.DoWorldTickAsync().WaitAsync(TimeSpan.FromSeconds(10));
+            chunk.SetBlock(2, 64, 2, BlocksRegistry.Stone);
+        }
+        finally
+        {
+            // Released whatever happened, so a failure fails the test instead of hanging its disposal.
+            release.TrySetResult();
+        }
+
+        await flush.WaitAsync(TimeSpan.FromSeconds(10));
+        region.ChunkFile.Observe = null;
+
+        Assert.True(chunk.IsUnsaved);
     }
 
     private static Chunk Complete(int x, int z)
