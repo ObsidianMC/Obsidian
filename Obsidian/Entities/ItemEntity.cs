@@ -225,7 +225,7 @@ public partial class ItemEntity : Entity
             using (this.EnterOwningLevel(out var owner))
             {
                 // Both stacks are this level's only while the other item hasn't left it since the lookup.
-                if (itemEntity.Level != owner)
+                if (itemEntity.Level != owner || !itemEntity.IsMemberOf(owner))
                     continue;
                 if (this.Removed || itemEntity.Removed || this.Item.IsNullOrAir() || itemEntity.Item.IsNullOrAir() || this.Item != itemEntity.Item)
                     continue;
@@ -261,7 +261,8 @@ public partial class ItemEntity : Entity
     {
         using (this.EnterOwningLevel(out var owner))
         {
-            if (owner != level || this.Removed || !this.CanPickup)
+            // A removed or unloaded item keeps its level, so it's checked to still be one of the level's entities.
+            if (owner != level || this.Removed || !this.CanPickup || !this.IsMemberOf(level))
                 return null;
 
             if (this.Item is not { IsAir: false, Count: > 0 } stack || !accepts(stack))

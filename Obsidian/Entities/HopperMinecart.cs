@@ -71,7 +71,7 @@ public sealed partial class HopperMinecart : AbstractMinecartContainer
         var bowl = level.BlockUpdates.EntitiesIn(bowlMin, bowlMax);
         foreach (var item in bowl.OfType<ItemEntity>().OrderBy(item => item.EntityId).ToList())
         {
-            if (await Hoppers.TakeInAsync(own, item, level, bowlMin, bowlMax))
+            if (await Hoppers.TakeInAsync(own, item, level, bowlMin, bowlMax, (Vector)this.Position.Floor()))
                 return true;
         }
 
@@ -81,7 +81,7 @@ public sealed partial class HopperMinecart : AbstractMinecartContainer
         var around = level.BlockUpdates.EntitiesIn(aroundMin, aroundMax);
         var took = false;
         foreach (var item in around.OfType<ItemEntity>().OrderBy(item => item.EntityId).ToList())
-            took |= await Hoppers.TakeInAsync(own, item, level, aroundMin, aroundMax);
+            took |= await Hoppers.TakeInAsync(own, item, level, aroundMin, aroundMax, (Vector)this.Position.Floor());
 
         return took;
     }

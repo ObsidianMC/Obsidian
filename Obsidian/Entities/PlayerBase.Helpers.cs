@@ -392,6 +392,10 @@ public partial class PlayerBase
                 // there: under its level's transfer lock it can't leave, be merged or be taken by anyone else.
                 if (level != this.Level || itemEntity.Removed || !itemEntity.CanPickup || itemEntity.Item.Count <= 0)
                     continue;
+
+                // A removed or unloaded item keeps its level and may not be marked removed.
+                if (!itemEntity.IsMemberOf(level))
+                    continue;
                 var originalCount = itemEntity.Item.Count;
                 var changed = AddToInventory(this.Inventory, this.CurrentHeldItemSlot, itemEntity.Item,
                     this.GameMode == GameMode.Creative);

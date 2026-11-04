@@ -96,13 +96,23 @@ internal static class Hoppers
         if (leftover is null)
             return;
 
-        level.TrySpawnEntity(new ItemEntity
+        var item = new ItemEntity
         {
             Level = level,
             EntityId = Server.GetNextEntityId(),
             Position = (VectorD)position + new VectorD(0.5, 0.5, 0.5),
             Item = leftover
-        }, hostOwned: true);
+        };
+
+        // Never lost: one the level can't take in now is tried again with its next tick.
+        if (!level.TrySpawnEntity(item, hostOwned: true))
+        {
+            level.EnqueueEntityAction(() =>
+            {
+                DropLeftover(level, position, leftover);
+                return ValueTask.CompletedTask;
+            });
+        }
     }
 
     // Vanilla's ejectItems: the first of the hopper's items that fits into the container it faces moves.
@@ -170,7 +180,7 @@ internal static class Hoppers
 
         foreach (var item in items)
         {
-            if (await TakeInAsync(own, item, level, min, max))
+            if (await TakeInAsync(own, item, level, min, max, position))
                 return true;
         }
 
@@ -186,15 +196,20 @@ internal static class Hoppers
     /// <param name="level">The hopper's level.</param>
     /// <param name="min">The area's low corner, which the item's box must still overlap.</param>
     /// <param name="max">The area's high corner.</param>
+    /// <param name="dropAt">
+    /// Where in <paramref name="level"/> what no longer fits is dropped: the hopper's own block, as the item may have
+    /// moved on.
+    /// </param>
     /// <remarks>
     /// The item may have moved, gone through a portal or been taken since it was found, so it's checked again under
     /// the transfer lock of the level owning it, and taken only while it's still in <paramref name="level"/> and the
-    /// area. The slots are filled outside that lock: filling them takes the container's click lock, which comes before
+    /// area, and is one of its entities (a removed or unloaded item keeps its level). The slots are filled outside that
+    /// lock: filling them takes the container's click lock, which comes before
     /// transfer locks in the lock order. What fits is worked out first; anything that no longer fits by then, the
     /// slots having changed meanwhile, is dropped as a new item rather than lost.
     /// </remarks>
     internal static async ValueTask<bool> TakeInAsync(
-        IItemAccess own, ItemEntity entity, AbstractLevel level, VectorD min, VectorD max)
+        IItemAccess own, ItemEntity entity, AbstractLevel level, VectorD min, VectorD max, Vector dropAt)
     {
         if (entity.Item is not { IsAir: false, Count: > 0 } offered)
             return false;
@@ -208,7 +223,7 @@ internal static class Hoppers
         bool all;
         using (entity.EnterOwningLevel(out var owner))
         {
-            if (owner != level || entity.Removed || !Overlaps(entity.BoundingBox, min, max))
+            if (owner != level || entity.Removed || !entity.IsMemberOf(level) || !Overlaps(entity.BoundingBox, min, max))
                 return false;
 
             if (entity.Item is not { IsAir: false, Count: > 0 } stack || stack != offered)
@@ -221,7 +236,7 @@ internal static class Hoppers
             entity.Removed = all;
         }
 
-        DropLeftover(level, (Vector)entity.Position.Floor(), own.Insert(taken));
+        DropLeftover(level, dropAt, own.Insert(taken));
 
         if (all)
             await entity.RemoveAsync();
