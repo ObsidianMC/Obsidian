@@ -192,9 +192,10 @@ public abstract partial class AbstractLevel
                     candidates.Add((key, chunk));
             }
 
+            var epoch = this.ChunkUnloadEpoch;
             foreach (var (key, chunk) in candidates)
             {
-                if (this.HasLoadedNeighbours(key, loaded))
+                if (this.HasLoadedNeighbours(key, chunk, epoch, loaded))
                     chunks.Add(chunk);
             }
 
@@ -244,6 +245,22 @@ public abstract partial class AbstractLevel
         }
 
         return chunk;
+    }
+
+    // Chunks leave the loaded set only in unloading passes (every 30 seconds) and as regions close, which move the
+    // unload epoch on, while loading only adds neighbours. So a chunk whose neighbours were all loaded at this epoch
+    // still has them, and its eight lookups are skipped. The epoch is read before the lookups: an unload racing
+    // them leaves a stale stamp, which the next tick checks again.
+    private bool HasLoadedNeighbours(long key, Chunk chunk, long epoch, Dictionary<long, IChunk?> loaded)
+    {
+        if (chunk.NeighboursLoadedEpoch == epoch)
+            return true;
+
+        if (!this.HasLoadedNeighbours(key, loaded))
+            return false;
+
+        chunk.NeighboursLoadedEpoch = epoch;
+        return true;
     }
 
     private bool HasLoadedNeighbours(long key, Dictionary<long, IChunk?> loaded)

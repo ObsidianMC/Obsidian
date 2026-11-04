@@ -86,6 +86,12 @@ public sealed class Chunk : IChunk
     internal void MarkUnsaved() => Volatile.Write(ref this.unsaved, 1);
 
     /// <summary>
+    /// The level's chunk unload epoch when the chunk's eight neighbours were last found loaded, for random ticks
+    /// (see <c>AbstractLevel.RandomTickingChunks</c>); 0 until they are. Only the level's tick reads and writes it.
+    /// </summary>
+    internal long NeighboursLoadedEpoch { get; set; }
+
+    /// <summary>
     /// An explicit change since the last snapshot. Unlike <see cref="IsUnsaved"/>, merely holding containers does
     /// not set this: unload checks it after freezing block access to detect late structure-state notifications.
     /// </summary>

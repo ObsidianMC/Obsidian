@@ -19,7 +19,8 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Smoke test of crop growth: a random tick grows the wheat it reaches, and the client is shown the change.
+/// Smoke test of crop growth: a random tick grows the wheat it reaches, and the client is shown the change. Also
+/// guards the tick's cached neighbour check, which must forget a chunk's neighbours once one of them unloads.
 /// </summary>
 public sealed class CropGrowth
 {
@@ -34,28 +35,7 @@ public sealed class CropGrowth
         var world = context.World;
         AddChunks(world);
         var chunk = world.GetLoadedChunk(0, 0)!;
-
-        // Every block of the section is wheat in full light, so every random tick reaches a crop.
-        for (var x = 0; x < 16; x++)
-        {
-            for (var y = 64; y < 80; y++)
-            {
-                for (var z = 0; z < 16; z++)
-                {
-                    chunk.SetBlock(x, y, z, BlocksRegistry.GetDefault(BlockIds.Wheat));
-                }
-            }
-        }
-
-        // Light after the blocks, since block writes update the light around them.
-        for (var x = 0; x < 16; x++)
-        {
-            for (var y = 64; y < 80; y++)
-            {
-                for (var z = 0; z < 16; z++)
-                    chunk.SetLightLevel(x, y, z, LightType.Sky, 15);
-            }
-        }
+        PlantWheat(chunk);
 
         world.GrowthRandom = new LegacyRandomSource(Seed);
         var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Grower", new VectorD(8, Ground + 1, 8));
@@ -82,6 +62,78 @@ public sealed class CropGrowth
         Assert.NotEmpty(updates);
         Assert.All(updates, update => Assert.True(chunk.GetBlock(update.Position).Is(BlockIds.Wheat)));
         Assert.Contains(updates, update => update.BlockId == chunk.GetBlock(update.Position).GetHashCode());
+    }
+
+    [Fact(DisplayName = "Random ticks stop reaching a chunk once one of its neighbours unloads")]
+    public async Task UnloadedNeighbourStopsRandomTicks()
+    {
+        await using var context = TestServerFactory.CreateServer($"crop-neighbours-{Guid.NewGuid():N}");
+        var world = context.World;
+        AddChunks(world);
+        PlantWheat(world.GetLoadedChunk(0, 0)!);
+        world.GrowthRandom = new LegacyRandomSource(Seed);
+
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Grower", new VectorD(8, Ground + 1, 8));
+        player.GameMode = GameMode.Survival;
+        Assert.True(world.TryAddPlayer(player));
+
+        // With all eight neighbours loaded, the tick's random ticks reach the wheat, and the chunk is remembered
+        // as complete.
+        Assert.True(GrowsDuringTicks(world));
+
+        // One neighbour unloads, so the chunk must be checked again rather than taken as still complete.
+        PlantWheat(world.GetLoadedChunk(0, 0)!);
+        await world.LoadRegionByChunk(1, 1).UnloadChunk(1, 1);
+        Assert.Null(world.GetLoadedChunk(1, 1));
+
+        Assert.False(GrowsDuringTicks(world));
+    }
+
+    // Ticks random blocks as the level's tick does, with its simulation snapshot, and reports whether any wheat in
+    // chunk 0, 0 grew.
+    private static bool GrowsDuringTicks(WorldData.World world)
+    {
+        world.SnapshotPlayers();
+        for (var tick = 0; tick < 200; tick++)
+            world.TickRandomBlocks();
+
+        var chunk = world.GetLoadedChunk(0, 0)!;
+        for (var x = 0; x < 16; x++)
+        {
+            for (var y = 64; y < 80; y++)
+            {
+                for (var z = 0; z < 16; z++)
+                {
+                    if (chunk.GetBlock(x, y, z).GetProperty("age") != "0")
+                        return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    // Fills one section of the chunk with young wheat in full light, so every random tick there reaches a crop.
+    private static void PlantWheat(IChunk chunk)
+    {
+        for (var x = 0; x < 16; x++)
+        {
+            for (var y = 64; y < 80; y++)
+            {
+                for (var z = 0; z < 16; z++)
+                    chunk.SetBlock(x, y, z, BlocksRegistry.GetDefault(BlockIds.Wheat));
+            }
+        }
+
+        // Light after the blocks, since block writes update the light around them.
+        for (var x = 0; x < 16; x++)
+        {
+            for (var y = 64; y < 80; y++)
+            {
+                for (var z = 0; z < 16; z++)
+                    chunk.SetLightLevel(x, y, z, LightType.Sky, 15);
+            }
+        }
     }
 
     private static void AddChunks(WorldData.World world)
