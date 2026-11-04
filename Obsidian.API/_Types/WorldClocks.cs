@@ -91,17 +91,17 @@ public sealed class WorldClockState
     /// The new time for the current one, or <c>null</c> to leave the clock as it is. A new time resets the partial
     /// tick, like <see cref="SetTime"/>.
     /// </param>
-    /// <returns>Whether the time was set.</returns>
-    public bool TrySetTime(Func<long, long?> change)
+    /// <returns>The time set, or <c>null</c> when it was left as it is.</returns>
+    public long? TrySetTime(Func<long, long?> change)
     {
         lock (this.gate)
         {
             if (change(this.totalTicks) is not long ticks)
-                return false;
+                return null;
 
             this.totalTicks = ticks;
             this.PartialTick = 0;
-            return true;
+            return ticks;
         }
     }
 

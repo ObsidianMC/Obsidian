@@ -86,8 +86,9 @@ public sealed class TimeCommandModule : CommandModuleBase
                 if (char.IsDigit(value[0]) || value[0] is '-' or '+' or '.')
                 {
                     var absolute = CommandInput.Ticks(value, 0);
-                    if (!clock.TrySetTime(time => time == absolute ? null : absolute))
+                    if (clock.TrySetTime(time => time == absolute ? null : absolute) is null)
                         throw new FormatException($"Clock {identifier} is already at {absolute}");
+
                     result = absolute;
                 }
                 else
@@ -96,9 +97,11 @@ public sealed class TimeCommandModule : CommandModuleBase
                     if (!WorldTimelines.Markers.TryGetValue(markerName, out var marker) || marker.Clock != identifier)
                         throw new FormatException($"No time marker {markerName} for clock {identifier}");
 
-                    if (!clock.TrySetTime(time => marker.OccursAt(time) ? null : marker.Next(time)))
+                    // The time the marker set, which a tick right after it doesn't change.
+                    if (clock.TrySetTime(time => marker.OccursAt(time) ? null : marker.Next(time)) is not long set)
                         throw new FormatException($"Clock {identifier} is already at {markerName}");
-                    result = Wrap(clock.TotalTicks);
+
+                    result = Wrap(set);
                 }
 
                 break;
