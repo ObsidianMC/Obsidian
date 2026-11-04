@@ -19,6 +19,69 @@ internal static class PathTypeClassifier
     /// </summary>
     public static PathType Static(IPathTerrain terrain, int x, int y, int z)
     {
+        if (searchCache is not { } cache || !ReferenceEquals(searchTerrain, terrain))
+            return ComputeStatic(terrain, x, y, z);
+
+        var cell = new Vector(x, y, z);
+        if (!cache.TryGetValue(cell, out var type))
+        {
+            type = ComputeStatic(terrain, x, y, z);
+            cache.Add(cell, type);
+        }
+
+        return type;
+    }
+
+    // The path types of the cells the search under way on this thread read, and its terrain. A search classifies the
+    // cells around each node it reaches (a box of them per node, and an open cell reads up to 26 blocks), and
+    // neighbouring nodes share nearly all of them, so each cell is classified once a search, as vanilla's path type
+    // cache does. Null outside a search (see CacheDuringSearch).
+    [ThreadStatic] private static Dictionary<Vector, PathType>? searchCache;
+    [ThreadStatic] private static IPathTerrain? searchTerrain;
+
+    /// <summary>
+    /// Keeps the path types <see cref="Static"/> works out on this thread for <paramref name="terrain"/> until the
+    /// returned scope is disposed: for one path search, which runs to its end without yielding, so the terrain doesn't
+    /// change under it. A search started inside another (a mob's own path costs searching) shares the outer cache when
+    /// it reads the same terrain and bypasses it otherwise.
+    /// </summary>
+    public static SearchCache CacheDuringSearch(IPathTerrain terrain)
+    {
+        if (searchCache is not null)
+            return default;
+
+        searchCache = cachedTypes ??= [];
+        searchTerrain = terrain;
+        return new SearchCache(owner: true);
+    }
+
+    private const int MaxRetainedCells = 1024;
+
+    // The cache's storage, kept for the thread's next search.
+    [ThreadStatic] private static Dictionary<Vector, PathType>? cachedTypes;
+
+    /// <summary>Ends the cache <see cref="CacheDuringSearch"/> started, when it started one.</summary>
+    public readonly struct SearchCache(bool owner) : IDisposable
+    {
+        public void Dispose()
+        {
+            if (!owner)
+                return;
+
+            // Clearing a dictionary clears all of its capacity, so one that a long search grew isn't kept for the
+            // short searches most are.
+            if (searchCache!.Count > MaxRetainedCells)
+                cachedTypes = null;
+            else
+                searchCache.Clear();
+
+            searchCache = null;
+            searchTerrain = null;
+        }
+    }
+
+    private static PathType ComputeStatic(IPathTerrain terrain, int x, int y, int z)
+    {
         var type = Base(StateAt(terrain, x, y, z) ?? AirStateId);
         if (type != PathType.OPEN)
             return type;
