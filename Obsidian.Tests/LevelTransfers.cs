@@ -2,6 +2,8 @@ using Obsidian.API;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
 using Obsidian.Entities;
+using Obsidian.Nbt;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
@@ -30,9 +32,10 @@ public sealed class LevelTransfers
     private static readonly VectorD Centre = new(8, 70, 8);
     private static readonly VectorD HopperMin = new(HopperX, 60, 0);
     private static readonly VectorD HopperMax = new(16, 80, 16);
+    private static readonly Vector HopperBlock = new(12, 69, 4);
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task ItemsSentThroughDuringParallelTicksArriveWithTheDestinationsTick()
+    public async Task ItemsSentThroughDuringParallelTicksAreNeitherDuplicatedNorLost()
     {
         await using var firstServer = TestServerFactory.CreateServer($"transfers-first-{Guid.NewGuid():N}");
         await using var secondServer = TestServerFactory.CreateServer($"transfers-second-{Guid.NewGuid():N}");
@@ -49,14 +52,10 @@ public sealed class LevelTransfers
             Task.Run(() => RunLevelAsync(second, first, traffic)))
             .WaitAsync(TimeSpan.FromSeconds(25));
 
-        // Every handoff succeeded (nothing else touches a level's items in its tick), and enough of them left while
-        // the destination was ticking. A flush takes in those still waiting, so the save has them.
+        // Every handoff succeeded (nothing else touches a level's items in its tick), and enough of them arrived while
+        // the destination was ticking.
         Assert.Equal(0, traffic.Failed);
         Assert.True(traffic.Overlapping >= OverlappingHandoffs, $"Only {traffic.Overlapping} overlapping handoffs.");
-        await first.World.FlushRegionsAsync();
-        await second.World.FlushRegionsAsync();
-        Assert.Equal(0, first.World.PendingArrivalCount);
-        Assert.Equal(0, second.World.PendingArrivalCount);
         AssertEveryDiamondOnce(first, second);
 
         // Holding two levels' transfer locks at once could deadlock levels ticking in parallel, so it's refused.
@@ -112,10 +111,19 @@ public sealed class LevelTransfers
         var sourceHopper = new ItemAccessOver(new Container(5));
         var targetHopper = new ItemAccessOver(new Container(5));
         Assert.Null(item.TryTake(source, 1, _ => true));
-        Assert.False(await Hoppers.TakeInAsync(sourceHopper.Access, item, source, HopperMin, HopperMax));
-        Assert.True(await Hoppers.TakeInAsync(targetHopper.Access, item, target, HopperMin, HopperMax));
+        Assert.False(await Hoppers.TakeInAsync(sourceHopper.Access, item, source, HopperMin, HopperMax, HopperBlock));
+        Assert.True(await Hoppers.TakeInAsync(targetHopper.Access, item, target, HopperMin, HopperMax, HopperBlock));
         Assert.Equal(1, Diamonds(targetHopper.Items));
         Assert.Equal(0, Diamonds(sourceHopper.Items));
+
+        // Removed from its level (as a removal or an unload does, without marking it removed), an item found before
+        // gives nothing either.
+        var removed = Drop(target, 1, new VectorD(12.5, 70, 4.5));
+        Assert.True(await target.DestroyEntityAsync(removed));
+        Assert.False(removed.Removed);
+        Assert.Null(removed.TryTake(target, 1, _ => true));
+        Assert.False(await Hoppers.TakeInAsync(targetHopper.Access, removed, target, HopperMin, HopperMax, HopperBlock));
+        Assert.Equal(1, Diamonds(targetHopper.Items));
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
@@ -164,9 +172,13 @@ public sealed class LevelTransfers
         source.LevelData.GameTime = 20 * 30;
         var refused = await TravelWhileTargetBusyAsync(item, target, Centre, source.ManageChunksAsync);
         Assert.IsType<InvalidOperationException>(refused);
-        Assert.Same(source, item.Level);
-        Assert.Same(item, source.GetRegionForLocation(position)!.Entities[item.EntityId]);
-        Assert.NotNull(LoadedChunk(source, chunk));
+        AssertBackInChunk(item, source, position, chunk);
+
+        // Nor does its region retire meanwhile.
+        refused = await TravelWhileTargetBusyAsync(item, target, Centre, () =>
+            source.UnloadRegionAsync(chunk >> Region.CubicRegionSizeShift, chunk >> Region.CubicRegionSizeShift));
+        Assert.IsType<InvalidOperationException>(refused);
+        AssertBackInChunk(item, source, position, chunk);
 
         // Refused by the source too (an entity with its UUID came meanwhile), it's kept in the chunk it left, to be
         // saved and spawned again, rather than dropped.
@@ -176,9 +188,109 @@ public sealed class LevelTransfers
             return Task.CompletedTask;
         });
         Assert.IsType<InvalidOperationException>(refused);
-        Assert.Contains(LoadedChunk(source, chunk)!.PendingEntities,
-            kept => kept.Type == "minecraft:item" && kept.Position == position);
         Assert.Null(item.TryTake(source, 1, _ => true));
+
+        // While the entity with its UUID stays, the kept item isn't dropped by the source's next tick either.
+        await source.DoWorldTickAsync();
+        Assert.Contains(LoadedChunk(source, chunk)!.UnspawnableEntities, IsItem);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task TravelPublishesTheEntityAndItsPassengersAtOnce()
+    {
+        await using var sourceServer = TestServerFactory.CreateServer($"publish-source-{Guid.NewGuid():N}");
+        await using var targetServer = TestServerFactory.CreateServer($"publish-target-{Guid.NewGuid():N}");
+        var source = sourceServer.World;
+        var target = targetServer.World;
+        WorldBlockEntities.AddEmptyChunk(source);
+        WorldBlockEntities.AddEmptyChunk(target);
+        var watcher = TestServerFactory.CreateConnectedPlayer(targetServer.Server, target, "Watcher", Centre);
+        await TestServerFactory.JoinConnectedPlayerAsync(targetServer.Server, watcher);
+        target.TryAddPlayer(watcher);
+        target.TryAddEntity(watcher);
+        watcher.LoadedChunks.Add(0);
+        var vehicle = new Cow { Level = source, EntityId = 713_000, Position = Centre };
+        var rider = new Chicken { Level = source, EntityId = 713_001, Position = Centre + VectorD.Up };
+        Assert.True(source.TryAddEntity(vehicle));
+        Assert.True(source.TryAddEntity(rider));
+        Assert.True(rider.Ride(vehicle));
+
+        // Once the teleport returns, the target finds both by UUID, and its players saw the vehicle spawn before any
+        // seating of it, like vanilla's teleport, which adds the entity to its new level at once.
+        await vehicle.TeleportAsync(target, Centre);
+        var packets = ((TestClient)watcher.Client).SentPackets.ToList();
+        Assert.Same(vehicle, target.FindEntity(vehicle.Uuid));
+        Assert.Same(rider, target.FindEntity(rider.Uuid));
+        Assert.Same(vehicle, rider.Vehicle);
+        var spawned = packets.FindIndex(packet => packet is BundledPacket bundle
+            && bundle.Packets.Any(part => part is AddEntityPacket { EntityId: 713_000 }));
+        var seated = packets.FindIndex(packet =>
+            packet is SetPassengersPacket { EntityId: 713_000 });
+        Assert.True(spawned >= 0 && seated > spawned, $"Spawned at {spawned}, seated at {seated}.");
+
+        // Spawning code that throws doesn't lose the entity: it's in the target already.
+        var faulty = new ThrowingCow { Level = source, EntityId = 713_002, Position = Centre };
+        Assert.True(source.TryAddEntity(faulty));
+        await Assert.ThrowsAsync<NotSupportedException>(() => faulty.TeleportAsync(target, Centre).AsTask());
+        Assert.Same(faulty, target.FindEntity(faulty.Uuid));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task AnArrivalIsNotTickedByItsNewLevelInTheTickItArrivesIn()
+    {
+        await using var sourceServer = TestServerFactory.CreateServer($"held-source-{Guid.NewGuid():N}");
+        await using var targetServer = TestServerFactory.CreateServer($"held-target-{Guid.NewGuid():N}");
+        var source = sourceServer.World;
+        var target = targetServer.World;
+        WorldBlockEntities.AddEmptyChunk(source);
+        WorldBlockEntities.AddEmptyChunk(target);
+        var watcher = TestServerFactory.CreateConnectedPlayer(targetServer.Server, target, "Watcher", Centre);
+        await TestServerFactory.JoinConnectedPlayerAsync(targetServer.Server, watcher);
+        target.TryAddPlayer(watcher);
+        target.TryAddEntity(watcher);
+        var cow = new CountingCow { Level = source, EntityId = 714_000, Position = Centre };
+        Assert.True(source.TryAddEntity(cow));
+
+        // It arrives while the target ticks, as from a level ticking alongside: published at once, ticked from the
+        // target's next tick, so the target never ticks it while the code that moved it may still be moving it.
+        target.EnqueueEntityAction(() => cow.TeleportAsync(target, Centre));
+        await target.DoWorldTickAsync();
+        Assert.Same(cow, target.FindEntity(cow.Uuid));
+        Assert.Equal(0, cow.Ticks);
+
+        await target.DoWorldTickAsync();
+        Assert.Equal(1, cow.Ticks);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task WhatAHopperCantHoldAnyMoreIsDroppedAtTheHopper()
+    {
+        await using var server = TestServerFactory.CreateServer($"overflow-{Guid.NewGuid():N}");
+        var world = server.World;
+        WorldBlockEntities.AddEmptyChunk(world);
+        var item = Drop(world, 0, new VectorD(12.5, 70, 4.5));
+
+        // The slots looked like they had room, but none by the time the item went in: it's dropped at the hopper,
+        // which here is in a region not loaded yet, so it's dropped once the region is.
+        var hopperBlock = new Vector(Region.CubicRegionSize * 16 + 4, 70, 4);
+        Assert.True(await Hoppers.TakeInAsync(new ShrinkingSlots(), item, world, HopperMin, HopperMax, hopperBlock));
+        Assert.DoesNotContain(world.GetNonPlayerEntitiesInRange(Centre, 32), entity => entity is ItemEntity);
+        Assert.Null(world.GetRegionForLocation((VectorD)hopperBlock));
+
+        WorldBlockEntities.AddEmptyChunk(world, Region.CubicRegionSize, 0);
+        await world.DoWorldTickAsync();
+        var dropped = Assert.Single(world.GetNonPlayerEntitiesInRange((VectorD)hopperBlock, 2).OfType<ItemEntity>());
+        Assert.True(dropped.Item.Is(ItemsRegistry.Diamond));
+    }
+
+    private static bool IsItem(NbtCompound kept) =>
+        kept.TryGetTagValue<string>("id", out var id) && id == "minecraft:item";
+
+    private static void AssertBackInChunk(ItemEntity item, World source, VectorD position, int chunk)
+    {
+        Assert.Same(source, item.Level);
+        Assert.Same(item, source.GetRegionForLocation(position)!.Entities[item.EntityId]);
+        Assert.NotNull(LoadedChunk(source, chunk));
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
@@ -346,11 +458,11 @@ public sealed class LevelTransfers
             await side.Player.PickupNearbyItemsAsync();
 
             foreach (var item in ItemsIn(side.World).Where(item => item.Position.X >= HopperX))
-                await Hoppers.TakeInAsync(side.Hopper.Access, item, side.World, HopperMin, HopperMax);
+                await Hoppers.TakeInAsync(side.Hopper.Access, item, side.World, HopperMin, HopperMax, HopperBlock);
         }
     }
 
-    // Run in the level's tick, as a portal sends entities through: they arrive with the destination's next tick.
+    // Run in the level's tick, as a portal sends entities through.
     private static async ValueTask SendHalfThroughAsync(World level, World destination, int parity, Traffic traffic)
     {
         foreach (var item in ItemsIn(level).Where(item => item.Position.X < HopperX && item.EntityId % 2 == parity))
@@ -378,7 +490,10 @@ public sealed class LevelTransfers
     }
 
     private static void Pull(ItemAccessOver hopper, ItemEntity item, World world) =>
-        Hoppers.TakeInAsync(hopper.Access, item, world, HopperMin, HopperMax).AsTask().GetAwaiter().GetResult();
+        Hoppers.TakeInAsync(hopper.Access, item, world, HopperMin, HopperMax, HopperBlock)
+            .AsTask()
+            .GetAwaiter()
+            .GetResult();
 
     // What a mob picking up its equipment does.
     private static void Equip(List<ItemStack> equipped, ItemEntity item, World world)
@@ -434,6 +549,36 @@ public sealed class LevelTransfers
             base.SpawnEntity(velocity, additionalData);
             this.Relayed ??= next.TeleportAsync(onwards, Centre).AsTask();
         }
+    }
+
+    private sealed class CountingCow : Cow
+    {
+        public int Ticks { get; private set; }
+
+        public override ValueTask TickAsync()
+        {
+            this.Ticks++;
+            return base.TickAsync();
+        }
+    }
+
+    // A cow whose spawning, like a plugin entity's override might, throws.
+    private sealed class ThrowingCow : Cow
+    {
+        public override void SpawnEntity(Velocity? velocity = null, int additionalData = 0) =>
+            throw new NotSupportedException("Spawning failed.");
+    }
+
+    // One slot that says it has room, then has none when filled.
+    private sealed class ShrinkingSlots : IItemAccess
+    {
+        public int SlotCount => 1;
+
+        public ItemStack? GetItem(int slot) => null;
+
+        public ItemStack? Insert(int slot, ItemStack stack, bool simulate = false) => simulate ? null : stack;
+
+        public ItemStack? Extract(int slot, int count, bool simulate = false) => null;
     }
 
     // A hopper's slots, reached as a hopper reaches the container it fills.
