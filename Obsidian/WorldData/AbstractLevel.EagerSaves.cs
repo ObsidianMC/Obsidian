@@ -35,10 +35,11 @@ public abstract partial class AbstractLevel
         if (Stopwatch.GetElapsedTime(tickStart) >= EagerSaveTickBudget)
             return;
 
-        if (Volatile.Read(ref this.eagerWrites) >= MaxEagerWrites)
+        var capacity = MaxEagerWrites - Volatile.Read(ref this.eagerWrites);
+        if (capacity <= 0)
             return;
 
-        var due = this.TakeEagerSaves();
+        var due = this.TakeEagerSaves(Math.Min(EagerSavesPerTick, capacity));
         if (due.Count == 0)
             return;
 
@@ -63,8 +64,8 @@ public abstract partial class AbstractLevel
         await Task.WhenAll(snapshots);
     }
 
-    // The changed chunks to save this tick, by region, from the scan's window, each starting its cooldown.
-    private Dictionary<Region, List<IChunk>> TakeEagerSaves()
+    // Up to `limit` changed chunks to save this tick, by region, from the scan's window, each starting its cooldown.
+    private Dictionary<Region, List<IChunk>> TakeEagerSaves(int limit)
     {
         var due = new Dictionary<Region, List<IChunk>>();
         var chunks = this.GeneratedChunksThisTick();
@@ -76,7 +77,7 @@ public abstract partial class AbstractLevel
         var window = Math.Min(EagerScanPerTick, chunks.Count);
         var picked = 0;
         var scanned = 0;
-        while (scanned < window && picked < EagerSavesPerTick)
+        while (scanned < window && picked < limit)
         {
             var chunk = chunks[(start + scanned) % chunks.Count];
             scanned++;

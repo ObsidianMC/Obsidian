@@ -372,7 +372,12 @@ public partial class Region : IRegion
             try
             {
                 var blocksOnly = chunks.Select(chunk => (chunk, false));
-                await this.SaveTogetherAsync(blocksOnly, unloading: false, taken, snapshotsTaken);
+                await this.SaveTogetherAsync(
+                    blocksOnly,
+                    unloading: false,
+                    taken,
+                    snapshotsTaken,
+                    waitForSlots: false);
             }
             finally
             {
@@ -383,6 +388,13 @@ public partial class Region : IRegion
         {
             snapshotsTaken.TrySetResult();
             this.EndSave(admitted);
+
+            // Chunks left out because every staging slot was busy are looked at again on the level's next pass.
+            foreach (var chunk in chunks)
+            {
+                if (chunk is Chunk concrete && !taken.Exists(save => ReferenceEquals(save.Chunk, chunk)))
+                    concrete.NextEagerSave = 0;
+            }
 
             foreach (var save in taken)
             {
@@ -436,8 +448,13 @@ public partial class Region : IRegion
     /// </remarks>
     /// <param name="unloading">Whether the chunks unload (see <see cref="SnapshotChunkAsync"/>).</param>
     /// <param name="snapshotsTaken">Completed once every snapshot is taken (see <see cref="WriteChangesAsync"/>).</param>
+    /// <param name="waitForSlots">
+    /// False to stop at the first chunk no staging slot is free for, leaving it and the rest unsaved, instead of
+    /// waiting: an eager save runs while the level's tick waits for its snapshots, which slow writes elsewhere would
+    /// otherwise hold up.
+    /// </param>
     private async Task SaveTogetherAsync(IEnumerable<(IChunk Chunk, bool Entities)> chunks, bool unloading,
-        List<ChunkSave> taken, TaskCompletionSource? snapshotsTaken = null)
+        List<ChunkSave> taken, TaskCompletionSource? snapshotsTaken = null, bool waitForSlots = true)
     {
         var staging = new List<Task>();
         Task completing = Task.CompletedTask;
@@ -445,7 +462,11 @@ public partial class Region : IRegion
         {
             foreach (var (chunk, entities) in chunks)
             {
-                await flushSlots.WaitAsync();
+                if (waitForSlots)
+                    await flushSlots.WaitAsync();
+                else if (!flushSlots.Wait(0))
+                    break;
+
                 var save = NewSave(chunk);
                 taken.Add(save);
                 try

@@ -357,8 +357,10 @@ public sealed class ChunkSaves
         await world.DoWorldTickAsync();
         Assert.True(chunk.IsUnsaved);
 
-        // Undone before the unload, which then has nothing of the blocks to write: what's on disk is the tick's save.
+        // Undone before the unload, with the light it changes settled first, so the unload has nothing of the blocks
+        // to write: what's on disk is the tick's save.
         chunk.SetBlock(2, 64, 2, BlocksRegistry.Air);
+        world.Lighting.Flush();
         chunk.TakeUnsaved();
         await region.UnloadChunk(0, 0);
 
