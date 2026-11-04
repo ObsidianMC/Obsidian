@@ -1046,9 +1046,10 @@ public sealed partial class Client : IClient
             {
                 // The player's ticks stop first, so the leave saves them as the last tick left them. A tick under way
                 // may have moved them to another level (through a portal) after they were removed, so they're removed
-                // from where they are now too.
+                // from where they are now too, under that level's transfer lock, so that a level change still under way
+                // (a plugin's teleport, say) doesn't publish them in their new level afterwards.
                 await player.StopTickingAsync();
-                player.Level.TryRemovePlayer(player);
+                Entity.RemoveFromOwningLevel(player, leaving: true);
 
                 var leaving = new PlayerLeaveEventArgs(player, this.HostServer, DateTimeOffset.Now);
                 result = await this.eventDispatcher.ExecuteEventAsync(leaving);

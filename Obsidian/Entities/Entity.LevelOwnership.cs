@@ -104,6 +104,31 @@ public partial class Entity
     }
 
     /// <summary>
+    /// Takes <paramref name="player"/> out of the players of the level that owns it, under that level's transfer lock,
+    /// so that a level change can't move it on between reading its level and removing it there.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="leaving">
+    /// Whether the player is leaving the server: if it's still on its way to the level, the level won't take it in
+    /// either (see <see cref="TryRemoveOnArrival"/>), so it never joins the level's players after this.
+    /// </param>
+    /// <returns>Whether the player was among the level's players.</returns>
+    /// <exception cref="InvalidOperationException">The current thread holds another level's transfer lock.</exception>
+    internal static bool RemoveFromOwningLevel(IPlayer player, bool leaving = false)
+    {
+        if (player is not Entity entity)
+            return player.Level.TryRemovePlayer(player);
+
+        using (entity.EnterOwningLevel(out var level))
+        {
+            if (leaving)
+                entity.TryRemoveOnArrival(level);
+
+            return level.TryRemovePlayer(player);
+        }
+    }
+
+    /// <summary>
     /// Removes the entity while it travels to <paramref name="level"/>, which hasn't taken it in yet: it won't be.
     /// Call holding the level's transfer lock.
     /// </summary>

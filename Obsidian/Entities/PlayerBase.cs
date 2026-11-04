@@ -916,6 +916,12 @@ public abstract partial class PlayerBase : Avatar, IPlayer
             this.Respawning = true;
             this.respawnFinished = new(TaskCreationOptions.RunContinuationsAsynchronously);
         }
+
+        // A dead player is held from ticking (see Entity.TryClaimTick) from just before it leaves where it died until
+        // the respawn is over, as a level change's player is; the chunk it respawns in stays loaded until then.
+        var holding = false;
+        var waiting = false;
+        PortalArea? respawnArea = null;
         try
         {
             // Reserve the respawn before changing levels: a death that won the lock retries without committing,
@@ -963,21 +969,14 @@ public abstract partial class PlayerBase : Avatar, IPlayer
                 Health = MaxHealth;
                 this.progressDead = false;
                 API.Data.AttachmentStorage.For(this).EndDeath();
-                await Level.DestroyEntityAsync(this);
 
-                // Like vanilla's respawn, the player comes back where their bed or anchor is, or at the world spawn.
-                if (respawnLevel != Level)
-                {
-                    Level.TryRemovePlayer(this);
-                    Level = respawnLevel;
-                    Level.TryAddPlayer(this);
-                }
-
-                Yaw = respawnYaw;
-                Position = respawnPosition;
-                LastPosition = Position;
-                BoundingBox = Dimension.CreateBBFromPosition(Position);
-                Level.TryAddEntity(this);
+                // Like vanilla's respawn, the player comes back where their bed or anchor is, or at the world spawn,
+                // whose chunk is loaded first so that its level can take the player in at once. The dead player leaves
+                // the level it died in and joins that one through travel's handoff, as one that travels would.
+                respawnArea = await this.LoadRespawnAreaAsync(respawnLevel, respawnPosition);
+                this.BeginTravelHold();
+                holding = true;
+                waiting = !this.CommitRespawn(respawnLevel, respawnPosition, respawnYaw, this.Pitch);
             }
 
             Log.ChangingLevel(this.Logger, this.Username, this.Level.Name);
@@ -1008,7 +1007,11 @@ public abstract partial class PlayerBase : Avatar, IPlayer
 
             pendingRespawnChunks = !await this.UpdateChunksUnderLockAsync(true);
             respawnChunkRetryTicks = 20;
-            Level.TryAddEntity(this);
+
+            // A level that couldn't take the respawned player in at once takes it in now that its chunks are loaded.
+            if (waiting && !this.TryArriveWhereWaiting())
+                Log.RespawnNotPlaced(this.Logger, this.Username, this.Level.Name);
+
             await this.QueuePacketAsync(new SetHealthPacket(Health, FoodLevel, FoodSaturationLevel));
             await SendPlayerInfoAsync();
 
@@ -1021,14 +1024,29 @@ public abstract partial class PlayerBase : Avatar, IPlayer
         }
         finally
         {
+            respawnArea?.Dispose();
             lock (this.deathState)
             {
                 this.Respawning = false;
                 this.respawnFinished!.TrySetResult();
             }
+
+            // Last, so that no level ticks the player before its respawn is over.
+            if (holding)
+                this.EndTravelHold();
         }
 
         return true;
+    }
+
+    // The chunk a dead player respawns in, loaded (and generated if need be) and held until they've been taken in
+    // there; not waited for once they've disconnected.
+    private async Task<PortalArea?> LoadRespawnAreaAsync(ILevel level, VectorD position)
+    {
+        if (level is not AbstractLevel destination)
+            return null;
+
+        return await PortalArea.LoadAsync(destination, (Vector)position.Floor(), 0, () => this.Connected);
     }
 
     //TODO make IDamageSource 
@@ -1314,5 +1332,9 @@ public abstract partial class PlayerBase : Avatar, IPlayer
 
         [LoggerMessage(Level = LogLevel.Warning, Message = "{Username}'s saved vehicle couldn't be restored; they join without it")]
         public static partial void VehicleNotRestored(ILogger logger, string username);
+
+        [LoggerMessage(Level = LogLevel.Warning,
+            Message = "{Username} respawned in {LevelName}, which couldn't take them in; they aren't among its entities")]
+        public static partial void RespawnNotPlaced(ILogger logger, string username, string levelName);
     }
 }

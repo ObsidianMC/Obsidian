@@ -1,4 +1,6 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
+using Obsidian.API.Configuration;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
 using Obsidian.Entities;
@@ -10,6 +12,7 @@ using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.Tests.Utilities;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Generators;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -451,6 +454,82 @@ public sealed class LevelTransfers
             Assert.DoesNotContain(traveller, target.GetNonPlayerEntitiesInRange(Centre, 8));
         }
     }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task APlayerRespawningInAnotherLevelIsTickedByNeitherUntilTheRespawnIsOver()
+    {
+        await using var context = TestServerFactory.CreateServer($"respawn-{Guid.NewGuid():N}");
+        var world = context.World;
+        var nether = AddNether(context);
+        WorldBlockEntities.AddEmptyChunk(world);
+        AddEmptyChunk(nether);
+        world.LevelData.SpawnPosition = Centre;
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Respawner", Centre);
+        player.Level = nether;
+        Assert.True(nether.TryAddPlayer(player));
+        Assert.True(nether.TryAddEntity(player));
+        await player.KillAsync(player, "Respawner died");
+
+        // With no respawn point, the player dying in the nether respawns at the world spawn. The overworld is busy as
+        // the player gets there, so the respawn waits between leaving the nether and joining the overworld.
+        using var busy = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        var holder = OnOwnThread(() =>
+        {
+            using (world.TransferLock.Enter())
+            {
+                busy.Set();
+                release.Wait(TimeSpan.FromSeconds(10));
+            }
+        });
+        busy.Wait(TimeSpan.FromSeconds(10));
+        var respawn = Task.Run(() => player.RespawnAsync());
+        try
+        {
+            // Meanwhile the overworld owns the player, the nether no longer finds it, and neither level may tick it.
+            Assert.True(SpinWait.SpinUntil(() => player.Level == world, TimeSpan.FromSeconds(10)));
+            Assert.Null(nether.FindEntity(player.Uuid));
+            Assert.False(nether.Players.ContainsKey(player.Uuid));
+            Assert.False(player.TryClaimTick(world));
+            Assert.False(player.TryClaimTick(nether));
+        }
+        finally
+        {
+            release.Set();
+        }
+
+        await holder.WaitAsync(TimeSpan.FromSeconds(10));
+        await respawn.WaitAsync(TimeSpan.FromSeconds(10));
+
+        // Once the respawn is over, the player is one of the overworld's players and entities, and the overworld's
+        // alone, which may tick it from then on.
+        Assert.True(player.Alive);
+        Assert.Same(player, world.FindEntity(player.Uuid));
+        Assert.Same(player, world.Players[player.Uuid]);
+        Assert.Null(nether.FindEntity(player.Uuid));
+        Assert.False(nether.Players.ContainsKey(player.Uuid));
+        Assert.True(player.TryClaimTick(world));
+        player.ReleaseTick(world);
+    }
+
+    private static WorldData.Dimension AddNether(RealServerContext context)
+    {
+        var world = context.World;
+        var nether = new WorldData.Dimension(
+            NullLogger<WorldData.Dimension>.Instance,
+            context.Broadcaster,
+            new TestOptionsMonitor<ServerConfiguration>(world.Configuration),
+            context.EventDispatcher,
+            new EmptyWorldGenerator(),
+            "minecraft:the_nether",
+            world);
+        nether.Initialize(CodecRegistry.Dimensions.All["minecraft:the_nether"]);
+        world.RegisterDimension(nether);
+        return nether;
+    }
+
+    private static void AddEmptyChunk(AbstractLevel level) =>
+        level.LoadRegionByChunk(0, 0).SetChunk(new Chunk(0, 0, level.MinY, level.Height, ChunkGenStage.full));
 
     // Teleports an entity while the target's transfer lock is held elsewhere. Once the entity has left its level and
     // waits to get in, runs meanwhile, then underTargetLock on the thread holding the target's lock, which then lets

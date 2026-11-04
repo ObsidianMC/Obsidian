@@ -296,20 +296,78 @@ public partial class Entity
             var pin = origin.TryPinForTravel(this.Position)
                 ?? throw new InvalidOperationException("The chunk the entity is in is unloading.");
             departure = new Departure(origin, this.Position, this.Yaw, this.Pitch, pin);
-            origin.RemoveEntity(this, transferring: true);
-            if (this is IPlayer player)
-                source.TryRemovePlayer(player);
-
-            this.Place(departure.Position, position, yaw ?? this.Yaw, pitch ?? this.Pitch);
-            this.removedOnArrival = false;
-            this.arrivingAt = destination;
-            this.Level = destination;
+            this.Leave(source, destination, departure.Position, position, yaw ?? this.Yaw, pitch ?? this.Pitch);
         }
 
+        this.ForgetIn(source);
+        return departure;
+    }
+
+    // What leaving a level for another, or for a new place in the same one, changes, under the source's transfer lock:
+    // the entity leaves its regions (and, between levels, its players), takes its new place, and names the destination
+    // as its level, which owns it from then on.
+    private void Leave(ILevel source, ILevel destination, VectorD from, VectorD position, Angle yaw, Angle pitch)
+    {
+        if (source is AbstractLevel origin)
+            origin.RemoveEntity(this, transferring: true);
+
+        if (this is IPlayer player && source != destination)
+            source.TryRemovePlayer(player);
+
+        this.Place(from, position, yaw, pitch);
+        this.removedOnArrival = false;
+        this.arrivingAt = destination;
+        this.Level = destination;
+    }
+
+    // The players of a level the entity left stop tracking it.
+    private void ForgetIn(ILevel source)
+    {
         foreach (var observer in source.Players.Values)
             observer.UntrackEntity(this.EntityId);
+    }
 
-        return departure;
+    /// <summary>
+    /// Moves a player respawning after death to <paramref name="position"/> in <paramref name="destination"/>, which
+    /// may be the level it died in, through travel's handoff: it leaves where it died under that level's transfer lock
+    /// and is taken in under the destination's (see <see cref="Arrive"/>), never holding both.
+    /// </summary>
+    /// <remarks>
+    /// Not <see cref="CommitTravel"/>, as a respawn never goes back or fails: the dead player leaves where it died
+    /// whether or not it's still there, so no chunk is pinned for a return, and when the destination can't take it in
+    /// yet it stays the destination's, waiting, for <see cref="TryArriveWhereWaiting"/>. Call holding no transfer lock,
+    /// with a travel hold (see <see cref="BeginTravelHold"/>) taken until the respawn is over.
+    /// </remarks>
+    /// <returns>Whether the destination took the player in.</returns>
+    /// <exception cref="InvalidOperationException">A transfer lock is held.</exception>
+    private protected bool CommitRespawn(ILevel destination, VectorD position, Angle yaw, Angle pitch)
+    {
+        RefuseNestedTravel();
+        ILevel source;
+        using (this.EnterOwningLevel(out source))
+            this.Leave(source, destination, position, position, yaw, pitch);
+
+        if (source != destination)
+            this.ForgetIn(source);
+
+        return this.Arrive(destination, returning: null, out _) == Arrival.Arrived;
+    }
+
+    /// <summary>
+    /// Takes the entity into its level if it's still waiting there, after the level couldn't take it in when it arrived
+    /// (see <see cref="CommitRespawn"/>). Call holding no other level's transfer lock.
+    /// </summary>
+    /// <returns>False only when the level refused it again, and it's still waiting.</returns>
+    private protected bool TryArriveWhereWaiting()
+    {
+        using (this.EnterOwningLevel(out var level))
+        {
+            if (!ReferenceEquals(this.arrivingAt, level))
+                return true;
+
+            // The lock is re-entered for the arrival: the same level's, so it's still one level's lock at a time.
+            return this.Arrive(level, returning: null, out _) != Arrival.Refused;
+        }
     }
 
     // The receiving level's half of a handoff, under its transfer lock. When the level can't take the entity in, it

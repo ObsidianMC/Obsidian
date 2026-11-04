@@ -789,7 +789,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
             finally
             {
                 player.CancelJoin();
-                player.Level.TryRemovePlayer(player);
+                Entity.RemoveFromOwningLevel(player);
                 this.RemovePlayer(player);
             }
             throw;
@@ -848,7 +848,9 @@ public sealed partial class Server : IServer, IPluginScopedServer
     private void ReleaseRegistrations(IPlayer player)
     {
         this.UsernameToUuidMappings.TryRemove(new KeyValuePair<string, Guid>(player.Username, player.Uuid));
-        player.Level.TryRemovePlayer(player);
+
+        // Under the transfer lock of the level that owns the player, so a level change can't move it on meanwhile.
+        Entity.RemoveFromOwningLevel(player);
     }
 
     public async Task<bool> RemoveServerPlayerAsync(IPlayer player)
