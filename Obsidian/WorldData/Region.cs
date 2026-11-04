@@ -319,6 +319,79 @@ public partial class Region : IRegion
         await this.SavesAdmittedBeforeAsync(admitted).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
     }
 
+    /// <summary>
+    /// Starts saving <paramref name="chunks"/>' blocks (not their entities), like vanilla's eager chunk saves (see
+    /// <c>AbstractLevel.SaveChunksEagerlyAsync</c>), unless another save of the region is taking or writing
+    /// snapshots, the region isn't ready, or it's closing: the level's tick never waits for those.
+    /// </summary>
+    /// <param name="snapshotsTaken">
+    /// Completed once the chunks are snapshotted, or the save failed before (see <see cref="WriteChangesAsync"/>).
+    /// </param>
+    /// <returns>The save, which ends once its chunks are written; null when it didn't start.</returns>
+    internal Task? TrySaveChunks(IReadOnlyList<IChunk> chunks, TaskCompletionSource snapshotsTaken)
+    {
+        if (!this.initialization.IsValueCreated || !this.initialization.Value.IsCompletedSuccessfully)
+            return null;
+
+        if (!this.flushLock.Wait(0))
+            return null;
+
+        long admitted;
+        try
+        {
+            lock (this.FluidTickLock)
+            {
+                if (this.lightingRetired)
+                {
+                    this.flushLock.Release();
+                    return null;
+                }
+            }
+
+            admitted = this.AdmitSave();
+        }
+        catch (ObjectDisposedException)
+        {
+            // The region is closing.
+            this.flushLock.Release();
+            return null;
+        }
+
+        return this.SaveChunksUnderLockAsync(chunks, admitted, snapshotsTaken);
+    }
+
+    // Called holding flushLock, which it releases.
+    private async Task SaveChunksUnderLockAsync(
+        IReadOnlyList<IChunk> chunks,
+        long admitted,
+        TaskCompletionSource snapshotsTaken)
+    {
+        var taken = new List<ChunkSave>();
+        try
+        {
+            try
+            {
+                var blocksOnly = chunks.Select(chunk => (chunk, false));
+                await this.SaveTogetherAsync(blocksOnly, unloading: false, taken, snapshotsTaken);
+            }
+            finally
+            {
+                this.flushLock.Release();
+            }
+        }
+        finally
+        {
+            snapshotsTaken.TrySetResult();
+            this.EndSave(admitted);
+
+            foreach (var save in taken)
+            {
+                save.Dispose();
+                await this.ReleaseRetiredAsync(save);
+            }
+        }
+    }
+
     private async Task WriteChangesUnderLockAsync(List<ChunkSave> taken, TaskCompletionSource? snapshotsTaken)
     {
         // Pending light goes in first, so a chunk it reaches counts as changed.

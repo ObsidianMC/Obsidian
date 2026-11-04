@@ -337,6 +337,35 @@ public sealed class ChunkSaves
         Assert.Equal(BlockIds.Stone, reloaded.GetBlock(2, 64, 2).RegistryId);
     }
 
+    [Fact(DisplayName = "A tick saves a changed chunk ahead of the autosave, once per cooldown")]
+    public async Task TicksSaveChangedChunksEagerly()
+    {
+        await using var context = TestServerFactory.CreateServer($"chunk-saves-eager-{Guid.NewGuid():N}");
+        var world = context.World;
+        var chunk = Complete(0, 0);
+        var region = (Region)world.LoadRegionByChunk(0, 0);
+        region.SetChunk(chunk);
+        await region.FlushAsync();
+
+        // The tick takes the change's snapshot, and writes it while the next ticks run.
+        chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+        await world.DoWorldTickAsync();
+        Assert.False(chunk.IsUnsaved);
+
+        // A second change within the cooldown waits for a later save.
+        chunk.SetBlock(2, 64, 2, BlocksRegistry.Stone);
+        await world.DoWorldTickAsync();
+        Assert.True(chunk.IsUnsaved);
+
+        // Undone before the unload, which then has nothing of the blocks to write: what's on disk is the tick's save.
+        chunk.SetBlock(2, 64, 2, BlocksRegistry.Air);
+        chunk.TakeUnsaved();
+        await region.UnloadChunk(0, 0);
+
+        var reloaded = await region.GetChunkAsync(0, 0);
+        Assert.Equal(BlockIds.Stone, reloaded.GetBlock(1, 64, 1).RegistryId);
+    }
+
     private static Chunk Complete(int x, int z)
     {
         var chunk = new Chunk(x, z);

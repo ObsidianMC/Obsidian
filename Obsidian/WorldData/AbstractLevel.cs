@@ -876,8 +876,13 @@ public abstract partial class AbstractLevel : ILevel
         await simulationGate.WaitAsync();
         try
         {
+            var tickStart = Stopwatch.GetTimestamp();
             this.SnapshotPlayers();
             await TickLevelAsync();
+
+            TickStage = "saving changed chunks";
+            await this.SaveChunksEagerlyAsync(tickStart);
+            TickStage = "idle";
         }
         finally
         {
