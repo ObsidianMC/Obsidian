@@ -1,6 +1,7 @@
 ﻿using Obsidian.Entities.Factories;
 using Obsidian.Nbt;
 using System.Buffers.Binary;
+using System.Collections.Frozen;
 
 namespace Obsidian.Entities;
 
@@ -139,7 +140,13 @@ internal static class EntityNbt
     /// <summary>
     /// The vanilla id of an entity type, e.g. <c>minecraft:end_crystal</c> for <see cref="EntityType.EndCrystal"/>.
     /// </summary>
-    public static string TypeId(EntityType type) => $"minecraft:{type.ToString().ToSnakeCase()}";
+    public static string TypeId(EntityType type) =>
+        typeIds.TryGetValue(type, out var id) ? id : $"minecraft:{type.ToString().ToSnakeCase()}";
+
+    // Worked out once: mob spawning looks up every ticking mob's id each tick.
+    private static readonly FrozenDictionary<EntityType, string> typeIds = Enum.GetValues<EntityType>()
+        .Distinct()
+        .ToFrozenDictionary(type => type, type => $"minecraft:{type.ToString().ToSnakeCase()}");
 
     /// <summary>
     /// The id an entity is saved with: its vanilla type's, or its plugin type's identifier.
