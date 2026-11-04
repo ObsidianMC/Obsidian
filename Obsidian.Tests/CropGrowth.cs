@@ -9,6 +9,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.ChunkData;
 using Obsidian.Tests.Fakes;
+using Obsidian.Tests.Utilities;
 using Obsidian.Utilities;
 using Obsidian.WorldData;
 using System;
@@ -64,8 +65,26 @@ public sealed class CropGrowth
         Assert.Contains(updates, update => update.BlockId == chunk.GetBlock(update.Position).GetHashCode());
     }
 
-    [Fact(DisplayName = "Random ticks stop reaching a chunk once one of its neighbours unloads")]
-    public async Task UnloadedNeighbourStopsRandomTicks()
+    // The ways a neighbour leaves the level's loaded chunks after random ticks remembered the chunk as complete.
+    private sealed record NeighbourLoss(string Name, Func<WorldData.World, Task> Lose);
+
+    [Fact(DisplayName = "Random ticks stop reaching a chunk once one of its neighbours is no longer loaded")]
+    public async Task LostNeighbourStopsRandomTicks()
+    {
+        NeighbourLoss[] losses =
+        [
+            new("unloaded", world => world.LoadRegionByChunk(1, 1).UnloadChunk(1, 1)),
+            new("no longer complete", world =>
+            {
+                ((Chunk)world.GetLoadedChunk(1, 1)!).SetChunkStatusCore(ChunkGenStage.light);
+                return Task.CompletedTask;
+            })
+        ];
+
+        await FixtureCases.AssertAllAsync(losses, loss => loss.Name, AssertLostNeighbourStopsRandomTicksAsync);
+    }
+
+    private static async Task AssertLostNeighbourStopsRandomTicksAsync(NeighbourLoss loss)
     {
         await using var context = TestServerFactory.CreateServer($"crop-neighbours-{Guid.NewGuid():N}");
         var world = context.World;
@@ -81,9 +100,9 @@ public sealed class CropGrowth
         // as complete.
         Assert.True(GrowsDuringTicks(world));
 
-        // One neighbour unloads, so the chunk must be checked again rather than taken as still complete.
+        // One neighbour leaves the loaded chunks, so the chunk must be checked again rather than taken as complete.
         PlantWheat(world.GetLoadedChunk(0, 0)!);
-        await world.LoadRegionByChunk(1, 1).UnloadChunk(1, 1);
+        await loss.Lose(world);
         Assert.Null(world.GetLoadedChunk(1, 1));
 
         Assert.False(GrowsDuringTicks(world));

@@ -86,10 +86,19 @@ public sealed class Chunk : IChunk
     internal void MarkUnsaved() => Volatile.Write(ref this.unsaved, 1);
 
     /// <summary>
-    /// The level's chunk unload epoch when the chunk's eight neighbours were last found loaded, for random ticks
-    /// (see <c>AbstractLevel.RandomTickingChunks</c>); 0 until they are. Only the level's tick reads and writes it.
+    /// The level's neighbour epoch when the chunk's eight neighbours were last found loaded, for random ticks (see
+    /// <c>AbstractLevel.RandomTickingChunks</c>); 0 until they are. Only the level's tick reads and writes it.
     /// </summary>
     internal long NeighboursLoadedEpoch { get; set; }
+
+    /// <summary>
+    /// Moves on whenever any complete chunk stops being complete (a plugin or command setting an earlier status),
+    /// which takes it out of its level's loaded chunks without unloading it. Rare, so every level's neighbour checks
+    /// start again when it does.
+    /// </summary>
+    internal static long CompletionLosses => Interlocked.Read(ref completionLosses);
+
+    private static long completionLosses;
 
     /// <summary>
     /// An explicit change since the last snapshot. Unlike <see cref="IsUnsaved"/>, merely holding containers does
@@ -837,7 +846,17 @@ public sealed class Chunk : IChunk
 
     private void SetChunkStatusLocked(ChunkGenStage status)
     {
+        // Moved on before and after, so a reader that saw the counter unchanged on both sides of reading this
+        // chunk's status read it as it is now.
+        var losingCompletion = this.ChunkStatus == ChunkGenStage.full && status != ChunkGenStage.full;
+        if (losingCompletion)
+            Interlocked.Increment(ref completionLosses);
+
         this.ChunkStatus = status;
+
+        if (losingCompletion)
+            Interlocked.Increment(ref completionLosses);
+
         this.MarkUnsaved();
 
         if (this.ChunkStatus == ChunkGenStage.full)

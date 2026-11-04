@@ -517,10 +517,23 @@ public abstract partial class AbstractLevel : ILevel
     private int regionsVersion;
 
     // Moved on whenever a chunk leaves the level's loaded set (unloaded, replaced, or its region closing), so a
-    // chunk's neighbours found loaded stay loaded while it holds. Starts at 1, so a chunk's 0 never matches it.
+    // chunk's neighbours found loaded stay loaded while it holds (see NeighbourEpoch). Starts at 1, so a chunk's 0
+    // never matches it.
     private long chunkUnloadEpoch = 1;
 
-    internal long ChunkUnloadEpoch => Interlocked.Read(ref this.chunkUnloadEpoch);
+    /// <summary>
+    /// What a chunk's neighbours found loaded stay valid for: the level's unloads and any chunk losing its
+    /// completion, both of which only count up, so an equal sum means neither moved.
+    /// </summary>
+    /// <remarks>
+    /// Read under the tick lock, which regions hold while they change a slot and move the epoch on: a replacement
+    /// moves it on before publishing the new chunk, so a read between the two would vouch for the old one.
+    /// </remarks>
+    internal long ReadNeighbourEpoch()
+    {
+        lock (this.Fluids.TickLock)
+            return Interlocked.Read(ref this.chunkUnloadEpoch) + Chunk.CompletionLosses;
+    }
 
     // A region closing passes its empty slots too.
     private void OnChunkUnloaded(IChunk? chunk)

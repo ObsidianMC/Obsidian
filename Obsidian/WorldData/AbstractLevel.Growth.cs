@@ -176,6 +176,9 @@ public abstract partial class AbstractLevel
         // checking the neighbours of each looked most of them up eight more times.
         if (Volatile.Read(ref this.simulationCurrent))
         {
+            // Read before any chunk is looked up, and again after: a chunk is only remembered as complete when
+            // nothing left the loaded chunks in between (see randomTickVerified).
+            var epoch = this.ReadNeighbourEpoch();
             var loaded = this.randomTickLoaded;
             loaded.Clear();
             var candidates = new List<(long Key, Chunk Chunk)>();
@@ -192,12 +195,30 @@ public abstract partial class AbstractLevel
                     candidates.Add((key, chunk));
             }
 
-            var epoch = this.ChunkUnloadEpoch;
+            var verified = this.randomTickVerified;
+            verified.Clear();
             foreach (var (key, chunk) in candidates)
             {
-                if (this.HasLoadedNeighbours(key, chunk, epoch, loaded))
+                if (chunk.NeighboursLoadedEpoch == epoch)
+                {
                     chunks.Add(chunk);
+                    continue;
+                }
+
+                if (!this.HasLoadedNeighbours(key, loaded))
+                    continue;
+
+                chunks.Add(chunk);
+                verified.Add(chunk);
             }
+
+            if (this.ReadNeighbourEpoch() == epoch)
+            {
+                foreach (var chunk in verified)
+                    chunk.NeighboursLoadedEpoch = epoch;
+            }
+
+            verified.Clear();
 
             // So it doesn't keep chunks unloaded meanwhile.
             loaded.Clear();
@@ -247,21 +268,11 @@ public abstract partial class AbstractLevel
         return chunk;
     }
 
-    // Chunks leave the loaded set only in unloading passes (every 30 seconds) and as regions close, which move the
-    // unload epoch on, while loading only adds neighbours. So a chunk whose neighbours were all loaded at this epoch
-    // still has them, and its eight lookups are skipped. The epoch is read before the lookups: an unload racing
-    // them leaves a stale stamp, which the next tick checks again.
-    private bool HasLoadedNeighbours(long key, Chunk chunk, long epoch, Dictionary<long, IChunk?> loaded)
-    {
-        if (chunk.NeighboursLoadedEpoch == epoch)
-            return true;
-
-        if (!this.HasLoadedNeighbours(key, loaded))
-            return false;
-
-        chunk.NeighboursLoadedEpoch = epoch;
-        return true;
-    }
+    // The chunks this tick found complete, to remember as such once the neighbour epoch is known not to have moved
+    // while they were checked. Chunks leave the loaded set only in unloading passes (every 30 seconds), as regions
+    // close and when a chunk loses its completion, which move the epoch on, while loading only adds neighbours. So a
+    // chunk remembered at the current epoch still has its eight neighbours, and its lookups are skipped.
+    private readonly List<Chunk> randomTickVerified = [];
 
     private bool HasLoadedNeighbours(long key, Dictionary<long, IChunk?> loaded)
     {
