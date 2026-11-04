@@ -1247,7 +1247,9 @@ public abstract partial class AbstractLevel : ILevel
         await simulationGate.WaitAsync();
         try
         {
-            // The region's final save has its block entities' changes made since the last tick.
+            // The region's final save has its block entities' changes made since the last tick, and the entities
+            // waiting to arrive in it.
+            this.AdoptArrivals();
             this.TakeBlockEntityChanges();
             await this.UnloadRegionUnderGateAsync(regionX, regionZ);
         }
@@ -1620,6 +1622,8 @@ public abstract partial class AbstractLevel : ILevel
             await simulationGate.WaitAsync();
             try
             {
+                // Entities waiting to arrive are saved with the regions that take them in.
+                this.AdoptArrivals();
                 this.TakeBlockEntityChanges();
 
                 jobsBeforeFlush = Interlocked.Exchange(ref this.jobsSinceFlush, 0);
@@ -2441,7 +2445,8 @@ public abstract partial class AbstractLevel : ILevel
         if (Interlocked.Exchange(ref this.generationFailure, null) is Exception failure)
             Log.ChunkGenerationFailed(this.Logger, failure);
 
-        if (Volatile.Read(ref this.jobsSinceFlush) != 0)
+        // A flush takes in the entities still waiting to arrive, which nothing else would save.
+        if (Volatile.Read(ref this.jobsSinceFlush) != 0 || this.PendingArrivalCount > 0)
             await this.FlushRegionsAsync();
 
         foreach (var region in Regions.Values)

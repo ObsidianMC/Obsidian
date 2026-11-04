@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Obsidian.API.World;
 using Obsidian.WorldData;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -5,16 +6,26 @@ using Obsidian.WorldData.Portals;
 
 namespace Obsidian.Entities;
 
+// Travel within and between levels. Between levels it's a handoff that never holds both levels' transfer locks: the
+// source lets the entity go under its own lock (Depart), and the destination takes it in under its own (Arrive).
+// Travel that starts during the source's tick (a portal, or other ticking code) leaves the entity waiting in the
+// destination's arrivals, which the destination takes in at the start of its next tick (AbstractLevel.Arrivals.cs);
+// travel from outside a tick (commands, plugins, players) arrives at once. Plugin code (SpawnEntity) only runs once
+// no transfer lock is held.
 public partial class Entity
 {
     /// <summary>Transfers the existing instance, including its state, instead of spawning a replacement.</summary>
+    /// <remarks>
+    /// Between levels, during the source level's tick, the entity arrives with the destination's next tick: it's on its
+    /// way when this returns.
+    /// </remarks>
     public virtual async ValueTask TeleportAsync(
         ILevel level, VectorD position, Angle? yaw = null, Angle? pitch = null)
     {
         ValidateTravel(level, position, yaw, pitch);
         this.CancelEntityPortalTravel();
         var source = this.Level;
-        using var area = level is AbstractLevel destination
+        var area = level is AbstractLevel destination
             ? await PortalArea.LoadAsync(destination, (Vector)position.Floor(), 0, () => this.IsTravelResident(source))
             : null;
         if (level is AbstractLevel && area is null)
@@ -24,40 +35,58 @@ public partial class Entity
         VectorD from;
         Angle fromYaw;
         Angle fromPitch;
-        using (TransferLockOf(source).Enter())
+        try
         {
-            this.ValidateTravelResident(source);
+            using (TransferLockOf(source).Enter())
+            {
+                this.ValidateTravelResident(source);
 
-            // Like vanilla, an entity teleported on its own gets off its vehicle, and its passengers get off to travel
-            // separately and board again at the destination.
-            riders = this.DetachPassengersForTravel();
-            from = this.Position;
-            fromYaw = this.Yaw;
-            fromPitch = this.Pitch;
+                // Like vanilla, an entity teleported on its own gets off its vehicle, and its passengers get off to
+                // travel separately and board again at the destination.
+                riders = this.DetachPassengersForTravel();
+                from = this.Position;
+                fromYaw = this.Yaw;
+                fromPitch = this.Pitch;
 
-            // Within the level the move is committed with the detach; travel to another level can't take the
-            // destination's lock while this one is held, so it's committed below.
-            if (source == level)
-                this.CommitTravelOrReseat(riders, source, level, position, yaw, pitch);
+                // Within the level the move is committed with the detach; travel to another level can't take the
+                // destination's lock while this one is held, so it's committed below.
+                if (source == level)
+                    this.TravelOrReseat(riders, () => this.RelocateWithinLevel(source, position, yaw, pitch));
+            }
+
+            if (source != level)
+            {
+                if (level is AbstractLevel queue && QueuesArrival(source))
+                {
+                    var leaving = area;
+                    area = null;
+                    this.TravelOrReseat(riders, () => this.DepartToQueue(source, queue, position, yaw, pitch, leaving));
+                }
+                else
+                {
+                    this.TravelOrReseat(riders, () => this.CommitTravel(source, level, position, yaw, pitch));
+                    this.AppearIn(level);
+                }
+            }
         }
-
-        if (source != level)
-            this.CommitTravelOrReseat(riders, source, level, position, yaw, pitch);
+        finally
+        {
+            area?.Dispose();
+        }
 
         await this.CarryPassengersAsync(riders, from, fromYaw, fromPitch);
     }
 
-    // Commits a teleport, seating the passengers taken off for it again if it fails.
-    private void CommitTravelOrReseat(
-        Entity[] riders, ILevel source, ILevel level, VectorD position, Angle? yaw, Angle? pitch)
-    {
-        Action arrived = source == level
-            ? () => this.QueueTeleport(level, position)
-            : this.AppearInNewLevel;
+    // Whether travel out of the level waits for the destination's tick: it does during the source's own tick.
+    private bool QueuesArrival(ILevel source) =>
+        this is not IPlayer && source is AbstractLevel { CurrentTickId: not 0 };
 
+    // Commits a teleport, seating the passengers taken off for it again if it fails.
+    private void TravelOrReseat(Entity[] riders, Action travel)
+    {
         try
         {
-            this.CommitTravel(source, level, position, yaw, pitch, arrived);
+            travel();
         }
         catch (InvalidOperationException)
         {
@@ -68,28 +97,12 @@ public partial class Entity
         }
     }
 
-    private void QueueTeleport(ILevel level, VectorD position) =>
-        this.PacketBroadcaster.QueuePacketToLevel(level, new TeleportEntityPacket
-        {
-            EntityId = this.EntityId,
-            Position = position,
-            Delta = this.Motion,
-            Yaw = this.Yaw,
-            Pitch = this.Pitch,
-            OnGround = this.MovementFlags.HasFlag(MovementFlags.OnGround)
-        });
-
-    // Spawned for the new level's players as the level takes it in, so a removal can't come between and leave it on
-    // their clients.
-    private void AppearInNewLevel()
+    // Shown to the players of the level it arrived in, unless it was removed or moved on meanwhile. Spawning is
+    // virtual, so plugin code, which may travel itself, and must run without a transfer lock held.
+    private void AppearIn(ILevel level)
     {
-        if (this is Mob mob)
-        {
-            mob.HoldLeashByUuid();
-            mob.ResetMovementBaseline();
-        }
-
-        this.SpawnEntity();
+        if (this.IsTravelResident(level))
+            this.SpawnEntity();
     }
 
     /// <summary>
@@ -130,16 +143,16 @@ public partial class Entity
     }
 
     // Membership is authoritative for ordinary removal and unloading saves; item pickup and mob death may mark
-    // removal before their dictionary entry is taken out. Read and revalidate under the source's transfer lock.
-    private protected bool IsTravelResident(ILevel source)
+    // removal before their dictionary entry is taken out. Read and revalidate under the level's transfer lock.
+    private protected bool IsTravelResident(ILevel level)
     {
-        using (TransferLockOf(source).Enter())
+        using (TransferLockOf(level).Enter())
         {
-            return this.Level == source
+            return this.Level == level
                 && this is not ItemEntity { Removed: true }
                 && this is not Mob { IsRemoved: true }
-                && source is AbstractLevel origin
-                && origin.GetRegionForLocation(this.Position) is IRegion region
+                && level is AbstractLevel resident
+                && resident.GetRegionForLocation(this.Position) is IRegion region
                 && region.Entities.TryGetValue(this.EntityId, out var entity)
                 && ReferenceEquals(entity, this);
         }
@@ -152,51 +165,126 @@ public partial class Entity
     }
 
     /// <summary>
-    /// Moves the entity to <paramref name="position"/> in <paramref name="destination"/>. Between levels it's a handoff
-    /// that never holds both levels' transfer locks: the source lets the entity go under its own lock (see
-    /// <see cref="Depart"/>), then the destination takes it in under its own (see <see cref="Arrive"/>), or sends it
-    /// back the same way when it can't. In between it's in neither level and owned by the destination, and a removal
+    /// Moves the entity to <paramref name="position"/> in <paramref name="destination"/> at once. Between levels the
+    /// source lets it go (see <see cref="Depart"/>) and the destination takes it in (see <see cref="Arrive"/>); when
+    /// the destination can't, it goes back, or, failing that, is kept in the chunk it left (see
+    /// <see cref="KeepWhereItLeft"/>). In between it's in neither level, owned by the destination, and a removal
     /// meanwhile (see <see cref="TryRemoveOnArrival"/>) keeps it from arriving.
     /// </summary>
-    /// <param name="arrived">
-    /// Run under the destination's transfer lock once the entity is there, before anything else can reach it there.
-    /// </param>
     /// <remarks>
-    /// Call holding no level's transfer lock, except the level's own for a move within it. No awaits or tick-lock
-    /// acquisition here: saves take tick lock, then transfer lock, then chunk entity lock.
+    /// Call holding no transfer lock: travel asked for under one (by code a transfer runs) is refused before the
+    /// entity leaves. No awaits, plugin code or tick-lock acquisition here: saves take tick lock, then transfer lock,
+    /// then chunk entity lock.
     /// </remarks>
     /// <exception cref="InvalidOperationException">
-    /// The entity isn't in <paramref name="source"/> anymore, the destination couldn't take it, or it was removed on
-    /// the way.
+    /// The entity isn't in <paramref name="source"/> anymore, the destination couldn't take it, it was removed on the
+    /// way, or a transfer lock is held.
     /// </exception>
     private protected void CommitTravel(
-        ILevel source, ILevel destination, VectorD position, Angle? yaw, Angle? pitch, Action? arrived = null)
+        ILevel source, ILevel destination, VectorD position, Angle? yaw, Angle? pitch)
     {
         if (source == destination)
         {
-            this.RelocateWithinLevel(source, position, yaw, pitch, arrived);
+            this.RelocateWithinLevel(source, position, yaw, pitch);
             return;
         }
 
         if (source is not AbstractLevel)
             throw new NotSupportedException("Entity transfers require an Obsidian source level.");
 
+        RefuseNestedTravel();
         var departure = this.Depart(source, destination, position, yaw, pitch);
-        var arrival = this.Arrive(destination, arrived, departure);
-        if (arrival == Arrival.Refused)
+        var settled = true;
+        try
         {
-            this.Arrive(source, arrived: null, returning: null);
-            throw new InvalidOperationException("The destination level could not accept the entity.");
-        }
+            var arrival = this.Arrive(destination, departure);
+            if (arrival == Arrival.Arrived)
+                return;
 
-        if (arrival == Arrival.Removed)
+            if (arrival == Arrival.Refused)
+            {
+                arrival = this.Arrive(departure.Level, returning: null);
+                if (arrival == Arrival.Arrived)
+                    throw new InvalidOperationException("The destination level could not accept the entity.");
+
+                if (arrival == Arrival.Refused)
+                {
+                    // Never dropped: kept in the chunk it left, or else left waiting to arrive there again, with the
+                    // chunk still pinned, for the level's next adoption or save to settle.
+                    settled = this.KeepWhereItLeft(departure);
+                    if (!settled)
+                        departure.Level.RetainArrival(new PendingArrival(this, departure, Returning: true, Area: null));
+
+                    throw new InvalidOperationException("Neither level could accept the entity.");
+                }
+            }
+
             throw new InvalidOperationException("The entity was removed while it travelled.");
-
-        foreach (var observer in source.Players.Values)
-            observer.UntrackEntity(this.EntityId);
+        }
+        finally
+        {
+            if (settled)
+                departure.Pin?.Dispose();
+        }
     }
 
-    private void RelocateWithinLevel(ILevel level, VectorD position, Angle? yaw, Angle? pitch, Action? arrived)
+    // Leaves for a level that takes the entity in at its own pace (see AbstractLevel.QueueArrival).
+    private void DepartToQueue(
+        ILevel source, AbstractLevel destination, VectorD position, Angle? yaw, Angle? pitch, PortalArea? area)
+    {
+        RefuseNestedTravel();
+        Departure departure;
+        try
+        {
+            departure = this.Depart(source, destination, position, yaw, pitch);
+        }
+        catch
+        {
+            area?.Dispose();
+            throw;
+        }
+
+        destination.QueueArrival(new PendingArrival(this, departure, Returning: false, area));
+    }
+
+    /// <summary>
+    /// Takes in the entity, waiting in <paramref name="level"/>'s arrivals (see <see cref="AbstractLevel.AdoptArrivals"/>).
+    /// One the level refuses is sent back to wait in the arrivals of the level it left; one refused there too is kept
+    /// in the chunk it left, or stays waiting when even that can't be done.
+    /// </summary>
+    internal void Adopt(AbstractLevel level, PendingArrival arrival)
+    {
+        var departure = arrival.From;
+        var outcome = this.Arrive(level, arrival.Returning ? null : departure);
+        if (outcome == Arrival.Refused && !arrival.Returning)
+        {
+            arrival.Area?.Dispose();
+            departure.Level.QueueArrival(arrival with { Returning = true, Area = null });
+            return;
+        }
+
+        if (outcome == Arrival.Refused && !this.KeepWhereItLeft(departure))
+        {
+            level.RetainArrival(arrival);
+            return;
+        }
+
+        arrival.Area?.Dispose();
+        departure.Pin?.Dispose();
+        if (outcome == Arrival.Arrived && !arrival.Returning)
+            this.AppearIn(level);
+    }
+
+    private static void RefuseNestedTravel()
+    {
+        if (EntityTransferLock.IsAnyHeldByCurrentThread)
+        {
+            throw new InvalidOperationException(
+                "An entity can't travel to another level from code run under a level's transfer lock.");
+        }
+    }
+
+    private void RelocateWithinLevel(ILevel level, VectorD position, Angle? yaw, Angle? pitch)
     {
         using (TransferLockOf(level).Enter())
         {
@@ -206,12 +294,24 @@ public partial class Entity
                 throw new InvalidOperationException("The destination level could not accept the entity.");
 
             this.Place(from, position, yaw ?? this.Yaw, pitch ?? this.Pitch);
-            arrived?.Invoke();
+            this.PacketBroadcaster.QueuePacketToLevel(level, new TeleportEntityPacket
+            {
+                EntityId = this.EntityId,
+                Position = position,
+                Delta = this.Motion,
+                Yaw = this.Yaw,
+                Pitch = this.Pitch,
+                OnGround = this.MovementFlags.HasFlag(MovementFlags.OnGround)
+            });
         }
     }
 
-    // Where the entity was, and how it faced, before it left a level, to send it back there.
-    private readonly record struct Departure(ILevel Level, VectorD Position, Angle Yaw, Angle Pitch);
+    /// <summary>
+    /// Where the entity was, and how it faced, before it left a level, and the pin keeping that chunk loaded until the
+    /// entity is settled, so that it can go back or be kept there.
+    /// </summary>
+    internal readonly record struct Departure(
+        AbstractLevel Level, VectorD Position, Angle Yaw, Angle Pitch, ChunkPin? Pin);
 
     private enum Arrival
     {
@@ -224,7 +324,9 @@ public partial class Entity
     // links, takes its new place, and names the destination as its level, which owns it from then on.
     private Departure Depart(ILevel source, ILevel destination, VectorD position, Angle? yaw, Angle? pitch)
     {
-        using (TransferLockOf(source).Enter())
+        var origin = (AbstractLevel)source;
+        Departure departure;
+        using (origin.TransferLock.Enter())
         {
             this.ValidateTravelResident(source);
 
@@ -232,8 +334,8 @@ public partial class Entity
             this.LeaveVehicle();
             this.EjectPassengers();
 
-            var departure = new Departure(source, this.Position, this.Yaw, this.Pitch);
-            ((AbstractLevel)source).RemoveEntity(this, transferring: true);
+            departure = new Departure(origin, this.Position, this.Yaw, this.Pitch, new ChunkPin(origin, this.Position));
+            origin.RemoveEntity(this, transferring: true);
             if (this is IPlayer player)
                 source.TryRemovePlayer(player);
 
@@ -241,24 +343,29 @@ public partial class Entity
             this.removedOnArrival = false;
             this.arrivingAt = destination;
             this.Level = destination;
-            return departure;
         }
+
+        foreach (var observer in source.Players.Values)
+            observer.UntrackEntity(this.EntityId);
+
+        return departure;
     }
 
     // The receiving level's half of a handoff, under its transfer lock. When the level can't take the entity in, it
-    // hands the entity back toward where it left (when returning says where), which takes it in the same way.
-    private Arrival Arrive(ILevel level, Action? arrived, Departure? returning)
+    // hands the entity back toward where it left (when returning says where); otherwise it stays the level's, waiting.
+    private Arrival Arrive(ILevel level, Departure? returning)
     {
         using (TransferLockOf(level).Enter())
         {
-            // Taken or killed on the way: picked up, say, from a lookup that found it before it left.
+            // Taken or killed on the way: picked up, say, through a lookup that found it before it left.
             var removed = this.removedOnArrival
                 || this is ItemEntity { Removed: true }
                 || this is Mob { IsRemoved: true };
-            this.arrivingAt = null;
             this.removedOnArrival = false;
             if (removed)
             {
+                this.arrivingAt = null;
+
                 // The rest of a removal, whose most was done as the entity left its source.
                 if (this is not IPlayer)
                     API.Data.AttachmentStorage.For(this).Retire();
@@ -266,17 +373,27 @@ public partial class Entity
                 return Arrival.Removed;
             }
 
+            // Ready before the level publishes it, as its tick may reach it from then on.
+            if (this is Mob mob)
+            {
+                mob.HoldLeashByUuid();
+                mob.ResetMovementBaseline();
+            }
+
             if (level.TryAddEntity(this))
             {
+                this.arrivingAt = null;
                 if (this is IPlayer player)
                     level.TryAddPlayer(player);
 
-                arrived?.Invoke();
                 return Arrival.Arrived;
             }
 
             if (returning is Departure back)
             {
+                // Riding links never span levels: whoever boarded it here stays.
+                this.LeaveVehicle();
+                this.EjectPassengers();
                 this.Place(this.Position, back.Position, back.Yaw, back.Pitch);
                 this.arrivingAt = back.Level;
                 this.Level = back.Level;
@@ -284,6 +401,29 @@ public partial class Entity
 
             return Arrival.Refused;
         }
+    }
+
+    // Keeps an entity neither level took in as an entity waiting to spawn in the chunk it left, which the chunk saves
+    // and the level spawns on its next tick (dropped then, like vanilla's, if its UUID is taken). The instance itself is
+    // retired, so that nothing still holding it can take its items.
+    private bool KeepWhereItLeft(Departure departure)
+    {
+        if (this is IPlayer || departure.Level.GetRegionForLocation(departure.Position) is not Region region)
+            return false;
+
+        using (departure.Level.TransferLock.Enter())
+        {
+            if (this.Level != departure.Level || !region.TryKeepUnplaced(this, departure.Level))
+                return false;
+
+            this.arrivingAt = null;
+            if (this is ItemEntity item)
+                item.Removed = true;
+        }
+
+        departure.Level.Logger.LogWarning(
+            "Entity {EntityId} could not be placed after travelling; it was kept in the chunk it left", this.EntityId);
+        return true;
     }
 
     private void Place(VectorD from, VectorD position, Angle yaw, Angle pitch)

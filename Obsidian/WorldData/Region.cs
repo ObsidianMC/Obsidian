@@ -714,6 +714,37 @@ public partial class Region : IRegion
             return this.EvictUnderTransferLock(entity, keepSaved);
     }
 
+    /// <summary>
+    /// Keeps an entity that travelled but no level could take in as one waiting to spawn in its chunk, which saves it
+    /// and spawns it on the level's next tick. Call holding the level's transfer lock.
+    /// </summary>
+    /// <returns>Whether the chunk, loaded and with its entities not unloaded, keeps it.</returns>
+    internal bool TryKeepUnplaced(Entity entity, AbstractLevel level)
+    {
+        var (chunkX, chunkZ) = ChunkOf(entity.Position);
+        var local = this.GetLoadedChunk(
+            NumericsHelper.Modulo(chunkX, CubicRegionSize),
+            NumericsHelper.Modulo(chunkZ, CubicRegionSize));
+        if (local is not Chunk { X: var x, Z: var z } chunk || (x, z) != (chunkX, chunkZ))
+            return false;
+
+        using (chunk.EntityLock.EnterScope())
+        {
+            if (chunk.EntitiesUnloaded
+                || EntityNbt.Save(entity) is not NbtCompound saved
+                || EntityNbt.ToGeneratedEntity(saved) is not GeneratedEntity pending)
+            {
+                return false;
+            }
+
+            chunk.PendingEntities.Add(pending);
+        }
+
+        API.Data.AttachmentStorage.For(entity).Retire();
+        level.QueueEntitySpawn(chunk);
+        return true;
+    }
+
     private bool EvictUnderTransferLock(IEntity entity, bool keepSaved)
     {
         var (chunkX, chunkZ) = ChunkOf(entity.Position);

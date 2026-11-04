@@ -22,12 +22,14 @@ namespace Obsidian.WorldData;
 /// that locks the level an entity names and finds it still names that level owns it until it lets go (see
 /// <c>Entity.EnterOwningLevel</c>). Travel between levels is a handoff, never holding both levels' locks: the source
 /// lets the entity go under its own lock, and the destination takes it in under its own (see <c>Entity.Travel</c>).
+/// Travel that starts during the source's tick leaves the entity waiting in the destination's arrivals, which the
+/// destination takes in with its next tick's entity actions, or before it saves (see <c>AbstractLevel.Arrivals</c>).
 /// </para>
 /// <para>
 /// A thread holds at most one level's transfer lock at a time; entering a second throws, as that is the way to a
 /// deadlock between levels ticking in parallel. In the lock order it comes after a level's tick lock and container
-/// click locks, and before a chunk's entity lock and an entity grid's lock. Never await, load chunks or run plugin code
-/// holding it.
+/// click locks, and before a chunk's entity lock and an entity grid's lock. Never await, load chunks, fill a container
+/// (its click lock comes first) or run plugin code holding it.
 /// </para>
 /// </remarks>
 internal sealed class EntityTransferLock
