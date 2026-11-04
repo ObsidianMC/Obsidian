@@ -270,15 +270,41 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         Directory.CreateDirectory(this.FolderPath);
     }
 
+    /// <summary>
+    /// Ticks the world: its clocks, then the world's own level and its dimensions, then its players once every level is
+    /// done.
+    /// </summary>
+    /// <remarks>
+    /// The levels only read what they share (the clocks, game rules and difficulty) while they tick, so they may tick
+    /// in parallel. The players' pass after them must wait for every level, since a player can have moved between
+    /// levels during the tick.
+    /// </remarks>
     public async override Task DoWorldTickAsync()
     {
-        await base.DoWorldTickAsync();
+        this.TickClocks();
 
+        await base.DoWorldTickAsync();
         await Task.WhenAll(this.dimensions.Values.Select(d => d.DoWorldTickAsync()));
 
         // Like vanilla's player inventory tick, after the levels ticked.
-        foreach (var player in this.Players.Values.Concat(this.dimensions.Values.SelectMany(dimension => dimension.Players.Values)).ToArray())
+        var players = this.Players.Values
+            .Concat(this.dimensions.Values.SelectMany(dimension => dimension.Players.Values))
+            .ToArray();
+
+        foreach (var player in players)
             await player.TickAfterLevelsAsync();
+    }
+
+    // Like vanilla's server, which ticks its clocks once before any level ticks: the world's levels share its clocks,
+    // so no level's tick changes them under another's. Game time advances with them, as the overworld's level data
+    // keeps it for every level.
+    private void TickClocks()
+    {
+        if (this.LevelData is null)
+            return;
+
+        var advanceTime = this.LevelData.GetBooleanRule("advance_time");
+        this.LevelData.WorldClocks.Tick(advanceTime, this.Configuration.TimeTickSpeedMultiplier);
     }
 
     public override async ValueTask DisposeAsync()

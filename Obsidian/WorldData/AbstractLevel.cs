@@ -931,11 +931,7 @@ public abstract partial class AbstractLevel : ILevel
             return;
         var timings = new TickTimings(this.entityTypeTimes);
 
-        if (this is not Dimension)
-        {
-            var advanceTime = LevelData.GetBooleanRule("advance_time");
-            LevelData.WorldClocks.Tick(advanceTime, this.Configuration.TimeTickSpeedMultiplier);
-        }
+        // The world's clocks ticked before its levels (see World.TickClocks).
         LevelData.RainTime -= this.Configuration.TimeTickSpeedMultiplier;
 
         // Like vanilla's ServerLevel, clients get the time every second, so their clocks don't drift from the server's.

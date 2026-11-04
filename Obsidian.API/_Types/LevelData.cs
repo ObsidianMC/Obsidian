@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+
 namespace Obsidian.API;
 
 /// <summary>
@@ -5,7 +7,11 @@ namespace Obsidian.API;
 /// </summary>
 public sealed class LevelData
 {
-    public Dictionary<string, string> GameRules { get; set; } = new(StringComparer.Ordinal);
+    /// <summary>
+    /// The game rules by name, as their saved values. A world's levels share one set, which commands change while the
+    /// levels tick and read it, so it's safe to read and write from several threads at once.
+    /// </summary>
+    public ConcurrentDictionary<string, string> GameRules { get; set; } = new(StringComparer.Ordinal);
 
     public bool GetBooleanRule(string name, bool defaultValue = true)
     {
