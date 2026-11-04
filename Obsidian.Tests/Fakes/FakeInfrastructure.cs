@@ -71,6 +71,11 @@ internal sealed class FakeWorldManager(IWorld defaultWorld, bool worldsLoaded = 
     public Exception? FlushFailure { get; init; }
 
     /// <summary>
+    /// What disposing the manager throws, once it's marked disposed; nothing by default.
+    /// </summary>
+    public Exception? DisposeFailure { get; init; }
+
+    /// <summary>
     /// Whether the manager was disposed.
     /// </summary>
     public bool Disposed { get; private set; }
@@ -95,7 +100,9 @@ internal sealed class FakeWorldManager(IWorld defaultWorld, bool worldsLoaded = 
     public ValueTask DisposeAsync()
     {
         this.Disposed = true;
-        return ValueTask.CompletedTask;
+        return this.DisposeFailure is Exception failure
+            ? ValueTask.FromException(failure)
+            : ValueTask.CompletedTask;
     }
 }
 

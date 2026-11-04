@@ -11,20 +11,24 @@ namespace Obsidian.Tests;
 /// </summary>
 public sealed class ServerShutdown
 {
-    [Fact(DisplayName = "A failed final save still disposes the worlds and fails the stop", Timeout = TestServerFactory.TestTimeout)]
-    public async Task FailedFinalSaveStillDisposesTheWorlds()
+    [Fact(DisplayName = "A failed final save still disposes the worlds, saves the user cache and fails the stop", Timeout = TestServerFactory.TestTimeout)]
+    public async Task FailedFinalSaveStillFinishesTheStop()
     {
-        var failure = new IOException("The disk is full.");
+        var saveFailure = new IOException("The disk is full.");
         FakeWorldManager? manager = null;
         await using var context = TestServerFactory.CreateServer(
             $"shutdown-{Guid.NewGuid():N}",
-            world => manager = new FakeWorldManager(world) { FlushFailure = failure });
+            world => manager = new FakeWorldManager(world)
+            {
+                FlushFailure = saveFailure,
+                DisposeFailure = new IOException("The disk is still full.")
+            });
 
         var thrown = await Assert.ThrowsAsync<IOException>(() => context.Server.StopAsync());
 
-        // The worlds were disposed, which saves what they can and releases the session lock, and the stop reports
-        // the save's own failure.
-        Assert.Same(failure, thrown);
+        // Each step ran although the ones before it failed, and the stop reports the first failure: the save's.
         Assert.True(manager!.Disposed);
+        Assert.True(context.UserCache.Saved);
+        Assert.Same(saveFailure, thrown);
     }
 }

@@ -546,14 +546,31 @@ public sealed partial class WorldManager(ILogger<WorldManager> logger, IServiceP
         // then wait for the chunks still generating. The server saved the worlds already, unless they hadn't loaded.
         await this.StopAsync(CancellationToken.None);
 
-        // A world disposes its dimensions too.
+        // A world disposes its dimensions too. One failing doesn't keep the others or the session lock held; the
+        // failures are the disposal's, once everything is released.
+        List<Exception> failures = [];
         foreach (var world in this.worlds.Values)
-            await world.DisposeAsync();
+        {
+            try
+            {
+                await world.DisposeAsync();
+            }
+            catch (Exception exception)
+            {
+                failures.Add(exception);
+            }
+        }
 
         this.sessionLock?.Dispose();
         this.serviceScope.Dispose();
 
         this.Dispose();
+
+        if (failures.Count == 1)
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw(failures[0]);
+
+        if (failures.Count > 1)
+            throw new AggregateException(failures);
     }
 
     private static async Task<List<ServerWorld>> LoadServerWorldsAsync(CancellationToken cancellationToken = default)

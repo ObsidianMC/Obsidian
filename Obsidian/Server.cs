@@ -631,35 +631,45 @@ public sealed partial class Server : IServer, IPluginScopedServer
             await this.saveLock.WaitAsync();
             try
             {
+                // Every step runs even when one before it failed: a failed final save still disposes the worlds,
+                // which save what they can and release the session lock, and the plugins, and saves the user cache.
+                List<Exception> failures = [];
+
                 // Worlds that didn't finish loading aren't saved: a new world whose generation was stopped keeps no
                 // level.dat, so it isn't later taken for a complete world.
-                // A failed final save still disposes the worlds, which save what they can and release the session
-                // lock, and the plugins and the user cache; the save's failure is the shutdown's, once they're done.
-                Exception? saveFailure = null;
-                try
-                {
-                    if (this.WorldManager.ReadyToJoin)
-                        await WorldManager.FlushLoadedWorldsAsync();
-                }
-                catch (Exception exception)
-                {
-                    saveFailure = exception;
-                }
+                if (this.WorldManager.ReadyToJoin)
+                    await RunStopStepAsync(failures, () => WorldManager.FlushLoadedWorldsAsync());
 
-                await WorldManager.DisposeAsync();
-                await this.PluginManager.DisposeAsync();
+                await RunStopStepAsync(failures, () => WorldManager.DisposeAsync().AsTask());
+                await RunStopStepAsync(failures, () => this.PluginManager.DisposeAsync().AsTask());
+                await RunStopStepAsync(failures, () => this.userCache.SaveAsync());
 
-                await this.userCache.SaveAsync();
+                // The first failure is the stop's, and any after it are logged.
+                foreach (var later in failures.Skip(1))
+                    Log.StopStepFailed(this.logger, later);
 
-                if (saveFailure is not null)
-                    ExceptionDispatchInfo.Throw(saveFailure);
+                if (failures.Count > 0)
+                    ExceptionDispatchInfo.Throw(failures[0]);
             }
             finally
             {
                 this.saveLock.Release();
             }
         }
+
+        static async Task RunStopStepAsync(List<Exception> failures, Func<Task> step)
+        {
+            try
+            {
+                await step();
+            }
+            catch (Exception exception)
+            {
+                failures.Add(exception);
+            }
+        }
     }
+
     /// <summary>
     /// Pauses the worlds between two ticks: once this returns, no world tick runs, and no chunk loads, unloads or
     /// starts generating, until <see cref="Resume"/>. Saves still run, and connections keep running.
@@ -1366,5 +1376,8 @@ public sealed partial class Server : IServer, IPluginScopedServer
 
         [LoggerMessage(Level = LogLevel.Error, Message = "Sending changed recipes to {Username} failed")]
         public static partial void RecipeSyncFailed(ILogger logger, Exception exception, string username);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "A step of stopping the server failed after an earlier one did")]
+        public static partial void StopStepFailed(ILogger logger, Exception exception);
     }
 }

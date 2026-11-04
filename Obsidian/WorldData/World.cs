@@ -309,8 +309,15 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
 
     public override async ValueTask DisposeAsync()
     {
-        await Task.WhenAll(this.dimensions.Values.Select(dimension => dimension.DisposeAsync().AsTask()));
-        await base.DisposeAsync();
+        // The world's own level is disposed even when a dimension's disposal fails.
+        try
+        {
+            await Task.WhenAll(this.dimensions.Values.Select(dimension => dimension.DisposeAsync().AsTask()));
+        }
+        finally
+        {
+            await base.DisposeAsync();
+        }
     }
 
     private static partial class Log

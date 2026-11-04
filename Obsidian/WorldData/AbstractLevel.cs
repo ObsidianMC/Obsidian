@@ -2451,7 +2451,16 @@ public abstract partial class AbstractLevel : ILevel
 
         this.ClearChunkTickets();
         this.optionsMonitor.Dispose();
-        this.SavePluginData();
+
+        // Like the final save below: a failure is reported, and disposal goes on.
+        try
+        {
+            this.SavePluginData();
+        }
+        catch (Exception exception)
+        {
+            Log.FinalSaveFailed(this.Logger, exception, this.Name);
+        }
 
         // Waits out the generation jobs, holding every slot so no new one starts, and saves what jobs finished since the
         // last save started, including jobs that were still running during the server's save on stop.
