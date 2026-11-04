@@ -250,7 +250,34 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
     // compared every tick.
     private bool HasNoComponents => this.InternalStorage.Count == 0 && this.UnmodeledComponents is null;
 
-    private bool ComponentsEqual(ItemStack other) =>
+    private bool ComponentsEqual(ItemStack other)
+    {
+        if (this.UnmodeledComponents is null && other.UnmodeledComponents is null)
+            return this.ModeledComponentsEqual(other);
+
+        return this.ProjectedComponentsEqual(other);
+    }
+
+    // Without saved plugin components, the components are just the modeled ones, one per type: compared by type
+    // without sorting or copying them, since equipment is compared every tick.
+    private bool ModeledComponentsEqual(ItemStack other)
+    {
+        if (this.InternalStorage.Count != other.InternalStorage.Count)
+            return false;
+
+        foreach (var (type, component) in this.InternalStorage)
+        {
+            if (!other.InternalStorage.TryGetValue(type, out var otherComponent))
+                return false;
+
+            if (!component.Equals(otherComponent))
+                return false;
+        }
+
+        return true;
+    }
+
+    private bool ProjectedComponentsEqual(ItemStack other) =>
         this.ProjectComponents(this.InternalStorage.Values).OrderBy(value => value.Type)
             .SequenceEqual(other.ProjectComponents(other.InternalStorage.Values).OrderBy(value => value.Type))
         && new ComponentValueKey(this.UnrecognizedComponents())
