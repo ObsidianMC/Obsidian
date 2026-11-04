@@ -66,20 +66,22 @@ public sealed partial class HopperMinecart : AbstractMinecartContainer
 
         // Unlike a hopper block's, a cart's isn't blocked by a solid block above it.
         var levelY = this.Position.Y + 0.5;
-        var bowl = level.BlockUpdates.EntitiesIn(
-            new VectorD(this.Position.X - 0.5, levelY - 0.5 + SuckBottom, this.Position.Z - 0.5),
-            new VectorD(this.Position.X + 0.5, levelY - 0.5 + SuckTop, this.Position.Z + 0.5));
+        var bowlMin = new VectorD(this.Position.X - 0.5, levelY - 0.5 + SuckBottom, this.Position.Z - 0.5);
+        var bowlMax = new VectorD(this.Position.X + 0.5, levelY - 0.5 + SuckTop, this.Position.Z + 0.5);
+        var bowl = level.BlockUpdates.EntitiesIn(bowlMin, bowlMax);
         foreach (var item in bowl.OfType<ItemEntity>().OrderBy(item => item.EntityId).ToList())
         {
-            if (await Hoppers.TakeInAsync(own, item))
+            if (await Hoppers.TakeInAsync(own, item, level, bowlMin, bowlMax))
                 return true;
         }
 
         var box = this.Dimension.CreateBBFromPosition(this.Position);
-        var around = level.BlockUpdates.EntitiesIn(box.Min - new VectorD(0.25, 0, 0.25), box.Max + new VectorD(0.25, 0, 0.25));
+        var aroundMin = box.Min - new VectorD(0.25, 0, 0.25);
+        var aroundMax = box.Max + new VectorD(0.25, 0, 0.25);
+        var around = level.BlockUpdates.EntitiesIn(aroundMin, aroundMax);
         var took = false;
         foreach (var item in around.OfType<ItemEntity>().OrderBy(item => item.EntityId).ToList())
-            took |= await Hoppers.TakeInAsync(own, item);
+            took |= await Hoppers.TakeInAsync(own, item, level, aroundMin, aroundMax);
 
         return took;
     }

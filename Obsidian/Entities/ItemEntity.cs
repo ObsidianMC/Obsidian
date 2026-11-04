@@ -246,6 +246,38 @@ public partial class ItemEntity : Entity
         }
     }
 
+    /// <summary>What <see cref="TryTake"/> took from an item entity's stack, and whether that emptied it.</summary>
+    internal readonly record struct Taken(ItemStack Stack, bool Emptied);
+
+    /// <summary>
+    /// Takes up to <paramref name="count"/> of the stack for something in <paramref name="level"/> that found the item
+    /// there, such as a mob picking it up, the way a player's pickup takes it: under the transfer lock of the level that
+    /// owns the item, only while that's still <paramref name="level"/> and the item isn't removed, can be picked up and
+    /// holds a stack <paramref name="accepts"/> takes. An item it empties is marked removed at once, so nothing else can
+    /// take it; the caller removes it (see <see cref="RemoveAsync"/>) once it has told the clients.
+    /// </summary>
+    /// <returns>What was taken, or null when nothing was.</returns>
+    internal Taken? TryTake(ILevel level, int count, Func<ItemStack, bool> accepts)
+    {
+        using (this.EnterOwningLevel(out var owner))
+        {
+            if (owner != level || this.Removed || !this.CanPickup)
+                return null;
+
+            if (this.Item is not { IsAir: false, Count: > 0 } stack || !accepts(stack))
+                return null;
+
+            var amount = Math.Min(count, stack.Count);
+            if (amount <= 0)
+                return null;
+
+            var taken = new Taken(new ItemStack(stack, amount), amount == stack.Count);
+            stack.Count -= amount;
+            this.Removed = taken.Emptied;
+            return taken;
+        }
+    }
+
     internal void SendItemUpdate() => this.PacketBroadcaster.QueuePacketToLevel(this.Level,
         new SetEntityDataPacket { EntityId = this.EntityId, Entity = this });
 

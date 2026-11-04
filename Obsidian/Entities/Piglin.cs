@@ -163,11 +163,11 @@ public sealed partial class Piglin : PathfinderMob, IAgeable
             var gold = GetEntitiesNear(1.5f)
                 .OfType<ItemEntity>()
                 .FirstOrDefault(item => item.CanPickup && item.Item is { Count: > 0, Holder.Id: ItemIds.GoldIngot });
-            if (gold != null)
+            // Taken as a player's pickup takes it, so gold something else took meanwhile isn't admired as well.
+            if (gold?.TryTake(Level, 1, stack => stack.Holder.Id == ItemIds.GoldIngot) is { } taken)
             {
-                gold.Item.Count--;
                 PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new TakeItemEntityPacket { CollectedEntityId = gold.EntityId, CollectorEntityId = EntityId, PickupItemCount = 1 });
-                if (gold.Item.Count == 0)
+                if (taken.Emptied)
                     await gold.RemoveAsync();
                 else
                     PacketBroadcaster.QueuePacketToLevelInRange(Level, gold.Position, new SetEntityDataPacket { EntityId = gold.EntityId, Entity = gold });

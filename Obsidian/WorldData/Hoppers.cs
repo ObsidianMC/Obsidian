@@ -160,17 +160,17 @@ internal static class Hoppers
         }
 
         var position = hopper.BlockPosition;
+        var min = new VectorD(position.X, position.Y + SuckBottom, position.Z);
+        var max = new VectorD(position.X + 1, position.Y + SuckTop, position.Z + 1);
         var items = level.BlockUpdates
-            .EntitiesIn(
-                new VectorD(position.X, position.Y + SuckBottom, position.Z),
-                new VectorD(position.X + 1, position.Y + SuckTop, position.Z + 1))
+            .EntitiesIn(min, max)
             .OfType<ItemEntity>()
             .OrderBy(item => item.EntityId)
             .ToList();
 
         foreach (var item in items)
         {
-            if (await TakeInAsync(own, item))
+            if (await TakeInAsync(own, item, level, min, max))
                 return true;
         }
 
@@ -181,22 +181,47 @@ internal static class Hoppers
     /// Vanilla's <c>addItem(Container, ItemEntity)</c>: as much of the entity's stack as fits goes in; only taking
     /// all of it counts as a transfer.
     /// </summary>
-    internal static async ValueTask<bool> TakeInAsync(IItemAccess own, ItemEntity entity)
+    /// <param name="own">The slots taking the items.</param>
+    /// <param name="entity">An item the hopper found in its area.</param>
+    /// <param name="level">The hopper's level.</param>
+    /// <param name="min">The area's low corner, which the item's box must still overlap.</param>
+    /// <param name="max">The area's high corner.</param>
+    /// <remarks>
+    /// The item may have moved, gone through a portal or been taken since it was found, so it's checked again under
+    /// the transfer lock of the level owning it, and taken only while it's still in <paramref name="level"/> and the
+    /// area. The slots are filled outside that lock: filling them takes the container's click lock, which comes before
+    /// transfer locks in the lock order. What fits is worked out first; anything that no longer fits by then, the
+    /// slots having changed meanwhile, is dropped as a new item rather than lost.
+    /// </remarks>
+    internal static async ValueTask<bool> TakeInAsync(
+        IItemAccess own, ItemEntity entity, AbstractLevel level, VectorD min, VectorD max)
     {
+        if (entity.Item is not { IsAir: false, Count: > 0 } offered)
+            return false;
+
+        var probe = new ItemStack(offered, offered.Count);
+        var fits = probe.Count - (own.Insert(probe, simulate: true)?.Count ?? 0);
+        if (fits <= 0)
+            return false;
+
+        ItemStack taken;
         bool all;
-        using (entity.EnterOwningLevel(out _))
+        using (entity.EnterOwningLevel(out var owner))
         {
-            if (entity.Removed || entity.Item is not { IsAir: false, Count: > 0 } stack)
+            if (owner != level || entity.Removed || !Overlaps(entity.BoundingBox, min, max))
                 return false;
 
-            var left = own.Insert(stack);
-            if (ReferenceEquals(left, stack))
+            if (entity.Item is not { IsAir: false, Count: > 0 } stack || stack != offered)
                 return false;
 
-            all = left is null;
-            entity.Item = left ?? ItemStack.Air;
+            var amount = Math.Min(fits, stack.Count);
+            all = amount == stack.Count;
+            taken = new ItemStack(stack, amount);
+            entity.Item = all ? ItemStack.Air : new ItemStack(stack, stack.Count - amount);
             entity.Removed = all;
         }
+
+        DropLeftover(level, (Vector)entity.Position.Floor(), own.Insert(taken));
 
         if (all)
             await entity.RemoveAsync();
@@ -205,6 +230,12 @@ internal static class Hoppers
 
         return all;
     }
+
+    // Whether a box overlaps the one from min to max, as the level's entity lookup tells (see EntitiesIn).
+    private static bool Overlaps(BoundingBox box, VectorD min, VectorD max) =>
+        box.Min.X < max.X && box.Max.X > min.X
+        && box.Min.Y < max.Y && box.Max.Y > min.Y
+        && box.Min.Z < max.Z && box.Max.Z > min.Z;
 
     internal static bool IsEmpty(IItemAccess access)
     {
