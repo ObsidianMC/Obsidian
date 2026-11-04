@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
 using Obsidian.WorldData.Features;
@@ -91,7 +92,12 @@ internal static class Hoppers
     /// <summary>
     /// Drops what <see cref="TryMoveOne"/> couldn't put anywhere, at the centre of <paramref name="position"/>.
     /// </summary>
-    public static void DropLeftover(AbstractLevel level, Vector position, ItemStack? leftover)
+    /// <summary>
+    /// Drops items a container couldn't take at <paramref name="position"/>, in the block's middle. Where the level
+    /// can't take the drop in (a chunk not loaded or unloading), it's kept in the chunk instead, or in the one at
+    /// <paramref name="keepAt"/>, waiting to spawn and saved with the chunk until it does, so it's never lost.
+    /// </summary>
+    public static void DropLeftover(AbstractLevel level, Vector position, ItemStack? leftover, VectorD? keepAt = null)
     {
         if (leftover is null)
             return;
@@ -104,16 +110,40 @@ internal static class Hoppers
             Item = leftover
         };
 
-        // Never lost: one the level can't take in now is tried again with its next tick.
-        if (!level.TrySpawnEntity(item, hostOwned: true))
+        bool spawned;
+        using (level.TransferLock.Enter())
         {
-            level.EnqueueEntityAction(() =>
+            spawned = level.AdmitsTravellersAt(item.Position) && level.TryAddEntity(item, hostOwned: true);
+            if (!spawned && KeepInChunk(level, item))
+                return;
+
+            if (!spawned && keepAt is VectorD fallback)
             {
-                DropLeftover(level, position, leftover);
-                return ValueTask.CompletedTask;
-            });
+                item.Position = fallback;
+                if (KeepInChunk(level, item))
+                    return;
+            }
         }
+
+        if (spawned)
+        {
+            item.SpawnEntity();
+            return;
+        }
+
+        // Nowhere loaded to keep it: tried again with the level's next tick.
+        level.Logger.LogError("Items a container couldn't take could not be dropped or kept; retrying");
+        level.EnqueueEntityAction(() =>
+        {
+            DropLeftover(level, position, leftover, keepAt);
+            return ValueTask.CompletedTask;
+        });
     }
+
+    // Keeps a drop the level couldn't take in as an entity waiting to spawn in its chunk. Call holding the level's
+    // transfer lock.
+    private static bool KeepInChunk(AbstractLevel level, ItemEntity item) =>
+        level.GetRegionForLocation(item.Position) is Region region && region.TryKeepUnplaced(item, level);
 
     // Vanilla's ejectItems: the first of the hopper's items that fits into the container it faces moves.
     private static bool Eject(AbstractLevel level, HopperBlockEntity hopper, IItemAccess own, BlockFace facing)
@@ -221,6 +251,7 @@ internal static class Hoppers
 
         ItemStack taken;
         bool all;
+        VectorD keepAt;
         using (entity.EnterOwningLevel(out var owner))
         {
             if (owner != level || entity.Removed || !entity.IsMemberOf(level) || !Overlaps(entity.BoundingBox, min, max))
@@ -229,6 +260,8 @@ internal static class Hoppers
             if (entity.Item is not { IsAir: false, Count: > 0 } stack || stack != offered)
                 return false;
 
+            // Where the item is now, in this level: a loaded chunk to keep what no longer fits in, if need be.
+            keepAt = entity.Position;
             var amount = Math.Min(fits, stack.Count);
             all = amount == stack.Count;
             taken = new ItemStack(stack, amount);
@@ -236,7 +269,7 @@ internal static class Hoppers
             entity.Removed = all;
         }
 
-        DropLeftover(level, dropAt, own.Insert(taken));
+        DropLeftover(level, dropAt, own.Insert(taken), keepAt);
 
         if (all)
             await entity.RemoveAsync();

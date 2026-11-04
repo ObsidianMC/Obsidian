@@ -81,6 +81,26 @@ public abstract partial class AbstractLevel
         }
     }
 
+    /// <summary>
+    /// Whether an entity arriving from another level may join the level at <paramref name="position"/>: not in a region
+    /// retiring or a chunk unloading, whose saves have taken or are taking their entities already. Call holding the
+    /// level's transfer lock, which those unloads take before they close.
+    /// </summary>
+    internal bool AdmitsTravellersAt(VectorD position)
+    {
+        var (x, z) = Region.ChunkOf(position);
+        if (this.closingChunks.Contains(NumericsHelper.IntsToLong(x, z)))
+            return false;
+
+        if (this.GetRegionForChunk(x, z) is not Region { TransfersClosed: false } region)
+            return false;
+
+        var local = region.GetLoadedChunk(
+            NumericsHelper.Modulo(x, Region.CubicRegionSize),
+            NumericsHelper.Modulo(z, Region.CubicRegionSize));
+        return local is Chunk { EntitiesUnloaded: false };
+    }
+
     private void ReopenChunkToTravel(long chunk)
     {
         using (this.TransferLock.Enter())
@@ -121,27 +141,20 @@ public abstract partial class AbstractLevel
     {
         Entity.Unplaced[] waiting;
         using (this.TransferLock.Enter())
-        {
-            if (this.unplaced.Count == 0)
-                return 0;
-
             waiting = [.. this.unplaced];
-            this.unplaced.Clear();
-        }
 
-        var left = 0;
+        // Each stays listed until it's settled; settling one never throws (see Entity.TrySettle).
         foreach (var traveller in waiting)
         {
-            if (traveller.Entity.TrySettle(traveller))
+            if (!traveller.Entity.TrySettle(traveller))
                 continue;
 
             using (this.TransferLock.Enter())
-                this.unplaced.Add(traveller);
-
-            left++;
+                this.unplaced.Remove(traveller);
         }
 
-        return left;
+        using (this.TransferLock.Enter())
+            return this.unplaced.Count;
     }
 
     private bool HasUnplacedTravellers
@@ -158,6 +171,13 @@ public abstract partial class AbstractLevel
         [LoggerMessage(Level = LogLevel.Error,
             Message = "Entity {EntityId} could not be placed in {LevelName} or kept in the chunk it left; retrying")]
         public static partial void TravellerUnplaced(ILogger logger, int entityId, string levelName);
+
+        [LoggerMessage(Level = LogLevel.Critical,
+            Message = "{Count} travelling entities of {LevelName} could not be placed or kept, and aren't saved")]
+        public static partial void TravellersNotSaved(ILogger logger, int count, string levelName);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "The final save of {LevelName} failed")]
+        public static partial void FinalSaveFailed(ILogger logger, Exception exception, string levelName);
     }
 }
 

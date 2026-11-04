@@ -979,18 +979,26 @@ public abstract partial class AbstractLevel : ILevel
             if (entity is Mob { HasAi: true } or ItemEntity or ExperienceOrb && !IsMobTicking(entity.Position))
                 continue;
 
-            // One that arrived from another level during this tick, or whose travel is still moving it, ticks from
-            // the next (see Entity.IsTickableIn).
-            if (entity is Entity arrival && !arrival.IsTickableIn(this))
+            // Not while travel still moves it or another level's tick of it is under way (see Entity.TryClaimTick).
+            var claimed = entity as Entity;
+            if (claimed is not null && !claimed.TryClaimTick(this))
                 continue;
-            if (GetRegionForLocation(entity.Position)?.Entities.ContainsKey(entity.EntityId) == true)
+
+            try
             {
-                this.tickingEntity = entity;
-                await entity.TickAsync();
-                await this.TouchPluginBlocksAsync(entity);
-                if (entity is Entity concrete && entity is not IPlayer && entity.Level == this)
-                    await concrete.TickEntityPortalAsync();
-                timings.LapEntity(entity.GetType());
+                if (GetRegionForLocation(entity.Position)?.Entities.ContainsKey(entity.EntityId) == true)
+                {
+                    this.tickingEntity = entity;
+                    await entity.TickAsync();
+                    await this.TouchPluginBlocksAsync(entity);
+                    if (entity is Entity concrete && entity is not IPlayer && entity.Level == this)
+                        await concrete.TickEntityPortalAsync();
+                    timings.LapEntity(entity.GetType());
+                }
+            }
+            finally
+            {
+                claimed?.ReleaseTick(this);
             }
         }
         // Like vanilla's entity movement, the redstone that entities touch reacts once they've all ticked: pressure plates,
@@ -1634,12 +1642,9 @@ public abstract partial class AbstractLevel : ILevel
             await simulationGate.WaitAsync();
             try
             {
-                // A traveller no level could place yet fails the save, loudly, rather than it going ahead without it.
+                // A traveller no level could place or keep yet isn't in this save: reported, and retried until it is.
                 if (this.RetryUnplaced() is var unplacedLeft and > 0)
-                {
-                    failures.Add(new InvalidOperationException(
-                        $"{unplacedLeft} travelling entities could not be placed in {this.Name}."));
-                }
+                    Log.TravellersNotSaved(this.Logger, unplacedLeft, this.Name);
 
                 this.TakeBlockEntityChanges();
 
@@ -2221,7 +2226,9 @@ public abstract partial class AbstractLevel : ILevel
     /// <remarks>
     /// The level hasn't ticked yet, so the entity work it does for complete chunks (populating them with mobs, spawning
     /// the entities generation placed) runs first, as the tick would before they could unload. Each region unloads its
-    /// chunks together (see <see cref="Region.UnloadChunksAsync"/>), so its files are committed once at most.
+    /// chunks together (see <see cref="Region.UnloadChunksAsync"/>), so its files are committed once at most. It doesn't
+    /// check travel pins (see <see cref="TryPinForTravel"/>): it runs before the level is available to players, plugins
+    /// or other levels, so no entity can have left these chunks for another level.
     /// </remarks>
     private async Task UnloadPregeneratedAsync(HashSet<long> remaining, HashSet<long> kept)
     {
@@ -2464,8 +2471,16 @@ public abstract partial class AbstractLevel : ILevel
 
         // The level's own: an override flushes other levels too, which may be disposed already. One with travellers
         // still unplaced fails rather than discarding them.
-        if (Volatile.Read(ref this.jobsSinceFlush) != 0 || this.HasUnplacedTravellers)
-            await this.FlushOwnRegionsAsync();
+        // A failed final save is reported, and disposal goes on.
+        try
+        {
+            if (Volatile.Read(ref this.jobsSinceFlush) != 0 || this.HasUnplacedTravellers)
+                await this.FlushOwnRegionsAsync();
+        }
+        catch (Exception exception)
+        {
+            Log.FinalSaveFailed(this.Logger, exception, this.Name);
+        }
 
         foreach (var region in Regions.Values)
         {

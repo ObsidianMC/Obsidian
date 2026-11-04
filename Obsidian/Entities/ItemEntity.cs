@@ -225,7 +225,7 @@ public partial class ItemEntity : Entity
             using (this.EnterOwningLevel(out var owner))
             {
                 // Both stacks are this level's only while the other item hasn't left it since the lookup.
-                if (itemEntity.Level != owner || !itemEntity.IsMemberOf(owner))
+                if (itemEntity.Level != owner || !itemEntity.IsMemberOf(owner) || !this.IsMemberOf(owner))
                     continue;
                 if (this.Removed || itemEntity.Removed || this.Item.IsNullOrAir() || itemEntity.Item.IsNullOrAir() || this.Item != itemEntity.Item)
                     continue;

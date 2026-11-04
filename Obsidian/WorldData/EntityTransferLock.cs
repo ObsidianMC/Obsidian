@@ -22,8 +22,8 @@ namespace Obsidian.WorldData;
 /// that locks the level an entity names and finds it still names that level owns it until it lets go (see
 /// <c>Entity.EnterOwningLevel</c>). Travel between levels is a handoff, never holding both levels' locks: the source
 /// lets the entity go under its own lock, and the destination takes it in under its own (see <c>Entity.Travel</c>).
-/// The destination publishes the entity at once but doesn't tick it before its next tick (see
-/// <c>Entity.IsTickableIn</c>), and the chunk it left stays pinned until it's settled (see
+/// The destination publishes the entity at once, ticks it only once travel and any other level's tick of it are done
+/// (see <c>Entity.TryClaimTick</c>), and the chunk it left stays pinned until it's settled (see
 /// <c>AbstractLevel.Travel</c>).
 /// </para>
 /// <para>

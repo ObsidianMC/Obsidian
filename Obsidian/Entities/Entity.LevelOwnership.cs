@@ -14,35 +14,55 @@ public partial class Entity
     private ILevel? arrivingAt;
     private bool removedOnArrival;
 
-    // The level the entity last arrived in and the tick of it under way then (0 between ticks), which that level
-    // doesn't tick the entity in; and whether a travel call is still using the entity (see TeleportAsync).
-    private AbstractLevel? arrivedIn;
-    private long arrivedDuringTick;
-    private volatile bool travelling;
+    // Which code may simulate the entity (see TryClaimTick): the level whose tick is ticking it now, and how many travel
+    // calls, nested or not, are still moving it or its passengers.
+    private AbstractLevel? tickingIn;
+    private int travelHolds;
 
     /// <summary>
-    /// Whether <paramref name="level"/>'s tick may tick the entity now. One that arrived from another level isn't ticked
-    /// by its new level during the tick under way when it arrived, which the level it left may be running alongside,
-    /// nor while the call that moved it is still moving it or its passengers: from then on, only its new level does.
+    /// Claims the entity for <paramref name="level"/>'s tick of it, which then calls <see cref="ReleaseTick"/>.
     /// </summary>
-    internal bool IsTickableIn(AbstractLevel level)
+    /// <remarks>
+    /// <para>
+    /// The rule: a level ticks an entity only in its entity phase, only if the entity was among its entities when the
+    /// phase began, is still one when its turn comes, no travel call holds it (see <see cref="BeginTravelHold"/>), and no
+    /// other level's tick of it is still under way. An entity that changes level belongs to its new level as soon as it
+    /// arrives (its membership, lookups and spawn packets, as vanilla adds it at once), but simulation passes to the new
+    /// level only once every travel call moving it has returned and the old level's tick of it, if one is still running
+    /// (a plugin's tick that awaited the teleport, say), has ended.
+    /// </para>
+    /// <para>
+    /// Like vanilla's entity tick list, one that arrives before the new level's entity phase begins is ticked in it,
+    /// and one that arrives after, in the next.
+    /// </para>
+    /// </remarks>
+    /// <returns>Whether the level may tick it now.</returns>
+    internal bool TryClaimTick(AbstractLevel level)
     {
-        if (this.travelling)
+        if (Volatile.Read(ref this.travelHolds) != 0)
             return false;
 
-        return !ReferenceEquals(Volatile.Read(ref this.arrivedIn), level)
-            || level.CurrentTickId != Volatile.Read(ref this.arrivedDuringTick);
+        if (Interlocked.CompareExchange(ref this.tickingIn, level, null) is not null)
+            return false;
+
+        // A travel that began meanwhile keeps it.
+        if (Volatile.Read(ref this.travelHolds) == 0)
+            return true;
+
+        Volatile.Write(ref this.tickingIn, null);
+        return false;
     }
 
-    // Called by the level taking the entity in, before publishing it.
-    private void HoldFromTicking(ILevel level)
-    {
-        if (level is not AbstractLevel arriving)
-            return;
+    /// <summary>Ends <paramref name="level"/>'s tick of the entity, claimed by <see cref="TryClaimTick"/>.</summary>
+    internal void ReleaseTick(AbstractLevel level) => Interlocked.CompareExchange(ref this.tickingIn, null, level);
 
-        Volatile.Write(ref this.arrivedDuringTick, arriving.CurrentTickId);
-        Volatile.Write(ref this.arrivedIn, arriving);
-    }
+    /// <summary>
+    /// Keeps every level from ticking the entity until the matching <see cref="EndTravelHold"/>: travel takes it before
+    /// the entity leaves its level and lets go once it and its passengers are settled. Holds nest.
+    /// </summary>
+    internal void BeginTravelHold() => Interlocked.Increment(ref this.travelHolds);
+
+    internal void EndTravelHold() => Interlocked.Decrement(ref this.travelHolds);
 
     /// <summary>
     /// Whether the entity, this instance, is among the entities of <paramref name="level"/>'s regions: removal and

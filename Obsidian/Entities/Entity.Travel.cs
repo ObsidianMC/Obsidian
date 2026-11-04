@@ -8,10 +8,10 @@ namespace Obsidian.Entities;
 
 // Travel within and between levels. Between levels it's a handoff that never holds both levels' transfer locks: the
 // source lets the entity go under its own lock (Depart), and the destination takes it in under its own (Arrive), at
-// once, as vanilla adds a teleported entity to its new level straight away. Its new level doesn't tick it until both
-// that level's tick under way (if any) is over and the travel call is done with it (see IsTickableIn), so a level
-// ticking in parallel never ticks an entity another level's code is still moving. Plugin code (SpawnEntity) only runs
-// once no transfer lock is held.
+// once, as vanilla adds a teleported entity to its new level straight away. No level ticks it while a travel call is
+// moving it or another level's tick of it is still running (see TryClaimTick), so a level ticking in parallel never
+// ticks an entity another level's code is still moving. Plugin code (SpawnEntity) only runs once no transfer lock is
+// held.
 public partial class Entity
 {
     /// <summary>Transfers the existing instance, including its state, instead of spawning a replacement.</summary>
@@ -27,6 +27,7 @@ public partial class Entity
         if (level is AbstractLevel && area is null)
             throw new InvalidOperationException("The entity moved while the destination was loading.");
 
+        var held = false;
         try
         {
             Entity[] riders;
@@ -45,7 +46,8 @@ public partial class Entity
                 fromPitch = this.Pitch;
 
                 // No level ticks the entity from here until its passengers are seated again.
-                this.travelling = true;
+                this.BeginTravelHold();
+                held = true;
 
                 // Within the level the move is committed with the detach; travel to another level can't take the
                 // destination's lock while this one is held, so it's committed below.
@@ -63,7 +65,8 @@ public partial class Entity
         }
         finally
         {
-            this.travelling = false;
+            if (held)
+                this.EndTravelHold();
         }
     }
 
@@ -180,7 +183,10 @@ public partial class Entity
 
         RefuseNestedTravel();
         var departure = this.Depart(source, destination, position, yaw, pitch);
-        var arrival = this.Arrive(destination, departure);
+
+        // From here the entity is in neither level until settled: every way out below either places it, keeps it,
+        // or leaves it retained, and only those release the chunk it left.
+        var arrival = this.Arrive(destination, departure, out var failure);
         if (arrival == Arrival.Arrived)
         {
             departure.Pin.Release();
@@ -198,7 +204,7 @@ public partial class Entity
         if (!this.TrySettle(refused))
             departure.Level.RetainUnplaced(refused);
 
-        throw new InvalidOperationException("The destination level could not accept the entity.");
+        throw new InvalidOperationException("The destination level could not accept the entity.", failure);
     }
 
     /// <summary>An entity its destination refused, on its way back to where it left.</summary>
@@ -212,8 +218,17 @@ public partial class Entity
     internal bool TrySettle(Unplaced traveller)
     {
         var from = traveller.From;
-        if (this.Arrive(from.Level, returning: null) == Arrival.Refused && !this.KeepWhereItLeft(from))
+        try
+        {
+            if (this.Arrive(from.Level, returning: null, out _) == Arrival.Refused && !this.KeepWhereItLeft(from))
+                return false;
+        }
+        catch (Exception exception)
+        {
+            // Still unsettled, and still the caller's to retain: nothing above lets it go before it's placed or kept.
+            from.Level.Logger.LogError(exception, "Settling travelling entity {EntityId} failed", this.EntityId);
             return false;
+        }
 
         from.Pin.Release();
         return true;
@@ -299,8 +314,11 @@ public partial class Entity
 
     // The receiving level's half of a handoff, under its transfer lock. When the level can't take the entity in, it
     // hands the entity back toward where it left (when returning says where); otherwise it stays the level's, waiting.
-    private Arrival Arrive(ILevel level, Departure? returning)
+    // A level's refusal of the entity, including adding it failing outright (a plugin closing, say), is reported as
+    // such: the entity is then still the caller's to settle, never left half-added.
+    private Arrival Arrive(ILevel level, Departure? returning, out Exception? failure)
     {
+        failure = null;
         using (TransferLockOf(level).Enter())
         {
             // Taken or killed on the way: picked up, say, through a lookup that found it before it left.
@@ -326,9 +344,19 @@ public partial class Entity
                 mob.ResetMovementBaseline();
             }
 
-            // Published at once, but not ticked by the level until its tick under way is over.
-            this.HoldFromTicking(level);
-            if (level.TryAddEntity(this))
+            // Not into a region or chunk that's unloading, which has already taken the entities it saves.
+            var admitted = level is not AbstractLevel destination || destination.AdmitsTravellersAt(this.Position);
+            try
+            {
+                admitted = admitted && level.TryAddEntity(this);
+            }
+            catch (Exception exception)
+            {
+                failure = exception;
+                admitted = false;
+            }
+
+            if (admitted)
             {
                 this.arrivingAt = null;
                 if (this is IPlayer player)
@@ -361,7 +389,22 @@ public partial class Entity
 
         using (departure.Level.TransferLock.Enter())
         {
-            if (this.Level != departure.Level || !region.TryKeepUnplaced(this, departure.Level))
+            if (this.Level != departure.Level)
+                return false;
+
+            // A type Obsidian never saves (an experience orb, say) would be gone from any save or unload of its chunk
+            // anyway, so it ends here rather than waiting for a place forever.
+            if (EntityNbt.Save(this) is null)
+            {
+                this.arrivingAt = null;
+                API.Data.AttachmentStorage.For(this).Retire();
+                departure.Level.Logger.LogWarning(
+                    "Entity {EntityId} could not be placed after travelling and isn't saved; it was discarded",
+                    this.EntityId);
+                return true;
+            }
+
+            if (!region.TryKeepUnplaced(this, departure.Level))
                 return false;
 
             this.arrivingAt = null;

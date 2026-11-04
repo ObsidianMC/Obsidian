@@ -760,33 +760,45 @@ public abstract partial class PlayerBase : Avatar, IPlayer
 
         await this.CloseContainerAsync();
 
-        while (true)
+        // No level ticks the player from just before it leaves until its passengers are seated again (see
+        // Entity.TryClaimTick); taken in Commit, so a death this waits for still ticks.
+        var holding = false;
+        try
         {
-            await this.WaitForDeathAsync();
-            // Held from the level change until the destination's packets are queued, so that another travel's packets
-            // can't come in between.
-            await this.chunkUpdates.WaitAsync();
-            await using var callbacks = DeferredInventoryWork.Begin(this.Logger);
-            try
+            while (true)
             {
-                if (await this.RespawnUnderLockAsync(
-                    DataKept.Attributes | DataKept.Metadata, levelChange: true, transfer: Commit))
+                await this.WaitForDeathAsync();
+                // Held from the level change until the destination's packets are queued, so that another travel's
+                // packets can't come in between.
+                await this.chunkUpdates.WaitAsync();
+                await using var callbacks = DeferredInventoryWork.Begin(this.Logger);
+                try
                 {
-                    await this.QueueDestinationAsync(destination);
-                    break;
+                    if (await this.RespawnUnderLockAsync(
+                        DataKept.Attributes | DataKept.Metadata, levelChange: true, transfer: Commit))
+                    {
+                        await this.QueueDestinationAsync(destination);
+                        break;
+                    }
+                }
+                finally
+                {
+                    this.preservePortalMotion = false;
+                    this.chunkUpdates.Release();
                 }
             }
-            finally
-            {
-                this.preservePortalMotion = false;
-                this.chunkUpdates.Release();
-            }
+
+            await this.EventDispatcher.ExecuteEventAsync(new PlayerTeleportEventArgs(this, this.Server, from, spawn));
+            await this.FireProgressAsync("changed_dimension", from: origin.DimensionName, to: destination.DimensionName);
+            this.progressDimension = destination.DimensionName;
+            await this.CarryPassengersAsync(riders, from, fromYaw, fromPitch);
+        }
+        finally
+        {
+            if (holding)
+                this.EndTravelHold();
         }
 
-        await this.EventDispatcher.ExecuteEventAsync(new PlayerTeleportEventArgs(this, this.Server, from, spawn));
-        await this.FireProgressAsync("changed_dimension", from: origin.DimensionName, to: destination.DimensionName);
-        this.progressDimension = destination.DimensionName;
-        await this.CarryPassengersAsync(riders, from, fromYaw, fromPitch);
         await SaveAsync();
 
         void Commit()
@@ -794,6 +806,12 @@ public abstract partial class PlayerBase : Avatar, IPlayer
             from = this.Position;
             fromYaw = this.Yaw;
             fromPitch = this.Pitch;
+            if (!holding)
+            {
+                this.BeginTravelHold();
+                holding = true;
+            }
+
             riders = this.DetachPassengersForTravel();
             try
             {
