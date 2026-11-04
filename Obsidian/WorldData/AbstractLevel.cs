@@ -260,7 +260,7 @@ public abstract partial class AbstractLevel : ILevel
     private void SnapshotPlayers()
     {
         IPlayer[] players;
-        lock (PlayerGrid.Gate)
+        lock (this.playerGrid.MembershipGate)
         {
             var changes = Volatile.Read(ref this.playerChanges);
             players = this.Players.Values.ToArray();
@@ -279,17 +279,18 @@ public abstract partial class AbstractLevel : ILevel
     /// </summary>
     internal double NearestPlayerDistanceSquared(VectorD position)
     {
-        lock (PlayerGrid.Gate)
-        {
-            if (this.CurrentTickPlayers is not null)
-                return this.playerGrid.NearestDistanceSquared(position, this.Players);
-        }
+        IPlayer[]? players;
+        lock (this.playerGrid.MembershipGate)
+            players = this.CurrentTickPlayers;
+
+        if (players is not null)
+            return this.playerGrid.NearestDistanceSquared(players, position, this.Players);
 
         var nearest = double.MaxValue;
         foreach (var (_, player) in this.Players)
         {
             if (player.GameMode != GameMode.Spectator)
-                nearest = Math.Min(nearest, (player.Position - position).MagnitudeSquared());
+                nearest = Math.Min(nearest, (PlayerGrid.ReadPosition(player) - position).MagnitudeSquared());
         }
         return nearest;
     }
@@ -815,7 +816,7 @@ public abstract partial class AbstractLevel : ILevel
         {
             foreach (var (_, player) in Players)
             {
-                if (player.Position == location)
+                if (PlayerGrid.ReadPosition(player) == location)
                 {
                     yield return player;
                 }
@@ -825,25 +826,30 @@ public abstract partial class AbstractLevel : ILevel
 
         distance *= distance;
 
-        // Snapshot order with live, atomically indexed positions. Outside a valid tick snapshot keep the original
-        // dictionary path: Players is publicly mutable, so it can change without TryAddPlayer/TryRemovePlayer.
-        IPlayer[]? indexed = null;
-        lock (PlayerGrid.Gate)
-        {
-            if (this.CurrentTickPlayers is not null)
-                indexed = this.playerGrid.InRange(location, distance, this.Players);
-        }
+        // Keep the snapshot's order, but test each player's current position and identity immediately before
+        // yielding, as the original array loop did. Column candidates refresh after movement while suspended.
+        IPlayer[]? players;
+        lock (this.playerGrid.MembershipGate)
+            players = this.CurrentTickPlayers;
 
-        if (indexed is not null)
+        if (players is not null)
         {
-            foreach (var player in indexed)
-                yield return player;
+            foreach (var player in this.playerGrid.CandidatesInOrder(players, location, distance))
+            {
+                var difference = PlayerGrid.ReadPosition(player) - location;
+                if (difference.X * difference.X + difference.Z * difference.Z <= distance
+                    && this.Players.TryGetValue(player.Uuid, out var current) && ReferenceEquals(current, player))
+                {
+                    yield return player;
+                }
+            }
             yield break;
         }
 
+        // Players is publicly mutable; outside a valid tick snapshot retain the original dictionary path.
         foreach (var (_, player) in Players)
         {
-            var difference = player.Position - location;
+            var difference = PlayerGrid.ReadPosition(player) - location;
             if (difference.X * difference.X + difference.Z * difference.Z <= distance)
             {
                 yield return player;
@@ -855,12 +861,13 @@ public abstract partial class AbstractLevel : ILevel
 
     public bool TryAddPlayer(IPlayer player)
     {
-        lock (PlayerGrid.Gate)
+        lock (this.playerGrid.MembershipGate)
         {
             if (!Players.TryAdd(player.Uuid, player))
                 return false;
 
             Interlocked.Increment(ref this.playerChanges);
+            this.playerGrid.Add(player);
             return true;
         }
     }
@@ -868,12 +875,13 @@ public abstract partial class AbstractLevel : ILevel
     // Matches the instance, not just the UUID, so a stale reference can't remove a newer player with the same UUID.
     public bool TryRemovePlayer(IPlayer player)
     {
-        lock (PlayerGrid.Gate)
+        lock (this.playerGrid.MembershipGate)
         {
             if (!Players.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
                 return false;
 
             Interlocked.Increment(ref this.playerChanges);
+            this.playerGrid.Remove(player);
             return true;
         }
     }

@@ -41,10 +41,21 @@ public partial class Entity : IEquatable<Entity>, IEntity
         {
             if (this is IPlayer player)
             {
-                lock (PlayerGrid.Gate)
+                var state = LazyInitializer.EnsureInitialized(ref this.PlayerQueryState);
+                lock (state.Gate)
                 {
-                    this.position = value;
-                    this.PlayerQueryGrid?.Move(player, value);
+                    if (state.Grid is PlayerGrid playerGrid)
+                    {
+                        lock (playerGrid.Gate)
+                        {
+                            this.position = value;
+                            playerGrid.Move(player, value);
+                        }
+                    }
+                    else
+                    {
+                        this.position = value;
+                    }
                 }
                 return;
             }
@@ -59,8 +70,8 @@ public partial class Entity : IEquatable<Entity>, IEntity
 
     private VectorD position;
 
-    // Separate from non-player grid membership; position writes and player queries share PlayerGrid.Gate.
-    internal PlayerGrid? PlayerQueryGrid { get; set; }
+    // Created only for players; serializes whole positions and migration between per-level grids.
+    internal PlayerGrid.PlayerState? PlayerQueryState;
 
     // The level's grid the entity is in and the chunk it's filed under there, both kept by the grid (see EntityGrid).
     internal EntityGrid? Grid { get; set; }

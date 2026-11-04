@@ -6,6 +6,7 @@ using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Services;
 using Obsidian.Tests.Fakes;
+using Obsidian.Tests.Utilities;
 using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
@@ -123,45 +124,207 @@ public sealed class PlayerSpatialQueries
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task SuspendedQueriesMatchBruteForceAfterRemovalTransferAndMovement()
+    {
+        await FixtureCases.AssertAllAsync(Enum.GetValues<SuspendedChange>(), change => change.ToString(),
+            AssertSuspendedQuery);
+    }
+
+    private enum SuspendedChange
+    {
+        Remove,
+        Transfer,
+        ReplaceInstance,
+        MoveOut,
+        MoveIntoSameColumn,
+        MoveIntoNewColumn
+    }
+
+    private static async Task AssertSuspendedQuery(SuspendedChange change)
+    {
+        await using var source = TestServerFactory.CreateServer($"player-grid-suspended-{Guid.NewGuid():N}");
+        await using var target = TestServerFactory.CreateServer($"player-grid-suspended-target-{Guid.NewGuid():N}");
+        var world = source.World;
+        var first = TestServerFactory.CreateConnectedPlayer(source.Server, world, "First", VectorD.Zero);
+        var second = TestServerFactory.CreateConnectedPlayer(source.Server, world, "Second", VectorD.Zero);
+        Assert.True(world.TryAddPlayer(first));
+        Assert.True(world.TryAddPlayer(second));
+        var snapshot = Snapshot(world);
+        var pending = (PlayerBase)snapshot[1];
+        if (change == SuspendedChange.MoveIntoSameColumn)
+            pending.Position = new VectorD(8, 0, 0);
+        if (change == SuspendedChange.MoveIntoNewColumn)
+            pending.Position = new VectorD(1024, 0, 0);
+
+        using var actual = world.GetPlayersInRange(VectorD.Zero, 1).GetEnumerator();
+        using var expected = BruteRange(world, snapshot, VectorD.Zero, 1, true).GetEnumerator();
+        Assert.True(expected.MoveNext());
+        Assert.True(actual.MoveNext());
+        Assert.Same(expected.Current, actual.Current);
+        Assert.Same(snapshot[0], actual.Current);
+
+        switch (change)
+        {
+            case SuspendedChange.Remove:
+                Assert.True(world.TryRemovePlayer(pending));
+                break;
+            case SuspendedChange.Transfer:
+                Assert.True(world.TryRemovePlayer(pending));
+                pending.Level = target.World;
+                Assert.True(target.World.TryAddPlayer(pending));
+                break;
+            case SuspendedChange.ReplaceInstance:
+                var replacement = TestServerFactory.CreateConnectedPlayer(source.Server, world, "Replacement",
+                    VectorD.Zero, pending.Uuid);
+                world.Players[pending.Uuid] = replacement;
+                break;
+            case SuspendedChange.MoveOut:
+                pending.Position = new VectorD(8, 0, 0);
+                break;
+            case SuspendedChange.MoveIntoSameColumn:
+            case SuspendedChange.MoveIntoNewColumn:
+                pending.Position = VectorD.Zero;
+                break;
+        }
+
+        Assert.Equal(Drain(expected), Drain(actual));
+    }
+
+    private static IPlayer[] Drain(IEnumerator<IPlayer> iterator)
+    {
+        var remaining = new List<IPlayer>();
+        while (iterator.MoveNext())
+            remaining.Add(iterator.Current);
+        return remaining.ToArray();
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task ConcurrentPositionWritesPublishWholePositionsAndBuckets()
     {
         await using var context = TestServerFactory.CreateServer($"player-grid-concurrent-{Guid.NewGuid():N}");
         var world = context.World;
-        var first = new VectorD(0, 0, 1024);
-        var second = new VectorD(1024, 0, 0);
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Moving", first);
+        VectorD[] endpoints =
+        [
+            new(63.75, 7, -64.25), new(1024.25, 7, 63.75),
+            new(64.25, 7, -63.75), new(1023.75, 7, 64.25)
+        ];
+        VectorD[] edges = [new(64, 7, -64), new(1024, 7, 64)];
+        var queries = endpoints.Concat(edges).ToArray();
+        var positions = Enumerable.Range(0, 32).SelectMany(_ => endpoints).ToArray();
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Moving", endpoints[0]);
         Assert.True(world.TryAddPlayer(player));
         var snapshot = Snapshot(world);
         using var stop = new CancellationTokenSource();
-        using var started = new ManualResetEventSlim();
-        var writer = Task.Run(() =>
+        using var published = new SemaphoreSlim(0);
+        using var advance = new SemaphoreSlim(0);
+        var writer = Task.Run(async () =>
         {
-            started.Set();
-            while (!stop.IsCancellationRequested)
+            foreach (var position in positions)
             {
-                player.Position = first;
-                player.Position = second;
+                player.Position = position;
+                published.Release();
+                await advance.WaitAsync(stop.Token);
             }
         });
 
         try
         {
-            Assert.True(started.Wait(TimeSpan.FromSeconds(5)));
-            for (var index = 0; index < 1000; index++)
+            foreach (var position in positions)
             {
-                Assert.Empty(world.GetPlayersInRange(VectorD.Zero, 1));
-                Assert.Equal(1024d * 1024, world.NearestPlayerDistanceSquared(VectorD.Zero));
+                Assert.True(await published.WaitAsync(TimeSpan.FromSeconds(5)));
+                Assert.Equal(position, PlayerGrid.ReadPosition(player));
 
-                // At a stable checkpoint, compare the entire ordered result and exact nearest distance with
-                // brute force. Between checkpoints the writer crosses 16 columns on every position write.
-                lock (PlayerGrid.Gate)
-                    AssertEquivalent(world, snapshot);
+                // The writer has published the position and cannot move again until every narrow query is
+                // checked. These rectangles visit endpoint/edge columns, never the occupied-column fallback.
+                foreach (var origin in queries)
+                {
+                    foreach (var range in new[] { 0.1f, 0.5f })
+                    {
+                        var expected = BruteRange(world, snapshot, origin, range, true).ToArray();
+                        Assert.Equal(expected, world.GetPlayersInRange(origin, range).ToArray());
+                    }
+                    Assert.Equal((position - origin).MagnitudeSquared(), world.NearestPlayerDistanceSquared(origin));
+                }
+                advance.Release();
             }
         }
         finally
         {
             stop.Cancel();
-            await writer;
+            try
+            {
+                await writer;
+            }
+            catch (OperationCanceledException) when (stop.IsCancellationRequested)
+            {
+                // Release a writer waiting at a publication checkpoint when an assertion fails.
+            }
+        }
+
+        // Also query while writes are actually in flight; either complete position has the same distance.
+        player.Position = new VectorD(0, 0, 1024);
+        using var racingStop = new CancellationTokenSource();
+        var racingWriter = Task.Run(() =>
+        {
+            while (!racingStop.IsCancellationRequested)
+            {
+                player.Position = new VectorD(0, 0, 1024);
+                player.Position = new VectorD(1024, 0, 0);
+            }
+        });
+        try
+        {
+            for (var index = 0; index < 1000; index++)
+            {
+                Assert.Empty(world.GetPlayersInRange(VectorD.Zero, 1));
+                Assert.Equal(1024d * 1024, world.NearestPlayerDistanceSquared(VectorD.Zero));
+            }
+        }
+        finally
+        {
+            racingStop.Cancel();
+            await racingWriter;
+        }
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task AGridLockDoesNotBlockOtherLevelsPositionsAndQueries()
+    {
+        await using var source = TestServerFactory.CreateServer($"player-grid-lock-{Guid.NewGuid():N}");
+        await using var target = TestServerFactory.CreateServer($"player-grid-lock-target-{Guid.NewGuid():N}");
+        var held = TestServerFactory.CreateConnectedPlayer(source.Server, source.World, "Held", VectorD.Zero);
+        var moving = TestServerFactory.CreateConnectedPlayer(target.Server, target.World, "Moving", VectorD.Zero);
+        Assert.True(source.World.TryAddPlayer(held));
+        Assert.True(target.World.TryAddPlayer(moving));
+        Snapshot(source.World);
+        Snapshot(target.World);
+        var acquired = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var release = new ManualResetEventSlim();
+        var holder = Task.Run(() =>
+        {
+            lock (held.PlayerQueryState!.Grid!.Gate)
+            {
+                acquired.SetResult();
+                release.Wait();
+            }
+        });
+        Task? independent = null;
+        try
+        {
+            await acquired.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            independent = Task.Run(() =>
+            {
+                moving.Position = new VectorD(1024, 7, 1024);
+                Assert.Same(moving, Assert.Single(target.World.GetPlayersInRange(moving.Position, 1)));
+            });
+            await independent.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        finally
+        {
+            release.Set();
+            await holder;
+            if (independent is not null)
+                await independent;
         }
     }
 
