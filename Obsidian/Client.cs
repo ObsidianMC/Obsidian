@@ -219,6 +219,7 @@ public sealed partial class Client : IClient
     {
         this.eventDispatcher = eventDispatcher;
         this.HostServer = server;
+        this.framer = new PacketFramer(server.Configuration.Network.CompressionLevel);
         this.loggerFactory = loggerFactory;
         this.userCache = playerCache;
         this.serverMetrics = serverMetrics;

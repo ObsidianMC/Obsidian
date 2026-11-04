@@ -39,7 +39,7 @@ public partial class Client
 
     // The flush's: frames are framed and encrypted into it, then appended to sendBufferMain under sendLock.
     private readonly NetworkBuffer framedOutput = new();
-    private readonly PacketFramer framer = new();
+    private readonly PacketFramer framer;
     private readonly Action flushOutput;
     private readonly Action deferredFlush;
 
