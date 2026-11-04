@@ -4,8 +4,11 @@ using Obsidian.API.Registries;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Plugins;
+using Obsidian.Plugins.Archives;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
+using Obsidian.Tests.Utilities;
 using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
@@ -236,7 +239,7 @@ public sealed class LevelTransfers
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task AnArrivalIsNotTickedByItsNewLevelInTheTickItArrivesIn()
+    public async Task AnArrivalBeforeTheEntityPhaseIsTickedInThatTick()
     {
         await using var sourceServer = TestServerFactory.CreateServer($"held-source-{Guid.NewGuid():N}");
         await using var targetServer = TestServerFactory.CreateServer($"held-target-{Guid.NewGuid():N}");
@@ -251,37 +254,156 @@ public sealed class LevelTransfers
         var cow = new CountingCow { Level = source, EntityId = 714_000, Position = Centre };
         Assert.True(source.TryAddEntity(cow));
 
-        // It arrives while the target ticks, as from a level ticking alongside: published at once, ticked from the
-        // target's next tick, so the target never ticks it while the code that moved it may still be moving it.
+        // It arrives during the target's tick, before its entity phase: like vanilla, which adds it to the tick list
+        // at once, the target ticks it in that same tick.
         target.EnqueueEntityAction(() => cow.TeleportAsync(target, Centre));
         await target.DoWorldTickAsync();
         Assert.Same(cow, target.FindEntity(cow.Uuid));
-        Assert.Equal(0, cow.Ticks);
+        Assert.Equal(1, cow.Ticks);
 
         await target.DoWorldTickAsync();
-        Assert.Equal(1, cow.Ticks);
+        Assert.Equal(2, cow.Ticks);
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task WhatAHopperCantHoldAnyMoreIsDroppedAtTheHopper()
+    public async Task ATravellerIsNotTickedByItsNewLevelWhileItsOldLevelStillTicksIt()
+    {
+        await using var sourceServer = TestServerFactory.CreateServer($"claimed-source-{Guid.NewGuid():N}");
+        await using var targetServer = TestServerFactory.CreateServer($"claimed-target-{Guid.NewGuid():N}");
+        var source = sourceServer.World;
+        var target = targetServer.World;
+        await WatchAsync(sourceServer, source);
+        await WatchAsync(targetServer, target);
+        var cow = new GatedCow { Level = source, EntityId = 715_000, Position = Centre };
+        Assert.True(source.TryAddEntity(cow));
+
+        // The source's tick of the cow waits (as a plugin's tick awaiting something might) while a command sends the
+        // cow to the target, which then ticks without it: the source's tick of it isn't over.
+        var sourceTick = Task.Run(() => source.DoWorldTickAsync());
+        await cow.Entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        await cow.TeleportAsync(target, Centre);
+        Assert.Same(cow, target.FindEntity(cow.Uuid));
+        await target.DoWorldTickAsync();
+        Assert.Equal(1, cow.Ticks);
+
+        // Once it is, the target ticks it.
+        cow.Release.SetResult();
+        await sourceTick.WaitAsync(TimeSpan.FromSeconds(10));
+        await target.DoWorldTickAsync();
+        Assert.Equal(2, cow.Ticks);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ATravellerLandingWhereItsDestinationUnloadsGoesBack()
+    {
+        await using var sourceServer = TestServerFactory.CreateServer($"closing-source-{Guid.NewGuid():N}");
+        await using var targetServer = TestServerFactory.CreateServer($"closing-target-{Guid.NewGuid():N}");
+        var source = sourceServer.World;
+        var target = targetServer.World;
+        WorldBlockEntities.AddEmptyChunk(source);
+        WorldBlockEntities.AddEmptyChunk(target);
+        var item = Drop(source, 0, Centre);
+
+        // The target's region starts retiring (its save has taken its entities) while the item waits to get in.
+        var refused = await TravelWhileTargetBusyAsync(
+            item,
+            target,
+            Centre,
+            meanwhile: () => Task.CompletedTask,
+            underTargetLock: () => ((Region)target.GetRegionForLocation(Centre)!).TransfersClosed = true);
+
+        Assert.IsType<InvalidOperationException>(refused);
+        Assert.Same(source, item.Level);
+        Assert.Same(item, source.GetRegionForLocation(Centre)!.Entities[item.EntityId]);
+        Assert.False(target.GetRegionForLocation(Centre)!.Entities.ContainsKey(item.EntityId));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ATravellerWhoseAdmissionThrowsIsNeverLost()
+    {
+        await using var sourceServer = TestServerFactory.CreateServer($"throwing-source-{Guid.NewGuid():N}");
+        await using var targetServer = TestServerFactory.CreateServer($"throwing-target-{Guid.NewGuid():N}");
+        var source = sourceServer.World;
+        var target = targetServer.World;
+        WorldBlockEntities.AddEmptyChunk(source);
+        WorldBlockEntities.AddEmptyChunk(target);
+        var cow = new Cow { Level = source, EntityId = 716_000, Position = Centre };
+        Assert.True(source.TryAddEntity(cow));
+        var spawner = ClosingPlugin();
+        try
+        {
+            // The plugin that spawned the cow is closing, so adding the cow to either level throws: it's kept in the
+            // chunk it left rather than lost between them.
+            cow.SpawnedBy = spawner;
+            spawner.Close();
+            Assert.NotNull(await Record.ExceptionAsync(() => cow.TeleportAsync(target, Centre).AsTask()));
+
+            Assert.Contains(LoadedChunk(source, 0)!.PendingEntities, kept => kept.Type == "minecraft:cow");
+            Assert.False(target.GetRegionForLocation(Centre)!.Entities.ContainsKey(cow.EntityId));
+        }
+        finally
+        {
+            spawner.UndoHostAdditions();
+            await spawner.DisposeAsync();
+        }
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task AnItemRemovedFromItsLevelDoesNotAbsorbAnother()
+    {
+        await using var server = TestServerFactory.CreateServer($"merge-{Guid.NewGuid():N}");
+        var side = await PrepareAsync(server, "Merger");
+        var world = side.World;
+        var receiver = Drop(world, 0, Centre);
+        var donor = Drop(world, 1, Centre);
+
+        // Removed after its tick began (a removal doesn't mark it), the receiver must not take in the donor.
+        Assert.True(await world.DestroyEntityAsync(receiver));
+        for (var tick = 0; tick < 40; tick++)
+            await receiver.TickAsync();
+
+        Assert.Same(donor, world.GetRegionForLocation(Centre)!.Entities[donor.EntityId]);
+        Assert.False(donor.Removed);
+        Assert.Equal(1, donor.Item.Count);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task WhatAHopperCantHoldAnyMoreIsNeverLost()
     {
         await using var server = TestServerFactory.CreateServer($"overflow-{Guid.NewGuid():N}");
         var world = server.World;
         WorldBlockEntities.AddEmptyChunk(world);
         var item = Drop(world, 0, new VectorD(12.5, 70, 4.5));
 
-        // The slots looked like they had room, but none by the time the item went in: it's dropped at the hopper,
-        // which here is in a region not loaded yet, so it's dropped once the region is.
-        var hopperBlock = new Vector(Region.CubicRegionSize * 16 + 4, 70, 4);
+        // The slots looked like they had room, but none by the time the item went in. It's dropped at the hopper,
+        // which here is in a chunk that isn't loaded, so it's kept in the loaded chunk the item was in instead (saved
+        // with it) and spawned there with the next tick.
+        var hopperBlock = new Vector(20, 70, 4);
         Assert.True(await Hoppers.TakeInAsync(new ShrinkingSlots(), item, world, HopperMin, HopperMax, hopperBlock));
-        Assert.DoesNotContain(world.GetNonPlayerEntitiesInRange(Centre, 32), entity => entity is ItemEntity);
-        Assert.Null(world.GetRegionForLocation((VectorD)hopperBlock));
+        Assert.Contains(LoadedChunk(world, 0)!.PendingEntities, kept => kept.Type == "minecraft:item");
 
-        WorldBlockEntities.AddEmptyChunk(world, Region.CubicRegionSize, 0);
         await world.DoWorldTickAsync();
-        var dropped = Assert.Single(world.GetNonPlayerEntitiesInRange((VectorD)hopperBlock, 2).OfType<ItemEntity>());
+        var dropped = Assert.Single(world.GetNonPlayerEntitiesInRange(Centre, 32).OfType<ItemEntity>());
         Assert.True(dropped.Item.Is(ItemsRegistry.Diamond));
     }
+
+    private static async Task WatchAsync(RealServerContext context, World level)
+    {
+        WorldBlockEntities.AddEmptyChunk(level);
+        var watcher = TestServerFactory.CreateConnectedPlayer(context.Server, level, "Watcher", Centre);
+        await TestServerFactory.JoinConnectedPlayerAsync(context.Server, watcher);
+        level.TryAddPlayer(watcher);
+        level.TryAddEntity(watcher);
+    }
+
+    private static PluginContainer ClosingPlugin() => new()
+    {
+        Info = new PluginInfo("transfers"),
+        Archive = PluginArchive.Open("transfers.obby", PluginArchives.Zip(new Dictionary<string, byte[]>
+        {
+            [PluginMetadata.FileName] = PluginArchives.Metadata("transfers", "1.0.0", "Transfers")
+        }))
+    };
 
     private static bool IsItem(NbtCompound kept) =>
         kept.TryGetTagValue<string>("id", out var id) && id == "minecraft:item";
@@ -548,6 +670,25 @@ public sealed class LevelTransfers
         {
             base.SpawnEntity(velocity, additionalData);
             this.Relayed ??= next.TeleportAsync(onwards, Centre).AsTask();
+        }
+    }
+
+    // A cow whose first tick waits for the test to release it, as a plugin's tick awaiting something might.
+    private sealed class GatedCow : Cow
+    {
+        public TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public int Ticks { get; private set; }
+
+        public override async ValueTask TickAsync()
+        {
+            this.Ticks++;
+            if (this.Entered.TrySetResult())
+                await this.Release.Task;
+
+            await base.TickAsync();
         }
     }
 
