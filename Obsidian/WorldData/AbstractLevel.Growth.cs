@@ -209,7 +209,8 @@ public abstract partial class AbstractLevel
                     continue;
 
                 chunks.Add(chunk);
-                verified.Add(chunk);
+                if (AreTracked(key, loaded))
+                    verified.Add(chunk);
             }
 
             if (this.ReadNeighbourEpoch() == epoch)
@@ -273,6 +274,24 @@ public abstract partial class AbstractLevel
     // close and when a chunk loses its completion, which move the epoch on, while loading only adds neighbours. So a
     // chunk remembered at the current epoch still has its eight neighbours, and its lookups are skipped.
     private readonly List<Chunk> randomTickVerified = [];
+
+    // Whether the chunk and its neighbours, looked up already, are Obsidian's own chunks, whose losing completion moves
+    // the neighbour epoch on (see Chunk.CompletionLosses). A plugin's own IChunk may stop being complete without it,
+    // so a neighbourhood holding one is checked again each tick.
+    private static bool AreTracked(long key, Dictionary<long, IChunk?> loaded)
+    {
+        NumericsHelper.LongToInts(key, out var chunkX, out var chunkZ);
+        for (var x = chunkX - 1; x <= chunkX + 1; x++)
+        {
+            for (var z = chunkZ - 1; z <= chunkZ + 1; z++)
+            {
+                if (loaded.GetValueOrDefault(NumericsHelper.IntsToLong(x, z)) is not Chunk)
+                    return false;
+            }
+        }
+
+        return true;
+    }
 
     private bool HasLoadedNeighbours(long key, Dictionary<long, IChunk?> loaded)
     {
