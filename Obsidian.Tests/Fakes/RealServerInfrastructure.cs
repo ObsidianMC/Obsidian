@@ -237,7 +237,10 @@ internal static class TestServerFactory
     /// </summary>
     public const int TestTimeout = 30_000;
 
-    public static RealServerContext CreateServer(string worldName)
+    /// <param name="worldManager">
+    /// Makes the server's world manager for its world; a <see cref="FakeWorldManager"/> by default.
+    /// </param>
+    public static RealServerContext CreateServer(string worldName, Func<World, IWorldManager>? worldManager = null)
     {
         var configuration = new ServerConfiguration
         {
@@ -260,7 +263,7 @@ internal static class TestServerFactory
 
         var broadcaster = new RecordingPacketBroadcaster();
         var world = CreateWorld(worldName, configuration, broadcaster, eventDispatcher);
-        var worldManager = new FakeWorldManager(world);
+        var manager = worldManager?.Invoke(world) ?? new FakeWorldManager(world);
 
         var services = new ServiceCollection();
         services.AddLogging();
@@ -282,7 +285,7 @@ internal static class TestServerFactory
             provider,
             commandHandler,
             new FakeUserCache(),
-            worldManager)
+            manager)
         {
             MaxConnections = 16,
             MaxBufferSize = 8192

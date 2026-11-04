@@ -22,6 +22,7 @@ using Obsidian.Services;
 using Obsidian.WorldData;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.ExceptionServices;
 using System.IO;
 using System.Threading;
 
@@ -632,13 +633,26 @@ public sealed partial class Server : IServer, IPluginScopedServer
             {
                 // Worlds that didn't finish loading aren't saved: a new world whose generation was stopped keeps no
                 // level.dat, so it isn't later taken for a complete world.
-                if (this.WorldManager.ReadyToJoin)
-                    await WorldManager.FlushLoadedWorldsAsync();
+                // A failed final save still disposes the worlds, which save what they can and release the session
+                // lock, and the plugins and the user cache; the save's failure is the shutdown's, once they're done.
+                Exception? saveFailure = null;
+                try
+                {
+                    if (this.WorldManager.ReadyToJoin)
+                        await WorldManager.FlushLoadedWorldsAsync();
+                }
+                catch (Exception exception)
+                {
+                    saveFailure = exception;
+                }
 
                 await WorldManager.DisposeAsync();
                 await this.PluginManager.DisposeAsync();
 
                 await this.userCache.SaveAsync();
+
+                if (saveFailure is not null)
+                    ExceptionDispatchInfo.Throw(saveFailure);
             }
             finally
             {

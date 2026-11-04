@@ -65,7 +65,18 @@ internal sealed class FakeWorldManager(IWorld defaultWorld, bool worldsLoaded = 
 
     public IReadOnlyCollection<IWorld> GetAvailableWorlds() => worldsLoaded ? [this.DefaultWorld] : [];
 
-    public Task FlushLoadedWorldsAsync() => Task.CompletedTask;
+    /// <summary>
+    /// What saving the worlds throws, standing in for a failed region save; nothing by default.
+    /// </summary>
+    public Exception? FlushFailure { get; init; }
+
+    /// <summary>
+    /// Whether the manager was disposed.
+    /// </summary>
+    public bool Disposed { get; private set; }
+
+    public Task FlushLoadedWorldsAsync() =>
+        this.FlushFailure is Exception failure ? Task.FromException(failure) : Task.CompletedTask;
 
     public Task TickWorldsAsync() => Task.CompletedTask;
 
@@ -81,7 +92,11 @@ internal sealed class FakeWorldManager(IWorld defaultWorld, bool worldsLoaded = 
         return world is not null;
     }
 
-    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    public ValueTask DisposeAsync()
+    {
+        this.Disposed = true;
+        return ValueTask.CompletedTask;
+    }
 }
 
 internal static class TestWorldFactory
