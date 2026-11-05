@@ -91,8 +91,8 @@ public partial class Region : IRegion
     // Which of the saves are unloads' (see AdmitSave). Under the saves' lock.
     private readonly HashSet<long> unloadSaves = [];
 
-    // The chunks an unload is taking, so two unloads overlapping never both take one. Under FluidTickLock.
-    private readonly HashSet<IChunk> unloadingChunks = [];
+    // The slots an unload is taking the chunk of, so two unloads overlapping never both take one. Under FluidTickLock.
+    private readonly HashSet<(int X, int Z)> unloadingSlots = [];
 
     // Set as the region closes: no save is admitted after.
     private bool closing;
@@ -665,7 +665,9 @@ public partial class Region : IRegion
                     if (loadedChunks[x, z] is IChunk resident)
                         return resident;
 
-                    // Stored and unloaded again while this read ran (see GetChunkAsync).
+                    // Stored and unloaded again while this read ran (see GetChunkAsync). Retried, and create runs
+                    // again, as often as that keeps happening: the factories only allocate, and a slot refilled and
+                    // emptied every read is a slot being unloaded every time, which ends with its unloads.
                     if (this.VersionOf(x, z) != version)
                         continue;
 
@@ -822,9 +824,10 @@ public partial class Region : IRegion
 
         // Admitted before the snapshots, so the region doesn't close before their writes (see WriteUnloadedAsync).
         var unloaded = new UnloadedChunks(this.AdmitSave(unload: true));
+        List<ChunkSave> retired;
         try
         {
-            await this.DetachAdmittedAsync(positions, unloaded);
+            retired = await this.DetachAdmittedAsync(positions, unloaded);
         }
         catch
         {
@@ -832,45 +835,86 @@ public partial class Region : IRegion
             throw;
         }
 
+        // The writes start before the callbacks, and go on without them: a callback may load a chunk unloaded here
+        // and save it, and its writes wait for these, whose turns come first.
+        unloaded.Written = this.WriteDetachedAsync(unloaded);
+        try
+        {
+            foreach (var save in retired)
+                await this.ReleaseRetiredAsync(save);
+        }
+        catch
+        {
+            await unloaded.Written;
+            throw;
+        }
+
         return unloaded;
     }
 
-    private async Task DetachAdmittedAsync(IReadOnlyList<(int X, int Z)> positions, UnloadedChunks unloaded)
+    // Takes and detaches the chunks; returns every save that retired something, for the callbacks to let go of.
+    private async Task<List<ChunkSave>> DetachAdmittedAsync(IReadOnlyList<(int X, int Z)> positions,
+        UnloadedChunks unloaded)
     {
         var retired = new List<ChunkSave>();
         foreach (var (x, z) in positions)
         {
-            // Claimed, so an overlapping unload of the chunk leaves it to this one.
+            // The position is claimed, not the instance stored there: generation may replace the chunk while the
+            // snapshot waits for its lock, and an overlapping unload must leave the replacement to this one.
+            var slot = (NumericsHelper.Modulo(x, CubicRegionSize), NumericsHelper.Modulo(z, CubicRegionSize));
             IChunk? chunk;
             lock (this.FluidTickLock)
             {
                 chunk = this.loadedChunks[x, z];
-                if (chunk is null || !this.unloadingChunks.Add(chunk))
+                if (chunk is null || !this.unloadingSlots.Add(slot))
                     continue;
             }
 
-            var save = NewSave(chunk);
-            retired.Add(save);
             try
             {
-                await this.SnapshotChunkAsync(save, unloading: true, saveEntities: true);
+                var save = NewSave(chunk);
+                retired.Add(save);
+                try
+                {
+                    await this.SnapshotChunkAsync(save, unloading: true, saveEntities: true);
+                }
+                catch (Exception failure)
+                {
+                    // The chunk stays, retired like its region's chunks, and its region's next save writes it, with
+                    // the marks and entities the snapshot put back; what it retired is let go all the same.
+                    unloaded.Failures.Add(failure);
+                    continue;
+                }
+
+                unloaded.Saves.Add((save, this.Detach(save)));
             }
-            catch (Exception failure)
+            finally
             {
-                // The chunk stays, retired like its region's chunks, and its region's next save writes it, with the
-                // marks the snapshot put back; what the snapshot retired is let go all the same.
                 lock (this.FluidTickLock)
-                    this.unloadingChunks.Remove(chunk);
-
-                unloaded.Failures.Add(failure);
-                continue;
+                    this.unloadingSlots.Remove(slot);
             }
-
-            unloaded.Saves.Add((save, this.Detach(save)));
         }
 
-        foreach (var save in retired)
-            await this.ReleaseRetiredAsync(save);
+        return retired;
+    }
+
+    // Writes the detached chunks' saves (see WriteAdmittedAsync), then ends the unload's admission.
+    private async Task<List<Exception>> WriteDetachedAsync(UnloadedChunks unloaded)
+    {
+        // Off the caller's thread, which runs the callbacks meanwhile.
+        await Task.Yield();
+
+        var failures = new List<Exception>();
+        try
+        {
+            await this.WriteAdmittedAsync(unloaded.Saves, failures);
+        }
+        finally
+        {
+            this.EndSave(unloaded.Admitted);
+        }
+
+        return failures;
     }
 
     // Publishes the chunk's save as its position's pending write and empties its slot, atomically for readers: one that
@@ -889,7 +933,6 @@ public partial class Region : IRegion
         lock (this.FluidTickLock)
         {
             this.PendingWrites.Add(pending);
-            this.unloadingChunks.Remove(save.Chunk!);
 
             if (ReferenceEquals(this.loadedChunks[save.X, save.Z], chunk))
             {
@@ -905,24 +948,16 @@ public partial class Region : IRegion
     }
 
     /// <summary>
-    /// Writes the saves <see cref="DetachForUnloadAsync"/> took, together, outside the level's simulation gate. Each
+    /// Waits for the writes of the saves <see cref="DetachForUnloadAsync"/> took, which it started, together, outside
+    /// the level's simulation gate. Each
     /// committed save leaves the pending writes; one whose write fails stays there, flagged failed, so loads still read
     /// it and the level's next save retries it (see <see cref="RetryPendingWritesAsync"/>). Failures, the snapshots'
     /// too, are thrown once every save was written or failed.
     /// </summary>
     internal async Task WriteUnloadedAsync(UnloadedChunks unloaded)
     {
-        var failures = new List<Exception>(unloaded.Failures);
-        try
-        {
-            await this.WriteAdmittedAsync(unloaded.Saves, failures);
-        }
-        finally
-        {
-            this.EndSave(unloaded.Admitted);
-        }
-
-        ThrowFailures(failures);
+        var written = await unloaded.Written!;
+        ThrowFailures([.. unloaded.Failures, .. written]);
     }
 
     /// <summary>
@@ -1068,6 +1103,9 @@ public partial class Region : IRegion
         internal List<(ChunkSave Save, PendingChunkWrite Pending)> Saves { get; } = [];
 
         internal List<Exception> Failures { get; } = [];
+
+        // The saves' writes, started as the chunks were detached, with their failures.
+        internal Task<List<Exception>>? Written { get; set; }
     }
 
     /// <summary>Validates a captured chunk under FluidTickLock: an unloaded one left its slot with its final snapshot.</summary>
@@ -1885,23 +1923,12 @@ public partial class Region : IRegion
             foreach (var unsupported in chunk.UnspawnableEntities)
                 entities.Add(unsupported);
 
-            foreach (var (_, entity) in this.entities)
+            var leaving = this.SaveLevelEntities(chunk, entities, unloading);
+
+            // Taken out only once every one is saved: a save that throws leaves them all in the level.
+            foreach (var levelEntity in leaving)
             {
-                if (entity is not Entity levelEntity || ChunkOf(levelEntity.Position) != (chunk.X, chunk.Z))
-                    continue;
-
-                if (unloading && levelEntity is not IPlayer)
-                    API.Data.AttachmentStorage.For(levelEntity).Retire();
-
-                if (EntityNbt.Save(levelEntity) is not NbtCompound saved)
-                {
-                    if (unloading && levelEntity is Mob { HasAi: true } && this.TryRemoveEntity(levelEntity))
-                        EntityGrid.Leave(levelEntity);
-                    continue;
-                }
-
-                entities.Add(saved);
-                if (unloading && this.TryRemoveEntity(levelEntity))
+                if (this.TryRemoveEntity(levelEntity))
                     EntityGrid.Leave(levelEntity);
             }
 
@@ -1911,6 +1938,53 @@ public partial class Region : IRegion
         }
 
         return entities;
+    }
+
+    /// <summary>
+    /// Adds the saves of the level's entities in the chunk to <paramref name="entities"/>. When unloading, their
+    /// attachments retire first, so no write to them is missed, and those to take out of the level are returned. A save
+    /// that throws gives back the attachments it retired, so the entities stay in the level as they were.
+    /// </summary>
+    private List<Entity> SaveLevelEntities(Chunk chunk, NbtList entities, bool unloading)
+    {
+        var leaving = new List<Entity>();
+        var retired = new List<API.Data.AttachmentStorage>();
+        try
+        {
+            foreach (var (_, entity) in this.entities)
+            {
+                if (entity is not Entity levelEntity || ChunkOf(levelEntity.Position) != (chunk.X, chunk.Z))
+                    continue;
+
+                if (unloading && levelEntity is not IPlayer)
+                {
+                    var attachments = API.Data.AttachmentStorage.For(levelEntity);
+                    if (attachments.TryRetire())
+                        retired.Add(attachments);
+                }
+
+                if (EntityNbt.Save(levelEntity) is not NbtCompound saved)
+                {
+                    if (unloading && levelEntity is Mob { HasAi: true })
+                        leaving.Add(levelEntity);
+
+                    continue;
+                }
+
+                entities.Add(saved);
+                if (unloading)
+                    leaving.Add(levelEntity);
+            }
+        }
+        catch
+        {
+            foreach (var attachments in retired)
+                attachments.Unretire();
+
+            throw;
+        }
+
+        return leaving;
     }
 
     /// <summary>

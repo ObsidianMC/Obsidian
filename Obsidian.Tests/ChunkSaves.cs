@@ -814,24 +814,35 @@ public sealed class ChunkSaves
         region.SetChunk(failing);
         await world.FlushRegionsAsync();
 
-        // Both chunks change; one holds an entity whose save throws, so its chunk's final snapshot does too.
+        // Both chunks change; one holds an entity whose save throws, so its chunk's final snapshot does too, after
+        // another entity's save there succeeded.
         unloading.SetBlock(1, 64, 1, BlocksRegistry.Stone);
         failing.SetBlock(2, 64, 2, BlocksRegistry.Stone);
-        var entity = new FailingItem
+        var saving = new ItemEntity
         {
             Level = world,
             EntityId = 1,
             Position = new VectorF(1048, 65, 1032),
             Item = new ItemStack(ItemsRegistry.Apple, 3)
         };
+        var entity = new FailingItem
+        {
+            Level = world,
+            EntityId = 2,
+            Position = new VectorF(1048, 65, 1032),
+            Item = new ItemStack(ItemsRegistry.Apple, 5)
+        };
+        Assert.True(world.TryAddEntity(saving));
         Assert.True(world.TryAddEntity(entity));
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => world.UnloadRegionAsync(region.X, region.Z));
 
-        // The region stays with the chunk that couldn't be taken; the other left with its save.
+        // The region stays with the chunk that couldn't be taken, and both its entities; the other left with its save.
         Assert.Same(region, world.GetRegionForChunk(64, 64));
         Assert.Null(region.GetLoadedChunk(0, 0));
         Assert.Same(failing, region.GetLoadedChunk(1, 0));
+        Assert.Same(saving, world.FindEntity(saving.Uuid));
+        Assert.Same(entity, world.FindEntity(entity.Uuid));
 
         // Once the entity saves again, a later unload takes the chunk with its change.
         entity.Fail = false;
@@ -843,7 +854,9 @@ public sealed class ChunkSaves
             Path.GetDirectoryName(region.RegionFolder)!, Path.GetFileName(region.RegionFolder));
         await reader.InitAsync();
         Assert.Equal(BlockIds.Stone, (await reader.GetChunkAsync(0, 0)).GetBlock(1, 64, 1).RegistryId);
-        Assert.Equal(BlockIds.Stone, (await reader.GetChunkAsync(1, 0)).GetBlock(2, 64, 2).RegistryId);
+        var saved = (Chunk)await reader.GetChunkAsync(1, 0);
+        Assert.Equal(BlockIds.Stone, saved.GetBlock(2, 64, 2).RegistryId);
+        Assert.Equal(2, saved.PendingEntities.Count(pending => pending.Type == "minecraft:item"));
     }
 
     [Fact]
