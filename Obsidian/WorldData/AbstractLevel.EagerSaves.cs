@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using System.Diagnostics;
 using System.Threading;
 
 namespace Obsidian.WorldData;
@@ -27,15 +26,22 @@ public abstract partial class AbstractLevel
     private int eagerScanCursor;
     private int eagerWrites;
 
+    // The eager saves still writing, which an autosave waits for before it takes the simulation gate.
+    private readonly HashSet<Task> eagerSaves = [];
+
+    // Autosaves waiting for eager saves to end; no eager save starts meanwhile, so the wait ends.
+    private int autosavesWaiting;
+
     /// <summary>
     /// Saves some of the chunks that changed, at the end of the level's tick and under its simulation gate, waiting
     /// only until their snapshots are taken (see <see cref="Region.TrySaveChunks"/>): writing them goes on while the
-    /// level ticks. Their entities are left to the autosave and unloads, as vanilla's are.
+    /// level ticks. Their entities are left to the autosave and unloads, as vanilla's are, once the region has
+    /// written them.
     /// </summary>
-    /// <param name="tickStart">When the level's tick started (a <see cref="Stopwatch"/> timestamp).</param>
-    private async Task SaveChunksEagerlyAsync(long tickStart)
+    /// <param name="tickTime">How long the level's tick has taken so far.</param>
+    private async Task SaveChunksEagerlyAsync(TimeSpan tickTime)
     {
-        if (Stopwatch.GetElapsedTime(tickStart) >= this.EagerSaveTickBudget)
+        if (tickTime >= this.EagerSaveTickBudget || Volatile.Read(ref this.autosavesWaiting) != 0)
             return;
 
         var capacity = MaxEagerWrites - Volatile.Read(ref this.eagerWrites);
@@ -46,28 +52,38 @@ public abstract partial class AbstractLevel
         if (due.Count == 0)
             return;
 
-        var snapshots = new List<Task>(due.Count);
+        var started = new List<(List<IChunk> Snapshotted, Task Snapshots)>(due.Count);
         foreach (var (region, chunks) in due)
         {
+            var snapshotted = new List<IChunk>();
             var taken = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            if (region.TrySaveChunks(chunks, taken) is not Task written)
-            {
-                // Another save of the region is under way; the chunks are looked at again on a later pass.
-                foreach (var chunk in chunks)
-                    ((Chunk)chunk).NextEagerSave = 0;
 
+            // Another save of the region is under way when it doesn't start; the chunks are looked at again on a later
+            // pass.
+            if (region.TrySaveChunks(chunks, snapshotted, taken) is not Task written)
                 continue;
-            }
 
             Interlocked.Add(ref this.eagerWrites, chunks.Count);
-            snapshots.Add(taken.Task);
+            lock (this.eagerSaves)
+                this.eagerSaves.Add(written);
+
             _ = this.EndEagerSaveAsync(written, chunks.Count);
+            started.Add((snapshotted, taken.Task));
         }
 
-        await Task.WhenAll(snapshots);
+        await Task.WhenAll(started.Select(save => save.Snapshots));
+
+        // Only the chunks taken start their cooldown, here on the tick, the only one to read it: the region left the
+        // others out, which a later pass looks at again.
+        var next = Environment.TickCount64 + EagerSaveCooldownMilliseconds;
+        foreach (var (snapshotted, _) in started)
+        {
+            foreach (var chunk in snapshotted.OfType<Chunk>())
+                chunk.NextEagerSave = next;
+        }
     }
 
-    // Up to `limit` changed chunks to save this tick, by region, from the scan's window, each starting its cooldown.
+    // Up to `limit` changed chunks whose cooldown is over, by region, from the scan's window.
     private Dictionary<Region, List<IChunk>> TakeEagerSaves(int limit)
     {
         var due = new Dictionary<Region, List<IChunk>>();
@@ -91,7 +107,6 @@ public abstract partial class AbstractLevel
             if (this.GetRegionForChunk(chunk.X, chunk.Z) is not Region region)
                 continue;
 
-            chunk.NextEagerSave = now + EagerSaveCooldownMilliseconds;
             if (!due.TryGetValue(region, out var batch))
                 due[region] = batch = [];
 
@@ -117,6 +132,54 @@ public abstract partial class AbstractLevel
         finally
         {
             Interlocked.Add(ref this.eagerWrites, -count);
+            lock (this.eagerSaves)
+                this.eagerSaves.Remove(written);
+        }
+    }
+
+    /// <summary>
+    /// Waits for the eager saves writing now (see <see cref="SaveChunksEagerlyAsync"/>) to end, whether or not they
+    /// fail.
+    /// </summary>
+    internal async Task EagerSavesWrittenAsync()
+    {
+        Task[] writing;
+        lock (this.eagerSaves)
+            writing = [.. this.eagerSaves];
+
+        // Their failures are logged (see EndEagerSaveAsync).
+        await Task.WhenAll(writing).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+    }
+
+    /// <summary>
+    /// Takes the simulation gate for an autosave once no eager save is writing. An eager save holds its region's flush
+    /// lock until its writes are committed, which the autosave's save of the region waits for: under the gate, the
+    /// level couldn't tick meanwhile. Eager saves only start under the gate, and not while this waits.
+    /// </summary>
+    private async Task EnterGateAfterEagerSavesAsync()
+    {
+        Interlocked.Increment(ref this.autosavesWaiting);
+        try
+        {
+            while (true)
+            {
+                await this.EagerSavesWrittenAsync();
+                await this.simulationGate.WaitAsync();
+
+                // One started by a tick that was past its check of autosavesWaiting.
+                bool writing;
+                lock (this.eagerSaves)
+                    writing = this.eagerSaves.Count != 0;
+
+                if (!writing)
+                    return;
+
+                this.simulationGate.Release();
+            }
+        }
+        finally
+        {
+            Interlocked.Decrement(ref this.autosavesWaiting);
         }
     }
 
