@@ -607,9 +607,11 @@ public sealed partial class Server : IServer, IPluginScopedServer
     /// Stops the server once: every call returns the same shutdown.
     /// </summary>
     /// <remarks>
-    /// The shutdown waits for the server's loop, and so for the ticks. Asked for from inside a level's tick, or a
-    /// player's tick, grant or save (<c>/stop</c> run by a command block minecart, say), it goes on in the background
-    /// and this returns at once.
+    /// The shutdown waits for the server's loop, and so for the ticks, and for the plugins' changes as it disposes
+    /// them. Asked for from a flow one of those waits for, it goes on in the background and this returns at once,
+    /// whether it started the shutdown or one had started already: from inside a level's tick, or a player's tick,
+    /// grant or save (<c>/stop</c> run by a command block minecart, say), or from a change to the plugins (a plugin's
+    /// load, ready or unloading callback, or a plugin's dimension being created, its generator finding a spawn).
     /// </remarks>
     public Task StopAsync()
     {
@@ -620,21 +622,17 @@ public sealed partial class Server : IServer, IPluginScopedServer
             if (this.shutdownTask is null)
             {
                 using (ExecutionContext.SuppressFlow())
-                {
-                    // Asked for from a change to the plugins (a plugin's load or ready callback), whose flow the
-                    // shutdown doesn't share, so it has to be told: disposing the plugins would wait for that change.
-                    var fromPluginChange = Plugins.PluginManager.InsideChange;
-                    this.shutdownTask = Task.Run(() => this.StopCoreAsync(fromPluginChange));
-                }
+                    this.shutdownTask = Task.Run(this.StopCoreAsync);
             }
 
             shutdown = this.shutdownTask;
         }
 
-        return WorldData.AbstractLevel.MustNotWaitForGates ? Task.CompletedTask : shutdown;
+        var waitedFor = WorldData.AbstractLevel.MustNotWaitForGates || Plugins.PluginManager.InsideChange;
+        return waitedFor ? Task.CompletedTask : shutdown;
     }
 
-    private async Task StopCoreAsync(bool fromPluginChange)
+    private async Task StopCoreAsync()
     {
         // No background work a tick asks for starts from now on: the final save covers it.
         this.BackgroundWork.Close();
@@ -676,11 +674,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
                     await RunStopStepAsync(failures, () => WorldManager.FlushLoadedWorldsAsync());
 
                 await RunStopStepAsync(failures, () => WorldManager.DisposeAsync().AsTask());
-                // Asked for from a plugin change, which holds the plugins until this stop ends, they're left loaded,
-                // as a plugin changing plugins from its callback is refused; the stop goes on and reports it.
-                await RunStopStepAsync(failures, () => fromPluginChange
-                    ? Task.FromException(new InvalidOperationException(Plugins.PluginManager.ReentrantChangeMessage))
-                    : this.PluginManager.DisposeAsync().AsTask());
+                await RunStopStepAsync(failures, () => this.PluginManager.DisposeAsync().AsTask());
                 await RunStopStepAsync(failures, () => this.userCache.SaveAsync());
 
                 // The first failure is the stop's, and any after it are logged.

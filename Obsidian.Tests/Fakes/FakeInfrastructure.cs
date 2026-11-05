@@ -97,12 +97,20 @@ internal sealed class FakeWorldManager(IWorld defaultWorld, bool worldsLoaded = 
         return world is not null;
     }
 
-    public ValueTask DisposeAsync()
+    /// <summary>
+    /// What disposing the manager waits for first, as a real manager waits for its loop's work (a plugin dimension's
+    /// creation, say); nothing by default.
+    /// </summary>
+    public Task? DisposeWaitsFor { get; init; }
+
+    public async ValueTask DisposeAsync()
     {
+        if (this.DisposeWaitsFor is Task waited)
+            await waited;
+
         this.Disposed = true;
-        return this.DisposeFailure is Exception failure
-            ? ValueTask.FromException(failure)
-            : ValueTask.CompletedTask;
+        if (this.DisposeFailure is Exception failure)
+            throw failure;
     }
 }
 

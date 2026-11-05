@@ -273,7 +273,7 @@ public sealed partial class PluginManager : IAsyncDisposable
     /// </summary>
     internal static bool InsideChange => changing.Value is not null || creatingDimensions.Value is { Active: true };
 
-    internal const string ReentrantChangeMessage =
+    private const string ReentrantChangeMessage =
         "Plugins can't be loaded or unloaded from a plugin's load, ready or unloading callback, or while its "
             + "dimensions are created.";
 
