@@ -126,6 +126,30 @@ internal sealed class AttachmentStorage
             this.retired = true;
     }
 
+    /// <summary>Retires the holder's attachments (see <see cref="Retire"/>).</summary>
+    /// <returns>Whether this retired them: false when they already were.</returns>
+    internal bool TryRetire()
+    {
+        lock (this.gate)
+        {
+            if (this.retired)
+                return false;
+
+            this.retired = true;
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Takes back a retirement whose final save failed, so the holder, still live, can be written again. Only for the
+    /// one that retired them (see <see cref="TryRetire"/>).
+    /// </summary>
+    internal void Unretire()
+    {
+        lock (this.gate)
+            this.retired = false;
+    }
+
     private void ThrowIfRetired()
     {
         if (this.retired)

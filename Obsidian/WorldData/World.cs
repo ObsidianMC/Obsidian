@@ -157,7 +157,7 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         await this.saveLock.WaitAsync();
         try
         {
-            if (this.Disposed)
+            if (this.IsDisposed)
                 return;
 
             this.SaveLevel();
@@ -224,7 +224,7 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         try
         {
             // A flush that ran late, once the world was disposed, writes nothing (see AbstractLevel.SaveAsync).
-            if (this.Disposed)
+            if (this.IsDisposed)
                 return;
 
             await this.FlushRegionsAsync();
