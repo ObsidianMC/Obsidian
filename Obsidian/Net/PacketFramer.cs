@@ -5,7 +5,10 @@ namespace Obsidian.Net;
 /// <see cref="NetworkBuffer.WriteFrame"/>), and encrypts the stream from the frame that turns encryption on. Used by
 /// one thread at a time.
 /// </summary>
-internal sealed class PacketFramer
+/// <param name="compressionLevel">
+/// The zlib level compressed frames are written at (see <see cref="NetworkBuffer.WriteFrame"/>).
+/// </param>
+internal sealed class PacketFramer(int compressionLevel = NetworkBuffer.DefaultCompressionLevel)
 {
     private AesCfbBlockCipher? encryptor;
 
@@ -21,7 +24,7 @@ internal sealed class PacketFramer
         }
 
         var start = output.Offset;
-        output.WriteFrame(frame.Body!.AsSpan(0, frame.Body.Size), frame.CompressionThreshold);
+        output.WriteFrame(frame.Body!.AsSpan(0, frame.Body.Size), frame.CompressionThreshold, compressionLevel);
         this.encryptor?.EncryptInPlace(output.AsSpan(start, output.Offset - start));
     }
 }

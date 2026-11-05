@@ -643,12 +643,23 @@ public partial class NetworkBuffer : INetStreamWriter
     // the thread.
     private const int MaxRetainedCompressionScratch = 1024 * 1024;
 
+    /// <summary>zlib's default level (6), which vanilla compresses packets at.</summary>
+    internal const int DefaultCompressionLevel = -1;
+
+    // One per zlib level from -1 to 9, so that compressing a packet doesn't allocate its options.
+    private static readonly ZLibCompressionOptions[] compressionOptions = Enumerable.Range(-1, 11)
+        .Select(level => new ZLibCompressionOptions { CompressionLevel = level })
+        .ToArray();
+
     /// <summary>
     /// Writes a packet's frame around its <paramref name="body"/> (its id and fields): length-prefixed and, with
     /// compression on (a <paramref name="compressionThreshold"/> of 0 or more), with its uncompressed length, zlib
-    /// compressed from the threshold and 0 below it.
+    /// compressed from the threshold at <paramref name="compressionLevel"/> (clamped to -1 to 9) and 0 below it.
     /// </summary>
-    internal void WriteFrame(ReadOnlySpan<byte> body, int compressionThreshold)
+    internal void WriteFrame(
+        ReadOnlySpan<byte> body,
+        int compressionThreshold,
+        int compressionLevel = DefaultCompressionLevel)
     {
         if (compressionThreshold < 0)
         {
@@ -661,7 +672,8 @@ public partial class NetworkBuffer : INetStreamWriter
 
             // Also rewinds it: the position never passes the length.
             compressed.SetLength(0);
-            using (ZLibStream zlibStream = new(compressed, CompressionLevel.Optimal, true))
+            var options = compressionOptions[Math.Clamp(compressionLevel, -1, 9) + 1];
+            using (ZLibStream zlibStream = new(compressed, options, leaveOpen: true))
             {
                 zlibStream.Write(body);
             }

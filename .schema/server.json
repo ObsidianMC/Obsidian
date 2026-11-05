@@ -217,6 +217,13 @@
         "shouldThrottle": {
           "type": "boolean"
         },
+        "compressionLevel": {
+          "type": "integer",
+          "minimum": -1,
+          "maximum": 9,
+          "default": -1,
+          "description": "The zlib level compressed packets are written at: 1 (fastest) to 9 (smallest), 0 for none, -1 for zlib's default (6)."
+        },
         "keepAliveInterval": {
           "type": "integer",
           "format": "int64"

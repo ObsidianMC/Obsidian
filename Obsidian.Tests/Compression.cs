@@ -1,8 +1,10 @@
 ﻿using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using Obsidian.Tests.Utilities;
 using Xunit;
 using Xunit.Abstractions;
@@ -56,32 +58,44 @@ public sealed class Compression(ITestOutputHelper output)
         AssertDelimiter(buffer);
     }
 
-    [Fact(DisplayName = "Packets round-trip through compressed framing")]
+    [Fact(DisplayName = "Packets round-trip through compressed framing at every level")]
     public void CompressedFramingRoundTrip()
     {
-        int[] cases =
+        FramingCase[] cases =
         [
-            10,
-            4000
+            new(MessageLength: 10, Level: NetworkBuffer.DefaultCompressionLevel),
+            new(MessageLength: 4000, Level: NetworkBuffer.DefaultCompressionLevel),
+            new(MessageLength: 4000, Level: 0),
+            new(MessageLength: 4000, Level: 1),
+            new(MessageLength: 4000, Level: 9),
+            new(MessageLength: 4000, Level: 42)
         ];
 
-        FixtureCases.AssertAll(cases, row => $"messageLength={row}", AssertCompressedFramingRoundTrip);
+        FixtureCases.AssertAll(cases, row => row.ToString(), AssertCompressedFramingRoundTrip);
     }
 
-    private static void AssertCompressedFramingRoundTrip(int messageLength)
+    // A level outside -1 to 9 is clamped rather than failing each packet.
+    private sealed record FramingCase(int MessageLength, int Level);
+
+    private static void AssertCompressedFramingRoundTrip(FramingCase row)
     {
-        var message = new string('x', messageLength);
+        var message = new string('x', row.MessageLength);
         var chat = new SystemChatPacket(message, false);
+        var bodies = new List<NetworkBuffer>();
+        NetworkBuffer.SerializeBodies(chat, writesPluginEntityData: false, bodies);
+
         using var buffer = new NetworkBuffer();
-        buffer.WriteCompressedPacket(chat, 256);
+        var framer = new PacketFramer(row.Level);
+        framer.Write(buffer, new OutgoingFrame(bodies.Single(), CompressionThreshold: 256));
         buffer.Reset();
 
         var frameLength = buffer.ReadVarInt();
         var packet = NetworkBuffer.ReadCompressedPacket(buffer.Read(frameLength).GetBuffer());
 
-        // Only the packet above the threshold is compressed, which makes this one far smaller than its text.
-        if (messageLength > 256)
-            Assert.True(frameLength < messageLength / 4);
+        // Only the packet above the threshold is compressed, which, at any level but 0, makes this one far smaller
+        // than its text.
+        if (row.MessageLength > 256 && row.Level != 0)
+            Assert.True(frameLength < row.MessageLength / 4);
 
         Assert.Equal(chat.Id, packet.Id);
         Assert.Equal(message, packet.NetworkBuffer.ReadChat().Text);

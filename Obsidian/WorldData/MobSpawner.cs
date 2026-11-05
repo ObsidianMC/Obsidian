@@ -137,6 +137,9 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             SpawnGroup(chunk, "creature", [], 32, true);
     }
 
+    // The chunks mobs may spawn in this tick (see Tick).
+    private readonly HashSet<long> spawningChunks = [];
+
     internal void Tick()
     {
         if (level.Generator is MobTestGenerator) return;
@@ -144,20 +147,25 @@ internal sealed partial class MobSpawner(AbstractLevel level)
         var players = level.Players.Values.Where(player => player.GameMode != GameMode.Spectator).ToArray();
         if (players.Length == 0)
             return;
-        var chunks = new HashSet<long>();
+        // Reused each tick. Players near each other share most of their chunks, so the distance and the set are
+        // checked before the chunk is looked up; the chunks still go in in the same order.
+        var chunks = this.spawningChunks;
+        chunks.Clear();
+        var distance = Math.Min(8, (int)level.Configuration.SimulationDistance);
         foreach (var player in players)
         {
             var (cx, cz) = Region.ChunkOf(player.Position);
-            var distance = Math.Min(8, (int)level.Configuration.SimulationDistance);
             for (var x = cx - distance; x <= cx + distance; x++)
             {
                 for (var z = cz - distance; z <= cz + distance; z++)
                 {
-                    if (level.GetLoadedChunk(x, z) != null &&
-                        (new VectorD(x * 16 + 8, player.Position.Y, z * 16 + 8) - player.Position).MagnitudeSquared() <= 16384)
-                    {
-                        chunks.Add(NumericsHelper.IntsToLong(x, z));
-                    }
+                    var center = new VectorD(x * 16 + 8, player.Position.Y, z * 16 + 8);
+                    if ((center - player.Position).MagnitudeSquared() > 16384)
+                        continue;
+
+                    var key = NumericsHelper.IntsToLong(x, z);
+                    if (!chunks.Contains(key) && level.GetLoadedChunk(x, z) != null)
+                        chunks.Add(key);
                 }
             }
         }
@@ -303,6 +311,12 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             "water_creature" => random.Next(seaLevel - 23, seaLevel),
             _ => random.Next(level.MinY, Math.Clamp(top + 1, level.MinY + 1, maxY))
         };
+
+        // Vanilla's spawnCategoryForChunk gives up on an origin inside a redstone conductor (a solid block, where most
+        // origins below the surface land) before it looks up the biome or picks a mob. Generation's spawning doesn't.
+        if (!generation && IsSolidOrigin(chunk, x, y, z))
+            return 0;
+
         var biome = this.SpawnBiomeAt(chunk, x, Math.Clamp(y, level.MinY, maxY - 1), z);
         // Vanilla's biomes' spawners, with plugins' biomes and spawn modifiers.
         var settings = PluginSpawns.Current.At(level.DimensionType, biome);
@@ -312,8 +326,11 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             return 0;
         }
 
-        if (category == "monster" && level.Generator is MojangGenerator structureGenerator &&
-            structureGenerator.IsInsideFortress(new Vector(x, y, z)))
+        // Like vanilla's isInNetherFortressBounds, only a monster above nether bricks looks for the fortress.
+        if (category == "monster"
+            && level.Generator is MojangGenerator structureGenerator
+            && IsAboveNetherBricks(chunk, x, y, z)
+            && structureGenerator.IsInsideFortress(new Vector(x, y, z)))
         {
             choices = fortressSpawns;
         }
@@ -542,6 +559,23 @@ internal sealed partial class MobSpawner(AbstractLevel level)
         }
 
         return withinReach && (level.LevelData.SpawnPosition - position).MagnitudeSquared() >= 576;
+    }
+
+    private bool IsSolidOrigin(IChunk chunk, int x, int y, int z)
+    {
+        if (y < level.MinY + 1)
+            return true;
+
+        return y < level.MinY + level.Height && chunk.GetBlock(x, y, z).IsRedstoneConductor();
+    }
+
+    private bool IsAboveNetherBricks(IChunk chunk, int x, int y, int z)
+    {
+        var below = y - 1;
+        if (below < level.MinY || below >= level.MinY + level.Height)
+            return false;
+
+        return chunk.GetBlock(x, below, z).Is(BlockIds.NetherBricks);
     }
 
     private static int GetSpawnHeight(IChunk chunk, int x, int z)

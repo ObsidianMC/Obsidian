@@ -1,4 +1,6 @@
+using System.Collections.Concurrent;
 using System.Collections.Frozen;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 namespace Obsidian.WorldData;
@@ -61,88 +63,150 @@ internal static class WorldTimelines
         return markers.ToFrozenDictionary();
     }
 
-    private static IEnumerable<JsonElement> For(ILevel level)
-    {
-        var identifiers = TimelinesRegistry.Identifiers;
-        var name = LevelEnvironment.Timelines(level.DimensionType);
-        if (name is null || !TagsRegistry.TryGet("timeline", name.TrimStart('#'), out var tag))
-            yield break;
+    // The timelines' tracks, read once from their JSON. Random ticks and mobs sample them many times a tick (a grass
+    // block's tick reads the sky light), and reading the JSON on each sample cost more than the ticks themselves.
+    private static readonly FrozenDictionary<string, Timeline> timelines =
+        definitions.ToFrozenDictionary(entry => entry.Key, entry => Timeline.Read(entry.Value));
 
-        foreach (var id in tag.Entries)
+    // Timeline tag names without their '#', so that sampling doesn't trim one each time.
+    private static readonly ConcurrentDictionary<string, string> tagIdentifiers = new();
+
+    private sealed record Timeline(string Clock, int? Period, FrozenDictionary<string, Track> Tracks)
+    {
+        public static Timeline Read(JsonElement definition)
         {
-            var identifier = identifiers[id];
-            if (definitions.TryGetValue(identifier, out var definition))
-                yield return definition;
+            var clock = definition.GetProperty("clock").GetString()!;
+            int? period = definition.TryGetProperty("period_ticks", out var ticks) ? ticks.GetInt32() : null;
+
+            var tracks = new Dictionary<string, Track>();
+            if (definition.TryGetProperty("tracks", out var values))
+            {
+                foreach (var entry in values.EnumerateObject())
+                    tracks.Add(entry.Name, Track.Read(entry.Value));
+            }
+
+            return new Timeline(clock, period, tracks.ToFrozenDictionary());
         }
+    }
+
+    private sealed record Track(string Modifier, Keyframe[] Keyframes)
+    {
+        public static Track Read(JsonElement track)
+        {
+            var modifier = track.TryGetProperty("modifier", out var operation) ? operation.GetString()! : "override";
+            var keyframes = track.GetProperty("keyframes")
+                .EnumerateArray()
+                .Select(Keyframe.Read)
+                .ToArray();
+
+            return new Track(modifier, keyframes);
+        }
+    }
+
+    // A keyframe's value as the attribute reads it: a flag for a boolean attribute, a number for a float one. Other
+    // kinds of value (strings) are never sampled.
+    private readonly record struct Keyframe(long Ticks, bool Flag, float Number)
+    {
+        public static Keyframe Read(JsonElement keyframe)
+        {
+            var value = keyframe.GetProperty("value");
+            var flag = value.ValueKind == JsonValueKind.True;
+            var number = value.ValueKind == JsonValueKind.Number ? value.GetSingle() : 0f;
+
+            return new Keyframe(keyframe.GetProperty("ticks").GetInt64(), flag, number);
+        }
+    }
+
+    // The tag that lists the timelines of the level's dimension type, in the order they apply.
+    private static bool TryGetTag(ILevel level, [NotNullWhen(true)] out Tag? tag)
+    {
+        tag = null;
+
+        var name = LevelEnvironment.Timelines(level.DimensionType);
+        if (name is null)
+            return false;
+
+        var identifier = tagIdentifiers.GetOrAdd(name, static name => name.TrimStart('#'));
+        return TagsRegistry.TryGet("timeline", identifier, out tag);
     }
 
     internal static bool Contains(ILevel level, string timeline)
     {
         var id = TimelinesRegistry.IdOf(timeline);
-        var name = LevelEnvironment.Timelines(level.DimensionType);
-        return name is not null
-            && TagsRegistry.TryGet("timeline", name.TrimStart('#'), out var tag)
-            && tag.Entries.Contains(id);
+        return TryGetTag(level, out var tag) && tag.Entries.Contains(id);
     }
 
     internal static bool Apply(ILevel level, string attribute, bool value)
     {
-        foreach (var definition in For(level))
+        if (!TryGetTag(level, out var tag))
+            return value;
+
+        var identifiers = TimelinesRegistry.Identifiers;
+        foreach (var id in tag.Entries)
         {
-            if (!definition.GetProperty("tracks").TryGetProperty(attribute, out var track))
+            if (!timelines.TryGetValue(identifiers[id], out var timeline))
                 continue;
 
-            var frames = Frames(level, definition, track);
-            var sampled = frames.From.GetProperty("value").GetBoolean();
-            var modifier = track.TryGetProperty("modifier", out var operation) ? operation.GetString() : "override";
-            value = modifier switch
+            if (!timeline.Tracks.TryGetValue(attribute, out var track))
+                continue;
+
+            var frames = Frames(level, timeline, track);
+            var sampled = frames.From.Flag;
+            value = track.Modifier switch
             {
                 "or" => value || sampled,
                 "and" => value && sampled,
                 _ => sampled
             };
         }
+
         return value;
     }
 
     internal static float Apply(ILevel level, string attribute, float value)
     {
-        foreach (var definition in For(level))
+        if (!TryGetTag(level, out var tag))
+            return value;
+
+        var identifiers = TimelinesRegistry.Identifiers;
+        foreach (var id in tag.Entries)
         {
-            if (!definition.GetProperty("tracks").TryGetProperty(attribute, out var track))
+            if (!timelines.TryGetValue(identifiers[id], out var timeline))
                 continue;
 
-            var frames = Frames(level, definition, track);
-            var from = frames.From.GetProperty("value").GetSingle();
-            var to = frames.To.GetProperty("value").GetSingle();
+            if (!timeline.Tracks.TryGetValue(attribute, out var track))
+                continue;
+
+            var frames = Frames(level, timeline, track);
+            var from = frames.From.Number;
+            var to = frames.To.Number;
             var sampled = from + frames.Progress * (to - from);
-            var modifier = track.TryGetProperty("modifier", out var operation) ? operation.GetString() : "override";
-            value = modifier switch
+            value = track.Modifier switch
             {
                 "multiply" => value * sampled,
                 "maximum" => Math.Max(value, sampled),
                 _ => sampled
             };
         }
+
         return value;
     }
 
-    private readonly record struct SampleFrames(JsonElement From, JsonElement To, float Progress);
+    private readonly record struct SampleFrames(Keyframe From, Keyframe To, float Progress);
 
-    private static SampleFrames Frames(ILevel level, JsonElement definition, JsonElement track)
+    private static SampleFrames Frames(ILevel level, Timeline timeline, Track track)
     {
-        var clock = definition.GetProperty("clock").GetString()!;
-        var time = level.LevelData.WorldClocks.States[clock].TotalTicks;
-        var frames = track.GetProperty("keyframes").EnumerateArray().ToArray();
-        int? period = definition.TryGetProperty("period_ticks", out var ticks) ? ticks.GetInt32() : null;
+        var time = level.LevelData.WorldClocks.States[timeline.Clock].TotalTicks;
+        var frames = track.Keyframes;
+        var period = timeline.Period;
         if (period is int length)
             time = (time % length + length) % length;
 
         var from = frames[^1];
-        var fromTime = from.GetProperty("ticks").GetInt64() - (period ?? 0);
+        var fromTime = from.Ticks - (period ?? 0);
         foreach (var to in frames)
         {
-            var toTime = to.GetProperty("ticks").GetInt64();
+            var toTime = to.Ticks;
             if (time < toTime)
             {
                 if (period is null && fromTime > time)
@@ -151,6 +215,7 @@ internal static class WorldTimelines
                 var progress = (float)(time - fromTime) / (toTime - fromTime);
                 return new SampleFrames(from, to, progress);
             }
+
             from = to;
             fromTime = toTime;
         }
@@ -158,7 +223,7 @@ internal static class WorldTimelines
         if (period is not int repeat)
             return new SampleFrames(from, from, 0);
 
-        var endTime = frames[0].GetProperty("ticks").GetInt64() + repeat;
+        var endTime = frames[0].Ticks + repeat;
         var endProgress = (float)(time - fromTime) / (endTime - fromTime);
         return new SampleFrames(from, frames[0], endProgress);
     }

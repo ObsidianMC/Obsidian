@@ -225,6 +225,7 @@ internal sealed class PathFinder(IPathBody body)
     {
         var open = searchOpen ??= new();
         var nodes = searchNodes ??= [];
+        using var pathTypes = PathTypeClassifier.CacheDuringSearch(body.Terrain);
         try
         {
             return this.FindPath(target, open, nodes);

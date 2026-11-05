@@ -146,7 +146,20 @@ internal sealed class PressurePlates
     {
         this.occupied = occupancy.Any.Keys.ToHashSet();
         this.occupiedByLiving = occupancy.Living.Keys.ToHashSet();
-        var pressing = occupancy.Any.Keys.Union(occupancy.Living.Keys).OrderBy(position => position.X).ThenBy(position => position.Y).ThenBy(position => position.Z);
+        // Entities cover many positions each tick and stand on few plates, so the plates are found before sorting.
+        var pressing = new List<Vector>();
+        foreach (var position in occupancy.Any.Keys)
+            this.AddIfPlate(pressing, position);
+
+        foreach (var position in occupancy.Living.Keys)
+        {
+            if (!occupancy.Any.ContainsKey(position))
+                this.AddIfPlate(pressing, position);
+        }
+
+        // In a fixed order (x, then y, then z), so the plates' writes and sounds come out the same each run.
+        pressing.Sort(CompareXyz);
+
         foreach (var position in pressing)
         {
             var state = this.world.GetLoadedBlock(position);
@@ -178,6 +191,22 @@ internal sealed class PressurePlates
                 this.world.PlaySound(position, PlateSound(state, on: true));
             }
         }
+    }
+
+    private void AddIfPlate(List<Vector> plates, Vector position)
+    {
+        if (this.world.GetLoadedBlock(position) is IBlock state && IsPlate(state))
+            plates.Add(position);
+    }
+
+    private static int CompareXyz(Vector left, Vector right)
+    {
+        var x = left.X.CompareTo(right.X);
+        if (x != 0)
+            return x;
+
+        var y = left.Y.CompareTo(right.Y);
+        return y != 0 ? y : left.Z.CompareTo(right.Z);
     }
 
     /// <summary>
