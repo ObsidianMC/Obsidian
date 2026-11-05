@@ -14,6 +14,12 @@ public partial class Entity
     private ILevel? arrivingAt;
     private bool removedOnArrival;
 
+    // Set for good once a player leaves the server (see LeaveServer), under the transfer lock of the level that owns it
+    // then. Departure and admission check it under theirs, so whichever comes second sees it: no travel or respawn
+    // moves the player on from then on, and no level takes it in. Removing only its registration (a plugin's
+    // IServer.RemovePlayer, say) doesn't set it: the player may still be connected and registered again.
+    private bool leftServer;
+
     // Which code may simulate the entity (see TryClaimTick): the level whose tick is ticking it now, and how many travel
     // calls, nested or not, are still moving it or its passengers.
     private AbstractLevel? tickingIn;
@@ -100,6 +106,42 @@ public partial class Entity
             }
 
             scope.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Takes <paramref name="player"/> out of the players of the level that owns it, under that level's transfer lock,
+    /// so that a level change can't move it on between reading its level and removing it there. Only the registration
+    /// goes: a travel or respawn later registers the player in its new level as usual. For a player leaving the server
+    /// for good, use <see cref="LeaveServer"/>.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <returns>Whether the player was among the level's players.</returns>
+    /// <exception cref="InvalidOperationException">The current thread holds another level's transfer lock.</exception>
+    internal static bool RemoveFromOwningLevel(IPlayer player) => RemoveFromOwningLevel(player, leaving: false);
+
+    /// <summary>
+    /// Takes <paramref name="player"/>, which is leaving the server for good (its client disconnected or left, or its
+    /// join was cancelled), out of the players of the level that owns it, like <see cref="RemoveFromOwningLevel"/>. The
+    /// player stays gone: no travel, respawn or arrival still under way (see <see cref="Arrive"/>) or begun later puts it
+    /// in any level's players or entities again.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <returns>Whether the player was among the level's players.</returns>
+    /// <exception cref="InvalidOperationException">The current thread holds another level's transfer lock.</exception>
+    internal static bool LeaveServer(IPlayer player) => RemoveFromOwningLevel(player, leaving: true);
+
+    private static bool RemoveFromOwningLevel(IPlayer player, bool leaving)
+    {
+        if (player is not Entity entity)
+            return player.Level.TryRemovePlayer(player);
+
+        using (entity.EnterOwningLevel(out var level))
+        {
+            if (leaving)
+                entity.leftServer = true;
+
+            return level.TryRemovePlayer(player);
         }
     }
 

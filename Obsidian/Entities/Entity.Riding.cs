@@ -80,6 +80,11 @@ public partial class Entity
             if (ReferenceEquals(vehicle, this) || ReferenceEquals(vehicle, this.Vehicle) || vehicle.Level != level)
                 return false;
 
+            // An entity waiting to be taken into the level (see CommitRespawn) is in none of its regions: a vehicle
+            // carrying it would move it into one without taking it in, so it rides and carries nobody until it is.
+            if (this.arrivingAt is not null || vehicle.arrivingAt is not null)
+                return false;
+
             // Validate and publish together: opposing concurrent mounts cannot both close the same cycle.
             for (var link = vehicle; link is not null; link = link.Vehicle)
             {
