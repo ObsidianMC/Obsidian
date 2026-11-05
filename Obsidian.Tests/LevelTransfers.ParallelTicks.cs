@@ -69,6 +69,7 @@ public sealed partial class LevelTransfers
     public async Task SavesRunFromTwoLevelsTicksAtOnceDoNotDeadlockThem()
     {
         await using var context = TestServerFactory.CreateServer($"parallel-saves-{Guid.NewGuid():N}");
+        context.World.Configuration.ParallelLevelTicks = true;
         var handler = (CommandHandler)context.Server.CommandHandler;
         handler.RegisterCommandClass<WorldCommandModule>(null);
         var nether = AddNether(context);
@@ -96,6 +97,7 @@ public sealed partial class LevelTransfers
     {
         await using var context = TestServerFactory.CreateServer($"parallel-player-saves-{Guid.NewGuid():N}");
         var world = context.World;
+        world.Configuration.ParallelLevelTicks = true;
         var nether = AddNether(context);
         var player = (await PrepareAsync(context, "Saver")).Player;
         await player.LoadAsync();

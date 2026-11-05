@@ -53,8 +53,8 @@
       "format": "int32"
     },
     "parallelLevelTicks": {
-      "type": "boolean",
-      "description": "Whether a world's levels (overworld, nether, end, plugin dimensions) tick at the same time, each on its own thread. Defaults to true."
+      "type": ["boolean", "null"],
+      "description": "Whether a world's levels (overworld, nether, end, plugin dimensions) tick at the same time, each on its own thread. Unset or null (the default): they do when the server has more than one processor, counting a container's CPU limit, and tick one after another otherwise."
     },
     "allowOperatorRequests": {
       "type": "boolean"
