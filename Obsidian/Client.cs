@@ -648,8 +648,13 @@ public sealed partial class Client : IClient
 
         this.HostServer.Connections.Remove(this.Id, out _);
 
+        // The client is gone, so its player leaves for good at once: no travel or respawn still under way puts it in a
+        // level again, even before its leave runs.
         if (this.Player is not null)
+        {
             this.HostServer.RemovePlayer(this.Player);
+            Entity.LeaveServer(this.Player);
+        }
 
         this.receiving = false;
 
@@ -1049,7 +1054,7 @@ public sealed partial class Client : IClient
                 // from where they are now too, under that level's transfer lock, so that a level change still under way
                 // (a plugin's teleport, say) doesn't publish them in their new level afterwards.
                 await player.StopTickingAsync();
-                Entity.RemoveFromOwningLevel(player);
+                Entity.LeaveServer(player);
 
                 var leaving = new PlayerLeaveEventArgs(player, this.HostServer, DateTimeOffset.Now);
                 result = await this.eventDispatcher.ExecuteEventAsync(leaving);

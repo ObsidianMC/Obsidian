@@ -618,6 +618,12 @@ public abstract partial class PlayerBase : Avatar, IPlayer
             throw new InvalidOperationException("The player died or changed level before the teleport.");
 
         var riders = this.DetachPassengersForTravel();
+
+        // Still waiting to be taken in after a respawn whose chunk wasn't ready: it's taken in at its new place instead,
+        // or waits there.
+        if (this.TryMoveWhileArriving(level, pos, yaw, pitch))
+            return riders;
+
         LastPosition = Position;
         if (Level is AbstractLevel resident && !resident.TryMoveEntity(this, Position, pos))
         {

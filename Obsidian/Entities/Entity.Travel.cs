@@ -344,8 +344,13 @@ public partial class Entity
     /// <see cref="AbstractLevel.KeepWaitingToArrive"/>).
     /// </para>
     /// <para>
-    /// A player that left the server first stays where it left (see <see cref="RemoveFromOwningLevel"/>). Call holding
-    /// no transfer lock, with a travel hold (see <see cref="BeginTravelHold"/>) taken until the respawn is over.
+    /// A waiting player is in none of the level's regions and isn't among its players, so nothing simulates it until
+    /// it's taken in; a teleport meanwhile takes it in at its new place, or it waits there (see
+    /// <see cref="TryMoveWhileArriving"/>).
+    /// </para>
+    /// <para>
+    /// A player that left the server first stays where it left (see <see cref="LeaveServer"/>). Call holding no
+    /// transfer lock, with a travel hold (see <see cref="BeginTravelHold"/>) taken until the respawn is over.
     /// </para>
     /// </remarks>
     /// <returns>
@@ -357,6 +362,7 @@ public partial class Entity
     {
         RefuseNestedTravel();
         ILevel source;
+        Arrival? arrival = null;
         using (this.EnterOwningLevel(out source))
         {
             // Its leave has taken it out and saves it as it left.
@@ -364,12 +370,20 @@ public partial class Entity
                 return true;
 
             this.Leave(source, destination, position, position, yaw, pitch);
+
+            // Within a level it's taken in under the same hold of the lock (re-entered, so still one level's), so it's
+            // never among the level's players while in none of its regions.
+            if (source == destination)
+                arrival = this.Arrive(destination, returning: null, out _);
         }
 
         if (source != destination)
+        {
             this.ForgetIn(source);
+            arrival = this.Arrive(destination, returning: null, out _);
+        }
 
-        if (this.Arrive(destination, returning: null, out _) != Arrival.Refused)
+        if (arrival != Arrival.Refused)
             return true;
 
         if (destination is not AbstractLevel waitingIn)
@@ -397,6 +411,32 @@ public partial class Entity
         }
     }
 
+    /// <summary>
+    /// Moves the entity to <paramref name="position"/> in <paramref name="level"/> when it's still waiting to be taken
+    /// in there (a respawned player whose chunk wasn't ready, see <see cref="CommitRespawn"/>, or a traveller no level
+    /// took in yet), and takes it in there at once when the level can. Otherwise it waits at its new place, and the
+    /// level takes it in on a later tick, as it would have at the old one. Call holding no other level's transfer lock.
+    /// </summary>
+    /// <remarks>
+    /// A waiting entity is in none of the level's regions, so moving it from one region to another as usual would put
+    /// it in a region without taking it in: never among the level's players, and refused by every later retry.
+    /// </remarks>
+    /// <returns>Whether the entity was waiting and has moved; when it wasn't, the caller moves it as usual.</returns>
+    private protected bool TryMoveWhileArriving(ILevel level, VectorD position, Angle? yaw, Angle? pitch)
+    {
+        using (TransferLockOf(level).Enter())
+        {
+            if (!ReferenceEquals(this.arrivingAt, level))
+                return false;
+
+            this.Place(this.Position, position, yaw ?? this.Yaw, pitch ?? this.Pitch);
+
+            // Refused, it's still listed where it waits, which retries it at its new place.
+            this.Arrive(level, returning: null, out _);
+            return true;
+        }
+    }
+
     // The receiving level's half of a handoff, under its transfer lock. When the level can't take the entity in, it
     // hands the entity back toward where it left (when returning says where); otherwise it stays the level's, waiting.
     // A level's refusal of the entity, including adding it failing outright (a plugin closing, say), is reported as
@@ -406,6 +446,11 @@ public partial class Entity
         failure = null;
         using (TransferLockOf(level).Enter())
         {
+            // Settled by someone else first: taken in by a teleport while it waited (see TryMoveWhileArriving), or
+            // moved on to another level by a respawn. Nothing is left for this caller to settle.
+            if (!ReferenceEquals(this.arrivingAt, level))
+                return Arrival.Arrived;
+
             // Taken or killed on the way: picked up, say, through a lookup that found it before it left, or a player
             // that left the server.
             var removed = this.removedOnArrival
@@ -460,6 +505,13 @@ public partial class Entity
                 this.Place(this.Position, back.Position, back.Yaw, back.Pitch);
                 this.arrivingAt = back.Level;
                 this.Level = back.Level;
+            }
+            else if (this is IPlayer waiting)
+            {
+                // A player waiting to be taken in isn't among the level's players either, whether it came from another
+                // level or respawned in this one, so the pass after the levels' ticks (see World.DoWorldTickAsync)
+                // doesn't simulate it outside the level's entities.
+                level.TryRemovePlayer(waiting);
             }
 
             return Arrival.Refused;

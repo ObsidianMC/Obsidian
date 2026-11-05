@@ -789,7 +789,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
             finally
             {
                 player.CancelJoin();
-                Entity.RemoveFromOwningLevel(player);
+                Entity.LeaveServer(player);
                 this.RemovePlayer(player);
             }
             throw;
@@ -849,7 +849,9 @@ public sealed partial class Server : IServer, IPluginScopedServer
     {
         this.UsernameToUuidMappings.TryRemove(new KeyValuePair<string, Guid>(player.Username, player.Uuid));
 
-        // Under the transfer lock of the level that owns the player, so a level change can't move it on meanwhile.
+        // Under the transfer lock of the level that owns the player, so a level change can't move it on meanwhile. Only
+        // the registration goes: a player still connected (one a plugin unregistered, say) may be registered again and
+        // keeps travelling and respawning. Leaving for good is the leave's (see Entity.LeaveServer).
         Entity.RemoveFromOwningLevel(player);
     }
 
@@ -899,8 +901,10 @@ public sealed partial class Server : IServer, IPluginScopedServer
         var result = EventResult.Failed;
         try
         {
-            // Its ticks stop first, so that nothing it does runs after it left.
+            // Its ticks stop first, so that nothing it does runs after it left, and then it leaves for good, so that no
+            // travel or respawn still under way puts it in a level again.
             await player.StopTickingAsync();
+            Entity.LeaveServer(player);
 
             result = await this.EventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(player, this, DateTimeOffset.Now));
         }

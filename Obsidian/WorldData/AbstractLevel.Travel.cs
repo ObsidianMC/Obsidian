@@ -164,12 +164,17 @@ public abstract partial class AbstractLevel
 
     /// <summary>
     /// Keeps a respawned player the level couldn't take in at once (see <c>Entity.CommitRespawn</c>) waiting, and takes
-    /// it in on a later tick, once its chunk is loaded and not unloading, unless it left the server first.
+    /// it in on a later tick, once its chunk is loaded and not unloading, unless it left the server first. A player
+    /// teleported meanwhile is taken in, or waits, at its new place (see <c>Entity.TryMoveWhileArriving</c>).
     /// </summary>
     internal void KeepWaitingToArrive(Entity player)
     {
         using (this.TransferLock.Enter())
-            this.waitingArrivals.Add(player);
+        {
+            // Listed once, though it may die and respawn here again while it waits.
+            if (!this.waitingArrivals.Contains(player))
+                this.waitingArrivals.Add(player);
+        }
 
         this.ScheduleTravellerRetry();
     }
