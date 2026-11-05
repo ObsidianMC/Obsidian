@@ -544,6 +544,26 @@ public sealed partial class LevelTransfers
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ATeleportAwaitedInItsLevelsTickGeneratesItsDestination()
+    {
+        await using var context = TestServerFactory.CreateServer($"teleport-ungenerated-{Guid.NewGuid():N}");
+        var world = context.World;
+        WorldBlockEntities.AddEmptyChunk(world);
+        var cow = new Cow { Level = world, EntityId = 718_000, Position = Centre };
+        Assert.True(world.TryAddEntity(cow));
+
+        // A plugin awaits a teleport inside the level's tick, to a chunk that isn't generated. Chunk management may be
+        // waiting for that tick to unload a chunk, so it starts no generation here: the teleport has to.
+        world.EnqueueEntityAction(async () => await cow.TeleportAsync(world, Ungenerated));
+        await world.DoWorldTickAsync().WaitAsync(TimeSpan.FromSeconds(10));
+
+        // Like a vanilla portal's, the destination was generated before the cow arrived.
+        Assert.True(world.GetLoadedChunk(UngeneratedChunk, UngeneratedChunk) is { IsGenerated: true });
+        Assert.Equal(Ungenerated, cow.Position);
+        Assert.Same(cow, world.FindEntity(cow.Uuid));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task APlayerThatLeftBeforeItsRespawnMovedItIsTakenInNowhere()
     {
         await using var context = TestServerFactory.CreateServer($"respawn-left-{Guid.NewGuid():N}");

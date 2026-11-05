@@ -227,7 +227,8 @@ public abstract partial class AbstractLevel
 
         foreach (var chunk in chunks)
         {
-            if (!chunk.HasBlockEntities || !this.IsMobTicking(new VectorD(chunk.X * 16 + 8, 0, chunk.Z * 16 + 8)))
+            // Vanilla gates block entities at the block tier, including the player and ticket border ring.
+            if (!chunk.HasBlockEntities || !this.IsBlockTicking(new Vector(chunk.X * 16 + 8, 0, chunk.Z * 16 + 8)))
                 continue;
 
             // Read in place: copying the values takes all the dictionary's locks, which chunk loading contends for.

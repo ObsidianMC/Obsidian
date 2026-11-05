@@ -14,8 +14,14 @@ public abstract partial class AbstractLevel
 
     private const string EndFightDataId = "minecraft:ender_dragon_fight";
 
+    // Vanilla's chunk tickets, of which Obsidian keeps the portal tickets (see AddPortalTicket).
+    private const string ChunkTicketsDataId = "minecraft:chunk_tickets";
+
     // Vanilla's dragon fight as it was read, so what Obsidian doesn't model of it survives.
     private NbtCompound? vanillaEndFight;
+
+    // Vanilla's chunk tickets as they were read, so the ones Obsidian doesn't model, like forced chunks, survive.
+    private NbtCompound? vanillaChunkTickets;
 
     /// <summary>
     /// The file of the level's state only Obsidian keeps (see <see cref="StateDataId"/>).
@@ -24,7 +30,7 @@ public abstract partial class AbstractLevel
 
     /// <summary>
     /// Reads the level's saved state: Obsidian's (see <see cref="StateDataId"/>), then vanilla's dragon fight, which wins
-    /// for what both keep.
+    /// for what both keep, and vanilla's chunk tickets.
     /// </summary>
     protected void ReadLevelState()
     {
@@ -39,6 +45,12 @@ public abstract partial class AbstractLevel
         {
             this.vanillaEndFight = fight;
             this.ReadVanillaEndFight(fight);
+        }
+
+        if (SavedDataFile.Read(WorldLayout.SavedDataPath(this.FolderPath, ChunkTicketsDataId)) is NbtCompound tickets)
+        {
+            this.vanillaChunkTickets = tickets;
+            this.ReadPortalTickets(tickets);
         }
     }
 
@@ -64,6 +76,7 @@ public abstract partial class AbstractLevel
             SavedDataFile.Write(WorldLayout.SavedDataPath(this.FolderPath, EndFightDataId), fight);
         }
 
+        this.WriteChunkTickets();
         this.SavePluginData();
     }
 

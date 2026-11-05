@@ -88,6 +88,8 @@ public partial class Entity
                         this.travelPortalCooldown = cooldown;
                         throw;
                     }
+
+                    this.PlacePortalTicket(destination);
                 }
             }
             finally
@@ -139,6 +141,20 @@ public partial class Entity
         this.travelPortalTime = 0;
         this.StartTravelPreparation(
             canContinue => PortalTravel.PrepareAsync(this, type, portal.Position, canContinue));
+    }
+
+    /// <summary>
+    /// Keeps the area around a portal trip's exit loaded for a while, as vanilla's portal transitions do once the
+    /// entity is through (see <see cref="PortalDestination"/>), unless the trip places none. The destination's chunks
+    /// are still held then, so they stay loaded throughout.
+    /// </summary>
+    private protected void PlacePortalTicket(PortalDestination destination)
+    {
+        if (!destination.PlacesTicket || !ReferenceEquals(this.Level, destination.Level))
+            return;
+
+        var anchor = destination.TicketAnchor is Vector found ? (VectorD)found : this.Position;
+        destination.Level.AddPortalTicket(anchor);
     }
 
     // End portals and gateways send entities without waiting, like vanilla's zero transition time; a gateway only
