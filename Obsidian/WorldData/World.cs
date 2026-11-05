@@ -227,17 +227,37 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     }
 
     /// <summary>
-    /// Sets the difficulty and whether it's locked, in the world and its dimensions: like vanilla's levels, they share
-    /// one difficulty.
+    /// Sets the difficulty, whether it's locked, or both, in the world and its dimensions: like vanilla's levels, they
+    /// share one difficulty. Changes run one at a time, so concurrent ones never leave the levels apart.
     /// </summary>
-    internal void SetDifficulty(Difficulty difficulty, bool locked)
+    /// <param name="difficulty">The new difficulty, or <c>null</c> to keep it.</param>
+    /// <param name="locked">Whether the difficulty is locked, or <c>null</c> to keep that.</param>
+    /// <param name="force">
+    /// Whether a locked difficulty changes too, like vanilla's <c>MinecraftServer.setDifficulty</c>: a command forces
+    /// it, a player's request doesn't.
+    /// </param>
+    /// <returns>Whether it changed: <c>false</c> when the difficulty is locked and the change isn't forced.</returns>
+    internal bool SetDifficulty(Difficulty? difficulty = null, bool? locked = null, bool force = true)
     {
-        foreach (var level in this.dimensions.Values.OfType<AbstractLevel>().Prepend(this))
+        lock (this.difficultyGate)
         {
-            level.LevelData.Difficulty = difficulty;
-            level.LevelData.DifficultyLocked = locked;
+            if (!force && this.LevelData.DifficultyLocked)
+                return false;
+
+            var newDifficulty = difficulty ?? this.LevelData.Difficulty;
+            var newLocked = locked ?? this.LevelData.DifficultyLocked;
+            foreach (var level in this.dimensions.Values.OfType<AbstractLevel>().Prepend(this))
+            {
+                level.LevelData.Difficulty = newDifficulty;
+                level.LevelData.DifficultyLocked = newLocked;
+            }
+
+            return true;
         }
     }
+
+    // Serializes difficulty changes (see SetDifficulty).
+    private readonly System.Threading.Lock difficultyGate = new();
 
     public ILevel? GetLevel(string identifier) =>
         this.DimensionName == identifier ? this : this.dimensions.GetValueOrDefault(identifier);
@@ -270,21 +290,55 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         Directory.CreateDirectory(this.FolderPath);
     }
 
+    /// <summary>
+    /// Ticks the world: its clocks, then the world's own level and its dimensions, then its players once every level is
+    /// done.
+    /// </summary>
+    /// <remarks>
+    /// What the levels share (the clocks, game rules and difficulty) is safe to read and change from several threads,
+    /// as commands already do from connection threads, and the clocks only advance here, before any level ticks. The
+    /// players' pass after the levels must wait for every one of them, since a player can have moved between levels
+    /// during the tick.
+    /// </remarks>
     public async override Task DoWorldTickAsync()
     {
-        await base.DoWorldTickAsync();
+        this.TickClocks();
 
+        await base.DoWorldTickAsync();
         await Task.WhenAll(this.dimensions.Values.Select(d => d.DoWorldTickAsync()));
 
         // Like vanilla's player inventory tick, after the levels ticked.
-        foreach (var player in this.Players.Values.Concat(this.dimensions.Values.SelectMany(dimension => dimension.Players.Values)).ToArray())
+        var players = this.Players.Values
+            .Concat(this.dimensions.Values.SelectMany(dimension => dimension.Players.Values))
+            .ToArray();
+
+        foreach (var player in players)
             await player.TickAfterLevelsAsync();
+    }
+
+    // Like vanilla's server, which ticks its clocks once before any level ticks: the world's levels share its clocks,
+    // so their passing time never changes under a level's tick. Game time advances with them, as the overworld's level
+    // data keeps it for every level.
+    private void TickClocks()
+    {
+        if (this.LevelData is null)
+            return;
+
+        var advanceTime = this.LevelData.GetBooleanRule("advance_time");
+        this.LevelData.WorldClocks.Tick(advanceTime, this.Configuration.TimeTickSpeedMultiplier);
     }
 
     public override async ValueTask DisposeAsync()
     {
-        await Task.WhenAll(this.dimensions.Values.Select(dimension => dimension.DisposeAsync().AsTask()));
-        await base.DisposeAsync();
+        // The world's own level is disposed even when a dimension's disposal fails.
+        try
+        {
+            await Task.WhenAll(this.dimensions.Values.Select(dimension => dimension.DisposeAsync().AsTask()));
+        }
+        finally
+        {
+            await base.DisposeAsync();
+        }
     }
 
     private static partial class Log

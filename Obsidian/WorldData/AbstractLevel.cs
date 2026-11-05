@@ -976,11 +976,7 @@ public abstract partial class AbstractLevel : ILevel
             return;
         var timings = new TickTimings(this.entityTypeTimes);
 
-        if (this is not Dimension)
-        {
-            var advanceTime = LevelData.GetBooleanRule("advance_time");
-            LevelData.WorldClocks.Tick(advanceTime, this.Configuration.TimeTickSpeedMultiplier);
-        }
+        // The world's clocks ticked before its levels (see World.TickClocks).
         LevelData.RainTime -= this.Configuration.TimeTickSpeedMultiplier;
 
         // Like vanilla's ServerLevel, clients get the time every second, so their clocks don't drift from the server's.
@@ -2521,7 +2517,16 @@ public abstract partial class AbstractLevel : ILevel
 
         this.ClearChunkTickets();
         this.optionsMonitor.Dispose();
-        this.SavePluginData();
+
+        // Like the final save below: a failure is reported, and disposal goes on.
+        try
+        {
+            this.SavePluginData();
+        }
+        catch (Exception exception)
+        {
+            Log.FinalSaveFailed(this.Logger, exception, this.Name);
+        }
 
         // Waits out the generation jobs, holding every slot so no new one starts, and saves what jobs finished since the
         // last save started, including jobs that were still running during the server's save on stop.

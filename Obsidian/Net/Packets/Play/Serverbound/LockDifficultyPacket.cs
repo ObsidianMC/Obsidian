@@ -17,7 +17,7 @@ public partial class LockDifficultyPacket
             return default;
         }
 
-        world.SetDifficulty(world.LevelData.Difficulty, this.Locked);
+        world.SetDifficulty(locked: this.Locked);
         obsidian.BroadcastDifficulty();
         return default;
     }

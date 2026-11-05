@@ -293,7 +293,12 @@ public sealed class WorldCommandModule : CommandModuleBase
 
         foreach (var world in levels)
         {
-            world.LevelData.Difficulty = difficulty;
+            // In the world's dimensions too, which share its difficulty; like vanilla's command, it's forced through
+            // the lock, which stays.
+            if (world is WorldData.World concrete)
+                concrete.SetDifficulty(difficulty);
+            else
+                world.LevelData.Difficulty = difficulty;
             world.PacketBroadcaster.QueuePacketToLevel(world, ChangeDifficultyPacket.Of(world.LevelData));
         }
 
