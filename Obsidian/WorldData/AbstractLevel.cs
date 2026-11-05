@@ -1600,6 +1600,7 @@ public abstract partial class AbstractLevel : ILevel
     public async virtual Task FlushRegionsAsync()
     {
         Region[] written = [];
+        Task<Exception?>[] saves = [];
         var failures = new List<Exception>();
         var jobsBeforeFlush = 0;
         try
@@ -1633,9 +1634,14 @@ public abstract partial class AbstractLevel : ILevel
                 // regions from taking a snapshot, nor should they be attempted twice in this save.
                 var regions = Regions.Values.Where(region => !failedRetries.Contains(region)).ToArray();
                 written = [.. regions.OfType<Region>()];
-                var saves = regions.Select(region => CaptureRegionSaveFailureAsync(region,
-                    () => region is Region concrete ? concrete.WriteChangesAsync() : region.FlushAsync()));
-                failures.AddRange((await Task.WhenAll(saves)).OfType<Exception>());
+                saves = new Task<Exception?>[regions.Length];
+                var snapshots = new Task[regions.Length];
+                for (var index = 0; index < regions.Length; index++)
+                    (saves[index], snapshots[index]) = StartRegionSave(regions[index]);
+
+                // The level waits only while the regions snapshot their chunks, all of them at the same point between
+                // two ticks; compressing and writing them goes on while it ticks, as vanilla's IO workers do.
+                await Task.WhenAll(snapshots);
                 try
                 {
                     this.SavePluginData();
@@ -1650,6 +1656,8 @@ public abstract partial class AbstractLevel : ILevel
                 SavingEntities = false;
                 simulationGate.Release();
             }
+
+            failures.AddRange((await Task.WhenAll(saves)).OfType<Exception>());
         }
         catch
         {
@@ -1660,8 +1668,7 @@ public abstract partial class AbstractLevel : ILevel
             throw;
         }
 
-        // Like vanilla's autosave, which leaves the disk to its IO workers, the level ticks again while the files
-        // reach the disk; the flush still ends once they have.
+        // The files reach the disk while the level ticks too; the flush still ends once they have.
         var syncs = written.Select(region => CaptureRegionSaveFailureAsync(region, region.SyncToDiskAsync));
         failures.AddRange((await Task.WhenAll(syncs)).OfType<Exception>());
         if (failures.Count != 0)
@@ -1671,6 +1678,21 @@ public abstract partial class AbstractLevel : ILevel
             Interlocked.Add(ref this.jobsSinceFlush, Math.Max(1, jobsBeforeFlush));
             throw new AggregateException($"Could not save every region of level '{this.Name}'.", failures);
         }
+    }
+
+    // Starts saving a region's changes, and returns the save with what the level waits for before ticking again:
+    // Obsidian's regions take their snapshots first, while another kind of region writes its changes whole.
+    private static (Task<Exception?> Save, Task Snapshots) StartRegionSave(IRegion region)
+    {
+        if (region is not Region concrete)
+        {
+            var whole = CaptureRegionSaveFailureAsync(region, () => region.FlushAsync());
+            return (whole, whole);
+        }
+
+        var taken = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var save = CaptureRegionSaveFailureAsync(region, () => concrete.WriteChangesAsync(taken));
+        return (save, taken.Task);
     }
 
     private static async Task<Exception?> CaptureRegionSaveFailureAsync(IRegion region, Func<Task> save)
