@@ -98,6 +98,30 @@ public sealed class WorldFolders : IDisposable
         Assert.Equal(["minecraft:forced", "minecraft:portal"], types);
     }
 
+    [Fact(DisplayName = "A saved portal ticket past the chunk coordinate limit is dropped instead of failing the load")]
+    public async Task PortalTicketPastTheCoordinateLimitIsDropped()
+    {
+        var folder = Path.Combine(this.root, "world");
+        CopyFolder(Path.Combine(AppContext.BaseDirectory, "Assets", "vanilla-26.3-world"), folder);
+
+        // A damaged or edited save holds a portal ticket whose square would reach past the chunk coordinates.
+        var path = Path.Combine(folder, "dimensions/minecraft/overworld/data/minecraft/chunk_tickets.dat");
+        var data = SavedDataFile.Read(path)!;
+        ((NbtList)data["tickets"]).Add(new NbtCompound
+        {
+            new NbtArray<int>("chunk_pos", [int.MaxValue, 0]),
+            new NbtTag<string>("type", "minecraft:portal"),
+            new NbtTag<int>("level", 30),
+            new NbtTag<long>("ticks_left", 100)
+        });
+        WriteSavedData(path, data);
+
+        await using var world = CreateWorld(folder, "777");
+
+        Assert.True(await world.LoadAsync(CodecRegistry.Dimensions.All["minecraft:overworld"]));
+        Assert.Null(world.PortalTicketTicksLeft(int.MaxValue, 0));
+    }
+
     [Fact(DisplayName = "A vanilla 26.3 world with stray legacy folders keeps its level data and world data")]
     public async Task StrayLegacyFoldersKeepVanillaData()
     {

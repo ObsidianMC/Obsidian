@@ -251,7 +251,13 @@ public abstract partial class AbstractLevel
                 if (ticksLeft < 0)
                     continue;
 
+                // A ticket whose square would reach past the coordinates chunks can have (a damaged or edited save) is
+                // dropped, as a plugin's would be refused.
                 var chunk = position.GetArray();
+                var coordinateLimit = MaximumChunkCoordinate - PortalTicketRadius;
+                if (Math.Abs((long)chunk[0]) > coordinateLimit || Math.Abs((long)chunk[1]) > coordinateLimit)
+                    continue;
+
                 var restored = (int)Math.Min(ticksLeft, PortalTicketTicks);
                 var key = NumericsHelper.IntsToLong(chunk[0], chunk[1]);
                 if (this.portalTickets.TryGetValue(key, out var existing) && existing.TicksLeft >= restored)
