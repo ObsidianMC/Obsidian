@@ -46,8 +46,15 @@ internal sealed class PortalArea(AbstractLevel level) : IDisposable
                         pending.Remove((x, z));
                     }
                 }
-                if (pending.Count > 0)
-                    await Task.Delay(25);
+                if (pending.Count == 0)
+                    break;
+
+                // Travel may wait inside a tick of the level, which chunk management can be waiting for, so the wait
+                // starts the generation it needs itself (see StartGenerationForWaiter).
+                if (generateMissing)
+                    level.StartGenerationForWaiter();
+
+                await Task.Delay(25);
             }
             return area;
         }
