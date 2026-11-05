@@ -32,6 +32,11 @@ namespace Obsidian.WorldData;
 /// click locks, and before a chunk's entity lock and an entity grid's lock. Never await, load chunks, fill a container
 /// (its click lock comes first) or run plugin code holding it.
 /// </para>
+/// <para>
+/// A level's tick, which holds its own tick lock, never waits for any level's simulation gate either: another level's
+/// tick could be waiting for its own. Work that does, like a save run by a command, goes through
+/// <see cref="AbstractLevel.RunOutsideTicksAsync"/>.
+/// </para>
 /// </remarks>
 internal sealed class EntityTransferLock
 {

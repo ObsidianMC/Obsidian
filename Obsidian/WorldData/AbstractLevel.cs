@@ -934,6 +934,9 @@ public abstract partial class AbstractLevel : ILevel
         try
         {
             this.SnapshotPlayers();
+
+            // Set in this method, it flows into what the tick awaits but not back to the caller.
+            tickingLevel.Value = new TickFlow(this, this.CurrentTickId);
             await TickLevelAsync();
         }
         finally
@@ -943,6 +946,50 @@ public abstract partial class AbstractLevel : ILevel
             Volatile.Write(ref this.currentTickId, 0);
             simulationGate.Release();
         }
+    }
+
+    // The level tick the current flow runs in, and which of its ticks: see InsideTick.
+    private static readonly AsyncLocal<TickFlow?> tickingLevel = new();
+
+    private sealed record TickFlow(AbstractLevel Level, long TickId);
+
+    /// <summary>
+    /// Whether the current flow runs in a level's tick that is still under way: the tick itself, or work it started
+    /// that hasn't outlived it.
+    /// </summary>
+    /// <remarks>
+    /// A level's tick must never wait for a level's simulation gate: its own is held, and another level's may be held by
+    /// that level's tick, which could be waiting for this one's as levels tick in parallel.
+    /// </remarks>
+    internal static bool InsideTick =>
+        tickingLevel.Value is TickFlow flow && flow.Level.CurrentTickId == flow.TickId;
+
+    /// <summary>
+    /// Runs <paramref name="work"/> that waits for levels' simulation gates, such as a save: at once, or, from inside a
+    /// level's tick (a command run by a command block minecart, say), in the background, where it waits for the ticks
+    /// to end instead of holding up the tick and its level's gate.
+    /// </summary>
+    /// <param name="work">What to run.</param>
+    /// <param name="logger">Where a failure of work run in the background is logged.</param>
+    /// <returns>The work, or, when it runs in the background, a completed task.</returns>
+    internal static Task RunOutsideTicksAsync(Func<Task> work, ILogger logger)
+    {
+        if (!InsideTick)
+            return work();
+
+        // Not in the tick's context: the work would count as inside the tick, and hold back the tick's output.
+        Task background;
+        using (ExecutionContext.SuppressFlow())
+            background = Task.Run(work);
+
+        _ = background.ContinueWith(
+            static (failed, state) => Log.BackgroundWorkFailed((ILogger)state!, failed.Exception!),
+            logger,
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted,
+            TaskScheduler.Default);
+
+        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -2581,6 +2628,9 @@ public abstract partial class AbstractLevel : ILevel
 
     private static partial class Log
     {
+        [LoggerMessage(Level = LogLevel.Error, Message = "Work a level's tick left to run after it failed")]
+        public static partial void BackgroundWorkFailed(ILogger logger, Exception exception);
+
         [LoggerMessage(Level = LogLevel.Information, Message = "Generating {ChunkCount} chunks for {LevelName}")]
         public static partial void Generating(ILogger logger, int chunkCount, string levelName);
 

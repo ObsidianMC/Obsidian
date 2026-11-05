@@ -11,6 +11,7 @@ using Obsidian.Plugins.Archives;
 using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
 using Obsidian.Services;
+using Obsidian.WorldData;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -723,7 +724,9 @@ public sealed partial class PluginManager : IAsyncDisposable
                 retired = PluginBlockEntities.RemoveFrom(level, plugin);
             }
 
-            if (!PluginCall.InsideAny && await level.TryRunBetweenTicksAsync(Remove, drainTimeout))
+            // Never from inside a plugin's call or a level's tick: the level's tick could be what is waiting.
+            var canWait = !PluginCall.InsideAny && !AbstractLevel.InsideTick;
+            if (canWait && await level.TryRunBetweenTicksAsync(Remove, drainTimeout))
             {
                 await PluginBlockEntities.CloseWindowsAsync(this.server, plugin, retired);
                 continue;

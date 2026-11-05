@@ -138,6 +138,12 @@ public sealed class ServerConfiguration
     /// The speed at which world time and rain time go by.
     /// </summary>
     public int TimeTickSpeedMultiplier { get; set; } = 1;
+
+    /// <summary>
+    /// Whether a world's levels (the overworld, the nether, the end and plugin dimensions) tick at the same time, each
+    /// on a thread of its own. Turned off, the world's own level ticks first and its dimensions after it.
+    /// </summary>
+    public bool ParallelLevelTicks { get; set; } = true;
 }
 
 public sealed class ServerWorld

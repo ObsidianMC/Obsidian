@@ -164,9 +164,10 @@ public sealed class MainCommandModule : CommandModuleBase
     [CommandInfo("Save World", "/save")]
     public async Task SaveAsync()
     {
+        // A command block minecart runs it inside a level's tick, which mustn't wait for the levels' gates.
         if (this.Player?.Level is World world)
         {
-            await world.FlushAsync();
+            await AbstractLevel.RunOutsideTicksAsync(world.FlushAsync, world.Logger);
         }
     }
 

@@ -26,7 +26,7 @@ namespace Obsidian.Tests;
 /// Each level guards its items with its own transfer lock, and travel hands entities from one level to another, so that
 /// levels can tick on threads of their own. These check that no item or entity is duplicated or lost doing so.
 /// </summary>
-public sealed class LevelTransfers
+public sealed partial class LevelTransfers
 {
     private const int ItemCount = 120;
     private const int OverlappingHandoffs = 10;
@@ -659,20 +659,22 @@ public sealed class LevelTransfers
         && region.Entities.TryGetValue(player.EntityId, out var entity)
         && ReferenceEquals(entity, player);
 
-    private static WorldData.Dimension AddNether(RealServerContext context)
+    private static WorldData.Dimension AddNether(RealServerContext context) => AddDimension(context, "minecraft:the_nether");
+
+    private static WorldData.Dimension AddDimension(RealServerContext context, string identifier)
     {
         var world = context.World;
-        var nether = new WorldData.Dimension(
+        var dimension = new WorldData.Dimension(
             NullLogger<WorldData.Dimension>.Instance,
             context.Broadcaster,
             new TestOptionsMonitor<ServerConfiguration>(world.Configuration),
             context.EventDispatcher,
             new EmptyWorldGenerator(),
-            "minecraft:the_nether",
+            identifier,
             world);
-        nether.Initialize(CodecRegistry.Dimensions.All["minecraft:the_nether"]);
-        world.RegisterDimension(nether);
-        return nether;
+        dimension.Initialize(CodecRegistry.Dimensions.All[identifier]);
+        world.RegisterDimension(dimension);
+        return dimension;
     }
 
     private static void AddEmptyChunk(AbstractLevel level) =>
@@ -732,7 +734,7 @@ public sealed class LevelTransfers
         return region.GetLoadedChunk(local, local) as Chunk;
     }
 
-    private sealed record Side(World World, Entities.Player Player, ItemAccessOver Hopper);
+    private sealed record Side(AbstractLevel World, Entities.Player Player, ItemAccessOver Hopper);
 
     // What the levels' threads did: handoffs that succeeded and failed, and those that left while the destination
     // was ticking.
@@ -762,24 +764,30 @@ public sealed class LevelTransfers
         }
     }
 
-    private static async Task<Side> PrepareAsync(RealServerContext context, string name)
+    // A floor of stone in the level's first chunk, with a player on it. The world's own level unless another is given.
+    private static async Task<Side> PrepareAsync(RealServerContext context, string name, AbstractLevel? level = null)
     {
-        var world = context.World;
-        WorldBlockEntities.AddEmptyChunk(world);
+        var world = level ?? context.World;
+        if (world is World own)
+            WorldBlockEntities.AddEmptyChunk(own);
+        else
+            AddEmptyChunk(world);
+
         for (var x = 0; x < 16; x++)
         {
             for (var z = 0; z < 16; z++)
                 await world.SetBlockAsync(new Vector(x, 69, z), BlocksRegistry.Stone);
         }
 
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, name, new VectorD(3.5, 70, 3.5));
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, name, new VectorD(3.5, 70, 3.5));
+        player.Level = world;
         Assert.True(world.TryAddPlayer(player));
         Assert.True(world.TryAddEntity(player));
 
         return new Side(world, player, new ItemAccessOver(new Container(27)));
     }
 
-    private static ItemEntity Drop(World world, int index, VectorD position)
+    private static ItemEntity Drop(AbstractLevel world, int index, VectorD position)
     {
         var item = new ItemEntity
         {
@@ -811,7 +819,8 @@ public sealed class LevelTransfers
     }
 
     // Run in the level's tick, as a portal sends entities through.
-    private static async ValueTask SendHalfThroughAsync(World level, World destination, int parity, Traffic traffic)
+    private static async ValueTask SendHalfThroughAsync(
+        AbstractLevel level, AbstractLevel destination, int parity, Traffic traffic)
     {
         foreach (var item in ItemsIn(level).Where(item => item.Position.X < HopperX && item.EntityId % 2 == parity))
         {
@@ -854,7 +863,7 @@ public sealed class LevelTransfers
             item.RemoveAsync().AsTask().GetAwaiter().GetResult();
     }
 
-    private static List<ItemEntity> ItemsIn(World world) =>
+    private static List<ItemEntity> ItemsIn(AbstractLevel world) =>
         world.GetNonPlayerEntitiesInRange(Centre, 32).OfType<ItemEntity>().ToList();
 
     private static void AssertEveryDiamondOnce(params Side[] sides)

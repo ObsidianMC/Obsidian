@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using Obsidian.API.Commands;
 using Obsidian.Commands.Framework;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData;
 using static Obsidian.Commands.CommandFeedback;
 
 namespace Obsidian.Commands.Modules;
@@ -327,7 +328,13 @@ public sealed class WorldCommandModule : CommandModuleBase
     {
         var level = LevelOf(this.CommandContext);
         level.LevelData.SpawnPosition = (VectorD)pos + new VectorD(0.5, 0, 0.5);
-        await level.SaveAsync();
+
+        // A command block minecart runs it inside a level's tick, which mustn't wait for the levels' gates: a
+        // dimension's save flushes its regions.
+        if (level is AbstractLevel concrete)
+            await AbstractLevel.RunOutsideTicksAsync(concrete.SaveAsync, concrete.Logger);
+        else
+            await level.SaveAsync();
 
         level.PacketBroadcaster.QueuePacketToLevel(level,
             new SetDefaultSpawnPositionPacket(new() { Dimension = level.DimensionName, Pos = pos }, 0, 0));
