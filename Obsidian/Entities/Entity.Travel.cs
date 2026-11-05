@@ -149,6 +149,20 @@ public partial class Entity
         }
     }
 
+    /// <summary>
+    /// Whether the entity is waiting to be taken into its level: a respawned player whose chunk wasn't ready (see
+    /// <see cref="CommitRespawn"/>). It's in none of the level's regions until then, so it can't travel on.
+    /// </summary>
+    private protected bool WaitsToArrive
+    {
+        get
+        {
+            var level = this.Level;
+            using (TransferLockOf(level).Enter())
+                return ReferenceEquals(this.arrivingAt, level) && ReferenceEquals(this.Level, level);
+        }
+    }
+
     private void ValidateTravelResident(ILevel source)
     {
         if (!this.IsTravelResident(source))

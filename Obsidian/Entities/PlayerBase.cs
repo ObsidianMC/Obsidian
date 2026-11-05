@@ -728,6 +728,10 @@ public abstract partial class PlayerBase : Avatar, IPlayer
         if (destination is null || !this.Alive || this.Respawning)
             return false;
 
+        // A respawned player waiting for its chunk can't leave for another dimension yet (see WaitsToArrive).
+        if (destination != this.Level && this.WaitsToArrive)
+            return false;
+
         if (destination == this.Level)
             await this.TeleportAsync(destination.LevelData.SpawnPosition);
         else
@@ -757,6 +761,14 @@ public abstract partial class PlayerBase : Avatar, IPlayer
         Entity[] riders = [];
         var spawn = position ?? destination.LevelData.SpawnPosition;
         ValidateTravel(destination, spawn, yaw, pitch);
+
+        // Refused rather than dropped: the player isn't in its level's regions yet, and waiting for it here could
+        // wait on the very tick that takes it in.
+        if (this.WaitsToArrive)
+        {
+            throw new InvalidOperationException(
+                "The player can't change dimension while it waits to be taken into its level after respawning.");
+        }
         using var area = destination is AbstractLevel target
             ? await PortalArea.LoadAsync(target, (Vector)spawn.Floor(), 0,
                 () => this.Connected && this.Alive && this.IsTravelResident(origin))

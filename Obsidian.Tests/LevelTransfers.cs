@@ -586,6 +586,10 @@ public sealed class LevelTransfers
         Assert.False(IsInRegion(world, player));
         Assert.False(world.Players.ContainsKey(player.Uuid));
 
+        // Sending it to another dimension meanwhile is refused, not dropped while reporting success.
+        Assert.False(await player.TeleportToDimensionAsync(nether.DimensionName));
+        Assert.Same(world, player.Level);
+
         // Teleported meanwhile to a loaded chunk of another region, it's taken in there.
         WorldBlockEntities.AddEmptyChunk(world, Region.CubicRegionSize, 0);
         var elsewhere = new VectorD(Region.CubicRegionSize * 16 + 8, 70, 8);

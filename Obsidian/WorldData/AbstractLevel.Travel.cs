@@ -196,20 +196,21 @@ public abstract partial class AbstractLevel
                 // ticks. The tick holds off chunk unloads, so a chunk loaded here is still there for the arrival.
                 var (x, z) = Region.ChunkOf(player.Position);
                 await this.GetChunkAsync(x, z);
-                settled = player.TryArriveWhereWaiting(this);
+
+                // Taken in and unlisted under one hold of the lock: a player that dies and respawns here again in
+                // between would otherwise find itself listed, and then lose the listing to this retry.
+                using (this.TransferLock.Enter())
+                {
+                    settled = player.TryArriveWhereWaiting(this);
+                    if (settled)
+                        this.waitingArrivals.Remove(player);
+                }
             }
             catch (Exception exception)
             {
                 // Still waiting, and retried on the next tick.
                 Log.WaitingArrivalFailed(this.Logger, exception, player.EntityId, this.Name);
-                continue;
             }
-
-            if (!settled)
-                continue;
-
-            using (this.TransferLock.Enter())
-                this.waitingArrivals.Remove(player);
         }
 
         using (this.TransferLock.Enter())
