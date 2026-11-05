@@ -95,10 +95,10 @@ public sealed partial class LevelTransfers
 
         // In the player's tick, a plugin unloads the level's region, which waits for the level's tick to end: refused.
         // It then saves everything while an autosave holds the server's save lock and waits for the player's tick:
-        // that save goes on once the ticks are over.
+        // refused too.
         Exception? unload = null;
         Task<bool>? autosave = null;
-        bool? saved = null;
+        Exception? saved = null;
         world.EnqueueEntityAction(async () => await player.GrantAdvancementAsync(async () =>
         {
             unload = await Record.ExceptionAsync(() => world.UnloadRegionAsync(0, 0));
@@ -107,16 +107,18 @@ public sealed partial class LevelTransfers
                 autosave = Task.Run(() => context.Server.SaveEverythingAsync(autosave: true));
 
             await autosaveStarted.Task.WaitAsync(TickWait);
-            saved = await context.Server.SaveEverythingAsync(autosave: false).WaitAsync(TickWait);
+            saved = await Record.ExceptionAsync(() => context.Server.SaveEverythingAsync(autosave: false));
             return false;
         }));
 
         await world.DoWorldTickAsync().WaitAsync(TickWait);
 
         Assert.IsType<InvalidOperationException>(unload);
-        Assert.True(saved);
+        Assert.IsType<InvalidOperationException>(saved);
+
+        // The autosave goes on once the tick is over.
         Assert.True(await autosave!.WaitAsync(TickWait));
-        await WaitUntilAsync(() => Volatile.Read(ref completed) == 2);
+        Assert.Equal(1, Volatile.Read(ref completed));
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
@@ -171,47 +173,6 @@ public sealed partial class LevelTransfers
         await management!.WaitAsync(TickWait);
     }
 
-    [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task SavesAskedForFromATickFinishBeforeTheWorldIsDisposedAndNoneRunsAfter()
-    {
-        await using var context = TestServerFactory.CreateServer($"deferred-saves-{Guid.NewGuid():N}");
-        var world = context.World;
-        var saved = (await PrepareAsync(context, "Saved")).Player;
-        var other = (await PrepareAsync(context, "Other")).Player;
-        await saved.LoadAsync();
-        var dataPath = world.GetPlayerDataPath(saved.Uuid);
-
-        // The player is in the middle of a tick (held by the test) when another player's tick saves them: the save
-        // waits, in the background, for the player's tick to end.
-        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var holding = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var held = Task.Run(() => saved.GrantAdvancementAsync(async () =>
-        {
-            holding.TrySetResult();
-            await release.Task;
-            return false;
-        }).AsTask());
-        await holding.Task.WaitAsync(TickWait);
-        await SaveFromAnotherPlayersTickAsync(saved, other);
-
-        // Disposing the world waits for that save, which writes before the world lets go of its files.
-        var disposal = world.DisposeAsync().AsTask();
-        await Task.Delay(StaysBlocked);
-        var disposedEarly = disposal.IsCompleted;
-
-        release.TrySetResult();
-        Assert.False(disposedEarly, "The world was disposed while a save it accepted was waiting.");
-        await held.WaitAsync(TickWait);
-        await disposal.WaitAsync(TickWait);
-        Assert.True(File.Exists(dataPath));
-
-        // Once disposed, a save asked for from a tick writes nothing.
-        File.Delete(dataPath);
-        await SaveFromAnotherPlayersTickAsync(saved, other);
-        await Task.Delay(StaysBlocked);
-        Assert.False(File.Exists(dataPath));
-    }
-
     private static Task GrantRootAsync(PlayerBase player) => player.Advancements.GrantAsync(RootAdvancement).AsTask();
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
@@ -244,47 +205,6 @@ public sealed partial class LevelTransfers
         // Once the ticks are over, the leave finishes, and adding the bot again waits for it.
         var again = await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "Bot", world).WaitAsync(TickWait);
         Assert.True(context.Server.IsPlayerOnline(again.Uuid));
-    }
-
-    [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task ALeaveWaitsForTheSavesTicksAskedOfThePlayerAndRunsNoneAfter()
-    {
-        await using var context = TestServerFactory.CreateServer($"leave-deferred-{Guid.NewGuid():N}");
-        var world = context.World;
-        var leaving = (await PrepareAsync(context, "Leaving")).Player;
-        var other = (await PrepareAsync(context, "Other")).Player;
-        await leaving.LoadAsync();
-        var dataPath = world.GetPlayerDataPath(leaving.Uuid);
-
-        // The leaving player is mid-tick (held by the test) when another player's tick saves them: the save waits in
-        // the background.
-        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var holding = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var held = Task.Run(() => leaving.GrantAdvancementAsync(async () =>
-        {
-            holding.TrySetResult();
-            await release.Task;
-            return false;
-        }).AsTask());
-        await holding.Task.WaitAsync(TickWait);
-        await SaveFromAnotherPlayersTickAsync(leaving, other);
-
-        // The leave's first step waits for that save, so the leave's own save comes after it.
-        var finishing = leaving.FinishDeferredWorkAsync();
-        await Task.Delay(StaysBlocked);
-        var finishedEarly = finishing.IsCompleted;
-
-        release.TrySetResult();
-        Assert.False(finishedEarly, "The leave went on while a save it accepted was waiting.");
-        await held.WaitAsync(TickWait);
-        await finishing.WaitAsync(TickWait);
-        Assert.True(File.Exists(dataPath));
-
-        // From then on a save asked for from a tick writes nothing, so it never overwrites a join again's data.
-        File.Delete(dataPath);
-        await SaveFromAnotherPlayersTickAsync(leaving, other);
-        await Task.Delay(StaysBlocked);
-        Assert.False(File.Exists(dataPath));
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
@@ -348,13 +268,13 @@ public sealed partial class LevelTransfers
     private static TaskCompletionSource AcceptTrigger(PlayerBase player)
     {
         var granted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var accepted = player.DeferredWork.TryStart(() => player.GrantAdvancementAsync(() =>
+        var accepted = ((Server)player.Server).BackgroundWork.TryStart(() => player.GrantAdvancementAsync(() =>
         {
             granted.TrySetResult();
             return ValueTask.FromResult(false);
         }).AsTask());
 
-        Assert.NotNull(accepted);
+        Assert.True(accepted);
         return granted;
     }
 
@@ -366,14 +286,6 @@ public sealed partial class LevelTransfers
             [PluginMetadata.FileName] = PluginArchives.Metadata("bots", "1.0.0", "Bots")
         }))
     };
-
-    // Saves the player from inside the other player's grant, as a plugin's handler of an event in their tick might.
-    private static Task SaveFromAnotherPlayersTickAsync(PlayerBase player, PlayerBase other) =>
-        other.GrantAdvancementAsync(async () =>
-        {
-            await player.SaveAsync();
-            return false;
-        }).AsTask();
 
     // In each of two levels' ticks, inside a player's grant there, calls something on the other player once both are in
     // their grants, then grants the player themselves an advancement. Records what each call threw.

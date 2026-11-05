@@ -103,33 +103,41 @@ public sealed partial class LevelTransfers
         await player.LoadAsync();
 
         // A plugin's callback in the player's grant, in the overworld's tick, saves the nether, while one in the
-        // nether's tick saves the player: each holds the gate the other waits for, unless the saves wait for neither.
+        // nether's tick saves the player: each holds the gate the other waits for, so both saves are refused.
         var overworldHolds = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var netherTicks = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Exception? netherSave = null;
         world.EnqueueEntityAction(async () => await player.GrantAdvancementAsync(async () =>
         {
             overworldHolds.TrySetResult();
             await netherTicks.Task.WaitAsync(OverlapWait);
-            await nether.SaveAsync();
+            netherSave = await Record.ExceptionAsync(() => nether.SaveAsync());
             return false;
         }));
 
-        Exception? refused = null;
+        Exception? playerSave = null;
+        Exception? tick = null;
         nether.EnqueueEntityAction(async () =>
         {
             netherTicks.TrySetResult();
             await overworldHolds.Task.WaitAsync(OverlapWait);
-            await player.SaveAsync();
+            playerSave = await Record.ExceptionAsync(() => player.SaveAsync());
 
-            // Ticking a level from a tick can't wait for later, so it's refused.
-            refused = await Record.ExceptionAsync(() => world.DoWorldTickAsync());
+            // Ticking a level from a tick is refused too.
+            tick = await Record.ExceptionAsync(() => world.DoWorldTickAsync());
         });
 
         await world.DoWorldTickAsync().WaitAsync(TimeSpan.FromSeconds(10));
 
-        // Both saves ran once the ticks let go of the gates.
-        Assert.IsType<InvalidOperationException>(refused);
-        await WaitUntilAsync(() => File.Exists(nether.StatePath) && File.Exists(world.GetPlayerDataPath(player.Uuid)));
+        Assert.IsType<InvalidOperationException>(netherSave);
+        Assert.IsType<InvalidOperationException>(playerSave);
+        Assert.IsType<InvalidOperationException>(tick);
+
+        // Outside the ticks, both save.
+        await nether.SaveAsync();
+        await player.SaveAsync();
+        Assert.True(File.Exists(nether.StatePath));
+        Assert.True(File.Exists(world.GetPlayerDataPath(player.Uuid)));
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]

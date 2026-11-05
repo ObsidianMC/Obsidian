@@ -507,14 +507,16 @@ public abstract partial class AbstractLevel : ILevel
     public abstract Task<bool> LoadAsync(DimensionCodec codec);
 
     /// <inheritdoc/>
-    public Task SaveAsync() => this.RunOutsideTicksAsync(this.SaveUnlessDisposedAsync, "save");
+    public Task SaveAsync()
+    {
+        ThrowIfMustNotWaitForGates(nameof(SaveAsync));
 
-    // A save that ran late, once the level was disposed, writes nothing: its files may belong to another server now.
-    private Task SaveUnlessDisposedAsync() => this.Disposed ? Task.CompletedTask : this.SaveLevelAsync();
+        // Once the level was disposed it writes nothing: its files may belong to another server now.
+        return this.Disposed ? Task.CompletedTask : this.SaveLevelAsync();
+    }
 
     /// <summary>
-    /// Saves the level, waiting for its simulation gate where it needs to: what <see cref="SaveAsync"/> runs, at once
-    /// or once the ticks let go of the gates.
+    /// Saves the level, waiting for its simulation gate where it needs to: what <see cref="SaveAsync"/> runs.
     /// </summary>
     protected abstract Task SaveLevelAsync();
 
@@ -1005,47 +1007,10 @@ public abstract partial class AbstractLevel : ILevel
         {
             throw new InvalidOperationException(
                 $"{operation} can't be called from inside a level's tick or a player's tick, grant or save, as it would " +
-                "wait for a tick that may be waiting for it.");
+                "wait for a tick that may be waiting for it. Plugins should do it outside ticks: from a scheduled " +
+                "task or a command, say.");
         }
     }
-
-    /// <summary>
-    /// Runs <paramref name="work"/> that waits for levels' simulation gates or players' tick gates, such as a save: at
-    /// once, or, from a flow that mustn't wait for them (see <see cref="MustNotWaitForGates"/>; a plugin's callback in a
-    /// level's tick, say), in the background, where it waits for the ticks to end instead of holding them up.
-    /// </summary>
-    /// <remarks>
-    /// In the background, it's tracked by the level, whose disposal waits for it, and for a dimension by its world too,
-    /// whose shutdown does; it doesn't run once either closed. Asked for again while it still runs, it runs once more
-    /// after it (see <see cref="WorldData.DeferredWork"/>).
-    /// </remarks>
-    /// <param name="work">What to run.</param>
-    /// <param name="what">Which of the level's saves it is, for coalescing it with the same save still running.</param>
-    /// <returns>The work, or, when it runs in the background, a completed task.</returns>
-    internal Task RunOutsideTicksAsync(Func<Task> work, string what)
-    {
-        if (!MustNotWaitForGates)
-            return work();
-
-        var world = this is Dimension { ParentWorld: World parent } ? parent.DeferredWork : null;
-        this.OwnDeferredWork.TryStart(work, alsoTrackedBy: world, target: (this, what));
-        return Task.CompletedTask;
-    }
-
-    /// <summary>
-    /// What the world's shutdown and disposal wait for: the world's tracker, for the world, its dimensions and their
-    /// players (see <see cref="RunOutsideTicksAsync"/>).
-    /// </summary>
-    internal DeferredWork DeferredWork =>
-        this is Dimension { ParentWorld: World world } ? world.DeferredWork : this.OwnDeferredWork;
-
-    // Published once, as parallel levels may ask for it at the same time and shutdown drains only the one kept.
-    private DeferredWork OwnDeferredWork =>
-        LazyInitializer.EnsureInitialized(
-            ref this.ownDeferredWork,
-            () => new DeferredWork(this.Logger, keepsFailures: this is World));
-
-    private DeferredWork? ownDeferredWork;
 
     /// <summary>Whether the level was disposed: its saves then write nothing.</summary>
     internal bool Disposed => Volatile.Read(ref this.disposed) != 0;
@@ -1827,13 +1792,14 @@ public abstract partial class AbstractLevel : ILevel
     /// <see cref="TakeBlockEntityChanges"/>), like the tick's end does, so that one changed between ticks (by plugin
     /// code off the tick, a command or a test) is saved with its own data as it is now, like its items.
     /// </remarks>
-    public Task FlushRegionsAsync() => this.RunOutsideTicksAsync(this.FlushUnlessDisposedAsync, "flush");
-
-    private Task FlushUnlessDisposedAsync() => this.Disposed ? Task.CompletedTask : this.FlushLevelRegionsAsync();
+    public Task FlushRegionsAsync()
+    {
+        ThrowIfMustNotWaitForGates(nameof(FlushRegionsAsync));
+        return this.Disposed ? Task.CompletedTask : this.FlushLevelRegionsAsync();
+    }
 
     /// <summary>
-    /// Saves the level's regions: what <see cref="FlushRegionsAsync"/> runs, at once or once the ticks let go of the
-    /// gates.
+    /// Saves the level's regions: what <see cref="FlushRegionsAsync"/> runs.
     /// </summary>
     protected virtual Task FlushLevelRegionsAsync() => this.FlushOwnRegionsAsync();
 
@@ -2695,9 +2661,6 @@ public abstract partial class AbstractLevel : ILevel
     public async virtual ValueTask DisposeAsync()
     {
         ThrowIfMustNotWaitForGates(nameof(DisposeAsync));
-
-        // Saves asked for from its ticks run first, and none after: a dimension's too, though its world tracks them.
-        await this.OwnDeferredWork.CloseAndDrainAsync();
 
         if (Interlocked.Exchange(ref this.disposed, 1) != 0)
             return;

@@ -121,10 +121,13 @@ public interface IPlayer : ILiving
     /// </summary>
     /// <remarks>
     /// It waits for the player's tick, grant or save under way. Called from the player's own, it saves at once as part
-    /// of it. Called from inside a level's tick or another player's tick, grant or save (a plugin's event handler run by
-    /// one, say), it can't wait, so it saves in the background once the ticks are over and returns at once; a failure is
-    /// then logged.
+    /// of it.
     /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// Called from inside a level's tick, or another player's tick, grant or save (a plugin's event handler run by one,
+    /// say): it would wait for a tick that may be waiting for it. Plugins should save outside ticks: from a scheduled
+    /// task or a command, say.
+    /// </exception>
     public Task SaveAsync();
 
     public Task LoadAsync(bool loadFromPersistentWorld = true);

@@ -284,10 +284,13 @@ public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
     /// Saves the level's regions: its chunks and their entities.
     /// </summary>
     /// <remarks>
-    /// It waits for the level to be between ticks. Called from inside a level's tick, or a player's tick, grant or save
-    /// (a plugin's event handler run by one, say), it can't wait for that, so it saves in the background once the
-    /// ticks are over and returns at once; a failure is then logged.
+    /// It waits for the level to be between ticks.
     /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// Called from inside a level's tick, or a player's tick, grant or save (a plugin's event handler run by one, say):
+    /// it would wait for a tick that may be waiting for it. Plugins should save outside ticks: from a scheduled task or
+    /// a command, say.
+    /// </exception>
     public Task FlushRegionsAsync();
 
     public Task<bool> LoadAsync(DimensionCodec codec);
@@ -297,10 +300,13 @@ public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
     /// </summary>
     /// <remarks>
     /// A dimension's save waits for it to be between ticks, to save its regions; a world's writes its level data while
-    /// the levels tick, after any save of the world under way, which may itself be waiting for them. Called from inside
-    /// a level's tick, or a player's tick, grant or save (a plugin's event handler run by one, say), it can't wait for
-    /// either, so it saves in the background once the ticks are over and returns at once; a failure is then logged.
+    /// the levels tick, after any save of the world under way, which may itself be waiting for them.
     /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// Called from inside a level's tick, or a player's tick, grant or save (a plugin's event handler run by one, say):
+    /// it would wait for a tick that may be waiting for it. Plugins should save outside ticks: from a scheduled task or
+    /// a command, say.
+    /// </exception>
     public Task SaveAsync();
 
     /// <summary>

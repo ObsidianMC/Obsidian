@@ -164,10 +164,10 @@ public sealed class MainCommandModule : CommandModuleBase
     [CommandInfo("Save World", "/save")]
     public async Task SaveAsync()
     {
-        // Run by a command block minecart, inside a level's tick, it saves once the ticks are over (see FlushAsync).
+        // Run by a command block minecart, inside a level's tick, it saves once the ticks are over.
         if (this.Player?.Level is World world)
         {
-            await world.FlushAsync();
+            await ((Server)this.Server).RunOutsideTicksAsync(world.FlushAsync);
         }
     }
 
@@ -532,7 +532,7 @@ public sealed class MainCommandModule : CommandModuleBase
         if (Player is not IPlayer player || !player.Alive) return;
         var block = (Vector)player.Position.Floor();
         player.Level.LevelData.SpawnPosition = (VectorD)block + new VectorD(0.5, 0, 0.5);
-        await player.Level.SaveAsync();
+        await ((Server)this.Server).RunOutsideTicksAsync(player.Level.SaveAsync);
         player.Level.PacketBroadcaster.QueuePacketToLevel(player.Level,
             new SetDefaultSpawnPositionPacket(new() { Dimension = player.Level.DimensionName, Pos = block }, 0, 0));
         await player.SendMessageAsync($"Spawn set to {block.X} {block.Y} {block.Z}.");

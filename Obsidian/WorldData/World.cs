@@ -208,11 +208,15 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     /// <summary>
     /// Saves what changes while the world runs: its and its dimensions' regions, then its level data and maps.
     /// </summary>
-    /// <remarks>
-    /// It waits for the levels' simulation gates, so called from inside a level's tick, or a player's tick, grant or
-    /// save, it saves in the background once the ticks let go of them, and returns at once; a failure is then logged.
-    /// </remarks>
-    public Task FlushAsync() => this.RunOutsideTicksAsync(this.FlushWorldAsync, "flush everything");
+    /// <exception cref="InvalidOperationException">
+    /// Called from inside a level's tick, or a player's tick, grant or save: it waits for the levels' simulation
+    /// gates. Plugins should save outside ticks: from a scheduled task or a command, say.
+    /// </exception>
+    public Task FlushAsync()
+    {
+        ThrowIfMustNotWaitForGates(nameof(FlushAsync));
+        return this.FlushWorldAsync();
+    }
 
     private async Task FlushWorldAsync()
     {
@@ -317,7 +321,7 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     /// game rules and difficulty, the server's players, scoreboards and boss bars, the maps and saved data) is safe to
     /// read and change from several threads, travel between them is a handoff that holds one level's lock at a time
     /// (see <see cref="EntityTransferLock"/>), and a tick never waits for a level's simulation gate (see
-    /// <see cref="AbstractLevel.RunOutsideTicksAsync"/>).
+    /// <see cref="AbstractLevel.MustNotWaitForGates"/>).
     /// </para>
     /// <para>
     /// The clocks only advance here, before any level ticks. The players' pass after the levels must wait for every
@@ -380,11 +384,8 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
 
     public override async ValueTask DisposeAsync()
     {
-        // It waits for the ticks' saves and for its levels' gates, so never from a tick (see MustNotWaitForGates).
+        // It waits for its levels' gates, so never from a tick (see MustNotWaitForGates).
         ThrowIfMustNotWaitForGates(nameof(DisposeAsync));
-
-        // Saves asked for from the ticks of the world, its dimensions and its players run first, and none after.
-        await this.DeferredWork.CloseAndDrainAsync();
 
         // The world's own level is disposed even when a dimension's disposal fails, and every level's failure is the
         // disposal's, so a shutdown reports each level it couldn't save.

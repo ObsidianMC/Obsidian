@@ -71,43 +71,19 @@ public partial class PlayerBase
     /// the world's singleplayer owner.
     /// </summary>
     /// <remarks>
-    /// It waits for the player's tick gate. From their own tick, grant or save, it saves at once as part of it; from
-    /// inside a level's tick or another player's, it saves in the background once the ticks let go of the gates, and
-    /// returns at once (see <see cref="WorldData.AbstractLevel.RunOutsideTicksAsync"/>). The player's leave waits for
-    /// such a save, and the world's shutdown and disposal too; none runs once those began.
+    /// It waits for the player's tick gate. From their own tick, grant or save, it saves at once as part of it.
     /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// Called from inside a level's tick, or another player's tick, grant or save: it would wait for a tick that may be
+    /// waiting for it. Plugins should save outside ticks: from a scheduled task or a command, say.
+    /// </exception>
     public virtual Task SaveAsync()
     {
-        if (this.IsInOwnTick || !WorldData.AbstractLevel.MustNotWaitForGates)
-            return this.RunSaveAsync();
+        if (!this.IsInOwnTick)
+            WorldData.AbstractLevel.ThrowIfMustNotWaitForGates(nameof(SaveAsync));
 
-        // Accepted by the player, whose leave waits for it, and the world, whose shutdown and disposal do, or by
-        // neither. A level of another kind (a plugin's) has no tracker, so the player's leave alone waits for it.
-        // Asked for again while it still runs, it runs once more after it.
-        var level = this.Level as WorldData.AbstractLevel;
-        this.DeferredWork.TryStart(
-            () => level is { Disposed: true } ? Task.CompletedTask : this.RunSaveAsync(),
-            alsoTrackedBy: level?.DeferredWork,
-            target: this);
-        return Task.CompletedTask;
+        return this.RunSaveAsync();
     }
-
-    /// <summary>
-    /// What other flows asked of the player that waits for their tick gate and so runs in the background: saves (see
-    /// <see cref="SaveAsync"/>) and advancement triggers (see <see cref="FireProgressAsync"/>). Their leave closes it
-    /// and waits for it (see <see cref="FinishDeferredWorkAsync"/>).
-    /// </summary>
-    internal WorldData.DeferredWork DeferredWork =>
-        LazyInitializer.EnsureInitialized(ref this.deferredWork, () => new WorldData.DeferredWork(this.Logger));
-
-    private WorldData.DeferredWork? deferredWork;
-
-    /// <summary>
-    /// Runs no more of the work other flows ask of the player in the background, and waits for what they asked before:
-    /// a leave's first step, so its triggers are granted before the player's grants stop, and its saves are written
-    /// before the leave's own, which a join again then reads. Their failures were logged already.
-    /// </summary>
-    internal Task FinishDeferredWorkAsync() => this.DeferredWork.CloseAndDrainAsync();
 
     private Task RunSaveAsync() => this.RunTickAsync(this.SavePlayerAsync, allowStopped: true).AsTask();
 

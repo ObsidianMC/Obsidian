@@ -149,16 +149,17 @@ public partial class PlayerBase
 
         // Gameplay firing a trigger for this player from another's tick (a hit landing in it, say) can't wait for this
         // player's gate. The event is matched now, as it is (the killer's position and dimension, say), and what it
-        // matched is granted in the background once the ticks let go of the gate. Their leave waits for the grants
-        // before their grants stop; one fired once the leave began is dropped, like a trigger fired after it.
+        // matched is granted in the server's background work once the ticks let go of the gate, which shutdown waits
+        // for before the players leave. A player leaving meanwhile has their grants stopped, so theirs is dropped, as
+        // a trigger fired after the leave would be.
         if (this.HoldsAnotherPlayersGate)
         {
             var matched = this.ProgressAdvancements.Match(
                 $"minecraft:{trigger}",
                 conditions => ProgressConditions.Match(
                     this, trigger, conditions, item, entity, block, position, recipe, from, to, levels));
-            if (matched.Count > 0)
-                this.DeferredWork.TryStart(() => this.GrantMatchedAsync(matched));
+            if (matched.Count > 0 && this.Server is Server server)
+                server.BackgroundWork.TryStart(() => this.GrantMatchedAsync(matched));
 
             return ValueTask.CompletedTask;
         }
