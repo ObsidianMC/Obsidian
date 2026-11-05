@@ -343,10 +343,10 @@ public sealed class RegionFiles : IDisposable
     }
 
     [Fact]
-    public async Task BatchUnloadKeepsTheChunkWhoseSaveFailed()
+    public async Task BatchUnloadKeepsTheFailedSavePending()
     {
-        // Two changed chunks unloaded together, one failing to write: the other unloads with its change, and the
-        // failed one stays loaded with its change, which the next save writes.
+        // Two changed chunks unloaded together, one failing to write: both leave the region, the other's change is
+        // written, and the failed one's save stays pending, where loads read it, until a retry writes it.
         var regionFolder = Path.Join(this.folder, "world");
         await using (var region = new Region(0, 0, regionFolder))
         {
@@ -364,10 +364,13 @@ public sealed class RegionFiles : IDisposable
                 : ValueTask.CompletedTask;
 
             await Assert.ThrowsAsync<IOException>(() => region.UnloadChunksAsync([(0, 0), (1, 0)]));
-            Assert.Same(failing, Assert.Single(region.ResidentChunks()));
+            Assert.Empty(region.ResidentChunks());
+            var pending = Assert.Single(region.PendingWrites.Failed());
+            Assert.Equal((0, 0), (pending.ChunkX, pending.ChunkZ));
 
             region.ChunkFile.Observe = null;
-            await region.FlushAsync();
+            await region.RetryPendingWritesAsync([pending]);
+            Assert.Empty(region.PendingWrites.Failed());
         }
 
         await using var reloaded = new Region(0, 0, regionFolder);

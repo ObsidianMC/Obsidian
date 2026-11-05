@@ -336,10 +336,6 @@ public sealed class Chunk : IChunk
     /// </summary>
     internal bool EntitiesUnloaded { get; set; }
 
-    // The final entity snapshot stays with a retired chunk until it detaches, so a failed unloading write can retry
-    // entities already removed from the level, including ones that were still pending when the snapshot was taken.
-    internal NbtList? UnloadedEntities { get; set; }
-
     /// <summary>
     /// How many entities the chunk's entity file listed when the region last wrote it, or -1 until it did. A chunk
     /// whose file lists none needs no entity save while it has no entities.

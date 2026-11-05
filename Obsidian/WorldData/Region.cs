@@ -69,13 +69,14 @@ public partial class Region : IRegion
 
     private DenseCollection<IChunk> loadedChunks { get; } = new(CubicRegionSize, CubicRegionSize);
 
-    private readonly RegionFile regionFile;
+    // Opened in the constructor, or once the region's predecessor closed its own (see the constructor).
+    private RegionFile regionFile = null!;
 
     // At most 1024 entries, released with the region. Only ids and boxes are retained, never full chunk/piece NBT.
     private readonly ConcurrentDictionary<int, Lazy<Task<SavedStructureStart[]>>> savedStartBounds = new();
 
     // Like vanilla, entities of complete chunks are kept in their own region files (entities/r.x.z.mca).
-    private readonly RegionFile entityRegionFile;
+    private RegionFile entityRegionFile = null!;
 
     // Reading the region files' headers; every file operation waits for it, since regions are loaded without waiting.
     private readonly Lazy<Task> initialization;
@@ -158,8 +159,9 @@ public partial class Region : IRegion
     internal Action<IChunk>? BlockAccessUnloaded { get; init; }
 
     /// <summary>
-    /// Tells a block entity its chunk unloaded (the level's <see cref="AbstractLevel.OnBlockEntityUnloaded"/>), after
-    /// the chunk's final save, holding no lock.
+    /// Tells a block entity its chunk unloaded (the level's <see cref="AbstractLevel.OnBlockEntityUnloaded"/>), right
+    /// after the chunk's final snapshot took it out of the region, still under the level's simulation gate when the
+    /// level unloads it, but holding no lock.
     /// </summary>
     internal Action<BlockEntity>? BlockEntityUnloaded { get; init; }
     private readonly HashSet<IChunk> retiredBlockAccess = [];
@@ -167,7 +169,8 @@ public partial class Region : IRegion
     // A removed region cannot publish or attach chunks, including loads and generation already in flight.
     private bool lightingRetired;
 
-    // Once the final save is clean, structure notifications wait for file closure, then mark a reloaded instance.
+    // Set as the region's final snapshot takes its chunks: structure notifications wait for file closure, then mark
+    // the chunk a fresh region object loads.
     private bool structureChangesSealed;
     private TaskCompletionSource? regionUnload;
     private readonly long[,] chunkVersions = new long[CubicRegionSize, CubicRegionSize];
@@ -177,9 +180,11 @@ public partial class Region : IRegion
 
     internal bool StructureChangesSealed => this.structureChangesSealed;
 
-    internal bool UnloadFailed => this.regionUnload?.Task.IsFaulted == true;
-
-    private bool HasUnsavedMarks => this.loadedChunks.OfType<Chunk>().Any(chunk => chunk.IsMarkedUnsaved);
+    /// <summary>
+    /// The final saves of the level's unloaded chunks not yet committed, which loads read before the files (see
+    /// <see cref="PendingChunkWrites"/>). A region made on its own has its own.
+    /// </summary>
+    internal PendingChunkWrites PendingWrites { get; init; } = new();
 
     /// <summary>Validates and optionally marks a stored start chunk, atomically with removal. Under FluidTickLock.</summary>
     internal bool TryAccessStructureChunk(Chunk chunk, bool markUnsaved)
@@ -198,27 +203,7 @@ public partial class Region : IRegion
         return true;
     }
 
-    /// <summary>Seals metadata changes once the final snapshot has every notification. Under FluidTickLock.</summary>
-    internal bool TrySealStructureChanges()
-    {
-        if (this.HasUnsavedMarks)
-            return false;
-
-        this.structureChangesSealed = true;
-        return true;
-    }
-
-    internal void EndRegionUnload(Exception? failure = null)
-    {
-        if (failure is null)
-            this.regionUnload?.TrySetResult();
-        else if (this.regionUnload is TaskCompletionSource pending)
-        {
-            pending.TrySetException(failure);
-            // The caller rethrows the I/O failure. A region with no metadata waiters must not leave an unobserved task.
-            _ = pending.Task.Exception;
-        }
-    }
+    internal void EndRegionUnload() => this.regionUnload?.TrySetResult();
 
     // The dimension's build range, which decides the section count of loaded chunks.
     private readonly int minY;
@@ -226,8 +211,15 @@ public partial class Region : IRegion
 
     /// <param name="regionFolderName">The chunk region files' folder in <paramref name="worldFolderPath"/>: Obsidian's
     /// <c>regions</c>, or vanilla's <c>region</c>. Entities are in <c>entities</c> either way.</param>
+    /// <param name="predecessor">
+    /// The region object this one replaces at its position, which may still hold the files while it writes its final
+    /// saves (see <see cref="RegionUnload"/>). The files are opened once it closed them; until then reads go to the
+    /// level's pending writes (see <see cref="PendingWrites"/>), which hold every save it's writing, and then to its
+    /// files, which hold every other chunk as committed.
+    /// </param>
     internal Region(int x, int z, string worldFolderPath, string regionFolderName = "regions",
-        NbtCompression chunkCompression = NbtCompression.ZLib, int minY = -64, int height = 384)
+        NbtCompression chunkCompression = NbtCompression.ZLib, int minY = -64, int height = 384,
+        Region? predecessor = null)
     {
         X = x;
         Z = z;
@@ -235,20 +227,43 @@ public partial class Region : IRegion
         this.height = height;
         RegionFolder = Path.Join(worldFolderPath, regionFolderName);
         Directory.CreateDirectory(RegionFolder);
-        var filePath = Path.Join(RegionFolder, $"r.{X}.{Z}.mca");
-
-        regionFile = new RegionFile(filePath, chunkCompression, CubicRegionSize);
         ChunkCompression = chunkCompression;
 
         var entityFolder = Path.Join(worldFolderPath, "entities");
         Directory.CreateDirectory(entityFolder);
-        this.entityRegionFile = new RegionFile(Path.Join(entityFolder, $"r.{X}.{Z}.mca"), chunkCompression, CubicRegionSize);
+        this.chunkFilePath = Path.Join(RegionFolder, $"r.{X}.{Z}.mca");
+        this.entityFilePath = Path.Join(entityFolder, $"r.{X}.{Z}.mca");
 
-        this.initialization = new(this.InitializeFilesAsync);
+        // The files are opened exclusively, so not while the region this one replaces still has them.
+        this.predecessor = predecessor;
+        if (predecessor is null)
+            this.OpenFiles();
+
+        this.initialization = new(() => this.InitializeFilesAsync(predecessor?.RegionUnload));
     }
 
-    private async Task InitializeFilesAsync()
+    // Read until this region opens the files (see the constructor); null once it has.
+    private Region? predecessor;
+
+    private readonly string chunkFilePath;
+    private readonly string entityFilePath;
+
+    private void OpenFiles()
     {
+        this.regionFile = new RegionFile(this.chunkFilePath, this.ChunkCompression, CubicRegionSize);
+        this.entityRegionFile = new RegionFile(this.entityFilePath, this.ChunkCompression, CubicRegionSize);
+    }
+
+    private async Task InitializeFilesAsync(Task? predecessor)
+    {
+        if (predecessor is not null)
+        {
+            // Its failures are its own; its unwritten chunks stay pending in the level, which retries them here.
+            await predecessor.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            this.OpenFiles();
+            this.predecessor = null;
+        }
+
         await Task.WhenAll(this.regionFile.InitializeAsync(), this.entityRegionFile.InitializeAsync());
 
         if (this.Logger is null)
@@ -282,16 +297,11 @@ public partial class Region : IRegion
     /// it only compresses and writes what it took, so the level may tick again (see
     /// <c>AbstractLevel.FlushRegionsAsync</c>).
     /// </param>
-    /// <param name="snapshotUnload">
-    /// Runs an unloading snapshot under the level's simulation gate. Waiting for staging capacity, earlier saves and
-    /// writes stays outside that callback, so none of those waits holds up a tick.
-    /// </param>
-    internal async Task WriteChangesAsync(TaskCompletionSource? snapshotsTaken = null,
-        Func<Func<Task<bool>>, Task<bool>>? snapshotUnload = null)
+    internal async Task WriteChangesAsync(TaskCompletionSource? snapshotsTaken = null)
     {
         try
         {
-            await this.WriteChangesCoreAsync(snapshotsTaken, snapshotUnload);
+            await this.WriteChangesCoreAsync(snapshotsTaken);
         }
         finally
         {
@@ -300,8 +310,7 @@ public partial class Region : IRegion
         }
     }
 
-    private async Task WriteChangesCoreAsync(TaskCompletionSource? snapshotsTaken,
-        Func<Func<Task<bool>>, Task<bool>>? snapshotUnload)
+    private async Task WriteChangesCoreAsync(TaskCompletionSource? snapshotsTaken)
     {
         await this.initialization.Value;
 
@@ -312,7 +321,7 @@ public partial class Region : IRegion
             await this.flushLock.WaitAsync();
             try
             {
-                await this.WriteChangesUnderLockAsync(taken, snapshotsTaken, snapshotUnload);
+                await this.WriteChangesUnderLockAsync(taken, snapshotsTaken);
             }
             finally
             {
@@ -437,8 +446,7 @@ public partial class Region : IRegion
     /// </summary>
     private static bool NeedsEntitySave(IChunk chunk) => chunk is Chunk { IsGenerated: true, SavedEntityCount: < 0 };
 
-    private async Task WriteChangesUnderLockAsync(List<ChunkSave> taken, TaskCompletionSource? snapshotsTaken,
-        Func<Func<Task<bool>>, Task<bool>>? snapshotUnload = null)
+    private async Task WriteChangesUnderLockAsync(List<ChunkSave> taken, TaskCompletionSource? snapshotsTaken)
     {
         // Pending light goes in first, so a chunk it reaches counts as changed.
         lock (this.FluidTickLock)
@@ -449,8 +457,7 @@ public partial class Region : IRegion
             this.ChunksToFlush(entityChunks),
             unloading: this.lightingRetired,
             taken,
-            snapshotsTaken,
-            snapshotUnload: snapshotUnload);
+            snapshotsTaken);
     }
 
     /// <summary>
@@ -489,8 +496,7 @@ public partial class Region : IRegion
     /// snapshots, which slow writes elsewhere, or a generation step, would otherwise hold up.
     /// </param>
     private async Task SaveTogetherAsync(IEnumerable<(IChunk Chunk, bool Entities)> chunks, bool unloading,
-        List<ChunkSave> taken, TaskCompletionSource? snapshotsTaken = null, bool wait = true,
-        Func<Func<Task<bool>>, Task<bool>>? snapshotUnload = null)
+        List<ChunkSave> taken, TaskCompletionSource? snapshotsTaken = null, bool wait = true)
     {
         var staging = new List<Task>();
         Task completing = Task.CompletedTask;
@@ -508,9 +514,7 @@ public partial class Region : IRegion
                 bool snapshotted;
                 try
                 {
-                    snapshotted = snapshotUnload is null
-                        ? await this.SnapshotChunkAsync(save, unloading, saveEntities: entities, wait)
-                        : await snapshotUnload(() => this.SnapshotChunkAsync(save, unloading, entities, wait));
+                    snapshotted = await this.SnapshotChunkAsync(save, unloading, saveEntities: entities, wait);
                 }
                 catch
                 {
@@ -561,7 +565,11 @@ public partial class Region : IRegion
     /// <summary>
     /// Waits for what was written to the region's files to reach the disk.
     /// </summary>
-    internal Task SyncToDiskAsync() => Task.WhenAll(this.regionFile.FlushAsync(), this.entityRegionFile.FlushAsync());
+    internal async Task SyncToDiskAsync()
+    {
+        await this.initialization.Value;
+        await Task.WhenAll(this.regionFile.FlushAsync(), this.entityRegionFile.FlushAsync());
+    }
 
     public async ValueTask<IChunk> GetChunkAsync(int x, int z)
     {
@@ -569,20 +577,20 @@ public partial class Region : IRegion
         if (chunk is not null)
             return chunk;
 
-        // A chunk the file doesn't have can't be loaded, so there's no read to serialize. The file only gains chunks that
-        // were loaded, which are found above.
-        await this.initialization.Value;
-        if (!this.regionFile.HasChunk(x, z))
+        // A chunk neither pending nor in the file can't be loaded, so there's no read to serialize. Both only gain
+        // chunks that were loaded, which are found above.
+        if (!await this.HasStoredChunkAsync(x, z))
             return null!;
 
         await chunkSlotLock.WaitAsync();
         try
         {
             Chunk? fromDisk = null;
+            PendingChunkWrite? pending = null;
             chunk = loadedChunks[x, z];
             if (chunk is null)
             {
-                fromDisk = await GetChunkFromFileAsync(x, z);
+                (fromDisk, pending) = await this.ReadStoredChunkAsync(x, z);
                 chunk = fromDisk;
             }
 
@@ -592,6 +600,7 @@ public partial class Region : IRegion
                 if (chunk is not null)
                     this.PublishChunk(x, z, chunk, ReferenceEquals(chunk, fromDisk));
 
+                this.AdoptIfPublished(x, z, fromDisk, pending);
                 return chunk!;
             }
         }
@@ -611,15 +620,16 @@ public partial class Region : IRegion
         if (chunk is not null)
             return chunk;
 
-        await this.initialization.Value;
+        // Reading the files waits for them (see ReadCompoundAsync); a pending write is read without them.
         await chunkSlotLock.WaitAsync();
         try
         {
             Chunk? fromDisk = null;
+            PendingChunkWrite? pending = null;
             chunk = loadedChunks[x, z];
-            if (chunk is null && this.regionFile.HasChunk(x, z))
+            if (chunk is null)
             {
-                fromDisk = await GetChunkFromFileAsync(x, z);
+                (fromDisk, pending) = await this.ReadStoredChunkAsync(x, z);
                 chunk = fromDisk;
             }
 
@@ -628,6 +638,7 @@ public partial class Region : IRegion
             {
                 chunk = loadedChunks[x, z] ?? chunk;
                 this.PublishChunk(x, z, chunk, ReferenceEquals(chunk, fromDisk));
+                this.AdoptIfPublished(x, z, fromDisk, pending);
                 return chunk;
             }
         }
@@ -645,8 +656,11 @@ public partial class Region : IRegion
         if (this.loadedChunks[x, z] is Chunk { StructureStarts: NbtCompound loaded })
             return SavedStructureStart.Read(loaded);
 
-        await this.initialization.Value;
-        if (!this.regionFile.HasChunk(x, z))
+        // Not cached: the file has another version until the write commits, which drops the cached one.
+        if (this.FindPending(x, z) is { Chunk: byte[] pending })
+            return ReadStarts(ParseCompound(pending));
+
+        if (!await this.FileHasChunkAsync(x, z))
             return [];
 
         var key = x + z * CubicRegionSize;
@@ -665,7 +679,12 @@ public partial class Region : IRegion
 
     private async Task<SavedStructureStart[]> ReadSavedStartBoundsAsync(int position)
     {
-        var chunk = await this.ReadCompoundAsync(this.regionFile, position % CubicRegionSize, position / CubicRegionSize);
+        var chunk = await this.ReadCompoundAsync(entities: false, position % CubicRegionSize, position / CubicRegionSize);
+        return ReadStarts(chunk);
+    }
+
+    private static SavedStructureStart[] ReadStarts(NbtCompound? chunk)
+    {
         if (chunk is null || !chunk.TryGetTag<NbtCompound>("structures", out var structures)
             || !structures.TryGetTag<NbtCompound>("starts", out var starts))
         {
@@ -692,7 +711,7 @@ public partial class Region : IRegion
                 return resident;
         }
 
-        await this.initialization.Value;
+        // Reading the files waits for them (see ReadCompoundAsync); a pending write is read without them.
         await this.chunkSlotLock.WaitAsync();
         try
         {
@@ -708,7 +727,7 @@ public partial class Region : IRegion
                     version = this.chunkVersions[x, z];
                 }
 
-                var fromDisk = this.regionFile.HasChunk(x, z) ? await this.GetChunkFromFileAsync(x, z) : null;
+                var (fromDisk, pending) = await this.ReadStoredChunkAsync(x, z);
                 var chunk = fromDisk ?? new Chunk(chunkX, chunkZ, this.minY, this.height, ChunkGenStage.structure_starts);
                 lock (this.FluidTickLock)
                 {
@@ -720,6 +739,7 @@ public partial class Region : IRegion
                         continue;
 
                     this.PublishChunk(x, z, chunk, fromDisk is not null, allowRetired: true);
+                    this.AdoptIfPublished(x, z, fromDisk, pending);
                     return chunk;
                 }
             }
@@ -730,120 +750,254 @@ public partial class Region : IRegion
         }
     }
 
-    public Task UnloadChunk(int x, int z) => this.UnloadChunkAsync(x, z);
-
-    // The level supplies a short simulation-gate hold for each snapshot; all waits for writes stay outside it.
-    internal async Task UnloadChunkAsync(int x, int z,
-        Func<Func<Task<bool>>, Task<bool>>? snapshotUnload = null)
+    /// <summary>
+    /// Unloads the chunk at the local coordinates: takes its final save and takes it out of the region in one step (see
+    /// <see cref="DetachForUnloadAsync"/>), then writes the save (see <see cref="WriteUnloadedAsync"/>).
+    /// </summary>
+    public async Task UnloadChunk(int x, int z)
     {
-        var chunk = loadedChunks[x, z];
-        if (chunk is null)
-            return;
-
-        while (true)
-        {
-            await SerializeChunkAsync(chunk, unloading: true, snapshotUnload: snapshotUnload);
-            lock (this.FluidTickLock)
-            {
-                if (this.TryDetachUnloaded(chunk))
-                    return;
-            }
-        }
+        var unloaded = await this.DetachForUnloadAsync([(x, z)]);
+        await this.WriteUnloadedAsync(unloaded);
     }
 
     /// <summary>
-    /// Unloads the chunks at the local coordinates like <see cref="UnloadChunk"/>, but together: they're saved as one
-    /// batch (see <see cref="SaveTogetherAsync"/>), so however many unload, each file is committed once, and not at all
-    /// when none of them has anything to write. A chunk whose save fails stays loaded; the others unload, then the
-    /// failure is thrown.
+    /// Unloads the chunks at the local coordinates like <see cref="UnloadChunk"/>, but together, so each file is
+    /// committed once however many unload. A chunk whose write fails stays pending for the level's next save to retry;
+    /// the others are written, then the failure is thrown.
     /// </summary>
     internal async Task UnloadChunksAsync(IEnumerable<(int X, int Z)> positions)
     {
-        // Each chunk once: a second save of a chunk in the batch would wait for the first's commit, which waits for it.
-        var unloading = positions
-            .Distinct()
-            .Select(position => this.loadedChunks[position.X, position.Z])
-            .OfType<IChunk>()
-            .ToList();
-
-        while (unloading.Count > 0)
-        {
-            await this.initialization.Value;
-
-            var admitted = this.AdmitSave();
-            var taken = new List<ChunkSave>();
-            ExceptionDispatchInfo? failure = null;
-            try
-            {
-                await this.flushLock.WaitAsync();
-                try
-                {
-                    var chunks = unloading.Select(chunk => (chunk, true));
-                    await this.SaveTogetherAsync(chunks, unloading: true, taken);
-                }
-                finally
-                {
-                    this.flushLock.Release();
-                }
-            }
-            catch (Exception exception)
-            {
-                failure = ExceptionDispatchInfo.Capture(exception);
-            }
-            finally
-            {
-                // After the save ends, like a flush's (see WriteChangesAsync).
-                this.EndSave(admitted);
-
-                foreach (var save in taken)
-                {
-                    save.Dispose();
-                    await this.ReleaseRetiredAsync(save);
-                }
-            }
-
-            var marked = new List<IChunk>();
-            lock (this.FluidTickLock)
-            {
-                foreach (var save in taken)
-                {
-                    if (save.Saved && !this.TryDetachUnloaded(save.Chunk))
-                        marked.Add(save.Chunk);
-                }
-            }
-
-            failure?.Throw();
-            unloading = marked;
-        }
+        var unloaded = await this.DetachForUnloadAsync([.. positions.Distinct()]);
+        await this.WriteUnloadedAsync(unloaded);
     }
 
     /// <summary>
-    /// Takes a chunk whose unloading save completed out of its slot, unless another chunk is stored there now. Called
-    /// under <see cref="FluidTickLock"/>.
+    /// Takes the final save of each chunk at the local coordinates and takes the chunk out of the region in the same
+    /// step, like vanilla's chunk map does as it unloads a chunk: its block access, block entities, entities and lighting
+    /// are retired, its save becomes the level's pending write for its position (see <see cref="PendingWrites"/>), which
+    /// loads read from then on, and its slot is emptied. Then its block entities hear their chunk unloaded.
     /// </summary>
-    /// <returns>
-    /// False when the chunk was marked unsaved during the save's I/O, as a structure search or placement can mark a
-    /// start chunk: it stays, and needs another unloading save.
-    /// </returns>
-    private bool TryDetachUnloaded(IChunk chunk)
+    /// <remarks>
+    /// The level calls this under its simulation gate, so no tick sees a chunk between its snapshot and its removal, and
+    /// the unload callbacks run between ticks like every other block entity callback. Nothing can change the chunk
+    /// afterwards, so the write (<see cref="WriteUnloadedAsync"/>) needs no further checks, and runs outside the gate.
+    /// </remarks>
+    internal async Task<UnloadedChunks> DetachForUnloadAsync(IReadOnlyList<(int X, int Z)> positions)
     {
-        var x = NumericsHelper.Modulo(chunk.X, CubicRegionSize);
-        var z = NumericsHelper.Modulo(chunk.Z, CubicRegionSize);
-        if (!ReferenceEquals(this.loadedChunks[x, z], chunk))
-            return true;
+        await this.initialization.Value;
 
-        if (chunk is Chunk { IsMarkedUnsaved: true })
-            return false;
+        var unloaded = new UnloadedChunks();
+        var retired = new List<ChunkSave>();
+        foreach (var (x, z) in positions)
+        {
+            if (this.loadedChunks[x, z] is not IChunk chunk)
+                continue;
 
-        this.DetachLighting(chunk);
-        this.loadedChunks[x, z] = null;
-        this.chunkVersions[x, z]++;
-        this.retiredBlockAccess.Remove(chunk);
-        this.StructureChunkUnloaded?.Invoke(chunk);
-        return true;
+            var save = NewSave(chunk);
+            retired.Add(save);
+            try
+            {
+                await this.SnapshotChunkAsync(save, unloading: true, saveEntities: true);
+            }
+            catch (Exception failure)
+            {
+                // The chunk stays, and unloads with a later attempt; what the snapshot retired is let go all the same.
+                unloaded.Failures.Add(failure);
+                continue;
+            }
+
+            unloaded.Saves.Add((save, this.Detach(save)));
+        }
+
+        foreach (var save in retired)
+            await this.ReleaseRetiredAsync(save);
+
+        return unloaded;
     }
 
-    /// <summary>Validates a captured chunk under FluidTickLock, including an unloading save still doing I/O.</summary>
+    // Publishes the chunk's save as its position's pending write and empties its slot, atomically for readers: one that
+    // finds the slot empty finds the save. The save's turns were reserved with its snapshot, so its write comes after
+    // every earlier write of the chunk, and before any of the chunk loaded from it.
+    private PendingChunkWrite Detach(ChunkSave save)
+    {
+        var chunk = save.Snapshotted!;
+        var pending = new PendingChunkWrite(
+            chunk.X,
+            chunk.Z,
+            save.Nbt?.Written.ToArray(),
+            save.EntityNbt?.Written.ToArray(),
+            save.EntityCount);
+
+        lock (this.FluidTickLock)
+        {
+            this.PendingWrites.Add(pending);
+
+            if (ReferenceEquals(this.loadedChunks[save.X, save.Z], chunk))
+            {
+                this.DetachLighting(chunk);
+                this.loadedChunks[save.X, save.Z] = null;
+                this.chunkVersions[save.X, save.Z]++;
+                this.retiredBlockAccess.Remove(chunk);
+                this.StructureChunkUnloaded?.Invoke(chunk);
+            }
+        }
+
+        return pending;
+    }
+
+    /// <summary>
+    /// Writes the saves <see cref="DetachForUnloadAsync"/> took, together, outside the level's simulation gate. Each
+    /// committed save leaves the pending writes; one whose write fails stays there, flagged failed, so loads still read
+    /// it and the level's next save retries it (see <see cref="RetryPendingWritesAsync"/>). Failures, the snapshots'
+    /// too, are thrown once every save was written or failed.
+    /// </summary>
+    internal async Task WriteUnloadedAsync(UnloadedChunks unloaded)
+    {
+        var failures = new List<Exception>(unloaded.Failures);
+        await this.WriteAdmittedAsync(unloaded.Saves, failures);
+        ThrowFailures(failures);
+    }
+
+    /// <summary>
+    /// Writes again the pending saves of this region's positions whose writes failed (see
+    /// <see cref="PendingChunkWrites.Failed"/>). A save a later unload replaced, or that a chunk was loaded from (which
+    /// saves itself), is left out.
+    /// </summary>
+    internal async Task RetryPendingWritesAsync(IEnumerable<PendingChunkWrite> writes)
+    {
+        await this.initialization.Value;
+
+        var saves = new List<(ChunkSave Save, PendingChunkWrite Pending)>();
+        lock (this.FluidTickLock)
+        {
+            foreach (var pending in writes)
+            {
+                var x = NumericsHelper.Modulo(pending.ChunkX, CubicRegionSize);
+                var z = NumericsHelper.Modulo(pending.ChunkZ, CubicRegionSize);
+                if (this.loadedChunks[x, z] is not null || !this.PendingWrites.IsCurrent(pending))
+                    continue;
+
+                saves.Add((this.SaveOf(pending, x, z), pending));
+            }
+        }
+
+        var failures = new List<Exception>();
+        await this.WriteAdmittedAsync(saves, failures);
+        ThrowFailures(failures);
+    }
+
+    // A save of a pending write, with its turns. Call under FluidTickLock, which orders it with the chunk's loads.
+    private ChunkSave SaveOf(PendingChunkWrite pending, int x, int z)
+    {
+        var save = new ChunkSave { X = x, Z = z };
+        if (pending.Chunk is byte[] chunk)
+        {
+            save.Nbt = new PooledBufferStream(chunk.Length);
+            save.Nbt.Write(chunk);
+            save.ChunkWrite = this.regionFile.ReserveWrite(x, z);
+        }
+
+        if (pending.Entities is byte[] entities)
+        {
+            save.EntityNbt = new PooledBufferStream(entities.Length);
+            save.EntityNbt.Write(entities);
+            save.EntityCount = pending.EntityCount;
+            save.EntityWrite = this.entityRegionFile.ReserveWrite(x, z);
+        }
+
+        return save;
+    }
+
+    // Stages the saves one at a time, each in its turns, commits them together, then settles each pending write.
+    private async Task WriteAdmittedAsync(List<(ChunkSave Save, PendingChunkWrite Pending)> saves,
+        List<Exception> failures)
+    {
+        long admitted;
+        try
+        {
+            admitted = this.AdmitSave();
+        }
+        catch (Exception closing)
+        {
+            foreach (var (save, pending) in saves)
+            {
+                save.Dispose();
+                pending.Failed = true;
+            }
+
+            failures.Add(closing);
+            return;
+        }
+
+        try
+        {
+            try
+            {
+                foreach (var (save, _) in saves)
+                {
+                    try
+                    {
+                        await this.StageSaveAsync(save);
+                    }
+                    catch (Exception failure)
+                    {
+                        failures.Add(failure);
+                    }
+                }
+            }
+            finally
+            {
+                // Commits with the writes other saves staged meanwhile; failures reach each save's writes.
+                await this.CommitAsync().ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            }
+
+            foreach (var (save, pending) in saves)
+            {
+                try
+                {
+                    await this.CompleteSaveAsync(save);
+                }
+                catch (Exception failure)
+                {
+                    failures.Add(failure);
+                }
+
+                if (save.Saved)
+                    this.PendingWrites.Remove(pending);
+                else
+                    pending.Failed = true;
+            }
+        }
+        finally
+        {
+            foreach (var (save, _) in saves)
+                save.Dispose();
+
+            this.EndSave(admitted);
+        }
+    }
+
+    private static void ThrowFailures(List<Exception> failures)
+    {
+        if (failures.Count == 1)
+            ExceptionDispatchInfo.Throw(failures[0]);
+
+        if (failures.Count > 1)
+            throw new AggregateException(failures);
+    }
+
+    /// <summary>
+    /// The final saves an unload took (see <see cref="DetachForUnloadAsync"/>), with the pending writes they became, and
+    /// the snapshots that failed, whose chunks stayed.
+    /// </summary>
+    internal sealed class UnloadedChunks
+    {
+        internal List<(ChunkSave Save, PendingChunkWrite Pending)> Saves { get; } = [];
+
+        internal List<Exception> Failures { get; } = [];
+    }
+
+    /// <summary>Validates a captured chunk under FluidTickLock: an unloaded one left its slot with its final snapshot.</summary>
     internal bool IsChunkResident(IChunk chunk)
     {
         var x = NumericsHelper.Modulo(chunk.X, CubicRegionSize);
@@ -1008,25 +1162,49 @@ public partial class Region : IRegion
         && EntityDefinitionsRegistry.TryGet(id, out var definition)
         && definition.Binding is not null;
 
-    private async Task<Chunk?> GetChunkFromFileAsync(int x, int z)
+    // The position's pending write (see PendingWrites), newer than the files while it's there.
+    private PendingChunkWrite? FindPending(int x, int z) =>
+        this.PendingWrites.Find(this.X * CubicRegionSize + x, this.Z * CubicRegionSize + z);
+
+    // Whether a chunk is stored at the position: pending, or in the file.
+    private async ValueTask<bool> HasStoredChunkAsync(int x, int z)
     {
-        if (await ReadCompoundAsync(this.regionFile, x, z) is not NbtCompound chunkCompound)
-            return null;
+        if (this.FindPending(x, z) is not null)
+            return true;
+
+        return await this.FileHasChunkAsync(x, z);
+    }
+
+    /// <summary>
+    /// Reads the chunk stored at the position, with its entities: from its pending write when there's one, which is
+    /// newer than the files, and from the files otherwise. A write committing meanwhile leaves the files as new.
+    /// </summary>
+    /// <returns>The chunk, or null when none is stored, and the pending write it was read from.</returns>
+    private async Task<(Chunk? Chunk, PendingChunkWrite? Pending)> ReadStoredChunkAsync(int x, int z)
+    {
+        var pending = this.FindPending(x, z);
+        var chunkCompound = pending?.Chunk is byte[] chunkNbt
+            ? ParseCompound(chunkNbt)
+            : await this.ReadCompoundAsync(entities: false, x, z);
+        if (chunkCompound is null)
+            return (null, pending);
 
         var chunk = DeserializeChunk(chunkCompound);
 
         // Entities of complete chunks are in the entity region file; they spawn like generated ones.
         if (chunk.IsGenerated)
         {
-            if (await ReadCompoundAsync(this.entityRegionFile, x, z) is NbtCompound entityChunk
-                && entityChunk.TryGetTag<NbtList>("Entities", out var entities))
+            var entityChunk = pending?.Entities is byte[] entityNbt
+                ? ParseCompound(entityNbt)
+                : await this.ReadCompoundAsync(entities: true, x, z);
+            if (entityChunk is not null && entityChunk.TryGetTag<NbtList>("Entities", out var entities))
             {
                 foreach (var entity in entities.OfType<NbtCompound>())
                 {
                     if (entity.TryGetTagValue<string>("id", out var id) && EntityNbt.IsKnownType(id) &&
-                        EntityNbt.ToGeneratedEntity(entity) is GeneratedEntity pending)
+                        EntityNbt.ToGeneratedEntity(entity) is GeneratedEntity spawning)
                     {
-                        chunk.PendingEntities.Add(pending);
+                        chunk.PendingEntities.Add(spawning);
                     }
                     else
                     {
@@ -1036,19 +1214,65 @@ public partial class Region : IRegion
             }
         }
 
-        return chunk;
+        return (chunk, pending);
     }
 
-    private async Task<NbtCompound?> ReadCompoundAsync(RegionFile file, int x, int z)
-    {
-        await this.initialization.Value;
+    private static NbtCompound? ParseCompound(byte[] nbt) => NbtReader.ReadTag(nbt, readName: true, out _) as NbtCompound;
 
-        if (await file.RentChunkBytesAsync(x, z) is not RentedArray<byte> data)
+    /// <summary>
+    /// Once a chunk read from a pending write is stored in its slot, drops the pending write: the chunk, unsaved as
+    /// every loaded chunk is, saves itself, and its writes come after the pending one's, whose turns were reserved
+    /// first. Call under <see cref="FluidTickLock"/>.
+    /// </summary>
+    private void AdoptIfPublished(int x, int z, Chunk? read, PendingChunkWrite? pending)
+    {
+        if (pending is not null && read is not null && ReferenceEquals(this.loadedChunks[x, z], read))
+            this.PendingWrites.Remove(pending);
+    }
+
+    // Reads the chunk file, or the entity file: through the predecessor while it still has them open (see the
+    // constructor), then once this region opened them.
+    private async Task<NbtCompound?> ReadCompoundAsync(bool entities, int x, int z)
+    {
+        RentedArray<byte>? data = null;
+        var read = false;
+        if (this.predecessor is Region previous)
+        {
+            try
+            {
+                var shared = entities ? previous.entityRegionFile : previous.regionFile;
+                data = await shared.RentChunkBytesAsync(x, z);
+                read = true;
+            }
+            catch (ObjectDisposedException)
+            {
+                // It closed them meanwhile, so this region opens them.
+            }
+        }
+
+        if (!read)
+        {
+            await this.initialization.Value;
+            var file = entities ? this.entityRegionFile : this.regionFile;
+            data = await file.RentChunkBytesAsync(x, z);
+        }
+
+        if (data is not RentedArray<byte> rented)
             return null;
 
         // Parsed in place: tags copy what they keep (arrays, strings), so the rented bytes go back once it's read.
-        using (data)
-            return NbtReader.ReadTag(data.Span, readName: true, out _) as NbtCompound;
+        using (rented)
+            return NbtReader.ReadTag(rented.Span, readName: true, out _) as NbtCompound;
+    }
+
+    // Whether the chunk file has the chunk, read like ReadCompoundAsync. A closed file still answers as it closed.
+    private async ValueTask<bool> FileHasChunkAsync(int x, int z)
+    {
+        if (this.predecessor is Region previous)
+            return previous.regionFile.HasChunk(x, z);
+
+        await this.initialization.Value;
+        return this.regionFile.HasChunk(x, z);
     }
 
     /// <summary>
@@ -1156,15 +1380,18 @@ public partial class Region : IRegion
         }
     }
 
-    /// <summary>Flushes final light and detaches every chunk when the level removes this region.</summary>
-    internal void RetireLighting()
+    /// <summary>
+    /// Retires the region as the level removes it, before its final snapshot: flushes final light and detaches every
+    /// chunk from lighting and block access, stops loads and generation from publishing chunks into it, and seals
+    /// structure notifications, which wait for <see cref="RegionUnload"/> and go to a fresh region object.
+    /// </summary>
+    internal void Retire()
     {
         lock (this.FluidTickLock)
         {
-            if (this.regionUnload is null || this.regionUnload.Task.IsCompleted)
-                this.regionUnload = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-
+            this.regionUnload ??= new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             this.lightingRetired = true;
+            this.structureChangesSealed = true;
             this.FlushLight?.Invoke();
             foreach (var chunk in this.loadedChunks)
                 this.DetachLighting(chunk);
@@ -1188,55 +1415,6 @@ public partial class Region : IRegion
         }
     }
 
-    /// <summary>
-    /// Saves a chunk, unless it's unchanged since its last save (see <see cref="Chunk.IsUnsaved"/>), and once it's
-    /// complete, its entities to the entity region file.
-    /// </summary>
-    /// <param name="unloading">Whether the chunk is being unloaded: its saved entities are also taken out of the level.</param>
-    /// <param name="entities">Whether to save the entities of a complete chunk that isn't unloading; unloading always
-    /// saves them.</param>
-    /// <param name="snapshotUnload">Runs only the snapshot under the level's simulation gate.</param>
-    internal async Task SerializeChunkAsync(IChunk chunk, bool unloading = false, bool entities = true,
-        Func<Func<Task<bool>>, Task<bool>>? snapshotUnload = null)
-    {
-        await this.initialization.Value;
-
-        var admitted = this.AdmitSave();
-        var save = NewSave(chunk);
-        try
-        {
-            // A save admitted before, still writing (an autosave goes on while the level ticks), puts back the
-            // chunk's unsaved marks if it fails, after its turn ended. An unloading snapshot that ran first would
-            // see the chunk as saved, and the chunk would be gone before the marks came back.
-            if (unloading)
-                await this.SavesAdmittedBeforeAsync(admitted).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
-
-            try
-            {
-                if (snapshotUnload is null)
-                    await this.SnapshotChunkAsync(save, unloading, entities);
-                else
-                    await snapshotUnload(() => this.SnapshotChunkAsync(save, unloading, entities));
-                await this.StageSaveAsync(save);
-            }
-            finally
-            {
-                // Commits with the writes other saves staged meanwhile; failures reach each save's writes.
-                await this.CommitAsync().ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
-            }
-
-            await this.CompleteSaveAsync(save);
-        }
-        finally
-        {
-            save.Dispose();
-            this.EndSave(admitted);
-
-            // Also when the snapshot failed after retiring them, once its locks are released.
-            await this.ReleaseRetiredAsync(save);
-        }
-    }
-
     private static ChunkSave NewSave(IChunk chunk) => new()
     {
         Chunk = chunk,
@@ -1247,15 +1425,15 @@ public partial class Region : IRegion
     /// <summary>
     /// Takes what a save writes of a chunk into <paramref name="save"/>: its NBT, uncompressed, and its entities, as of
     /// one moment under the tick lock, and its turn to be written to each file, in the order snapshots are taken. An
-    /// unloading save takes its turns even with nothing to write: waiting for them, it waits for the chunk's earlier
-    /// writes, so the chunk read once it's unloaded is the latest.
+    /// unloading save also serializes a chunk unchanged since its last save while that save is still being written, so
+    /// the pending write it becomes (see <see cref="Detach"/>) holds the chunk whatever that write's outcome.
     /// </summary>
     /// <param name="waitForLock">False to take nothing when the generator's lock of the chunk is held.</param>
     /// <returns>Whether the snapshot was taken, which it is unless <paramref name="waitForLock"/> is false.</returns>
     private async Task<bool> SnapshotChunkAsync(ChunkSave save, bool unloading, bool saveEntities,
         bool waitForLock = true)
     {
-        var (chunk, x, z) = (save.Chunk, save.X, save.Z);
+        var (chunk, x, z) = (save.Chunk!, save.X, save.Z);
         NbtWriterStream? writer = null;
         try
         {
@@ -1274,6 +1452,7 @@ public partial class Region : IRegion
                     // given while it waited (see ReplaceChunk). One no longer stored was unloaded and is saved as it
                     // was.
                     var current = this.loadedChunks[x, z] ?? chunk;
+                    save.Snapshotted = current;
 
                     // No block hooks or async setters may change this instance after its final snapshot.
                     if (unloading && ReferenceEquals(current, chunk))
@@ -1286,6 +1465,12 @@ public partial class Region : IRegion
                     // freezes their items. A chunk unchanged since its last save is on disk as it is, so only its
                     // entities may need saving.
                     var write = current is not Chunk tracked || tracked.TakeUnsaved();
+
+                    // With no write in flight, an unchanged chunk's file holds it: a failed write puts the chunk's
+                    // marks back before it ends (see RegionFile.ChunkWrite.Failed).
+                    if (unloading && !write && this.regionFile.HasWriteInFlight(x, z))
+                        write = true;
+
                     if (write)
                     {
                         save.Taken = current as Chunk;
@@ -1301,8 +1486,12 @@ public partial class Region : IRegion
                         SerializeChunk(writer.Value, current, structureStarts);
                     }
 
-                    if (write || unloading)
+                    if (write)
+                    {
                         save.ChunkWrite = this.regionFile.ReserveWrite(x, z);
+                        if (save.Taken is Chunk taken)
+                            save.ChunkWrite.Failed = taken.MarkUnsaved;
+                    }
 
                     if ((unloading || saveEntities) && current.IsGenerated && current is Chunk complete)
                         save.Entities = this.CollectEntities(complete, unloading);
@@ -1548,13 +1737,8 @@ public partial class Region : IRegion
         if (!chunk.IsGenerated)
             return false;
 
-        if (entityChunks.Contains((chunk.X, chunk.Z))
-            || chunk.PendingEntities.Count > 0
-            || chunk.UnspawnableEntities.Count > 0
-            || chunk.UnloadedEntities is { Count: > 0 })
-        {
+        if (entityChunks.Contains((chunk.X, chunk.Z)) || chunk.PendingEntities.Count > 0 || chunk.UnspawnableEntities.Count > 0)
             return true;
-        }
 
         var (x, z) = (NumericsHelper.Modulo(chunk.X, CubicRegionSize), NumericsHelper.Modulo(chunk.Z, CubicRegionSize));
         return chunk.SavedEntityCount != 0 && this.entityRegionFile.HasChunk(x, z);
@@ -1564,7 +1748,7 @@ public partial class Region : IRegion
     /// The entities to save with a complete chunk: those still waiting to spawn, and those of the level in the chunk. When
     /// unloading, the level's are taken out of it too, and the chunk's pending ones won't spawn anymore.
     /// </summary>
-    /// <returns>The retired snapshot on retries, so entities removed from the level survive a failed write.</returns>
+    /// <returns><c>null</c> once an unloading save took the entities, which a later save of the chunk mustn't overwrite.</returns>
     private NbtList? CollectEntities(Chunk chunk, bool unloading)
     {
         var entities = new NbtList(NbtTagType.Compound, "Entities");
@@ -1574,7 +1758,7 @@ public partial class Region : IRegion
             using (chunk.EntityLock.EnterScope())
         {
             if (chunk.EntitiesUnloaded)
-                return chunk.UnloadedEntities;
+                return null;
 
             foreach (var pending in chunk.PendingEntities)
                 entities.Add(EntityNbt.ToNbt(pending));
@@ -1603,16 +1787,7 @@ public partial class Region : IRegion
             }
 
             if (unloading)
-            {
-                // Keep a detached copy: entity saves can refer to live NBT, while retries happen after more ticks.
-                var retained = new NbtList(NbtTagType.Compound, "Entities");
-                foreach (NbtCompound entity in entities)
-                    retained.Add(DataBlockEntity.Copy(entity));
-
-                chunk.UnloadedEntities = retained;
                 chunk.EntitiesUnloaded = true;
-                return retained;
-            }
         }
         }
 
@@ -2157,8 +2332,12 @@ public partial class Region : IRegion
         // No save is admitted from now on; those admitted are committed first. Their failures are their callers'.
         await this.CloseSavesAsync();
 
-        await regionFile.DisposeAsync();
-        await this.entityRegionFile.DisposeAsync();
+        // A region whose predecessor hadn't closed yet may never have opened its files.
+        if (this.regionFile is not null)
+            await this.regionFile.DisposeAsync();
+
+        if (this.entityRegionFile is not null)
+            await this.entityRegionFile.DisposeAsync();
 
         foreach (var chunk in this.loadedChunks)
             this.StructureChunkUnloaded?.Invoke(chunk);
@@ -2168,9 +2347,13 @@ public partial class Region : IRegion
     /// What a save took of a chunk (see <see cref="SnapshotChunkAsync"/>) until it's written. Disposing it gives back
     /// the uncompressed NBT and gives up the turns it didn't stage.
     /// </summary>
-    private sealed class ChunkSave : IDisposable
+    internal sealed class ChunkSave : IDisposable
     {
-        public required IChunk Chunk { get; init; }
+        // The chunk the save was taken for; null for a retried pending write, whose chunk is gone.
+        public IChunk? Chunk { get; init; }
+
+        // The chunk the snapshot serialized: the one stored at the position, which generation may have replaced.
+        public IChunk? Snapshotted { get; set; }
 
         // The chunk's local coordinates in the region.
         public required int X { get; init; }

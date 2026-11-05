@@ -1273,9 +1273,13 @@ public abstract partial class AbstractLevel : ILevel
             if (Regions.TryGetValue(value, out region))
                 return region;
 
-            region = new Region(regionX, regionZ, FolderPath, this.RegionFolderName, minY: this.MinY, height: this.Height)
+            // A region removed at this position may still be writing its final saves into the files.
+            var predecessor = this.closingRegions.GetValueOrDefault(value);
+            region = new Region(regionX, regionZ, FolderPath, this.RegionFolderName, minY: this.MinY, height: this.Height,
+                predecessor: predecessor)
             {
                 Logger = this.Logger,
+                PendingWrites = this.PendingWrites,
                 LockChunk = this.Generator.LockChunkAsync,
                 FluidTickLock = this.Fluids.TickLock,
                 EntityTransfers = this.TransferLock,
@@ -1629,23 +1633,7 @@ public abstract partial class AbstractLevel : ILevel
         var jobsBeforeFlush = 0;
         try
         {
-            var failedRetries = new HashSet<IRegion>();
-            foreach (var region in Regions.Values.OfType<Region>())
-            {
-                bool retry;
-                lock (this.Fluids.TickLock)
-                    retry = region.UnloadFailed;
-                if (!retry)
-                    continue;
-
-                var failure = await CaptureRegionSaveFailureAsync(region,
-                    () => this.UnloadRegionCoreAsync(region.X, region.Z, retry: true));
-                if (failure is not null)
-                {
-                    failures.Add(failure);
-                    failedRetries.Add(region);
-                }
-            }
+            await this.RetryFailedUnloadWritesAsync(failures);
 
             await this.EnterGateAfterEagerSavesAsync();
             try
@@ -1658,9 +1646,7 @@ public abstract partial class AbstractLevel : ILevel
 
                 jobsBeforeFlush = Interlocked.Exchange(ref this.jobsSinceFlush, 0);
                 SavingEntities = true;
-                // Failed retries remain reachable for the next autosave. Their failures must not prevent unrelated
-                // regions from taking a snapshot, nor should they be attempted twice in this save.
-                var regions = Regions.Values.Where(region => !failedRetries.Contains(region)).ToArray();
+                var regions = Regions.Values.ToArray();
                 written = [.. regions.OfType<Region>()];
                 saves = new Task<Exception?>[regions.Length];
                 var snapshots = new Task[regions.Length];
@@ -2505,10 +2491,12 @@ public abstract partial class AbstractLevel : ILevel
             Log.ChunkGenerationFailed(this.Logger, failure);
 
         // The level's own: an override flushes other levels too, which may be disposed already. One with travellers
-        // still unplaced fails rather than discarding them.
+        // still unplaced, or unloaded chunks whose writes failed, tries again rather than discarding them.
         try
         {
-            if (Volatile.Read(ref this.jobsSinceFlush) != 0 || this.HasUnplacedTravellers)
+            if (Volatile.Read(ref this.jobsSinceFlush) != 0
+                || this.HasUnplacedTravellers
+                || this.PendingWrites.Failed().Length != 0)
                 await this.FlushOwnRegionsAsync();
         }
         catch (Exception exception)

@@ -314,12 +314,12 @@ public sealed class ChunkSaves
         {
             await writing.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
-            // While it writes, the chunk changes again and unloads. The unload waits for the autosave to end before
-            // it takes its snapshot, which would take the chunk's unsaved marks.
+            // While it writes, the chunk changes again and unloads. The unload's snapshot takes the whole chunk, since
+            // the autosave's write is still in flight, and its own write waits for that one's turn to end.
             chunk.SetBlock(2, 64, 2, BlocksRegistry.Stone);
             unload = region.UnloadChunk(0, 0);
-            var snapshotTaken = SpinWait.SpinUntil(() => !chunk.IsUnsaved, TimeSpan.FromMilliseconds(500));
-            Assert.False(snapshotTaken);
+            await Task.WhenAny(unload, Task.Delay(100));
+            Assert.False(unload.IsCompleted);
         }
         finally
         {
@@ -573,12 +573,14 @@ public sealed class ChunkSaves
             ? ValueTask.FromException(new IOException("The unload write failed."))
             : ValueTask.CompletedTask;
 
+        // The chunk is gone either way; its final save stays pending, for the next save to retry.
         await Assert.ThrowsAsync<IOException>(() => StartUnload(world, region, wholeRegion));
-        Assert.Same(chunk, region.GetLoadedChunk(0, 0));
+        Assert.Null(region.GetLoadedChunk(0, 0));
+        Assert.Single(world.PendingWrites.Failed());
         failingFile.Observe = null;
 
-        // Region failures retry through autosave; chunk failures keep their resident snapshot for the next save.
         await world.FlushRegionsAsync();
+        Assert.Empty(world.PendingWrites.Failed());
         await world.DisposeAsync();
 
         // Read the autosave's disk state without taking another unloading snapshot that could hide a missed retry.
@@ -679,6 +681,262 @@ public sealed class ChunkSaves
         Assert.Equal(BlockIds.Stone, (await reader.GetChunkAsync(0, 0)).GetBlock(1, 64, 1).RegistryId);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ChangesThroughTheLevelDuringAnUnloadWriteAreSaved(bool wholeRegion)
+    {
+        await using var context = TestServerFactory.CreateServer($"chunk-saves-unload-write-{Guid.NewGuid():N}");
+        var world = context.World;
+        var region = PrepareUnload(world, out var chunk);
+        await region.FlushAsync();
+        chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+
+        // An eager save on the tick could write the change too; here only the unload and the reloaded chunk may.
+        chunk.NextEagerSave = long.MaxValue;
+        var (writing, release) = PauseUnloadWrite(region, RegionFile.Step.PayloadWritten);
+
+        var unload = StartUnload(world, region, wholeRegion);
+        try
+        {
+            // While the final save is written, a ticker gets the chunk through the level: a new instance, read from the
+            // pending save, which it changes. The unloaded instance is out of reach.
+            await writing.WaitAsync(TimeSpan.FromSeconds(10));
+            await TickWithAsync(world, async () =>
+            {
+                var reloaded = await world.GetChunkAsync(64, 64, scheduleGeneration: false);
+                Assert.NotNull(reloaded);
+                Assert.NotSame(chunk, reloaded);
+                Assert.Equal(BlockIds.Stone, reloaded.GetBlock(1, 64, 1).RegistryId);
+                reloaded.SetBlock(2, 64, 2, BlocksRegistry.Stone);
+            });
+        }
+        finally
+        {
+            release.TrySetResult();
+            await unload.WaitAsync(TimeSpan.FromSeconds(10));
+            region.ChunkFile.Observe = null;
+        }
+
+        var saved = await ReadSavedChunkAsync(world, region);
+        Assert.Equal(BlockIds.Stone, saved.GetBlock(1, 64, 1).RegistryId);
+        Assert.Equal(BlockIds.Stone, saved.GetBlock(2, 64, 2).RegistryId);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task EntityArrivingDuringAnUnloadWriteIsSaved(bool wholeRegion, bool movedIn)
+    {
+        await using var context = TestServerFactory.CreateServer($"chunk-saves-unload-arrival-{Guid.NewGuid():N}");
+        var world = context.World;
+        var region = PrepareUnload(world, out var chunk);
+        await region.FlushAsync();
+        chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+        var (writing, release) = PauseUnloadWrite(region, RegionFile.Step.PayloadWritten);
+
+        // Spawned into the chunk, or moved in from chunk 63 of the neighbouring region, which stays loaded.
+        var destination = new VectorD(1032, 65, 1032);
+        var item = new ItemEntity
+        {
+            Level = world,
+            EntityId = 1,
+            Position = movedIn ? new VectorF(1020, 65, 1032) : (VectorF)destination,
+            Item = new ItemStack(ItemsRegistry.Apple, 3)
+        };
+        if (movedIn)
+        {
+            ((Region)world.LoadRegionByChunk(63, 64)).SetChunk(Complete(63, 64));
+            Assert.True(world.TryAddEntity(item));
+        }
+
+        var unload = StartUnload(world, region, wholeRegion);
+        try
+        {
+            // The chunk's entities left with its final save; the item arrives in the chunk loaded again meanwhile.
+            await writing.WaitAsync(TimeSpan.FromSeconds(10));
+            await TickWithAsync(world, async () =>
+            {
+                Assert.NotNull(await world.GetChunkAsync(64, 64, scheduleGeneration: false));
+                Arrive(world, item, destination, movedIn);
+            });
+        }
+        finally
+        {
+            release.TrySetResult();
+            await unload.WaitAsync(TimeSpan.FromSeconds(10));
+            region.ChunkFile.Observe = null;
+        }
+
+        Assert.Same(item, world.FindEntity(item.Uuid));
+        var saved = await ReadSavedChunkAsync(world, region);
+        var savedItem = Assert.Single(saved.PendingEntities, entity => entity.Type == "minecraft:item");
+        var restoredItem = Assert.IsType<ItemEntity>(EntityNbt.Load(EntityNbt.ToNbt(savedItem), world));
+        Assert.Equal(3, restoredItem.Item.Count);
+        Assert.Equal(ItemsRegistry.Apple, restoredItem.Item.Holder);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task UnloadedSpawnersStopTickingWhileTheirSaveIsWritten(bool wholeRegion)
+    {
+        await using var context = TestServerFactory.CreateServer($"chunk-saves-unload-spawner-{Guid.NewGuid():N}");
+        var world = context.World;
+        var region = PrepareUnload(world, out var chunk);
+        var spawner = (DataBlockEntity)BlockEntityNbt.Create("minecraft:mob_spawner", new Vector(1028, 30, 1028));
+        chunk.SetBlockEntity(Spawner.X, Spawner.Y, Spawner.Z, spawner);
+        var watcher = TestServerFactory.CreateConnectedPlayer(
+            context.Server, world, "Watcher", new VectorD(1028.5, 31, 1028.5));
+        Assert.True(world.TryAddPlayer(watcher));
+
+        // With its chunk loaded, a player in range counts the spawner down each tick.
+        await world.DoWorldTickAsync().WaitAsync(TimeSpan.FromSeconds(5));
+        var counted = Delay(spawner);
+        Assert.True(counted < 20);
+
+        chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+        chunk.NextEagerSave = long.MaxValue;
+        var (writing, release) = PauseUnloadWrite(region, RegionFile.Step.PayloadWritten);
+        var unload = StartUnload(world, region, wholeRegion);
+        try
+        {
+            // Unloaded, it no longer ticks, so the save being written keeps its state.
+            await writing.WaitAsync(TimeSpan.FromSeconds(10));
+            await world.DoWorldTickAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal(counted, Delay(spawner));
+        }
+        finally
+        {
+            release.TrySetResult();
+            await unload.WaitAsync(TimeSpan.FromSeconds(10));
+            region.ChunkFile.Observe = null;
+        }
+
+        world.Players.TryRemove(watcher.Uuid, out _);
+        var saved = await ReadSavedChunkAsync(world, region);
+        var savedSpawner = Assert.IsType<DataBlockEntity>(saved.GetBlockEntity(Spawner.X, Spawner.Y, Spawner.Z));
+        Assert.Equal(counted, Delay(savedSpawner));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task UnloadCallbacksRunBetweenTicks(bool wholeRegion)
+    {
+        await using var context = TestServerFactory.CreateServer($"chunk-saves-unload-callback-{Guid.NewGuid():N}");
+        var world = context.World;
+        var region = PrepareUnload(world, out var chunk);
+        var probe = new GateProbe(world) { Id = "probe:gate", BlockPosition = Crate };
+        chunk.SetBlockEntity(Crate.X, Crate.Y, Crate.Z, probe);
+        await world.DoWorldTickAsync().WaitAsync(TimeSpan.FromSeconds(5));
+
+        await StartUnload(world, region, wholeRegion).WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.True(probe.Unloaded);
+        Assert.True(probe.GateHeld);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AChunkChangedEveryTickStillUnloads(bool wholeRegion)
+    {
+        await using var context = TestServerFactory.CreateServer($"chunk-saves-unload-busy-{Guid.NewGuid():N}");
+        var world = context.World;
+        var region = PrepareUnload(world, out var chunk);
+        chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+        chunk.NextEagerSave = long.MaxValue;
+
+        // A plugin keeps writing the instance it holds, every tick, through and after the unload.
+        var height = 70;
+        using var writer = world.AddTicker(() =>
+        {
+            chunk.SetBlock(3, height++ % 200, 3, BlocksRegistry.Stone);
+            return ValueTask.CompletedTask;
+        });
+
+        var (writing, release) = PauseUnloadWrite(region, RegionFile.Step.PayloadWritten);
+        var unload = StartUnload(world, region, wholeRegion);
+        await writing.WaitAsync(TimeSpan.FromSeconds(10));
+        await world.DoWorldTickAsync().WaitAsync(TimeSpan.FromSeconds(5));
+        release.TrySetResult();
+
+        // The unload ends while the level keeps ticking, and the autosave after it isn't held up.
+        for (var tick = 0; tick < 100 && !unload.IsCompleted; tick++)
+            await world.DoWorldTickAsync().WaitAsync(TimeSpan.FromSeconds(5));
+
+        await unload.WaitAsync(TimeSpan.FromSeconds(10));
+        region.ChunkFile.Observe = null;
+        await world.FlushRegionsAsync().WaitAsync(TimeSpan.FromSeconds(10));
+
+        // The instance the plugin holds kept changing after the unload took it out of the level.
+        Assert.True(chunk.IsUnsaved);
+    }
+
+    private static void Arrive(World world, ItemEntity item, VectorD destination, bool movedIn)
+    {
+        if (!movedIn)
+        {
+            Assert.True(world.TryAddEntity(item));
+            return;
+        }
+
+        Assert.True(world.TryMoveEntity(item, item.Position, destination));
+        item.Position = (VectorF)destination;
+    }
+
+    // Saves and disposes the world, as a server stopping does, then reads the unloaded chunk's region from disk.
+    private static async Task<Chunk> ReadSavedChunkAsync(World world, Region region)
+    {
+        await world.FlushRegionsAsync();
+        await world.DisposeAsync();
+
+        await using var reader = new Region(region.X, region.Z,
+            Path.GetDirectoryName(region.RegionFolder)!, Path.GetFileName(region.RegionFolder));
+        await reader.InitAsync();
+        return (Chunk)await reader.GetChunkAsync(0, 0);
+    }
+
+    private static short Delay(DataBlockEntity spawner) =>
+        spawner.Data.TryGetTagValue<short>("Delay", out var delay) ? delay : (short)20;
+
+    // Runs one level tick in which a ticker does what's given once, as a plugin's ticker would.
+    private static async Task TickWithAsync(World world, Func<ValueTask> action)
+    {
+        var ran = 0;
+        using var ticker = world.AddTicker(async () =>
+        {
+            if (Interlocked.Exchange(ref ran, 1) == 0)
+                await action();
+        });
+
+        await world.DoWorldTickAsync().WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(1, ran);
+    }
+
+    /// <summary>
+    /// Records whether its chunk's unload told it so between ticks, holding the level's simulation gate, where block
+    /// entity callbacks run.
+    /// </summary>
+    private sealed class GateProbe(World world) : BlockEntity
+    {
+        public bool Unloaded { get; private set; }
+
+        public bool GateHeld { get; private set; }
+
+        protected internal override void OnChunkUnloaded()
+        {
+            this.Unloaded = true;
+
+            // Takes the gate at once only when nothing holds it.
+            var free = world.TryRunBetweenTicksAsync(() => { }, TimeSpan.Zero).GetAwaiter().GetResult();
+            this.GateHeld = !free;
+        }
+    }
+
     private static Region PrepareUnload(World world, out Chunk chunk)
     {
         chunk = Complete(64, 64);
@@ -689,9 +947,15 @@ public sealed class ChunkSaves
         return region;
     }
 
-    private static Task StartUnload(World world, Region region, bool wholeRegion) => wholeRegion
-        ? world.UnloadRegionAsync(region.X, region.Z)
-        : world.ManageChunksAsync();
+    // Chunk management unloads unneeded chunks every 600 ticks, which ticks run before may have passed.
+    private static Task StartUnload(World world, Region region, bool wholeRegion)
+    {
+        if (wholeRegion)
+            return world.UnloadRegionAsync(region.X, region.Z);
+
+        world.LevelData.GameTime = 600;
+        return world.ManageChunksAsync();
+    }
 
     private static (Task Writing, TaskCompletionSource Release) PauseUnloadWrite(Region region, RegionFile.Step step)
     {

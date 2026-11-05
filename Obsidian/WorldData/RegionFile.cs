@@ -268,6 +268,15 @@ public sealed partial class RegionFile : IAsyncDisposable
     }
 
     /// <summary>
+    /// Whether a write of the chunk is reserved and hasn't ended yet, so the file may not hold its latest save.
+    /// </summary>
+    internal bool HasWriteInFlight(int chunkX, int chunkZ)
+    {
+        lock (this.lastWrites)
+            return this.lastWrites[this.GetChunkTableIndex(chunkX, chunkZ)] is { IsCompleted: false };
+    }
+
+    /// <summary>
     /// Compresses a chunk's NBT as this file stores it, at <see cref="PayloadCompressionLevel"/>. Return the result to
     /// the pool once written.
     /// </summary>
@@ -1372,6 +1381,12 @@ public sealed partial class RegionFile : IAsyncDisposable
         /// </summary>
         public Exception? Failure { get; private set; }
 
+        /// <summary>
+        /// Runs when the write fails, before <see cref="Done"/> completes, so whoever sees it ended without a write in
+        /// flight also sees what the failure put back (like the chunk's unsaved marks).
+        /// </summary>
+        public Action? Failed { get; set; }
+
         /// <summary>Gives the write up, unless it was staged: then its commit ends it.</summary>
         public void Dispose()
         {
@@ -1387,6 +1402,9 @@ public sealed partial class RegionFile : IAsyncDisposable
                 return;
 
             this.Failure = failure;
+            if (failure is not null)
+                this.Failed?.Invoke();
+
             this.End();
         }
 
