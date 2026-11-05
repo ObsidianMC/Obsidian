@@ -70,6 +70,7 @@ public partial class PlayerBase
                         || contact?.BlockId == this.lastPortal && contact?.Type == this.lastPortalType))
                 {
                     await this.ChangePortalLevelAsync(destination);
+                    this.PlacePortalTicket(destination);
                     this.portalCooldown = PlayerPortalCooldown;
                     this.portalTime = 0;
                 }
@@ -191,8 +192,9 @@ public partial class PlayerBase
 
                     if (CanContinue())
                     {
+                        // Like vanilla's, a trip out of the End places no portal ticket.
                         return new(destination, position, enteringEnd ? 90f : this.Yaw,
-                            enteringEnd ? 0f : this.Pitch, VectorD.Zero, area);
+                            enteringEnd ? 0f : this.Pitch, VectorD.Zero, area, PlacesTicket: enteringEnd);
                     }
 
                     area.Dispose();

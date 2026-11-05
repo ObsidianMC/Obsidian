@@ -85,6 +85,7 @@ internal static class EndTravel
 
         // Leaving the End: the top of the world spawn's column (vanilla's adjustSpawnLocation, with the
         // MOTION_BLOCKING_NO_LEAVES heightmap), keeping rotation and velocity. Obsidian has no spawn angle to add.
+        // Vanilla places no portal ticket for this trip.
         var spawn = world.LevelData.SpawnPosition;
         var column = new Vector((int)Math.Floor(spawn.X), (int)Math.Floor(spawn.Y), (int)Math.Floor(spawn.Z));
         var spawnArea = await PortalArea.LoadAsync(destination, column, 0, canContinue);
@@ -97,7 +98,7 @@ internal static class EndTravel
             var y = chunk.GetHeight(HeightmapType.MotionBlockingNoLeaves, column.X, column.Z);
             var arrival = new VectorD(column.X + 0.5, y, column.Z + 0.5);
             return ValueTask.FromResult<PortalDestination>(
-                new(destination, arrival, entity.Yaw, entity.Pitch, entity.Motion, spawnArea));
+                new(destination, arrival, entity.Yaw, entity.Pitch, entity.Motion, spawnArea, PlacesTicket: false));
         }, canContinue);
     }
 

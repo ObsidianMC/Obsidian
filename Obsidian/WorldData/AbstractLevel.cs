@@ -986,6 +986,8 @@ public abstract partial class AbstractLevel : ILevel
         if (++this.timeSyncTicks % 20 == 0)
             this.BroadcastTime();
 
+        this.AgePortalTickets();
+
         // Like vanilla, block ticks and then fluid ticks run before entities tick.
         TickStage = "block and fluid ticks";
         this.Fluids.Tick();

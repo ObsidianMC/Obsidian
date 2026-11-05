@@ -19,6 +19,24 @@ public abstract partial class AbstractLevel
     private readonly HashSet<ChunkTicket> chunkTickets = [];
     private TicketChunks ticketChunks = new([], []);
 
+    // Like vanilla's portal ticket (TicketType.PORTAL, placed at radius 3 for 300 ticks): the chunks within 3 of a
+    // portal exit stay loaded, and those within 2 tick, for 300 of the level's ticks after an entity came through.
+    // Vanilla's radius-3 ticket makes those within 2 block-ticking and those within 1 entity-ticking; Obsidian ticks
+    // both alike, so the ticking square is the block-ticking one.
+    private const int PortalTicketRadius = 3;
+    private const int PortalTicketTicks = 300;
+
+    // The portal tickets by exit chunk, with the level ticks each has left. Guarded by chunkTicketLock. They're apart
+    // from chunkTickets, so that they never count against plugins' ticket limits.
+    private readonly Dictionary<long, PortalTicket> portalTickets = [];
+
+    private sealed class PortalTicket(long[] loaded, long[] ticking)
+    {
+        public long[] Loaded { get; } = loaded;
+        public long[] Ticking { get; } = ticking;
+        public int TicksLeft { get; set; } = PortalTicketTicks;
+    }
+
     private sealed record TicketChunks(HashSet<long> Loaded, HashSet<long> Ticking);
 
     // An explicit world request survives ticket release, and a dispatched job finishes under its pins. Ticket and player
@@ -63,7 +81,8 @@ public abstract partial class AbstractLevel
             if (this.chunkTickets.Count >= MaximumChunkTickets)
                 throw new InvalidOperationException("The level's limit of 256 chunk tickets has been reached.");
 
-            var loaded = new HashSet<long>(this.ticketChunks.Loaded);
+            // Plugins' tickets alone count against the limits, not the level's own portal tickets.
+            var loaded = new HashSet<long>(this.chunkTickets.SelectMany(held => held.Loaded));
             loaded.UnionWith(ticket.Loaded);
             if (loaded.Count > MaximumTicketChunks)
                 throw new InvalidOperationException("Chunk tickets may retain at most 1024 chunks per level.");
@@ -120,9 +139,61 @@ public abstract partial class AbstractLevel
         {
             var tickets = this.chunkTickets.ToArray();
             this.chunkTickets.Clear();
+            this.portalTickets.Clear();
             this.PublishTicketChunks();
             foreach (var ticket in tickets)
                 ticket.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Keeps the chunks around <paramref name="exit"/> loaded and ticking for a while after an entity came through a
+    /// portal to it, like vanilla's portal ticket (see <see cref="PortalTicketRadius"/>). Another one at the same exit
+    /// chunk starts its time again, as vanilla's does.
+    /// </summary>
+    internal void AddPortalTicket(VectorD exit)
+    {
+        var (x, z) = Region.ChunkOf(exit);
+        var key = NumericsHelper.IntsToLong(x, z);
+        lock (this.chunkTicketLock)
+        {
+            if (Volatile.Read(ref this.disposed) != 0)
+                return;
+
+            if (this.portalTickets.TryGetValue(key, out var existing))
+            {
+                existing.TicksLeft = PortalTicketTicks;
+                return;
+            }
+
+            var loaded = TicketSquare(x, z, PortalTicketRadius);
+            var ticking = TicketSquare(x, z, PortalTicketRadius - 1);
+            this.portalTickets.Add(key, new PortalTicket(loaded, ticking));
+            this.PublishTicketChunks();
+        }
+    }
+
+    // Called once a level tick, before the level's blocks and entities tick, as vanilla's chunk source ages its
+    // tickets: releases the portal tickets whose time is up.
+    private void AgePortalTickets()
+    {
+        lock (this.chunkTicketLock)
+        {
+            if (this.portalTickets.Count == 0)
+                return;
+
+            var expired = 0;
+            foreach (var (key, ticket) in this.portalTickets)
+            {
+                if (--ticket.TicksLeft > 0)
+                    continue;
+
+                this.portalTickets.Remove(key);
+                expired++;
+            }
+
+            if (expired > 0)
+                this.PublishTicketChunks();
         }
     }
 
@@ -132,6 +203,12 @@ public abstract partial class AbstractLevel
         var loaded = new HashSet<long>();
         var ticking = new HashSet<long>();
         foreach (var ticket in this.chunkTickets)
+        {
+            loaded.UnionWith(ticket.Loaded);
+            ticking.UnionWith(ticket.Ticking);
+        }
+
+        foreach (var ticket in this.portalTickets.Values)
         {
             loaded.UnionWith(ticket.Loaded);
             ticking.UnionWith(ticket.Ticking);

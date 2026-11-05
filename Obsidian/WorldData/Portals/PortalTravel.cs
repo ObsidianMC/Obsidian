@@ -12,7 +12,8 @@ internal sealed record PortalDestination(
     VectorD Motion,
     PortalArea Area,
     PortalType? Type = null,
-    int Generation = 0);
+    int Generation = 0,
+    bool PlacesTicket = true);
 
 /// <summary>Rectangular transit shared by players and other entities; preparation does not block ticks.</summary>
 internal static class PortalTravel
