@@ -330,15 +330,33 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
 
     public override async ValueTask DisposeAsync()
     {
-        // The world's own level is disposed even when a dimension's disposal fails.
+        // The world's own level is disposed even when a dimension's disposal fails, and every level's failure is the
+        // disposal's, so a shutdown reports each level it couldn't save.
+        List<Exception> failures = [];
+        var dimensions = Task.WhenAll(this.dimensions.Values.Select(dimension => dimension.DisposeAsync().AsTask()));
         try
         {
-            await Task.WhenAll(this.dimensions.Values.Select(dimension => dimension.DisposeAsync().AsTask()));
+            await dimensions;
         }
-        finally
+        catch (Exception exception)
+        {
+            failures.AddRange(dimensions.Exception?.InnerExceptions ?? [exception]);
+        }
+
+        try
         {
             await base.DisposeAsync();
         }
+        catch (Exception exception)
+        {
+            failures.Add(exception);
+        }
+
+        if (failures.Count == 1)
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw(failures[0]);
+
+        if (failures.Count > 1)
+            throw new AggregateException(failures);
     }
 
     private static partial class Log
