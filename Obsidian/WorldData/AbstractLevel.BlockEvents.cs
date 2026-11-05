@@ -41,7 +41,7 @@ public abstract partial class AbstractLevel
         if (this.GetLoadedChunk(x, z) is null)
             return false;
 
-        // Vanilla ChunkLevel: block events tick at level <= 32, one ring beyond entity ticking (<= 31).
+        // Vanilla ChunkLevel: block-tier work ticks at level <= 32, one ring beyond entity ticking (<= 31).
         // Dilating the entity-ticking squares also includes the block-ticking border of ticking tickets.
         var snapshot = Volatile.Read(ref this.simulationCurrent);
         for (var dx = -1; dx <= 1; dx++)

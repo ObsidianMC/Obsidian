@@ -1,7 +1,7 @@
 namespace Obsidian.WorldData;
 
 /// <summary>
-/// The chunks within simulation distance of a level's non-spectator players: those whose mobs, block entities and
+/// The chunks within simulation distance of a level's non-spectator players: those whose mobs and
 /// random ticks run, like vanilla's chunk map works out once a tick. It's updated from the players' chunks at the start
 /// of each tick, and only the squares of players who changed chunk, joined or left are counted again, since the level's
 /// tick asks whether a chunk is simulated for every mob and loaded chunk.
