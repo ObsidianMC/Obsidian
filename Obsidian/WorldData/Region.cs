@@ -282,11 +282,16 @@ public partial class Region : IRegion
     /// it only compresses and writes what it took, so the level may tick again (see
     /// <c>AbstractLevel.FlushRegionsAsync</c>).
     /// </param>
-    internal async Task WriteChangesAsync(TaskCompletionSource? snapshotsTaken = null)
+    /// <param name="snapshotUnload">
+    /// Runs an unloading snapshot under the level's simulation gate. Waiting for staging capacity, earlier saves and
+    /// writes stays outside that callback, so none of those waits holds up a tick.
+    /// </param>
+    internal async Task WriteChangesAsync(TaskCompletionSource? snapshotsTaken = null,
+        Func<Func<Task<bool>>, Task<bool>>? snapshotUnload = null)
     {
         try
         {
-            await this.WriteChangesCoreAsync(snapshotsTaken);
+            await this.WriteChangesCoreAsync(snapshotsTaken, snapshotUnload);
         }
         finally
         {
@@ -295,7 +300,8 @@ public partial class Region : IRegion
         }
     }
 
-    private async Task WriteChangesCoreAsync(TaskCompletionSource? snapshotsTaken)
+    private async Task WriteChangesCoreAsync(TaskCompletionSource? snapshotsTaken,
+        Func<Func<Task<bool>>, Task<bool>>? snapshotUnload)
     {
         await this.initialization.Value;
 
@@ -306,7 +312,7 @@ public partial class Region : IRegion
             await this.flushLock.WaitAsync();
             try
             {
-                await this.WriteChangesUnderLockAsync(taken, snapshotsTaken);
+                await this.WriteChangesUnderLockAsync(taken, snapshotsTaken, snapshotUnload);
             }
             finally
             {
@@ -431,7 +437,8 @@ public partial class Region : IRegion
     /// </summary>
     private static bool NeedsEntitySave(IChunk chunk) => chunk is Chunk { IsGenerated: true, SavedEntityCount: < 0 };
 
-    private async Task WriteChangesUnderLockAsync(List<ChunkSave> taken, TaskCompletionSource? snapshotsTaken)
+    private async Task WriteChangesUnderLockAsync(List<ChunkSave> taken, TaskCompletionSource? snapshotsTaken,
+        Func<Func<Task<bool>>, Task<bool>>? snapshotUnload = null)
     {
         // Pending light goes in first, so a chunk it reaches counts as changed.
         lock (this.FluidTickLock)
@@ -442,7 +449,8 @@ public partial class Region : IRegion
             this.ChunksToFlush(entityChunks),
             unloading: this.lightingRetired,
             taken,
-            snapshotsTaken);
+            snapshotsTaken,
+            snapshotUnload: snapshotUnload);
     }
 
     /// <summary>
@@ -481,7 +489,8 @@ public partial class Region : IRegion
     /// snapshots, which slow writes elsewhere, or a generation step, would otherwise hold up.
     /// </param>
     private async Task SaveTogetherAsync(IEnumerable<(IChunk Chunk, bool Entities)> chunks, bool unloading,
-        List<ChunkSave> taken, TaskCompletionSource? snapshotsTaken = null, bool wait = true)
+        List<ChunkSave> taken, TaskCompletionSource? snapshotsTaken = null, bool wait = true,
+        Func<Func<Task<bool>>, Task<bool>>? snapshotUnload = null)
     {
         var staging = new List<Task>();
         Task completing = Task.CompletedTask;
@@ -499,7 +508,9 @@ public partial class Region : IRegion
                 bool snapshotted;
                 try
                 {
-                    snapshotted = await this.SnapshotChunkAsync(save, unloading, saveEntities: entities, wait);
+                    snapshotted = snapshotUnload is null
+                        ? await this.SnapshotChunkAsync(save, unloading, saveEntities: entities, wait)
+                        : await snapshotUnload(() => this.SnapshotChunkAsync(save, unloading, entities, wait));
                 }
                 catch
                 {
@@ -719,7 +730,11 @@ public partial class Region : IRegion
         }
     }
 
-    public async Task UnloadChunk(int x, int z)
+    public Task UnloadChunk(int x, int z) => this.UnloadChunkAsync(x, z);
+
+    // The level supplies a short simulation-gate hold for each snapshot; all waits for writes stay outside it.
+    internal async Task UnloadChunkAsync(int x, int z,
+        Func<Func<Task<bool>>, Task<bool>>? snapshotUnload = null)
     {
         var chunk = loadedChunks[x, z];
         if (chunk is null)
@@ -727,7 +742,7 @@ public partial class Region : IRegion
 
         while (true)
         {
-            await SerializeChunkAsync(chunk, unloading: true);
+            await SerializeChunkAsync(chunk, unloading: true, snapshotUnload: snapshotUnload);
             lock (this.FluidTickLock)
             {
                 if (this.TryDetachUnloaded(chunk))
@@ -1180,7 +1195,9 @@ public partial class Region : IRegion
     /// <param name="unloading">Whether the chunk is being unloaded: its saved entities are also taken out of the level.</param>
     /// <param name="entities">Whether to save the entities of a complete chunk that isn't unloading; unloading always
     /// saves them.</param>
-    internal async Task SerializeChunkAsync(IChunk chunk, bool unloading = false, bool entities = true)
+    /// <param name="snapshotUnload">Runs only the snapshot under the level's simulation gate.</param>
+    internal async Task SerializeChunkAsync(IChunk chunk, bool unloading = false, bool entities = true,
+        Func<Func<Task<bool>>, Task<bool>>? snapshotUnload = null)
     {
         await this.initialization.Value;
 
@@ -1196,7 +1213,10 @@ public partial class Region : IRegion
 
             try
             {
-                await this.SnapshotChunkAsync(save, unloading, entities);
+                if (snapshotUnload is null)
+                    await this.SnapshotChunkAsync(save, unloading, entities);
+                else
+                    await snapshotUnload(() => this.SnapshotChunkAsync(save, unloading, entities));
                 await this.StageSaveAsync(save);
             }
             finally
@@ -1528,8 +1548,13 @@ public partial class Region : IRegion
         if (!chunk.IsGenerated)
             return false;
 
-        if (entityChunks.Contains((chunk.X, chunk.Z)) || chunk.PendingEntities.Count > 0 || chunk.UnspawnableEntities.Count > 0)
+        if (entityChunks.Contains((chunk.X, chunk.Z))
+            || chunk.PendingEntities.Count > 0
+            || chunk.UnspawnableEntities.Count > 0
+            || chunk.UnloadedEntities is { Count: > 0 })
+        {
             return true;
+        }
 
         var (x, z) = (NumericsHelper.Modulo(chunk.X, CubicRegionSize), NumericsHelper.Modulo(chunk.Z, CubicRegionSize));
         return chunk.SavedEntityCount != 0 && this.entityRegionFile.HasChunk(x, z);
@@ -1539,7 +1564,7 @@ public partial class Region : IRegion
     /// The entities to save with a complete chunk: those still waiting to spawn, and those of the level in the chunk. When
     /// unloading, the level's are taken out of it too, and the chunk's pending ones won't spawn anymore.
     /// </summary>
-    /// <returns><c>null</c> once an unloading save took the entities, which a later save of the chunk mustn't overwrite.</returns>
+    /// <returns>The retired snapshot on retries, so entities removed from the level survive a failed write.</returns>
     private NbtList? CollectEntities(Chunk chunk, bool unloading)
     {
         var entities = new NbtList(NbtTagType.Compound, "Entities");
@@ -1549,7 +1574,7 @@ public partial class Region : IRegion
             using (chunk.EntityLock.EnterScope())
         {
             if (chunk.EntitiesUnloaded)
-                return null;
+                return chunk.UnloadedEntities;
 
             foreach (var pending in chunk.PendingEntities)
                 entities.Add(EntityNbt.ToNbt(pending));
@@ -1578,7 +1603,16 @@ public partial class Region : IRegion
             }
 
             if (unloading)
+            {
+                // Keep a detached copy: entity saves can refer to live NBT, while retries happen after more ticks.
+                var retained = new NbtList(NbtTagType.Compound, "Entities");
+                foreach (NbtCompound entity in entities)
+                    retained.Add(DataBlockEntity.Copy(entity));
+
+                chunk.UnloadedEntities = retained;
                 chunk.EntitiesUnloaded = true;
+                return retained;
+            }
         }
         }
 

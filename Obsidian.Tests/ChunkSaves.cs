@@ -469,6 +469,245 @@ public sealed class ChunkSaves
         region.ChunkFile.Observe = null;
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LevelTicksWhileAnUnloadWritesAndAutosaveWaits(bool wholeRegion)
+    {
+        await using var context = TestServerFactory.CreateServer($"chunk-saves-unload-tick-{Guid.NewGuid():N}");
+        var world = context.World;
+        var region = PrepareUnload(world, out var chunk);
+        chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+        var (writing, release) = PauseUnloadWrite(region, RegionFile.Step.Flushed);
+
+        var unload = StartUnload(world, region, wholeRegion);
+        Task autosave = Task.CompletedTask;
+        try
+        {
+            await writing.WaitAsync(TimeSpan.FromSeconds(10));
+            autosave = world.FlushRegionsAsync();
+
+            var before = world.LevelData.GameTime;
+            await world.DoWorldTickAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal(before + 1, world.LevelData.GameTime);
+            Assert.False(unload.IsCompleted);
+            Assert.False(autosave.IsCompleted);
+        }
+        finally
+        {
+            release.TrySetResult();
+            await Task.WhenAll(unload, autosave).WaitAsync(TimeSpan.FromSeconds(10));
+            region.ChunkFile.Observe = null;
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReloadDuringAnUnloadKeepsTheLatestBlocksAndBlockEntities(bool wholeRegion)
+    {
+        await using var context = TestServerFactory.CreateServer($"chunk-saves-unload-reload-{Guid.NewGuid():N}");
+        var world = context.World;
+        var region = PrepareUnload(world, out var chunk);
+        await region.FlushAsync();
+
+        chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+        AddSpawner(chunk);
+        var (writing, release) = PauseUnloadWrite(region, RegionFile.Step.PayloadWritten);
+        var unload = StartUnload(world, region, wholeRegion);
+        try
+        {
+            await writing.WaitAsync(TimeSpan.FromSeconds(10));
+
+            // The resident instance remains readable until its final write commits; the disk still has the old data.
+            var duringWrite = await world.GetChunkAsync(64, 64, scheduleGeneration: false);
+            Assert.NotNull(duringWrite);
+            Assert.Equal(BlockIds.Stone, duringWrite.GetBlock(1, 64, 1).RegistryId);
+            Assert.NotNull(duringWrite.GetBlockEntity(Spawner.X, Spawner.Y, Spawner.Z));
+            Assert.False(unload.IsCompleted);
+        }
+        finally
+        {
+            release.TrySetResult();
+            await unload.WaitAsync(TimeSpan.FromSeconds(10));
+            region.ChunkFile.Observe = null;
+        }
+
+        var reloaded = await world.GetChunkAsync(64, 64, scheduleGeneration: false);
+        Assert.NotNull(reloaded);
+        Assert.NotSame(chunk, reloaded);
+        Assert.Equal(BlockIds.Stone, reloaded.GetBlock(1, 64, 1).RegistryId);
+        Assert.NotNull(reloaded.GetBlockEntity(Spawner.X, Spawner.Y, Spawner.Z));
+    }
+
+    [Theory]
+    [InlineData(false, false, true)]
+    [InlineData(true, false, true)]
+    [InlineData(false, true, true)]
+    [InlineData(true, true, true)]
+    [InlineData(false, true, false)]
+    [InlineData(true, true, false)]
+    public async Task FailedUnloadRetriesLiveAndPendingEntities(
+        bool wholeRegion, bool entityFile, bool pendingEntity)
+    {
+        await using var context = TestServerFactory.CreateServer($"chunk-saves-unload-entities-{Guid.NewGuid():N}");
+        var world = context.World;
+        var region = PrepareUnload(world, out var chunk);
+        await region.FlushAsync();
+
+        chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+        AddSpawner(chunk);
+        if (pendingEntity)
+            chunk.PendingEntities.Add(new GeneratedEntity("minecraft:end_crystal", new VectorD(1032, 80, 1032)));
+
+        var item = new ItemEntity
+        {
+            Level = world,
+            EntityId = 1,
+            Position = new VectorF(1032, 65, 1032),
+            Item = new ItemStack(ItemsRegistry.Apple, 3)
+        };
+        Assert.True(region.TryAddEntity(item));
+        var failingFile = entityFile ? region.EntityFile : region.ChunkFile;
+        failingFile.Observe = change => change.Step == RegionFile.Step.PayloadWritten
+            ? ValueTask.FromException(new IOException("The unload write failed."))
+            : ValueTask.CompletedTask;
+
+        await Assert.ThrowsAsync<IOException>(() => StartUnload(world, region, wholeRegion));
+        Assert.Same(chunk, region.GetLoadedChunk(0, 0));
+        failingFile.Observe = null;
+
+        // Region failures retry through autosave; chunk failures keep their resident snapshot for the next save.
+        await world.FlushRegionsAsync();
+        await world.DisposeAsync();
+
+        // Read the autosave's disk state without taking another unloading snapshot that could hide a missed retry.
+        await using var reader = new Region(region.X, region.Z,
+            Path.GetDirectoryName(region.RegionFolder)!, Path.GetFileName(region.RegionFolder));
+        await reader.InitAsync();
+        var reloaded = (Chunk)await reader.GetChunkAsync(0, 0);
+        Assert.Equal(BlockIds.Stone, reloaded.GetBlock(1, 64, 1).RegistryId);
+        Assert.NotNull(reloaded.GetBlockEntity(Spawner.X, Spawner.Y, Spawner.Z));
+        Assert.Equal(pendingEntity ? 2 : 1, reloaded.PendingEntities.Count);
+        var savedItem = Assert.Single(reloaded.PendingEntities, entity => entity.Type == "minecraft:item");
+        var restoredItem = Assert.IsType<ItemEntity>(EntityNbt.Load(EntityNbt.ToNbt(savedItem), world));
+        Assert.Equal(3, restoredItem.Item.Count);
+        Assert.Equal(ItemsRegistry.Apple, restoredItem.Item.Holder);
+        if (pendingEntity)
+            Assert.Contains(reloaded.PendingEntities, entity => entity.Type == "minecraft:end_crystal");
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task UnloadWaitsForAFailingEarlierSaveWithoutHoldingTheTick(bool wholeRegion, bool eager)
+    {
+        await using var context = TestServerFactory.CreateServer($"chunk-saves-unload-prior-{Guid.NewGuid():N}");
+        var world = context.World;
+        var region = PrepareUnload(world, out var chunk);
+        await region.FlushAsync();
+        chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+
+        var writing = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var failing = 1;
+        region.ChunkFile.Observe = async change =>
+        {
+            if (change.Step != RegionFile.Step.Flushed || Interlocked.Exchange(ref failing, 0) == 0)
+                return;
+
+            writing.TrySetResult();
+            await release.Task;
+            throw new IOException("The earlier save failed.");
+        };
+
+        var earlierSave = eager ? SaveEagerlyAsync(region, chunk) : world.FlushRegionsAsync();
+        Task unload = Task.CompletedTask;
+        try
+        {
+            await writing.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            chunk.SetBlock(2, 64, 2, BlocksRegistry.Stone);
+            unload = StartUnload(world, region, wholeRegion);
+            await world.DoWorldTickAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.False(unload.IsCompleted);
+        }
+        finally
+        {
+            release.TrySetResult();
+            await Assert.ThrowsAnyAsync<Exception>(() => earlierSave.WaitAsync(TimeSpan.FromSeconds(10)));
+            await unload.WaitAsync(TimeSpan.FromSeconds(10));
+            region.ChunkFile.Observe = null;
+        }
+
+        var reloaded = await world.GetChunkAsync(64, 64, scheduleGeneration: false);
+        Assert.NotNull(reloaded);
+        Assert.Equal(BlockIds.Stone, reloaded.GetBlock(1, 64, 1).RegistryId);
+        Assert.Equal(BlockIds.Stone, reloaded.GetBlock(2, 64, 2).RegistryId);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DisposalWaitsForAnUnloadWrite(bool wholeRegion)
+    {
+        await using var context = TestServerFactory.CreateServer($"chunk-saves-unload-dispose-{Guid.NewGuid():N}");
+        var world = context.World;
+        var region = PrepareUnload(world, out var chunk);
+        chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+        var (writing, release) = PauseUnloadWrite(region, RegionFile.Step.Flushed);
+
+        var unload = StartUnload(world, region, wholeRegion);
+        Task disposing = Task.CompletedTask;
+        try
+        {
+            await writing.WaitAsync(TimeSpan.FromSeconds(10));
+            disposing = world.DisposeAsync().AsTask();
+            var first = await Task.WhenAny(disposing, Task.Delay(100));
+            Assert.NotSame(disposing, first);
+        }
+        finally
+        {
+            release.TrySetResult();
+            await Task.WhenAll(unload, disposing).WaitAsync(TimeSpan.FromSeconds(10));
+        }
+
+        await using var reader = new Region(region.X, region.Z,
+            Path.GetDirectoryName(region.RegionFolder)!, Path.GetFileName(region.RegionFolder));
+        await reader.InitAsync();
+        Assert.Equal(BlockIds.Stone, (await reader.GetChunkAsync(0, 0)).GetBlock(1, 64, 1).RegistryId);
+    }
+
+    private static Region PrepareUnload(World world, out Chunk chunk)
+    {
+        chunk = Complete(64, 64);
+        var region = (Region)world.LoadRegionByChunk(64, 64);
+        region.SetChunk(chunk);
+        world.LoadedChunks.Add(NumericsHelper.IntsToLong(64, 64));
+        world.LevelData.GameTime = 600;
+        return region;
+    }
+
+    private static Task StartUnload(World world, Region region, bool wholeRegion) => wholeRegion
+        ? world.UnloadRegionAsync(region.X, region.Z)
+        : world.ManageChunksAsync();
+
+    private static (Task Writing, TaskCompletionSource Release) PauseUnloadWrite(Region region, RegionFile.Step step)
+    {
+        var writing = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        region.ChunkFile.Observe = async change =>
+        {
+            if (change.Step != step)
+                return;
+
+            writing.TrySetResult();
+            await release.Task;
+        };
+        return (writing.Task, release);
+    }
+
     // Saves the chunk like a tick's eager save (see AbstractLevel.SaveChunksEagerlyAsync), waiting for its writes.
     // An attempt can leave the chunk out while other tests hold the shared staging slots, so it's tried again, as a
     // later tick would.
