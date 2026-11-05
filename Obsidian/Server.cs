@@ -236,6 +236,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
         IWorldManager worldManager)
     {
         this.logger = loggerFactory.CreateLogger<Server>();
+        this.serverDeferredWork = new WorldData.DeferredWork(this.logger);
         this.tickStatsLogger = loggerFactory.CreateLogger(TickStatsCategory);
         this.cancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
 
@@ -605,14 +606,36 @@ public sealed partial class Server : IServer, IPluginScopedServer
     /// <summary>
     /// Stops the server once: every call returns the same shutdown.
     /// </summary>
+    /// <remarks>
+    /// The shutdown waits for the server's loop, and so for the ticks. Asked for from inside a level's tick, or a
+    /// player's tick, grant or save (<c>/stop</c> run by a command block minecart, say), it goes on in the background
+    /// and this returns at once.
+    /// </remarks>
     public Task StopAsync()
     {
+        Task shutdown;
         lock (this.shutdownLock)
-            return this.shutdownTask ??= this.StopCoreAsync();
+        {
+            // Started apart from the caller's flow, so that its saves never count as inside the caller's tick.
+            if (this.shutdownTask is null)
+            {
+                using (ExecutionContext.SuppressFlow())
+                    this.shutdownTask = Task.Run(this.StopCoreAsync);
+            }
+
+            shutdown = this.shutdownTask;
+        }
+
+        return WorldData.AbstractLevel.MustNotWaitForGates ? Task.CompletedTask : shutdown;
     }
 
     private async Task StopCoreAsync()
     {
+        // No save asked for from a tick starts from now on: the final save covers it.
+        this.serverDeferredWork.Close();
+        foreach (var world in this.WorldManager.GetAvailableWorlds().OfType<WorldData.World>())
+            world.DeferredWork.Close();
+
         await cancelTokenSource.CancelAsync();
 
         this.CloseListeners();
@@ -625,6 +648,10 @@ public sealed partial class Server : IServer, IPluginScopedServer
         finally
         {
             await this.PendingLeavesAsync();
+
+            // Saves a tick started in the background finish before the final save, which they can't overwrite then.
+            await this.serverDeferredWork.WhenIdleAsync();
+            await this.WorldDeferredWorkAsync(close: true);
 
             // The final save waits for a save in progress (a pause, the save command, an autosave), so they never
             // overlap.
@@ -675,8 +702,13 @@ public sealed partial class Server : IServer, IPluginScopedServer
     /// starts generating, until <see cref="Resume"/>. Saves still run, and connections keep running.
     /// </summary>
     /// <returns>Whether the worlds were running, so this call paused them.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Called from inside a level's tick, or a player's tick, grant or save: it would wait for that tick to end.
+    /// </exception>
     public async Task<bool> PauseAsync()
     {
+        WorldData.AbstractLevel.ThrowIfMustNotWaitForGates(nameof(PauseAsync));
+
         await this.tickGate.WaitAsync();
         try
         {
@@ -709,8 +741,33 @@ public sealed partial class Server : IServer, IPluginScopedServer
     /// one at a time; a failed one is logged and reported through <see cref="SaveCompleted"/>.
     /// </summary>
     /// <param name="autosave">Whether this is the periodic autosave, rather than one that was asked for.</param>
-    /// <returns>Whether the save succeeded.</returns>
-    public async Task<bool> SaveEverythingAsync(bool autosave)
+    /// <returns>
+    /// Whether the save succeeded. Asked for from inside a level's tick, or a player's tick, grant or save, it can't
+    /// wait for the ticks (an autosave under way may be waiting for that tick), so it saves in the background once
+    /// they're over and returns <c>true</c> at once; <see cref="SaveCompleted"/> reports how it went. None starts once
+    /// the server is stopping, whose final save covers it.
+    /// </returns>
+    public Task<bool> SaveEverythingAsync(bool autosave)
+    {
+        if (!WorldData.AbstractLevel.MustNotWaitForGates)
+            return this.SaveEverythingNowAsync(autosave);
+
+        this.serverDeferredWork.TryStart(() => this.SaveEverythingNowAsync(autosave));
+        return Task.FromResult(true);
+    }
+
+    // Saves started from ticks that couldn't wait for them (see SaveEverythingAsync), which the shutdown waits for.
+    private readonly WorldData.DeferredWork serverDeferredWork;
+
+    // Waits for the saves the worlds' ticks started in the background, and closes them to new ones when stopping.
+    private Task WorldDeferredWorkAsync(bool close)
+    {
+        var worlds = this.WorldManager.GetAvailableWorlds().OfType<WorldData.World>();
+        return Task.WhenAll(worlds.Select(world =>
+            close ? world.DeferredWork.CloseAndDrainAsync() : world.DeferredWork.WhenIdleAsync()));
+    }
+
+    private async Task<bool> SaveEverythingNowAsync(bool autosave)
     {
         await this.saveLock.WaitAsync();
         try
@@ -725,6 +782,10 @@ public sealed partial class Server : IServer, IPluginScopedServer
 
                 await WorldManager.FlushLoadedWorldsAsync();
                 await this.userCache.SaveAsync();
+
+                // Saves the ticks started in the background are part of everything too, so the save is reported
+                // once they're written.
+                await this.WorldDeferredWorkAsync(close: false);
             }
             catch (Exception ex)
             {
@@ -892,7 +953,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
 
         // Like a network player's leave, it waits for the player's tick under way. One asked for from that tick (a
         // plugin removing the player as they die, say) runs apart from it, once it's done, and isn't waited for.
-        if (!serverPlayer.IsInOwnTick)
+        if (!serverPlayer.IsInOwnTick && !WorldData.AbstractLevel.MustNotWaitForGates)
         {
             await this.LeaveServerPlayerAsync(serverPlayer);
             return true;

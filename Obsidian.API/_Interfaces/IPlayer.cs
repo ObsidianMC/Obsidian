@@ -282,12 +282,19 @@ public interface IPlayer : ILiving
     internal ValueTask<bool> GrantAdvancementAsync(Func<ValueTask<bool>> grant) => grant();
     internal ValueTask RewardAdvancementAsync(Advancements.Advancement advancement) => default;
 
+    /// <summary>
+    /// Disconnects the player and waits for their leave, which waits for their tick under way. Called from inside a
+    /// level's tick, or any player's tick, grant or save, the leave finishes after the ticks, without being waited for.
+    /// </summary>
     public ValueTask DisconnectAsync(ChatMessage reason);
     public ValueTask SendMessageAsync(ChatMessage message);
     public ValueTask SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature);
     public ValueTask SetActionBarTextAsync(ChatMessage message);
     public ValueTask SendSoundAsync(ISoundEffect soundEffect);
+    /// <summary>Kicks the player; it waits for their leave like <see cref="DisconnectAsync"/>.</summary>
     public ValueTask KickAsync(ChatMessage reason);
+
+    /// <inheritdoc cref="KickAsync(ChatMessage)"/>
     public ValueTask KickAsync(string reason);
     public ValueTask OpenInventoryAsync(BaseContainer container);
     /// <summary>

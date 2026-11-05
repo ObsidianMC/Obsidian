@@ -7,7 +7,18 @@ public interface IAdvancements
 {
     bool IsDone(string identifier);
     bool HasCriterion(string identifier, string criterion);
+
+    /// <summary>
+    /// Grants a criterion of the advancement, or all of them, with its rewards once it's done. It waits for the player's
+    /// tick, grant or save under way.
+    /// </summary>
+    /// <returns>Whether anything was granted.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Called from another player's tick, grant or save (a plugin's handler of an event in that player's tick, say): the
+    /// two players' ticks could each be waiting for the other. A grant to the player whose tick it is works.
+    /// </exception>
     ValueTask<bool> GrantAsync(string identifier, string? criterion = null);
+
     bool Revoke(string identifier, string? criterion = null);
 }
 
@@ -28,5 +39,9 @@ public sealed class AdvancementTrigger<TInstance>
     public string Identifier { get; }
 
     /// <summary>Tests matching criteria for this player. An unloaded registration is inert.</summary>
+    /// <exception cref="InvalidOperationException">
+    /// Called from another player's tick, grant or save: granting what matches waits for this player's (see
+    /// <see cref="IAdvancements.GrantAsync"/>).
+    /// </exception>
     public ValueTask FireAsync(IPlayer player, Func<TInstance, bool> matches) => this.fire(player, matches);
 }

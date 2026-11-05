@@ -148,8 +148,9 @@ public interface IServer : IDisposable
     /// network player, once their tick under way has ended.
     /// </summary>
     /// <returns>
-    /// Whether the player was online and is leaving. Called from the player's own tick, the leave finishes after that
-    /// tick, without being waited for; adding a player with their name waits for it meanwhile.
+    /// Whether the player was online and is leaving. Called from inside a level's tick, or any player's tick, grant or
+    /// save (the player's own included), the leave finishes after the ticks, without being waited for; adding a player
+    /// with their name waits for it meanwhile.
     /// </returns>
     public Task<bool> RemoveServerPlayerAsync(IPlayer player);
 

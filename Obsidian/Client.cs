@@ -1010,7 +1010,7 @@ public sealed partial class Client : IClient
             return Task.CompletedTask;
 
         Player player;
-        bool inOwnTick;
+        bool cannotWait;
         TaskCompletionSource leave;
         lock (this.leavingLock)
         {
@@ -1019,11 +1019,13 @@ public sealed partial class Client : IClient
 
             player = current;
 
-            // The leave waits for a tick of the player under way, so a leave from inside one isn't waited for.
-            inOwnTick = player.IsInOwnTick;
+            // The leave waits for a tick of the player under way, so a leave from inside one isn't waited for. Nor is
+            // one from inside any other tick (a level's, or another player's): that tick could be what the player's
+            // tick waits for.
+            cannotWait = player.IsInOwnTick || WorldData.AbstractLevel.MustNotWaitForGates;
 
             if (this.leaving is TaskCompletionSource started)
-                return inOwnTick ? Task.CompletedTask : started.Task;
+                return cannotWait ? Task.CompletedTask : started.Task;
 
             leave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             this.leaving = leave;
@@ -1037,7 +1039,7 @@ public sealed partial class Client : IClient
         using (ExecutionContext.SuppressFlow())
             _ = Task.Run(() => this.RaiseLeaveAsync(player, leave));
 
-        return inOwnTick ? Task.CompletedTask : leave.Task;
+        return cannotWait ? Task.CompletedTask : leave.Task;
     }
 
     // Raises the leave event and completes the leave; it never throws.
@@ -1052,7 +1054,9 @@ public sealed partial class Client : IClient
                 // The player's ticks stop first, so the leave saves them as the last tick left them. A tick under way
                 // may have moved them to another level (through a portal) after they were removed, so they're removed
                 // from where they are now too, under that level's transfer lock, so that a level change still under way
-                // (a plugin's teleport, say) doesn't publish them in their new level afterwards.
+                // (a plugin's teleport, say) doesn't publish them in their new level afterwards. Saves a tick asked for
+                // in the background come first, so the leave's save is the last.
+                await player.WaitForDeferredSavesAsync();
                 await player.StopTickingAsync();
                 Entity.LeaveServer(player);
 

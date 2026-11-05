@@ -157,6 +157,9 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         await this.saveLock.WaitAsync();
         try
         {
+            if (this.Disposed)
+                return;
+
             this.SaveLevel();
         }
         finally
@@ -209,13 +212,17 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     /// It waits for the levels' simulation gates, so called from inside a level's tick, or a player's tick, grant or
     /// save, it saves in the background once the ticks let go of them, and returns at once; a failure is then logged.
     /// </remarks>
-    public Task FlushAsync() => RunOutsideTicksAsync(this.FlushWorldAsync, this.Logger);
+    public Task FlushAsync() => RunOutsideTicksAsync(this.FlushWorldAsync, this.DeferredWork);
 
     private async Task FlushWorldAsync()
     {
         await this.saveLock.WaitAsync();
         try
         {
+            // A flush that ran late, once the world was disposed, writes nothing (see AbstractLevel.SaveAsync).
+            if (this.Disposed)
+                return;
+
             await this.FlushRegionsAsync();
             this.SaveLevel();
         }
@@ -373,6 +380,9 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
 
     public override async ValueTask DisposeAsync()
     {
+        // Saves asked for from the ticks of the world, its dimensions and its players run first, and none after.
+        await this.DeferredWork.CloseAndDrainAsync();
+
         // The world's own level is disposed even when a dimension's disposal fails, and every level's failure is the
         // disposal's, so a shutdown reports each level it couldn't save.
         List<Exception> failures = [];

@@ -73,14 +73,40 @@ public partial class PlayerBase
     /// <remarks>
     /// It waits for the player's tick gate. From their own tick, grant or save, it saves at once as part of it; from
     /// inside a level's tick or another player's, it saves in the background once the ticks let go of the gates, and
-    /// returns at once (see <see cref="WorldData.AbstractLevel.RunOutsideTicksAsync"/>).
+    /// returns at once (see <see cref="WorldData.AbstractLevel.RunOutsideTicksAsync"/>). The player's leave waits for
+    /// such a save, and the world's shutdown and disposal too; none runs once those began.
     /// </remarks>
     public virtual Task SaveAsync()
     {
-        if (this.IsInOwnTick)
+        if (this.IsInOwnTick || !WorldData.AbstractLevel.MustNotWaitForGates)
             return this.RunSaveAsync();
 
-        return WorldData.AbstractLevel.RunOutsideTicksAsync(this.RunSaveAsync, this.Logger);
+        if (this.Level is not WorldData.AbstractLevel level)
+            return this.RunSaveAsync();
+
+        var deferred = level.DeferredWork.TryStart(() => level.Disposed ? Task.CompletedTask : this.RunSaveAsync());
+        if (deferred is not null)
+        {
+            lock (this.deferredSavesLock)
+                this.deferredSaves = Task.WhenAll(this.deferredSaves, deferred);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    // The player's saves running in the background (see SaveAsync), which their leave waits for. Guarded by
+    // deferredSavesLock.
+    private Task deferredSaves = Task.CompletedTask;
+    private readonly Lock deferredSavesLock = new();
+
+    /// <summary>
+    /// Waits for the player's saves asked for from inside a tick and still running in the background, so that a leave
+    /// saves after them and a join again reads what they wrote. Their failures were logged already.
+    /// </summary>
+    internal Task WaitForDeferredSavesAsync()
+    {
+        lock (this.deferredSavesLock)
+            return this.deferredSaves.ContinueWith(static _ => { }, TaskScheduler.Default);
     }
 
     private Task RunSaveAsync() => this.RunTickAsync(this.SavePlayerAsync, allowStopped: true).AsTask();

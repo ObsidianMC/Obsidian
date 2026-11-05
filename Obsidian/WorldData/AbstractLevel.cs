@@ -507,7 +507,10 @@ public abstract partial class AbstractLevel : ILevel
     public abstract Task<bool> LoadAsync(DimensionCodec codec);
 
     /// <inheritdoc/>
-    public Task SaveAsync() => RunOutsideTicksAsync(this.SaveLevelAsync, this.Logger);
+    public Task SaveAsync() => RunOutsideTicksAsync(this.SaveUnlessDisposedAsync, this.DeferredWork);
+
+    // A save that ran late, once the level was disposed, writes nothing: its files may belong to another server now.
+    private Task SaveUnlessDisposedAsync() => this.Disposed ? Task.CompletedTask : this.SaveLevelAsync();
 
     /// <summary>
     /// Saves the level, waiting for its simulation gate where it needs to: what <see cref="SaveAsync"/> runs, at once
@@ -1012,27 +1015,30 @@ public abstract partial class AbstractLevel : ILevel
     /// level's tick, say), in the background, where it waits for the ticks to end instead of holding them up.
     /// </summary>
     /// <param name="work">What to run.</param>
-    /// <param name="logger">Where a failure of work run in the background is logged.</param>
+    /// <param name="deferred">
+    /// Where it runs in the background, tracked: not at all once that closed, as a shutdown or disposal began.
+    /// </param>
     /// <returns>The work, or, when it runs in the background, a completed task.</returns>
-    internal static Task RunOutsideTicksAsync(Func<Task> work, ILogger logger)
+    internal static Task RunOutsideTicksAsync(Func<Task> work, DeferredWork deferred)
     {
         if (!MustNotWaitForGates)
             return work();
 
-        // Not in the tick's context: the work would count as inside the tick, and hold back the tick's output.
-        Task background;
-        using (ExecutionContext.SuppressFlow())
-            background = Task.Run(work);
-
-        _ = background.ContinueWith(
-            static (failed, state) => Log.BackgroundWorkFailed((ILogger)state!, failed.Exception!),
-            logger,
-            CancellationToken.None,
-            TaskContinuationOptions.OnlyOnFaulted,
-            TaskScheduler.Default);
-
+        deferred.TryStart(work);
         return Task.CompletedTask;
     }
+
+    /// <summary>
+    /// Where the level's saves asked for from inside a tick run (see <see cref="RunOutsideTicksAsync"/>): the world's,
+    /// for the world and its dimensions and their players, which its shutdown and disposal wait for.
+    /// </summary>
+    internal DeferredWork DeferredWork =>
+        this is Dimension { ParentWorld: World world } ? world.DeferredWork : this.OwnDeferredWork;
+
+    private DeferredWork OwnDeferredWork => field ??= new DeferredWork(this.Logger);
+
+    /// <summary>Whether the level was disposed: its saves then write nothing.</summary>
+    internal bool Disposed => Volatile.Read(ref this.disposed) != 0;
 
     /// <summary>
     /// Runs the entity actions queued so far, populating complete chunks among them, then spawns the entities complete
@@ -1397,8 +1403,14 @@ public abstract partial class AbstractLevel : ILevel
         }
     }
 
+    /// <summary>Saves and unloads the region, unless something still needs it.</summary>
+    /// <exception cref="InvalidOperationException">
+    /// Called from inside a level's tick, or a player's tick, grant or save: it waits for the level to be between ticks.
+    /// </exception>
     public async Task UnloadRegionAsync(int regionX, int regionZ)
     {
+        ThrowIfMustNotWaitForGates(nameof(UnloadRegionAsync));
+
         await simulationGate.WaitAsync();
         try
         {
@@ -1512,8 +1524,16 @@ public abstract partial class AbstractLevel : ILevel
     // waitingJobs.
     private TaskCompletionSource? chunkManagementResumed;
 
+    /// <summary>
+    /// Unloads the chunks no one needs, then loads and starts generating those asked for: the world manager's loop.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// Called from inside a level's tick, or a player's tick, grant or save: it waits for the level to be between ticks.
+    /// </exception>
     public async Task ManageChunksAsync()
     {
+        ThrowIfMustNotWaitForGates(nameof(ManageChunksAsync));
+
         if (LevelData.GameTime > 0 && LevelData.GameTime % (20 * 30) == 0)
         {
             var chunksToKeep = new List<long>();
@@ -1797,7 +1817,9 @@ public abstract partial class AbstractLevel : ILevel
     /// <see cref="TakeBlockEntityChanges"/>), like the tick's end does, so that one changed between ticks (by plugin
     /// code off the tick, a command or a test) is saved with its own data as it is now, like its items.
     /// </remarks>
-    public Task FlushRegionsAsync() => RunOutsideTicksAsync(this.FlushLevelRegionsAsync, this.Logger);
+    public Task FlushRegionsAsync() => RunOutsideTicksAsync(this.FlushUnlessDisposedAsync, this.DeferredWork);
+
+    private Task FlushUnlessDisposedAsync() => this.Disposed ? Task.CompletedTask : this.FlushLevelRegionsAsync();
 
     /// <summary>
     /// Saves the level's regions: what <see cref="FlushRegionsAsync"/> runs, at once or once the ticks let go of the
@@ -2659,6 +2681,9 @@ public abstract partial class AbstractLevel : ILevel
 
     public async virtual ValueTask DisposeAsync()
     {
+        // Saves asked for from its ticks run first, and none after.
+        await this.OwnDeferredWork.CloseAndDrainAsync();
+
         if (Interlocked.Exchange(ref this.disposed, 1) != 0)
             return;
 
@@ -2739,9 +2764,6 @@ public abstract partial class AbstractLevel : ILevel
 
     private static partial class Log
     {
-        [LoggerMessage(Level = LogLevel.Error, Message = "Work a level's tick left to run after it failed")]
-        public static partial void BackgroundWorkFailed(ILogger logger, Exception exception);
-
         [LoggerMessage(Level = LogLevel.Information, Message = "Generating {ChunkCount} chunks for {LevelName}")]
         public static partial void Generating(ILogger logger, int chunkCount, string levelName);
 

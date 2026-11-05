@@ -36,8 +36,11 @@ namespace Obsidian.WorldData;
 /// A level's tick, which holds its own tick lock, never waits for any level's simulation gate either: another level's
 /// tick could be waiting for its own. Nor does a flow holding a player's tick gate (their tick, a grant or a save), which
 /// comes after the simulation gates, as a level's tick ticks its players. Saves called from such a flow, plugins'
-/// included, run in the background (see <see cref="AbstractLevel.RunOutsideTicksAsync"/>), and ticking or generating a
-/// level throws (see <see cref="AbstractLevel.MustNotWaitForGates"/>).
+/// included, run in the background (see <see cref="AbstractLevel.RunOutsideTicksAsync"/>), and ticking, generating or
+/// unloading a level, managing its chunks or pausing the server throws (see
+/// <see cref="AbstractLevel.MustNotWaitForGates"/>).
+/// Nor does such a flow wait for another player's tick gate, as players in different levels tick at the same time: a
+/// grant to another player throws, and leaves (kicks, disconnects) and stopping the server aren't waited for.
 /// </para>
 /// </remarks>
 internal sealed class EntityTransferLock
