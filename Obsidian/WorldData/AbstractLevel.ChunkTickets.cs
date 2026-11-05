@@ -1,3 +1,4 @@
+using Obsidian.Nbt;
 using Obsidian.Plugins;
 using System.Threading;
 
@@ -19,22 +20,29 @@ public abstract partial class AbstractLevel
     private readonly HashSet<ChunkTicket> chunkTickets = [];
     private TicketChunks ticketChunks = new([], []);
 
-    // Like vanilla's portal ticket (TicketType.PORTAL, placed at radius 3 for 300 ticks): the chunks within 3 of a
-    // portal exit stay loaded, and those within 2 tick, for 300 of the level's ticks after an entity came through.
-    // Vanilla's radius-3 ticket makes those within 2 block-ticking and those within 1 entity-ticking; Obsidian ticks
-    // both alike, so the ticking square is the block-ticking one.
+    // Like vanilla's portal ticket (TicketType.PORTAL, placed at radius 3 for 300 ticks): for 300 of the level's ticks
+    // after an entity came through, the chunks within 3 of the exit stay loaded, those within 2 are block-ticking and
+    // those within 1 entity-ticking. A ticket's ticking square is Obsidian's entity-ticking tier, which IsBlockTicking
+    // widens by one ring for block ticks, so it has radius 1.
     private const int PortalTicketRadius = 3;
+    private const int PortalTicketTickingRadius = 1;
     private const int PortalTicketTicks = 300;
+
+    // How vanilla saves its portal tickets in the level's chunk_tickets saved data: the type, and the ticket level of
+    // one placed at radius 3 (ChunkLevel's full-chunk level 33, less the radius). Vanilla persists them (TicketType's
+    // FLAG_PERSIST), each with the ticks it has left.
+    private const string PortalTicketType = "minecraft:portal";
+    private const int PortalTicketLevel = 30;
 
     // The portal tickets by exit chunk, with the level ticks each has left. Guarded by chunkTicketLock. They're apart
     // from chunkTickets, so that they never count against plugins' ticket limits.
     private readonly Dictionary<long, PortalTicket> portalTickets = [];
 
-    private sealed class PortalTicket(long[] loaded, long[] ticking)
+    private sealed class PortalTicket(long[] loaded, long[] ticking, int ticksLeft)
     {
         public long[] Loaded { get; } = loaded;
         public long[] Ticking { get; } = ticking;
-        public int TicksLeft { get; set; } = PortalTicketTicks;
+        public int TicksLeft { get; set; } = ticksLeft;
     }
 
     private sealed record TicketChunks(HashSet<long> Loaded, HashSet<long> Ticking);
@@ -147,45 +155,67 @@ public abstract partial class AbstractLevel
     }
 
     /// <summary>
-    /// Keeps the chunks around <paramref name="exit"/> loaded and ticking for a while after an entity came through a
-    /// portal to it, like vanilla's portal ticket (see <see cref="PortalTicketRadius"/>). Another one at the same exit
-    /// chunk starts its time again, as vanilla's does.
+    /// Keeps the chunks around <paramref name="anchor"/> loaded and ticking for a while after an entity came through a
+    /// portal, like vanilla's portal ticket (see <see cref="PortalTicketRadius"/>). Another one in the same chunk starts
+    /// its time again, as vanilla's does.
     /// </summary>
-    internal void AddPortalTicket(VectorD exit)
+    internal void AddPortalTicket(VectorD anchor)
     {
-        var (x, z) = Region.ChunkOf(exit);
-        var key = NumericsHelper.IntsToLong(x, z);
+        var (x, z) = Region.ChunkOf(anchor);
         lock (this.chunkTicketLock)
         {
             if (Volatile.Read(ref this.disposed) != 0)
                 return;
 
-            if (this.portalTickets.TryGetValue(key, out var existing))
+            if (this.portalTickets.TryGetValue(NumericsHelper.IntsToLong(x, z), out var existing))
             {
                 existing.TicksLeft = PortalTicketTicks;
                 return;
             }
 
-            var loaded = TicketSquare(x, z, PortalTicketRadius);
-            var ticking = TicketSquare(x, z, PortalTicketRadius - 1);
-            this.portalTickets.Add(key, new PortalTicket(loaded, ticking));
+            this.AddPortalTicketLocked(x, z, PortalTicketTicks);
             this.PublishTicketChunks();
         }
     }
 
-    // Called once a level tick, before the level's blocks and entities tick, as vanilla's chunk source ages its
-    // tickets: releases the portal tickets whose time is up.
-    private void AgePortalTickets()
+    /// <summary>
+    /// The level ticks the portal ticket in chunk (<paramref name="chunkX"/>, <paramref name="chunkZ"/>) has left, or
+    /// <c>null</c> when there's none there.
+    /// </summary>
+    internal int? PortalTicketTicksLeft(int chunkX, int chunkZ)
+    {
+        lock (this.chunkTicketLock)
+        {
+            return this.portalTickets.TryGetValue(NumericsHelper.IntsToLong(chunkX, chunkZ), out var ticket)
+                ? ticket.TicksLeft
+                : null;
+        }
+    }
+
+    // Called under chunkTicketLock; the caller publishes the ticket chunks.
+    private void AddPortalTicketLocked(int chunkX, int chunkZ, int ticksLeft)
+    {
+        var loaded = TicketSquare(chunkX, chunkZ, PortalTicketRadius);
+        var ticking = TicketSquare(chunkX, chunkZ, PortalTicketTickingRadius);
+        this.portalTickets[NumericsHelper.IntsToLong(chunkX, chunkZ)] = new PortalTicket(loaded, ticking, ticksLeft);
+    }
+
+    /// <summary>
+    /// Called once a level tick, before the level's blocks and entities tick, as vanilla's chunk source ages its
+    /// tickets: releases the portal tickets whose time is up.
+    /// </summary>
+    internal void AgePortalTickets()
     {
         lock (this.chunkTicketLock)
         {
             if (this.portalTickets.Count == 0)
                 return;
 
+            // Like vanilla's Ticket, one lasts while it has 0 ticks left, and goes once it's below that.
             var expired = 0;
             foreach (var (key, ticket) in this.portalTickets)
             {
-                if (--ticket.TicksLeft > 0)
+                if (--ticket.TicksLeft >= 0)
                     continue;
 
                 this.portalTickets.Remove(key);
@@ -195,6 +225,101 @@ public abstract partial class AbstractLevel
             if (expired > 0)
                 this.PublishTicketChunks();
         }
+    }
+
+    // Restores the portal tickets of vanilla's chunk_tickets saved data (see PortalTicketType); the level saves them
+    // there with those it doesn't model, which it keeps as they were read (see WriteChunkTickets).
+    private void ReadPortalTickets(NbtCompound data)
+    {
+        if (!data.TryGetTag<NbtList>("tickets", out var tickets))
+            return;
+
+        lock (this.chunkTicketLock)
+        {
+            foreach (var tag in tickets)
+            {
+                if (!IsPortalTicket(tag)
+                    || tag is not NbtCompound ticket
+                    || !ticket.TryGetTag<NbtArray<int>>("chunk_pos", out var position)
+                    || position.Count != 2)
+                {
+                    continue;
+                }
+
+                // Vanilla leaves out the ticks left when there are none.
+                var ticksLeft = ticket.TryGetTagValue<long>("ticks_left", out var saved) ? saved : 0;
+                if (ticksLeft < 0)
+                    continue;
+
+                var chunk = position.GetArray();
+                var restored = (int)Math.Min(ticksLeft, PortalTicketTicks);
+                var key = NumericsHelper.IntsToLong(chunk[0], chunk[1]);
+                if (this.portalTickets.TryGetValue(key, out var existing) && existing.TicksLeft >= restored)
+                    continue;
+
+                this.AddPortalTicketLocked(chunk[0], chunk[1], restored);
+            }
+
+            this.PublishTicketChunks();
+        }
+    }
+
+    // Writes vanilla's chunk_tickets saved data: the tickets it held when it was read, but for the portal tickets,
+    // which are the level's own now. A level that never had the file, or any portal ticket, writes none.
+    private void WriteChunkTickets()
+    {
+        var portals = new List<NbtCompound>();
+        lock (this.chunkTicketLock)
+        {
+            foreach (var (key, ticket) in this.portalTickets)
+            {
+                NumericsHelper.LongToInts(key, out var x, out var z);
+                portals.Add(PortalTicketNbt(x, z, ticket.TicksLeft));
+            }
+        }
+
+        if (this.vanillaChunkTickets is null && portals.Count == 0)
+            return;
+
+        var data = this.vanillaChunkTickets ??= new NbtCompound("data");
+        var tickets = new NbtList(NbtTagType.Compound, "tickets");
+        if (data.TryGetTag<NbtList>("tickets", out var read))
+        {
+            foreach (var tag in read)
+            {
+                if (!IsPortalTicket(tag))
+                    tickets.Add(tag);
+            }
+        }
+
+        foreach (var portal in portals)
+            tickets.Add(portal);
+
+        // Like vanilla, which leaves the list out when it's empty.
+        data.Remove("tickets");
+        if (tickets.Count > 0)
+            data.Add(tickets);
+
+        SavedDataFile.Write(WorldLayout.SavedDataPath(this.FolderPath, ChunkTicketsDataId), data);
+    }
+
+    private static bool IsPortalTicket(INbtTag tag) =>
+        tag is NbtCompound ticket && ticket.TryGetTagValue<string>("type", out var type) && type == PortalTicketType;
+
+    // A portal ticket as vanilla's Ticket and TicketStorage codecs save it, which leave out ticks_left when it's 0.
+    private static NbtCompound PortalTicketNbt(int chunkX, int chunkZ, int ticksLeft)
+    {
+        var ticket = new NbtCompound
+        {
+            new NbtArray<int>("chunk_pos", [chunkX, chunkZ]),
+            new NbtTag<string>("type", PortalTicketType),
+            new NbtTag<int>("level", PortalTicketLevel)
+        };
+
+        if (ticksLeft != 0)
+            ticket.Add(new NbtTag<long>("ticks_left", ticksLeft));
+
+        return ticket;
     }
 
     // Called only under chunkTicketLock; published sets are never changed afterwards.

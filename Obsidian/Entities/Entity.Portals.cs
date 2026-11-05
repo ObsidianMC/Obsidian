@@ -144,14 +144,17 @@ public partial class Entity
     }
 
     /// <summary>
-    /// Keeps the area around where the entity came out of a portal loaded for a while, as vanilla's portal transitions
-    /// do once the entity is through (see <see cref="AbstractLevel.AddPortalTicket"/>), unless the trip places none.
-    /// The destination's chunks are still held then, so they stay loaded throughout.
+    /// Keeps the area around a portal trip's exit loaded for a while, as vanilla's portal transitions do once the
+    /// entity is through (see <see cref="PortalDestination"/>), unless the trip places none. The destination's chunks
+    /// are still held then, so they stay loaded throughout.
     /// </summary>
     private protected void PlacePortalTicket(PortalDestination destination)
     {
-        if (destination.PlacesTicket && ReferenceEquals(this.Level, destination.Level))
-            destination.Level.AddPortalTicket(this.Position);
+        if (!destination.PlacesTicket || !ReferenceEquals(this.Level, destination.Level))
+            return;
+
+        var anchor = destination.TicketAnchor is Vector found ? (VectorD)found : this.Position;
+        destination.Level.AddPortalTicket(anchor);
     }
 
     // End portals and gateways send entities without waiting, like vanilla's zero transition time; a gateway only
