@@ -499,6 +499,7 @@ public sealed class StructureCacheEviction
     {
         var world = CreateWorld(new MojangGenerator());
         Region? failing = null;
+        Region? retrying = null;
         try
         {
             _ = await world.GetChunkAsync(StartX, StartZ, scheduleGeneration: false);
@@ -517,7 +518,7 @@ public sealed class StructureCacheEviction
             await Assert.ThrowsAsync<IOException>(() => world.UnloadRegionAsync(failing.X, failing.Z));
 
             // Its failed save is retried through the region object now at its position, whose writes fail too.
-            var retrying = (Region)world.LoadRegionByChunk(StartX, StartZ);
+            retrying = (Region)world.LoadRegionByChunk(StartX, StartZ);
             await retrying.InitAsync();
             retrying.ChunkFile.Observe = failing.ChunkFile.Observe;
             SetMarker(healthy, 1);
@@ -549,6 +550,8 @@ public sealed class StructureCacheEviction
         {
             if (failing is not null)
                 failing.ChunkFile.Observe = null;
+            if (retrying is not null)
+                retrying.ChunkFile.Observe = null;
             try
             {
                 await world.DisposeAsync();

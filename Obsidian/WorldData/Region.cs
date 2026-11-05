@@ -119,6 +119,12 @@ public partial class Region : IRegion
     internal RegionFile EntityFile => this.entityRegionFile;
 
     /// <summary>
+    /// Run as an unloading snapshot has taken its chunk's unsaved marks, under the tick lock, for tests that make an
+    /// earlier write of the chunk fail just then.
+    /// </summary>
+    internal Action? UnloadMarksTaken { get; set; }
+
+    /// <summary>
     /// Locks a chunk against generation while it's serialized (the level's generator), or <c>null</c> for no locking.
     /// </summary>
     internal Func<int, int, ValueTask<IDisposable?>>? LockChunk { get; init; }
@@ -1464,12 +1470,17 @@ public partial class Region : IRegion
                     // Taken after the light flush, which may write into the chunk, and the containers' retirement, which
                     // freezes their items. A chunk unchanged since its last save is on disk as it is, so only its
                     // entities may need saving.
+                    //
+                    // An unloading save also takes a chunk unchanged since a save still being written, whose write may
+                    // fail. Checked before the marks are taken: with none in flight, every earlier write has ended,
+                    // and a failed one put the chunk's marks back before it did (see RegionFile.ChunkWrite.Failed), so
+                    // the marks have it. No write of the chunk is reserved meanwhile: that takes this lock.
+                    var earlierInFlight = unloading && this.regionFile.HasWriteInFlight(x, z);
                     var write = current is not Chunk tracked || tracked.TakeUnsaved();
+                    if (unloading)
+                        this.UnloadMarksTaken?.Invoke();
 
-                    // With no write in flight, an unchanged chunk's file holds it: a failed write puts the chunk's
-                    // marks back before it ends (see RegionFile.ChunkWrite.Failed).
-                    if (unloading && !write && this.regionFile.HasWriteInFlight(x, z))
-                        write = true;
+                    write |= earlierInFlight;
 
                     if (write)
                     {

@@ -2490,36 +2490,31 @@ public abstract partial class AbstractLevel : ILevel
         if (Interlocked.Exchange(ref this.generationFailure, null) is Exception failure)
             Log.ChunkGenerationFailed(this.Logger, failure);
 
-        // The level's own: an override flushes other levels too, which may be disposed already. One with travellers
-        // still unplaced, or unloaded chunks whose writes failed, tries again rather than discarding them.
-        try
-        {
-            if (Volatile.Read(ref this.jobsSinceFlush) != 0
-                || this.HasUnplacedTravellers
-                || this.PendingWrites.Failed().Length != 0)
-                await this.FlushOwnRegionsAsync();
-        }
-        catch (Exception exception)
-        {
-            saveFailures.Add(exception);
-        }
-
-        // The save failures are logged even when closing the regions throws, which then fails the disposal instead.
-        // Unloads still writing own the regions until they end.
+        // Unloads still writing own the regions until they end, and their writes may fail meanwhile, so the final
+        // save is decided, run and followed by closing the regions under one hold of the gate they hold. No unload
+        // starts after: the level is disposed.
         await this.unloadGate.WaitAsync();
         try
         {
-            foreach (var region in Regions.Values)
-                await region.DisposeAsync();
+            await this.FinalSaveAsync(saveFailures);
 
-            simulationGate.Dispose();
+            // The save failures are logged even when closing the regions throws, which then fails the disposal instead.
+            try
+            {
+                foreach (var region in Regions.Values)
+                    await region.DisposeAsync();
+
+                simulationGate.Dispose();
+            }
+            finally
+            {
+                foreach (var saveFailure in saveFailures)
+                    Log.FinalSaveFailed(this.Logger, saveFailure, this.Name);
+            }
         }
         finally
         {
             this.unloadGate.Release();
-
-            foreach (var saveFailure in saveFailures)
-                Log.FinalSaveFailed(this.Logger, saveFailure, this.Name);
         }
 
         if (saveFailures.Count == 1)
@@ -2527,6 +2522,26 @@ public abstract partial class AbstractLevel : ILevel
 
         if (saveFailures.Count > 1)
             throw new AggregateException(saveFailures);
+    }
+
+    // The level's own save as it's disposed: an override flushes other levels too, which may be disposed already. It
+    // saves what generation jobs changed since the last save, and one with travellers still unplaced, or unloaded
+    // chunks whose writes failed, tries again rather than discarding them. Call holding unloadGate.
+    private async Task FinalSaveAsync(List<Exception> failures)
+    {
+        try
+        {
+            if (Volatile.Read(ref this.jobsSinceFlush) != 0
+                || this.HasUnplacedTravellers
+                || this.PendingWrites.Failed().Length != 0)
+            {
+                await this.FlushOwnRegionsCoreAsync();
+            }
+        }
+        catch (Exception exception)
+        {
+            failures.Add(exception);
+        }
     }
 
     public IEntitySpawner GetNewEntitySpawner() => new EntitySpawner(this);

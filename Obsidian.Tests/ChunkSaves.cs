@@ -681,6 +681,110 @@ public sealed class ChunkSaves
         Assert.Equal(BlockIds.Stone, (await reader.GetChunkAsync(0, 0)).GetBlock(1, 64, 1).RegistryId);
     }
 
+    [Fact]
+    public async Task AnEarlierSaveFailingAsTheUnloadTakesTheMarksIsStillSaved()
+    {
+        await using var context = TestServerFactory.CreateServer($"chunk-saves-unload-race-{Guid.NewGuid():N}");
+        var world = context.World;
+        var chunk = Complete(0, 0);
+        var region = (Region)world.LoadRegionByChunk(0, 0);
+        region.SetChunk(chunk);
+        await region.FlushAsync();
+        AddSpawner(chunk);
+
+        // An eager save takes the spawner; its commit waits until released, then fails.
+        var writing = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var failing = 1;
+        region.ChunkFile.Observe = async change =>
+        {
+            if (change.Step != RegionFile.Step.Flushed || Interlocked.Exchange(ref failing, 0) == 0)
+                return;
+
+            writing.TrySetResult();
+            await release.Task;
+            throw new IOException("The eager save failed.");
+        };
+
+        var eager = SaveEagerlyAsync(region, chunk);
+        await writing.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+        // It fails, and its write ends, just as the unload's snapshot has taken the chunk's marks.
+        region.UnloadMarksTaken = () =>
+        {
+            release.TrySetResult();
+            var ended = SpinWait.SpinUntil(() => !region.ChunkFile.HasWriteInFlight(0, 0), TimeSpan.FromSeconds(10));
+            Assert.True(ended);
+        };
+
+        try
+        {
+            await region.UnloadChunk(0, 0).WaitAsync(TimeSpan.FromSeconds(10));
+        }
+        finally
+        {
+            region.UnloadMarksTaken = null;
+            release.TrySetResult();
+            region.ChunkFile.Observe = null;
+        }
+
+        await Assert.ThrowsAnyAsync<Exception>(() => eager.WaitAsync(TimeSpan.FromSeconds(10)));
+        var reloaded = await region.GetChunkAsync(0, 0);
+        Assert.NotSame(chunk, reloaded);
+        Assert.NotNull(reloaded.GetBlockEntity(Spawner.X, Spawner.Y, Spawner.Z));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DisposalRetriesAnUnloadWriteThatFailsWhileItWaits(bool wholeRegion)
+    {
+        await using var context = TestServerFactory.CreateServer($"chunk-saves-unload-dispose-fail-{Guid.NewGuid():N}");
+        var world = context.World;
+        var region = PrepareUnload(world, out var chunk);
+        await world.FlushRegionsAsync();
+        chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+        chunk.NextEagerSave = long.MaxValue;
+
+        // Nothing else is due for a final save. The unload's write waits until released, then fails once.
+        var writing = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var failing = 1;
+        region.ChunkFile.Observe = async change =>
+        {
+            if (change.Step != RegionFile.Step.PayloadWritten || Interlocked.Exchange(ref failing, 0) == 0)
+                return;
+
+            writing.TrySetResult();
+            await release.Task;
+            throw new IOException("The unload write failed.");
+        };
+
+        var unload = StartUnload(world, region, wholeRegion);
+        Task disposing = Task.CompletedTask;
+        try
+        {
+            // Disposal starts while the write is paused, and waits for it.
+            await writing.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            disposing = world.DisposeAsync().AsTask();
+            await Task.WhenAny(disposing, Task.Delay(200));
+            Assert.False(disposing.IsCompleted);
+        }
+        finally
+        {
+            release.TrySetResult();
+        }
+
+        await Assert.ThrowsAsync<IOException>(() => unload.WaitAsync(TimeSpan.FromSeconds(10)));
+        await disposing.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Empty(world.PendingWrites.Failed());
+
+        await using var reader = new Region(region.X, region.Z,
+            Path.GetDirectoryName(region.RegionFolder)!, Path.GetFileName(region.RegionFolder));
+        await reader.InitAsync();
+        Assert.Equal(BlockIds.Stone, (await reader.GetChunkAsync(0, 0)).GetBlock(1, 64, 1).RegistryId);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
