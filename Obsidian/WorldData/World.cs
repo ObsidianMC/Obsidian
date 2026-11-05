@@ -151,7 +151,7 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     }
 
     // The world's save lock is held while saves wait for the levels' simulation gates (see FlushAsync), so a flow that
-    // mustn't wait for those doesn't wait for it either: AbstractLevel.SaveAsync runs this in the background then.
+    // mustn't wait for those doesn't wait for it either: AbstractLevel.SaveAsync refuses such a flow before this.
     protected override async Task SaveLevelAsync()
     {
         await this.saveLock.WaitAsync();

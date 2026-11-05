@@ -817,7 +817,13 @@ public abstract partial class PlayerBase : Avatar, IPlayer
                 this.EndTravelHold();
         }
 
-        await SaveAsync();
+        // Vanilla doesn't save a player changing level; Obsidian does, so their saved world follows them between
+        // worlds. A travel from inside a level's tick (an ender pearl's, a command block's /tp) can't wait for the
+        // player's gate, so that save runs in the server's background work.
+        if (this.Server is Server server)
+            await server.RunOutsideTicksAsync(this.SaveAsync);
+        else if (this.IsInOwnTick || !WorldData.AbstractLevel.MustNotWaitForGates)
+            await this.SaveAsync();
 
         void Commit()
         {

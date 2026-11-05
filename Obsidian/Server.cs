@@ -634,9 +634,8 @@ public sealed partial class Server : IServer, IPluginScopedServer
 
     private async Task StopCoreAsync()
     {
-        // No background work a tick asks for starts from now on: the final save covers it.
-        this.BackgroundWork.Close();
-
+        // Background work stays open until the ticks are over: the last tick's triggers still have their grants, for
+        // players who haven't left. The loop, then this, close and drain it before the players leave.
         await cancelTokenSource.CancelAsync();
 
         this.CloseListeners();

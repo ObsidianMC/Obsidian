@@ -65,15 +65,26 @@ internal sealed partial class DeferredWork(ILogger logger)
         return Task.WhenAll(left);
     }
 
+    // The work ends for the drains however its failure's logging goes: a logger that throws (a full disk, say) mustn't
+    // keep the shutdown waiting for good.
     private void Finish(Task task, TaskCompletionSource finished)
     {
-        if (task.Exception is AggregateException failure)
-            Log.DeferredWorkFailed(logger, failure);
+        try
+        {
+            if (task.Exception is AggregateException failure)
+                Log.DeferredWorkFailed(logger, failure);
+        }
+        catch (Exception)
+        {
+            // Nothing is left to report it with.
+        }
+        finally
+        {
+            lock (this.gate)
+                this.running.Remove(finished.Task);
 
-        lock (this.gate)
-            this.running.Remove(finished.Task);
-
-        finished.TrySetResult();
+            finished.TrySetResult();
+        }
     }
 
     private static partial class Log

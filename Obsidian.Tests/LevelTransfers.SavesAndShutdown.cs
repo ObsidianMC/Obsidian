@@ -1,8 +1,12 @@
+using Microsoft.Extensions.Logging;
+using Obsidian.Entities;
 using Obsidian.Plugins;
+using Obsidian.Utilities;
 using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -114,6 +118,85 @@ public sealed partial class LevelTransfers
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task BackgroundWorkWhoseFailureCantBeLoggedStillEndsForTheShutdown()
+    {
+        // The server's log can't be written (a full disk, say) when work in the background fails.
+        var work = new DeferredWork(new ThrowingLogger());
+        Assert.True(work.TryStart(() => Task.FromException(new IOException("The save failed."))));
+
+        await work.CloseAndDrainAsync().WaitAsync(TickWait);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task APlayerSentToAnotherLevelFromATickArrivesAndIsSaved()
+    {
+        await using var context = TestServerFactory.CreateServer($"travel-from-tick-{Guid.NewGuid():N}");
+        var world = context.World;
+        var nether = AddNether(context);
+        WorldBlockEntities.AddEmptyChunk(world);
+        AddEmptyChunk(nether);
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Pearled", Centre);
+        Assert.True(context.Server.AddPlayer(player));
+        player.Level = nether;
+        Assert.True(nether.TryAddPlayer(player));
+        Assert.True(nether.TryAddEntity(player));
+        await player.LoadAsync();
+
+        // An ender pearl in the nether's tick lands in the overworld, taking its owner there.
+        Exception? travel = null;
+        nether.EnqueueEntityAction(async () =>
+        {
+            travel = await Record.ExceptionAsync(() => player.TeleportAsync(world, Centre).AsTask());
+        });
+        await nether.DoWorldTickAsync().WaitAsync(TickWait);
+
+        // The travel completes, and its save runs once the tick is over.
+        Assert.Null(travel);
+        Assert.Same(world, player.Level);
+        await WaitUntilAsync(() => File.Exists(world.GetPlayerDataPath(player.Uuid)));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ATriggerFiredInTheLastTickIsGrantedBeforeThePlayersLeave()
+    {
+        await using var context = TestServerFactory.CreateServer($"last-tick-trigger-{Guid.NewGuid():N}");
+        var world = context.World;
+        WorldBlockEntities.AddEmptyChunk(world);
+        var bot = (PlayerBase)await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "Bot", world);
+
+        // The server's loop is in its last tick, which the shutdown waits for.
+        var lastTick = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        typeof(Server)
+            .GetField("loopTask", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(context.Server, lastTick.Task);
+
+        // In that tick, /stop runs, and then a trigger is fired for the bot from another player's tick: its grant is
+        // left to the background.
+        var accepted = false;
+        TaskCompletionSource? granted = null;
+        world.EnqueueEntityAction(async () =>
+        {
+            _ = context.Server.StopAsync();
+            await WaitUntilAsync(() => context.Server.Stopping);
+            granted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            accepted = context.Server.BackgroundWork.TryStart(() => bot.GrantAdvancementAsync(() =>
+            {
+                granted.TrySetResult();
+                return ValueTask.FromResult(false);
+            }).AsTask());
+        });
+        await world.DoWorldTickAsync().WaitAsync(TickWait);
+
+        // Once the tick ends, the shutdown grants it before the bot leaves.
+        lastTick.TrySetResult();
+        await context.Server.StopAsync().WaitAsync(TickWait);
+
+        Assert.True(accepted, "The last tick's trigger was refused.");
+        Assert.True(granted!.Task.IsCompletedSuccessfully);
+        Assert.True(context.Server.OnlinePlayers.IsEmpty);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task ASaveOfEverythingAskedForOnceTheServerStoppedIsNotReportedAsSaved()
     {
         await using var context = TestServerFactory.CreateServer($"save-after-stop-{Guid.NewGuid():N}");
@@ -142,5 +225,21 @@ public sealed partial class LevelTransfers
         await world.DoWorldTickAsync().WaitAsync(TickWait);
 
         Assert.IsType<InvalidOperationException>(disposal);
+    }
+
+    // A logger whose writes fail, as a log file on a full disk does.
+    private sealed class ThrowingLogger : ILogger
+    {
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter) =>
+            throw new IOException("There is not enough space on the disk.");
     }
 }
