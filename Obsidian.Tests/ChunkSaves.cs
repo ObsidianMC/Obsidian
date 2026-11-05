@@ -14,7 +14,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Obsidian.Tests.Fakes;
 using Obsidian.Tests.Utilities;
 using Xunit;
 
@@ -235,6 +237,104 @@ public sealed class ChunkSaves
         {
             Directory.Delete(folder, recursive: true);
         }
+    }
+
+    [Fact(DisplayName = "An autosave lets the level tick while it writes, and keeps changes made meanwhile")]
+    public async Task LevelTicksWhileTheSaveWrites()
+    {
+        await using var context = TestServerFactory.CreateServer($"chunk-saves-tick-{Guid.NewGuid():N}");
+        var world = context.World;
+        var chunk = Complete(0, 0);
+        var region = (Region)world.LoadRegionByChunk(0, 0);
+        region.SetChunk(chunk);
+        chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+
+        // The save's disk flush waits until released, after its snapshots are taken.
+        var writing = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        region.ChunkFile.Observe = async change =>
+        {
+            if (change.Step != RegionFile.Step.Flushed)
+                return;
+
+            writing.TrySetResult();
+            await release.Task;
+        };
+
+        var flush = world.FlushRegionsAsync();
+        try
+        {
+            await writing.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+            // While it writes, the level ticks, and a change made then is left for the next save.
+            await world.DoWorldTickAsync().WaitAsync(TimeSpan.FromSeconds(10));
+            chunk.SetBlock(2, 64, 2, BlocksRegistry.Stone);
+        }
+        finally
+        {
+            // Released whatever happened, so a failure fails the test instead of hanging its disposal.
+            release.TrySetResult();
+        }
+
+        await flush.WaitAsync(TimeSpan.FromSeconds(10));
+        region.ChunkFile.Observe = null;
+
+        Assert.True(chunk.IsUnsaved);
+    }
+
+    [Fact(DisplayName = "A chunk unloaded while an autosave writes keeps a change that save failed to write")]
+    public async Task UnloadDuringAFailingAutosaveKeepsTheChange()
+    {
+        await using var context = TestServerFactory.CreateServer($"chunk-saves-unload-{Guid.NewGuid():N}");
+        var world = context.World;
+        var chunk = Complete(0, 0);
+        var region = (Region)world.LoadRegionByChunk(0, 0);
+        region.SetChunk(chunk);
+        await region.FlushAsync();
+        chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+
+        // The autosave's disk flush waits until released, then fails.
+        var writing = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var failing = 1;
+        region.ChunkFile.Observe = async change =>
+        {
+            if (change.Step != RegionFile.Step.Flushed || Interlocked.Exchange(ref failing, 0) == 0)
+                return;
+
+            writing.TrySetResult();
+            await release.Task;
+            throw new IOException("The disk is full.");
+        };
+
+        var flush = world.FlushRegionsAsync();
+        var unload = Task.CompletedTask;
+        try
+        {
+            await writing.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+            // While it writes, the chunk changes again and unloads. The unload waits for the autosave to end before
+            // it takes its snapshot, which would take the chunk's unsaved marks.
+            chunk.SetBlock(2, 64, 2, BlocksRegistry.Stone);
+            unload = region.UnloadChunk(0, 0);
+            var snapshotTaken = SpinWait.SpinUntil(() => !chunk.IsUnsaved, TimeSpan.FromMilliseconds(500));
+            Assert.False(snapshotTaken);
+        }
+        finally
+        {
+            // Released whatever happened, so a failure fails the test instead of hanging its disposal.
+            release.TrySetResult();
+        }
+
+        await Assert.ThrowsAnyAsync<Exception>(() => flush.WaitAsync(TimeSpan.FromSeconds(10)));
+        await unload.WaitAsync(TimeSpan.FromSeconds(10));
+        region.ChunkFile.Observe = null;
+
+        // The unload wrote both changes, the one the autosave couldn't included.
+        Assert.Null(region.GetLoadedChunk(0, 0));
+        var reloaded = await region.GetChunkAsync(0, 0);
+        Assert.Equal(BlockIds.Stone, reloaded.GetBlock(1, 64, 1).RegistryId);
+        Assert.Equal(BlockIds.Stone, reloaded.GetBlock(2, 64, 2).RegistryId);
     }
 
     private static Chunk Complete(int x, int z)

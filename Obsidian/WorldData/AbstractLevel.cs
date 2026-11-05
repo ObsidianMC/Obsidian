@@ -246,6 +246,7 @@ public abstract partial class AbstractLevel : ILevel
     // so that one who joined mid-tick is seen.
     private TickPlayerSnapshot? tickPlayers;
     private int playerChanges;
+    private readonly PlayerGrid playerGrid = new();
 
     private sealed record TickPlayerSnapshot(IPlayer[] Players, int Changes);
 
@@ -255,14 +256,19 @@ public abstract partial class AbstractLevel : ILevel
             ? snapshot.Players
             : null;
 
-    // Called at the start of the level's tick, under the simulation gate.
-    private void SnapshotPlayers()
+    // Called at the start of the level's tick, under the simulation gate; tests call it to stand in for one.
+    internal void SnapshotPlayers()
     {
-        var changes = Volatile.Read(ref this.playerChanges);
-        var players = this.Players.Values.ToArray();
+        IPlayer[] players;
+        lock (this.playerGrid.MembershipGate)
+        {
+            var changes = Volatile.Read(ref this.playerChanges);
+            players = this.Players.Values.ToArray();
+            this.playerGrid.Rebuild(players);
+            Volatile.Write(ref this.tickPlayers, new TickPlayerSnapshot(players, changes));
+        }
         this.simulation.Update(players.Where(player => player.GameMode != GameMode.Spectator), Configuration.SimulationDistance);
 
-        Volatile.Write(ref this.tickPlayers, new TickPlayerSnapshot(players, changes));
         Volatile.Write(ref this.simulationCurrent, true);
         Volatile.Write(ref this.currentTickId, ++this.lastTickId);
     }
@@ -273,21 +279,18 @@ public abstract partial class AbstractLevel : ILevel
     /// </summary>
     internal double NearestPlayerDistanceSquared(VectorD position)
     {
-        var nearest = double.MaxValue;
-        if (this.CurrentTickPlayers is IPlayer[] players)
-        {
-            foreach (var player in players)
-            {
-                if (player.GameMode != GameMode.Spectator && this.Players.ContainsKey(player.Uuid))
-                    nearest = Math.Min(nearest, (player.Position - position).MagnitudeSquared());
-            }
-            return nearest;
-        }
+        IPlayer[]? players;
+        lock (this.playerGrid.MembershipGate)
+            players = this.CurrentTickPlayers;
 
+        if (players is not null)
+            return this.playerGrid.NearestDistanceSquared(players, position, this.Players);
+
+        var nearest = double.MaxValue;
         foreach (var (_, player) in this.Players)
         {
             if (player.GameMode != GameMode.Spectator)
-                nearest = Math.Min(nearest, (player.Position - position).MagnitudeSquared());
+                nearest = Math.Min(nearest, (PlayerGrid.ReadPosition(player) - position).MagnitudeSquared());
         }
         return nearest;
     }
@@ -527,6 +530,35 @@ public abstract partial class AbstractLevel : ILevel
 
     // Changed whenever a region is added or removed (see GetRegionForChunk).
     private int regionsVersion;
+
+    // Moved on whenever a chunk leaves the level's loaded set (unloaded, replaced, or its region closing), so a
+    // chunk's neighbours found loaded stay loaded while it holds (see NeighbourEpoch). Starts at 1, so a chunk's 0
+    // never matches it.
+    private long chunkUnloadEpoch = 1;
+
+    /// <summary>
+    /// What a chunk's neighbours found loaded stay valid for: the level's unloads and any chunk losing its
+    /// completion, both of which only count up, so an equal sum means neither moved.
+    /// </summary>
+    /// <remarks>
+    /// Read under the tick lock, which regions hold while they change a slot and move the epoch on: a replacement
+    /// moves it on before publishing the new chunk, so a read between the two would vouch for the old one.
+    /// </remarks>
+    internal long ReadNeighbourEpoch()
+    {
+        lock (this.Fluids.TickLock)
+            return Interlocked.Read(ref this.chunkUnloadEpoch) + Chunk.CompletionLosses;
+    }
+
+    // A region closing passes its empty slots too.
+    private void OnChunkUnloaded(IChunk? chunk)
+    {
+        if (chunk is null)
+            return;
+
+        Interlocked.Increment(ref this.chunkUnloadEpoch);
+        (this.Generator as IStructureStartStorage)?.UntrackStructureChunk(chunk);
+    }
 
     private sealed record RegionLookup(AbstractLevel Level, long Key, int Version, IRegion Region);
 
@@ -825,7 +857,7 @@ public abstract partial class AbstractLevel : ILevel
         {
             foreach (var (_, player) in Players)
             {
-                if (player.Position == location)
+                if (PlayerGrid.ReadPosition(player) == location)
                 {
                     yield return player;
                 }
@@ -835,13 +867,17 @@ public abstract partial class AbstractLevel : ILevel
 
         distance *= distance;
 
-        // During the tick, from its snapshot of the players: mobs ask this many times a tick, and going over the
-        // players' dictionary each time cost more than the checks. A player who left since isn't returned.
-        if (this.CurrentTickPlayers is IPlayer[] players)
+        // Keep the snapshot's order, but test each player's current position and identity immediately before
+        // yielding, as the original array loop did. Column candidates refresh after movement while suspended.
+        IPlayer[]? players;
+        lock (this.playerGrid.MembershipGate)
+            players = this.CurrentTickPlayers;
+
+        if (players is not null)
         {
-            foreach (var player in players)
+            foreach (var player in this.playerGrid.CandidatesInOrder(players, location, distance))
             {
-                var difference = player.Position - location;
+                var difference = PlayerGrid.ReadPosition(player) - location;
                 if (difference.X * difference.X + difference.Z * difference.Z <= distance
                     && this.Players.TryGetValue(player.Uuid, out var current) && ReferenceEquals(current, player))
                 {
@@ -851,9 +887,10 @@ public abstract partial class AbstractLevel : ILevel
             yield break;
         }
 
+        // Players is publicly mutable; outside a valid tick snapshot retain the original dictionary path.
         foreach (var (_, player) in Players)
         {
-            var difference = player.Position - location;
+            var difference = PlayerGrid.ReadPosition(player) - location;
             if (difference.X * difference.X + difference.Z * difference.Z <= distance)
             {
                 yield return player;
@@ -865,21 +902,29 @@ public abstract partial class AbstractLevel : ILevel
 
     public bool TryAddPlayer(IPlayer player)
     {
-        if (!Players.TryAdd(player.Uuid, player))
-            return false;
+        lock (this.playerGrid.MembershipGate)
+        {
+            if (!Players.TryAdd(player.Uuid, player))
+                return false;
 
-        Interlocked.Increment(ref this.playerChanges);
-        return true;
+            Interlocked.Increment(ref this.playerChanges);
+            this.playerGrid.Add(player);
+            return true;
+        }
     }
 
     // Matches the instance, not just the UUID, so a stale reference can't remove a newer player with the same UUID.
     public bool TryRemovePlayer(IPlayer player)
     {
-        if (!Players.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
-            return false;
+        lock (this.playerGrid.MembershipGate)
+        {
+            if (!Players.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
+                return false;
 
-        Interlocked.Increment(ref this.playerChanges);
-        return true;
+            Interlocked.Increment(ref this.playerChanges);
+            this.playerGrid.Remove(player);
+            return true;
+        }
     }
 
     public async virtual Task DoWorldTickAsync()
@@ -1235,9 +1280,8 @@ public abstract partial class AbstractLevel : ILevel
                 StructureChunkLoaded = this.Generator is IStructureStartStorage loading
                     ? loading.TrackStructureChunk
                     : null,
-                StructureChunkUnloaded = this.Generator is IStructureStartStorage unloading
-                    ? unloading.UntrackStructureChunk
-                    : null
+                // Raised for every chunk that leaves the region, which random ticks need as well as structures.
+                StructureChunkUnloaded = this.OnChunkUnloaded
             };
 
             if (this.Regions.TryAdd(value, region))
@@ -1635,6 +1679,7 @@ public abstract partial class AbstractLevel : ILevel
     private async Task FlushOwnRegionsAsync()
     {
         Region[] written = [];
+        Task<Exception?>[] saves = [];
         var failures = new List<Exception>();
         var jobsBeforeFlush = 0;
         try
@@ -1672,9 +1717,14 @@ public abstract partial class AbstractLevel : ILevel
                 // regions from taking a snapshot, nor should they be attempted twice in this save.
                 var regions = Regions.Values.Where(region => !failedRetries.Contains(region)).ToArray();
                 written = [.. regions.OfType<Region>()];
-                var saves = regions.Select(region => CaptureRegionSaveFailureAsync(region,
-                    () => region is Region concrete ? concrete.WriteChangesAsync() : region.FlushAsync()));
-                failures.AddRange((await Task.WhenAll(saves)).OfType<Exception>());
+                saves = new Task<Exception?>[regions.Length];
+                var snapshots = new Task[regions.Length];
+                for (var index = 0; index < regions.Length; index++)
+                    (saves[index], snapshots[index]) = StartRegionSave(regions[index]);
+
+                // The level waits only while the regions snapshot their chunks, all of them at the same point between
+                // two ticks; compressing and writing them goes on while it ticks, as vanilla's IO workers do.
+                await Task.WhenAll(snapshots);
                 try
                 {
                     this.SavePluginData();
@@ -1689,6 +1739,8 @@ public abstract partial class AbstractLevel : ILevel
                 SavingEntities = false;
                 simulationGate.Release();
             }
+
+            failures.AddRange((await Task.WhenAll(saves)).OfType<Exception>());
         }
         catch
         {
@@ -1699,8 +1751,7 @@ public abstract partial class AbstractLevel : ILevel
             throw;
         }
 
-        // Like vanilla's autosave, which leaves the disk to its IO workers, the level ticks again while the files
-        // reach the disk; the flush still ends once they have.
+        // The files reach the disk while the level ticks too; the flush still ends once they have.
         var syncs = written.Select(region => CaptureRegionSaveFailureAsync(region, region.SyncToDiskAsync));
         failures.AddRange((await Task.WhenAll(syncs)).OfType<Exception>());
         if (failures.Count != 0)
@@ -1710,6 +1761,21 @@ public abstract partial class AbstractLevel : ILevel
             Interlocked.Add(ref this.jobsSinceFlush, Math.Max(1, jobsBeforeFlush));
             throw new AggregateException($"Could not save every region of level '{this.Name}'.", failures);
         }
+    }
+
+    // Starts saving a region's changes, and returns the save with what the level waits for before ticking again:
+    // Obsidian's regions take their snapshots first, while another kind of region writes its changes whole.
+    private static (Task<Exception?> Save, Task Snapshots) StartRegionSave(IRegion region)
+    {
+        if (region is not Region concrete)
+        {
+            var whole = CaptureRegionSaveFailureAsync(region, () => region.FlushAsync());
+            return (whole, whole);
+        }
+
+        var taken = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var save = CaptureRegionSaveFailureAsync(region, () => concrete.WriteChangesAsync(taken));
+        return (save, taken.Task);
     }
 
     private static async Task<Exception?> CaptureRegionSaveFailureAsync(IRegion region, Func<Task> save)

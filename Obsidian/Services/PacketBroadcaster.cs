@@ -91,11 +91,11 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
         if (toLevel is not AbstractLevel world)
             return;
 
-        var shared = new SharedPacketBodies(packet);
+        SharedPacketBodies? shared = null;
         foreach (var player in world.GetPlayersInRange(location, world.Configuration.EntityBroadcastRangePercentage))
         {
             if (!excludedIds.Contains(player.EntityId))
-                Send(player, shared);
+                Send(player, shared ??= new SharedPacketBodies(packet));
         }
     }
 
@@ -119,7 +119,7 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
         {
             Packet = packet,
             ToLevel = world,
-            IncludedIds = [.. includedIds],
+            IncludedIds = includedIds,
         }, 1);
     }
 
@@ -191,7 +191,7 @@ public sealed class PacketBroadcaster(IServer server, ILogger<PacketBroadcaster>
         public required IClientboundPacket Packet { get; init; }
 
         public int[]? ExcludedIds { get; init; }
-        public int[]? IncludedIds { get; init; }
+        public ICollection<int>? IncludedIds { get; init; }
 
         public ILevel? ToLevel { get; init; }
     }
