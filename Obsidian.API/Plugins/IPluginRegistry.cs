@@ -61,9 +61,20 @@ public interface IPluginRegistry
     public IPluginRegistry MapCommand(string name, Delegate contextDelegate);
     public IPluginRegistry MapCommand(string name, ValueTaskContextDelegate<CommandContext> contextDelegate);
 
+    /// <summary>Registers a handler for an event.</summary>
+    /// <remarks>
+    /// Handlers can run concurrently across levels and connections. Make shared state thread-safe;
+    /// see <see cref="IEventDispatcher"/> for the threading contract.
+    /// </remarks>
     public IPluginRegistry MapEvent<TEventArgs>(ValueTaskContextDelegate<TEventArgs> contextDelegate, Priority priority = Priority.Low)
         where TEventArgs : BaseMinecraftEventArgs;
+
+    /// <summary>Registers a handler whose first parameter identifies the event.</summary>
+    /// <remarks>Handlers may run concurrently; see <see cref="IEventDispatcher"/> for the threading contract.</remarks>
     public IPluginRegistry MapEvent(Delegate contextDelegate, Priority priority = Priority.Low);
+
+    /// <summary>Registers attributed handlers from the plugin's <see cref="MinecraftEventHandler"/> modules.</summary>
+    /// <remarks>Handlers may run concurrently; see <see cref="IEventDispatcher"/> for the threading contract.</remarks>
     public IPluginRegistry MapEvents();
 
     /// <summary>
