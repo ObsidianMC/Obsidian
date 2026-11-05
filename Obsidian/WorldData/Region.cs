@@ -331,6 +331,106 @@ public partial class Region : IRegion
         await this.SavesAdmittedBeforeAsync(admitted).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
     }
 
+    /// <summary>
+    /// Starts saving <paramref name="chunks"/>, like vanilla's eager chunk saves (see
+    /// <c>AbstractLevel.SaveChunksEagerlyAsync</c>), unless another save of the region is taking or writing
+    /// snapshots, the region isn't ready, or it's closing: the level's tick never waits for those. It saves their
+    /// blocks, and their entities only until the region first writes them (see <see cref="NeedsEntitySave"/>). A chunk
+    /// whose generator lock is held, or that no staging slot is free for, is left out.
+    /// </summary>
+    /// <param name="snapshotted">
+    /// Filled with the chunks the save took, before <paramref name="snapshotsTaken"/> completes; the region doesn't
+    /// touch it after.
+    /// </param>
+    /// <param name="snapshotsTaken">
+    /// Completed once the chunks are snapshotted, or the save failed before (see <see cref="WriteChangesAsync"/>).
+    /// </param>
+    /// <returns>The save, which ends once its chunks are written; null when it didn't start.</returns>
+    internal Task? TrySaveChunks(
+        IReadOnlyList<IChunk> chunks,
+        List<IChunk> snapshotted,
+        TaskCompletionSource snapshotsTaken)
+    {
+        if (!this.initialization.IsValueCreated || !this.initialization.Value.IsCompletedSuccessfully)
+            return null;
+
+        if (!this.flushLock.Wait(0))
+            return null;
+
+        long admitted;
+        try
+        {
+            lock (this.FluidTickLock)
+            {
+                if (this.lightingRetired)
+                {
+                    this.flushLock.Release();
+                    return null;
+                }
+            }
+
+            admitted = this.AdmitSave();
+        }
+        catch (ObjectDisposedException)
+        {
+            // The region is closing.
+            this.flushLock.Release();
+            return null;
+        }
+
+        return this.SaveChunksUnderLockAsync(chunks, admitted, snapshotted, snapshotsTaken);
+    }
+
+    // Called holding flushLock, which it releases.
+    private async Task SaveChunksUnderLockAsync(
+        IReadOnlyList<IChunk> chunks,
+        long admitted,
+        List<IChunk> snapshotted,
+        TaskCompletionSource snapshotsTaken)
+    {
+        var taken = new List<ChunkSave>();
+        try
+        {
+            try
+            {
+                var saves = chunks.Select(chunk => (chunk, NeedsEntitySave(chunk)));
+                var snapshots = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                var saving = this.SaveTogetherAsync(saves, unloading: false, taken, snapshots, wait: false);
+
+                // The batch takes no more saves once its snapshots are taken.
+                await snapshots.Task;
+                snapshotted.AddRange(taken.Select(save => save.Chunk));
+                snapshotsTaken.TrySetResult();
+
+                await saving;
+            }
+            finally
+            {
+                this.flushLock.Release();
+            }
+        }
+        finally
+        {
+            snapshotsTaken.TrySetResult();
+            this.EndSave(admitted);
+
+            foreach (var save in taken)
+            {
+                save.Dispose();
+                await this.ReleaseRetiredAsync(save);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Whether an eager save writes the chunk's entities with its blocks: while it's complete and the region hasn't
+    /// written its entities (see <see cref="Chunk.SavedEntityCount"/>). Until then, those of a chunk completed since it
+    /// was loaded are only in memory, or in its proto record's <c>entities</c>, which saving the complete chunk empties:
+    /// saved without them, they'd be lost if the server stopped before the autosave or an unload wrote them. A chunk
+    /// loaded complete has them in its entity file already, and only writes them once more.
+    /// </summary>
+    private static bool NeedsEntitySave(IChunk chunk) => chunk is Chunk { IsGenerated: true, SavedEntityCount: < 0 };
+
     private async Task WriteChangesUnderLockAsync(List<ChunkSave> taken, TaskCompletionSource? snapshotsTaken)
     {
         // Pending light goes in first, so a chunk it reaches counts as changed.
@@ -375,8 +475,13 @@ public partial class Region : IRegion
     /// </remarks>
     /// <param name="unloading">Whether the chunks unload (see <see cref="SnapshotChunkAsync"/>).</param>
     /// <param name="snapshotsTaken">Completed once every snapshot is taken (see <see cref="WriteChangesAsync"/>).</param>
+    /// <param name="wait">
+    /// False to leave chunks unsaved instead of waiting: it stops at the first chunk no staging slot is free for, and
+    /// leaves out a chunk whose generator lock is held. An eager save runs while the level's tick waits for its
+    /// snapshots, which slow writes elsewhere, or a generation step, would otherwise hold up.
+    /// </param>
     private async Task SaveTogetherAsync(IEnumerable<(IChunk Chunk, bool Entities)> chunks, bool unloading,
-        List<ChunkSave> taken, TaskCompletionSource? snapshotsTaken = null)
+        List<ChunkSave> taken, TaskCompletionSource? snapshotsTaken = null, bool wait = true)
     {
         var staging = new List<Task>();
         Task completing = Task.CompletedTask;
@@ -384,17 +489,31 @@ public partial class Region : IRegion
         {
             foreach (var (chunk, entities) in chunks)
             {
-                await flushSlots.WaitAsync();
+                if (wait)
+                    await flushSlots.WaitAsync();
+                else if (!flushSlots.Wait(0))
+                    break;
+
                 var save = NewSave(chunk);
                 taken.Add(save);
+                bool snapshotted;
                 try
                 {
-                    await this.SnapshotChunkAsync(save, unloading, saveEntities: entities);
+                    snapshotted = await this.SnapshotChunkAsync(save, unloading, saveEntities: entities, wait);
                 }
                 catch
                 {
                     flushSlots.Release();
                     throw;
+                }
+
+                if (!snapshotted)
+                {
+                    // Its generator lock was held, and nothing was taken.
+                    taken.RemoveAt(taken.Count - 1);
+                    save.Dispose();
+                    flushSlots.Release();
+                    continue;
                 }
 
                 staging.Add(Task.Run(async () =>
@@ -1111,14 +1230,21 @@ public partial class Region : IRegion
     /// unloading save takes its turns even with nothing to write: waiting for them, it waits for the chunk's earlier
     /// writes, so the chunk read once it's unloaded is the latest.
     /// </summary>
-    private async Task SnapshotChunkAsync(ChunkSave save, bool unloading, bool saveEntities)
+    /// <param name="waitForLock">False to take nothing when the generator's lock of the chunk is held.</param>
+    /// <returns>Whether the snapshot was taken, which it is unless <paramref name="waitForLock"/> is false.</returns>
+    private async Task<bool> SnapshotChunkAsync(ChunkSave save, bool unloading, bool saveEntities,
+        bool waitForLock = true)
     {
         var (chunk, x, z) = (save.Chunk, save.X, save.Z);
         NbtWriterStream? writer = null;
         try
         {
             // Snapshot blocks, fluid ticks and entities together; take the generator's lock before the fluid lock.
-            using (this.LockChunk is null ? null : await this.LockChunk(chunk.X, chunk.Z))
+            var (locked, chunkLock) = await this.LockChunkAsync(chunk, waitForLock);
+            if (!locked)
+                return false;
+
+            using (chunkLock)
             {
                 lock (this.FluidTickLock)
                 {
@@ -1180,6 +1306,8 @@ public partial class Region : IRegion
                 save.EntityNbt = SerializeEntities(chunk.X, chunk.Z, entities);
                 save.Entities = null;
             }
+
+            return true;
         }
         catch
         {
@@ -1195,6 +1323,34 @@ public partial class Region : IRegion
         {
             writer?.Dispose();
         }
+    }
+
+    /// <summary>
+    /// Takes the generator's lock of the chunk (see <see cref="LockChunk"/>), or, when <paramref name="wait"/> is false
+    /// and it's held, gives up.
+    /// </summary>
+    /// <returns>Whether it's taken, and its handle: null when the generator doesn't lock chunks.</returns>
+    private async ValueTask<(bool Taken, IDisposable? Handle)> LockChunkAsync(IChunk chunk, bool wait)
+    {
+        if (this.LockChunk is null)
+            return (true, null);
+
+        var locking = this.LockChunk(chunk.X, chunk.Z);
+        if (wait || locking.IsCompleted)
+            return (true, await locking);
+
+        // Generation holds it, maybe for a whole step. A generator's lock can't be tried, so the wait goes on, and the
+        // lock is given back once it's taken.
+        _ = ReleaseOnceTakenAsync(locking.AsTask());
+        return (false, null);
+    }
+
+    // Failing to take the lock leaves nothing held; the next save that takes it meets the failure again.
+    private static async Task ReleaseOnceTakenAsync(Task<IDisposable?> locking)
+    {
+        await ((Task)locking).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+        if (locking.IsCompletedSuccessfully)
+            locking.Result?.Dispose();
     }
 
     /// <summary>

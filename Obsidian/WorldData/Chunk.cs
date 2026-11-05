@@ -101,6 +101,12 @@ public sealed class Chunk : IChunk
     private static long completionLosses;
 
     /// <summary>
+    /// When the level may next save the chunk ahead of the autosave (an <see cref="Environment.TickCount64"/>), like
+    /// vanilla's per-chunk cooldown; 0 until it first does. Only the level's tick reads and writes it.
+    /// </summary>
+    internal long NextEagerSave { get; set; }
+
+    /// <summary>
     /// An explicit change since the last snapshot. Unlike <see cref="IsUnsaved"/>, merely holding containers does
     /// not set this: unload checks it after freezing block access to detect late structure-state notifications.
     /// </summary>

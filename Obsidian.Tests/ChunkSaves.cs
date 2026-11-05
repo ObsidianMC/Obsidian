@@ -3,6 +3,7 @@ using Obsidian.API.BlockEntities;
 using Obsidian.API.Containers;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
+using Obsidian.API.World.Features;
 using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
@@ -335,6 +336,158 @@ public sealed class ChunkSaves
         var reloaded = await region.GetChunkAsync(0, 0);
         Assert.Equal(BlockIds.Stone, reloaded.GetBlock(1, 64, 1).RegistryId);
         Assert.Equal(BlockIds.Stone, reloaded.GetBlock(2, 64, 2).RegistryId);
+    }
+
+    [Fact(DisplayName = "A tick saves a changed chunk ahead of the autosave, once per cooldown")]
+    public async Task TicksSaveChangedChunksEagerly()
+    {
+        await using var context = TestServerFactory.CreateServer($"chunk-saves-eager-{Guid.NewGuid():N}");
+        var world = context.World;
+
+        // However long the tick takes on a slow machine, it saves.
+        world.EagerSaveTickBudget = TimeSpan.MaxValue;
+        var chunk = Complete(0, 0);
+        var region = (Region)world.LoadRegionByChunk(0, 0);
+        region.SetChunk(chunk);
+        await region.FlushAsync();
+
+        // The tick takes the change's snapshot, and writes it while the next ticks run. A tick leaves the chunk for a
+        // later one while every staging slot is busy (other tests save too), or generation holds the chunk's lock.
+        chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(5);
+        do
+        {
+            await world.DoWorldTickAsync();
+        }
+        while (chunk.IsUnsaved && DateTime.UtcNow < deadline);
+
+        Assert.False(chunk.IsUnsaved);
+
+        // A second change within the cooldown waits for a later save.
+        chunk.SetBlock(2, 64, 2, BlocksRegistry.Stone);
+        await world.DoWorldTickAsync();
+        Assert.True(chunk.IsUnsaved);
+
+        // Undone before the unload, with the light it changes settled first, so the unload has nothing of the blocks
+        // to write: what's on disk is the tick's save.
+        chunk.SetBlock(2, 64, 2, BlocksRegistry.Air);
+        world.Lighting.Flush();
+        chunk.TakeUnsaved();
+        await region.UnloadChunk(0, 0);
+
+        var reloaded = await region.GetChunkAsync(0, 0);
+        Assert.Equal(BlockIds.Stone, reloaded.GetBlock(1, 64, 1).RegistryId);
+    }
+
+    [Fact(DisplayName = "An eager save of a newly complete chunk keeps the entities its proto record held")]
+    public async Task EagerSaveKeepsANewlyCompleteChunksEntities()
+    {
+        var folder = Path.Join(Path.GetTempPath(), $"obsidian-chunk-saves-{Guid.NewGuid():N}");
+        try
+        {
+            await using (var region = new Region(0, 0, folder))
+            {
+                await region.InitAsync();
+
+                // Saved while generating, with an entity generation placed: the proto record holds it.
+                var chunk = new Chunk(0, 0);
+                chunk.SetChunkStatus(ChunkGenStage.features);
+                chunk.PendingEntities.Add(new GeneratedEntity("minecraft:end_crystal", new VectorD(8.5, 80, 8.5)));
+                region.SetChunk(chunk);
+                await region.FlushAsync();
+
+                // Complete and changed, it's saved eagerly; then the server stops before anything else is saved.
+                chunk.SetChunkStatus(ChunkGenStage.full);
+                chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+                await SaveEagerlyAsync(region, chunk);
+            }
+
+            await using (var reloaded = new Region(0, 0, folder))
+            {
+                await reloaded.InitAsync();
+                var chunk = (Chunk)await reloaded.GetChunkAsync(0, 0);
+
+                Assert.True(chunk.IsGenerated);
+                Assert.Single(chunk.PendingEntities);
+            }
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    [Fact(DisplayName = "An autosave lets the level tick while an eager save writes")]
+    public async Task AutosaveDoesNotHoldTheTickForAnEagerSave()
+    {
+        await using var context = TestServerFactory.CreateServer($"chunk-saves-eager-autosave-{Guid.NewGuid():N}");
+        var world = context.World;
+        world.EagerSaveTickBudget = TimeSpan.MaxValue;
+        var chunk = Complete(0, 0);
+        var region = (Region)world.LoadRegionByChunk(0, 0);
+        region.SetChunk(chunk);
+        await region.FlushAsync();
+
+        // An eager save's disk flush waits until released, holding the region's flush lock.
+        var writing = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        region.ChunkFile.Observe = async change =>
+        {
+            if (change.Step != RegionFile.Step.Flushed)
+                return;
+
+            writing.TrySetResult();
+            await release.Task;
+        };
+
+        Task flush = Task.CompletedTask;
+        try
+        {
+            // A tick saves the change eagerly (a later one, while the staging slots are busy).
+            chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+            var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(5);
+            do
+            {
+                await world.DoWorldTickAsync();
+            }
+            while (!writing.Task.IsCompleted && DateTime.UtcNow < deadline);
+
+            await writing.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+            // An autosave starts meanwhile; the level still ticks.
+            chunk.SetBlock(2, 64, 2, BlocksRegistry.Stone);
+            flush = world.FlushRegionsAsync();
+            await world.DoWorldTickAsync().WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        finally
+        {
+            // Released whatever happened, so a failure fails the test instead of hanging its disposal.
+            release.TrySetResult();
+        }
+
+        await flush.WaitAsync(TimeSpan.FromSeconds(10));
+        region.ChunkFile.Observe = null;
+    }
+
+    // Saves the chunk like a tick's eager save (see AbstractLevel.SaveChunksEagerlyAsync), waiting for its writes.
+    // An attempt can leave the chunk out while other tests hold the shared staging slots, so it's tried again, as a
+    // later tick would.
+    private static async Task SaveEagerlyAsync(Region region, Chunk chunk)
+    {
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(5);
+        List<IChunk> snapshotted;
+        do
+        {
+            snapshotted = [];
+            var taken = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var written = region.TrySaveChunks([chunk], snapshotted, taken);
+
+            Assert.NotNull(written);
+            await written;
+        }
+        while (snapshotted.Count == 0 && DateTime.UtcNow < deadline);
+
+        Assert.Equal([chunk], snapshotted);
     }
 
     private static Chunk Complete(int x, int z)

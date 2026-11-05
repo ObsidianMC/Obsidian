@@ -1081,6 +1081,11 @@ public abstract partial class AbstractLevel : ILevel
         foreach (var player in trackedPlayers)
             player.SynchronizeOwnState();
         timings.Lap("light and tracking");
+
+        TickStage = "saving changed chunks";
+        await this.SaveChunksEagerlyAsync(timings.Elapsed);
+        timings.Lap("eager saves");
+
         TickStage = "idle";
         timings.RecordTo(this.TickTimes);
         timings.ReportIfSlow(this.Logger, DimensionName);
@@ -1124,6 +1129,9 @@ public abstract partial class AbstractLevel : ILevel
             times = (times.Ms + Stopwatch.GetElapsedTime(entityLap, now).TotalMilliseconds, times.Count + 1);
             entityLap = now;
         }
+
+        // How long the tick has taken so far.
+        public TimeSpan Elapsed => Stopwatch.GetElapsedTime(start);
 
         public void RecordTo(TimingWindow window) => window.Record(Stopwatch.GetElapsedTime(start).TotalMilliseconds, stages);
 
@@ -1680,7 +1688,7 @@ public abstract partial class AbstractLevel : ILevel
         var jobsBeforeFlush = 0;
         try
         {
-            await simulationGate.WaitAsync();
+            await this.EnterGateAfterEagerSavesAsync();
             try
             {
                 // A traveller no level could place or keep yet isn't in this save: reported, and retried until it is.
