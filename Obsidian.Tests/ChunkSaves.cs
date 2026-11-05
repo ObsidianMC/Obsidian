@@ -785,6 +785,105 @@ public sealed class ChunkSaves
         Assert.Equal(BlockIds.Stone, (await reader.GetChunkAsync(0, 0)).GetBlock(1, 64, 1).RegistryId);
     }
 
+    [Fact]
+    public async Task ARegionWhoseFilesFailToOpenStaysUsableAfterItsUnloadFails()
+    {
+        await using var context = TestServerFactory.CreateServer($"chunk-saves-unload-broken-{Guid.NewGuid():N}");
+        var world = context.World;
+        var folder = ((Region)world.LoadRegionByChunk(0, 0)).RegionFolder;
+
+        // A truncated header holding data, which opening the region's chunk file refuses.
+        await File.WriteAllBytesAsync(Path.Join(folder, "r.2.2.mca"), Enumerable.Repeat((byte)0xFF, 100).ToArray());
+        var broken = (Region)world.LoadRegionByChunk(64, 64);
+
+        await Assert.ThrowsAsync<InvalidDataException>(() => world.UnloadRegionAsync(2, 2));
+
+        // Left as it was rather than retired: structure lookups fail at once instead of waiting for its unload.
+        Assert.Same(broken, world.GetRegionForChunk(64, 64));
+        var lookup = world.ReadSavedStructureStartsAsync(64, 64).AsTask();
+        await Assert.ThrowsAsync<InvalidDataException>(() => lookup.WaitAsync(TimeSpan.FromSeconds(10)));
+    }
+
+    [Fact]
+    public async Task ARegionUnloadKeepsTheRegionWhenAChunkSnapshotFails()
+    {
+        await using var context = TestServerFactory.CreateServer($"chunk-saves-unload-keep-{Guid.NewGuid():N}");
+        var world = context.World;
+        var region = PrepareUnload(world, out var unloading);
+        var failing = Complete(65, 64);
+        region.SetChunk(failing);
+        await world.FlushRegionsAsync();
+
+        // Both chunks change; one holds an entity whose save throws, so its chunk's final snapshot does too.
+        unloading.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+        failing.SetBlock(2, 64, 2, BlocksRegistry.Stone);
+        var entity = new FailingItem
+        {
+            Level = world,
+            EntityId = 1,
+            Position = new VectorF(1048, 65, 1032),
+            Item = new ItemStack(ItemsRegistry.Apple, 3)
+        };
+        Assert.True(world.TryAddEntity(entity));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => world.UnloadRegionAsync(region.X, region.Z));
+
+        // The region stays with the chunk that couldn't be taken; the other left with its save.
+        Assert.Same(region, world.GetRegionForChunk(64, 64));
+        Assert.Null(region.GetLoadedChunk(0, 0));
+        Assert.Same(failing, region.GetLoadedChunk(1, 0));
+
+        // Once the entity saves again, a later unload takes the chunk with its change.
+        entity.Fail = false;
+        await world.UnloadRegionAsync(region.X, region.Z);
+        Assert.Null(world.GetRegionForChunk(64, 64));
+
+        await world.DisposeAsync();
+        await using var reader = new Region(region.X, region.Z,
+            Path.GetDirectoryName(region.RegionFolder)!, Path.GetFileName(region.RegionFolder));
+        await reader.InitAsync();
+        Assert.Equal(BlockIds.Stone, (await reader.GetChunkAsync(0, 0)).GetBlock(1, 64, 1).RegistryId);
+        Assert.Equal(BlockIds.Stone, (await reader.GetChunkAsync(1, 0)).GetBlock(2, 64, 2).RegistryId);
+    }
+
+    [Fact]
+    public async Task ARegionThatCantReopenForARetryDoesntStopOtherSaves()
+    {
+        await using var context = TestServerFactory.CreateServer($"chunk-saves-unload-reopen-{Guid.NewGuid():N}");
+        var world = context.World;
+        var region = PrepareUnload(world, out var chunk);
+        var healthyRegion = (Region)world.LoadRegionByChunk(0, 0);
+        var healthy = Complete(0, 0);
+        healthyRegion.SetChunk(healthy);
+        await world.FlushRegionsAsync();
+
+        // The region's final write fails, leaving its save pending, then its file can't be opened for a while.
+        chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+        region.ChunkFile.Observe = change => change.Step == RegionFile.Step.PayloadWritten
+            ? ValueTask.FromException(new IOException("The unload write failed."))
+            : ValueTask.CompletedTask;
+        await Assert.ThrowsAsync<IOException>(() => world.UnloadRegionAsync(region.X, region.Z));
+        var held = File.Open(Path.Join(region.RegionFolder, $"r.{region.X}.{region.Z}.mca"),
+            FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+        // The autosave reports the region it couldn't reopen, and saves the others all the same.
+        healthy.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+        try
+        {
+            var failure = await Record.ExceptionAsync(() => world.FlushRegionsAsync());
+            Assert.IsType<AggregateException>(failure);
+            Assert.False(healthy.IsUnsaved);
+            Assert.Single(world.PendingWrites.Failed());
+        }
+        finally
+        {
+            held.Dispose();
+        }
+
+        await world.FlushRegionsAsync();
+        Assert.Empty(world.PendingWrites.Failed());
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -964,9 +1063,15 @@ public sealed class ChunkSaves
 
         var (writing, release) = PauseUnloadWrite(region, RegionFile.Step.PayloadWritten);
         var unload = StartUnload(world, region, wholeRegion);
-        await writing.WaitAsync(TimeSpan.FromSeconds(10));
-        await world.DoWorldTickAsync().WaitAsync(TimeSpan.FromSeconds(5));
-        release.TrySetResult();
+        try
+        {
+            await writing.WaitAsync(TimeSpan.FromSeconds(10));
+            await world.DoWorldTickAsync().WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        finally
+        {
+            release.TrySetResult();
+        }
 
         // The unload ends while the level keeps ticking, and the autosave after it isn't held up.
         for (var tick = 0; tick < 100 && !unload.IsCompleted; tick++)
@@ -1019,6 +1124,20 @@ public sealed class ChunkSaves
 
         await world.DoWorldTickAsync().WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(1, ran);
+    }
+
+    // An item whose save throws while Fail is set, as a plugin entity's can.
+    private sealed class FailingItem : ItemEntity
+    {
+        public bool Fail { get; set; } = true;
+
+        internal override void WriteNbt(NbtCompound tag)
+        {
+            if (this.Fail)
+                throw new InvalidOperationException("The entity's save failed.");
+
+            base.WriteNbt(tag);
+        }
     }
 
     /// <summary>

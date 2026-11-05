@@ -858,6 +858,147 @@ public sealed class RegionFiles : IDisposable
 
     private static int VersionOf(ReadOnlySpan<byte> payload) => BinaryPrimitives.ReadInt32BigEndian(payload);
 
+    [Fact]
+    public async Task LoadOverlappingAStoreAndUnloadReadsTheNewerSave()
+    {
+        var regionFolder = Path.Join(this.folder, "world");
+        await using var region = new Region(0, 0, regionFolder);
+        await region.InitAsync();
+        region.SetChunk(Complete(0, 0));
+        await region.UnloadChunk(0, 0);
+
+        // A load reads the file's version while a newer chunk is stored in the slot and unloaded again.
+        var (reading, release) = PauseOnce(region.ChunkFile, RegionFile.Step.Reading);
+        var load = region.GetChunkAsync(0, 0).AsTask();
+        await reading.WaitAsync(TimeSpan.FromSeconds(10));
+
+        var newer = Complete(0, 0);
+        newer.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+        region.SetChunk(newer);
+        await region.UnloadChunk(0, 0);
+        release.TrySetResult();
+
+        var loaded = await load.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Equal(BlocksRegistry.Stone, loaded.GetBlock(1, 64, 1));
+    }
+
+    [Fact]
+    public async Task ClosingWaitsForAnUnloadAdmittedBeforeItsSnapshot()
+    {
+        var regionFolder = Path.Join(this.folder, "world");
+        var generatorLock = Task.CompletedTask;
+        var region = new Region(0, 0, regionFolder) { LockChunk = (_, _) => LockAfter(generatorLock) };
+        await region.InitAsync();
+        var chunk = Complete(0, 0);
+        region.SetChunk(chunk);
+        await region.FlushAsync();
+        chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+
+        // The unload's snapshot waits for the generator's lock of the chunk while the region closes.
+        var locked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        generatorLock = locked.Task;
+        var unload = region.UnloadChunk(0, 0);
+        var closing = region.DisposeAsync().AsTask();
+        await Task.WhenAny(closing, Task.Delay(100));
+        Assert.False(closing.IsCompleted);
+
+        locked.TrySetResult();
+        await unload.WaitAsync(TimeSpan.FromSeconds(10));
+        await closing.WaitAsync(TimeSpan.FromSeconds(10));
+
+        await using var reloaded = new Region(0, 0, regionFolder);
+        await reloaded.InitAsync();
+        Assert.Equal(BlocksRegistry.Stone, (await reloaded.GetChunkAsync(0, 0)).GetBlock(1, 64, 1));
+    }
+
+    [Fact]
+    public async Task OverlappingUnloadsOfAChunkKeepItsEntities()
+    {
+        var regionFolder = Path.Join(this.folder, "world");
+        var generatorLock = Task.CompletedTask;
+        await using var region = new Region(0, 0, regionFolder) { LockChunk = (_, _) => LockAfter(generatorLock) };
+        await region.InitAsync();
+        var chunk = Complete(0, 0);
+        region.SetChunk(chunk);
+        await region.FlushAsync();
+        chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+        region.TryAddEntity(new ItemEntity
+        {
+            Level = null!,
+            EntityId = 1,
+            Position = new VectorF(8.5f, 65f, 8.5f),
+            Item = new ItemStack(ItemsRegistry.Apple, 3)
+        });
+
+        // Both unloads find the chunk, then wait for the generator's lock of it. The first takes it and its write
+        // pauses; then the second does.
+        var firstLocked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondLocked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        generatorLock = firstLocked.Task;
+        var first = region.UnloadChunk(0, 0);
+        generatorLock = secondLocked.Task;
+        var second = region.UnloadChunk(0, 0);
+        var (writing, release) = PauseOnce(region.ChunkFile, RegionFile.Step.PayloadWritten);
+        try
+        {
+            firstLocked.TrySetResult();
+            await writing.WaitAsync(TimeSpan.FromSeconds(10));
+            secondLocked.TrySetResult();
+            await Task.WhenAny(second, Task.Delay(200));
+
+            // A load meanwhile reads the pending save, which has the item.
+            var loaded = (Chunk)await region.GetChunkAsync(0, 0);
+            Assert.Single(loaded.PendingEntities, entity => entity.Type == "minecraft:item");
+        }
+        finally
+        {
+            release.TrySetResult();
+            await Task.WhenAll(first, second).WaitAsync(TimeSpan.FromSeconds(10));
+        }
+    }
+
+    [Fact]
+    public async Task ClosingARegionClosesBothFilesWhenOneFails()
+    {
+        var regionFolder = Path.Join(this.folder, "world");
+        var region = new Region(0, 0, regionFolder);
+        await region.InitAsync();
+        region.ChunkFile.Observe = step => step.Step == RegionFile.Step.Closed
+            ? ValueTask.FromException(new IOException("Closing failed."))
+            : ValueTask.CompletedTask;
+
+        await Assert.ThrowsAsync<IOException>(() => region.DisposeAsync().AsTask());
+
+        // Both files are free to open again.
+        await using var reopened = new Region(0, 0, regionFolder);
+        await reopened.InitAsync();
+    }
+
+    // A generator's lock of a chunk, taken once the task ends.
+    private static async ValueTask<IDisposable?> LockAfter(Task locked)
+    {
+        await locked;
+        return null;
+    }
+
+    // Pauses the file at its first event of the step, until released.
+    private static (Task Paused, TaskCompletionSource Release) PauseOnce(RegionFile file, RegionFile.Step step)
+    {
+        var paused = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var pending = 1;
+        file.Observe = async change =>
+        {
+            if (change.Step != step || Interlocked.Exchange(ref pending, 0) == 0)
+                return;
+
+            paused.TrySetResult();
+            await release.Task;
+        };
+
+        return (paused.Task, release);
+    }
+
     private static Chunk Complete(int x, int z)
     {
         var chunk = new Chunk(x, z);

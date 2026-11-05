@@ -99,8 +99,15 @@ public abstract partial class AbstractLevel
     private async Task UnloadRegionCoreAsync(int regionX, int regionZ)
     {
         var key = NumericsHelper.IntsToLong(regionX, regionZ);
+
+        // A region whose files fail to open can't be saved, so it's left as it is rather than retired. Waited for
+        // outside the gate, since a region loaded where another is closing opens its files once that one closed them.
+        if (this.Regions.TryGetValue(key, out var opening) && opening is Region initializing)
+            await initializing.InitAsync();
+
         IRegion? removed;
         Region.UnloadedChunks? unloaded = null;
+        var kept = false;
 
         await this.simulationGate.WaitAsync();
         try
@@ -129,7 +136,21 @@ public abstract partial class AbstractLevel
                     .Select(chunk => (NumericsHelper.Modulo(chunk.X, Region.CubicRegionSize),
                         NumericsHelper.Modulo(chunk.Z, Region.CubicRegionSize)))
                     .ToArray();
-                unloaded = await region.DetachForUnloadAsync(positions);
+                try
+                {
+                    unloaded = await region.DetachForUnloadAsync(positions);
+                }
+                catch
+                {
+                    this.KeepRegion(region);
+                    throw;
+                }
+
+                // A chunk whose final snapshot failed is still in the region, so the level keeps the region: its next
+                // save writes the chunk, and a later unload takes it. The chunks taken out are written below.
+                kept = unloaded.Failures.Count != 0;
+                if (kept)
+                    this.KeepRegion(region);
             }
             else
             {
@@ -137,22 +158,8 @@ public abstract partial class AbstractLevel
                 await removed.FlushAsync();
             }
 
-            using (this.regionLock.EnterScope())
-            {
-                if (removed is Region closing)
-                    this.closingRegions[key] = closing;
-
-                lock (this.Fluids.TickLock)
-                {
-                    if (this.Regions.TryRemove(KeyValuePair.Create(key, removed)))
-                        Interlocked.Increment(ref this.regionsVersion);
-                }
-            }
-
-            // The snapshot took the entities it saves out of the level; any left (such as those in chunks never
-            // loaded) go with the region, so they leave the entity index too.
-            foreach (var (_, entity) in removed.Entities)
-                EntityGrid.Leave(entity);
+            if (!kept)
+                this.RemoveUnloadedRegion(key, removed);
         }
         finally
         {
@@ -165,6 +172,13 @@ public abstract partial class AbstractLevel
             return;
         }
 
+        // Throws the failed snapshots once the others are written.
+        if (kept)
+        {
+            await written.WriteUnloadedAsync(unloaded!);
+            return;
+        }
+
         try
         {
             await written.WriteUnloadedAsync(unloaded!);
@@ -174,6 +188,36 @@ public abstract partial class AbstractLevel
         {
             await this.CloseRemovedRegionAsync(written, key);
         }
+    }
+
+    // Takes the region out of the level in the step that took its final snapshot. Call under the simulation gate.
+    private void RemoveUnloadedRegion(long key, IRegion removed)
+    {
+        using (this.regionLock.EnterScope())
+        {
+            if (removed is Region closing)
+                this.closingRegions[key] = closing;
+
+            lock (this.Fluids.TickLock)
+            {
+                if (this.Regions.TryRemove(KeyValuePair.Create(key, removed)))
+                    Interlocked.Increment(ref this.regionsVersion);
+            }
+        }
+
+        // The snapshot took the entities it saves out of the level; any left (such as those in chunks never loaded)
+        // go with the region, so they leave the entity index too.
+        foreach (var (_, entity) in removed.Entities)
+            EntityGrid.Leave(entity);
+    }
+
+    // Keeps a region whose final snapshot failed (see Region.Unretire), open to travel again. Call under the
+    // simulation gate.
+    private void KeepRegion(Region region)
+    {
+        region.Unretire();
+        using (this.TransferLock.Enter())
+            region.TransfersClosed = false;
     }
 
     // Closes the files of a removed region, then lets a region object loaded at its position open them. Saves that
@@ -209,7 +253,21 @@ public abstract partial class AbstractLevel
 
         foreach (var writes in byRegion)
         {
-            if (this.LoadRegion(writes.Key.Item1, writes.Key.Item2) is not Region region)
+            var (regionX, regionZ) = writes.Key;
+            Region? region;
+            try
+            {
+                region = this.LoadRegion(regionX, regionZ) as Region;
+            }
+            catch (Exception opening)
+            {
+                // Its files can't be opened now: its writes stay pending for the next save, and the other regions
+                // are saved all the same.
+                failures.Add(new InvalidOperationException($"Could not save region ({regionX}, {regionZ}).", opening));
+                continue;
+            }
+
+            if (region is null)
                 continue;
 
             var failure = await CaptureRegionSaveFailureAsync(region, () => region.RetryPendingWritesAsync(writes));
