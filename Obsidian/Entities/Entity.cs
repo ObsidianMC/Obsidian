@@ -39,6 +39,27 @@ public partial class Entity : IEquatable<Entity>, IEntity
         get => this.position;
         set
         {
+            if (this is IPlayer player)
+            {
+                var state = LazyInitializer.EnsureInitialized(ref this.PlayerQueryState);
+                lock (state.Gate)
+                {
+                    if (state.Grid is PlayerGrid playerGrid)
+                    {
+                        lock (playerGrid.Gate)
+                        {
+                            this.position = value;
+                            playerGrid.Move(player, value);
+                        }
+                    }
+                    else
+                    {
+                        this.position = value;
+                    }
+                }
+                return;
+            }
+
             this.position = value;
 
             // Racy outside the grid's lock, but Move checks again under it.
@@ -48,6 +69,9 @@ public partial class Entity : IEquatable<Entity>, IEntity
     }
 
     private VectorD position;
+
+    // Created only for players; serializes whole positions and migration between per-level grids.
+    internal PlayerGrid.PlayerState? PlayerQueryState;
 
     // The level's grid the entity is in and the chunk it's filed under there, both kept by the grid (see EntityGrid).
     internal EntityGrid? Grid { get; set; }
