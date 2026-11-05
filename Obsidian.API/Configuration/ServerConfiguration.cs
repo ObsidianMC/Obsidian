@@ -138,6 +138,17 @@ public sealed class ServerConfiguration
     /// The speed at which world time and rain time go by.
     /// </summary>
     public int TimeTickSpeedMultiplier { get; set; } = 1;
+
+    /// <summary>
+    /// Experimental, and off unless turned on: whether a world's levels (the overworld, the nether, the end and plugin
+    /// dimensions) tick at the same time, each on a thread of its own. Off, the default, the world's own level ticks
+    /// first and its dimensions after it.
+    /// </summary>
+    /// <remarks>
+    /// It only helps a server with more than one processor (counting a container's CPU limit): with one, the levels'
+    /// ticks can't run at the same time anyway, so leave it off there.
+    /// </remarks>
+    public bool ParallelLevelTicks { get; set; }
 }
 
 public sealed class ServerWorld

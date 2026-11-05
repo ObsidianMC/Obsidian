@@ -70,7 +70,22 @@ public partial class PlayerBase
     /// it, and the world they're in to <see cref="PersistentDataFile"/>. An integrated server's local player then becomes
     /// the world's singleplayer owner.
     /// </summary>
-    public virtual async Task SaveAsync() => await this.RunTickAsync(this.SavePlayerAsync, allowStopped: true);
+    /// <remarks>
+    /// It waits for the player's tick gate. From their own tick, grant or save, it saves at once as part of it.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// Called from inside a level's tick, or another player's tick, grant or save: it would wait for a tick that may be
+    /// waiting for it. Plugins should save outside ticks: from a scheduled task or a command, say.
+    /// </exception>
+    public virtual Task SaveAsync()
+    {
+        if (!this.IsInOwnTick)
+            WorldData.AbstractLevel.ThrowIfMustNotWaitForGates(nameof(SaveAsync));
+
+        return this.RunSaveAsync();
+    }
+
+    private Task RunSaveAsync() => this.RunTickAsync(this.SavePlayerAsync, allowStopped: true).AsTask();
 
     private async ValueTask SavePlayerAsync()
     {

@@ -1,0 +1,331 @@
+using Obsidian.API;
+using Obsidian.API.Events;
+using Obsidian.Entities;
+using Obsidian.Plugins;
+using Obsidian.Plugins.Archives;
+using Obsidian.Tests.Fakes;
+using Obsidian.Tests.Utilities;
+using Obsidian.Utilities;
+using Obsidian.WorldData;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
+
+namespace Obsidian.Tests;
+
+/// <summary>
+/// A flow inside a level's tick, or holding a player's tick gate, never waits for a level's simulation gate or another
+/// player's tick gate (see <c>EntityTransferLock</c>): what would is refused, or runs in the background, tracked so that
+/// shutdown and disposal wait for it. These check the ways in that would otherwise deadlock or write too late.
+/// </summary>
+public sealed partial class LevelTransfers
+{
+    private static readonly TimeSpan TickWait = TimeSpan.FromSeconds(10);
+
+    // How long something blocked on purpose is watched to make sure it stays blocked.
+    private static readonly TimeSpan StaysBlocked = TimeSpan.FromMilliseconds(300);
+
+    private const string RootAdvancement = "minecraft:story/root";
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task PlayersTickingInTwoLevelsAtOnceNeitherGrantToNorRemoveEachOtherIntoADeadlock()
+    {
+        await using var context = TestServerFactory.CreateServer($"player-gates-{Guid.NewGuid():N}");
+        var world = context.World;
+        world.Configuration.ParallelLevelTicks = true;
+        var nether = AddNether(context);
+        WorldBlockEntities.AddEmptyChunk(world);
+        AddEmptyChunk(nether);
+        var first = (PlayerBase)await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "First", world);
+        var second = (PlayerBase)await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "Second", world);
+        await second.TeleportAsync(nether, Centre);
+
+        // In each player's grant, in their own level's tick, a plugin grants the other player an advancement: each
+        // would wait for the other's gate. That's refused, while a grant to the player themselves works.
+        var grants = new CrossedCalls(world, first, nether, second, (_, other) => GrantRootAsync(other));
+        await world.DoWorldTickAsync().WaitAsync(TickWait);
+
+        Assert.IsType<InvalidOperationException>(grants.FirstRefusal);
+        Assert.IsType<InvalidOperationException>(grants.SecondRefusal);
+        Assert.Null(grants.FirstOwnGrant);
+        Assert.Null(grants.SecondOwnGrant);
+
+        // Then each ticks the other through the public tick: refused too.
+        var ticks = new CrossedCalls(world, first, nether, second, (_, other) => other.TickAsync().AsTask());
+        await world.DoWorldTickAsync().WaitAsync(TickWait);
+
+        Assert.IsType<InvalidOperationException>(ticks.FirstRefusal);
+        Assert.IsType<InvalidOperationException>(ticks.SecondRefusal);
+
+        // Then each removes the other: the leaves wait for each other's gate, so they finish after the ticks instead.
+        var removals = new CrossedCalls(
+            world,
+            first,
+            nether,
+            second,
+            (_, other) => context.Server.RemoveServerPlayerAsync(other));
+        await world.DoWorldTickAsync().WaitAsync(TickWait);
+
+        Assert.Null(removals.FirstRefusal);
+        Assert.Null(removals.SecondRefusal);
+        await WaitUntilAsync(() => context.Server.OnlinePlayers.IsEmpty);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ALevelsTickAwaitingItsOwnUnloadOrASaveOfEverythingIsNotStuckOnIt()
+    {
+        await using var context = TestServerFactory.CreateServer($"tick-coordinators-{Guid.NewGuid():N}");
+        var world = context.World;
+        var player = (await PrepareAsync(context, "Saved")).Player;
+        Assert.True(context.Server.AddPlayer(player));
+        await player.LoadAsync();
+
+        var completed = 0;
+        context.Server.SaveCompleted += (_, failure) =>
+        {
+            Assert.Null(failure);
+            Interlocked.Increment(ref completed);
+        };
+
+        var autosaveStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        context.Server.SaveStarted += _ => autosaveStarted.TrySetResult();
+
+        // In the player's tick, a plugin unloads the level's region, which waits for the level's tick to end: refused.
+        // It then saves everything while an autosave holds the server's save lock and waits for the player's tick:
+        // refused too.
+        Exception? unload = null;
+        Task<bool>? autosave = null;
+        Exception? saved = null;
+        world.EnqueueEntityAction(async () => await player.GrantAdvancementAsync(async () =>
+        {
+            unload = await Record.ExceptionAsync(() => world.UnloadRegionAsync(0, 0));
+
+            using (ExecutionContext.SuppressFlow())
+                autosave = Task.Run(() => context.Server.SaveEverythingAsync(autosave: true));
+
+            await autosaveStarted.Task.WaitAsync(TickWait);
+            saved = await Record.ExceptionAsync(() => context.Server.SaveEverythingAsync(autosave: false));
+            return false;
+        }));
+
+        await world.DoWorldTickAsync().WaitAsync(TickWait);
+
+        Assert.IsType<InvalidOperationException>(unload);
+        Assert.IsType<InvalidOperationException>(saved);
+
+        // The autosave goes on once the tick is over.
+        Assert.True(await autosave!.WaitAsync(TickWait));
+        Assert.Equal(1, Volatile.Read(ref completed));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ATickAwaitingTravelIntoAnotherLevelsUngeneratedChunkGeneratesItThoughThatLevelsGateIsHeld()
+    {
+        await using var sourceServer = TestServerFactory.CreateServer($"travel-source-{Guid.NewGuid():N}");
+        await using var targetServer = TestServerFactory.CreateServer($"travel-target-{Guid.NewGuid():N}");
+        var source = sourceServer.World;
+        var target = targetServer.World;
+        WorldBlockEntities.AddEmptyChunk(source);
+        WorldBlockEntities.AddEmptyChunk(target);
+        WorldBlockEntities.AddEmptyChunk(target, 1, 0);
+        Assert.NotNull(await target.GetChunkAsync(1, 0));
+        var cow = new Cow { Level = source, EntityId = 719_000, Position = Centre };
+        Assert.True(source.TryAddEntity(cow));
+
+        // The target's tick reaches a chunk management tick, at which its chunk management unloads its idle chunk (not
+        // the spawn chunk): that waits at the target's gate, which the target's tick holds until the cow arrives.
+        target.LevelData.GameTime = 20 * 30 - 1;
+        var targetTicks = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var arrived = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task? management = null;
+        target.EnqueueEntityAction(async () =>
+        {
+            using (ExecutionContext.SuppressFlow())
+                management = Task.Run(target.ManageChunksAsync);
+
+            targetTicks.TrySetResult();
+            await arrived.Task.WaitAsync(TickWait);
+        });
+
+        // A plugin in the source's tick, meanwhile, awaits sending the cow to an ungenerated chunk of the target.
+        Exception? travel = null;
+        var managementWaited = false;
+        source.EnqueueEntityAction(async () =>
+        {
+            await targetTicks.Task.WaitAsync(TickWait);
+            var sent = cow.TeleportAsync(target, Ungenerated).AsTask();
+            travel = await Record.ExceptionAsync(() => sent.WaitAsync(TimeSpan.FromSeconds(5)));
+            managementWaited = management is { IsCompleted: false };
+            arrived.TrySetResult();
+        });
+
+        var targetTick = Task.Run(target.DoWorldTickAsync);
+        await source.DoWorldTickAsync().WaitAsync(TimeSpan.FromSeconds(20));
+        await targetTick.WaitAsync(TickWait);
+
+        Assert.Null(travel);
+        Assert.True(managementWaited, "The target's chunk management didn't wait at its gate.");
+        Assert.True(target.GetLoadedChunk(UngeneratedChunk, UngeneratedChunk) is { IsGenerated: true });
+        Assert.Same(cow, target.FindEntity(cow.Uuid));
+        await management!.WaitAsync(TickWait);
+    }
+
+    private static Task GrantRootAsync(PlayerBase player) => player.Advancements.GrantAsync(RootAdvancement).AsTask();
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task AddingAPlayerAgainFromTheTickThatRemovedThemIsRefusedWhileTheirLeaveWaitsForIt()
+    {
+        await using var context = TestServerFactory.CreateServer($"rejoin-from-tick-{Guid.NewGuid():N}");
+        var world = context.World;
+        WorldBlockEntities.AddEmptyChunk(world);
+        var bot = await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "Bot", world);
+
+        // A plugin saves the level as players leave, which waits for the level's tick to end.
+        context.EventDispatcher.RegisterEvent(
+            null,
+            (Func<PlayerLeaveEventArgs, ValueTask>)(async _ => await world.FlushRegionsAsync()),
+            Priority.Critical);
+
+        // In the level's tick, another plugin removes the bot and adds it again: adding it would wait for the leave,
+        // which waits for that tick, so it's refused.
+        Exception? rejoin = null;
+        world.EnqueueEntityAction(async () =>
+        {
+            Assert.True(await context.Server.RemoveServerPlayerAsync(bot));
+            var adding = () => context.Server.AddServerPlayerAsync(Guid.NewGuid(), "Bot", world);
+            rejoin = await Record.ExceptionAsync(adding);
+        });
+        await world.DoWorldTickAsync().WaitAsync(TickWait);
+
+        Assert.IsType<InvalidOperationException>(rejoin);
+
+        // Once the ticks are over, the leave finishes, and adding the bot again waits for it.
+        var again = await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "Bot", world).WaitAsync(TickWait);
+        Assert.True(context.Server.IsPlayerOnline(again.Uuid));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task StoppingTheServerFinishesWhatTicksAskedOfItsServerPlayersBeforeTheWorldsAreSaved()
+    {
+        await using var context = TestServerFactory.CreateServer($"stop-bots-{Guid.NewGuid():N}");
+        var world = context.World;
+        WorldBlockEntities.AddEmptyChunk(world);
+        var serverBot = (PlayerBase)await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", world);
+        var pluginBot = (PlayerBase)await context.Server.AddServerPlayerAsync(
+            Guid.NewGuid(),
+            "PluginBot",
+            world,
+            BotPlugin());
+
+        // Each bot is mid-tick (held by the test) when another player's tick fires an advancement trigger for it: the
+        // trigger is accepted and waits, in the background, for the bot's gate.
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var serverBotHeld = await HoldGateAsync(serverBot, release.Task);
+        var pluginBotHeld = await HoldGateAsync(pluginBot, release.Task);
+        var serverBotGranted = AcceptTrigger(serverBot);
+        var pluginBotGranted = AcceptTrigger(pluginBot);
+
+        // Stopping the server waits for those triggers, which are granted before the bots' grants stop and the worlds'
+        // final save.
+        var stop = context.Server.StopAsync();
+        await Task.Delay(StaysBlocked);
+        var stoppedEarly = stop.IsCompleted;
+
+        release.TrySetResult();
+        await Task.WhenAll(serverBotHeld, pluginBotHeld).WaitAsync(TickWait);
+        await stop.WaitAsync(TickWait);
+
+        Assert.False(stoppedEarly, "The server stopped while triggers it accepted for its bots were waiting.");
+        Assert.True(serverBotGranted.Task.IsCompletedSuccessfully);
+        Assert.True(pluginBotGranted.Task.IsCompletedSuccessfully);
+        Assert.True(context.Server.OnlinePlayers.IsEmpty);
+
+        // The bots left, so their plugin's disposal removing its bot again finds it gone.
+        Assert.False(await context.Server.RemoveServerPlayerAsync(pluginBot));
+    }
+
+    // Holds the player's tick gate until released, as a tick or grant under way does. Returns once it's held, with what
+    // lets go of it.
+    private static async Task<Task> HoldGateAsync(PlayerBase player, Task release)
+    {
+        var holding = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var held = Task.Run(() => player.GrantAdvancementAsync(async () =>
+        {
+            holding.TrySetResult();
+            await release;
+            return false;
+        }).AsTask());
+
+        await holding.Task.WaitAsync(TickWait);
+        return held;
+    }
+
+    // What another player's tick firing a matching trigger for the player leaves to run in the background (see
+    // PlayerBase.FireProgressAsync): a grant, which completes the returned source once it ran.
+    private static TaskCompletionSource AcceptTrigger(PlayerBase player)
+    {
+        var granted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var accepted = ((Server)player.Server).BackgroundWork.TryStart(() => player.GrantAdvancementAsync(() =>
+        {
+            granted.TrySetResult();
+            return ValueTask.FromResult(false);
+        }).AsTask());
+
+        Assert.True(accepted);
+        return granted;
+    }
+
+    private static PluginContainer BotPlugin() => new()
+    {
+        Info = new PluginInfo("bots"),
+        Archive = PluginArchive.Open("bots.obby", PluginArchives.Zip(new Dictionary<string, byte[]>
+        {
+            [PluginMetadata.FileName] = PluginArchives.Metadata("bots", "1.0.0", "Bots")
+        }))
+    };
+
+    // In each of two levels' ticks, inside a player's grant there, calls something on the other player once both are in
+    // their grants, then grants the player themselves an advancement. Records what each call threw.
+    private sealed class CrossedCalls
+    {
+        public CrossedCalls(
+            AbstractLevel firstLevel,
+            PlayerBase first,
+            AbstractLevel secondLevel,
+            PlayerBase second,
+            Func<PlayerBase, PlayerBase, Task> call)
+        {
+            var firstIn = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var secondIn = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            firstLevel.EnqueueEntityAction(async () => await first.GrantAdvancementAsync(async () =>
+            {
+                firstIn.TrySetResult();
+                await secondIn.Task.WaitAsync(OverlapWait);
+                this.FirstRefusal = await Record.ExceptionAsync(() => call(first, second));
+                this.FirstOwnGrant = await Record.ExceptionAsync(() => GrantRootAsync(first));
+                return false;
+            }));
+
+            secondLevel.EnqueueEntityAction(async () => await second.GrantAdvancementAsync(async () =>
+            {
+                secondIn.TrySetResult();
+                await firstIn.Task.WaitAsync(OverlapWait);
+                this.SecondRefusal = await Record.ExceptionAsync(() => call(second, first));
+                this.SecondOwnGrant = await Record.ExceptionAsync(() => GrantRootAsync(second));
+                return false;
+            }));
+        }
+
+        public Exception? FirstRefusal { get; private set; }
+
+        public Exception? SecondRefusal { get; private set; }
+
+        public Exception? FirstOwnGrant { get; private set; }
+
+        public Exception? SecondOwnGrant { get; private set; }
+    }
+}

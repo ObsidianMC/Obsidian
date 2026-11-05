@@ -236,6 +236,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
         IWorldManager worldManager)
     {
         this.logger = loggerFactory.CreateLogger<Server>();
+        this.BackgroundWork = new WorldData.DeferredWork(this.logger);
         this.tickStatsLogger = loggerFactory.CreateLogger(TickStatsCategory);
         this.cancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
 
@@ -605,14 +606,36 @@ public sealed partial class Server : IServer, IPluginScopedServer
     /// <summary>
     /// Stops the server once: every call returns the same shutdown.
     /// </summary>
+    /// <remarks>
+    /// The shutdown waits for the server's loop, and so for the ticks, and for the plugins' changes as it disposes
+    /// them. Asked for from a flow one of those waits for, it goes on in the background and this returns at once,
+    /// whether it started the shutdown or one had started already: from inside a level's tick, or a player's tick,
+    /// grant or save (<c>/stop</c> run by a command block minecart, say), or from a change to the plugins (a plugin's
+    /// load, ready or unloading callback, or a plugin's dimension being created, its generator finding a spawn).
+    /// </remarks>
     public Task StopAsync()
     {
+        Task shutdown;
         lock (this.shutdownLock)
-            return this.shutdownTask ??= this.StopCoreAsync();
+        {
+            // Started apart from the caller's flow, so that its saves never count as inside the caller's tick.
+            if (this.shutdownTask is null)
+            {
+                using (ExecutionContext.SuppressFlow())
+                    this.shutdownTask = Task.Run(this.StopCoreAsync);
+            }
+
+            shutdown = this.shutdownTask;
+        }
+
+        var waitedFor = WorldData.AbstractLevel.MustNotWaitForGates || Plugins.PluginManager.InsideChange;
+        return waitedFor ? Task.CompletedTask : shutdown;
     }
 
     private async Task StopCoreAsync()
     {
+        // Background work stays open until the ticks are over: the last tick's triggers still have their grants, for
+        // players who haven't left. The loop, then this, close and drain it before the players leave.
         await cancelTokenSource.CancelAsync();
 
         this.CloseListeners();
@@ -624,7 +647,16 @@ public sealed partial class Server : IServer, IPluginScopedServer
         }
         finally
         {
+            // What the ticks left to run in the background (a command block's /save, a trigger's grants) finishes
+            // before the players leave and the worlds' final save. The loop does it too, before its leaves.
+            await this.BackgroundWork.CloseAndDrainAsync();
             await this.PendingLeavesAsync();
+
+            // Server-side players leave too, the server's and plugins' alike, now that the ticks are over: what other
+            // players' ticks asked of them (advancement triggers and their rewards) is done before the worlds' final
+            // save and disposal, and their leave handlers run while the plugins are still loaded. Plugins' disposal
+            // then finds theirs gone.
+            await this.LeaveServerPlayersAsync();
 
             // The final save waits for a save in progress (a pause, the save command, an autosave), so they never
             // overlap.
@@ -675,8 +707,13 @@ public sealed partial class Server : IServer, IPluginScopedServer
     /// starts generating, until <see cref="Resume"/>. Saves still run, and connections keep running.
     /// </summary>
     /// <returns>Whether the worlds were running, so this call paused them.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Called from inside a level's tick, or a player's tick, grant or save: it would wait for that tick to end.
+    /// </exception>
     public async Task<bool> PauseAsync()
     {
+        WorldData.AbstractLevel.ThrowIfMustNotWaitForGates(nameof(PauseAsync));
+
         await this.tickGate.WaitAsync();
         try
         {
@@ -709,12 +746,69 @@ public sealed partial class Server : IServer, IPluginScopedServer
     /// one at a time; a failed one is logged and reported through <see cref="SaveCompleted"/>.
     /// </summary>
     /// <param name="autosave">Whether this is the periodic autosave, rather than one that was asked for.</param>
-    /// <returns>Whether the save succeeded.</returns>
-    public async Task<bool> SaveEverythingAsync(bool autosave)
+    /// <returns>
+    /// Whether the save succeeded. Once the server is stopping, none starts (the final save covers it), and it returns
+    /// <c>false</c> without reporting a save.
+    /// </returns>
+    /// <exception cref="InvalidOperationException">
+    /// Called from inside a level's tick, or a player's tick, grant or save: it would wait for the ticks, which an
+    /// autosave under way may be waiting for. Plugins should save outside ticks: from a scheduled task or a command,
+    /// say.
+    /// </exception>
+    public Task<bool> SaveEverythingAsync(bool autosave)
+    {
+        WorldData.AbstractLevel.ThrowIfMustNotWaitForGates(nameof(SaveEverythingAsync));
+        return this.SaveEverythingNowAsync(autosave);
+    }
+
+    /// <summary>
+    /// Obsidian's own work that a tick asks for but can't wait for, run in the background once the ticks let go of the
+    /// gates: a command block minecart's <c>/save</c> or <c>/setworldspawn</c>, a trigger's grants for a player whose
+    /// tick isn't the one running. Shutdown closes it and waits for it before the players leave and the final save. A
+    /// failure is logged.
+    /// </summary>
+    internal WorldData.DeferredWork BackgroundWork { get; }
+
+    /// <summary>
+    /// Runs <paramref name="work"/> that waits for the gates (a save): at once, or, from a flow that mustn't wait for
+    /// them (see <see cref="WorldData.AbstractLevel.MustNotWaitForGates"/>), in <see cref="BackgroundWork"/>, and
+    /// returns at once. For Obsidian's own callers, such as commands a command block minecart runs in a tick.
+    /// </summary>
+    internal Task RunOutsideTicksAsync(Func<Task> work)
+    {
+        if (!WorldData.AbstractLevel.MustNotWaitForGates)
+            return work();
+
+        this.BackgroundWork.TryStart(work);
+        return Task.CompletedTask;
+    }
+
+    // A stop's leave of every server-side player still online (see StopCoreAsync). One failing doesn't keep the others
+    // from leaving; it's logged, like a leave from a tick.
+    private async Task LeaveServerPlayersAsync()
+    {
+        foreach (var player in this.OnlinePlayers.Values.OfType<ServerPlayer>().ToList())
+        {
+            try
+            {
+                await this.RemoveServerPlayerAsync(player);
+            }
+            catch (Exception ex)
+            {
+                Log.ServerPlayerLeaveFailed(this.logger, ex, player.Username);
+            }
+        }
+    }
+
+    private async Task<bool> SaveEverythingNowAsync(bool autosave)
     {
         await this.saveLock.WaitAsync();
         try
         {
+            // Asked for before the stop, but it got the lock after the final save: the worlds are disposed now.
+            if (this.Stopping)
+                return false;
+
             Log.SavingWorlds(this.logger);
             this.SaveStarted?.Invoke(autosave);
 
@@ -772,14 +866,17 @@ public sealed partial class Server : IServer, IPluginScopedServer
     {
         plugin?.ThrowIfClosing();
 
-        // A player with the name may still be leaving: one removed from its own tick leaves once the tick ends (see
-        // RemoveServerPlayerAsync). The join waits for that, like a network player's, unless it's that tick asking,
-        // which would wait for itself.
+        // A player with the name may still be leaving: one removed from a tick leaves once the ticks end (see
+        // RemoveServerPlayerAsync). The join waits for that, like a network player's, unless a tick is asking: the
+        // leave may wait for that tick (it's the player's own, or a leave handler saves its level).
         var leaving = this.WaitForLeavesAsync(username);
         if (!leaving.IsCompleted)
         {
-            if (string.Equals(PlayerBase.TickingPlayer?.Username, username, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException($"Player '{username}' is still leaving; add them once their tick ends.");
+            if (WorldData.AbstractLevel.MustNotWaitForGates)
+            {
+                throw new InvalidOperationException(
+                    $"Player '{username}' is still leaving; add them once the ticks end.");
+            }
 
             await leaving;
         }
@@ -892,7 +989,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
 
         // Like a network player's leave, it waits for the player's tick under way. One asked for from that tick (a
         // plugin removing the player as they die, say) runs apart from it, once it's done, and isn't waited for.
-        if (!serverPlayer.IsInOwnTick)
+        if (!serverPlayer.IsInOwnTick && !WorldData.AbstractLevel.MustNotWaitForGates)
         {
             await this.LeaveServerPlayerAsync(serverPlayer);
             return true;
@@ -1293,6 +1390,10 @@ public sealed partial class Server : IServer, IPluginScopedServer
         await autosave;
 
         TickStage = "stopped";
+
+        // What the last ticks left to run in the background (a trigger's grants for a player) finishes before the
+        // players leave, whose grants stop then.
+        await this.BackgroundWork.CloseAndDrainAsync();
         foreach (var client in this.Connections.Values)
         {
             await client.DisconnectAsync("Server closed");

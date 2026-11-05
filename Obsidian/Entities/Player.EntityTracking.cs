@@ -13,9 +13,34 @@ public partial class Player
 
     void IPlayer.ForgetVisiblePlayer(IPlayer player) => this.visiblePlayers.Remove(player);
 
-    ValueTask IPlayer.SynchronizeTrackedEntitiesAsync() => SynchronizeTrackedEntitiesAsync();
+    ValueTask IPlayer.SynchronizeTrackedEntitiesAsync(ILevel level) => this.SynchronizeTrackedEntitiesAsync(level);
 
-    internal async ValueTask SynchronizeTrackedEntitiesAsync()
+    /// <summary>
+    /// The tracking pass of <paramref name="level"/>'s tick: the client is shown the entities around the player in it,
+    /// and forgets those out of range, as long as the player is still in that level.
+    /// </summary>
+    /// <remarks>
+    /// Under chunkUpdates, which a level change, respawn or teleport holds while it moves the player and resets and
+    /// tracks the client's view where they end up. So the pass of a level the player left (another level's tick may
+    /// have moved them, through a portal or an ender pearl) neither shows the client its entities nor makes it forget
+    /// those of the player's new level. It leaves them to that level, whose entities it mustn't read during its tick.
+    /// </remarks>
+    internal async ValueTask SynchronizeTrackedEntitiesAsync(ILevel level)
+    {
+        await this.chunkUpdates.WaitAsync();
+        try
+        {
+            if (ReferenceEquals(this.Level, level))
+                await this.SynchronizeTrackedEntitiesUnderLockAsync();
+        }
+        finally
+        {
+            this.chunkUpdates.Release();
+        }
+    }
+
+    // Tracks the entities around the player in their level, with chunkUpdates held.
+    private protected override async ValueTask SynchronizeTrackedEntitiesUnderLockAsync()
     {
         var visible = new HashSet<int>();
         foreach (var entity in Level.GetNonPlayerEntitiesInRange(Position, Server.Configuration.EntityBroadcastRangePercentage).OfType<Entity>())

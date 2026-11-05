@@ -150,11 +150,16 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         }
     }
 
-    public override async Task SaveAsync()
+    // The world's save lock is held while saves wait for the levels' simulation gates (see FlushAsync), so a flow that
+    // mustn't wait for those doesn't wait for it either: AbstractLevel.SaveAsync refuses such a flow before this.
+    protected override async Task SaveLevelAsync()
     {
         await this.saveLock.WaitAsync();
         try
         {
+            if (this.IsDisposed)
+                return;
+
             this.SaveLevel();
         }
         finally
@@ -203,11 +208,25 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     /// <summary>
     /// Saves what changes while the world runs: its and its dimensions' regions, then its level data and maps.
     /// </summary>
-    public async Task FlushAsync()
+    /// <exception cref="InvalidOperationException">
+    /// Called from inside a level's tick, or a player's tick, grant or save: it waits for the levels' simulation
+    /// gates. Plugins should save outside ticks: from a scheduled task or a command, say.
+    /// </exception>
+    public Task FlushAsync()
+    {
+        ThrowIfMustNotWaitForGates(nameof(FlushAsync));
+        return this.FlushWorldAsync();
+    }
+
+    private async Task FlushWorldAsync()
     {
         await this.saveLock.WaitAsync();
         try
         {
+            // A flush that ran late, once the world was disposed, writes nothing (see AbstractLevel.SaveAsync).
+            if (this.IsDisposed)
+                return;
+
             await this.FlushRegionsAsync();
             this.SaveLevel();
         }
@@ -295,17 +314,29 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     /// done.
     /// </summary>
     /// <remarks>
-    /// What the levels share (the clocks, game rules and difficulty) is safe to read and change from several threads,
-    /// as commands already do from connection threads, and the clocks only advance here, before any level ticks. The
-    /// players' pass after the levels must wait for every one of them, since a player can have moved between levels
-    /// during the tick.
+    /// <para>
+    /// With <see cref="ServerConfiguration.ParallelLevelTicks"/> on, every level's tick runs at the same time as the
+    /// others, each started on a thread of its own; turned off, the world's own level ticks first and its dimensions
+    /// after it. Either way no level's tick waits for a lock another level's tick holds: what they share (the clocks,
+    /// game rules and difficulty, the server's players, scoreboards and boss bars, the maps and saved data) is safe to
+    /// read and change from several threads, travel between them is a handoff that holds one level's lock at a time
+    /// (see <see cref="EntityTransferLock"/>), and a tick never waits for a level's simulation gate (see
+    /// <see cref="AbstractLevel.MustNotWaitForGates"/>).
+    /// </para>
+    /// <para>
+    /// The clocks only advance here, before any level ticks. The players' pass after the levels must wait for every
+    /// one of them, since a player can have moved between levels during the tick.
+    /// </para>
     /// </remarks>
     public async override Task DoWorldTickAsync()
     {
+        ThrowIfMustNotWaitForGates(nameof(DoWorldTickAsync));
         this.TickClocks();
 
-        await base.DoWorldTickAsync();
-        await Task.WhenAll(this.dimensions.Values.Select(d => d.DoWorldTickAsync()));
+        if (this.Configuration.ParallelLevelTicks)
+            await this.TickLevelsInParallelAsync();
+        else
+            await this.TickLevelsInOrderAsync();
 
         // Like vanilla's player inventory tick, after the levels ticked.
         var players = this.Players.Values
@@ -315,6 +346,29 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         foreach (var player in players)
             await player.TickAfterLevelsAsync();
     }
+
+    // Each level's tick starts on a thread of its own: started inline, a tick would run on the caller's thread until it
+    // first awaited something unfinished, and the levels would mostly tick one after another.
+    private Task TickLevelsInParallelAsync()
+    {
+        var ticks = new List<Task>(this.dimensions.Count + 1)
+        {
+            Task.Run(this.TickOwnLevelAsync)
+        };
+
+        foreach (var dimension in this.dimensions.Values)
+            ticks.Add(Task.Run(dimension.DoWorldTickAsync));
+
+        return Task.WhenAll(ticks);
+    }
+
+    private async Task TickLevelsInOrderAsync()
+    {
+        await this.TickOwnLevelAsync();
+        await Task.WhenAll(this.dimensions.Values.Select(dimension => dimension.DoWorldTickAsync()));
+    }
+
+    private Task TickOwnLevelAsync() => base.DoWorldTickAsync();
 
     // Like vanilla's server, which ticks its clocks once before any level ticks: the world's levels share its clocks,
     // so their passing time never changes under a level's tick. Game time advances with them, as the overworld's level
@@ -330,6 +384,9 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
 
     public override async ValueTask DisposeAsync()
     {
+        // It waits for its levels' gates, so never from a tick (see MustNotWaitForGates).
+        ThrowIfMustNotWaitForGates(nameof(DisposeAsync));
+
         // The world's own level is disposed even when a dimension's disposal fails, and every level's failure is the
         // disposal's, so a shutdown reports each level it couldn't save.
         List<Exception> failures = [];
@@ -368,9 +425,9 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         public static partial void UnreadableLevelData(ILogger logger, string path, Exception exception);
     }
 
-    public async override Task FlushRegionsAsync()
+    protected async override Task FlushLevelRegionsAsync()
     {
-        await base.FlushRegionsAsync();
+        await base.FlushLevelRegionsAsync();
         await Task.WhenAll(dimensions.Values.Select(dimension => dimension.FlushRegionsAsync()));
     }
 }

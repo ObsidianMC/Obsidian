@@ -44,6 +44,44 @@ public sealed class ConfigFilesMigration : IDisposable
             row => AssertExistingConfigsKeepTheirWhitelist(row.Json, row.Whitelist, row.Noticed));
     }
 
+    [Fact]
+    public async Task ParallelLevelTicksAreOffUnlessTurnedOn()
+    {
+        (string? Json, bool Parallel)[] cases =
+        [
+            (null, false),
+            ("{ \"motd\": \"Old server\" }", false),
+            ("{ \"parallelLevelTicks\": true }", true),
+            ("{ \"parallelLevelTicks\": false }", false)
+        ];
+
+        await FixtureCases.AssertAllAsync(
+            cases,
+            row => $"json={row.Json ?? "fresh install"}, parallel={row.Parallel}",
+            row => this.AssertParallelLevelTicksAsync(row.Json, row.Parallel));
+    }
+
+    // A fresh install's server.json when json is null, which states the default: the same on every machine.
+    private async Task AssertParallelLevelTicksAsync(string? json, bool parallel)
+    {
+        if (Directory.Exists(this.directory))
+            Directory.Delete(this.directory, recursive: true);
+
+        Directory.CreateDirectory(this.directory);
+        if (json is not null)
+            await File.WriteAllTextAsync(Path.Combine(this.directory, "server.json"), json);
+
+        await ConfigFiles.GenerateAsync(this.directory, _ => { });
+
+        if (json is null)
+        {
+            var text = await File.ReadAllTextAsync(Path.Combine(this.directory, "server.json"));
+            Assert.Contains("\"parallelLevelTicks\": false", text);
+        }
+
+        Assert.Equal(parallel, this.Load().ParallelLevelTicks);
+    }
+
     private async Task AssertExistingConfigsKeepTheirWhitelist(string json, bool whitelist, bool noticed)
     {
         Directory.CreateDirectory(this.directory);

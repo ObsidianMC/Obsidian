@@ -116,7 +116,20 @@ public interface IPlayer : ILiving
     public float FoodExhaustionLevel { get; set; }
     public float FoodSaturationLevel { get; set; }
 
+    /// <summary>
+    /// Saves the player's data, statistics and advancements.
+    /// </summary>
+    /// <remarks>
+    /// It waits for the player's tick, grant or save under way. Called from the player's own, it saves at once as part
+    /// of it.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// Called from inside a level's tick, or another player's tick, grant or save (a plugin's event handler run by one,
+    /// say): it would wait for a tick that may be waiting for it. Plugins should save outside ticks: from a scheduled
+    /// task or a command, say.
+    /// </exception>
     public Task SaveAsync();
+
     public Task LoadAsync(bool loadFromPersistentWorld = true);
 
     /// <summary>
@@ -191,7 +204,8 @@ public interface IPlayer : ILiving
 
     // Server hooks for what a client has been shown. The defaults suit players without a client, which have nothing to
     // keep in sync; the server's network player overrides them.
-    internal ValueTask SynchronizeTrackedEntitiesAsync() => default;
+    // A level's tracking pass, which does nothing once the player is in another level.
+    internal ValueTask SynchronizeTrackedEntitiesAsync(ILevel level) => default;
     internal void TrackEntity(IEntity entity) { }
     internal void UntrackEntity(int entityId) { }
     internal void ForgetVisiblePlayer(IPlayer player) { }
@@ -271,12 +285,19 @@ public interface IPlayer : ILiving
     internal ValueTask<bool> GrantAdvancementAsync(Func<ValueTask<bool>> grant) => grant();
     internal ValueTask RewardAdvancementAsync(Advancements.Advancement advancement) => default;
 
+    /// <summary>
+    /// Disconnects the player and waits for their leave, which waits for their tick under way. Called from inside a
+    /// level's tick, or any player's tick, grant or save, the leave finishes after the ticks, without being waited for.
+    /// </summary>
     public ValueTask DisconnectAsync(ChatMessage reason);
     public ValueTask SendMessageAsync(ChatMessage message);
     public ValueTask SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature);
     public ValueTask SetActionBarTextAsync(ChatMessage message);
     public ValueTask SendSoundAsync(ISoundEffect soundEffect);
+    /// <summary>Kicks the player; it waits for their leave like <see cref="DisconnectAsync"/>.</summary>
     public ValueTask KickAsync(ChatMessage reason);
+
+    /// <inheritdoc cref="KickAsync(ChatMessage)"/>
     public ValueTask KickAsync(string reason);
     public ValueTask OpenInventoryAsync(BaseContainer container);
     /// <summary>

@@ -817,7 +817,13 @@ public abstract partial class PlayerBase : Avatar, IPlayer
                 this.EndTravelHold();
         }
 
-        await SaveAsync();
+        // Vanilla doesn't save a player changing level; Obsidian does, so their saved world follows them between
+        // worlds. A travel from inside a level's tick (an ender pearl's, a command block's /tp) can't wait for the
+        // player's gate, so that save runs in the server's background work.
+        if (this.Server is Server server)
+            await server.RunOutsideTicksAsync(this.SaveAsync);
+        else if (this.IsInOwnTick || !WorldData.AbstractLevel.MustNotWaitForGates)
+            await this.SaveAsync();
 
         void Commit()
         {
@@ -1034,7 +1040,7 @@ public abstract partial class PlayerBase : Avatar, IPlayer
                 await this.QueuePacketAsync(new SetExperiencePacket(this.XpP, this.XpLevel, this.XpTotal));
 
             await TrySpawnPlayerAsync(Position);
-            await ((IPlayer)this).SynchronizeTrackedEntitiesAsync();
+            await this.SynchronizeTrackedEntitiesUnderLockAsync();
         }
         finally
         {
@@ -1332,6 +1338,9 @@ public abstract partial class PlayerBase : Avatar, IPlayer
 
     // Forgets what the player's client was shown, which a respawn sends again.
     private protected virtual void ResetClientView() { }
+
+    // Shows the player's client the entities around them, with chunkUpdates held. A player without a client has none.
+    private protected virtual ValueTask SynchronizeTrackedEntitiesUnderLockAsync() => default;
 
     private static partial class Log
     {

@@ -141,6 +141,10 @@ public interface IServer : IDisposable
     /// <param name="uuid">The player's UUID.</param>
     /// <param name="username">The player's username.</param>
     /// <param name="world">The world to spawn the player in. Uses <see cref="DefaultWorld"/> when null.</param>
+    /// <exception cref="InvalidOperationException">
+    /// A player with the name is still leaving and it's called from inside a level's tick, or a player's tick, grant or
+    /// save, which the leave may be waiting for. Add them once the ticks are over.
+    /// </exception>
     public Task<IPlayer> AddServerPlayerAsync(Guid uuid, string username, IWorld? world = null);
 
     /// <summary>
@@ -148,8 +152,9 @@ public interface IServer : IDisposable
     /// network player, once their tick under way has ended.
     /// </summary>
     /// <returns>
-    /// Whether the player was online and is leaving. Called from the player's own tick, the leave finishes after that
-    /// tick, without being waited for; adding a player with their name waits for it meanwhile.
+    /// Whether the player was online and is leaving. Called from inside a level's tick, or any player's tick, grant or
+    /// save (the player's own included), the leave finishes after the ticks, without being waited for; adding a player
+    /// with their name waits for it meanwhile.
     /// </returns>
     public Task<bool> RemoveServerPlayerAsync(IPlayer player);
 

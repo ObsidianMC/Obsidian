@@ -81,8 +81,14 @@ public abstract partial class AbstractLevel
         }
     }
 
+    /// <summary>Saves and unloads the region, unless something still needs it.</summary>
+    /// <exception cref="InvalidOperationException">
+    /// Called from inside a level's tick, or a player's tick, grant or save: it waits for the level to be between ticks.
+    /// </exception>
     public async Task UnloadRegionAsync(int regionX, int regionZ)
     {
+        ThrowIfMustNotWaitForGates(nameof(UnloadRegionAsync));
+
         await this.unloadGate.WaitAsync();
         try
         {

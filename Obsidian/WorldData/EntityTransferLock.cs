@@ -32,6 +32,17 @@ namespace Obsidian.WorldData;
 /// click locks, and before a chunk's entity lock and an entity grid's lock. Never await, load chunks, fill a container
 /// (its click lock comes first) or run plugin code holding it.
 /// </para>
+/// <para>
+/// A level's tick, which holds its own tick lock, never waits for any level's simulation gate either: another level's
+/// tick could be waiting for its own. Nor does a flow holding a player's tick gate (their tick, a grant or a save), which
+/// comes after the simulation gates, as a level's tick ticks its players. What would wait for one from such a flow
+/// throws (see <see cref="AbstractLevel.MustNotWaitForGates"/>): saving, ticking, generating, unloading or disposing a
+/// level, managing its chunks, and saving everything or pausing the server. Obsidian's own callers that run in ticks
+/// (a command block's <c>/save</c>) leave their saves to the server's background work (see
+/// <see cref="Server.BackgroundWork"/>).
+/// Nor does such a flow wait for another player's tick gate, as players in different levels tick at the same time: a
+/// grant to another player throws, and leaves (kicks, disconnects) and stopping the server aren't waited for.
+/// </para>
 /// </remarks>
 internal sealed class EntityTransferLock
 {

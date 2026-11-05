@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace Obsidian.API;
 
@@ -183,7 +185,20 @@ public sealed class LevelData
     /// </summary>
     public long RandomSeed { get; set; }
 
-    public VectorD SpawnPosition { get; set; }
+    /// <summary>
+    /// The level's spawn: for a world's own level, the world spawn, which its other levels read too.
+    /// </summary>
+    /// <remarks>
+    /// Read and set whole, so a level reading it while another sets it (levels tick in parallel) never sees a mix of
+    /// the old and new position.
+    /// </remarks>
+    public VectorD SpawnPosition
+    {
+        get => Volatile.Read(ref this.spawnPosition).Value;
+        set => Volatile.Write(ref this.spawnPosition, new StrongBox<VectorD>(value));
+    }
+
+    private StrongBox<VectorD> spawnPosition = new();
 
     /// <summary>
     /// true if the rain/snow/cloud cover is a lightning storm and dark enough for mobs to spawn under the sky.

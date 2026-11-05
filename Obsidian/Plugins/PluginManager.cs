@@ -11,6 +11,7 @@ using Obsidian.Plugins.Archives;
 using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
 using Obsidian.Services;
+using Obsidian.WorldData;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -267,16 +268,22 @@ public sealed partial class PluginManager : IAsyncDisposable
     }
 
     /// <summary>
+    /// Whether the current flow is in a change to the loaded plugins (a plugin's load, ready or unloading callback, or
+    /// its dimensions being created), which another change, disposing the plugins included, would wait for.
+    /// </summary>
+    internal static bool InsideChange => changing.Value is not null || creatingDimensions.Value is { Active: true };
+
+    private const string ReentrantChangeMessage =
+        "Plugins can't be loaded or unloaded from a plugin's load, ready or unloading callback, or while its "
+            + "dimensions are created.";
+
+    /// <summary>
     /// Runs a change to the loaded plugins once the changes before it finished, unless the manager was disposed.
     /// </summary>
     private async Task RunChangeAsync(Func<Task> change)
     {
         if (changing.Value == this || creatingDimensions.Value is { Active: true })
-        {
-            throw new InvalidOperationException(
-                "Plugins can't be loaded or unloaded from a plugin's load, ready or unloading callback, or while its "
-                    + "dimensions are created.");
-        }
+            throw new InvalidOperationException(ReentrantChangeMessage);
 
         await this.changes.WaitAsync();
         try
@@ -723,7 +730,9 @@ public sealed partial class PluginManager : IAsyncDisposable
                 retired = PluginBlockEntities.RemoveFrom(level, plugin);
             }
 
-            if (!PluginCall.InsideAny && await level.TryRunBetweenTicksAsync(Remove, drainTimeout))
+            // Never from inside a plugin's call, a level's tick or a player's: the level's tick could be what is waiting.
+            var canWait = !PluginCall.InsideAny && !AbstractLevel.MustNotWaitForGates;
+            if (canWait && await level.TryRunBetweenTicksAsync(Remove, drainTimeout))
             {
                 await PluginBlockEntities.CloseWindowsAsync(this.server, plugin, retired);
                 continue;

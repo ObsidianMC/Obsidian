@@ -1010,7 +1010,7 @@ public sealed partial class Client : IClient
             return Task.CompletedTask;
 
         Player player;
-        bool inOwnTick;
+        bool cannotWait;
         TaskCompletionSource leave;
         lock (this.leavingLock)
         {
@@ -1019,11 +1019,13 @@ public sealed partial class Client : IClient
 
             player = current;
 
-            // The leave waits for a tick of the player under way, so a leave from inside one isn't waited for.
-            inOwnTick = player.IsInOwnTick;
+            // The leave waits for a tick of the player under way, so a leave from inside one isn't waited for. Nor is
+            // one from inside any other tick (a level's, or another player's): that tick could be what the player's
+            // tick waits for.
+            cannotWait = player.IsInOwnTick || WorldData.AbstractLevel.MustNotWaitForGates;
 
             if (this.leaving is TaskCompletionSource started)
-                return inOwnTick ? Task.CompletedTask : started.Task;
+                return cannotWait ? Task.CompletedTask : started.Task;
 
             leave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             this.leaving = leave;
@@ -1037,7 +1039,7 @@ public sealed partial class Client : IClient
         using (ExecutionContext.SuppressFlow())
             _ = Task.Run(() => this.RaiseLeaveAsync(player, leave));
 
-        return inOwnTick ? Task.CompletedTask : leave.Task;
+        return cannotWait ? Task.CompletedTask : leave.Task;
     }
 
     // Raises the leave event and completes the leave; it never throws.

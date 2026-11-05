@@ -327,7 +327,9 @@ public sealed class WorldCommandModule : CommandModuleBase
     {
         var level = LevelOf(this.CommandContext);
         level.LevelData.SpawnPosition = (VectorD)pos + new VectorD(0.5, 0, 0.5);
-        await level.SaveAsync();
+
+        // Run by a command block minecart, inside a level's tick, it saves once the ticks are over.
+        await ((Server)this.Server).RunOutsideTicksAsync(level.SaveAsync);
 
         level.PacketBroadcaster.QueuePacketToLevel(level,
             new SetDefaultSpawnPositionPacket(new() { Dimension = level.DimensionName, Pos = pos }, 0, 0));

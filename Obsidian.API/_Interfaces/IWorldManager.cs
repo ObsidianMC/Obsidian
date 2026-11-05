@@ -14,8 +14,23 @@ public interface IWorldManager : IAsyncDisposable
 
     public IReadOnlyCollection<IWorld> GetAvailableWorlds();
 
+    /// <summary>
+    /// Saves every loaded world: its and its dimensions' regions, then its level data and maps.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// Called from inside a level's tick, or a player's tick, grant or save (a plugin's event handler run by one, say):
+    /// it would wait for a tick that may be waiting for it. Plugins should save outside ticks: from a scheduled task or
+    /// a command, say.
+    /// </exception>
     public Task FlushLoadedWorldsAsync();
 
+    /// <summary>
+    /// Ticks every loaded world once. The server does, every tick.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// Called from inside a level's tick, or a player's tick, grant or save: it would wait for a tick that may be
+    /// waiting for it.
+    /// </exception>
     public Task TickWorldsAsync();
 
     public bool TryGetWorld(string name, [NotNullWhen(true)] out IWorld? world);

@@ -271,15 +271,52 @@ public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
         float speed = 0,
         bool force = false);
     public IEnumerable<IPlayer> PlayersInRange(Vector location);
+    /// <summary>
+    /// Ticks the level once. The server does, every tick; a plugin rarely needs to.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// Called from inside a level's tick, or a player's tick, grant or save (a plugin's event handler run by one, say):
+    /// it would wait for a tick that may be waiting for it.
+    /// </exception>
     public Task DoWorldTickAsync();
+
+    /// <summary>
+    /// Saves the level's regions: its chunks and their entities.
+    /// </summary>
+    /// <remarks>
+    /// It waits for the level to be between ticks.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// Called from inside a level's tick, or a player's tick, grant or save (a plugin's event handler run by one, say):
+    /// it would wait for a tick that may be waiting for it. Plugins should save outside ticks: from a scheduled task or
+    /// a command, say.
+    /// </exception>
     public Task FlushRegionsAsync();
+
     public Task<bool> LoadAsync(DimensionCodec codec);
+
+    /// <summary>
+    /// Saves the level's state: for a world, its level data and maps; for a dimension, its regions and its state.
+    /// </summary>
+    /// <remarks>
+    /// A dimension's save waits for it to be between ticks, to save its regions; a world's writes its level data while
+    /// the levels tick, after any save of the world under way, which may itself be waiting for them.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// Called from inside a level's tick, or a player's tick, grant or save (a plugin's event handler run by one, say):
+    /// it would wait for a tick that may be waiting for it. Plugins should save outside ticks: from a scheduled task or
+    /// a command, say.
+    /// </exception>
     public Task SaveAsync();
 
     /// <summary>
     /// Generates a new level's chunks around its spawn. Cancelling stops starting new chunks and throws
     /// <see cref="OperationCanceledException"/>; chunks already generating finish in the background.
     /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// The level isn't generated yet and it's called from inside a level's tick, or a player's tick, grant or save: it
+    /// would wait for a tick that may be waiting for it.
+    /// </exception>
     public Task GenerateAsync(CancellationToken cancellationToken = default);
 
     /// <summary>

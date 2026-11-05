@@ -27,8 +27,11 @@ public partial class PlayerBase
     private readonly ConcurrentQueue<string> craftedRecipes = new();
 
     /// <summary>Applies criteria and all their rewards as one player state change, unless the player left.</summary>
+    /// <exception cref="InvalidOperationException">The current flow holds another player's tick gate.</exception>
     internal async ValueTask<bool> GrantAdvancementAsync(Func<ValueTask<bool>> grant)
     {
+        this.ThrowIfInAnotherPlayersTick("Granting an advancement");
+
         var changed = false;
         await this.RunTickAsync(async () =>
         {
@@ -126,18 +129,49 @@ public partial class PlayerBase
     // Grants take tickGate to keep criteria and rewards together with saves and leaving. A death must finish
     // before waiting for that gate: a tick holding it may itself be waiting for the death before respawning.
     // Other triggers fired from inventory/chunk transactions follow the same lock order.
-    ValueTask IPlayer.FireAdvancementTriggerAsync(string trigger, Func<JsonElement, bool> matches) =>
-        this.ProgressAdvancements.FireAsync(trigger, matches);
+    ValueTask IPlayer.FireAdvancementTriggerAsync(string trigger, Func<JsonElement, bool> matches)
+    {
+        // A plugin's trigger is refused at once, rather than only once one of its criteria matches.
+        this.ThrowIfInAnotherPlayersTick("Firing an advancement trigger");
+        return this.ProgressAdvancements.FireAsync(trigger, matches);
+    }
 
     ValueTask IPlayer.FlushAdvancementsAsync() => this.ProgressAdvancements.FlushAsync();
 
     internal ValueTask FireProgressAsync(string trigger, ItemStack? item = null, IEntity? entity = null,
         IBlock? block = null, Vector? position = null, string? recipe = null, string? from = null,
-        string? to = null, int? levels = null) => DeferredInventoryWork.RunOrDeferAsync(
-            () => this.ProgressAdvancements.FireAsync(
+        string? to = null, int? levels = null)
+    {
+        ValueTask Fire() => this.ProgressAdvancements.FireAsync(
+            $"minecraft:{trigger}",
+            conditions => ProgressConditions.Match(
+                this, trigger, conditions, item, entity, block, position, recipe, from, to, levels));
+
+        // Gameplay firing a trigger for this player from another's tick (a hit landing in it, say) can't wait for this
+        // player's gate. The event is matched now, as it is (the killer's position and dimension, say), and what it
+        // matched is granted in the server's background work once the ticks let go of the gate, which shutdown waits
+        // for before the players leave. A player leaving meanwhile has their grants stopped, so theirs is dropped, as
+        // a trigger fired after the leave would be.
+        if (this.HoldsAnotherPlayersGate)
+        {
+            var matched = this.ProgressAdvancements.Match(
                 $"minecraft:{trigger}",
                 conditions => ProgressConditions.Match(
-                    this, trigger, conditions, item, entity, block, position, recipe, from, to, levels)));
+                    this, trigger, conditions, item, entity, block, position, recipe, from, to, levels));
+            if (matched.Count > 0 && this.Server is Server server)
+                server.BackgroundWork.TryStart(() => this.GrantMatchedAsync(matched));
+
+            return ValueTask.CompletedTask;
+        }
+
+        return DeferredInventoryWork.RunOrDeferAsync(Fire);
+    }
+
+    private async Task GrantMatchedAsync(List<(string Advancement, string Criterion)> matched)
+    {
+        foreach (var (advancement, criterion) in matched)
+            await this.ProgressAdvancements.GrantAsync(advancement, criterion);
+    }
 
     /// <summary>Record only accepted movement. Vanilla's distance stats round blocks to centimetres.</summary>
     private void RecordProgressMovement(VectorD previous, MovementFlags previousFlags)
