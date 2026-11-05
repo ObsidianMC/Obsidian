@@ -311,7 +311,7 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     /// </summary>
     /// <remarks>
     /// <para>
-    /// With <see cref="ServerConfiguration.TicksLevelsInParallel"/> on, every level's tick runs at the same time as the
+    /// With <see cref="ServerConfiguration.ParallelLevelTicks"/> on, every level's tick runs at the same time as the
     /// others, each started on a thread of its own; turned off, the world's own level ticks first and its dimensions
     /// after it. Either way no level's tick waits for a lock another level's tick holds: what they share (the clocks,
     /// game rules and difficulty, the server's players, scoreboards and boss bars, the maps and saved data) is safe to
@@ -329,7 +329,7 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         ThrowIfMustNotWaitForGates(nameof(DoWorldTickAsync));
         this.TickClocks();
 
-        if (this.Configuration.TicksLevelsInParallel)
+        if (this.Configuration.ParallelLevelTicks)
             await this.TickLevelsInParallelAsync();
         else
             await this.TickLevelsInOrderAsync();

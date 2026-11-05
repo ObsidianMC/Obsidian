@@ -1,10 +1,14 @@
 using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.Entities;
+using Obsidian.Plugins;
+using Obsidian.Plugins.Archives;
 using Obsidian.Tests.Fakes;
+using Obsidian.Tests.Utilities;
 using Obsidian.Utilities;
 using Obsidian.WorldData;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -282,6 +286,86 @@ public sealed partial class LevelTransfers
         await Task.Delay(StaysBlocked);
         Assert.False(File.Exists(dataPath));
     }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task StoppingTheServerFinishesWhatTicksAskedOfItsServerPlayersBeforeTheWorldsAreSaved()
+    {
+        await using var context = TestServerFactory.CreateServer($"stop-bots-{Guid.NewGuid():N}");
+        var world = context.World;
+        WorldBlockEntities.AddEmptyChunk(world);
+        var serverBot = (PlayerBase)await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "ServerBot", world);
+        var pluginBot = (PlayerBase)await context.Server.AddServerPlayerAsync(
+            Guid.NewGuid(),
+            "PluginBot",
+            world,
+            BotPlugin());
+
+        // Each bot is mid-tick (held by the test) when another player's tick fires an advancement trigger for it: the
+        // trigger is accepted and waits, in the background, for the bot's gate.
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var serverBotHeld = await HoldGateAsync(serverBot, release.Task);
+        var pluginBotHeld = await HoldGateAsync(pluginBot, release.Task);
+        var serverBotGranted = AcceptTrigger(serverBot);
+        var pluginBotGranted = AcceptTrigger(pluginBot);
+
+        // Stopping the server waits for those triggers, which are granted before the bots' grants stop and the worlds'
+        // final save.
+        var stop = context.Server.StopAsync();
+        await Task.Delay(StaysBlocked);
+        var stoppedEarly = stop.IsCompleted;
+
+        release.TrySetResult();
+        await Task.WhenAll(serverBotHeld, pluginBotHeld).WaitAsync(TickWait);
+        await stop.WaitAsync(TickWait);
+
+        Assert.False(stoppedEarly, "The server stopped while triggers it accepted for its bots were waiting.");
+        Assert.True(serverBotGranted.Task.IsCompletedSuccessfully);
+        Assert.True(pluginBotGranted.Task.IsCompletedSuccessfully);
+        Assert.True(context.Server.OnlinePlayers.IsEmpty);
+
+        // The bots left, so their plugin's disposal removing its bot again finds it gone.
+        Assert.False(await context.Server.RemoveServerPlayerAsync(pluginBot));
+    }
+
+    // Holds the player's tick gate until released, as a tick or grant under way does. Returns once it's held, with what
+    // lets go of it.
+    private static async Task<Task> HoldGateAsync(PlayerBase player, Task release)
+    {
+        var holding = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var held = Task.Run(() => player.GrantAdvancementAsync(async () =>
+        {
+            holding.TrySetResult();
+            await release;
+            return false;
+        }).AsTask());
+
+        await holding.Task.WaitAsync(TickWait);
+        return held;
+    }
+
+    // What another player's tick firing a matching trigger for the player leaves to run in the background (see
+    // PlayerBase.FireProgressAsync): a grant, which completes the returned source once it ran.
+    private static TaskCompletionSource AcceptTrigger(PlayerBase player)
+    {
+        var granted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var accepted = player.DeferredWork.TryStart(() => player.GrantAdvancementAsync(() =>
+        {
+            granted.TrySetResult();
+            return ValueTask.FromResult(false);
+        }).AsTask());
+
+        Assert.NotNull(accepted);
+        return granted;
+    }
+
+    private static PluginContainer BotPlugin() => new()
+    {
+        Info = new PluginInfo("bots"),
+        Archive = PluginArchive.Open("bots.obby", PluginArchives.Zip(new Dictionary<string, byte[]>
+        {
+            [PluginMetadata.FileName] = PluginArchives.Metadata("bots", "1.0.0", "Bots")
+        }))
+    };
 
     // Saves the player from inside the other player's grant, as a plugin's handler of an event in their tick might.
     private static Task SaveFromAnotherPlayersTickAsync(PlayerBase player, PlayerBase other) =>

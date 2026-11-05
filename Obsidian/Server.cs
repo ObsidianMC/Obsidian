@@ -649,6 +649,12 @@ public sealed partial class Server : IServer, IPluginScopedServer
         {
             await this.PendingLeavesAsync();
 
+            // Server-side players leave too, the server's and plugins' alike, now that the ticks are over: what other
+            // players' ticks asked of them (advancement triggers and their rewards) is done before the worlds' final
+            // save and disposal, and their leave handlers run while the plugins are still loaded. Plugins' disposal
+            // then finds theirs gone.
+            await this.LeaveServerPlayersAsync();
+
             // Saves a tick started in the background finish before the final save, which they can't overwrite then.
             await this.serverDeferredWork.WhenIdleAsync();
             await this.WorldDeferredWorkAsync(close: true);
@@ -754,6 +760,23 @@ public sealed partial class Server : IServer, IPluginScopedServer
 
         this.serverDeferredWork.TryStart(() => this.SaveEverythingNowAsync(autosave));
         return Task.FromResult(true);
+    }
+
+    // A stop's leave of every server-side player still online (see StopCoreAsync). One failing doesn't keep the others
+    // from leaving; it's logged, like a leave from a tick.
+    private async Task LeaveServerPlayersAsync()
+    {
+        foreach (var player in this.OnlinePlayers.Values.OfType<ServerPlayer>().ToList())
+        {
+            try
+            {
+                await this.RemoveServerPlayerAsync(player);
+            }
+            catch (Exception ex)
+            {
+                Log.ServerPlayerLeaveFailed(this.logger, ex, player.Username);
+            }
+        }
     }
 
     // Saves started from ticks that couldn't wait for them (see SaveEverythingAsync), which the shutdown waits for.

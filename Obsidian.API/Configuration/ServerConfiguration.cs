@@ -140,24 +140,15 @@ public sealed class ServerConfiguration
     public int TimeTickSpeedMultiplier { get; set; } = 1;
 
     /// <summary>
-    /// Whether a world's levels (the overworld, the nether, the end and plugin dimensions) tick at the same time, each
-    /// on a thread of its own. Turned off, the world's own level ticks first and its dimensions after it. Left unset
-    /// (<c>null</c>), the default, they tick in parallel when the server has more than one processor (see
-    /// <see cref="TicksLevelsInParallel"/>).
+    /// Experimental, and off unless turned on: whether a world's levels (the overworld, the nether, the end and plugin
+    /// dimensions) tick at the same time, each on a thread of its own. Off, the default, the world's own level ticks
+    /// first and its dimensions after it.
     /// </summary>
     /// <remarks>
-    /// Unset rather than a fixed default so that a <c>server.json</c> written on one machine still follows the
-    /// processors of the one it runs on.
+    /// It only helps a server with more than one processor (counting a container's CPU limit): with one, the levels'
+    /// ticks can't run at the same time anyway, so leave it off there.
     /// </remarks>
-    public bool? ParallelLevelTicks { get; set; }
-
-    /// <summary>
-    /// Whether a world's levels tick in parallel: <see cref="ParallelLevelTicks"/> when set, or else whether the server
-    /// has more than one processor (<see cref="Environment.ProcessorCount"/>, which counts a container's CPU limit).
-    /// One processor gains nothing from it, so the levels keep the sequential order there.
-    /// </summary>
-    [JsonIgnore]
-    public bool TicksLevelsInParallel => this.ParallelLevelTicks ?? Environment.ProcessorCount > 1;
+    public bool ParallelLevelTicks { get; set; }
 }
 
 public sealed class ServerWorld
