@@ -886,7 +886,9 @@ public sealed partial class LevelTransfers
     private static List<ItemEntity> ItemsIn(AbstractLevel world) =>
         world.GetNonPlayerEntitiesInRange(Centre, 32).OfType<ItemEntity>().ToList();
 
-    private static void AssertEveryDiamondOnce(params Side[] sides)
+    private static void AssertEveryDiamondOnce(params Side[] sides) => AssertEveryDiamondOnce(ItemCount, sides);
+
+    private static void AssertEveryDiamondOnce(int expected, params Side[] sides)
     {
         var entities = new HashSet<ItemEntity>(ReferenceEqualityComparer.Instance);
         var diamonds = 0;
@@ -907,7 +909,7 @@ public sealed partial class LevelTransfers
             diamonds += Diamonds(side.Hopper.Items);
         }
 
-        Assert.Equal(ItemCount, diamonds);
+        Assert.Equal(expected, diamonds);
     }
 
     private static int Diamonds(IEnumerable<ItemStack> stacks) =>

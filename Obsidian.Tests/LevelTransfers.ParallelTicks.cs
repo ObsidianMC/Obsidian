@@ -215,10 +215,10 @@ public sealed partial class LevelTransfers
         Assert.Equal(0, traffic.Failed);
         Assert.True(traffic.Overlapping >= OverlappingHandoffs, $"Only {traffic.Overlapping} overlapping handoffs.");
         Assert.True(contest.Enough, $"Only {contest.Sent} contested items sent and {contest.Taken} taken.");
-        AssertEveryDiamondOnce(overworld, netherSide);
+        AssertEveryDiamondOnce(ItemCount + contest.Supplied, overworld, netherSide);
 
         // Saved and read back, every diamond is still there once.
-        Assert.Equal(ItemCount, await SavedDiamondsAsync(context, overworld, netherSide));
+        Assert.Equal(ItemCount + contest.Supplied, await SavedDiamondsAsync(context, overworld, netherSide));
     }
 
     // Queues a round of the level's item traffic, run in its next tick.
@@ -243,6 +243,11 @@ public sealed partial class LevelTransfers
             .Where(item => item.Position.X < HopperX && item.EntityId % 2 == parity)
             .Take(ContestedPerTick)
             .ToList();
+
+        // The player and the hopper keep what they take, so the items left to contest run low; fresh diamonds top
+        // them up, and count towards the diamonds there must be.
+        while (items.Count < ContestedPerTick)
+            items.Add(contest.Supply(side.World, parity));
 
         using var gate = new Barrier(2);
         await Task.WhenAll(
@@ -399,8 +404,23 @@ public sealed partial class LevelTransfers
     // item's lock, wins most.
     private sealed class Contest
     {
+        // The fresh diamonds' indices (see Drop) start past every other item's, and keep their round's parity.
+        private const int SupplyIndex = 200_000;
+
         private int sent;
         private int taken;
+        private int supplied;
+
+        // How many fresh diamonds the contests dropped.
+        public int Supplied => Volatile.Read(ref this.supplied);
+
+        // Drops a fresh diamond for a contest of the round's parity, run in the level's tick.
+        public ItemEntity Supply(AbstractLevel level, int parity)
+        {
+            var count = Interlocked.Increment(ref this.supplied);
+            var index = SupplyIndex + 2 * count + parity;
+            return Drop(level, index, Spot(index));
+        }
 
         public int Sent => Volatile.Read(ref this.sent);
 
