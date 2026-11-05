@@ -343,10 +343,10 @@ public sealed class RegionFiles : IDisposable
     }
 
     [Fact]
-    public async Task BatchUnloadKeepsTheChunkWhoseSaveFailed()
+    public async Task BatchUnloadKeepsTheFailedSavePending()
     {
-        // Two changed chunks unloaded together, one failing to write: the other unloads with its change, and the
-        // failed one stays loaded with its change, which the next save writes.
+        // Two changed chunks unloaded together, one failing to write: both leave the region, the other's change is
+        // written, and the failed one's save stays pending, where loads read it, until a retry writes it.
         var regionFolder = Path.Join(this.folder, "world");
         await using (var region = new Region(0, 0, regionFolder))
         {
@@ -364,10 +364,13 @@ public sealed class RegionFiles : IDisposable
                 : ValueTask.CompletedTask;
 
             await Assert.ThrowsAsync<IOException>(() => region.UnloadChunksAsync([(0, 0), (1, 0)]));
-            Assert.Same(failing, Assert.Single(region.ResidentChunks()));
+            Assert.Empty(region.ResidentChunks());
+            var pending = Assert.Single(region.PendingWrites.Failed());
+            Assert.Equal((0, 0), (pending.ChunkX, pending.ChunkZ));
 
             region.ChunkFile.Observe = null;
-            await region.FlushAsync();
+            await region.RetryPendingWritesAsync([pending]);
+            Assert.Empty(region.PendingWrites.Failed());
         }
 
         await using var reloaded = new Region(0, 0, regionFolder);
@@ -854,6 +857,285 @@ public sealed class RegionFiles : IDisposable
     }
 
     private static int VersionOf(ReadOnlySpan<byte> payload) => BinaryPrimitives.ReadInt32BigEndian(payload);
+
+    [Fact]
+    public async Task LoadOverlappingAStoreAndUnloadReadsTheNewerSave()
+    {
+        var regionFolder = Path.Join(this.folder, "world");
+        await using var region = new Region(0, 0, regionFolder);
+        await region.InitAsync();
+        region.SetChunk(Complete(0, 0));
+        await region.UnloadChunk(0, 0);
+
+        // A load reads the file's version while a newer chunk is stored in the slot and unloaded again.
+        var (reading, release) = PauseOnce(region.ChunkFile, RegionFile.Step.Reading);
+        var load = region.GetChunkAsync(0, 0).AsTask();
+        try
+        {
+            await reading.WaitAsync(TimeSpan.FromSeconds(10));
+
+            var newer = Complete(0, 0);
+            newer.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+            region.SetChunk(newer);
+            await region.UnloadChunk(0, 0);
+        }
+        finally
+        {
+            release.TrySetResult();
+        }
+
+        var loaded = await load.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Equal(BlocksRegistry.Stone, loaded.GetBlock(1, 64, 1));
+    }
+
+    [Fact]
+    public async Task ClosingWaitsForAnUnloadAdmittedBeforeItsSnapshot()
+    {
+        var regionFolder = Path.Join(this.folder, "world");
+        var generatorLock = Task.CompletedTask;
+        var region = new Region(0, 0, regionFolder) { LockChunk = (_, _) => LockAfter(generatorLock) };
+        await region.InitAsync();
+        var chunk = Complete(0, 0);
+        region.SetChunk(chunk);
+        await region.FlushAsync();
+        chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+
+        // The unload's snapshot waits for the generator's lock of the chunk while the region closes.
+        var locked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        generatorLock = locked.Task;
+        var unload = region.UnloadChunk(0, 0);
+        var closing = region.DisposeAsync().AsTask();
+        try
+        {
+            await Task.WhenAny(closing, Task.Delay(100));
+            Assert.False(closing.IsCompleted);
+        }
+        finally
+        {
+            locked.TrySetResult();
+            await Task.WhenAll(unload, closing).WaitAsync(TimeSpan.FromSeconds(10));
+        }
+
+        await using var reloaded = new Region(0, 0, regionFolder);
+        await reloaded.InitAsync();
+        Assert.Equal(BlocksRegistry.Stone, (await reloaded.GetChunkAsync(0, 0)).GetBlock(1, 64, 1));
+    }
+
+    [Fact]
+    public async Task OverlappingUnloadsOfAChunkKeepItsEntities()
+    {
+        var regionFolder = Path.Join(this.folder, "world");
+        var generatorLock = Task.CompletedTask;
+        await using var region = new Region(0, 0, regionFolder) { LockChunk = (_, _) => LockAfter(generatorLock) };
+        await region.InitAsync();
+        var chunk = Complete(0, 0);
+        region.SetChunk(chunk);
+        await region.FlushAsync();
+        chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+        region.TryAddEntity(new ItemEntity
+        {
+            Level = null!,
+            EntityId = 1,
+            Position = new VectorF(8.5f, 65f, 8.5f),
+            Item = new ItemStack(ItemsRegistry.Apple, 3)
+        });
+
+        // Both unloads find the chunk, then wait for the generator's lock of it. The first takes it and its write
+        // pauses; then the second does.
+        var firstLocked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondLocked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        generatorLock = firstLocked.Task;
+        var first = region.UnloadChunk(0, 0);
+        generatorLock = secondLocked.Task;
+        var second = region.UnloadChunk(0, 0);
+        var (writing, release) = PauseOnce(region.ChunkFile, RegionFile.Step.PayloadWritten);
+        try
+        {
+            firstLocked.TrySetResult();
+            await writing.WaitAsync(TimeSpan.FromSeconds(10));
+            secondLocked.TrySetResult();
+            await Task.WhenAny(second, Task.Delay(200));
+
+            // A load meanwhile reads the pending save, which has the item.
+            var loaded = (Chunk)await region.GetChunkAsync(0, 0);
+            Assert.Single(loaded.PendingEntities, entity => entity.Type == "minecraft:item");
+        }
+        finally
+        {
+            firstLocked.TrySetResult();
+            secondLocked.TrySetResult();
+            release.TrySetResult();
+            await Task.WhenAll(first, second).WaitAsync(TimeSpan.FromSeconds(10));
+        }
+    }
+
+    [Fact]
+    public async Task OverlappingUnloadsOfAReplacedChunkKeepItsEntities()
+    {
+        var regionFolder = Path.Join(this.folder, "world");
+        var generatorLock = Task.CompletedTask;
+        await using var region = new Region(0, 0, regionFolder) { LockChunk = (_, _) => LockAfter(generatorLock) };
+        await region.InitAsync();
+        var original = Complete(0, 0);
+        region.SetChunk(original);
+        await region.FlushAsync();
+        region.TryAddEntity(new ItemEntity
+        {
+            Level = null!,
+            EntityId = 1,
+            Position = new VectorF(8.5f, 65f, 8.5f),
+            Item = new ItemStack(ItemsRegistry.Apple, 3)
+        });
+
+        // The first unload waits for the generator's lock while generation replaces the chunk; a second unload then
+        // finds the replacement, and waits too.
+        var firstLocked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondLocked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        generatorLock = firstLocked.Task;
+        var first = region.UnloadChunk(0, 0);
+        region.ReplaceChunk(original, Complete(0, 0));
+        generatorLock = secondLocked.Task;
+        var second = region.UnloadChunk(0, 0);
+        var (writing, release) = PauseOnce(region.ChunkFile, RegionFile.Step.PayloadWritten);
+        try
+        {
+            firstLocked.TrySetResult();
+            await writing.WaitAsync(TimeSpan.FromSeconds(10));
+            secondLocked.TrySetResult();
+            await Task.WhenAny(second, Task.Delay(200));
+
+            // A load meanwhile reads the pending save, which has the item.
+            var loaded = (Chunk)await region.GetChunkAsync(0, 0);
+            Assert.Single(loaded.PendingEntities, entity => entity.Type == "minecraft:item");
+        }
+        finally
+        {
+            firstLocked.TrySetResult();
+            secondLocked.TrySetResult();
+            release.TrySetResult();
+            await Task.WhenAll(first, second).WaitAsync(TimeSpan.FromSeconds(10));
+        }
+    }
+
+    [Fact]
+    public async Task AnUnloadCallbackCanSaveTheChunkItUnloaded()
+    {
+        var regionFolder = Path.Join(this.folder, "world");
+        Region? region = null;
+        var flushed = false;
+
+        // Told its chunk unloaded, a block entity's handler loads the chunk again, changes it and saves the region.
+        region = new Region(0, 0, regionFolder)
+        {
+            BlockEntityUnloaded = _ =>
+            {
+                var reloaded = region!.GetChunkAsync(0, 0).AsTask().GetAwaiter().GetResult();
+                reloaded.SetBlock(2, 64, 2, BlocksRegistry.Stone);
+                flushed = region.FlushAsync().Wait(TimeSpan.FromSeconds(5));
+            }
+        };
+
+        await using (region)
+        {
+            await region.InitAsync();
+            var chunk = Complete(0, 0);
+            var crate = new Vector(4, 70, 4);
+            chunk.SetBlockEntity(crate.X, crate.Y, crate.Z,
+                new ContainerBlockEntity(new Container(9)) { Id = "probe:crate", BlockPosition = crate });
+            chunk.SetBlock(1, 64, 1, BlocksRegistry.Stone);
+            region.SetChunk(chunk);
+
+            await region.UnloadChunk(0, 0).WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.True(flushed);
+        }
+
+        await using var reopened = new Region(0, 0, regionFolder);
+        await reopened.InitAsync();
+        var saved = await reopened.GetChunkAsync(0, 0);
+        Assert.Equal(BlocksRegistry.Stone, saved.GetBlock(1, 64, 1));
+        Assert.Equal(BlocksRegistry.Stone, saved.GetBlock(2, 64, 2));
+    }
+
+    [Fact]
+    public async Task AFailingUnloadCallbackKeepsTheWritesFailureReported()
+    {
+        var regionFolder = Path.Join(this.folder, "world");
+        var callbackFailure = new InvalidOperationException("The handler failed.");
+        var writeFailure = new IOException("The disk is full.");
+        await using var region = new Region(0, 0, regionFolder)
+        {
+            BlockEntityUnloaded = _ => throw callbackFailure
+        };
+        await region.InitAsync();
+
+        var chunk = Complete(0, 0);
+        var crate = new Vector(4, 70, 4);
+        chunk.SetBlockEntity(crate.X, crate.Y, crate.Z,
+            new ContainerBlockEntity(new Container(9)) { Id = "probe:crate", BlockPosition = crate });
+        region.SetChunk(chunk);
+
+        // The block entity's handler throws while the chunk's write fails too.
+        region.ChunkFile.Observe = step => step.Step == RegionFile.Step.PayloadWritten
+            ? ValueTask.FromException(writeFailure)
+            : ValueTask.CompletedTask;
+
+        try
+        {
+            var thrown = await Assert.ThrowsAsync<AggregateException>(
+                () => region.UnloadChunk(0, 0).WaitAsync(TimeSpan.FromSeconds(30)));
+
+            // Both failures are reported, the handler's first.
+            var failures = thrown.Flatten().InnerExceptions;
+            Assert.Same(callbackFailure, failures[0]);
+            Assert.Contains(writeFailure, failures);
+        }
+        finally
+        {
+            region.ChunkFile.Observe = null;
+        }
+    }
+
+    [Fact]
+    public async Task ClosingARegionClosesBothFilesWhenOneFails()
+    {
+        var regionFolder = Path.Join(this.folder, "world");
+        var region = new Region(0, 0, regionFolder);
+        await region.InitAsync();
+        region.ChunkFile.Observe = step => step.Step == RegionFile.Step.Closed
+            ? ValueTask.FromException(new IOException("Closing failed."))
+            : ValueTask.CompletedTask;
+
+        await Assert.ThrowsAsync<IOException>(() => region.DisposeAsync().AsTask());
+
+        // Both files are free to open again.
+        await using var reopened = new Region(0, 0, regionFolder);
+        await reopened.InitAsync();
+    }
+
+    // A generator's lock of a chunk, taken once the task ends.
+    private static async ValueTask<IDisposable?> LockAfter(Task locked)
+    {
+        await locked;
+        return null;
+    }
+
+    // Pauses the file at its first event of the step, until released.
+    private static (Task Paused, TaskCompletionSource Release) PauseOnce(RegionFile file, RegionFile.Step step)
+    {
+        var paused = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var pending = 1;
+        file.Observe = async change =>
+        {
+            if (change.Step != step || Interlocked.Exchange(ref pending, 0) == 0)
+                return;
+
+            paused.TrySetResult();
+            await release.Task;
+        };
+
+        return (paused.Task, release);
+    }
 
     private static Chunk Complete(int x, int z)
     {

@@ -192,7 +192,7 @@ public sealed class StructureCacheEviction
     }
 
     [Fact]
-    public async Task FailedRegionUnloadKeepsItsResidentStartsReachableForRetry()
+    public async Task FailedRegionUnloadKeepsItsStartsReachableForRetry()
     {
         var generator = new MojangGenerator();
         var world = CreateWorld(generator);
@@ -213,13 +213,14 @@ public sealed class StructureCacheEviction
 
             await Assert.ThrowsAsync<IOException>(() => world.UnloadRegionAsync(region.X, region.Z));
 
-            Assert.Same(region, Assert.Single(world.Regions.Values));
-            Assert.Same(chunk, await world.GetChunkAsync(StartX, StartZ, scheduleGeneration: false));
-            Assert.Same(start, manager.GetStarts(StartX, StartZ).Single());
-            Assert.Equal(1, cache.Count);
+            // The region is gone, but its failed final save stays pending: loading the chunk reads it.
+            Assert.Empty(world.Regions);
+            var reloaded = (Chunk)await world.GetChunkAsync(StartX, StartZ, scheduleGeneration: false);
+            Assert.NotSame(chunk, reloaded);
+            Assert.Equal(1, ((NbtCompound)reloaded.StructureStarts![Pyramid]).GetInt("references"));
 
-            region.ChunkFile.Observe = null;
-            await world.UnloadRegionAsync(region.X, region.Z);
+            var current = (Region)world.GetRegionForChunk(StartX, StartZ)!;
+            await world.UnloadRegionAsync(current.X, current.Z);
             Assert.Empty(world.Regions);
             Assert.Equal(0, cache.Count);
             var saved = (Chunk)await world.GetChunkAsync(StartX, StartZ, scheduleGeneration: false);
@@ -467,9 +468,9 @@ public sealed class StructureCacheEviction
             await Assert.ThrowsAsync<IOException>(() => unloading);
             region.ChunkFile.Observe = null;
 
-            // Production autosave must finish the pending unload, without another explicit unload request.
+            // Production autosave must write the pending save, without another explicit unload request.
             await world.FlushRegionsAsync();
-            Assert.Empty(world.Regions);
+            Assert.Empty(world.PendingWrites.Failed());
             Assert.Equal(0, manager.StartCache.Count);
             var saved = (Chunk)await world.GetChunkAsync(StartX, StartZ, scheduleGeneration: false);
             Assert.Equal(1, ((NbtCompound)saved.StructureStarts![Pyramid]).GetInt("references"));
@@ -498,6 +499,7 @@ public sealed class StructureCacheEviction
     {
         var world = CreateWorld(new MojangGenerator());
         Region? failing = null;
+        Region? retrying = null;
         try
         {
             _ = await world.GetChunkAsync(StartX, StartZ, scheduleGeneration: false);
@@ -514,6 +516,11 @@ public sealed class StructureCacheEviction
                 ? ValueTask.FromException(new IOException("Persistent unload write failure."))
                 : ValueTask.CompletedTask;
             await Assert.ThrowsAsync<IOException>(() => world.UnloadRegionAsync(failing.X, failing.Z));
+
+            // Its failed save is retried through the region object now at its position, whose writes fail too.
+            retrying = (Region)world.LoadRegionByChunk(StartX, StartZ);
+            await retrying.InitAsync();
+            retrying.ChunkFile.Observe = failing.ChunkFile.Observe;
             SetMarker(healthy, 1);
             var failure = await Record.ExceptionAsync(() => world.FlushRegionsAsync());
 
@@ -543,6 +550,8 @@ public sealed class StructureCacheEviction
         {
             if (failing is not null)
                 failing.ChunkFile.Observe = null;
+            if (retrying is not null)
+                retrying.ChunkFile.Observe = null;
             try
             {
                 await world.DisposeAsync();
