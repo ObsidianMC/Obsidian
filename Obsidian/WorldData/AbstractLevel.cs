@@ -2526,14 +2526,16 @@ public abstract partial class AbstractLevel : ILevel
         this.ClearChunkTickets();
         this.optionsMonitor.Dispose();
 
-        // Like the final save below: a failure is reported, and disposal goes on.
+        // A failed save doesn't stop the disposal: the regions are still closed, and the failures are the disposal's
+        // once it's done, so a shutdown reports them.
+        List<Exception> saveFailures = [];
         try
         {
             this.SavePluginData();
         }
         catch (Exception exception)
         {
-            Log.FinalSaveFailed(this.Logger, exception, this.Name);
+            saveFailures.Add(exception);
         }
 
         // Waits out the generation jobs, holding every slot so no new one starts, and saves what jobs finished since the
@@ -2550,7 +2552,6 @@ public abstract partial class AbstractLevel : ILevel
 
         // The level's own: an override flushes other levels too, which may be disposed already. One with travellers
         // still unplaced fails rather than discarding them.
-        // A failed final save is reported, and disposal goes on.
         try
         {
             if (Volatile.Read(ref this.jobsSinceFlush) != 0 || this.HasUnplacedTravellers)
@@ -2558,7 +2559,7 @@ public abstract partial class AbstractLevel : ILevel
         }
         catch (Exception exception)
         {
-            Log.FinalSaveFailed(this.Logger, exception, this.Name);
+            saveFailures.Add(exception);
         }
 
         foreach (var region in Regions.Values)
@@ -2566,6 +2567,15 @@ public abstract partial class AbstractLevel : ILevel
             await region.DisposeAsync();
         }
         simulationGate.Dispose();
+
+        foreach (var saveFailure in saveFailures)
+            Log.FinalSaveFailed(this.Logger, saveFailure, this.Name);
+
+        if (saveFailures.Count == 1)
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw(saveFailures[0]);
+
+        if (saveFailures.Count > 1)
+            throw new AggregateException(saveFailures);
     }
 
     public IEntitySpawner GetNewEntitySpawner() => new EntitySpawner(this);
