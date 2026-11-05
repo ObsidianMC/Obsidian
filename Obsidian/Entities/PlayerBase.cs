@@ -918,10 +918,8 @@ public abstract partial class PlayerBase : Avatar, IPlayer
         }
 
         // A dead player is held from ticking (see Entity.TryClaimTick) from just before it leaves where it died until
-        // the respawn is over, as a level change's player is; the chunk it respawns in stays loaded until then.
+        // the respawn is over, as a level change's player is.
         var holding = false;
-        var waiting = false;
-        PortalArea? respawnArea = null;
         try
         {
             // Reserve the respawn before changing levels: a death that won the lock retries without committing,
@@ -970,13 +968,16 @@ public abstract partial class PlayerBase : Avatar, IPlayer
                 this.progressDead = false;
                 API.Data.AttachmentStorage.For(this).EndDeath();
 
-                // Like vanilla's respawn, the player comes back where their bed or anchor is, or at the world spawn,
-                // whose chunk is loaded first so that its level can take the player in at once. The dead player leaves
-                // the level it died in and joins that one through travel's handoff, as one that travels would.
-                respawnArea = await this.LoadRespawnAreaAsync(respawnLevel, respawnPosition);
+                // Like vanilla's respawn, the player comes back where their bed or anchor is, or at the world spawn.
+                // The dead player leaves the level it died in and joins that one through travel's handoff, as one that
+                // travels would. Vanilla loads the respawn chunk first, between ticks; this may run inside a level's
+                // tick (a plugin's), which generation waits for, so a chunk that isn't generated yet isn't waited for:
+                // the player waits in its new level and is taken in once the chunk is ready (see CommitRespawn).
+                await RequestRespawnChunkAsync(respawnLevel, respawnPosition);
                 this.BeginTravelHold();
                 holding = true;
-                waiting = !this.CommitRespawn(respawnLevel, respawnPosition, respawnYaw, this.Pitch);
+                if (!this.CommitRespawn(respawnLevel, respawnPosition, respawnYaw, this.Pitch))
+                    Log.RespawnNotPlaced(this.Logger, this.Username, respawnLevel.Name);
             }
 
             Log.ChangingLevel(this.Logger, this.Username, this.Level.Name);
@@ -1007,11 +1008,6 @@ public abstract partial class PlayerBase : Avatar, IPlayer
 
             pendingRespawnChunks = !await this.UpdateChunksUnderLockAsync(true);
             respawnChunkRetryTicks = 20;
-
-            // A level that couldn't take the respawned player in at once takes it in now that its chunks are loaded.
-            if (waiting && !this.TryArriveWhereWaiting())
-                Log.RespawnNotPlaced(this.Logger, this.Username, this.Level.Name);
-
             await this.QueuePacketAsync(new SetHealthPacket(Health, FoodLevel, FoodSaturationLevel));
             await SendPlayerInfoAsync();
 
@@ -1024,7 +1020,6 @@ public abstract partial class PlayerBase : Avatar, IPlayer
         }
         finally
         {
-            respawnArea?.Dispose();
             lock (this.deathState)
             {
                 this.Respawning = false;
@@ -1039,14 +1034,12 @@ public abstract partial class PlayerBase : Avatar, IPlayer
         return true;
     }
 
-    // The chunk a dead player respawns in, loaded (and generated if need be) and held until they've been taken in
-    // there; not waited for once they've disconnected.
-    private async Task<PortalArea?> LoadRespawnAreaAsync(ILevel level, VectorD position)
+    // Loads the chunk a dead player respawns in from its save, so that its level can take them in at once, or queues
+    // its generation, which isn't waited for.
+    private static async ValueTask RequestRespawnChunkAsync(ILevel level, VectorD position)
     {
-        if (level is not AbstractLevel destination)
-            return null;
-
-        return await PortalArea.LoadAsync(destination, (Vector)position.Floor(), 0, () => this.Connected);
+        var (x, z) = Region.ChunkOf(position);
+        await level.GetChunkAsync(x, z);
     }
 
     //TODO make IDamageSource 

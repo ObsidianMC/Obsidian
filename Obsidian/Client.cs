@@ -1049,7 +1049,7 @@ public sealed partial class Client : IClient
                 // from where they are now too, under that level's transfer lock, so that a level change still under way
                 // (a plugin's teleport, say) doesn't publish them in their new level afterwards.
                 await player.StopTickingAsync();
-                Entity.RemoveFromOwningLevel(player, leaving: true);
+                Entity.RemoveFromOwningLevel(player);
 
                 var leaving = new PlayerLeaveEventArgs(player, this.HostServer, DateTimeOffset.Now);
                 result = await this.eventDispatcher.ExecuteEventAsync(leaving);

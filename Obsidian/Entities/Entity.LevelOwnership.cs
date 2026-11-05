@@ -14,6 +14,11 @@ public partial class Entity
     private ILevel? arrivingAt;
     private bool removedOnArrival;
 
+    // Set for good once a player leaves the server (see RemoveFromOwningLevel), under the transfer lock of the level
+    // that owns it then. Departure and admission check it under theirs, so whichever comes second sees it: no travel or
+    // respawn moves the player on from then on, and no level takes it in.
+    private bool leftServer;
+
     // Which code may simulate the entity (see TryClaimTick): the level whose tick is ticking it now, and how many travel
     // calls, nested or not, are still moving it or its passengers.
     private AbstractLevel? tickingIn;
@@ -104,26 +109,22 @@ public partial class Entity
     }
 
     /// <summary>
-    /// Takes <paramref name="player"/> out of the players of the level that owns it, under that level's transfer lock,
-    /// so that a level change can't move it on between reading its level and removing it there.
+    /// Takes <paramref name="player"/>, which is leaving the server, out of the players of the level that owns it, under
+    /// that level's transfer lock, so that a level change can't move it on between reading its level and removing it
+    /// there. The player stays gone: no travel, respawn or arrival still under way (see <see cref="Arrive"/>) or begun
+    /// later puts it in any level's players or entities again.
     /// </summary>
     /// <param name="player">The player.</param>
-    /// <param name="leaving">
-    /// Whether the player is leaving the server: if it's still on its way to the level, the level won't take it in
-    /// either (see <see cref="TryRemoveOnArrival"/>), so it never joins the level's players after this.
-    /// </param>
     /// <returns>Whether the player was among the level's players.</returns>
     /// <exception cref="InvalidOperationException">The current thread holds another level's transfer lock.</exception>
-    internal static bool RemoveFromOwningLevel(IPlayer player, bool leaving = false)
+    internal static bool RemoveFromOwningLevel(IPlayer player)
     {
         if (player is not Entity entity)
             return player.Level.TryRemovePlayer(player);
 
         using (entity.EnterOwningLevel(out var level))
         {
-            if (leaving)
-                entity.TryRemoveOnArrival(level);
-
+            entity.leftServer = true;
             return level.TryRemovePlayer(player);
         }
     }

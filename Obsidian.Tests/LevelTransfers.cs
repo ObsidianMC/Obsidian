@@ -36,6 +36,10 @@ public sealed class LevelTransfers
     private const double HopperX = 10;
 
     private static readonly VectorD Centre = new(8, 70, 8);
+
+    // A place in the first region whose chunk isn't generated until a test adds it.
+    private const int UngeneratedChunk = 2;
+    private static readonly VectorD Ungenerated = new(UngeneratedChunk * 16 + 8, 70, UngeneratedChunk * 16 + 8);
     private static readonly VectorD HopperMin = new(HopperX, 60, 0);
     private static readonly VectorD HopperMax = new(16, 80, 16);
     private static readonly Vector HopperBlock = new(12, 69, 4);
@@ -464,11 +468,7 @@ public sealed class LevelTransfers
         WorldBlockEntities.AddEmptyChunk(world);
         AddEmptyChunk(nether);
         world.LevelData.SpawnPosition = Centre;
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Respawner", Centre);
-        player.Level = nether;
-        Assert.True(nether.TryAddPlayer(player));
-        Assert.True(nether.TryAddEntity(player));
-        await player.KillAsync(player, "Respawner died");
+        var player = await DeadPlayerAsync(context, nether, "Respawner");
 
         // With no respawn point, the player dying in the nether respawns at the world spawn. The overworld is busy as
         // the player gets there, so the respawn waits between leaving the nether and joining the overworld.
@@ -504,13 +504,85 @@ public sealed class LevelTransfers
         // Once the respawn is over, the player is one of the overworld's players and entities, and the overworld's
         // alone, which may tick it from then on.
         Assert.True(player.Alive);
-        Assert.Same(player, world.FindEntity(player.Uuid));
+        Assert.True(IsInRegion(world, player));
         Assert.Same(player, world.Players[player.Uuid]);
         Assert.Null(nether.FindEntity(player.Uuid));
         Assert.False(nether.Players.ContainsKey(player.Uuid));
         Assert.True(player.TryClaimTick(world));
         player.ReleaseTick(world);
     }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ARespawnAwaitedInItsLevelsTickDoesNotWaitForItsChunkToGenerate()
+    {
+        await using var context = TestServerFactory.CreateServer($"respawn-ungenerated-{Guid.NewGuid():N}");
+        var world = context.World;
+        WorldBlockEntities.AddEmptyChunk(world);
+        world.LevelData.SpawnPosition = Ungenerated;
+        var player = await DeadPlayerAsync(context, world, "Waiter");
+
+        // A plugin awaits the respawn inside the level's tick, which chunk management, and so generation, waits for.
+        // The world spawn's chunk isn't generated, so the player waits in the level, among none of its entities.
+        world.EnqueueEntityAction(async () => await player.RespawnAsync());
+        await world.DoWorldTickAsync().WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.True(player.Alive);
+        Assert.Same(world, player.Level);
+        Assert.False(IsInRegion(world, player));
+
+        // A tick before the chunk is ready leaves the player waiting; the tick after it's ready takes the player in.
+        await world.DoWorldTickAsync();
+        Assert.False(IsInRegion(world, player));
+
+        WorldBlockEntities.AddEmptyChunk(world, UngeneratedChunk, UngeneratedChunk);
+        await world.DoWorldTickAsync();
+
+        Assert.True(IsInRegion(world, player));
+        Assert.Same(player, world.Players[player.Uuid]);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task APlayerThatLeftBeforeItsRespawnMovedItIsTakenInNowhere()
+    {
+        await using var context = TestServerFactory.CreateServer($"respawn-left-{Guid.NewGuid():N}");
+        var world = context.World;
+        var nether = AddNether(context);
+        WorldBlockEntities.AddEmptyChunk(world);
+        AddEmptyChunk(nether);
+        world.LevelData.SpawnPosition = Centre;
+        var player = await DeadPlayerAsync(context, nether, "Leaver");
+
+        // The player leaves while its respawn is still on its way (loading its chunk, say), before it left the nether.
+        Assert.True(Entity.RemoveFromOwningLevel(player));
+        Assert.True(await nether.DestroyEntityAsync(player));
+        await player.RespawnAsync();
+        await world.DoWorldTickAsync();
+
+        // It stays where it left, and neither level has it among its players or entities.
+        Assert.Same(nether, player.Level);
+        Assert.False(world.Players.ContainsKey(player.Uuid));
+        Assert.False(IsInRegion(world, player));
+        Assert.False(nether.Players.ContainsKey(player.Uuid));
+        Assert.Null(nether.FindEntity(player.Uuid));
+    }
+
+    // A player of the server's, dead in level.
+    private static async Task<Entities.Player> DeadPlayerAsync(RealServerContext context, AbstractLevel level, string name)
+    {
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, name, Centre);
+        player.Level = level;
+        Assert.True(level.TryAddPlayer(player));
+        Assert.True(level.TryAddEntity(player));
+        await player.KillAsync(player, $"{name} died");
+        return player;
+    }
+
+    // Whether the player is among the entities of the region at its position, which lookups by UUID don't show: they
+    // find players among the level's players first.
+    private static bool IsInRegion(AbstractLevel level, Entities.Player player) =>
+        level.GetRegionForLocation(player.Position) is IRegion region
+        && region.Entities.TryGetValue(player.EntityId, out var entity)
+        && ReferenceEquals(entity, player);
 
     private static WorldData.Dimension AddNether(RealServerContext context)
     {

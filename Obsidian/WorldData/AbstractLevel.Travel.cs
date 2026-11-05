@@ -5,8 +5,9 @@ using System.Threading;
 namespace Obsidian.WorldData;
 
 // What keeps the chunk an entity left for another level loaded until the entity is settled (see Entity.Travel.cs),
-// and the travellers no level could place yet. All of it is guarded by the level's TransferLock, which the region and
-// chunk unloads below take too, so an unload and a departure never both go ahead.
+// the travellers no level could place yet, and the respawned players waiting to be taken in. All of it is guarded by
+// the level's TransferLock, which the region and chunk unloads below take too, so an unload and a departure never both
+// go ahead.
 public abstract partial class AbstractLevel
 {
     // Chunks entities left and may still come back to or be kept in, with how many such travellers each.
@@ -17,7 +18,11 @@ public abstract partial class AbstractLevel
 
     // Travellers neither their destination nor this level could take in or keep yet, retried every tick.
     private readonly List<Entity.Unplaced> unplaced = [];
-    private int unplacedRetryScheduled;
+    private int travellerRetryScheduled;
+
+    // Players a respawn brought here that the level couldn't take in yet, retried every tick until it does or they leave
+    // the server. Players aren't saved in chunks, so unlike unplaced travellers they don't hold up saves.
+    private readonly List<Entity> waitingArrivals = [];
 
     /// <summary>
     /// Pins the chunk at <paramref name="position"/> for an entity leaving it, so neither the chunk nor its region
@@ -117,21 +122,21 @@ public abstract partial class AbstractLevel
             this.unplaced.Add(traveller);
 
         Log.TravellerUnplaced(this.Logger, traveller.Entity.EntityId, this.Name);
-        this.ScheduleUnplacedRetry();
+        this.ScheduleTravellerRetry();
     }
 
-    private void ScheduleUnplacedRetry()
+    private void ScheduleTravellerRetry()
     {
-        if (Interlocked.Exchange(ref this.unplacedRetryScheduled, 1) != 0)
+        if (Interlocked.Exchange(ref this.travellerRetryScheduled, 1) != 0)
             return;
 
-        this.EnqueueEntityAction(() =>
+        this.EnqueueEntityAction(async () =>
         {
-            Volatile.Write(ref this.unplacedRetryScheduled, 0);
-            if (this.RetryUnplaced() > 0)
-                this.ScheduleUnplacedRetry();
-
-            return ValueTask.CompletedTask;
+            Volatile.Write(ref this.travellerRetryScheduled, 0);
+            var unplacedLeft = this.RetryUnplaced();
+            var waitingLeft = await this.RetryWaitingArrivalsAsync();
+            if (unplacedLeft + waitingLeft > 0)
+                this.ScheduleTravellerRetry();
         });
     }
 
@@ -157,6 +162,55 @@ public abstract partial class AbstractLevel
             return this.unplaced.Count;
     }
 
+    /// <summary>
+    /// Keeps a respawned player the level couldn't take in at once (see <c>Entity.CommitRespawn</c>) waiting, and takes
+    /// it in on a later tick, once its chunk is loaded and not unloading, unless it left the server first.
+    /// </summary>
+    internal void KeepWaitingToArrive(Entity player)
+    {
+        using (this.TransferLock.Enter())
+            this.waitingArrivals.Add(player);
+
+        this.ScheduleTravellerRetry();
+    }
+
+    /// <summary>Tries again to take in the players waiting to arrive. Call from the level's tick.</summary>
+    /// <returns>How many are still waiting.</returns>
+    private async ValueTask<int> RetryWaitingArrivalsAsync()
+    {
+        Entity[] waiting;
+        using (this.TransferLock.Enter())
+            waiting = [.. this.waitingArrivals];
+
+        foreach (var player in waiting)
+        {
+            bool settled;
+            try
+            {
+                // Loaded from its save, or queued for generation without waiting for it: generation is started between
+                // ticks. The tick holds off chunk unloads, so a chunk loaded here is still there for the arrival.
+                var (x, z) = Region.ChunkOf(player.Position);
+                await this.GetChunkAsync(x, z);
+                settled = player.TryArriveWhereWaiting(this);
+            }
+            catch (Exception exception)
+            {
+                // Still waiting, and retried on the next tick.
+                Log.WaitingArrivalFailed(this.Logger, exception, player.EntityId, this.Name);
+                continue;
+            }
+
+            if (!settled)
+                continue;
+
+            using (this.TransferLock.Enter())
+                this.waitingArrivals.Remove(player);
+        }
+
+        using (this.TransferLock.Enter())
+            return this.waitingArrivals.Count;
+    }
+
     private bool HasUnplacedTravellers
     {
         get
@@ -175,6 +229,11 @@ public abstract partial class AbstractLevel
         [LoggerMessage(Level = LogLevel.Critical,
             Message = "{Count} travelling entities of {LevelName} could not be placed or kept, and aren't saved")]
         public static partial void TravellersNotSaved(ILogger logger, int count, string levelName);
+
+        [LoggerMessage(Level = LogLevel.Error,
+            Message = "Taking in player entity {EntityId}, waiting to arrive in {LevelName}, failed; retrying")]
+        public static partial void WaitingArrivalFailed(
+            ILogger logger, Exception exception, int entityId, string levelName);
 
         [LoggerMessage(Level = LogLevel.Error, Message = "The final save of {LevelName} failed")]
         public static partial void FinalSaveFailed(ILogger logger, Exception exception, string levelName);

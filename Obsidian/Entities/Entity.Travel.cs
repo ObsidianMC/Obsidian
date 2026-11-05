@@ -132,12 +132,14 @@ public partial class Entity
     }
 
     // Membership is authoritative for ordinary removal and unloading saves; item pickup and mob death may mark
-    // removal before their dictionary entry is taken out. Read and revalidate under the level's transfer lock.
+    // removal before their dictionary entry is taken out, and a player's leave before its leave event takes it out.
+    // Read and revalidate under the level's transfer lock.
     private protected bool IsTravelResident(ILevel level)
     {
         using (TransferLockOf(level).Enter())
         {
             return this.Level == level
+                && !this.leftServer
                 && this is not ItemEntity { Removed: true }
                 && this is not Mob { IsRemoved: true }
                 && level is AbstractLevel resident
@@ -333,35 +335,60 @@ public partial class Entity
     /// and is taken in under the destination's (see <see cref="Arrive"/>), never holding both.
     /// </summary>
     /// <remarks>
-    /// Not <see cref="CommitTravel"/>, as a respawn never goes back or fails: the dead player leaves where it died
-    /// whether or not it's still there, so no chunk is pinned for a return, and when the destination can't take it in
-    /// yet it stays the destination's, waiting, for <see cref="TryArriveWhereWaiting"/>. Call holding no transfer lock,
-    /// with a travel hold (see <see cref="BeginTravelHold"/>) taken until the respawn is over.
+    /// <para>
+    /// Not <see cref="CommitTravel"/>, as a respawn never goes back: the dead player leaves where it died whether or not
+    /// it's still there, so no chunk is pinned for a return. Nor does it wait for the destination's chunk: a plugin may
+    /// await the respawn inside the destination's tick, which chunk management, and so generation, waits for. When the
+    /// destination can't take the player in yet (its chunk is still loading, generating or unloading), the player stays
+    /// the destination's, waiting, and the destination takes it in on a later tick (see
+    /// <see cref="AbstractLevel.KeepWaitingToArrive"/>).
+    /// </para>
+    /// <para>
+    /// A player that left the server first stays where it left (see <see cref="RemoveFromOwningLevel"/>). Call holding
+    /// no transfer lock, with a travel hold (see <see cref="BeginTravelHold"/>) taken until the respawn is over.
+    /// </para>
     /// </remarks>
-    /// <returns>Whether the destination took the player in.</returns>
+    /// <returns>
+    /// False only when the destination, a level that isn't Obsidian's, refused the player, which then isn't among its
+    /// entities.
+    /// </returns>
     /// <exception cref="InvalidOperationException">A transfer lock is held.</exception>
     private protected bool CommitRespawn(ILevel destination, VectorD position, Angle yaw, Angle pitch)
     {
         RefuseNestedTravel();
         ILevel source;
         using (this.EnterOwningLevel(out source))
+        {
+            // Its leave has taken it out and saves it as it left.
+            if (this.leftServer)
+                return true;
+
             this.Leave(source, destination, position, position, yaw, pitch);
+        }
 
         if (source != destination)
             this.ForgetIn(source);
 
-        return this.Arrive(destination, returning: null, out _) == Arrival.Arrived;
+        if (this.Arrive(destination, returning: null, out _) != Arrival.Refused)
+            return true;
+
+        if (destination is not AbstractLevel waitingIn)
+            return false;
+
+        waitingIn.KeepWaitingToArrive(this);
+        return true;
     }
 
     /// <summary>
-    /// Takes the entity into its level if it's still waiting there, after the level couldn't take it in when it arrived
-    /// (see <see cref="CommitRespawn"/>). Call holding no other level's transfer lock.
+    /// Takes the entity into <paramref name="level"/> if it's still waiting there, after the level couldn't take it in
+    /// when it arrived (see <see cref="CommitRespawn"/>). Call holding no other level's transfer lock.
     /// </summary>
     /// <returns>False only when the level refused it again, and it's still waiting.</returns>
-    private protected bool TryArriveWhereWaiting()
+    internal bool TryArriveWhereWaiting(AbstractLevel level)
     {
-        using (this.EnterOwningLevel(out var level))
+        using (level.TransferLock.Enter())
         {
+            // Taken in already, or left the server, which the arrival below sees.
             if (!ReferenceEquals(this.arrivingAt, level))
                 return true;
 
@@ -379,8 +406,10 @@ public partial class Entity
         failure = null;
         using (TransferLockOf(level).Enter())
         {
-            // Taken or killed on the way: picked up, say, through a lookup that found it before it left.
+            // Taken or killed on the way: picked up, say, through a lookup that found it before it left, or a player
+            // that left the server.
             var removed = this.removedOnArrival
+                || this.leftServer
                 || this is ItemEntity { Removed: true }
                 || this is Mob { IsRemoved: true };
             this.removedOnArrival = false;
