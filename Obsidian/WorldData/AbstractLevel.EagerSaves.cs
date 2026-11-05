@@ -18,8 +18,11 @@ public abstract partial class AbstractLevel
     // chunk as it changes, which Obsidian's many ways of changing a chunk don't announce.
     private const int EagerScanPerTick = 256;
 
-    // The share of the tick's 50 ms the level's own work may have taken for it to still save eagerly.
-    private static readonly TimeSpan EagerSaveTickBudget = TimeSpan.FromMilliseconds(40);
+    /// <summary>
+    /// The share of the tick's 50 ms the level's own work may have taken for it to still save eagerly. Tests lift it,
+    /// so that a slow first tick (one still compiling, say) doesn't skip the save they check.
+    /// </summary>
+    internal TimeSpan EagerSaveTickBudget { get; set; } = TimeSpan.FromMilliseconds(40);
 
     private int eagerScanCursor;
     private int eagerWrites;
@@ -32,7 +35,7 @@ public abstract partial class AbstractLevel
     /// <param name="tickStart">When the level's tick started (a <see cref="Stopwatch"/> timestamp).</param>
     private async Task SaveChunksEagerlyAsync(long tickStart)
     {
-        if (Stopwatch.GetElapsedTime(tickStart) >= EagerSaveTickBudget)
+        if (Stopwatch.GetElapsedTime(tickStart) >= this.EagerSaveTickBudget)
             return;
 
         var capacity = MaxEagerWrites - Volatile.Read(ref this.eagerWrites);

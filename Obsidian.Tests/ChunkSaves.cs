@@ -342,6 +342,9 @@ public sealed class ChunkSaves
     {
         await using var context = TestServerFactory.CreateServer($"chunk-saves-eager-{Guid.NewGuid():N}");
         var world = context.World;
+
+        // However long the tick takes on a slow machine, it saves.
+        world.EagerSaveTickBudget = TimeSpan.MaxValue;
         var chunk = Complete(0, 0);
         var region = (Region)world.LoadRegionByChunk(0, 0);
         region.SetChunk(chunk);
