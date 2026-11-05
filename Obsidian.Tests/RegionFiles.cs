@@ -1057,6 +1057,45 @@ public sealed class RegionFiles : IDisposable
     }
 
     [Fact]
+    public async Task AFailingUnloadCallbackKeepsTheWritesFailureReported()
+    {
+        var regionFolder = Path.Join(this.folder, "world");
+        var callbackFailure = new InvalidOperationException("The handler failed.");
+        var writeFailure = new IOException("The disk is full.");
+        await using var region = new Region(0, 0, regionFolder)
+        {
+            BlockEntityUnloaded = _ => throw callbackFailure
+        };
+        await region.InitAsync();
+
+        var chunk = Complete(0, 0);
+        var crate = new Vector(4, 70, 4);
+        chunk.SetBlockEntity(crate.X, crate.Y, crate.Z,
+            new ContainerBlockEntity(new Container(9)) { Id = "probe:crate", BlockPosition = crate });
+        region.SetChunk(chunk);
+
+        // The block entity's handler throws while the chunk's write fails too.
+        region.ChunkFile.Observe = step => step.Step == RegionFile.Step.PayloadWritten
+            ? ValueTask.FromException(writeFailure)
+            : ValueTask.CompletedTask;
+
+        try
+        {
+            var thrown = await Assert.ThrowsAsync<AggregateException>(
+                () => region.UnloadChunk(0, 0).WaitAsync(TimeSpan.FromSeconds(30)));
+
+            // Both failures are reported, the handler's first.
+            var failures = thrown.Flatten().InnerExceptions;
+            Assert.Same(callbackFailure, failures[0]);
+            Assert.Contains(writeFailure, failures);
+        }
+        finally
+        {
+            region.ChunkFile.Observe = null;
+        }
+    }
+
+    [Fact]
     public async Task ClosingARegionClosesBothFilesWhenOneFails()
     {
         var regionFolder = Path.Join(this.folder, "world");

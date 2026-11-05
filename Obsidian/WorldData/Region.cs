@@ -843,9 +843,12 @@ public partial class Region : IRegion
             foreach (var save in retired)
                 await this.ReleaseRetiredAsync(save);
         }
-        catch
+        catch (Exception callbackFailure)
         {
-            await unloaded.Written;
+            // The callback's failure comes first, but the write's and the snapshots' are reported with it, as
+            // WriteUnloadedAsync would have, since the caller won't reach it.
+            var written = await unloaded.Written;
+            ThrowFailures([callbackFailure, .. unloaded.Failures, .. written]);
             throw;
         }
 
