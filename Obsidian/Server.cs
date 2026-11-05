@@ -620,7 +620,12 @@ public sealed partial class Server : IServer, IPluginScopedServer
             if (this.shutdownTask is null)
             {
                 using (ExecutionContext.SuppressFlow())
-                    this.shutdownTask = Task.Run(this.StopCoreAsync);
+                {
+                    // Asked for from a change to the plugins (a plugin's load or ready callback), whose flow the
+                    // shutdown doesn't share, so it has to be told: disposing the plugins would wait for that change.
+                    var fromPluginChange = Plugins.PluginManager.InsideChange;
+                    this.shutdownTask = Task.Run(() => this.StopCoreAsync(fromPluginChange));
+                }
             }
 
             shutdown = this.shutdownTask;
@@ -629,7 +634,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
         return WorldData.AbstractLevel.MustNotWaitForGates ? Task.CompletedTask : shutdown;
     }
 
-    private async Task StopCoreAsync()
+    private async Task StopCoreAsync(bool fromPluginChange)
     {
         // No save asked for from a tick starts from now on: the final save covers it.
         this.serverDeferredWork.Close();
@@ -674,7 +679,11 @@ public sealed partial class Server : IServer, IPluginScopedServer
                     await RunStopStepAsync(failures, () => WorldManager.FlushLoadedWorldsAsync());
 
                 await RunStopStepAsync(failures, () => WorldManager.DisposeAsync().AsTask());
-                await RunStopStepAsync(failures, () => this.PluginManager.DisposeAsync().AsTask());
+                // Asked for from a plugin change, which holds the plugins until this stop ends, they're left loaded,
+                // as a plugin changing plugins from its callback is refused; the stop goes on and reports it.
+                await RunStopStepAsync(failures, () => fromPluginChange
+                    ? Task.FromException(new InvalidOperationException(Plugins.PluginManager.ReentrantChangeMessage))
+                    : this.PluginManager.DisposeAsync().AsTask());
                 await RunStopStepAsync(failures, () => this.userCache.SaveAsync());
 
                 // The first failure is the stop's, and any after it are logged.
@@ -750,15 +759,17 @@ public sealed partial class Server : IServer, IPluginScopedServer
     /// <returns>
     /// Whether the save succeeded. Asked for from inside a level's tick, or a player's tick, grant or save, it can't
     /// wait for the ticks (an autosave under way may be waiting for that tick), so it saves in the background once
-    /// they're over and returns <c>true</c> at once; <see cref="SaveCompleted"/> reports how it went. None starts once
-    /// the server is stopping, whose final save covers it.
+    /// they're over and returns <c>true</c> at once; <see cref="SaveCompleted"/> reports how it went. Once the server
+    /// is stopping, none starts (the final save covers it), and it returns <c>false</c> without reporting a save. A
+    /// save a tick started in the background that failed fails it too.
     /// </returns>
     public Task<bool> SaveEverythingAsync(bool autosave)
     {
         if (!WorldData.AbstractLevel.MustNotWaitForGates)
             return this.SaveEverythingNowAsync(autosave);
 
-        this.serverDeferredWork.TryStart(() => this.SaveEverythingNowAsync(autosave));
+        // Asked for again while one runs, it runs once more after it, however many times it was asked for.
+        this.serverDeferredWork.TryStart(() => this.SaveEverythingNowAsync(autosave), target: (this, autosave));
         return Task.FromResult(true);
     }
 
@@ -790,11 +801,26 @@ public sealed partial class Server : IServer, IPluginScopedServer
             close ? world.DeferredWork.CloseAndDrainAsync() : world.DeferredWork.WhenIdleAsync()));
     }
 
+    // Throws the failures of the saves the worlds' ticks started in the background since the last save of everything.
+    private void ThrowDeferredFailures()
+    {
+        var failures = this.WorldManager.GetAvailableWorlds()
+            .OfType<WorldData.World>()
+            .SelectMany(world => world.DeferredWork.TakeFailures())
+            .ToList();
+        if (failures.Count > 0)
+            throw new AggregateException("A save a tick started in the background failed.", failures);
+    }
+
     private async Task<bool> SaveEverythingNowAsync(bool autosave)
     {
         await this.saveLock.WaitAsync();
         try
         {
+            // Asked for before the stop, but it got the lock after the final save: the worlds are disposed now.
+            if (this.Stopping)
+                return false;
+
             Log.SavingWorlds(this.logger);
             this.SaveStarted?.Invoke(autosave);
 
@@ -809,6 +835,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
                 // Saves the ticks started in the background are part of everything too, so the save is reported
                 // once they're written.
                 await this.WorldDeferredWorkAsync(close: false);
+                this.ThrowDeferredFailures();
             }
             catch (Exception ex)
             {

@@ -148,15 +148,28 @@ public partial class PlayerBase
                 this, trigger, conditions, item, entity, block, position, recipe, from, to, levels));
 
         // Gameplay firing a trigger for this player from another's tick (a hit landing in it, say) can't wait for this
-        // player's gate, so the trigger fires in the background once the ticks let go of it. Their leave waits for it
+        // player's gate. The event is matched now, as it is (the killer's position and dimension, say), and what it
+        // matched is granted in the background once the ticks let go of the gate. Their leave waits for the grants
         // before their grants stop; one fired once the leave began is dropped, like a trigger fired after it.
         if (this.HoldsAnotherPlayersGate)
         {
-            this.DeferredWork.TryStart(() => Fire().AsTask());
+            var matched = this.ProgressAdvancements.Match(
+                $"minecraft:{trigger}",
+                conditions => ProgressConditions.Match(
+                    this, trigger, conditions, item, entity, block, position, recipe, from, to, levels));
+            if (matched.Count > 0)
+                this.DeferredWork.TryStart(() => this.GrantMatchedAsync(matched));
+
             return ValueTask.CompletedTask;
         }
 
         return DeferredInventoryWork.RunOrDeferAsync(Fire);
+    }
+
+    private async Task GrantMatchedAsync(List<(string Advancement, string Criterion)> matched)
+    {
+        foreach (var (advancement, criterion) in matched)
+            await this.ProgressAdvancements.GrantAsync(advancement, criterion);
     }
 
     /// <summary>Record only accepted movement. Vanilla's distance stats round blocks to centimetres.</summary>

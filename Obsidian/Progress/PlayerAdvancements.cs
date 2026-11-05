@@ -123,23 +123,48 @@ internal sealed class PlayerAdvancements(IPlayer player) : IAdvancements
 
             foreach (var criterion in advancement.Criteria)
             {
-                if (criterion.Trigger != trigger || this.HasCriterion(advancement.Identifier, criterion.Identifier))
-                    continue;
-
-                bool match;
-                try
-                {
-                    match = matches(criterion.Conditions);
-                }
-                catch (Exception ex) when (ex is JsonException or ArgumentException or InvalidOperationException
-                    or NotSupportedException or KeyNotFoundException or InvalidDataException)
-                {
-                    match = false;
-                }
-
-                if (match)
+                if (this.Matches(trigger, advancement, criterion, matches))
                     await this.GrantAsync(advancement.Identifier, criterion.Identifier);
             }
+        }
+    }
+
+    /// <summary>
+    /// The criteria not granted yet that the trigger's event matches, tested now: for a trigger whose grants run later
+    /// (see <c>PlayerBase.FireProgressAsync</c>), so they're decided by the event as it was, as vanilla's are.
+    /// </summary>
+    public List<(string Advancement, string Criterion)> Match(string trigger, Func<JsonElement, bool> matches)
+    {
+        List<(string Advancement, string Criterion)> matched = [];
+        foreach (var advancement in AdvancementsRegistry.ForTrigger(trigger))
+        {
+            if (this.IsDone(advancement.Identifier))
+                continue;
+
+            foreach (var criterion in advancement.Criteria)
+            {
+                if (this.Matches(trigger, advancement, criterion, matches))
+                    matched.Add((advancement.Identifier, criterion.Identifier));
+            }
+        }
+
+        return matched;
+    }
+
+    private bool Matches(string trigger, Advancement advancement, Criteria criterion,
+        Func<JsonElement, bool> matches)
+    {
+        if (criterion.Trigger != trigger || this.HasCriterion(advancement.Identifier, criterion.Identifier))
+            return false;
+
+        try
+        {
+            return matches(criterion.Conditions);
+        }
+        catch (Exception ex) when (ex is JsonException or ArgumentException or InvalidOperationException
+            or NotSupportedException or KeyNotFoundException or InvalidDataException)
+        {
+            return false;
         }
     }
 

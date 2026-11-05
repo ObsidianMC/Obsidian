@@ -212,7 +212,7 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     /// It waits for the levels' simulation gates, so called from inside a level's tick, or a player's tick, grant or
     /// save, it saves in the background once the ticks let go of them, and returns at once; a failure is then logged.
     /// </remarks>
-    public Task FlushAsync() => RunOutsideTicksAsync(this.FlushWorldAsync, this.DeferredWork);
+    public Task FlushAsync() => this.RunOutsideTicksAsync(this.FlushWorldAsync, "flush everything");
 
     private async Task FlushWorldAsync()
     {
@@ -380,6 +380,9 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
 
     public override async ValueTask DisposeAsync()
     {
+        // It waits for the ticks' saves and for its levels' gates, so never from a tick (see MustNotWaitForGates).
+        ThrowIfMustNotWaitForGates(nameof(DisposeAsync));
+
         // Saves asked for from the ticks of the world, its dimensions and its players run first, and none after.
         await this.DeferredWork.CloseAndDrainAsync();
 

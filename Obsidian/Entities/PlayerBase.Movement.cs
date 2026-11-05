@@ -114,6 +114,16 @@ public partial class PlayerBase
     /// </summary>
     internal void SynchronizeMovementAbilities()
     {
+        // Two levels' ticks can both sync a player who changed level between them, so what was sent is read and
+        // written under a lock, like the attachments' (see Player.SynchronizeAttachments).
+        lock (this.movementAbilitiesSyncGate)
+            this.SynchronizeMovementAbilitiesUnderLock();
+    }
+
+    private readonly System.Threading.Lock movementAbilitiesSyncGate = new();
+
+    private void SynchronizeMovementAbilitiesUnderLock()
+    {
         // A client back in configuration (a reload, say) is sent them again once it plays.
         if (this.Connection is not { State: ClientState.Play } client)
         {

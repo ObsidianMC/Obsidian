@@ -81,14 +81,14 @@ public partial class PlayerBase
         if (this.IsInOwnTick || !WorldData.AbstractLevel.MustNotWaitForGates)
             return this.RunSaveAsync();
 
-        if (this.Level is not WorldData.AbstractLevel level)
-            return this.RunSaveAsync();
-
         // Accepted by the player, whose leave waits for it, and the world, whose shutdown and disposal do, or by
-        // neither.
+        // neither. A level of another kind (a plugin's) has no tracker, so the player's leave alone waits for it.
+        // Asked for again while it still runs, it runs once more after it.
+        var level = this.Level as WorldData.AbstractLevel;
         this.DeferredWork.TryStart(
-            () => level.Disposed ? Task.CompletedTask : this.RunSaveAsync(),
-            alsoTrackedBy: level.DeferredWork);
+            () => level is { Disposed: true } ? Task.CompletedTask : this.RunSaveAsync(),
+            alsoTrackedBy: level?.DeferredWork,
+            target: this);
         return Task.CompletedTask;
     }
 

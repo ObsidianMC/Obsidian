@@ -296,9 +296,10 @@ public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
     /// Saves the level's state: for a world, its level data and maps; for a dimension, its regions and its state.
     /// </summary>
     /// <remarks>
-    /// It waits for the levels to be between ticks. Called from inside a level's tick, or a player's tick, grant or
-    /// save (a plugin's event handler run by one, say), it can't wait for that, so it saves in the background once the
-    /// ticks are over and returns at once; a failure is then logged.
+    /// A dimension's save waits for it to be between ticks, to save its regions; a world's writes its level data while
+    /// the levels tick, after any save of the world under way, which may itself be waiting for them. Called from inside
+    /// a level's tick, or a player's tick, grant or save (a plugin's event handler run by one, say), it can't wait for
+    /// either, so it saves in the background once the ticks are over and returns at once; a failure is then logged.
     /// </remarks>
     public Task SaveAsync();
 

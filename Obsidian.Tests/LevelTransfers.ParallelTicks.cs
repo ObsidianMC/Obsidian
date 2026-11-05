@@ -188,15 +188,21 @@ public sealed partial class LevelTransfers
         // at the same moment.
         var traffic = new Traffic();
         var contest = new Contest();
-        for (var round = 0; round < MaxRounds && !(traffic.Enough && contest.Enough); round++)
+        try
         {
-            QueueTraffic(overworld, netherSide, round % 2, traffic, contest);
-            QueueTraffic(netherSide, overworld, round % 2, traffic, contest);
-            await context.World.DoWorldTickAsync().WaitAsync(TimeSpan.FromSeconds(20));
+            for (var round = 0; round < MaxRounds && !(traffic.Enough && contest.Enough); round++)
+            {
+                QueueTraffic(overworld, netherSide, round % 2, traffic, contest);
+                QueueTraffic(netherSide, overworld, round % 2, traffic, contest);
+                await context.World.DoWorldTickAsync().WaitAsync(TimeSpan.FromSeconds(20));
+            }
         }
-
-        await stopSaving.CancelAsync();
-        await saves.WaitAsync(TimeSpan.FromSeconds(20));
+        finally
+        {
+            // Stopped however the ticks ended, so it never keeps saving a disposed world.
+            await stopSaving.CancelAsync();
+            await saves.WaitAsync(TimeSpan.FromSeconds(20));
+        }
 
         Assert.Equal(0, traffic.Failed);
         Assert.True(traffic.Overlapping >= OverlappingHandoffs, $"Only {traffic.Overlapping} overlapping handoffs.");
