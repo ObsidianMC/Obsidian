@@ -199,6 +199,12 @@ public partial class PlayerBase
         }
     }
 
+    /// <summary>
+    /// Ticks the player once, as their level's tick does, once their tick, grant or save under way ends.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// Called from another player's tick, grant or save: the two players' ticks could each be waiting for the other.
+    /// </exception>
     public override ValueTask TickAsync() => this.RunTickAsync(this.TickPlayerAsync);
 
     // Like vanilla's LivingEntity.baseTick: a player loses air with their eyes in water, unless they can breathe there

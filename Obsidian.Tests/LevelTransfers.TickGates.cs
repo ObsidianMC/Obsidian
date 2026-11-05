@@ -1,4 +1,5 @@
 using Obsidian.API;
+using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Tests.Fakes;
 using Obsidian.Utilities;
@@ -47,6 +48,13 @@ public sealed partial class LevelTransfers
         Assert.IsType<InvalidOperationException>(grants.SecondRefusal);
         Assert.Null(grants.FirstOwnGrant);
         Assert.Null(grants.SecondOwnGrant);
+
+        // Then each ticks the other through the public tick: refused too.
+        var ticks = new CrossedCalls(world, first, nether, second, (_, other) => other.TickAsync().AsTask());
+        await world.DoWorldTickAsync().WaitAsync(TickWait);
+
+        Assert.IsType<InvalidOperationException>(ticks.FirstRefusal);
+        Assert.IsType<InvalidOperationException>(ticks.SecondRefusal);
 
         // Then each removes the other: the leaves wait for each other's gate, so they finish after the ticks instead.
         var removals = new CrossedCalls(
@@ -185,9 +193,10 @@ public sealed partial class LevelTransfers
         // Disposing the world waits for that save, which writes before the world lets go of its files.
         var disposal = world.DisposeAsync().AsTask();
         await Task.Delay(StaysBlocked);
-        Assert.False(disposal.IsCompleted, "The world was disposed while a save it accepted was waiting.");
+        var disposedEarly = disposal.IsCompleted;
 
         release.TrySetResult();
+        Assert.False(disposedEarly, "The world was disposed while a save it accepted was waiting.");
         await held.WaitAsync(TickWait);
         await disposal.WaitAsync(TickWait);
         Assert.True(File.Exists(dataPath));
@@ -200,6 +209,79 @@ public sealed partial class LevelTransfers
     }
 
     private static Task GrantRootAsync(PlayerBase player) => player.Advancements.GrantAsync(RootAdvancement).AsTask();
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task AddingAPlayerAgainFromTheTickThatRemovedThemIsRefusedWhileTheirLeaveWaitsForIt()
+    {
+        await using var context = TestServerFactory.CreateServer($"rejoin-from-tick-{Guid.NewGuid():N}");
+        var world = context.World;
+        WorldBlockEntities.AddEmptyChunk(world);
+        var bot = await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "Bot", world);
+
+        // A plugin saves the level as players leave, which waits for the level's tick to end.
+        context.EventDispatcher.RegisterEvent(
+            null,
+            (Func<PlayerLeaveEventArgs, ValueTask>)(async _ => await world.FlushRegionsAsync()),
+            Priority.Critical);
+
+        // In the level's tick, another plugin removes the bot and adds it again: adding it would wait for the leave,
+        // which waits for that tick, so it's refused.
+        Exception? rejoin = null;
+        world.EnqueueEntityAction(async () =>
+        {
+            Assert.True(await context.Server.RemoveServerPlayerAsync(bot));
+            var adding = () => context.Server.AddServerPlayerAsync(Guid.NewGuid(), "Bot", world);
+            rejoin = await Record.ExceptionAsync(adding);
+        });
+        await world.DoWorldTickAsync().WaitAsync(TickWait);
+
+        Assert.IsType<InvalidOperationException>(rejoin);
+
+        // Once the ticks are over, the leave finishes, and adding the bot again waits for it.
+        var again = await context.Server.AddServerPlayerAsync(Guid.NewGuid(), "Bot", world).WaitAsync(TickWait);
+        Assert.True(context.Server.IsPlayerOnline(again.Uuid));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ALeaveWaitsForTheSavesTicksAskedOfThePlayerAndRunsNoneAfter()
+    {
+        await using var context = TestServerFactory.CreateServer($"leave-deferred-{Guid.NewGuid():N}");
+        var world = context.World;
+        var leaving = (await PrepareAsync(context, "Leaving")).Player;
+        var other = (await PrepareAsync(context, "Other")).Player;
+        await leaving.LoadAsync();
+        var dataPath = world.GetPlayerDataPath(leaving.Uuid);
+
+        // The leaving player is mid-tick (held by the test) when another player's tick saves them: the save waits in
+        // the background.
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var holding = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var held = Task.Run(() => leaving.GrantAdvancementAsync(async () =>
+        {
+            holding.TrySetResult();
+            await release.Task;
+            return false;
+        }).AsTask());
+        await holding.Task.WaitAsync(TickWait);
+        await SaveFromAnotherPlayersTickAsync(leaving, other);
+
+        // The leave's first step waits for that save, so the leave's own save comes after it.
+        var finishing = leaving.FinishDeferredWorkAsync();
+        await Task.Delay(StaysBlocked);
+        var finishedEarly = finishing.IsCompleted;
+
+        release.TrySetResult();
+        Assert.False(finishedEarly, "The leave went on while a save it accepted was waiting.");
+        await held.WaitAsync(TickWait);
+        await finishing.WaitAsync(TickWait);
+        Assert.True(File.Exists(dataPath));
+
+        // From then on a save asked for from a tick writes nothing, so it never overwrites a join again's data.
+        File.Delete(dataPath);
+        await SaveFromAnotherPlayersTickAsync(leaving, other);
+        await Task.Delay(StaysBlocked);
+        Assert.False(File.Exists(dataPath));
+    }
 
     // Saves the player from inside the other player's grant, as a plugin's handler of an event in their tick might.
     private static Task SaveFromAnotherPlayersTickAsync(PlayerBase player, PlayerBase other) =>

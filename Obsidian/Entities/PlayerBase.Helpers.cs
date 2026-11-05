@@ -84,30 +84,30 @@ public partial class PlayerBase
         if (this.Level is not WorldData.AbstractLevel level)
             return this.RunSaveAsync();
 
-        var deferred = level.DeferredWork.TryStart(() => level.Disposed ? Task.CompletedTask : this.RunSaveAsync());
-        if (deferred is not null)
-        {
-            lock (this.deferredSavesLock)
-                this.deferredSaves = Task.WhenAll(this.deferredSaves, deferred);
-        }
-
+        // Accepted by the player, whose leave waits for it, and the world, whose shutdown and disposal do, or by
+        // neither.
+        this.DeferredWork.TryStart(
+            () => level.Disposed ? Task.CompletedTask : this.RunSaveAsync(),
+            alsoTrackedBy: level.DeferredWork);
         return Task.CompletedTask;
     }
 
-    // The player's saves running in the background (see SaveAsync), which their leave waits for. Guarded by
-    // deferredSavesLock.
-    private Task deferredSaves = Task.CompletedTask;
-    private readonly Lock deferredSavesLock = new();
+    /// <summary>
+    /// What other flows asked of the player that waits for their tick gate and so runs in the background: saves (see
+    /// <see cref="SaveAsync"/>) and advancement triggers (see <see cref="FireProgressAsync"/>). Their leave closes it
+    /// and waits for it (see <see cref="FinishDeferredWorkAsync"/>).
+    /// </summary>
+    internal WorldData.DeferredWork DeferredWork =>
+        LazyInitializer.EnsureInitialized(ref this.deferredWork, () => new WorldData.DeferredWork(this.Logger));
+
+    private WorldData.DeferredWork? deferredWork;
 
     /// <summary>
-    /// Waits for the player's saves asked for from inside a tick and still running in the background, so that a leave
-    /// saves after them and a join again reads what they wrote. Their failures were logged already.
+    /// Runs no more of the work other flows ask of the player in the background, and waits for what they asked before:
+    /// a leave's first step, so its triggers are granted before the player's grants stop, and its saves are written
+    /// before the leave's own, which a join again then reads. Their failures were logged already.
     /// </summary>
-    internal Task WaitForDeferredSavesAsync()
-    {
-        lock (this.deferredSavesLock)
-            return this.deferredSaves.ContinueWith(static _ => { }, TaskScheduler.Default);
-    }
+    internal Task FinishDeferredWorkAsync() => this.DeferredWork.CloseAndDrainAsync();
 
     private Task RunSaveAsync() => this.RunTickAsync(this.SavePlayerAsync, allowStopped: true).AsTask();
 

@@ -31,9 +31,31 @@ public partial class PlayerBase
     /// </summary>
     internal async Task StopTickingAsync()
     {
+        this.ThrowIfInAnotherPlayersTick("Stopping the ticks");
         await this.tickGate.WaitAsync();
         this.stoppedTicking = true;
         this.tickGate.Release();
+    }
+
+    /// <summary>
+    /// Whether the current flow holds another player's tick gate (in their tick, a grant or a save).
+    /// </summary>
+    internal bool HoldsAnotherPlayersGate => TickingPlayer is PlayerBase other && !ReferenceEquals(other, this);
+
+    /// <summary>
+    /// Throws when the current flow holds another player's tick gate: waiting for this player's could wait for a flow
+    /// that holds it and waits for the other's, as players in different levels tick at the same time. Every way of
+    /// taking a player's tick gate checks it, so no flow ever holds two players' gates.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The current flow holds another player's tick gate.</exception>
+    private void ThrowIfInAnotherPlayersTick(string operation)
+    {
+        if (TickingPlayer is PlayerBase other && !ReferenceEquals(other, this))
+        {
+            throw new InvalidOperationException(
+                $"{operation} for {this.Username} can't be done from {other.Username}'s tick, grant or save, " +
+                "as it would wait for a tick that may be waiting for it.");
+        }
     }
 
     async ValueTask IPlayer.TickAfterLevelsAsync() => await this.RunTickAsync(this.TickAfterLevelsAsync);
@@ -59,6 +81,7 @@ public partial class PlayerBase
             return;
         }
 
+        this.ThrowIfInAnotherPlayersTick("Ticking");
         await this.tickGate.WaitAsync();
         var previous = tickingPlayer.Value;
         tickingPlayer.Value = this;

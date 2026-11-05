@@ -1035,7 +1035,11 @@ public abstract partial class AbstractLevel : ILevel
     internal DeferredWork DeferredWork =>
         this is Dimension { ParentWorld: World world } ? world.DeferredWork : this.OwnDeferredWork;
 
-    private DeferredWork OwnDeferredWork => field ??= new DeferredWork(this.Logger);
+    // Published once, as parallel levels may ask for it at the same time and shutdown drains only the one kept.
+    private DeferredWork OwnDeferredWork =>
+        LazyInitializer.EnsureInitialized(ref this.ownDeferredWork, () => new DeferredWork(this.Logger));
+
+    private DeferredWork? ownDeferredWork;
 
     /// <summary>Whether the level was disposed: its saves then write nothing.</summary>
     internal bool Disposed => Volatile.Read(ref this.disposed) != 0;

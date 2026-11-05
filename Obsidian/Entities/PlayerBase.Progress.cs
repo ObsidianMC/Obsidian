@@ -136,21 +136,6 @@ public partial class PlayerBase
         return this.ProgressAdvancements.FireAsync(trigger, matches);
     }
 
-    /// <summary>
-    /// Throws when the current flow holds another player's tick gate (in their tick, a grant or a save): waiting for
-    /// this player's could wait for a flow that holds it and waits for the other's, as players in different levels
-    /// tick at the same time.
-    /// </summary>
-    private void ThrowIfInAnotherPlayersTick(string operation)
-    {
-        if (TickingPlayer is PlayerBase other && !ReferenceEquals(other, this))
-        {
-            throw new InvalidOperationException(
-                $"{operation} for {this.Username} can't be done from {other.Username}'s tick, grant or save, " +
-                "as it would wait for a tick that may be waiting for it.");
-        }
-    }
-
     ValueTask IPlayer.FlushAdvancementsAsync() => this.ProgressAdvancements.FlushAsync();
 
     internal ValueTask FireProgressAsync(string trigger, ItemStack? item = null, IEntity? entity = null,
@@ -163,11 +148,11 @@ public partial class PlayerBase
                 this, trigger, conditions, item, entity, block, position, recipe, from, to, levels));
 
         // Gameplay firing a trigger for this player from another's tick (a hit landing in it, say) can't wait for this
-        // player's gate, so the trigger fires in the background once the ticks let go of it.
-        var inAnothersTick = TickingPlayer is PlayerBase other && !ReferenceEquals(other, this);
-        if (inAnothersTick && this.Level is WorldData.AbstractLevel level)
+        // player's gate, so the trigger fires in the background once the ticks let go of it. Their leave waits for it
+        // before their grants stop; one fired once the leave began is dropped, like a trigger fired after it.
+        if (this.HoldsAnotherPlayersGate)
         {
-            level.DeferredWork.TryStart(() => Fire().AsTask());
+            this.DeferredWork.TryStart(() => Fire().AsTask());
             return ValueTask.CompletedTask;
         }
 

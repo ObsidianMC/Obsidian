@@ -1054,9 +1054,9 @@ public sealed partial class Client : IClient
                 // The player's ticks stop first, so the leave saves them as the last tick left them. A tick under way
                 // may have moved them to another level (through a portal) after they were removed, so they're removed
                 // from where they are now too, under that level's transfer lock, so that a level change still under way
-                // (a plugin's teleport, say) doesn't publish them in their new level afterwards. Saves a tick asked for
-                // in the background come first, so the leave's save is the last.
-                await player.WaitForDeferredSavesAsync();
+                // (a plugin's teleport, say) doesn't publish them in their new level afterwards. What ticks asked of
+                // the player in the background (saves, advancement triggers) comes first, and no more after.
+                await player.FinishDeferredWorkAsync();
                 await player.StopTickingAsync();
                 Entity.LeaveServer(player);
 

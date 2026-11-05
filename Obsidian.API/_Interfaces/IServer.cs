@@ -141,6 +141,10 @@ public interface IServer : IDisposable
     /// <param name="uuid">The player's UUID.</param>
     /// <param name="username">The player's username.</param>
     /// <param name="world">The world to spawn the player in. Uses <see cref="DefaultWorld"/> when null.</param>
+    /// <exception cref="InvalidOperationException">
+    /// A player with the name is still leaving and it's called from inside a level's tick, or a player's tick, grant or
+    /// save, which the leave may be waiting for. Add them once the ticks are over.
+    /// </exception>
     public Task<IPlayer> AddServerPlayerAsync(Guid uuid, string username, IWorld? world = null);
 
     /// <summary>

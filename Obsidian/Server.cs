@@ -833,14 +833,17 @@ public sealed partial class Server : IServer, IPluginScopedServer
     {
         plugin?.ThrowIfClosing();
 
-        // A player with the name may still be leaving: one removed from its own tick leaves once the tick ends (see
-        // RemoveServerPlayerAsync). The join waits for that, like a network player's, unless it's that tick asking,
-        // which would wait for itself.
+        // A player with the name may still be leaving: one removed from a tick leaves once the ticks end (see
+        // RemoveServerPlayerAsync). The join waits for that, like a network player's, unless a tick is asking: the
+        // leave may wait for that tick (it's the player's own, or a leave handler saves its level).
         var leaving = this.WaitForLeavesAsync(username);
         if (!leaving.IsCompleted)
         {
-            if (string.Equals(PlayerBase.TickingPlayer?.Username, username, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException($"Player '{username}' is still leaving; add them once their tick ends.");
+            if (WorldData.AbstractLevel.MustNotWaitForGates)
+            {
+                throw new InvalidOperationException(
+                    $"Player '{username}' is still leaving; add them once the ticks end.");
+            }
 
             await leaving;
         }
@@ -987,7 +990,9 @@ public sealed partial class Server : IServer, IPluginScopedServer
         try
         {
             // Its ticks stop first, so that nothing it does runs after it left, and then it leaves for good, so that no
-            // travel or respawn still under way puts it in a level again.
+            // travel or respawn still under way puts it in a level again. What ticks asked of it in the background
+            // (advancement triggers) comes before that, and no more after.
+            await player.FinishDeferredWorkAsync();
             await player.StopTickingAsync();
             Entity.LeaveServer(player);
 

@@ -18,26 +18,54 @@ internal sealed partial class DeferredWork(ILogger logger)
     /// Starts <paramref name="work"/> in the background, apart from the caller's flow, so that it doesn't count as
     /// inside the caller's tick. Its failure is logged.
     /// </summary>
-    /// <returns>The work, or <c>null</c> once closed: the final save that closing leads to covers it.</returns>
-    public Task? TryStart(Func<Task> work)
+    /// <param name="work">What to run.</param>
+    /// <param name="alsoTrackedBy">
+    /// Another tracker that must accept it too, atomically with this one: a player's saves are their world's too. This
+    /// one's lock comes first, so a player's tracker is always the one this is called on.
+    /// </param>
+    /// <returns>The work, or <c>null</c> once either closed: the final save that closing leads to covers it.</returns>
+    public Task? TryStart(Func<Task> work, DeferredWork? alsoTrackedBy = null)
     {
         lock (this.gate)
         {
             if (this.closed)
                 return null;
 
-            Task task;
-            using (ExecutionContext.SuppressFlow())
-                task = Task.Run(work);
+            if (alsoTrackedBy is null)
+                return this.StartUnderLock(work);
 
-            this.running.Add(task);
-            _ = task.ContinueWith(
-                this.Finish,
-                CancellationToken.None,
-                TaskContinuationOptions.None,
-                TaskScheduler.Default);
-            return task;
+            lock (alsoTrackedBy.gate)
+            {
+                if (alsoTrackedBy.closed)
+                    return null;
+
+                var task = this.StartUnderLock(work);
+                alsoTrackedBy.TrackUnderLock(task);
+                return task;
+            }
         }
+    }
+
+    // Called under gate.
+    private Task StartUnderLock(Func<Task> work)
+    {
+        Task task;
+        using (ExecutionContext.SuppressFlow())
+            task = Task.Run(work);
+
+        this.TrackUnderLock(task);
+        return task;
+    }
+
+    // Called under gate.
+    private void TrackUnderLock(Task task)
+    {
+        this.running.Add(task);
+        _ = task.ContinueWith(
+            this.Finish,
+            CancellationToken.None,
+            TaskContinuationOptions.None,
+            TaskScheduler.Default);
     }
 
     /// <summary>Stops accepting work: what is asked for from now on isn't run.</summary>
