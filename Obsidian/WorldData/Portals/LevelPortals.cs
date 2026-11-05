@@ -167,7 +167,7 @@ internal sealed class LevelPortals(AbstractLevel level)
     /// Finds the nearest portal block of <paramref name="type"/> around <paramref name="target"/>, skipping portal
     /// blocks of other types sharing its block, or builds a new exit when there is none.
     /// </summary>
-    public async Task<PortalFrame?> FindOrCreateExitAsync(
+    public async Task<PortalExit?> FindOrCreateExitAsync(
         Vector target, string axis, Func<bool> canContinue, PortalType type, PortalProperties properties)
     {
         var radius = properties.SearchRadius?.Invoke(level) ?? 128;
@@ -209,15 +209,21 @@ internal sealed class LevelPortals(AbstractLevel level)
             {
                 var existingAxis = area.Read(found).GetProperty("axis") ?? "x";
                 var frame = await PortalFrame.FindAsync(area.ReadAsync, found, existingAxis, level.MinY, properties);
-                if (frame is { IsComplete: true })
-                    return frame;
-                // Command-placed portal blocks still work, even without a frame.
-                return await RectangleAsync(area.ReadAsync, found, existingAxis, properties);
+                if (frame is not { IsComplete: true })
+                {
+                    // Command-placed portal blocks still work, even without a frame.
+                    frame = await RectangleAsync(area.ReadAsync, found, existingAxis, properties);
+                }
+
+                return new PortalExit(frame.Value, found);
             }
             using var creationArea = await PortalArea.LoadAsync(level, target, 16 + PortalFrame.MaxSize, canContinue);
-            return creationArea is null
-                ? null
-                : await this.CreateExitAsync(creationArea, target, axis, type, properties);
+            if (creationArea is null)
+                return null;
+
+            return await this.CreateExitAsync(creationArea, target, axis, type, properties) is PortalFrame created
+                ? new PortalExit(created, null)
+                : null;
         }
         finally
         {

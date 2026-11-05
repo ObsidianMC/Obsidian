@@ -26,6 +26,9 @@ public abstract partial class AbstractLevel : ILevel
 {
     private bool generated;
 
+    // While GenerateAsync pregenerates, which takes the queued chunks itself (see StartGenerationForWaiter).
+    private bool pregenerating;
+
     public LevelData LevelData { get; internal set; } = default!;
 
     public ConcurrentDictionary<Guid, IPlayer> Players { get; protected set; } = [];
@@ -983,6 +986,8 @@ public abstract partial class AbstractLevel : ILevel
         if (++this.timeSyncTicks % 20 == 0)
             this.BroadcastTime();
 
+        this.AgePortalTickets();
+
         // Like vanilla, block ticks and then fluid ticks run before entities tick.
         TickStage = "block and fluid ticks";
         this.Fluids.Tick();
@@ -1486,6 +1491,32 @@ public abstract partial class AbstractLevel : ILevel
             // Started apart, so a job that finishes at once doesn't start the next one inside it, or run on the tick.
             _ = this.RunGenerationJob(() => this.GenerateQueuedChunkAsync(job, startNext: true));
         }
+    }
+
+    /// <summary>
+    /// Starts the queued chunks on free generation slots now, for code waiting for chunks it asked for (travel loading
+    /// its destination, see <see cref="Portals.PortalArea"/>), rather than at the next <see cref="ManageChunksAsync"/>.
+    /// Call it while waiting; it doesn't wait itself.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A wait inside one of the level's ticks holds its simulation gate, which chunk management waits for before it
+    /// unloads a chunk, and so before it starts queued chunks. Left to chunk management, the tick would wait for
+    /// generation, generation for chunk management, and chunk management for the tick. Vanilla's server thread runs
+    /// chunk tasks itself while it waits for a chunk; here the waiter starts the generation it waits for.
+    /// </para>
+    /// <para>
+    /// Generation never needed the gate: jobs already run alongside ticks, each starting the next as it finishes. A
+    /// pause still stops them (see <see cref="ChunkManagementPaused"/>), and none start while the level pregenerates,
+    /// which takes the queued chunks itself and generates those asked for meanwhile too.
+    /// </para>
+    /// </remarks>
+    internal void StartGenerationForWaiter()
+    {
+        if (Volatile.Read(ref this.pregenerating))
+            return;
+
+        this.StartQueuedJobs();
     }
 
     /// <summary>
@@ -2047,6 +2078,19 @@ public abstract partial class AbstractLevel : ILevel
         if (this.generated)
             return;
 
+        Volatile.Write(ref this.pregenerating, true);
+        try
+        {
+            await this.PregenerateAsync(cancellationToken);
+        }
+        finally
+        {
+            Volatile.Write(ref this.pregenerating, false);
+        }
+    }
+
+    private async Task PregenerateAsync(CancellationToken cancellationToken)
+    {
         int pregenerationRange = this.Configuration.PregenerateChunkRange;
 
         // Generators that know where players spawn pick it first, so pregeneration surrounds the spawn.

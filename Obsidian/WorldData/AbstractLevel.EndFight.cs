@@ -317,6 +317,10 @@ public abstract partial class AbstractLevel
                 this.QueueBlockEvent(position, BlockIds.EndGateway, 1, 0);
                 endPortalCooldowns[player.Uuid] = 100;
                 await player.TeleportAsync(new VectorD(destination.X + 0.5, destination.Y, destination.Z + 0.5));
+
+                // Like vanilla's gateway trips, a player's places a portal ticket where they came out.
+                if (player.Level == this)
+                    this.AddPortalTicket(player.Position);
             }
         }
     }

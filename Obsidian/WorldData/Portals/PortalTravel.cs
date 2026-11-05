@@ -4,6 +4,18 @@ using Obsidian.Entities;
 namespace Obsidian.WorldData.Portals;
 
 internal readonly record struct PortalContact(Vector Position, int BlockId, PortalType? Type);
+
+/// <summary>
+/// The frame a trip comes out of, and the portal block that was found for it, or <c>null</c> when it was built for the
+/// trip.
+/// </summary>
+internal readonly record struct PortalExit(PortalFrame Frame, Vector? Found);
+
+/// <summary>
+/// Where a portal trip arrives. Once the entity is through, the trip places a portal ticket (see
+/// <see cref="AbstractLevel.AddPortalTicket"/>) unless <see cref="PlacesTicket"/> is false: at
+/// <see cref="TicketAnchor"/>, or where the entity ended up when there's none.
+/// </summary>
 internal sealed record PortalDestination(
     AbstractLevel Level,
     VectorD Position,
@@ -12,7 +24,9 @@ internal sealed record PortalDestination(
     VectorD Motion,
     PortalArea Area,
     PortalType? Type = null,
-    int Generation = 0);
+    int Generation = 0,
+    bool PlacesTicket = true,
+    Vector? TicketAnchor = null);
 
 /// <summary>Rectangular transit shared by players and other entities; preparation does not block ticks.</summary>
 internal static class PortalTravel
@@ -122,11 +136,11 @@ internal static class PortalTravel
             var normal = axis == "x"
                 ? entity.Position.Z - sourceFrame.Origin.Z - 0.5
                 : entity.Position.X - sourceFrame.Origin.X - 0.5;
-            var frame = await destination.Portals.FindOrCreateExitAsync(
+            var found = await destination.Portals.FindOrCreateExitAsync(
                 target, axis, CanContinue, type, properties);
-            if (frame is null || !CanContinue())
+            if (found is null || !CanContinue())
                 return null;
-            var exit = frame.Value;
+            var exit = found.Value.Frame;
             var h = width / 2 + (exit.Width - width) * horizontal;
             var v = (exit.Height - height) * vertical;
             var positionAtExit = new VectorD(
@@ -152,7 +166,10 @@ internal static class PortalTravel
                         motion,
                         exitArea,
                         type,
-                        generation);
+                        generation,
+                        // Like vanilla's NetherPortalBlock: the ticket of a trip to a portal that was there already
+                        // is at the portal block found for it, and one to a new portal where the entity comes out.
+                        TicketAnchor: found.Value.Found);
                 }
 
                 exitArea.Dispose();

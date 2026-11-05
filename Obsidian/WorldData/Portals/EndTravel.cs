@@ -85,6 +85,7 @@ internal static class EndTravel
 
         // Leaving the End: the top of the world spawn's column (vanilla's adjustSpawnLocation, with the
         // MOTION_BLOCKING_NO_LEAVES heightmap), keeping rotation and velocity. Obsidian has no spawn angle to add.
+        // Unlike a player's trip out of the End, this one places a portal ticket, as vanilla's does.
         var spawn = world.LevelData.SpawnPosition;
         var column = new Vector((int)Math.Floor(spawn.X), (int)Math.Floor(spawn.Y), (int)Math.Floor(spawn.Z));
         var spawnArea = await PortalArea.LoadAsync(destination, column, 0, canContinue);
