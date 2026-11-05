@@ -12,6 +12,7 @@ using Obsidian.Plugins;
 using Obsidian.Plugins.Archives;
 using Obsidian.Tests.Fakes;
 using Obsidian.Tests.Utilities;
+using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -382,8 +383,8 @@ public partial class Portals
         Assert.Same(first.RootVehicle, second.RootVehicle);
         Assert.Single(first.Passengers.Concat(second.Passengers));
 
-        // Reads and mutation requests from a click must finish while pickup owns TransferLock. The queued mounts
-        // still check cycles together when delivered, and earlier snapshots keep their original passengers.
+        // Reads and mutation requests from a click must finish while pickup owns the level's transfer lock. The queued
+        // mounts still check cycles together when delivered, and earlier snapshots keep their original passengers.
         var vehicle = new Cow { Level = context.World };
         var rider = new Cow { Level = context.World };
         var replacement = new Cow { Level = context.World };
@@ -393,7 +394,7 @@ public partial class Portals
         var held = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var holding = OnOwnThread(() =>
         {
-            lock (ItemEntity.TransferLock)
+            using (context.World.TransferLock.Enter())
             {
                 held.SetResult();
                 return release.Wait(TimeSpan.FromSeconds(10));
@@ -407,7 +408,8 @@ public partial class Portals
                 var container = new Container(5);
                 using (await container.LockAsync())
                 {
-                    // Waiting for TransferLock would never end, so the bound only tells a deadlock from a slow machine.
+                    // Waiting for the transfer lock would never end, so the bound only tells a deadlock from a slow
+                    // machine.
                     await OnOwnThread(() =>
                     {
                         Assert.Same(rider, Assert.Single(((IEntity)vehicle).Passengers));
@@ -438,10 +440,9 @@ public partial class Portals
         Assert.Same(rider, Assert.Single(snapshot));
     }
 
-    // Runs work that blocks (on a barrier, or holding the process-wide TransferLock) on a thread of its own rather
-    // than the thread pool's. Parallel test classes' pool threads block on TransferLock while this test holds it, and
-    // on a runner with few cores the pool then has no thread left for the work this test waits on before letting go.
-    // The current flow's DeferredInventoryWork section still flows into it.
+    // Runs work that blocks (on a barrier, or holding a level's transfer lock) on a thread of its own rather than the
+    // thread pool's, so a runner with few cores still has a pool thread for the work this test waits on before letting
+    // go. The current flow's DeferredInventoryWork section still flows into it.
     private static Task<T> OnOwnThread<T>(Func<T> work) =>
         Task.Factory.StartNew(work, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
@@ -460,7 +461,7 @@ public partial class Portals
         {
             get
             {
-                Assert.False(Monitor.IsEntered(ItemEntity.TransferLock));
+                Assert.False(EntityTransferLock.IsAnyHeldByCurrentThread);
                 Assert.True(gate.SignalAndWait(TimeSpan.FromSeconds(10)));
                 return 1;
             }

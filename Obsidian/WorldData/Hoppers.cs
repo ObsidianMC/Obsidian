@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
 using Obsidian.WorldData.Features;
@@ -91,19 +92,58 @@ internal static class Hoppers
     /// <summary>
     /// Drops what <see cref="TryMoveOne"/> couldn't put anywhere, at the centre of <paramref name="position"/>.
     /// </summary>
-    public static void DropLeftover(AbstractLevel level, Vector position, ItemStack? leftover)
+    /// <summary>
+    /// Drops items a container couldn't take at <paramref name="position"/>, in the block's middle. Where the level
+    /// can't take the drop in (a chunk not loaded or unloading), it's kept in the chunk instead, or in the one at
+    /// <paramref name="keepAt"/>, waiting to spawn and saved with the chunk until it does, so it's never lost.
+    /// </summary>
+    public static void DropLeftover(AbstractLevel level, Vector position, ItemStack? leftover, VectorD? keepAt = null)
     {
         if (leftover is null)
             return;
 
-        level.TrySpawnEntity(new ItemEntity
+        var item = new ItemEntity
         {
             Level = level,
             EntityId = Server.GetNextEntityId(),
             Position = (VectorD)position + new VectorD(0.5, 0.5, 0.5),
             Item = leftover
-        }, hostOwned: true);
+        };
+
+        bool spawned;
+        using (level.TransferLock.Enter())
+        {
+            spawned = level.AdmitsTravellersAt(item.Position) && level.TryAddEntity(item, hostOwned: true);
+            if (!spawned && KeepInChunk(level, item))
+                return;
+
+            if (!spawned && keepAt is VectorD fallback)
+            {
+                item.Position = fallback;
+                if (KeepInChunk(level, item))
+                    return;
+            }
+        }
+
+        if (spawned)
+        {
+            item.SpawnEntity();
+            return;
+        }
+
+        // Nowhere loaded to keep it: tried again with the level's next tick.
+        level.Logger.LogError("Items a container couldn't take could not be dropped or kept; retrying");
+        level.EnqueueEntityAction(() =>
+        {
+            DropLeftover(level, position, leftover, keepAt);
+            return ValueTask.CompletedTask;
+        });
     }
+
+    // Keeps a drop the level couldn't take in as an entity waiting to spawn in its chunk. Call holding the level's
+    // transfer lock.
+    private static bool KeepInChunk(AbstractLevel level, ItemEntity item) =>
+        level.GetRegionForLocation(item.Position) is Region region && region.TryKeepUnplaced(item, level);
 
     // Vanilla's ejectItems: the first of the hopper's items that fits into the container it faces moves.
     private static bool Eject(AbstractLevel level, HopperBlockEntity hopper, IItemAccess own, BlockFace facing)
@@ -160,17 +200,17 @@ internal static class Hoppers
         }
 
         var position = hopper.BlockPosition;
+        var min = new VectorD(position.X, position.Y + SuckBottom, position.Z);
+        var max = new VectorD(position.X + 1, position.Y + SuckTop, position.Z + 1);
         var items = level.BlockUpdates
-            .EntitiesIn(
-                new VectorD(position.X, position.Y + SuckBottom, position.Z),
-                new VectorD(position.X + 1, position.Y + SuckTop, position.Z + 1))
+            .EntitiesIn(min, max)
             .OfType<ItemEntity>()
             .OrderBy(item => item.EntityId)
             .ToList();
 
         foreach (var item in items)
         {
-            if (await TakeInAsync(own, item))
+            if (await TakeInAsync(own, item, level, min, max, position))
                 return true;
         }
 
@@ -181,22 +221,55 @@ internal static class Hoppers
     /// Vanilla's <c>addItem(Container, ItemEntity)</c>: as much of the entity's stack as fits goes in; only taking
     /// all of it counts as a transfer.
     /// </summary>
-    internal static async ValueTask<bool> TakeInAsync(IItemAccess own, ItemEntity entity)
+    /// <param name="own">The slots taking the items.</param>
+    /// <param name="entity">An item the hopper found in its area.</param>
+    /// <param name="level">The hopper's level.</param>
+    /// <param name="min">The area's low corner, which the item's box must still overlap.</param>
+    /// <param name="max">The area's high corner.</param>
+    /// <param name="dropAt">
+    /// Where in <paramref name="level"/> what no longer fits is dropped: the hopper's own block, as the item may have
+    /// moved on.
+    /// </param>
+    /// <remarks>
+    /// The item may have moved, gone through a portal or been taken since it was found, so it's checked again under
+    /// the transfer lock of the level owning it, and taken only while it's still in <paramref name="level"/> and the
+    /// area, and is one of its entities (a removed or unloaded item keeps its level). The slots are filled outside that
+    /// lock: filling them takes the container's click lock, which comes before
+    /// transfer locks in the lock order. What fits is worked out first; anything that no longer fits by then, the
+    /// slots having changed meanwhile, is dropped as a new item rather than lost.
+    /// </remarks>
+    internal static async ValueTask<bool> TakeInAsync(
+        IItemAccess own, ItemEntity entity, AbstractLevel level, VectorD min, VectorD max, Vector dropAt)
     {
+        if (entity.Item is not { IsAir: false, Count: > 0 } offered)
+            return false;
+
+        var probe = new ItemStack(offered, offered.Count);
+        var fits = probe.Count - (own.Insert(probe, simulate: true)?.Count ?? 0);
+        if (fits <= 0)
+            return false;
+
+        ItemStack taken;
         bool all;
-        lock (ItemEntity.TransferLock)
+        VectorD keepAt;
+        using (entity.EnterOwningLevel(out var owner))
         {
-            if (entity.Removed || entity.Item is not { IsAir: false, Count: > 0 } stack)
+            if (owner != level || entity.Removed || !entity.IsMemberOf(level) || !Overlaps(entity.BoundingBox, min, max))
                 return false;
 
-            var left = own.Insert(stack);
-            if (ReferenceEquals(left, stack))
+            if (entity.Item is not { IsAir: false, Count: > 0 } stack || stack != offered)
                 return false;
 
-            all = left is null;
-            entity.Item = left ?? ItemStack.Air;
+            // Where the item is now, in this level: a loaded chunk to keep what no longer fits in, if need be.
+            keepAt = entity.Position;
+            var amount = Math.Min(fits, stack.Count);
+            all = amount == stack.Count;
+            taken = new ItemStack(stack, amount);
+            entity.Item = all ? ItemStack.Air : new ItemStack(stack, stack.Count - amount);
             entity.Removed = all;
         }
+
+        DropLeftover(level, dropAt, own.Insert(taken), keepAt);
 
         if (all)
             await entity.RemoveAsync();
@@ -205,6 +278,12 @@ internal static class Hoppers
 
         return all;
     }
+
+    // Whether a box overlaps the one from min to max, as the level's entity lookup tells (see EntitiesIn).
+    private static bool Overlaps(BoundingBox box, VectorD min, VectorD max) =>
+        box.Min.X < max.X && box.Max.X > min.X
+        && box.Min.Y < max.Y && box.Max.Y > min.Y
+        && box.Min.Z < max.Z && box.Max.Z > min.Z;
 
     internal static bool IsEmpty(IItemAccess access)
     {

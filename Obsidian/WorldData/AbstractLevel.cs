@@ -463,14 +463,26 @@ public abstract partial class AbstractLevel : ILevel
         this.Generator.Init(this);
     }
 
+    /// <summary>
+    /// The lock that makes moving this level's items and entities atomic (see <see cref="EntityTransferLock"/>). Each
+    /// level has its own, so levels don't wait for each other's.
+    /// </summary>
+    internal EntityTransferLock TransferLock { get; } = new();
+
     public ValueTask<bool> DestroyEntityAsync(IEntity entity)
     {
-        lock (ItemEntity.TransferLock)
-            return ValueTask.FromResult(this.RemoveEntity(entity, transferring: false));
+        using (this.TransferLock.Enter())
+        {
+            // An entity on its way here is in no region yet: it's kept from arriving instead.
+            var removed = entity is Entity travelling && travelling.TryRemoveOnArrival(this)
+                || this.RemoveEntity(entity, transferring: false);
+
+            return ValueTask.FromResult(removed);
+        }
     }
 
     // Transfers reuse the instance and its attachment holder; only a real removal retires storage.
-    // The caller holds TransferLock, shared with transfer commits and the entity save snapshot.
+    // The caller holds the level's TransferLock, shared with transfer commits and the entity save snapshot.
     internal bool RemoveEntity(IEntity entity, bool transferring)
     {
         if (this.GetRegionForLocation(entity.Position) is not Region region || !region.TryRemoveEntity(entity))
@@ -1011,14 +1023,27 @@ public abstract partial class AbstractLevel : ILevel
         {
             if (entity is Mob { HasAi: true } or ItemEntity or ExperienceOrb && !IsMobTicking(entity.Position))
                 continue;
-            if (GetRegionForLocation(entity.Position)?.Entities.ContainsKey(entity.EntityId) == true)
+
+            // Not while travel still moves it or another level's tick of it is under way (see Entity.TryClaimTick).
+            var claimed = entity as Entity;
+            if (claimed is not null && !claimed.TryClaimTick(this))
+                continue;
+
+            try
             {
-                this.tickingEntity = entity;
-                await entity.TickAsync();
-                await this.TouchPluginBlocksAsync(entity);
-                if (entity is Entity concrete && entity is not IPlayer && entity.Level == this)
-                    await concrete.TickEntityPortalAsync();
-                timings.LapEntity(entity.GetType());
+                if (GetRegionForLocation(entity.Position)?.Entities.ContainsKey(entity.EntityId) == true)
+                {
+                    this.tickingEntity = entity;
+                    await entity.TickAsync();
+                    await this.TouchPluginBlocksAsync(entity);
+                    if (entity is Entity concrete && entity is not IPlayer && entity.Level == this)
+                        await concrete.TickEntityPortalAsync();
+                    timings.LapEntity(entity.GetType());
+                }
+            }
+            finally
+            {
+                claimed?.ReleaseTick(this);
             }
         }
         // Like vanilla's entity movement, the redstone that entities touch reacts once they've all ticked: pressure plates,
@@ -1244,6 +1269,7 @@ public abstract partial class AbstractLevel : ILevel
                 Logger = this.Logger,
                 LockChunk = this.Generator.LockChunkAsync,
                 FluidTickLock = this.Fluids.TickLock,
+                EntityTransfers = this.TransferLock,
                 FlushLight = this.Lighting.Flush,
                 LightLoaded = this.TrackPublishedChunk,
                 LightUnloaded = this.Lighting.Untrack,
@@ -1299,6 +1325,10 @@ public abstract partial class AbstractLevel : ILevel
                 return;
 
             if (!retry && this.HasRegionTickets(regionX, regionZ))
+                return;
+
+            // Not while an entity that left it for another level may still come back or be kept there.
+            if (!retry && r is Region leaving && !this.TryCloseRegionToTravel(leaving))
                 return;
 
             // A failed unload stays registered until autosave retries it. Once retired it must finish closing,
@@ -1399,8 +1429,9 @@ public abstract partial class AbstractLevel : ILevel
                 await simulationGate.WaitAsync();
                 try
                 {
-                    // Recheck after entering the gate, against tickets acquired since the candidate snapshot.
-                    if (!this.TryReleaseUnneededChunk(chunk))
+                    // Recheck after entering the gate, against tickets acquired since the candidate snapshot, and
+                    // against entities that left the chunk for another level and may come back.
+                    if (!this.TryReleaseChunkClosedToTravel(chunk))
                         continue;
 
                     // The chunk's final save has its block entities' changes made since the last tick.
@@ -1417,6 +1448,7 @@ public abstract partial class AbstractLevel : ILevel
                 }
                 finally
                 {
+                    this.ReopenChunkToTravel(chunk);
                     simulationGate.Release();
                 }
             }
@@ -1641,7 +1673,10 @@ public abstract partial class AbstractLevel : ILevel
     /// <see cref="TakeBlockEntityChanges"/>), like the tick's end does, so that one changed between ticks (by plugin
     /// code off the tick, a command or a test) is saved with its own data as it is now, like its items.
     /// </remarks>
-    public async virtual Task FlushRegionsAsync()
+    public virtual Task FlushRegionsAsync() => this.FlushOwnRegionsAsync();
+
+    // The level's own flush, which disposal runs without the overrides that flush other levels too.
+    private async Task FlushOwnRegionsAsync()
     {
         Region[] written = [];
         Task<Exception?>[] saves = [];
@@ -1652,6 +1687,10 @@ public abstract partial class AbstractLevel : ILevel
             await simulationGate.WaitAsync();
             try
             {
+                // A traveller no level could place or keep yet isn't in this save: reported, and retried until it is.
+                if (this.RetryUnplaced() is var unplacedLeft and > 0)
+                    Log.TravellersNotSaved(this.Logger, unplacedLeft, this.Name);
+
                 this.TakeBlockEntityChanges();
 
                 jobsBeforeFlush = Interlocked.Exchange(ref this.jobsSinceFlush, 0);
@@ -2253,7 +2292,9 @@ public abstract partial class AbstractLevel : ILevel
     /// <remarks>
     /// The level hasn't ticked yet, so the entity work it does for complete chunks (populating them with mobs, spawning
     /// the entities generation placed) runs first, as the tick would before they could unload. Each region unloads its
-    /// chunks together (see <see cref="Region.UnloadChunksAsync"/>), so its files are committed once at most.
+    /// chunks together (see <see cref="Region.UnloadChunksAsync"/>), so its files are committed once at most. It doesn't
+    /// check travel pins (see <see cref="TryPinForTravel"/>): it runs before the level is available to players, plugins
+    /// or other levels, so no entity can have left these chunks for another level.
     /// </remarks>
     private async Task UnloadPregeneratedAsync(HashSet<long> remaining, HashSet<long> kept)
     {
@@ -2494,8 +2535,18 @@ public abstract partial class AbstractLevel : ILevel
         if (Interlocked.Exchange(ref this.generationFailure, null) is Exception failure)
             Log.ChunkGenerationFailed(this.Logger, failure);
 
-        if (Volatile.Read(ref this.jobsSinceFlush) != 0)
-            await this.FlushRegionsAsync();
+        // The level's own: an override flushes other levels too, which may be disposed already. One with travellers
+        // still unplaced fails rather than discarding them.
+        // A failed final save is reported, and disposal goes on.
+        try
+        {
+            if (Volatile.Read(ref this.jobsSinceFlush) != 0 || this.HasUnplacedTravellers)
+                await this.FlushOwnRegionsAsync();
+        }
+        catch (Exception exception)
+        {
+            Log.FinalSaveFailed(this.Logger, exception, this.Name);
+        }
 
         foreach (var region in Regions.Values)
         {

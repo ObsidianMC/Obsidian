@@ -14,8 +14,7 @@ public abstract partial class AbstractLevel
     /// </summary>
     internal void UnpackLootTable(ContainerBlockEntity container, IEntity? opener, bool removing = false)
     {
-        if (this.Fluids.TickLock.IsHeldByCurrentThread
-            || System.Threading.Monitor.IsEntered(ItemEntity.TransferLock))
+        if (this.Fluids.TickLock.IsHeldByCurrentThread || EntityTransferLock.IsAnyHeldByCurrentThread)
         {
             throw new InvalidOperationException("Container loot must be prepared outside the tick and transfer locks.");
         }

@@ -33,6 +33,18 @@ public partial class Region : IRegion
     public IReadOnlyDictionary<int, IEntity> Entities => this.entities;
 
     /// <summary>
+    /// The transfer lock of the region's level (see <see cref="EntityTransferLock"/>), under which entities move between
+    /// its regions and its saves take theirs. A region made on its own has one of its own.
+    /// </summary>
+    internal EntityTransferLock EntityTransfers { get; init; } = new();
+
+    /// <summary>
+    /// Whether the region is retiring, which no entity may leave it for another level from anymore (see
+    /// <see cref="AbstractLevel.TryPinForTravel"/>). Set under the level's transfer lock.
+    /// </summary>
+    internal bool TransfersClosed { get; set; }
+
+    /// <summary>
     /// Adds the entity to the region's entities. Only the region's level calls this: it also keeps the entity in its
     /// <see cref="EntityGrid"/>, which a move between regions of the level leaves alone.
     /// </summary>
@@ -730,8 +742,43 @@ public partial class Region : IRegion
     /// <returns>Whether the entity was in the region.</returns>
     internal bool Evict(IEntity entity, bool keepSaved)
     {
-        lock (ItemEntity.TransferLock)
+        using (this.EntityTransfers.Enter())
             return this.EvictUnderTransferLock(entity, keepSaved);
+    }
+
+    /// <summary>
+    /// Keeps an entity that travelled but no level could take in, in its chunk, which saves it: as one waiting to
+    /// spawn on the level's next tick, or, while another entity in the level has its UUID (which would drop it there),
+    /// as one kept as saved until the chunk loads again. Call holding the level's transfer lock.
+    /// </summary>
+    /// <returns>Whether the chunk, loaded and with its entities not unloaded, keeps it.</returns>
+    internal bool TryKeepUnplaced(Entity entity, AbstractLevel level)
+    {
+        var (chunkX, chunkZ) = ChunkOf(entity.Position);
+        var local = this.GetLoadedChunk(
+            NumericsHelper.Modulo(chunkX, CubicRegionSize),
+            NumericsHelper.Modulo(chunkZ, CubicRegionSize));
+        if (local is not Chunk { X: var x, Z: var z } chunk || (x, z) != (chunkX, chunkZ))
+            return false;
+
+        using (chunk.EntityLock.EnterScope())
+        {
+            if (chunk.EntitiesUnloaded
+                || EntityNbt.Save(entity) is not NbtCompound saved
+                || EntityNbt.ToGeneratedEntity(saved) is not GeneratedEntity pending)
+            {
+                return false;
+            }
+
+            if (level.FindEntity(entity.Uuid) is null)
+                chunk.PendingEntities.Add(pending);
+            else
+                chunk.UnspawnableEntities.Add(saved);
+        }
+
+        API.Data.AttachmentStorage.For(entity).Retire();
+        level.QueueEntitySpawn(chunk);
+        return true;
     }
 
     private bool EvictUnderTransferLock(IEntity entity, bool keepSaved)
@@ -1341,7 +1388,7 @@ public partial class Region : IRegion
     {
         var entities = new NbtList(NbtTagType.Compound, "Entities");
 
-        lock (ItemEntity.TransferLock)
+        using (this.EntityTransfers.Enter())
         {
             using (chunk.EntityLock.EnterScope())
         {
@@ -1473,15 +1520,20 @@ public partial class Region : IRegion
     {
         foreach (var (_, entity) in this.entities)
         {
-            lock (ItemEntity.TransferLock)
+            // Nearly every entity stays in its region, which changes nothing, so that's checked without the lock. One
+            // that seems to have left is checked again under it: travel, removal or a save may be taking it meanwhile.
+            if (this.Holds(entity.Position))
+                continue;
+
+            using (this.EntityTransfers.Enter())
             {
                 if (!this.entities.TryGetValue(entity.EntityId, out var resident) || !ReferenceEquals(resident, entity))
                     continue;
 
-                var (chunkX, chunkZ) = ChunkOf(entity.Position);
-                if (chunkX >> CubicRegionSizeShift == this.X && chunkZ >> CubicRegionSizeShift == this.Z)
+                if (this.Holds(entity.Position))
                     continue;
 
+                var (chunkX, chunkZ) = ChunkOf(entity.Position);
                 if (entity.Level is AbstractLevel level && level.GetRegionForChunk(chunkX, chunkZ) is Region target
                     && target.TryAddEntity(entity))
                 {
@@ -1489,6 +1541,13 @@ public partial class Region : IRegion
                 }
             }
         }
+    }
+
+    // Whether an entity at the position belongs to this region's chunks.
+    private bool Holds(VectorD position)
+    {
+        var (chunkX, chunkZ) = ChunkOf(position);
+        return chunkX >> CubicRegionSizeShift == this.X && chunkZ >> CubicRegionSizeShift == this.Z;
     }
 
     #region NBT Ops

@@ -90,17 +90,21 @@ public partial class Mob
             var currentScore = slot == EquipmentSlot.MainHand ? GetWeaponDamage(current) : GetArmorStats(current, slot).Armor + GetArmorStats(current, slot).Toughness * 0.01f;
             if (!current.IsAir && (incomingScore < currentScore || incomingScore == currentScore && item.Damage >= current.Damage))
                 continue;
+
+            // Taken as a player's pickup takes it, so one a hopper took or that went through a portal meanwhile isn't
+            // equipped as well. Taking draws nothing, so the drop chance is drawn when it was.
+            if (entity.TryTake(Level, 1, stack => stack == item) is not { } taken)
+                continue;
             if (!current.IsAir && Math.Max(Random.NextSingle() - 0.1f, 0) < GetEquipmentDropChance(slot))
                 DropItem(current);
-            SetEquipment(slot, new ItemStack(item));
+            SetEquipment(slot, taken.Stack);
             equipmentDropChances[slot] = 2;
             PersistenceRequired = true;
-            item.Count--;
             PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new TakeItemEntityPacket
             {
                 CollectedEntityId = entity.EntityId, CollectorEntityId = EntityId, PickupItemCount = 1
             }, EntityId);
-            if (item.Count == 0)
+            if (taken.Emptied)
                 await entity.RemoveAsync();
         }
     }

@@ -148,11 +148,12 @@ public sealed partial class Panda : FarmAnimal
         {
             var item = GetEntitiesNear(2).OfType<ItemEntity>().FirstOrDefault(entity => entity.CanPickup &&
                 entity.Item.Holder.Id is ItemIds.Bamboo or ItemIds.Cake);
-            if (item != null)
+            // Taken as a player's pickup takes it, so a stack something else took meanwhile isn't eaten as well.
+            if (item?.TryTake(Level, 1, stack => stack.Holder.Id is ItemIds.Bamboo or ItemIds.Cake) is { } taken)
             {
                 EatingTicks = 80;
-                SetEquipment(EquipmentSlot.MainHand, new ItemStack(item.Item, 1));
-                if (--item.Item.Count == 0)
+                SetEquipment(EquipmentSlot.MainHand, taken.Stack);
+                if (taken.Emptied)
                     await item.RemoveAsync();
                 SynchronizeMetadata();
             }

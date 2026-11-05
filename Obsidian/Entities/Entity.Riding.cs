@@ -1,6 +1,5 @@
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
-using System.Threading;
 
 namespace Obsidian.Entities;
 
@@ -9,8 +8,9 @@ namespace Obsidian.Entities;
 // whole passenger tree (see Entity.Travel.cs).
 public partial class Entity
 {
-    // Published arrays are never mutated or exposed for writing. Reads may happen under a container click lock,
-    // later in the lock order than TransferLock, so they must never wait for the graph's mutation lock.
+    // Changed under the transfer lock of the level the entity is in (see EntityTransferLock): riders and their vehicle
+    // share a level, so one lock covers both ends of a link. Published arrays are never mutated or exposed for writing,
+    // so reads never wait for that lock, which a container click lock comes before.
     private volatile IReadOnlyList<Entity> passengers = Array.AsReadOnly<Entity>([]);
     private volatile Entity? vehicle;
 
@@ -70,13 +70,14 @@ public partial class Entity
         if (DeferRidingChange(() => this.Ride(vehicle, force)))
             return true;
 
-        // Evaluate the virtual seat policy without the graph lock. The graph shares the transfer lock so its
+        // Evaluate the virtual seat policy without the graph lock. The graph shares the level's transfer lock so its
         // level checks and travel commits agree; never acquire a tick lock or run plugin code while holding it.
         var seats = force ? 0 : vehicle.MaximumPassengers;
         Entity? previous;
-        lock (ItemEntity.TransferLock)
+        using (this.EnterOwningLevel(out var level))
         {
-            if (ReferenceEquals(vehicle, this) || ReferenceEquals(vehicle, this.Vehicle) || vehicle.Level != this.Level)
+            // The vehicle can't leave the level while its lock is held, so they share it for as long as this holds.
+            if (ReferenceEquals(vehicle, this) || ReferenceEquals(vehicle, this.Vehicle) || vehicle.Level != level)
                 return false;
 
             // Validate and publish together: opposing concurrent mounts cannot both close the same cycle.
@@ -114,7 +115,7 @@ public partial class Entity
             return;
 
         Entity vehicle;
-        lock (ItemEntity.TransferLock)
+        using (this.EnterOwningLevel(out _))
         {
             if (this.Vehicle is not Entity current)
                 return;
@@ -133,7 +134,7 @@ public partial class Entity
         if (DeferRidingChange(this.EjectPassengers))
             return;
 
-        lock (ItemEntity.TransferLock)
+        using (this.EnterOwningLevel(out _))
         {
             if (this.passengers.Count == 0)
                 return;
@@ -147,10 +148,10 @@ public partial class Entity
         this.SynchronizePassengers();
     }
 
-    // Inventory hooks must not acquire TransferLock after a click lock. Travel that already owns TransferLock
-    // can change the graph immediately: it must detach riders atomically with its level commit.
+    // Inventory hooks must not acquire a transfer lock after a click lock. Travel that already owns its level's
+    // transfer lock can change the graph immediately: it must detach riders atomically with its level commit.
     private static bool DeferRidingChange(Action change) =>
-        !Monitor.IsEntered(ItemEntity.TransferLock) && DeferredInventoryWork.TryDefer(change);
+        !EntityTransferLock.IsAnyHeldByCurrentThread && DeferredInventoryWork.TryDefer(change);
 
     /// <summary>
     /// Moves every passenger to its seat, and their passengers to theirs. A passenger whose new position its level

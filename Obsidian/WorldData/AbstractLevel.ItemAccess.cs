@@ -103,8 +103,7 @@ public abstract partial class AbstractLevel
         if (container.LootTable is null)
             return true;
 
-        if (!this.Fluids.TickLock.IsHeldByCurrentThread
-            && !System.Threading.Monitor.IsEntered(ItemEntity.TransferLock))
+        if (!this.Fluids.TickLock.IsHeldByCurrentThread && !EntityTransferLock.IsAnyHeldByCurrentThread)
         {
             this.UnpackLootTable(container, opener: null);
             return true;

@@ -72,11 +72,22 @@ public partial class Entity
                     && (destination.Type is null || destination.Type.Generation == destination.Generation))
                 {
                     this.Motion = destination.Motion;
-                    await this.TeleportAsync(
-                        destination.Level, destination.Position, destination.Yaw, destination.Pitch);
-                    // Vanilla Entity's default dimension-change cooldown is 300; players override it to ten.
+
+                    // Vanilla Entity's default dimension-change cooldown is 300; players override it to ten. Set while
+                    // the entity is still this level's: once through, the destination's tick may reach it at any time.
+                    // Teleporting resets the portal time.
+                    var cooldown = this.travelPortalCooldown;
                     this.travelPortalCooldown = this.TravelPortalCooldown;
-                    this.travelPortalTime = 0;
+                    try
+                    {
+                        await this.TeleportAsync(
+                            destination.Level, destination.Position, destination.Yaw, destination.Pitch);
+                    }
+                    catch
+                    {
+                        this.travelPortalCooldown = cooldown;
+                        throw;
+                    }
                 }
             }
             finally

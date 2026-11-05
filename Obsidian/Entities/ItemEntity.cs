@@ -14,9 +14,9 @@ public partial class ItemEntity : Entity
     // Ticks since it was spawned or loaded, like vanilla's unsaved Entity.tickCount; it paces merging.
     private int ticksExisted;
     internal void SetExtendedLifetime() => age = -6000;
-    // Merges, pickups and removal check and set Removed under this lock, so a stack isn't transferred after its entity
-    // is removed, even when the removal comes from outside the level tick.
-    internal static readonly object TransferLock = new();
+    // Merges, pickups, hopper pulls and removal check and set it under the transfer lock of the level owning the item
+    // (see Entity.EnterOwningLevel), so a stack isn't transferred after its entity is removed, even when the removal
+    // comes from outside the level tick.
     internal bool Removed { get; set; }
     private int pickupDelay = 10;
 
@@ -182,7 +182,7 @@ public partial class ItemEntity : Entity
     {
         await base.TickAsync();
         this.ticksExisted++;
-        lock (TransferLock)
+        using (this.EnterOwningLevel(out _))
         {
             if (this.Removed)
                 return;
@@ -222,8 +222,11 @@ public partial class ItemEntity : Entity
                 continue;
 
             bool remove;
-            lock (TransferLock)
+            using (this.EnterOwningLevel(out var owner))
             {
+                // Both stacks are this level's only while the other item hasn't left it since the lookup.
+                if (itemEntity.Level != owner || !itemEntity.IsMemberOf(owner) || !this.IsMemberOf(owner))
+                    continue;
                 if (this.Removed || itemEntity.Removed || this.Item.IsNullOrAir() || itemEntity.Item.IsNullOrAir() || this.Item != itemEntity.Item)
                     continue;
                 var count = Math.Min(this.Item.MaxStackSize - this.Item.Count, itemEntity.Item.Count);
@@ -240,6 +243,39 @@ public partial class ItemEntity : Entity
             }
             if (remove)
                 await itemEntity.RemoveAsync();
+        }
+    }
+
+    /// <summary>What <see cref="TryTake"/> took from an item entity's stack, and whether that emptied it.</summary>
+    internal readonly record struct Taken(ItemStack Stack, bool Emptied);
+
+    /// <summary>
+    /// Takes up to <paramref name="count"/> of the stack for something in <paramref name="level"/> that found the item
+    /// there, such as a mob picking it up, the way a player's pickup takes it: under the transfer lock of the level that
+    /// owns the item, only while that's still <paramref name="level"/> and the item isn't removed, can be picked up and
+    /// holds a stack <paramref name="accepts"/> takes. An item it empties is marked removed at once, so nothing else can
+    /// take it; the caller removes it (see <see cref="RemoveAsync"/>) once it has told the clients.
+    /// </summary>
+    /// <returns>What was taken, or null when nothing was.</returns>
+    internal Taken? TryTake(ILevel level, int count, Func<ItemStack, bool> accepts)
+    {
+        using (this.EnterOwningLevel(out var owner))
+        {
+            // A removed or unloaded item keeps its level, so it's checked to still be one of the level's entities.
+            if (owner != level || this.Removed || !this.CanPickup || !this.IsMemberOf(level))
+                return null;
+
+            if (this.Item is not { IsAir: false, Count: > 0 } stack || !accepts(stack))
+                return null;
+
+            var amount = Math.Min(count, stack.Count);
+            if (amount <= 0)
+                return null;
+
+            var taken = new Taken(new ItemStack(stack, amount), amount == stack.Count);
+            stack.Count -= amount;
+            this.Removed = taken.Emptied;
+            return taken;
         }
     }
 
@@ -269,7 +305,7 @@ public partial class ItemEntity : Entity
 
     public override async ValueTask RemoveAsync()
     {
-        lock (TransferLock)
+        using (this.EnterOwningLevel(out _))
             this.Removed = true;
         await base.RemoveAsync();
     }
