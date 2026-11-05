@@ -1034,7 +1034,7 @@ public abstract partial class PlayerBase : Avatar, IPlayer
                 await this.QueuePacketAsync(new SetExperiencePacket(this.XpP, this.XpLevel, this.XpTotal));
 
             await TrySpawnPlayerAsync(Position);
-            await ((IPlayer)this).SynchronizeTrackedEntitiesAsync();
+            await this.SynchronizeTrackedEntitiesUnderLockAsync();
         }
         finally
         {
@@ -1332,6 +1332,9 @@ public abstract partial class PlayerBase : Avatar, IPlayer
 
     // Forgets what the player's client was shown, which a respawn sends again.
     private protected virtual void ResetClientView() { }
+
+    // Shows the player's client the entities around them, with chunkUpdates held. A player without a client has none.
+    private protected virtual ValueTask SynchronizeTrackedEntitiesUnderLockAsync() => default;
 
     private static partial class Log
     {

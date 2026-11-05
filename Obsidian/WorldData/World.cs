@@ -150,7 +150,9 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         }
     }
 
-    public override async Task SaveAsync()
+    // The world's save lock is held while saves wait for the levels' simulation gates (see FlushAsync), so a flow that
+    // mustn't wait for those doesn't wait for it either: AbstractLevel.SaveAsync runs this in the background then.
+    protected override async Task SaveLevelAsync()
     {
         await this.saveLock.WaitAsync();
         try
@@ -203,7 +205,13 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     /// <summary>
     /// Saves what changes while the world runs: its and its dimensions' regions, then its level data and maps.
     /// </summary>
-    public async Task FlushAsync()
+    /// <remarks>
+    /// It waits for the levels' simulation gates, so called from inside a level's tick, or a player's tick, grant or
+    /// save, it saves in the background once the ticks let go of them, and returns at once; a failure is then logged.
+    /// </remarks>
+    public Task FlushAsync() => RunOutsideTicksAsync(this.FlushWorldAsync, this.Logger);
+
+    private async Task FlushWorldAsync()
     {
         await this.saveLock.WaitAsync();
         try
@@ -311,6 +319,7 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
     /// </remarks>
     public async override Task DoWorldTickAsync()
     {
+        ThrowIfMustNotWaitForGates(nameof(DoWorldTickAsync));
         this.TickClocks();
 
         if (this.Configuration.ParallelLevelTicks)
@@ -384,9 +393,9 @@ public sealed partial class World(ILogger<World> logger, IWorldManager worldMana
         public static partial void UnreadableLevelData(ILogger logger, string path, Exception exception);
     }
 
-    public async override Task FlushRegionsAsync()
+    protected async override Task FlushLevelRegionsAsync()
     {
-        await base.FlushRegionsAsync();
+        await base.FlushLevelRegionsAsync();
         await Task.WhenAll(dimensions.Values.Select(dimension => dimension.FlushRegionsAsync()));
     }
 }

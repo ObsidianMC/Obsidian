@@ -116,7 +116,17 @@ public interface IPlayer : ILiving
     public float FoodExhaustionLevel { get; set; }
     public float FoodSaturationLevel { get; set; }
 
+    /// <summary>
+    /// Saves the player's data, statistics and advancements.
+    /// </summary>
+    /// <remarks>
+    /// It waits for the player's tick, grant or save under way. Called from the player's own, it saves at once as part
+    /// of it. Called from inside a level's tick or another player's tick, grant or save (a plugin's event handler run by
+    /// one, say), it can't wait, so it saves in the background once the ticks are over and returns at once; a failure is
+    /// then logged.
+    /// </remarks>
     public Task SaveAsync();
+
     public Task LoadAsync(bool loadFromPersistentWorld = true);
 
     /// <summary>
@@ -191,7 +201,8 @@ public interface IPlayer : ILiving
 
     // Server hooks for what a client has been shown. The defaults suit players without a client, which have nothing to
     // keep in sync; the server's network player overrides them.
-    internal ValueTask SynchronizeTrackedEntitiesAsync() => default;
+    // A level's tracking pass, which does nothing once the player is in another level.
+    internal ValueTask SynchronizeTrackedEntitiesAsync(ILevel level) => default;
     internal void TrackEntity(IEntity entity) { }
     internal void UntrackEntity(int entityId) { }
     internal void ForgetVisiblePlayer(IPlayer player) { }

@@ -271,15 +271,45 @@ public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
         float speed = 0,
         bool force = false);
     public IEnumerable<IPlayer> PlayersInRange(Vector location);
+    /// <summary>
+    /// Ticks the level once. The server does, every tick; a plugin rarely needs to.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// Called from inside a level's tick, or a player's tick, grant or save (a plugin's event handler run by one, say):
+    /// it would wait for a tick that may be waiting for it.
+    /// </exception>
     public Task DoWorldTickAsync();
+
+    /// <summary>
+    /// Saves the level's regions: its chunks and their entities.
+    /// </summary>
+    /// <remarks>
+    /// It waits for the level to be between ticks. Called from inside a level's tick, or a player's tick, grant or save
+    /// (a plugin's event handler run by one, say), it can't wait for that, so it saves in the background once the
+    /// ticks are over and returns at once; a failure is then logged.
+    /// </remarks>
     public Task FlushRegionsAsync();
+
     public Task<bool> LoadAsync(DimensionCodec codec);
+
+    /// <summary>
+    /// Saves the level's state: for a world, its level data and maps; for a dimension, its regions and its state.
+    /// </summary>
+    /// <remarks>
+    /// It waits for the levels to be between ticks. Called from inside a level's tick, or a player's tick, grant or
+    /// save (a plugin's event handler run by one, say), it can't wait for that, so it saves in the background once the
+    /// ticks are over and returns at once; a failure is then logged.
+    /// </remarks>
     public Task SaveAsync();
 
     /// <summary>
     /// Generates a new level's chunks around its spawn. Cancelling stops starting new chunks and throws
     /// <see cref="OperationCanceledException"/>; chunks already generating finish in the background.
     /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// The level isn't generated yet and it's called from inside a level's tick, or a player's tick, grant or save: it
+    /// would wait for a tick that may be waiting for it.
+    /// </exception>
     public Task GenerateAsync(CancellationToken cancellationToken = default);
 
     /// <summary>

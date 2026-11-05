@@ -724,8 +724,8 @@ public sealed partial class PluginManager : IAsyncDisposable
                 retired = PluginBlockEntities.RemoveFrom(level, plugin);
             }
 
-            // Never from inside a plugin's call or a level's tick: the level's tick could be what is waiting.
-            var canWait = !PluginCall.InsideAny && !AbstractLevel.InsideTick;
+            // Never from inside a plugin's call, a level's tick or a player's: the level's tick could be what is waiting.
+            var canWait = !PluginCall.InsideAny && !AbstractLevel.MustNotWaitForGates;
             if (canWait && await level.TryRunBetweenTicksAsync(Remove, drainTimeout))
             {
                 await PluginBlockEntities.CloseWindowsAsync(this.server, plugin, retired);

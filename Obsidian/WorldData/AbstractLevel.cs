@@ -502,7 +502,15 @@ public abstract partial class AbstractLevel : ILevel
     }
 
     public abstract Task<bool> LoadAsync(DimensionCodec codec);
-    public abstract Task SaveAsync();
+
+    /// <inheritdoc/>
+    public Task SaveAsync() => RunOutsideTicksAsync(this.SaveLevelAsync, this.Logger);
+
+    /// <summary>
+    /// Saves the level, waiting for its simulation gate where it needs to: what <see cref="SaveAsync"/> runs, at once
+    /// or once the ticks let go of the gates.
+    /// </summary>
+    protected abstract Task SaveLevelAsync();
 
     public IRegion? GetRegionForLocation(VectorD location)
     {
@@ -927,8 +935,11 @@ public abstract partial class AbstractLevel : ILevel
         }
     }
 
+    /// <inheritdoc/>
     public async virtual Task DoWorldTickAsync()
     {
+        ThrowIfMustNotWaitForGates(nameof(DoWorldTickAsync));
+
         TickStage = "waiting for simulation gate";
         await simulationGate.WaitAsync();
         try
@@ -965,16 +976,44 @@ public abstract partial class AbstractLevel : ILevel
         tickingLevel.Value is TickFlow flow && flow.Level.CurrentTickId == flow.TickId;
 
     /// <summary>
-    /// Runs <paramref name="work"/> that waits for levels' simulation gates, such as a save: at once, or, from inside a
-    /// level's tick (a command run by a command block minecart, say), in the background, where it waits for the ticks
-    /// to end instead of holding up the tick and its level's gate.
+    /// Whether the current flow must not wait for a level's simulation gate or a player's tick gate: it runs in a level's
+    /// tick, or holds a player's tick gate (in their tick, a grant or a save).
+    /// </summary>
+    /// <remarks>
+    /// The gates are taken in one order: a level's simulation gate, then a player's tick gate, as a level's tick ticks
+    /// its players. A flow holding a player's tick gate that waited for a simulation gate could wait for a level's tick
+    /// waiting for that player, and one inside a level's tick could wait for another level's tick waiting for it. Code
+    /// that waits for the gates (saves, ticks, generation) checks this first, and so do the public APIs that do.
+    /// </remarks>
+    internal static bool MustNotWaitForGates => InsideTick || PlayerBase.TickingPlayer is not null;
+
+    /// <summary>
+    /// Throws when the current flow mustn't wait for the gates (see <see cref="MustNotWaitForGates"/>): for what can't
+    /// run later in the background, like a tick.
+    /// </summary>
+    /// <param name="operation">What was called, for the exception's message.</param>
+    /// <exception cref="InvalidOperationException">The current flow is inside a level's or a player's tick.</exception>
+    internal static void ThrowIfMustNotWaitForGates(string operation)
+    {
+        if (MustNotWaitForGates)
+        {
+            throw new InvalidOperationException(
+                $"{operation} can't be called from inside a level's tick or a player's tick, grant or save, as it would " +
+                "wait for a tick that may be waiting for it.");
+        }
+    }
+
+    /// <summary>
+    /// Runs <paramref name="work"/> that waits for levels' simulation gates or players' tick gates, such as a save: at
+    /// once, or, from a flow that mustn't wait for them (see <see cref="MustNotWaitForGates"/>; a plugin's callback in a
+    /// level's tick, say), in the background, where it waits for the ticks to end instead of holding them up.
     /// </summary>
     /// <param name="work">What to run.</param>
     /// <param name="logger">Where a failure of work run in the background is logged.</param>
     /// <returns>The work, or, when it runs in the background, a completed task.</returns>
     internal static Task RunOutsideTicksAsync(Func<Task> work, ILogger logger)
     {
-        if (!InsideTick)
+        if (!MustNotWaitForGates)
             return work();
 
         // Not in the tick's context: the work would count as inside the tick, and hold back the tick's output.
@@ -1121,10 +1160,13 @@ public abstract partial class AbstractLevel : ILevel
         }
 
         // A player's tracking reads the level and writes only their own tracking and connection, so players are tracked
-        // in parallel: one after another, with many players, it took a good part of the tick.
+        // in parallel: one after another, with many players, it took a good part of the tick. A player another level's
+        // tick moved away meanwhile is left to that level (see Player.SynchronizeTrackedEntitiesAsync).
         TickStage = "tracking";
         var trackedPlayers = this.Players.Values.ToArray();
-        await Parallel.ForEachAsync(trackedPlayers, static async (player, _) => await player.SynchronizeTrackedEntitiesAsync());
+        await Parallel.ForEachAsync(
+            trackedPlayers,
+            (player, _) => player.SynchronizeTrackedEntitiesAsync(this));
         foreach (var player in trackedPlayers)
             player.SynchronizeOwnState();
         timings.Lap("light and tracking");
@@ -1724,7 +1766,13 @@ public abstract partial class AbstractLevel : ILevel
     /// <see cref="TakeBlockEntityChanges"/>), like the tick's end does, so that one changed between ticks (by plugin
     /// code off the tick, a command or a test) is saved with its own data as it is now, like its items.
     /// </remarks>
-    public virtual Task FlushRegionsAsync() => this.FlushOwnRegionsAsync();
+    public Task FlushRegionsAsync() => RunOutsideTicksAsync(this.FlushLevelRegionsAsync, this.Logger);
+
+    /// <summary>
+    /// Saves the level's regions: what <see cref="FlushRegionsAsync"/> runs, at once or once the ticks let go of the
+    /// gates.
+    /// </summary>
+    protected virtual Task FlushLevelRegionsAsync() => this.FlushOwnRegionsAsync();
 
     // The level's own flush, which disposal runs without the overrides that flush other levels too.
     private async Task FlushOwnRegionsAsync()
@@ -2093,6 +2141,8 @@ public abstract partial class AbstractLevel : ILevel
     {
         if (this.generated)
             return;
+
+        ThrowIfMustNotWaitForGates(nameof(GenerateAsync));
 
         int pregenerationRange = this.Configuration.PregenerateChunkRange;
 

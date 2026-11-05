@@ -853,7 +853,7 @@ public sealed partial class LevelTransfers
             .GetResult();
 
     // What a mob picking up its equipment does.
-    private static void Equip(List<ItemStack> equipped, ItemEntity item, World world)
+    private static void Equip(List<ItemStack> equipped, ItemEntity item, AbstractLevel world)
     {
         if (item.TryTake(world, 1, _ => true) is not { } taken)
             return;

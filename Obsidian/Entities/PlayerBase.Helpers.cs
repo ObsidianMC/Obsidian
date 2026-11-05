@@ -70,7 +70,20 @@ public partial class PlayerBase
     /// it, and the world they're in to <see cref="PersistentDataFile"/>. An integrated server's local player then becomes
     /// the world's singleplayer owner.
     /// </summary>
-    public virtual async Task SaveAsync() => await this.RunTickAsync(this.SavePlayerAsync, allowStopped: true);
+    /// <remarks>
+    /// It waits for the player's tick gate. From their own tick, grant or save, it saves at once as part of it; from
+    /// inside a level's tick or another player's, it saves in the background once the ticks let go of the gates, and
+    /// returns at once (see <see cref="WorldData.AbstractLevel.RunOutsideTicksAsync"/>).
+    /// </remarks>
+    public virtual Task SaveAsync()
+    {
+        if (this.IsInOwnTick)
+            return this.RunSaveAsync();
+
+        return WorldData.AbstractLevel.RunOutsideTicksAsync(this.RunSaveAsync, this.Logger);
+    }
+
+    private Task RunSaveAsync() => this.RunTickAsync(this.SavePlayerAsync, allowStopped: true).AsTask();
 
     private async ValueTask SavePlayerAsync()
     {

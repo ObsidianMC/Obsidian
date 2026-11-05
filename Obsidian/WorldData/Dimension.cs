@@ -170,7 +170,7 @@ internal sealed class Dimension(ILogger<Dimension> logger, IPacketBroadcaster pa
         writer.WriteInt("SpawnZ", spawn.Z);
     }
 
-    public override async Task SaveAsync()
+    protected override async Task SaveLevelAsync()
     {
         await FlushRegionsAsync();
 
