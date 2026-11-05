@@ -255,8 +255,8 @@ public abstract partial class AbstractLevel : ILevel
             ? snapshot.Players
             : null;
 
-    // Called at the start of the level's tick, under the simulation gate.
-    private void SnapshotPlayers()
+    // Called at the start of the level's tick, under the simulation gate; tests call it to stand in for one.
+    internal void SnapshotPlayers()
     {
         var changes = Volatile.Read(ref this.playerChanges);
         var players = this.Players.Values.ToArray();
@@ -515,6 +515,35 @@ public abstract partial class AbstractLevel : ILevel
 
     // Changed whenever a region is added or removed (see GetRegionForChunk).
     private int regionsVersion;
+
+    // Moved on whenever a chunk leaves the level's loaded set (unloaded, replaced, or its region closing), so a
+    // chunk's neighbours found loaded stay loaded while it holds (see NeighbourEpoch). Starts at 1, so a chunk's 0
+    // never matches it.
+    private long chunkUnloadEpoch = 1;
+
+    /// <summary>
+    /// What a chunk's neighbours found loaded stay valid for: the level's unloads and any chunk losing its
+    /// completion, both of which only count up, so an equal sum means neither moved.
+    /// </summary>
+    /// <remarks>
+    /// Read under the tick lock, which regions hold while they change a slot and move the epoch on: a replacement
+    /// moves it on before publishing the new chunk, so a read between the two would vouch for the old one.
+    /// </remarks>
+    internal long ReadNeighbourEpoch()
+    {
+        lock (this.Fluids.TickLock)
+            return Interlocked.Read(ref this.chunkUnloadEpoch) + Chunk.CompletionLosses;
+    }
+
+    // A region closing passes its empty slots too.
+    private void OnChunkUnloaded(IChunk? chunk)
+    {
+        if (chunk is null)
+            return;
+
+        Interlocked.Increment(ref this.chunkUnloadEpoch);
+        (this.Generator as IStructureStartStorage)?.UntrackStructureChunk(chunk);
+    }
 
     private sealed record RegionLookup(AbstractLevel Level, long Key, int Version, IRegion Region);
 
@@ -1209,9 +1238,8 @@ public abstract partial class AbstractLevel : ILevel
                 StructureChunkLoaded = this.Generator is IStructureStartStorage loading
                     ? loading.TrackStructureChunk
                     : null,
-                StructureChunkUnloaded = this.Generator is IStructureStartStorage unloading
-                    ? unloading.UntrackStructureChunk
-                    : null
+                // Raised for every chunk that leaves the region, which random ticks need as well as structures.
+                StructureChunkUnloaded = this.OnChunkUnloaded
             };
 
             if (this.Regions.TryAdd(value, region))

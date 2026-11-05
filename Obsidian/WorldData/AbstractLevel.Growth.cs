@@ -176,6 +176,9 @@ public abstract partial class AbstractLevel
         // checking the neighbours of each looked most of them up eight more times.
         if (Volatile.Read(ref this.simulationCurrent))
         {
+            // Read before any chunk is looked up, and again after: a chunk is only remembered as complete when
+            // nothing left the loaded chunks in between (see randomTickVerified).
+            var epoch = this.ReadNeighbourEpoch();
             var loaded = this.randomTickLoaded;
             loaded.Clear();
             var candidates = new List<(long Key, Chunk Chunk)>();
@@ -192,11 +195,31 @@ public abstract partial class AbstractLevel
                     candidates.Add((key, chunk));
             }
 
+            var verified = this.randomTickVerified;
+            verified.Clear();
             foreach (var (key, chunk) in candidates)
             {
-                if (this.HasLoadedNeighbours(key, loaded))
+                if (chunk.NeighboursLoadedEpoch == epoch)
+                {
                     chunks.Add(chunk);
+                    continue;
+                }
+
+                if (!this.HasLoadedNeighbours(key, loaded))
+                    continue;
+
+                chunks.Add(chunk);
+                if (AreTracked(key, loaded))
+                    verified.Add(chunk);
             }
+
+            if (this.ReadNeighbourEpoch() == epoch)
+            {
+                foreach (var chunk in verified)
+                    chunk.NeighboursLoadedEpoch = epoch;
+            }
+
+            verified.Clear();
 
             // So it doesn't keep chunks unloaded meanwhile.
             loaded.Clear();
@@ -244,6 +267,30 @@ public abstract partial class AbstractLevel
         }
 
         return chunk;
+    }
+
+    // The chunks this tick found complete, to remember as such once the neighbour epoch is known not to have moved
+    // while they were checked. Chunks leave the loaded set only in unloading passes (every 30 seconds), as regions
+    // close and when a chunk loses its completion, which move the epoch on, while loading only adds neighbours. So a
+    // chunk remembered at the current epoch still has its eight neighbours, and its lookups are skipped.
+    private readonly List<Chunk> randomTickVerified = [];
+
+    // Whether the chunk and its neighbours, looked up already, are Obsidian's own chunks, whose losing completion moves
+    // the neighbour epoch on (see Chunk.CompletionLosses). A plugin's own IChunk may stop being complete without it,
+    // so a neighbourhood holding one is checked again each tick.
+    private static bool AreTracked(long key, Dictionary<long, IChunk?> loaded)
+    {
+        NumericsHelper.LongToInts(key, out var chunkX, out var chunkZ);
+        for (var x = chunkX - 1; x <= chunkX + 1; x++)
+        {
+            for (var z = chunkZ - 1; z <= chunkZ + 1; z++)
+            {
+                if (loaded.GetValueOrDefault(NumericsHelper.IntsToLong(x, z)) is not Chunk)
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     private bool HasLoadedNeighbours(long key, Dictionary<long, IChunk?> loaded)
