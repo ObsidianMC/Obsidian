@@ -470,14 +470,23 @@ public sealed class ChunkSaves
     }
 
     // Saves the chunk like a tick's eager save (see AbstractLevel.SaveChunksEagerlyAsync), waiting for its writes.
+    // An attempt can leave the chunk out while other tests hold the shared staging slots, so it's tried again, as a
+    // later tick would.
     private static async Task SaveEagerlyAsync(Region region, Chunk chunk)
     {
-        var snapshotted = new List<IChunk>();
-        var taken = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var written = region.TrySaveChunks([chunk], snapshotted, taken);
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(5);
+        List<IChunk> snapshotted;
+        do
+        {
+            snapshotted = [];
+            var taken = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var written = region.TrySaveChunks([chunk], snapshotted, taken);
 
-        Assert.NotNull(written);
-        await written;
+            Assert.NotNull(written);
+            await written;
+        }
+        while (snapshotted.Count == 0 && DateTime.UtcNow < deadline);
+
         Assert.Equal([chunk], snapshotted);
     }
 
