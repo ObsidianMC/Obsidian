@@ -2562,14 +2562,21 @@ public abstract partial class AbstractLevel : ILevel
             saveFailures.Add(exception);
         }
 
-        foreach (var region in Regions.Values)
+        // The save failures are logged even when closing the regions throws, which then fails the disposal instead.
+        try
         {
-            await region.DisposeAsync();
-        }
-        simulationGate.Dispose();
+            foreach (var region in Regions.Values)
+            {
+                await region.DisposeAsync();
+            }
 
-        foreach (var saveFailure in saveFailures)
-            Log.FinalSaveFailed(this.Logger, saveFailure, this.Name);
+            simulationGate.Dispose();
+        }
+        finally
+        {
+            foreach (var saveFailure in saveFailures)
+                Log.FinalSaveFailed(this.Logger, saveFailure, this.Name);
+        }
 
         if (saveFailures.Count == 1)
             System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw(saveFailures[0]);
