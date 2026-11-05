@@ -22,6 +22,7 @@ using Obsidian.Services;
 using Obsidian.WorldData;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.ExceptionServices;
 using System.IO;
 using System.Threading;
 
@@ -630,22 +631,45 @@ public sealed partial class Server : IServer, IPluginScopedServer
             await this.saveLock.WaitAsync();
             try
             {
+                // Every step runs even when one before it failed: a failed final save still disposes the worlds,
+                // which save what they can and release the session lock, and the plugins, and saves the user cache.
+                List<Exception> failures = [];
+
                 // Worlds that didn't finish loading aren't saved: a new world whose generation was stopped keeps no
                 // level.dat, so it isn't later taken for a complete world.
                 if (this.WorldManager.ReadyToJoin)
-                    await WorldManager.FlushLoadedWorldsAsync();
+                    await RunStopStepAsync(failures, () => WorldManager.FlushLoadedWorldsAsync());
 
-                await WorldManager.DisposeAsync();
-                await this.PluginManager.DisposeAsync();
+                await RunStopStepAsync(failures, () => WorldManager.DisposeAsync().AsTask());
+                await RunStopStepAsync(failures, () => this.PluginManager.DisposeAsync().AsTask());
+                await RunStopStepAsync(failures, () => this.userCache.SaveAsync());
 
-                await this.userCache.SaveAsync();
+                // The first failure is the stop's, and any after it are logged.
+                foreach (var later in failures.Skip(1))
+                    Log.StopStepFailed(this.logger, later);
+
+                if (failures.Count > 0)
+                    ExceptionDispatchInfo.Throw(failures[0]);
             }
             finally
             {
                 this.saveLock.Release();
             }
         }
+
+        static async Task RunStopStepAsync(List<Exception> failures, Func<Task> step)
+        {
+            try
+            {
+                await step();
+            }
+            catch (Exception exception)
+            {
+                failures.Add(exception);
+            }
+        }
     }
+
     /// <summary>
     /// Pauses the worlds between two ticks: once this returns, no world tick runs, and no chunk loads, unloads or
     /// starts generating, until <see cref="Resume"/>. Saves still run, and connections keep running.
@@ -789,7 +813,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
             finally
             {
                 player.CancelJoin();
-                player.Level.TryRemovePlayer(player);
+                Entity.LeaveServer(player);
                 this.RemovePlayer(player);
             }
             throw;
@@ -848,7 +872,11 @@ public sealed partial class Server : IServer, IPluginScopedServer
     private void ReleaseRegistrations(IPlayer player)
     {
         this.UsernameToUuidMappings.TryRemove(new KeyValuePair<string, Guid>(player.Username, player.Uuid));
-        player.Level.TryRemovePlayer(player);
+
+        // Under the transfer lock of the level that owns the player, so a level change can't move it on meanwhile. Only
+        // the registration goes: a player still connected (one a plugin unregistered, say) may be registered again and
+        // keeps travelling and respawning. Leaving for good is the leave's (see Entity.LeaveServer).
+        Entity.RemoveFromOwningLevel(player);
     }
 
     public async Task<bool> RemoveServerPlayerAsync(IPlayer player)
@@ -897,8 +925,10 @@ public sealed partial class Server : IServer, IPluginScopedServer
         var result = EventResult.Failed;
         try
         {
-            // Its ticks stop first, so that nothing it does runs after it left.
+            // Its ticks stop first, so that nothing it does runs after it left, and then it leaves for good, so that no
+            // travel or respawn still under way puts it in a level again.
             await player.StopTickingAsync();
+            Entity.LeaveServer(player);
 
             result = await this.EventDispatcher.ExecuteEventAsync(new PlayerLeaveEventArgs(player, this, DateTimeOffset.Now));
         }
@@ -1352,5 +1382,8 @@ public sealed partial class Server : IServer, IPluginScopedServer
 
         [LoggerMessage(Level = LogLevel.Error, Message = "Sending changed recipes to {Username} failed")]
         public static partial void RecipeSyncFailed(ILogger logger, Exception exception, string username);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "A step of stopping the server failed after an earlier one did")]
+        public static partial void StopStepFailed(ILogger logger, Exception exception);
     }
 }

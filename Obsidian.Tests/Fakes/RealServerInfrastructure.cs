@@ -187,7 +187,16 @@ internal sealed class FakeUserCache : IUserCache
 
     public Task<MojangProfile?> HasJoinedAsync(string username, string serverId) => Task.FromResult<MojangProfile?>(null);
 
-    public Task SaveAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    /// <summary>
+    /// Whether the cache was saved.
+    /// </summary>
+    public bool Saved { get; private set; }
+
+    public Task SaveAsync(CancellationToken cancellationToken = default)
+    {
+        this.Saved = true;
+        return Task.CompletedTask;
+    }
 
     public Task LoadAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
@@ -215,6 +224,7 @@ internal sealed class RealServerContext : IAsyncDisposable
     public required IServiceProvider BootstrapProvider { get; init; }
     public required IServiceProvider Provider { get; init; }
     public required string WorldName { get; init; }
+    public required FakeUserCache UserCache { get; init; }
 
     public async ValueTask DisposeAsync()
     {
@@ -237,7 +247,10 @@ internal static class TestServerFactory
     /// </summary>
     public const int TestTimeout = 30_000;
 
-    public static RealServerContext CreateServer(string worldName)
+    /// <param name="worldManager">
+    /// Makes the server's world manager for its world; a <see cref="FakeWorldManager"/> by default.
+    /// </param>
+    public static RealServerContext CreateServer(string worldName, Func<World, IWorldManager>? worldManager = null)
     {
         var configuration = new ServerConfiguration
         {
@@ -260,7 +273,7 @@ internal static class TestServerFactory
 
         var broadcaster = new RecordingPacketBroadcaster();
         var world = CreateWorld(worldName, configuration, broadcaster, eventDispatcher);
-        var worldManager = new FakeWorldManager(world);
+        var manager = worldManager?.Invoke(world) ?? new FakeWorldManager(world);
 
         var services = new ServiceCollection();
         services.AddLogging();
@@ -273,6 +286,7 @@ internal static class TestServerFactory
         services.AddSingleton<IPacketBroadcaster>(broadcaster);
         var provider = services.BuildServiceProvider();
 
+        var userCache = new FakeUserCache();
         var server = new Server(
             new FakeHostApplicationLifetime(),
             new TestOptionsMonitor<ServerConfiguration>(configuration),
@@ -281,8 +295,8 @@ internal static class TestServerFactory
             eventDispatcher,
             provider,
             commandHandler,
-            new FakeUserCache(),
-            worldManager)
+            userCache,
+            manager)
         {
             MaxConnections = 16,
             MaxBufferSize = 8192
@@ -301,7 +315,8 @@ internal static class TestServerFactory
             EventDispatcher = eventDispatcher,
             BootstrapProvider = bootstrapProvider,
             Provider = provider,
-            WorldName = worldName
+            WorldName = worldName,
+            UserCache = userCache
         };
     }
 

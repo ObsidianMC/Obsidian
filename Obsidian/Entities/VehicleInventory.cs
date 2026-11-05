@@ -288,8 +288,8 @@ internal sealed class VehicleItemAccess(VehicleInventory inventory, VehicleEntit
 
         if (inventory.LootTable is not null)
         {
-            // Rolling loot may load chunks, which mustn't happen under the tick or item transfer lock.
-            if (level.Fluids.TickLock.IsHeldByCurrentThread || Monitor.IsEntered(ItemEntity.TransferLock))
+            // Rolling loot may load chunks, which mustn't happen under the tick lock or any level's transfer lock.
+            if (level.Fluids.TickLock.IsHeldByCurrentThread || EntityTransferLock.IsAnyHeldByCurrentThread)
                 return null;
 
             level.UnpackVehicleLoot(inventory, null, vehicle.Position);

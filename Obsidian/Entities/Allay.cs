@@ -138,16 +138,18 @@ public sealed partial class Allay : PathfinderMob
         var destination = item != null && (collected.IsAir || collected.Count < collected.MaxStackSize) ? item.Position : delivery;
         ((Navigator)Navigator!).Stop();
         MoveControl.MoveTo(destination, 1);
-        if (item != null && IsInRange(item, 1.5f))
+        var room = collected.IsAir ? held.MaxStackSize : collected.MaxStackSize - collected.Count;
+
+        // Taken as a player's pickup takes it, so a stack something else took meanwhile isn't collected as well.
+        if (item != null && IsInRange(item, 1.5f) && item.TryTake(Level, room, stack => stack == held) is { } taken)
         {
-            var amount = Math.Min(item.Item.Count, collected.IsAir ? held.MaxStackSize : collected.MaxStackSize - collected.Count);
+            var amount = taken.Stack.Count;
             if (collected.IsAir)
-                collected = new ItemStack(item.Item, amount);
+                collected = taken.Stack;
             else
                 collected.Count += amount;
-            item.Item.Count -= amount;
             PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new TakeItemEntityPacket { CollectedEntityId = item.EntityId, CollectorEntityId = EntityId, PickupItemCount = amount });
-            if (item.Item.Count == 0)
+            if (taken.Emptied)
                 await item.RemoveAsync();
             else
                 PacketBroadcaster.QueuePacketToLevelInRange(Level, item.Position, new SetEntityDataPacket { EntityId = item.EntityId, Entity = item });

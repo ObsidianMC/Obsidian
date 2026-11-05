@@ -55,8 +55,9 @@ internal static class GameRuleSynchronization
         // Dimensions share their parent world's rule storage. Keep the existing command's server-wide scope.
         foreach (var world in server.WorldManager.GetAvailableWorlds())
         {
-            world.LevelData.GameRules.Remove($"minecraft:{name}");
+            // The new value first, then the old spelling's, so a level reading the rule meanwhile never finds neither.
             world.LevelData.GameRules[name] = normalized;
+            world.LevelData.GameRules.TryRemove($"minecraft:{name}", out _);
         }
 
         var packet = new GameRuleValuesPacket { Values = new Dictionary<string, string> { [$"minecraft:{name}"] = normalized } };

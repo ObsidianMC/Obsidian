@@ -246,6 +246,7 @@ public abstract partial class AbstractLevel : ILevel
     // so that one who joined mid-tick is seen.
     private TickPlayerSnapshot? tickPlayers;
     private int playerChanges;
+    private readonly PlayerGrid playerGrid = new();
 
     private sealed record TickPlayerSnapshot(IPlayer[] Players, int Changes);
 
@@ -258,11 +259,16 @@ public abstract partial class AbstractLevel : ILevel
     // Called at the start of the level's tick, under the simulation gate; tests call it to stand in for one.
     internal void SnapshotPlayers()
     {
-        var changes = Volatile.Read(ref this.playerChanges);
-        var players = this.Players.Values.ToArray();
+        IPlayer[] players;
+        lock (this.playerGrid.MembershipGate)
+        {
+            var changes = Volatile.Read(ref this.playerChanges);
+            players = this.Players.Values.ToArray();
+            this.playerGrid.Rebuild(players);
+            Volatile.Write(ref this.tickPlayers, new TickPlayerSnapshot(players, changes));
+        }
         this.simulation.Update(players.Where(player => player.GameMode != GameMode.Spectator), Configuration.SimulationDistance);
 
-        Volatile.Write(ref this.tickPlayers, new TickPlayerSnapshot(players, changes));
         Volatile.Write(ref this.simulationCurrent, true);
         Volatile.Write(ref this.currentTickId, ++this.lastTickId);
     }
@@ -273,21 +279,18 @@ public abstract partial class AbstractLevel : ILevel
     /// </summary>
     internal double NearestPlayerDistanceSquared(VectorD position)
     {
-        var nearest = double.MaxValue;
-        if (this.CurrentTickPlayers is IPlayer[] players)
-        {
-            foreach (var player in players)
-            {
-                if (player.GameMode != GameMode.Spectator && this.Players.ContainsKey(player.Uuid))
-                    nearest = Math.Min(nearest, (player.Position - position).MagnitudeSquared());
-            }
-            return nearest;
-        }
+        IPlayer[]? players;
+        lock (this.playerGrid.MembershipGate)
+            players = this.CurrentTickPlayers;
 
+        if (players is not null)
+            return this.playerGrid.NearestDistanceSquared(players, position, this.Players);
+
+        var nearest = double.MaxValue;
         foreach (var (_, player) in this.Players)
         {
             if (player.GameMode != GameMode.Spectator)
-                nearest = Math.Min(nearest, (player.Position - position).MagnitudeSquared());
+                nearest = Math.Min(nearest, (PlayerGrid.ReadPosition(player) - position).MagnitudeSquared());
         }
         return nearest;
     }
@@ -460,14 +463,26 @@ public abstract partial class AbstractLevel : ILevel
         this.Generator.Init(this);
     }
 
+    /// <summary>
+    /// The lock that makes moving this level's items and entities atomic (see <see cref="EntityTransferLock"/>). Each
+    /// level has its own, so levels don't wait for each other's.
+    /// </summary>
+    internal EntityTransferLock TransferLock { get; } = new();
+
     public ValueTask<bool> DestroyEntityAsync(IEntity entity)
     {
-        lock (ItemEntity.TransferLock)
-            return ValueTask.FromResult(this.RemoveEntity(entity, transferring: false));
+        using (this.TransferLock.Enter())
+        {
+            // An entity on its way here is in no region yet: it's kept from arriving instead.
+            var removed = entity is Entity travelling && travelling.TryRemoveOnArrival(this)
+                || this.RemoveEntity(entity, transferring: false);
+
+            return ValueTask.FromResult(removed);
+        }
     }
 
     // Transfers reuse the instance and its attachment holder; only a real removal retires storage.
-    // The caller holds TransferLock, shared with transfer commits and the entity save snapshot.
+    // The caller holds the level's TransferLock, shared with transfer commits and the entity save snapshot.
     internal bool RemoveEntity(IEntity entity, bool transferring)
     {
         if (this.GetRegionForLocation(entity.Position) is not Region region || !region.TryRemoveEntity(entity))
@@ -842,7 +857,7 @@ public abstract partial class AbstractLevel : ILevel
         {
             foreach (var (_, player) in Players)
             {
-                if (player.Position == location)
+                if (PlayerGrid.ReadPosition(player) == location)
                 {
                     yield return player;
                 }
@@ -852,13 +867,17 @@ public abstract partial class AbstractLevel : ILevel
 
         distance *= distance;
 
-        // During the tick, from its snapshot of the players: mobs ask this many times a tick, and going over the
-        // players' dictionary each time cost more than the checks. A player who left since isn't returned.
-        if (this.CurrentTickPlayers is IPlayer[] players)
+        // Keep the snapshot's order, but test each player's current position and identity immediately before
+        // yielding, as the original array loop did. Column candidates refresh after movement while suspended.
+        IPlayer[]? players;
+        lock (this.playerGrid.MembershipGate)
+            players = this.CurrentTickPlayers;
+
+        if (players is not null)
         {
-            foreach (var player in players)
+            foreach (var player in this.playerGrid.CandidatesInOrder(players, location, distance))
             {
-                var difference = player.Position - location;
+                var difference = PlayerGrid.ReadPosition(player) - location;
                 if (difference.X * difference.X + difference.Z * difference.Z <= distance
                     && this.Players.TryGetValue(player.Uuid, out var current) && ReferenceEquals(current, player))
                 {
@@ -868,9 +887,10 @@ public abstract partial class AbstractLevel : ILevel
             yield break;
         }
 
+        // Players is publicly mutable; outside a valid tick snapshot retain the original dictionary path.
         foreach (var (_, player) in Players)
         {
-            var difference = player.Position - location;
+            var difference = PlayerGrid.ReadPosition(player) - location;
             if (difference.X * difference.X + difference.Z * difference.Z <= distance)
             {
                 yield return player;
@@ -882,21 +902,29 @@ public abstract partial class AbstractLevel : ILevel
 
     public bool TryAddPlayer(IPlayer player)
     {
-        if (!Players.TryAdd(player.Uuid, player))
-            return false;
+        lock (this.playerGrid.MembershipGate)
+        {
+            if (!Players.TryAdd(player.Uuid, player))
+                return false;
 
-        Interlocked.Increment(ref this.playerChanges);
-        return true;
+            Interlocked.Increment(ref this.playerChanges);
+            this.playerGrid.Add(player);
+            return true;
+        }
     }
 
     // Matches the instance, not just the UUID, so a stale reference can't remove a newer player with the same UUID.
     public bool TryRemovePlayer(IPlayer player)
     {
-        if (!Players.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
-            return false;
+        lock (this.playerGrid.MembershipGate)
+        {
+            if (!Players.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
+                return false;
 
-        Interlocked.Increment(ref this.playerChanges);
-        return true;
+            Interlocked.Increment(ref this.playerChanges);
+            this.playerGrid.Remove(player);
+            return true;
+        }
     }
 
     public async virtual Task DoWorldTickAsync()
@@ -948,11 +976,7 @@ public abstract partial class AbstractLevel : ILevel
             return;
         var timings = new TickTimings(this.entityTypeTimes);
 
-        if (this is not Dimension)
-        {
-            var advanceTime = LevelData.GetBooleanRule("advance_time");
-            LevelData.WorldClocks.Tick(advanceTime, this.Configuration.TimeTickSpeedMultiplier);
-        }
+        // The world's clocks ticked before its levels (see World.TickClocks).
         LevelData.RainTime -= this.Configuration.TimeTickSpeedMultiplier;
 
         // Like vanilla's ServerLevel, clients get the time every second, so their clocks don't drift from the server's.
@@ -995,14 +1019,27 @@ public abstract partial class AbstractLevel : ILevel
         {
             if (entity is Mob { HasAi: true } or ItemEntity or ExperienceOrb && !IsMobTicking(entity.Position))
                 continue;
-            if (GetRegionForLocation(entity.Position)?.Entities.ContainsKey(entity.EntityId) == true)
+
+            // Not while travel still moves it or another level's tick of it is under way (see Entity.TryClaimTick).
+            var claimed = entity as Entity;
+            if (claimed is not null && !claimed.TryClaimTick(this))
+                continue;
+
+            try
             {
-                this.tickingEntity = entity;
-                await entity.TickAsync();
-                await this.TouchPluginBlocksAsync(entity);
-                if (entity is Entity concrete && entity is not IPlayer && entity.Level == this)
-                    await concrete.TickEntityPortalAsync();
-                timings.LapEntity(entity.GetType());
+                if (GetRegionForLocation(entity.Position)?.Entities.ContainsKey(entity.EntityId) == true)
+                {
+                    this.tickingEntity = entity;
+                    await entity.TickAsync();
+                    await this.TouchPluginBlocksAsync(entity);
+                    if (entity is Entity concrete && entity is not IPlayer && entity.Level == this)
+                        await concrete.TickEntityPortalAsync();
+                    timings.LapEntity(entity.GetType());
+                }
+            }
+            finally
+            {
+                claimed?.ReleaseTick(this);
             }
         }
         // Like vanilla's entity movement, the redstone that entities touch reacts once they've all ticked: pressure plates,
@@ -1236,6 +1273,7 @@ public abstract partial class AbstractLevel : ILevel
                 Logger = this.Logger,
                 LockChunk = this.Generator.LockChunkAsync,
                 FluidTickLock = this.Fluids.TickLock,
+                EntityTransfers = this.TransferLock,
                 FlushLight = this.Lighting.Flush,
                 LightLoaded = this.TrackPublishedChunk,
                 LightUnloaded = this.Lighting.Untrack,
@@ -1291,6 +1329,10 @@ public abstract partial class AbstractLevel : ILevel
                 return;
 
             if (!retry && this.HasRegionTickets(regionX, regionZ))
+                return;
+
+            // Not while an entity that left it for another level may still come back or be kept there.
+            if (!retry && r is Region leaving && !this.TryCloseRegionToTravel(leaving))
                 return;
 
             // A failed unload stays registered until autosave retries it. Once retired it must finish closing,
@@ -1391,8 +1433,9 @@ public abstract partial class AbstractLevel : ILevel
                 await simulationGate.WaitAsync();
                 try
                 {
-                    // Recheck after entering the gate, against tickets acquired since the candidate snapshot.
-                    if (!this.TryReleaseUnneededChunk(chunk))
+                    // Recheck after entering the gate, against tickets acquired since the candidate snapshot, and
+                    // against entities that left the chunk for another level and may come back.
+                    if (!this.TryReleaseChunkClosedToTravel(chunk))
                         continue;
 
                     // The chunk's final save has its block entities' changes made since the last tick.
@@ -1409,6 +1452,7 @@ public abstract partial class AbstractLevel : ILevel
                 }
                 finally
                 {
+                    this.ReopenChunkToTravel(chunk);
                     simulationGate.Release();
                 }
             }
@@ -1633,7 +1677,10 @@ public abstract partial class AbstractLevel : ILevel
     /// <see cref="TakeBlockEntityChanges"/>), like the tick's end does, so that one changed between ticks (by plugin
     /// code off the tick, a command or a test) is saved with its own data as it is now, like its items.
     /// </remarks>
-    public async virtual Task FlushRegionsAsync()
+    public virtual Task FlushRegionsAsync() => this.FlushOwnRegionsAsync();
+
+    // The level's own flush, which disposal runs without the overrides that flush other levels too.
+    private async Task FlushOwnRegionsAsync()
     {
         Region[] written = [];
         Task<Exception?>[] saves = [];
@@ -1644,6 +1691,10 @@ public abstract partial class AbstractLevel : ILevel
             await this.EnterGateAfterEagerSavesAsync();
             try
             {
+                // A traveller no level could place or keep yet isn't in this save: reported, and retried until it is.
+                if (this.RetryUnplaced() is var unplacedLeft and > 0)
+                    Log.TravellersNotSaved(this.Logger, unplacedLeft, this.Name);
+
                 this.TakeBlockEntityChanges();
 
                 jobsBeforeFlush = Interlocked.Exchange(ref this.jobsSinceFlush, 0);
@@ -2245,7 +2296,9 @@ public abstract partial class AbstractLevel : ILevel
     /// <remarks>
     /// The level hasn't ticked yet, so the entity work it does for complete chunks (populating them with mobs, spawning
     /// the entities generation placed) runs first, as the tick would before they could unload. Each region unloads its
-    /// chunks together (see <see cref="Region.UnloadChunksAsync"/>), so its files are committed once at most.
+    /// chunks together (see <see cref="Region.UnloadChunksAsync"/>), so its files are committed once at most. It doesn't
+    /// check travel pins (see <see cref="TryPinForTravel"/>): it runs before the level is available to players, plugins
+    /// or other levels, so no entity can have left these chunks for another level.
     /// </remarks>
     private async Task UnloadPregeneratedAsync(HashSet<long> remaining, HashSet<long> kept)
     {
@@ -2472,7 +2525,16 @@ public abstract partial class AbstractLevel : ILevel
 
         this.ClearChunkTickets();
         this.optionsMonitor.Dispose();
-        this.SavePluginData();
+
+        // Like the final save below: a failure is reported, and disposal goes on.
+        try
+        {
+            this.SavePluginData();
+        }
+        catch (Exception exception)
+        {
+            Log.FinalSaveFailed(this.Logger, exception, this.Name);
+        }
 
         // Waits out the generation jobs, holding every slot so no new one starts, and saves what jobs finished since the
         // last save started, including jobs that were still running during the server's save on stop.
@@ -2486,8 +2548,18 @@ public abstract partial class AbstractLevel : ILevel
         if (Interlocked.Exchange(ref this.generationFailure, null) is Exception failure)
             Log.ChunkGenerationFailed(this.Logger, failure);
 
-        if (Volatile.Read(ref this.jobsSinceFlush) != 0)
-            await this.FlushRegionsAsync();
+        // The level's own: an override flushes other levels too, which may be disposed already. One with travellers
+        // still unplaced fails rather than discarding them.
+        // A failed final save is reported, and disposal goes on.
+        try
+        {
+            if (Volatile.Read(ref this.jobsSinceFlush) != 0 || this.HasUnplacedTravellers)
+                await this.FlushOwnRegionsAsync();
+        }
+        catch (Exception exception)
+        {
+            Log.FinalSaveFailed(this.Logger, exception, this.Name);
+        }
 
         foreach (var region in Regions.Values)
         {

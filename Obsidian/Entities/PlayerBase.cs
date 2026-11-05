@@ -618,6 +618,12 @@ public abstract partial class PlayerBase : Avatar, IPlayer
             throw new InvalidOperationException("The player died or changed level before the teleport.");
 
         var riders = this.DetachPassengersForTravel();
+
+        // Still waiting to be taken in after a respawn whose chunk wasn't ready: it's taken in at its new place instead,
+        // or waits there.
+        if (this.TryMoveWhileArriving(level, pos, yaw, pitch))
+            return riders;
+
         LastPosition = Position;
         if (Level is AbstractLevel resident && !resident.TryMoveEntity(this, Position, pos))
         {
@@ -722,6 +728,10 @@ public abstract partial class PlayerBase : Avatar, IPlayer
         if (destination is null || !this.Alive || this.Respawning)
             return false;
 
+        // A respawned player waiting for its chunk can't leave for another dimension yet (see WaitsToArrive).
+        if (destination != this.Level && this.WaitsToArrive)
+            return false;
+
         if (destination == this.Level)
             await this.TeleportAsync(destination.LevelData.SpawnPosition);
         else
@@ -751,6 +761,14 @@ public abstract partial class PlayerBase : Avatar, IPlayer
         Entity[] riders = [];
         var spawn = position ?? destination.LevelData.SpawnPosition;
         ValidateTravel(destination, spawn, yaw, pitch);
+
+        // Refused rather than dropped: the player isn't in its level's regions yet, and waiting for it here could
+        // wait on the very tick that takes it in.
+        if (this.WaitsToArrive)
+        {
+            throw new InvalidOperationException(
+                "The player can't change dimension while it waits to be taken into its level after respawning.");
+        }
         using var area = destination is AbstractLevel target
             ? await PortalArea.LoadAsync(target, (Vector)spawn.Floor(), 0,
                 () => this.Connected && this.Alive && this.IsTravelResident(origin))
@@ -760,33 +778,45 @@ public abstract partial class PlayerBase : Avatar, IPlayer
 
         await this.CloseContainerAsync();
 
-        while (true)
+        // No level ticks the player from just before it leaves until its passengers are seated again (see
+        // Entity.TryClaimTick); taken in Commit, so a death this waits for still ticks.
+        var holding = false;
+        try
         {
-            await this.WaitForDeathAsync();
-            // Held from the level change until the destination's packets are queued, so that another travel's packets
-            // can't come in between.
-            await this.chunkUpdates.WaitAsync();
-            await using var callbacks = DeferredInventoryWork.Begin(this.Logger);
-            try
+            while (true)
             {
-                if (await this.RespawnUnderLockAsync(
-                    DataKept.Attributes | DataKept.Metadata, levelChange: true, transfer: Commit))
+                await this.WaitForDeathAsync();
+                // Held from the level change until the destination's packets are queued, so that another travel's
+                // packets can't come in between.
+                await this.chunkUpdates.WaitAsync();
+                await using var callbacks = DeferredInventoryWork.Begin(this.Logger);
+                try
                 {
-                    await this.QueueDestinationAsync(destination);
-                    break;
+                    if (await this.RespawnUnderLockAsync(
+                        DataKept.Attributes | DataKept.Metadata, levelChange: true, transfer: Commit))
+                    {
+                        await this.QueueDestinationAsync(destination);
+                        break;
+                    }
+                }
+                finally
+                {
+                    this.preservePortalMotion = false;
+                    this.chunkUpdates.Release();
                 }
             }
-            finally
-            {
-                this.preservePortalMotion = false;
-                this.chunkUpdates.Release();
-            }
+
+            await this.EventDispatcher.ExecuteEventAsync(new PlayerTeleportEventArgs(this, this.Server, from, spawn));
+            await this.FireProgressAsync("changed_dimension", from: origin.DimensionName, to: destination.DimensionName);
+            this.progressDimension = destination.DimensionName;
+            await this.CarryPassengersAsync(riders, from, fromYaw, fromPitch);
+        }
+        finally
+        {
+            if (holding)
+                this.EndTravelHold();
         }
 
-        await this.EventDispatcher.ExecuteEventAsync(new PlayerTeleportEventArgs(this, this.Server, from, spawn));
-        await this.FireProgressAsync("changed_dimension", from: origin.DimensionName, to: destination.DimensionName);
-        this.progressDimension = destination.DimensionName;
-        await this.CarryPassengersAsync(riders, from, fromYaw, fromPitch);
         await SaveAsync();
 
         void Commit()
@@ -794,6 +824,12 @@ public abstract partial class PlayerBase : Avatar, IPlayer
             from = this.Position;
             fromYaw = this.Yaw;
             fromPitch = this.Pitch;
+            if (!holding)
+            {
+                this.BeginTravelHold();
+                holding = true;
+            }
+
             riders = this.DetachPassengersForTravel();
             try
             {
@@ -898,6 +934,10 @@ public abstract partial class PlayerBase : Avatar, IPlayer
             this.Respawning = true;
             this.respawnFinished = new(TaskCreationOptions.RunContinuationsAsynchronously);
         }
+
+        // A dead player is held from ticking (see Entity.TryClaimTick) from just before it leaves where it died until
+        // the respawn is over, as a level change's player is.
+        var holding = false;
         try
         {
             // Reserve the respawn before changing levels: a death that won the lock retries without committing,
@@ -945,21 +985,17 @@ public abstract partial class PlayerBase : Avatar, IPlayer
                 Health = MaxHealth;
                 this.progressDead = false;
                 API.Data.AttachmentStorage.For(this).EndDeath();
-                await Level.DestroyEntityAsync(this);
 
                 // Like vanilla's respawn, the player comes back where their bed or anchor is, or at the world spawn.
-                if (respawnLevel != Level)
-                {
-                    Level.TryRemovePlayer(this);
-                    Level = respawnLevel;
-                    Level.TryAddPlayer(this);
-                }
-
-                Yaw = respawnYaw;
-                Position = respawnPosition;
-                LastPosition = Position;
-                BoundingBox = Dimension.CreateBBFromPosition(Position);
-                Level.TryAddEntity(this);
+                // The dead player leaves the level it died in and joins that one through travel's handoff, as one that
+                // travels would. Vanilla loads the respawn chunk first, between ticks; this may run inside a level's
+                // tick (a plugin's), which generation waits for, so a chunk that isn't generated yet isn't waited for:
+                // the player waits in its new level and is taken in once the chunk is ready (see CommitRespawn).
+                await RequestRespawnChunkAsync(respawnLevel, respawnPosition);
+                this.BeginTravelHold();
+                holding = true;
+                if (!this.CommitRespawn(respawnLevel, respawnPosition, respawnYaw, this.Pitch))
+                    Log.RespawnNotPlaced(this.Logger, this.Username, respawnLevel.Name);
             }
 
             Log.ChangingLevel(this.Logger, this.Username, this.Level.Name);
@@ -990,7 +1026,6 @@ public abstract partial class PlayerBase : Avatar, IPlayer
 
             pendingRespawnChunks = !await this.UpdateChunksUnderLockAsync(true);
             respawnChunkRetryTicks = 20;
-            Level.TryAddEntity(this);
             await this.QueuePacketAsync(new SetHealthPacket(Health, FoodLevel, FoodSaturationLevel));
             await SendPlayerInfoAsync();
 
@@ -1008,9 +1043,21 @@ public abstract partial class PlayerBase : Avatar, IPlayer
                 this.Respawning = false;
                 this.respawnFinished!.TrySetResult();
             }
+
+            // Last, so that no level ticks the player before its respawn is over.
+            if (holding)
+                this.EndTravelHold();
         }
 
         return true;
+    }
+
+    // Loads the chunk a dead player respawns in from its save, so that its level can take them in at once, or queues
+    // its generation, which isn't waited for.
+    private static async ValueTask RequestRespawnChunkAsync(ILevel level, VectorD position)
+    {
+        var (x, z) = Region.ChunkOf(position);
+        await level.GetChunkAsync(x, z);
     }
 
     //TODO make IDamageSource 
@@ -1296,5 +1343,9 @@ public abstract partial class PlayerBase : Avatar, IPlayer
 
         [LoggerMessage(Level = LogLevel.Warning, Message = "{Username}'s saved vehicle couldn't be restored; they join without it")]
         public static partial void VehicleNotRestored(ILogger logger, string username);
+
+        [LoggerMessage(Level = LogLevel.Warning,
+            Message = "{Username} respawned in {LevelName}, which couldn't take them in; they aren't among its entities")]
+        public static partial void RespawnNotPlaced(ILogger logger, string username, string levelName);
     }
 }
