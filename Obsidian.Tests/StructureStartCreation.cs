@@ -277,7 +277,7 @@ public sealed class StructureStartCreation
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task ReviewTaskDispatchedReentrancyCompletesBeforeItsOwnerReturns()
+    public async Task TaskDispatchedReentrancyCompletesBeforeItsOwnerReturns()
     {
         var cache = new StructureStartCache
         {
@@ -446,7 +446,7 @@ public sealed class StructureStartCreation
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task ReviewEndedCapturedContextMustJoinAnUnrelatedCreator()
+    public async Task AnEndedCapturedContextJoinsAnUnrelatedCreator()
     {
         ExecutionContext? captured = null;
         var layout = Layout();
