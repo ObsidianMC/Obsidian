@@ -39,26 +39,6 @@ internal static class SpecialCrafting
         };
     }
 
-    /// <summary>
-    /// Whether <paramref name="stack"/> is valid by vanilla's <c>ItemStack.validateStrict</c>, which a recipe's
-    /// result template checks the result with: no more items than its stack size, not both damageable and
-    /// stackable, and no stack it holds (in a container, bundle or loaded crossbow) larger than that stack's size.
-    /// Vanilla's bundle weight check fails only when the weight overflows, which no valid bundle reaches.
-    /// </summary>
-    internal static bool IsValidStack(ItemStack stack)
-    {
-        var maxStackSize = MaxStackSize(stack);
-        if (stack.MaxDamage > 0 && maxStackSize > 1)
-            return false;
-
-        if (stack.Count > maxStackSize)
-            return false;
-
-        return HeldStacksFit(stack, DataComponentType.Container)
-            && HeldStacksFit(stack, DataComponentType.BundleContents)
-            && HeldStacksFit(stack, DataComponentType.ChargedProjectiles);
-    }
-
     // One target and at least one dye item, in any slots.
     private static bool TryDye(DyeRecipe recipe, List<ItemStack> items, out ItemStack? result)
     {
@@ -254,20 +234,7 @@ internal static class SpecialCrafting
     }
 
     // Like vanilla's ItemStackTemplate, which logs an invalid result and creates an empty stack instead.
-    private static ItemStack? Validated(ItemStack stack) => IsValidStack(stack) ? stack : null;
-
-    private static bool HeldStacksFit(ItemStack stack, DataComponentType type)
-    {
-        var held = stack.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(type)?.Value ?? [];
-
-        return held
-            .Where(IsOccupied)
-            .All(item => item.Count <= MaxStackSize(item));
-    }
-
-    // Vanilla's getMaxStackSize, whose default is 1: a stack whose max_stack_size component was removed holds one.
-    private static int MaxStackSize(ItemStack stack) =>
-        stack.RemoveComponents.Contains(DataComponentType.MaxStackSize) ? 1 : stack.MaxStackSize;
+    private static ItemStack? Validated(ItemStack stack) => ItemStackValidation.IsValid(stack) ? stack : null;
 
     // The grid's items, row by row.
     private static List<ItemStack> Occupied(IReadOnlyList<ItemStack?> grid) => grid

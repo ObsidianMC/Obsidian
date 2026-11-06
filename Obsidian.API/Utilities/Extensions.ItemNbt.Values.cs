@@ -119,10 +119,42 @@ public partial class Extensions
         ? new NbtTag<string>(name, provider) : new NbtTag<float>(name, value.Constant);
 
     private static ComponentIntValue ComponentIntFromNbt(INbtTag value) => value is NbtTag<string> provider
-        ? new(0, provider.Value) : new(((NbtTag<int>)value).Value);
+        ? new(0, provider.Value) : new((int)Math.Floor(Number(value)));
 
     private static ComponentFloatValue ComponentFloatFromNbt(INbtTag value) => value is NbtTag<string> provider
-        ? new(0, provider.Value) : new(((NbtTag<float>)value).Value);
+        ? new(0, provider.Value) : new((float)Number(value));
+
+    // A number tag of any type, read like vanilla's numeric tags: a data pack's JSON writes a float's 1 as an int.
+    private static double Number(INbtTag tag) =>
+        NumberOf(tag) ?? throw new InvalidDataException($"{tag.Name} isn't a number.");
+
+    private static double? NumberOf(INbtTag tag) => tag switch
+    {
+        NbtTag<byte> value => value.Value,
+        NbtTag<short> value => value.Value,
+        NbtTag<int> value => value.Value,
+        NbtTag<long> value => value.Value,
+        NbtTag<float> value => value.Value,
+        NbtTag<double> value => value.Value,
+        _ => null
+    };
+
+    // A list of numbers, saved as a list of number tags or a number array: JSON's lists of whole numbers become int
+    // arrays (see JsonNbt), and vanilla reads either.
+    private static IEnumerable<double> ListNumbers(NbtCompound tag, string name)
+    {
+        if (!tag.TryGetTag(name, out var list))
+            return [];
+
+        return list switch
+        {
+            NbtArray<int> ints => ints.GetArray().Select(value => (double)value),
+            NbtArray<long> longs => longs.GetArray().Select(value => (double)value),
+            NbtArray<byte> bytes => bytes.GetArray().Select(value => (double)value),
+            NbtList numbers => numbers.Select(NumberOf).OfType<double>(),
+            _ => []
+        };
+    }
 
     private static DataComponent? AdditionalComponentFromNbt(string name, INbtTag tag)
     {
@@ -537,10 +569,10 @@ public partial class Extensions
         DataComponentType.EntityData or DataComponentType.BlockEntityData => EntityDataFromNbt(type, tag),
         DataComponentType.CustomModelData => new CustomModelDataComponent
         {
-            Floats = [.. ListValues<float>(tag, "floats")],
+            Floats = [.. ListNumbers(tag, "floats").Select(value => (float)value)],
             Flags = tag.TryGetTag<NbtList>("flags", out var flags) ? [.. flags.Select(ReadBoolean)] : [],
             Strings = [.. ListValues<string>(tag, "strings")],
-            Colors = [.. ListValues<int>(tag, "colors")]
+            Colors = [.. ListNumbers(tag, "colors").Select(value => (int)value)]
         },
         DataComponentType.LodestoneTracker => new LodestoneTrackerDataComponent
         {

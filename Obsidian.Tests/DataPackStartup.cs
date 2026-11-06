@@ -384,8 +384,17 @@ public sealed class DataPackStartup : IDisposable
             var horn = Assert.Single(ChestItems());
             Assert.True(horn.ContainsKey(DataComponentType.Instrument));
             Assert.True(horn.HasEnchantmentGlint);
-            Assert.Equal("Wintry Horn", horn.CustomName!.Text);
             Assert.Single(horn.Lore);
+
+            // A float written as a whole number reads like vanilla's, and a patch making a damageable item
+            // stackable is undone, as vanilla's applyComponentsAndValidate does.
+            Assert.Equal(2f, horn.GetComponent<UseCooldownDataComponent>(DataComponentType.UseCooldown)!.Seconds);
+            Assert.Equal(5, horn.MaxDamage);
+            Assert.Equal(1, horn.MaxStackSize);
+
+            // A list of a string and an object is a text with the rest as its extras.
+            Assert.Equal("Wintry ", horn.CustomName!.Text);
+            Assert.Equal("Horn", Assert.Single(horn.CustomName.GetExtras()).Text);
         }
         finally
         {
@@ -460,12 +469,17 @@ public sealed class DataPackStartup : IDisposable
                 { "type": "minecraft:set_instrument", "options": "#minecraft:regular_goat_horns" },
                 {
                   "type": "minecraft:set_components",
-                  "components": { "minecraft:enchantment_glint_override": true }
+                  "components": {
+                    "minecraft:enchantment_glint_override": true,
+                    "minecraft:use_cooldown": { "seconds": 2 },
+                    "minecraft:max_damage": 5
+                  }
                 },
+                { "type": "minecraft:set_components", "components": { "minecraft:max_stack_size": 16 } },
                 {
                   "type": "minecraft:set_name",
                   "entity": "this",
-                  "name": { "text": "Wintry Horn", "italic": false }
+                  "name": ["Wintry ", { "text": "Horn", "italic": false }]
                 },
                 { "type": "minecraft:set_lore", "mode": "append", "lore": [{ "text": "Found in an igloo" }] }
               ]

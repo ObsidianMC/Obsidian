@@ -5,6 +5,7 @@ using Obsidian.API.Registries;
 using Obsidian.API.Utilities;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Obsidian.API.Loot;
 
@@ -226,9 +227,45 @@ public static partial class LootTableJson
     }
 
     // A text component as data packs write it, read like a saved one: vanilla's text codec reads either.
-    private static ChatMessage ReadText(JsonElement json) =>
-        JsonNbt.ToNbt(string.Empty, json).TextFromNbt()
+    private static ChatMessage ReadText(JsonElement json)
+    {
+        var text = JsonSerializer.SerializeToElement(Homogeneous(json));
+
+        return JsonNbt.ToNbt(string.Empty, text).TextFromNbt()
             ?? throw new InvalidDataException($"{json.GetRawText()} isn't a text component.");
+    }
+
+    // Vanilla's text codec reads a string, an object or a list of texts at any depth, a list's first text holding the
+    // rest as its extras, which may mix strings and objects. An NBT list holds one type, so every text in a list (and
+    // in an object's extra or with) becomes an object.
+    private static JsonNode? Homogeneous(JsonElement text)
+    {
+        if (text.ValueKind == JsonValueKind.Array)
+            return new JsonArray([.. text.EnumerateArray().Select(TextObject)]);
+
+        if (text.ValueKind != JsonValueKind.Object)
+            return JsonNode.Parse(text.GetRawText());
+
+        var result = new JsonObject();
+
+        foreach (var property in text.EnumerateObject())
+        {
+            var isTextList = property.Name is "extra" or "with" && property.Value.ValueKind == JsonValueKind.Array;
+            result[property.Name] = isTextList ? Homogeneous(property.Value) : JsonNode.Parse(property.Value.GetRawText());
+        }
+
+        return result;
+    }
+
+    // A text in a list as an object: a string or a translation's number argument as plain text, and a nested list as
+    // an empty text with the list as its extras.
+    private static JsonNode? TextObject(JsonElement text) => text.ValueKind switch
+    {
+        JsonValueKind.Object => Homogeneous(text),
+        JsonValueKind.Array => new JsonObject { ["text"] = string.Empty, ["extra"] = Homogeneous(text) },
+        JsonValueKind.String => new JsonObject { ["text"] = text.GetString() },
+        _ => new JsonObject { ["text"] = text.GetRawText() }
+    };
 
     private static NameTarget ReadNameTarget(JsonElement json)
     {
@@ -288,19 +325,22 @@ public static partial class LootTableJson
     }
 
     // Vanilla's set_components applies its patch to the stack: each component it sets replaces the stack's, and each
-    // one it removes is gone. Components are immutable, so stacks can share them.
+    // one it removes is gone. Like vanilla's applyComponentsAndValidate, a patch leaving the stack invalid (a
+    // damageable item made stackable) is undone. Components are immutable, so stacks can share them.
     private static ItemStack SetComponents(
         ItemStack stack,
         ImmutableArray<DataComponent> components,
         ImmutableArray<DataComponentType> removed)
     {
+        var patched = new ItemStack(stack, stack.Count);
+
         foreach (var component in components)
-            LootItems.Set(stack, component);
+            LootItems.Set(patched, component);
 
         foreach (var type in removed)
-            stack.Remove(type);
+            patched.Remove(type);
 
-        return stack;
+        return ItemStackValidation.IsValid(patched) ? patched : stack;
     }
 
     private static bool ReadFlag(JsonElement json, string name, bool fallback) =>

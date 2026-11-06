@@ -145,12 +145,28 @@ public partial class Extensions
                 continue;
             }
 
-            var tag = JsonNbt.ToNbt(name, property.Value);
-            set.Add(ComponentFromNbt(name, tag)
-                ?? throw new InvalidDataException($"Obsidian can't set the component {name} yet."));
+            set.Add(ComponentFromJson(name, property.Value));
         }
 
         return (set.ToImmutable(), removed.ToImmutable());
+    }
+
+    // The readers of saved components fail in many ways on a value that isn't one; any failure is the value's, so that
+    // only the file holding it is left out.
+    private static DataComponent ComponentFromJson(string name, System.Text.Json.JsonElement value)
+    {
+        DataComponent? component;
+
+        try
+        {
+            component = ComponentFromNbt(name, JsonNbt.ToNbt(name, value));
+        }
+        catch (Exception error) when (error is not (OutOfMemoryException or InvalidDataException))
+        {
+            throw new InvalidDataException($"{name} isn't a valid component: {error.Message}", error);
+        }
+
+        return component ?? throw new InvalidDataException($"Obsidian can't set the component {name} yet.");
     }
 
     // The fields of Obsidian's previous item tag.
