@@ -27,6 +27,7 @@ internal static class ScenarioCaptures
     public const string Heightmaps = "heightmaps";
     public const string SavedHeightmaps = "saved_heightmaps";
     public const string Mining = "mining";
+    public const string Placement = "placement";
 
     private const string Symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -54,7 +55,8 @@ internal static class ScenarioCaptures
     private static readonly string[] SelectableCases = [Sulfur, MoreBlocks, StructurePieces];
 
     public static readonly string[] All =
-        [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps, Mining];
+        [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps, Mining,
+            Placement];
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -94,6 +96,13 @@ internal static class ScenarioCaptures
         {
             throw new ArgumentException(
                 "Case selection requires CaptureFixtures=sulfur, more_blocks or structure_pieces.");
+        }
+
+        if (fixtures.Contains(Placement))
+        {
+            await FixtureDumper.DumpPlacementAsync(server, Path.Combine(assetsDirectory, "block_placement.json"));
+            if (fixtures.Count == 1)
+                return;
         }
 
         if (fixtures.Contains(SavedHeightmaps))
