@@ -542,16 +542,21 @@ public partial class UseItemOnPacket
         }
 
         // What the placed item holds goes to its block entity, like a shulker box's items.
-        var placement = new BlockPlacement(player, handSlot, currentItem);
+        // A door's upper half or a bed's head goes in the same step as the block, so nothing fills its place between.
+        var placement = new BlockPlacement(player, handSlot, currentItem)
+        {
+            Placed = () => VanillaPlacement.OnPlacedByPlayer(placeLevel.BlockUpdates, position, block)
+        };
 
-        // The event's handlers may have filled the target or changed the player's hand while it ran: both are checked
-        // again in the same step as the block is placed, and the item is only used once it is.
+        // The event's handlers may have filled the target (or a second half's place) or changed the player's hand while
+        // it ran: all are checked again in the same step as the block is placed, and the item is only used once it is.
         var stored = await placeLevel.TrySetBlockAsync(
             position,
             block,
             BlockUpdateFlags.All,
             current => (pouring || current.CanBeReplaced()
                     || VanillaPlacement.SlabCanBeReplaced(current, block, replacesClicked, this.Face, upperHit))
+                && VanillaPlacement.SecondHalfFits(placeLevel.BlockUpdates, position, block)
                 && ReferenceEquals(player.Inventory.GetItem(handSlot), currentItem)
                 && currentItem.Count > 0,
             placement);
@@ -567,9 +572,6 @@ public partial class UseItemOnPacket
             item: progressItem, block: block, position: position);
         await player.FireProgressAsync("item_used_on_block",
             item: progressItem, block: b, position: this.Position);
-
-        lock (placeLevel.Fluids.TickLock)
-            VanillaPlacement.OnPlacedByPlayer(placeLevel.BlockUpdates, position, block);
 
         if (!pouring)
             BlockSoundPlayback.Play(placeLevel, block, position, breaking: false, player.EntityId);

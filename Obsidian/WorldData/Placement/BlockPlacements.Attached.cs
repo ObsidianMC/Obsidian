@@ -256,9 +256,9 @@ internal static partial class BlockPlacements
             return PlacementSurvival.CanSurvive(level, hanging, position) ? hanging : null;
         }
 
-        var across = face.ClockWise();
-        var doubleAttached = PlacementSurvival.CanAttach(level, position, across)
-            && PlacementSurvival.CanAttach(level, position, across.Opposite());
+        // Between two walls: the clicked one and the one facing it across the bell.
+        var doubleAttached = PlacementSurvival.CanAttach(level, position, face)
+            && PlacementSurvival.CanAttach(level, position, face.Opposite());
         var state = context.Block
             .WithProperty("facing", Name(face.Opposite()))
             .WithProperty("attachment", doubleAttached ? "double_wall" : "single_wall");

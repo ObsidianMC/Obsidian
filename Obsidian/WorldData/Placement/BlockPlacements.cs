@@ -402,14 +402,37 @@ internal static partial class BlockPlacements
         if (!name.EndsWith("copper_chest", StringComparison.Ordinal))
             return null;
 
-        return name.Contains("oxidized") ? 3 : name.Contains("weathered") ? 2 : name.Contains("exposed") ? 1 : 0;
+        if (name.Contains("oxidized"))
+            return 3;
+
+        if (name.Contains("weathered"))
+            return 2;
+
+        return name.Contains("exposed") ? 1 : 0;
     }
 
-    // The facing of a single chest of the same kind in that direction, if there is one.
+    /// <summary>
+    /// Vanilla <c>ChestBlock.chestCanConnectTo</c>: a chest pairs with a chest of its own kind, and a copper chest with
+    /// any copper chest (the <c>copper_chests</c> tag), however weathered or waxed.
+    /// </summary>
+    public static bool ChestsConnect(IBlock chest, IBlock other)
+    {
+        if (!IsCopperChest(chest))
+            return other.RegistryId == chest.RegistryId;
+
+        return TagsRegistry.Block.CopperChests.Entries.Contains(other.RegistryId)
+            && other.GetProperty("type") is not null;
+    }
+
+    /// <summary>Whether a block is a copper chest of any weathering, waxed or not.</summary>
+    public static bool IsCopperChest(IBlock block) =>
+        block.BlockClass() is "CopperChestBlock" or "WeatheringCopperChestBlock";
+
+    // The facing of a single chest this one can pair with in that direction, if there is one.
     private static BlockFace? PartnerFacing(BlockPlaceContext context, BlockFace direction)
     {
         var other = context.Level.GetBlock(context.Position.Offset(direction));
-        if (other.RegistryId != context.Block.RegistryId || other.GetProperty("type") != "single")
+        if (!ChestsConnect(context.Block, other) || other.GetProperty("type") != "single")
             return null;
 
         return FeatureHelpers.ParseFace(other.GetProperty("facing"));

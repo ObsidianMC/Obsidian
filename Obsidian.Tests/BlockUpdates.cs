@@ -229,6 +229,18 @@ public sealed class BlockUpdates : IDisposable
             client.SentPackets.OfType<BlockUpdatePacket>(),
             packet => packet.Position == filled && packet.BlockId == BlocksRegistry.Stone.GetHashCode());
 
+        // The same for a second half: a handler that fills the place above a door keeps the door from being placed,
+        // rather than the door's upper half overwriting what the handler put there.
+        var door = new Vector(8, Ground + 1, 8);
+        var doorTop = door + Vector.Up;
+        meanwhile = () => world.SetBlockAsync(doorTop, BlocksRegistry.Stone);
+        player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Get("minecraft:oak_door"), 1));
+        await UseOn(door + Vector.Down, BlockFace.Up).HandleAsync(context.Server, player);
+
+        Assert.True(world.GetLoadedChunk(0, 0)!.GetBlock(door).IsAir);
+        Assert.True(world.GetLoadedChunk(0, 0)!.GetBlock(doorTop).Is(BlockIds.Stone));
+        Assert.Equal(1, player.GetHeldItem()?.Count);
+
         // Vanilla's redstone components go down as vanilla places them: a lever on the floor facing the way the
         // player does, a torch clicked onto a block's side on that side, and isolated redstone dust as a cross
         // (vanilla's getStateForPlacement starts from the cross).

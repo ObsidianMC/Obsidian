@@ -764,6 +764,7 @@ public abstract partial class AbstractLevel : ILevel
             placement?.Consume();
             this.CompleteBlockEntityPlacement(c, prepared?.Entity);
             this.AfterBlockSet(new Vector(x, y, z), old, block, flags);
+            placement?.Placed?.Invoke();
         }
 
         if (removed is not null)

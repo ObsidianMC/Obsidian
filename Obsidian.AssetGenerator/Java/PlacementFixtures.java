@@ -1,5 +1,6 @@
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.authlib.GameProfile;
@@ -40,7 +41,8 @@ import net.minecraft.world.phys.Vec3;
  * block and face clicked, where on that face, and the player's rotation and sneaking. For every block item, in
  * registry order, the probe runs each context on a cleared area and records every block in the area that changed,
  * as {@code dx,dy,dz=state} relative to the target, joined with {@code ;}. A state lists only the properties that
- * differ from its block's default. An empty string means nothing changed.
+ * differ from its block's default. An empty string means nothing changed. A context with {@code items} runs only for
+ * those items, and records {@code null} for the others.
  */
 public final class PlacementFixtures {
     // How far from the target the area that is cleared before and compared after each use reaches.
@@ -96,9 +98,15 @@ public final class PlacementFixtures {
             if (!(item instanceof BlockItem) || !item.isEnabled(level.enabledFeatures()))
                 continue;
 
+            var key = BuiltInRegistries.ITEM.getKey(item).toString();
             var results = new JsonArray();
             for (var element : contexts) {
                 var context = element.getAsJsonObject();
+                if (!appliesTo(context, key)) {
+                    results.add(JsonNull.INSTANCE);
+                    continue;
+                }
+
                 clear(level, target);
                 for (var setup : context.getAsJsonArray("setup")) {
                     var placement = setup.getAsJsonObject();
@@ -111,12 +119,25 @@ public final class PlacementFixtures {
                 results.add(changes(level, target, before));
             }
 
-            items.add(BuiltInRegistries.ITEM.getKey(item).toString(), results);
+            items.add(key, results);
             count++;
         }
 
         clear(level, target);
         System.out.println("Placed " + count + " block items in " + contexts.size() + " contexts");
+    }
+
+    // Whether a context is run for an item: every item, or only those its "items" name.
+    private static boolean appliesTo(JsonObject context, String item) {
+        if (!context.has("items"))
+            return true;
+
+        for (var name : context.getAsJsonArray("items")) {
+            if (name.getAsString().equals(item))
+                return true;
+        }
+
+        return false;
     }
 
     // Uses the item on the context's clicked face, as the server does for a use-item-on packet.

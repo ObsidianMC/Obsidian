@@ -45,36 +45,54 @@ internal static class VanillaPlacement
         block.BlockClass() is "ChestBlock" or "TrappedChestBlock" or "CopperChestBlock" or "WeatheringCopperChestBlock";
 
     /// <summary>
+    /// Where the second half of a block a player places goes (a door's or tall plant's upper half, a bed's head), or
+    /// null for a block of one piece.
+    /// </summary>
+    public static Vector? SecondHalf(IBlock state, Vector position) => state.BlockClass() switch
+    {
+        "DoorBlock" or "WeatheringCopperDoorBlock" => position + Vector.Up,
+        "DoublePlantBlock" or "TallFlowerBlock" or "TallSeagrassBlock" or "SmallDripleafBlock" => position + Vector.Up,
+        "BedBlock" or "StrawBedBlock" => position + FeatureHelpers.ParseFace(state.GetProperty("facing")).ToVector(),
+        _ => null
+    };
+
+    /// <summary>
+    /// Whether the second half of <paramref name="state"/> still has room, as its placement found when it was worked
+    /// out: something placed meanwhile (by a plugin's place event, say) refuses the whole placement rather than being
+    /// overwritten.
+    /// </summary>
+    public static bool SecondHalfFits(LevelBlockUpdates level, Vector position, IBlock state) =>
+        SecondHalf(state, position) is not Vector other || level.GetBlock(other).CanBeReplaced();
+
+    /// <summary>
     /// Vanilla <c>setPlacedBy</c>: a door's upper half goes on top of the lower half a player placed, a bed's head in
     /// front of its foot, and a tall plant's upper half above it.
     /// </summary>
     public static void OnPlacedByPlayer(LevelBlockUpdates level, Vector position, IBlock state)
     {
-        if (!level.GetBlock(position).IsSameState(state))
+        if (!level.GetBlock(position).IsSameState(state) || SecondHalf(state, position) is not Vector other)
             return;
 
-        var above = position + Vector.Up;
         switch (state.BlockClass())
         {
             case "DoorBlock" or "WeatheringCopperDoorBlock":
-                level.Set(above, state.WithProperty("half", "upper"), BlockUpdateFlags.All);
+                level.Set(other, state.WithProperty("half", "upper"), BlockUpdateFlags.All);
                 break;
             case "BedBlock" or "StrawBedBlock":
-                var head = position + FeatureHelpers.ParseFace(state.GetProperty("facing")).ToVector();
-                level.Set(head, state.WithProperty("part", "head"), BlockUpdateFlags.All);
+                level.Set(other, state.WithProperty("part", "head"), BlockUpdateFlags.All);
                 break;
             case "DoublePlantBlock" or "TallFlowerBlock" or "TallSeagrassBlock":
                 // Vanilla DoublePlantBlock.setPlacedBy: the upper half's default state.
                 var upper = BlocksRegistry.GetDefault(state.RegistryId).WithProperty("half", "upper");
-                level.Set(above, upper, BlockUpdateFlags.All);
+                level.Set(other, upper, BlockUpdateFlags.All);
                 break;
             case "SmallDripleafBlock":
                 // Vanilla SmallDripleafBlock.setPlacedBy: turned like the lower half, taking any water above.
                 var leaf = BlocksRegistry.GetDefault(state.RegistryId)
                     .WithProperty("half", "upper")
                     .WithProperty("facing", state.GetProperty("facing")!)
-                    .WithProperty("waterlogged", IsWater(level.GetBlock(above)));
-                level.Set(above, leaf, BlockUpdateFlags.All);
+                    .WithProperty("waterlogged", IsWater(level.GetBlock(other)));
+                level.Set(other, leaf, BlockUpdateFlags.All);
                 break;
         }
     }
@@ -108,22 +126,36 @@ internal static class VanillaPlacement
         if (direction.IsVertical())
             return state;
 
-        if (neighbor.RegistryId == state.RegistryId)
+        var connects = BlockPlacements.ChestsConnect(state, neighbor);
+        var updated = state;
+        if (connects)
         {
             var type = neighbor.GetProperty("type");
             if (state.GetProperty("type") == "single" && type != "single"
                 && state.GetProperty("facing") == neighbor.GetProperty("facing")
                 && BlockPlacements.ConnectedDirection(neighbor) == direction.Opposite())
             {
-                return state.WithProperty("type", type == "left" ? "right" : "left");
+                updated = state.WithProperty("type", type == "left" ? "right" : "left");
             }
         }
         else if (BlockPlacements.ConnectedDirection(state) == direction)
         {
-            return state.WithProperty("type", "single");
+            updated = state.WithProperty("type", "single");
         }
 
-        return state;
+        // Vanilla CopperChestBlock.updateShape: a copper chest paired with another becomes its kind, so the two halves
+        // weather (and are waxed) alike.
+        var pairedWith = connects
+            && BlockPlacements.IsCopperChest(state)
+            && updated.GetProperty("type") != "single"
+            && BlockPlacements.ConnectedDirection(updated) == direction;
+        if (!pairedWith)
+            return updated;
+
+        return BlocksRegistry.GetDefault(neighbor.RegistryId)
+            .WithProperty("facing", updated.GetProperty("facing")!)
+            .WithProperty("type", updated.GetProperty("type")!)
+            .WithProperty("waterlogged", updated.GetProperty("waterlogged")!);
     }
 
     /// <summary>

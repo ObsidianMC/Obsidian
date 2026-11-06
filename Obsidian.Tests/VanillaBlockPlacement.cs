@@ -200,10 +200,15 @@ public sealed class VanillaBlockPlacement(ITestOutputHelper output)
 
     private static IEnumerable<Case> ReadCases(JsonProperty item, Context[] contexts)
     {
-        var results = item.Value.EnumerateArray().Select(result => result.GetString()!).ToArray();
+        var results = item.Value.EnumerateArray().ToArray();
         Assert.Equal(contexts.Length, results.Length);
 
-        return results.Select((result, index) => new Case(item.Name, contexts[index], result));
+        // A context that names its items records null for the others.
+        for (var index = 0; index < results.Length; index++)
+        {
+            if (results[index].ValueKind == JsonValueKind.String)
+                yield return new Case(item.Name, contexts[index], results[index].GetString()!);
+        }
     }
 
     private static Context ReadContext(JsonElement context)
