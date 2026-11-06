@@ -40,6 +40,10 @@ internal static class FixtureDumper
     }
 
     // An on-request gameplay probe: it does not regenerate unrelated assets or fixtures.
+    internal static Task DumpMiningAsync(VanillaServer server, string fixture) =>
+        VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
+            Source("MiningFixtures.java"), fixture);
+
     internal static Task DumpSulfurAsync(VanillaServer server, string fixture) =>
         VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
             Source("SulfurFixtures.java"), fixture);

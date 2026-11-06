@@ -102,8 +102,8 @@ public sealed class BlockDrops
             var type = Assert.IsType<BlockType>(ItemsRegistry.Get("probe:ore").Block);
             var original = type.Settings;
             type.Settings = original with { RequiresCorrectTool = true };
-            Assert.True(BlockLoot.HasCorrectTool(ore, new ItemStack(ItemsRegistry.WoodenPickaxe)));
-            Assert.False(BlockLoot.HasCorrectTool(ore, null));
+            Assert.True(ItemTools.HasCorrectTool(ore, new ItemStack(ItemsRegistry.WoodenPickaxe)));
+            Assert.False(ItemTools.HasCorrectTool(ore, null));
             type.Settings = original;
             Assert.Equal("probe:gem*2", Describe(BlockLoot.GetDrops(ore, null, new LegacyRandomSource(1))));
             Assert.Equal("probe:gem*3", Describe(BlockLoot.GetDrops(BlocksRegistry.Stone,

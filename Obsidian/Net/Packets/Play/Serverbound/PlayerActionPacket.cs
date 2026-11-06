@@ -51,10 +51,7 @@ public partial class PlayerActionPacket
             notes.PlayNoteBlock(Position, player);
         }
 
-        // A block that breaks instantly (grass, flowers, torches) gets only a start from survival clients, never a finish.
-        var instant = Status == PlayerActionStatus.StartedDigging && player.GameMode != GameMode.Spectator &&
-            (player.GameMode == GameMode.Creative || !block.IsAir && Registries.BlockPhysics.MiningHardness(block.GetHashCode()) == 0);
-        if (Status == PlayerActionStatus.FinishedDigging || instant)
+        if (Status == PlayerActionStatus.FinishedDigging || this.BreaksAtOnce(player, block))
         {
             var args = new BlockBreakEventArgs(server, player, block, Position, player.Level)
             {
@@ -67,6 +64,20 @@ public partial class PlayerActionPacket
         }
 
         this.BroadcastPlayerAction(player);
+    }
+
+    // Like vanilla's ServerPlayerGameMode: a creative player breaks a block as they start, and so does a survival player
+    // whose first tick of mining breaks it all (grass by hand, leaves with shears, stone with a fast enough pickaxe).
+    // Their client breaks those at once and only ever sends the start, never a finish.
+    private bool BreaksAtOnce(IClientPlayer player, IBlock block)
+    {
+        if (this.Status != PlayerActionStatus.StartedDigging || player.GameMode == GameMode.Spectator)
+            return false;
+
+        if (player.GameMode == GameMode.Creative)
+            return true;
+
+        return !block.IsAir && player is PlayerBase miner && miner.DestroyProgress(block) >= 1;
     }
 
     private void BroadcastPlayerAction(IClientPlayer player)

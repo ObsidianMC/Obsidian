@@ -1,0 +1,305 @@
+{
+  "version": "26.3",
+  "_notes": "Vanilla BlockState.getDestroyProgress for a survival player, recorded by Obsidian.AssetGenerator/Java/MiningFixtures.java (CaptureFixtures=mining). Each case names a block's default state, the held item and helmet with their enchantments, the player's effects (amplifiers), whether they stand on the ground (default true) and whether their eyes are in water (default false). progress is what one tick of mining breaks; 1 or more breaks the block on the first tick.",
+  "cases": [
+    {
+      "name": "stone_by_hand",
+      "block": "minecraft:stone",
+      "progress": 0.006666667
+    },
+    {
+      "name": "stone_wooden_pickaxe",
+      "block": "minecraft:stone",
+      "item": {
+        "id": "minecraft:wooden_pickaxe"
+      },
+      "progress": 0.044444446
+    },
+    {
+      "name": "stone_diamond_pickaxe",
+      "block": "minecraft:stone",
+      "item": {
+        "id": "minecraft:diamond_pickaxe"
+      },
+      "progress": 0.17777778
+    },
+    {
+      "name": "stone_efficiency_5",
+      "block": "minecraft:stone",
+      "item": {
+        "id": "minecraft:diamond_pickaxe",
+        "enchantments": {
+          "minecraft:efficiency": 5
+        }
+      },
+      "progress": 0.7555555
+    },
+    {
+      "name": "stone_efficiency_5_haste_2",
+      "block": "minecraft:stone",
+      "item": {
+        "id": "minecraft:netherite_pickaxe",
+        "enchantments": {
+          "minecraft:efficiency": 5
+        }
+      },
+      "effects": {
+        "minecraft:haste": 1
+      },
+      "progress": 1.0888889
+    },
+    {
+      "name": "stone_conduit_power",
+      "block": "minecraft:stone",
+      "item": {
+        "id": "minecraft:iron_pickaxe"
+      },
+      "effects": {
+        "minecraft:conduit_power": 0
+      },
+      "progress": 0.16000001
+    },
+    {
+      "name": "stone_haste_and_conduit",
+      "block": "minecraft:stone",
+      "item": {
+        "id": "minecraft:iron_pickaxe"
+      },
+      "effects": {
+        "minecraft:haste": 0,
+        "minecraft:conduit_power": 2
+      },
+      "progress": 0.21333334
+    },
+    {
+      "name": "stone_mining_fatigue_0",
+      "block": "minecraft:stone",
+      "item": {
+        "id": "minecraft:diamond_pickaxe"
+      },
+      "effects": {
+        "minecraft:mining_fatigue": 0
+      },
+      "progress": 0.053333335
+    },
+    {
+      "name": "stone_mining_fatigue_4",
+      "block": "minecraft:stone",
+      "item": {
+        "id": "minecraft:diamond_pickaxe"
+      },
+      "effects": {
+        "minecraft:mining_fatigue": 4
+      },
+      "progress": 4.3200003E-4
+    },
+    {
+      "name": "stone_shovel_efficiency",
+      "block": "minecraft:stone",
+      "item": {
+        "id": "minecraft:diamond_shovel",
+        "enchantments": {
+          "minecraft:efficiency": 5
+        }
+      },
+      "progress": 0.006666667
+    },
+    {
+      "name": "stone_airborne",
+      "block": "minecraft:stone",
+      "item": {
+        "id": "minecraft:diamond_pickaxe"
+      },
+      "onGround": false,
+      "progress": 0.035555556
+    },
+    {
+      "name": "obsidian_diamond_pickaxe",
+      "block": "minecraft:obsidian",
+      "item": {
+        "id": "minecraft:diamond_pickaxe"
+      },
+      "progress": 0.0053333333
+    },
+    {
+      "name": "obsidian_iron_pickaxe",
+      "block": "minecraft:obsidian",
+      "item": {
+        "id": "minecraft:iron_pickaxe"
+      },
+      "progress": 0.0011999999
+    },
+    {
+      "name": "leaves_by_hand",
+      "block": "minecraft:oak_leaves",
+      "progress": 0.16666667
+    },
+    {
+      "name": "leaves_shears",
+      "block": "minecraft:oak_leaves",
+      "item": {
+        "id": "minecraft:shears"
+      },
+      "progress": 2.5
+    },
+    {
+      "name": "leaves_stone_hoe",
+      "block": "minecraft:oak_leaves",
+      "item": {
+        "id": "minecraft:stone_hoe"
+      },
+      "progress": 0.6666667
+    },
+    {
+      "name": "leaves_netherite_hoe",
+      "block": "minecraft:oak_leaves",
+      "item": {
+        "id": "minecraft:netherite_hoe"
+      },
+      "progress": 1.5
+    },
+    {
+      "name": "leaves_sword",
+      "block": "minecraft:oak_leaves",
+      "item": {
+        "id": "minecraft:iron_sword"
+      },
+      "progress": 0.25
+    },
+    {
+      "name": "wool_shears",
+      "block": "minecraft:white_wool",
+      "item": {
+        "id": "minecraft:shears"
+      },
+      "progress": 0.20833333
+    },
+    {
+      "name": "vine_shears",
+      "block": "minecraft:vine",
+      "item": {
+        "id": "minecraft:shears"
+      },
+      "progress": 0.33333334
+    },
+    {
+      "name": "cobweb_by_hand",
+      "block": "minecraft:cobweb",
+      "progress": 0.0025
+    },
+    {
+      "name": "cobweb_shears",
+      "block": "minecraft:cobweb",
+      "item": {
+        "id": "minecraft:shears"
+      },
+      "progress": 0.125
+    },
+    {
+      "name": "cobweb_sword",
+      "block": "minecraft:cobweb",
+      "item": {
+        "id": "minecraft:wooden_sword"
+      },
+      "progress": 0.125
+    },
+    {
+      "name": "bamboo_sword",
+      "block": "minecraft:bamboo",
+      "item": {
+        "id": "minecraft:wooden_sword"
+      },
+      "progress": 1.1342745E37
+    },
+    {
+      "name": "melon_axe",
+      "block": "minecraft:melon",
+      "item": {
+        "id": "minecraft:golden_axe"
+      },
+      "progress": 0.4
+    },
+    {
+      "name": "short_grass_by_hand",
+      "block": "minecraft:short_grass",
+      "progress": "Infinity"
+    },
+    {
+      "name": "bedrock_by_hand",
+      "block": "minecraft:bedrock",
+      "progress": 0.0
+    },
+    {
+      "name": "glass_by_hand",
+      "block": "minecraft:glass",
+      "progress": 0.11111111
+    },
+    {
+      "name": "dirt_underwater",
+      "block": "minecraft:dirt",
+      "item": {
+        "id": "minecraft:iron_shovel"
+      },
+      "eyeInWater": true,
+      "progress": 0.080000006
+    },
+    {
+      "name": "dirt_underwater_aqua_affinity",
+      "block": "minecraft:dirt",
+      "item": {
+        "id": "minecraft:iron_shovel"
+      },
+      "helmet": {
+        "id": "minecraft:turtle_helmet",
+        "enchantments": {
+          "minecraft:aqua_affinity": 1
+        }
+      },
+      "eyeInWater": true,
+      "progress": 0.4
+    },
+    {
+      "name": "dirt_underwater_floating",
+      "block": "minecraft:dirt",
+      "item": {
+        "id": "minecraft:iron_shovel"
+      },
+      "eyeInWater": true,
+      "onGround": false,
+      "progress": 0.016
+    },
+    {
+      "name": "sand_golden_shovel_efficiency_1",
+      "block": "minecraft:sand",
+      "item": {
+        "id": "minecraft:golden_shovel",
+        "enchantments": {
+          "minecraft:efficiency": 1
+        }
+      },
+      "progress": 0.93333334
+    },
+    {
+      "name": "netherrack_wooden_pickaxe",
+      "block": "minecraft:netherrack",
+      "item": {
+        "id": "minecraft:wooden_pickaxe"
+      },
+      "progress": 0.16666667
+    },
+    {
+      "name": "deepslate_diamond_efficiency_5_haste_2",
+      "block": "minecraft:deepslate",
+      "item": {
+        "id": "minecraft:diamond_pickaxe",
+        "enchantments": {
+          "minecraft:efficiency": 5
+        }
+      },
+      "effects": {
+        "minecraft:haste": 1
+      },
+      "progress": 0.5288889
+    }
+  ]
+}

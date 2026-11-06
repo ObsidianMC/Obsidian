@@ -116,6 +116,16 @@ replaces only what vanilla produced.
   and concurrent column writes and snapshots. The probe edits isolated native chunks on the server thread;
   neighboring-block notifications and world generation do not alter these inputs.
 
+- `mining_progress.json` (`VanillaMining.ReplayDestroyProgressReference`) records vanilla's
+  `BlockState.getDestroyProgress` for a survival player, from `Java/MiningFixtures.java` (`CaptureFixtures=mining`).
+  Each case names a block's default state, the held item and helmet with their enchantments, effect amplifiers,
+  whether the player stands on the ground and whether their eyes are in water. The probe applies the equipment's
+  enchantment attribute modifiers the way vanilla does (`EnchantmentHelper.forEachModifier`), so Efficiency and Aqua
+  Affinity come out of vanilla's own data. The replay checks Obsidian's progress exactly, then starts mining the
+  block through `PlayerActionPacket` and checks that it breaks at once exactly when the progress is 1 or more:
+  clients break those blocks themselves and never send a finish. Infinite progress (no hardness) is the string
+  `"Infinity"`, which JSON numbers can't hold.
+
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.
 

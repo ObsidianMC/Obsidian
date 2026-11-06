@@ -197,7 +197,7 @@ internal static class CombatItems
         return result;
     }
 
-    private static bool MatchesSlot(string group, string slot) => group == "any" || group == slot ||
+    internal static bool MatchesSlot(string group, string slot) => group == "any" || group == slot ||
         group == "hand" && slot is "mainhand" or "offhand" ||
         group == "armor" && slot is "head" or "chest" or "legs" or "feet";
 
