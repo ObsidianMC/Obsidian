@@ -645,6 +645,2022 @@
       "z": -29898974,
       "value": "0.9606271",
       "bits": "0x3F75EBA8"
+    },
+    {
+      "name": "flat_noise_0",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0
+        }
+      },
+      "x": 5,
+      "y": -61,
+      "z": 1037,
+      "value": "0.15276939",
+      "bits": "0x3E1C6F94"
+    },
+    {
+      "name": "flat_noise_1",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0
+        }
+      },
+      "x": 5,
+      "y": -13,
+      "z": 1037,
+      "value": "0.15276939",
+      "bits": "0x3E1C6F94"
+    },
+    {
+      "name": "flat_noise_2",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0
+        }
+      },
+      "x": 5,
+      "y": 30,
+      "z": 1037,
+      "value": "0.15276939",
+      "bits": "0x3E1C6F94"
+    },
+    {
+      "name": "flat_noise_3",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0
+        }
+      },
+      "x": 5,
+      "y": 77,
+      "z": 1037,
+      "value": "0.15276939",
+      "bits": "0x3E1C6F94"
+    },
+    {
+      "name": "flat_noise_4",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0
+        }
+      },
+      "x": 5,
+      "y": 141,
+      "z": 1037,
+      "value": "0.15276939",
+      "bits": "0x3E1C6F94"
+    },
+    {
+      "name": "flat_noise_5",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0
+        }
+      },
+      "x": 5,
+      "y": 250,
+      "z": 1037,
+      "value": "0.15276939",
+      "bits": "0x3E1C6F94"
+    },
+    {
+      "name": "flat_noise_6",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0
+        }
+      },
+      "x": -3001,
+      "y": -61,
+      "z": -77,
+      "value": "0.10835958",
+      "bits": "0x3DDDEBA1"
+    },
+    {
+      "name": "flat_noise_7",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0
+        }
+      },
+      "x": -3001,
+      "y": -13,
+      "z": -77,
+      "value": "0.10835958",
+      "bits": "0x3DDDEBA1"
+    },
+    {
+      "name": "flat_noise_8",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0
+        }
+      },
+      "x": -3001,
+      "y": 30,
+      "z": -77,
+      "value": "0.10835958",
+      "bits": "0x3DDDEBA1"
+    },
+    {
+      "name": "flat_noise_9",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0
+        }
+      },
+      "x": -3001,
+      "y": 77,
+      "z": -77,
+      "value": "0.10835958",
+      "bits": "0x3DDDEBA1"
+    },
+    {
+      "name": "flat_noise_10",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0
+        }
+      },
+      "x": -3001,
+      "y": 141,
+      "z": -77,
+      "value": "0.10835958",
+      "bits": "0x3DDDEBA1"
+    },
+    {
+      "name": "flat_noise_11",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0
+        }
+      },
+      "x": -3001,
+      "y": 250,
+      "z": -77,
+      "value": "0.10835958",
+      "bits": "0x3DDDEBA1"
+    },
+    {
+      "name": "flat_spline_0",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "value": -0.4,
+                "derivative": 0.0
+              },
+              {
+                "location": 0.0,
+                "value": 0.3,
+                "derivative": 1.5
+              },
+              {
+                "location": 0.6,
+                "value": 1.0,
+                "derivative": 0.0
+              }
+            ]
+          }
+        }
+      },
+      "x": 5,
+      "y": -61,
+      "z": 1037,
+      "value": "0.6433538",
+      "bits": "0x3F24B2D6"
+    },
+    {
+      "name": "flat_spline_1",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "value": -0.4,
+                "derivative": 0.0
+              },
+              {
+                "location": 0.0,
+                "value": 0.3,
+                "derivative": 1.5
+              },
+              {
+                "location": 0.6,
+                "value": 1.0,
+                "derivative": 0.0
+              }
+            ]
+          }
+        }
+      },
+      "x": 5,
+      "y": -13,
+      "z": 1037,
+      "value": "0.6433538",
+      "bits": "0x3F24B2D6"
+    },
+    {
+      "name": "flat_spline_2",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "value": -0.4,
+                "derivative": 0.0
+              },
+              {
+                "location": 0.0,
+                "value": 0.3,
+                "derivative": 1.5
+              },
+              {
+                "location": 0.6,
+                "value": 1.0,
+                "derivative": 0.0
+              }
+            ]
+          }
+        }
+      },
+      "x": 5,
+      "y": 30,
+      "z": 1037,
+      "value": "0.6433538",
+      "bits": "0x3F24B2D6"
+    },
+    {
+      "name": "flat_spline_3",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "value": -0.4,
+                "derivative": 0.0
+              },
+              {
+                "location": 0.0,
+                "value": 0.3,
+                "derivative": 1.5
+              },
+              {
+                "location": 0.6,
+                "value": 1.0,
+                "derivative": 0.0
+              }
+            ]
+          }
+        }
+      },
+      "x": 5,
+      "y": 77,
+      "z": 1037,
+      "value": "0.6433538",
+      "bits": "0x3F24B2D6"
+    },
+    {
+      "name": "flat_spline_4",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "value": -0.4,
+                "derivative": 0.0
+              },
+              {
+                "location": 0.0,
+                "value": 0.3,
+                "derivative": 1.5
+              },
+              {
+                "location": 0.6,
+                "value": 1.0,
+                "derivative": 0.0
+              }
+            ]
+          }
+        }
+      },
+      "x": 5,
+      "y": 141,
+      "z": 1037,
+      "value": "0.6433538",
+      "bits": "0x3F24B2D6"
+    },
+    {
+      "name": "flat_spline_5",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "value": -0.4,
+                "derivative": 0.0
+              },
+              {
+                "location": 0.0,
+                "value": 0.3,
+                "derivative": 1.5
+              },
+              {
+                "location": 0.6,
+                "value": 1.0,
+                "derivative": 0.0
+              }
+            ]
+          }
+        }
+      },
+      "x": 5,
+      "y": 250,
+      "z": 1037,
+      "value": "0.6433538",
+      "bits": "0x3F24B2D6"
+    },
+    {
+      "name": "flat_spline_6",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "value": -0.4,
+                "derivative": 0.0
+              },
+              {
+                "location": 0.0,
+                "value": 0.3,
+                "derivative": 1.5
+              },
+              {
+                "location": 0.6,
+                "value": 1.0,
+                "derivative": 0.0
+              }
+            ]
+          }
+        }
+      },
+      "x": -3001,
+      "y": -61,
+      "z": -77,
+      "value": "0.66719717",
+      "bits": "0x3F2ACD6F"
+    },
+    {
+      "name": "flat_spline_7",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "value": -0.4,
+                "derivative": 0.0
+              },
+              {
+                "location": 0.0,
+                "value": 0.3,
+                "derivative": 1.5
+              },
+              {
+                "location": 0.6,
+                "value": 1.0,
+                "derivative": 0.0
+              }
+            ]
+          }
+        }
+      },
+      "x": -3001,
+      "y": -13,
+      "z": -77,
+      "value": "0.66719717",
+      "bits": "0x3F2ACD6F"
+    },
+    {
+      "name": "flat_spline_8",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "value": -0.4,
+                "derivative": 0.0
+              },
+              {
+                "location": 0.0,
+                "value": 0.3,
+                "derivative": 1.5
+              },
+              {
+                "location": 0.6,
+                "value": 1.0,
+                "derivative": 0.0
+              }
+            ]
+          }
+        }
+      },
+      "x": -3001,
+      "y": 30,
+      "z": -77,
+      "value": "0.66719717",
+      "bits": "0x3F2ACD6F"
+    },
+    {
+      "name": "flat_spline_9",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "value": -0.4,
+                "derivative": 0.0
+              },
+              {
+                "location": 0.0,
+                "value": 0.3,
+                "derivative": 1.5
+              },
+              {
+                "location": 0.6,
+                "value": 1.0,
+                "derivative": 0.0
+              }
+            ]
+          }
+        }
+      },
+      "x": -3001,
+      "y": 77,
+      "z": -77,
+      "value": "0.66719717",
+      "bits": "0x3F2ACD6F"
+    },
+    {
+      "name": "flat_spline_10",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "value": -0.4,
+                "derivative": 0.0
+              },
+              {
+                "location": 0.0,
+                "value": 0.3,
+                "derivative": 1.5
+              },
+              {
+                "location": 0.6,
+                "value": 1.0,
+                "derivative": 0.0
+              }
+            ]
+          }
+        }
+      },
+      "x": -3001,
+      "y": 141,
+      "z": -77,
+      "value": "0.66719717",
+      "bits": "0x3F2ACD6F"
+    },
+    {
+      "name": "flat_spline_11",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "value": -0.4,
+                "derivative": 0.0
+              },
+              {
+                "location": 0.0,
+                "value": 0.3,
+                "derivative": 1.5
+              },
+              {
+                "location": 0.6,
+                "value": 1.0,
+                "derivative": 0.0
+              }
+            ]
+          }
+        }
+      },
+      "x": -3001,
+      "y": 250,
+      "z": -77,
+      "value": "0.66719717",
+      "bits": "0x3F2ACD6F"
+    },
+    {
+      "name": "flat_shifted_y_0",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0,
+          "shift_x": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:offset",
+            "xz_scale": 1.0,
+            "y_scale": 0.0
+          },
+          "shift_y": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": -64,
+            "from_value": -1.5,
+            "to_coordinate": 320,
+            "to_value": 1.5
+          }
+        }
+      },
+      "x": 5,
+      "y": -61,
+      "z": 1037,
+      "value": "0.15450129",
+      "bits": "0x3E1E3596"
+    },
+    {
+      "name": "flat_shifted_y_1",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0,
+          "shift_x": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:offset",
+            "xz_scale": 1.0,
+            "y_scale": 0.0
+          },
+          "shift_y": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": -64,
+            "from_value": -1.5,
+            "to_coordinate": 320,
+            "to_value": 1.5
+          }
+        }
+      },
+      "x": 5,
+      "y": -13,
+      "z": 1037,
+      "value": "0.15398487",
+      "bits": "0x3E1DAE36"
+    },
+    {
+      "name": "flat_shifted_y_2",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0,
+          "shift_x": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:offset",
+            "xz_scale": 1.0,
+            "y_scale": 0.0
+          },
+          "shift_y": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": -64,
+            "from_value": -1.5,
+            "to_coordinate": 320,
+            "to_value": 1.5
+          }
+        }
+      },
+      "x": 5,
+      "y": 30,
+      "z": 1037,
+      "value": "0.15352196",
+      "bits": "0x3E1D34DC"
+    },
+    {
+      "name": "flat_shifted_y_3",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0,
+          "shift_x": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:offset",
+            "xz_scale": 1.0,
+            "y_scale": 0.0
+          },
+          "shift_y": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": -64,
+            "from_value": -1.5,
+            "to_coordinate": 320,
+            "to_value": 1.5
+          }
+        }
+      },
+      "x": 5,
+      "y": 77,
+      "z": 1037,
+      "value": "0.15301546",
+      "bits": "0x3E1CB016"
+    },
+    {
+      "name": "flat_shifted_y_4",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0,
+          "shift_x": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:offset",
+            "xz_scale": 1.0,
+            "y_scale": 0.0
+          },
+          "shift_y": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": -64,
+            "from_value": -1.5,
+            "to_coordinate": 320,
+            "to_value": 1.5
+          }
+        }
+      },
+      "x": 5,
+      "y": 141,
+      "z": 1037,
+      "value": "0.15232508",
+      "bits": "0x3E1BFB1B"
+    },
+    {
+      "name": "flat_shifted_y_5",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0,
+          "shift_x": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:offset",
+            "xz_scale": 1.0,
+            "y_scale": 0.0
+          },
+          "shift_y": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": -64,
+            "from_value": -1.5,
+            "to_coordinate": 320,
+            "to_value": 1.5
+          }
+        }
+      },
+      "x": 5,
+      "y": 250,
+      "z": 1037,
+      "value": "0.151147",
+      "bits": "0x3E1AC647"
+    },
+    {
+      "name": "flat_shifted_y_6",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0,
+          "shift_x": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:offset",
+            "xz_scale": 1.0,
+            "y_scale": 0.0
+          },
+          "shift_y": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": -64,
+            "from_value": -1.5,
+            "to_coordinate": 320,
+            "to_value": 1.5
+          }
+        }
+      },
+      "x": -3001,
+      "y": -61,
+      "z": -77,
+      "value": "0.10822451",
+      "bits": "0x3DDDA4D0"
+    },
+    {
+      "name": "flat_shifted_y_7",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0,
+          "shift_x": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:offset",
+            "xz_scale": 1.0,
+            "y_scale": 0.0
+          },
+          "shift_y": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": -64,
+            "from_value": -1.5,
+            "to_coordinate": 320,
+            "to_value": 1.5
+          }
+        }
+      },
+      "x": -3001,
+      "y": -13,
+      "z": -77,
+      "value": "0.108270854",
+      "bits": "0x3DDDBD1C"
+    },
+    {
+      "name": "flat_shifted_y_8",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0,
+          "shift_x": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:offset",
+            "xz_scale": 1.0,
+            "y_scale": 0.0
+          },
+          "shift_y": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": -64,
+            "from_value": -1.5,
+            "to_coordinate": 320,
+            "to_value": 1.5
+          }
+        }
+      },
+      "x": -3001,
+      "y": 30,
+      "z": -77,
+      "value": "0.10831205",
+      "bits": "0x3DDDD2B5"
+    },
+    {
+      "name": "flat_shifted_y_9",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0,
+          "shift_x": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:offset",
+            "xz_scale": 1.0,
+            "y_scale": 0.0
+          },
+          "shift_y": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": -64,
+            "from_value": -1.5,
+            "to_coordinate": 320,
+            "to_value": 1.5
+          }
+        }
+      },
+      "x": -3001,
+      "y": 77,
+      "z": -77,
+      "value": "0.10835698",
+      "bits": "0x3DDDEA44"
+    },
+    {
+      "name": "flat_shifted_y_10",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0,
+          "shift_x": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:offset",
+            "xz_scale": 1.0,
+            "y_scale": 0.0
+          },
+          "shift_y": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": -64,
+            "from_value": -1.5,
+            "to_coordinate": 320,
+            "to_value": 1.5
+          }
+        }
+      },
+      "x": -3001,
+      "y": 141,
+      "z": -77,
+      "value": "0.108417824",
+      "bits": "0x3DDE0A2A"
+    },
+    {
+      "name": "flat_shifted_y_11",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:temperature",
+          "xz_scale": 1.0,
+          "y_scale": 0.0,
+          "shift_x": {
+            "type": "minecraft:noise",
+            "noise": "minecraft:offset",
+            "xz_scale": 1.0,
+            "y_scale": 0.0
+          },
+          "shift_y": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": -64,
+            "from_value": -1.5,
+            "to_coordinate": 320,
+            "to_value": 1.5
+          }
+        }
+      },
+      "x": -3001,
+      "y": 250,
+      "z": -77,
+      "value": "0.10852085",
+      "bits": "0x3DDE402E"
+    },
+    {
+      "name": "flat_nested_spline_0",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "derivative": 0.0,
+                "value": {
+                  "coordinate": {
+                    "type": "minecraft:gradient",
+                    "axis": "y",
+                    "from_coordinate": -64,
+                    "from_value": -1.5,
+                    "to_coordinate": 320,
+                    "to_value": 1.5
+                  },
+                  "points": [
+                    {
+                      "location": -1.0,
+                      "value": -1.0,
+                      "derivative": 0.5
+                    },
+                    {
+                      "location": 1.0,
+                      "value": 1.0,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              },
+              {
+                "location": 0.5,
+                "derivative": 0.2,
+                "value": {
+                  "coordinate": "minecraft:y",
+                  "points": [
+                    {
+                      "location": 0.0,
+                      "value": 0.5,
+                      "derivative": 0.01
+                    },
+                    {
+                      "location": 200.0,
+                      "value": -0.5,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "x": 5,
+      "y": -61,
+      "z": 1037,
+      "value": "-0.35698926",
+      "bits": "0xBEB6C74C"
+    },
+    {
+      "name": "flat_nested_spline_1",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "derivative": 0.0,
+                "value": {
+                  "coordinate": {
+                    "type": "minecraft:gradient",
+                    "axis": "y",
+                    "from_coordinate": -64,
+                    "from_value": -1.5,
+                    "to_coordinate": 320,
+                    "to_value": 1.5
+                  },
+                  "points": [
+                    {
+                      "location": -1.0,
+                      "value": -1.0,
+                      "derivative": 0.5
+                    },
+                    {
+                      "location": 1.0,
+                      "value": 1.0,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              },
+              {
+                "location": 0.5,
+                "derivative": 0.2,
+                "value": {
+                  "coordinate": "minecraft:y",
+                  "points": [
+                    {
+                      "location": 0.0,
+                      "value": 0.5,
+                      "derivative": 0.01
+                    },
+                    {
+                      "location": 200.0,
+                      "value": -0.5,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "x": 5,
+      "y": -13,
+      "z": 1037,
+      "value": "0.066514395",
+      "bits": "0x3D8838B3"
+    },
+    {
+      "name": "flat_nested_spline_2",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "derivative": 0.0,
+                "value": {
+                  "coordinate": {
+                    "type": "minecraft:gradient",
+                    "axis": "y",
+                    "from_coordinate": -64,
+                    "from_value": -1.5,
+                    "to_coordinate": 320,
+                    "to_value": 1.5
+                  },
+                  "points": [
+                    {
+                      "location": -1.0,
+                      "value": -1.0,
+                      "derivative": 0.5
+                    },
+                    {
+                      "location": 1.0,
+                      "value": 1.0,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              },
+              {
+                "location": 0.5,
+                "derivative": 0.2,
+                "value": {
+                  "coordinate": "minecraft:y",
+                  "points": [
+                    {
+                      "location": 0.0,
+                      "value": 0.5,
+                      "derivative": 0.01
+                    },
+                    {
+                      "location": 200.0,
+                      "value": -0.5,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "x": 5,
+      "y": 30,
+      "z": 1037,
+      "value": "0.3382219",
+      "bits": "0x3EAD2B6C"
+    },
+    {
+      "name": "flat_nested_spline_3",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "derivative": 0.0,
+                "value": {
+                  "coordinate": {
+                    "type": "minecraft:gradient",
+                    "axis": "y",
+                    "from_coordinate": -64,
+                    "from_value": -1.5,
+                    "to_coordinate": 320,
+                    "to_value": 1.5
+                  },
+                  "points": [
+                    {
+                      "location": -1.0,
+                      "value": -1.0,
+                      "derivative": 0.5
+                    },
+                    {
+                      "location": 1.0,
+                      "value": 1.0,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              },
+              {
+                "location": 0.5,
+                "derivative": 0.2,
+                "value": {
+                  "coordinate": "minecraft:y",
+                  "points": [
+                    {
+                      "location": 0.0,
+                      "value": 0.5,
+                      "derivative": 0.01
+                    },
+                    {
+                      "location": 200.0,
+                      "value": -0.5,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "x": 5,
+      "y": 77,
+      "z": 1037,
+      "value": "0.26104793",
+      "bits": "0x3E85A813"
+    },
+    {
+      "name": "flat_nested_spline_4",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "derivative": 0.0,
+                "value": {
+                  "coordinate": {
+                    "type": "minecraft:gradient",
+                    "axis": "y",
+                    "from_coordinate": -64,
+                    "from_value": -1.5,
+                    "to_coordinate": 320,
+                    "to_value": 1.5
+                  },
+                  "points": [
+                    {
+                      "location": -1.0,
+                      "value": -1.0,
+                      "derivative": 0.5
+                    },
+                    {
+                      "location": 1.0,
+                      "value": 1.0,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              },
+              {
+                "location": 0.5,
+                "derivative": 0.2,
+                "value": {
+                  "coordinate": "minecraft:y",
+                  "points": [
+                    {
+                      "location": 0.0,
+                      "value": 0.5,
+                      "derivative": 0.01
+                    },
+                    {
+                      "location": 200.0,
+                      "value": -0.5,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "x": 5,
+      "y": 141,
+      "z": 1037,
+      "value": "-0.11308113",
+      "bits": "0xBDE79714"
+    },
+    {
+      "name": "flat_nested_spline_5",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "derivative": 0.0,
+                "value": {
+                  "coordinate": {
+                    "type": "minecraft:gradient",
+                    "axis": "y",
+                    "from_coordinate": -64,
+                    "from_value": -1.5,
+                    "to_coordinate": 320,
+                    "to_value": 1.5
+                  },
+                  "points": [
+                    {
+                      "location": -1.0,
+                      "value": -1.0,
+                      "derivative": 0.5
+                    },
+                    {
+                      "location": 1.0,
+                      "value": 1.0,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              },
+              {
+                "location": 0.5,
+                "derivative": 0.2,
+                "value": {
+                  "coordinate": "minecraft:y",
+                  "points": [
+                    {
+                      "location": 0.0,
+                      "value": 0.5,
+                      "derivative": 0.01
+                    },
+                    {
+                      "location": 200.0,
+                      "value": -0.5,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "x": 5,
+      "y": 250,
+      "z": 1037,
+      "value": "-0.24003117",
+      "bits": "0xBE75CABB"
+    },
+    {
+      "name": "flat_nested_spline_6",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "derivative": 0.0,
+                "value": {
+                  "coordinate": {
+                    "type": "minecraft:gradient",
+                    "axis": "y",
+                    "from_coordinate": -64,
+                    "from_value": -1.5,
+                    "to_coordinate": 320,
+                    "to_value": 1.5
+                  },
+                  "points": [
+                    {
+                      "location": -1.0,
+                      "value": -1.0,
+                      "derivative": 0.5
+                    },
+                    {
+                      "location": 1.0,
+                      "value": 1.0,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              },
+              {
+                "location": 0.5,
+                "derivative": 0.2,
+                "value": {
+                  "coordinate": "minecraft:y",
+                  "points": [
+                    {
+                      "location": 0.0,
+                      "value": 0.5,
+                      "derivative": 0.01
+                    },
+                    {
+                      "location": 200.0,
+                      "value": -0.5,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "x": -3001,
+      "y": -61,
+      "z": -77,
+      "value": "-0.3355026",
+      "bits": "0xBEABC6FF"
+    },
+    {
+      "name": "flat_nested_spline_7",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "derivative": 0.0,
+                "value": {
+                  "coordinate": {
+                    "type": "minecraft:gradient",
+                    "axis": "y",
+                    "from_coordinate": -64,
+                    "from_value": -1.5,
+                    "to_coordinate": 320,
+                    "to_value": 1.5
+                  },
+                  "points": [
+                    {
+                      "location": -1.0,
+                      "value": -1.0,
+                      "derivative": 0.5
+                    },
+                    {
+                      "location": 1.0,
+                      "value": 1.0,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              },
+              {
+                "location": 0.5,
+                "derivative": 0.2,
+                "value": {
+                  "coordinate": "minecraft:y",
+                  "points": [
+                    {
+                      "location": 0.0,
+                      "value": 0.5,
+                      "derivative": 0.01
+                    },
+                    {
+                      "location": 200.0,
+                      "value": -0.5,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "x": -3001,
+      "y": -13,
+      "z": -77,
+      "value": "0.09346477",
+      "bits": "0x3DBF6A75"
+    },
+    {
+      "name": "flat_nested_spline_8",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "derivative": 0.0,
+                "value": {
+                  "coordinate": {
+                    "type": "minecraft:gradient",
+                    "axis": "y",
+                    "from_coordinate": -64,
+                    "from_value": -1.5,
+                    "to_coordinate": 320,
+                    "to_value": 1.5
+                  },
+                  "points": [
+                    {
+                      "location": -1.0,
+                      "value": -1.0,
+                      "derivative": 0.5
+                    },
+                    {
+                      "location": 1.0,
+                      "value": 1.0,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              },
+              {
+                "location": 0.5,
+                "derivative": 0.2,
+                "value": {
+                  "coordinate": "minecraft:y",
+                  "points": [
+                    {
+                      "location": 0.0,
+                      "value": 0.5,
+                      "derivative": 0.01
+                    },
+                    {
+                      "location": 200.0,
+                      "value": -0.5,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "x": -3001,
+      "y": 30,
+      "z": -77,
+      "value": "0.36640137",
+      "bits": "0x3EBB98F6"
+    },
+    {
+      "name": "flat_nested_spline_9",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "derivative": 0.0,
+                "value": {
+                  "coordinate": {
+                    "type": "minecraft:gradient",
+                    "axis": "y",
+                    "from_coordinate": -64,
+                    "from_value": -1.5,
+                    "to_coordinate": 320,
+                    "to_value": 1.5
+                  },
+                  "points": [
+                    {
+                      "location": -1.0,
+                      "value": -1.0,
+                      "derivative": 0.5
+                    },
+                    {
+                      "location": 1.0,
+                      "value": 1.0,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              },
+              {
+                "location": 0.5,
+                "derivative": 0.2,
+                "value": {
+                  "coordinate": "minecraft:y",
+                  "points": [
+                    {
+                      "location": 0.0,
+                      "value": 0.5,
+                      "derivative": 0.01
+                    },
+                    {
+                      "location": 200.0,
+                      "value": -0.5,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "x": -3001,
+      "y": 77,
+      "z": -77,
+      "value": "0.27786812",
+      "bits": "0x3E8E44BB"
+    },
+    {
+      "name": "flat_nested_spline_10",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "derivative": 0.0,
+                "value": {
+                  "coordinate": {
+                    "type": "minecraft:gradient",
+                    "axis": "y",
+                    "from_coordinate": -64,
+                    "from_value": -1.5,
+                    "to_coordinate": 320,
+                    "to_value": 1.5
+                  },
+                  "points": [
+                    {
+                      "location": -1.0,
+                      "value": -1.0,
+                      "derivative": 0.5
+                    },
+                    {
+                      "location": 1.0,
+                      "value": 1.0,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              },
+              {
+                "location": 0.5,
+                "derivative": 0.2,
+                "value": {
+                  "coordinate": "minecraft:y",
+                  "points": [
+                    {
+                      "location": 0.0,
+                      "value": 0.5,
+                      "derivative": 0.01
+                    },
+                    {
+                      "location": 200.0,
+                      "value": -0.5,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "x": -3001,
+      "y": 141,
+      "z": -77,
+      "value": "-0.12069796",
+      "bits": "0xBDF7307E"
+    },
+    {
+      "name": "flat_nested_spline_11",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:interpolated",
+        "cell_size_xz": 4,
+        "cell_size_y": 8,
+        "input": {
+          "type": "minecraft:spline",
+          "spline": {
+            "coordinate": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:continentalness",
+              "xz_scale": 0.25,
+              "y_scale": 0.0
+            },
+            "points": [
+              {
+                "location": -0.5,
+                "derivative": 0.0,
+                "value": {
+                  "coordinate": {
+                    "type": "minecraft:gradient",
+                    "axis": "y",
+                    "from_coordinate": -64,
+                    "from_value": -1.5,
+                    "to_coordinate": 320,
+                    "to_value": 1.5
+                  },
+                  "points": [
+                    {
+                      "location": -1.0,
+                      "value": -1.0,
+                      "derivative": 0.5
+                    },
+                    {
+                      "location": 1.0,
+                      "value": 1.0,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              },
+              {
+                "location": 0.5,
+                "derivative": 0.2,
+                "value": {
+                  "coordinate": "minecraft:y",
+                  "points": [
+                    {
+                      "location": 0.0,
+                      "value": 0.5,
+                      "derivative": 0.01
+                    },
+                    {
+                      "location": 200.0,
+                      "value": -0.5,
+                      "derivative": 0.0
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "x": -3001,
+      "y": 250,
+      "z": -77,
+      "value": "-0.26757175",
+      "bits": "0xBE88FF2A"
     }
   ]
 }
