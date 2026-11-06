@@ -157,8 +157,8 @@ public partial class Extensions
             NbtTag<short> number => number.Value.ToString(CultureInfo.InvariantCulture),
             NbtTag<int> number => number.Value.ToString(CultureInfo.InvariantCulture),
             NbtTag<long> number => number.Value.ToString(CultureInfo.InvariantCulture),
-            NbtTag<float> number => JavaDecimal(number.Value.ToString(CultureInfo.InvariantCulture)),
-            NbtTag<double> number => JavaDecimal(number.Value.ToString(CultureInfo.InvariantCulture)),
+            NbtTag<float> number => JavaDecimal(number.Value),
+            NbtTag<double> number => JavaDecimal(number.Value),
             _ => null
         };
 
@@ -166,33 +166,36 @@ public partial class Extensions
     }
 
     /// <summary>
-    /// A float or double as Java's <c>toString</c> writes it, from the shortest digits .NET writes (which are Java's
-    /// too): at least one decimal, and scientific notation (<c>1.0E-5</c>) below 10^-3 and from 10^7.
+    /// A double as Java's <c>Double.toString</c> writes it: at least one decimal, and scientific notation
+    /// (<c>1.0E-5</c>) below 10^-3 and from 10^7.
     /// </summary>
-    internal static string JavaDecimal(string shortest)
+    internal static string JavaDecimal(double value) => JavaDecimal(
+        value.ToString(CultureInfo.InvariantCulture),
+        value.ToString("E1", CultureInfo.InvariantCulture));
+
+    /// <summary>
+    /// A float as Java's <c>Float.toString</c> writes it, like <see cref="JavaDecimal(double)"/>.
+    /// </summary>
+    internal static string JavaDecimal(float value) => JavaDecimal(
+        value.ToString(CultureInfo.InvariantCulture),
+        value.ToString("E1", CultureInfo.InvariantCulture));
+
+    // A number from the shortest digits .NET writes for it, which are Java's when there's more than one, and the two
+    // closest to it, rounded from its exact value.
+    private static string JavaDecimal(string shortest, string closestTwo)
     {
         if (shortest is "NaN" or "∞" or "-∞" or "Infinity" or "-Infinity")
             return shortest.Replace("∞", "Infinity");
 
         var negative = shortest.StartsWith('-');
-        var unsigned = negative ? shortest[1..] : shortest;
-
-        // The digits without the point, and the power of ten of the first one.
-        var parts = unsigned.Split('E');
-        var mantissa = parts[0];
-        var exponent = parts.Length > 1 ? int.Parse(parts[1], CultureInfo.InvariantCulture) : 0;
-        var point = mantissa.IndexOf('.');
-        var digits = mantissa.Replace(".", string.Empty);
-        var leadingZeros = digits.Length - digits.TrimStart('0').Length;
-
-        digits = digits.TrimStart('0');
+        var (digits, power) = Decimal(shortest.TrimStart('-'));
         if (digits.Length == 0)
             return negative ? "-0.0" : "0.0";
 
-        var power = (point < 0 ? mantissa.Length : point) - 1 - leadingZeros + exponent;
-        digits = digits.TrimEnd('0');
-        if (digits.Length == 0)
-            digits = "0";
+        // Java writes at least two digits, and with one shortest digit picks the two closest to the number: those of a
+        // subnormal can differ from it (Double.MIN_VALUE is 4.9E-324, not 5.0E-324).
+        if (digits.Length == 1)
+            (digits, power) = Decimal(closestTwo.TrimStart('-'));
 
         var sign = negative ? "-" : string.Empty;
 
@@ -202,6 +205,22 @@ public partial class Extensions
         var fraction = digits.Length > 1 ? digits[1..] : "0";
 
         return $"{sign}{digits[0]}.{fraction}E{power}";
+    }
+
+    // A written decimal's significant digits without trailing zeros, and the power of ten of the first; no digits for
+    // zero.
+    private static (string Digits, int Power) Decimal(string written)
+    {
+        var parts = written.Split('E');
+        var mantissa = parts[0];
+        var exponent = parts.Length > 1 ? int.Parse(parts[1], CultureInfo.InvariantCulture) : 0;
+        var point = mantissa.IndexOf('.');
+        var allDigits = mantissa.Replace(".", string.Empty);
+        var significant = allDigits.TrimStart('0');
+        var leadingZeros = allDigits.Length - significant.Length;
+        var power = (point < 0 ? mantissa.Length : point) - 1 - leadingZeros + exponent;
+
+        return (significant.TrimEnd('0'), power);
     }
 
     // Digits whose first is 10^power, written out with at least one decimal.
