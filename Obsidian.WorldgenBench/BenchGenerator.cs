@@ -4,6 +4,8 @@ using Obsidian.WorldData.Generators.Biomes;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Generators.Features;
 using Obsidian.WorldData.Generators.Mojang.Structures;
+using Obsidian.Registries;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -20,12 +22,26 @@ internal sealed class BenchGenerator
 {
     private readonly BiomeTerrain pipeline;
 
-    public BenchGenerator(BenchDimension bench, long seed)
+    /// <param name="dataPacks">Whether data packs were applied (see <see cref="DataPacks"/>): the dimension is then
+    /// generated as the server would, with the current features and structures.</param>
+    public BenchGenerator(BenchDimension bench, long seed, bool dataPacks)
     {
-        var dimension = WorldgenDimension.Vanilla(bench.Identifier);
-        this.HasSkyLight = dimension.DimensionType.Element.HasSkylight;
-        this.pipeline = BiomeTerrain.Create(dimension, seed, new FeatureRegistry(WorldgenData.Vanilla),
-            structures: true);
+        if (dataPacks)
+        {
+            var dimension = PluginDimensions.Find(bench.Identifier) as WorldgenDimension
+                ?? throw new InvalidOperationException($"No {bench.Identifier} with the data packs.");
+            this.HasSkyLight = dimension.DimensionType.Element.HasSkylight;
+            this.pipeline = BiomeTerrain.Create(dimension, seed, structures: true,
+                featureSource: static () => PluginFeatures.CurrentRegistry,
+                structureSource: static () => PluginStructures.CurrentRegistry);
+        }
+        else
+        {
+            var dimension = WorldgenDimension.Vanilla(bench.Identifier);
+            this.HasSkyLight = dimension.DimensionType.Element.HasSkylight;
+            this.pipeline = BiomeTerrain.Create(dimension, seed, new FeatureRegistry(WorldgenData.Vanilla),
+                structures: true);
+        }
     }
 
     public StructureManager? Structures => this.pipeline.Structures;

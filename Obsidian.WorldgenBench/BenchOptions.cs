@@ -4,7 +4,8 @@ using System.Linq;
 
 namespace WorldgenBench;
 
-internal sealed record BenchOptions(IReadOnlyList<BenchDimension> Dimensions, int Radius, long Seed, bool Cold)
+internal sealed record BenchOptions(IReadOnlyList<BenchDimension> Dimensions, int Radius, long Seed, bool Cold,
+    string? DataPacks)
 {
     public const int DefaultRadius = 16;
     public const long DefaultSeed = 12345L;
@@ -12,7 +13,7 @@ internal sealed record BenchOptions(IReadOnlyList<BenchDimension> Dimensions, in
     /// <summary>
     /// Whether the run generates the chunks whose hashes are recorded.
     /// </summary>
-    public bool HasExpectedHashes => this.Radius == DefaultRadius && this.Seed == DefaultSeed;
+    public bool HasExpectedHashes => this.Radius == DefaultRadius && this.Seed == DefaultSeed && this.DataPacks is null;
 
     public static BenchOptions Parse(ReadOnlySpan<string> args)
     {
@@ -20,6 +21,7 @@ internal sealed record BenchOptions(IReadOnlyList<BenchDimension> Dimensions, in
         var radius = DefaultRadius;
         var seed = DefaultSeed;
         var cold = false;
+        string? dataPacks = null;
 
         for (var i = 0; i < args.Length; i++)
         {
@@ -41,12 +43,15 @@ internal sealed record BenchOptions(IReadOnlyList<BenchDimension> Dimensions, in
                 case "--cold":
                     cold = true;
                     break;
+                case "--datapacks":
+                    dataPacks = args[++i];
+                    break;
                 default:
                     throw new ArgumentException($"Unknown option '{args[i]}'.");
             }
         }
 
-        return new BenchOptions(dimensions, radius, seed, cold);
+        return new BenchOptions(dimensions, radius, seed, cold, dataPacks);
     }
 }
 
