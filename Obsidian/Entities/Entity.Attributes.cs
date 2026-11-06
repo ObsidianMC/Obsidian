@@ -71,25 +71,6 @@ public partial class Entity
         }
     }
 
-    /// <summary>
-    /// The attribute's value with <paramref name="extra"/> modifiers applied on top of the entity's own, like the
-    /// enchantment modifiers vanilla adds while an item is equipped (see <see cref="EnchantmentAttributes"/>).
-    /// </summary>
-    internal float GetAttributeValue(string attributeResourceName, IEnumerable<EntityAttributeModifier> extra)
-    {
-        var name = this.ResolveAttributeName(attributeResourceName);
-        if (!this.Attributes.TryGetValue(name, out var baseValue))
-            return 0;
-
-        lock (this.attributeLock)
-        {
-            var own = this.attributeModifiers?.GetValueOrDefault(name)?.Values
-                ?? Enumerable.Empty<EntityAttributeModifier>();
-
-            return (float)Compute(VanillaName(name), baseValue, own.Concat(extra).ToList());
-        }
-    }
-
     public bool SetAttributeModifier(string attribute, string id, double amount, AttributeOperation operation)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);

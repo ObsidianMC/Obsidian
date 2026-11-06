@@ -1,13 +1,11 @@
 using Obsidian.API.Inventory;
-using Obsidian.Entities.AI;
+using Obsidian.WorldData;
+using Obsidian.WorldData.Fluids;
 
 namespace Obsidian.Entities;
 
 public partial class PlayerBase
 {
-    // The inventory slot of the helmet, whose enchantments (Aqua Affinity) change mining under water.
-    private const int HelmetSlot = 5;
-
     /// <summary>
     /// How much of <paramref name="block"/> one tick of mining breaks, like vanilla's
     /// <c>BlockState.getDestroyProgress</c> for a player: 1 or more breaks it on the first tick, which the player's
@@ -35,12 +33,11 @@ public partial class PlayerBase
     // Vanilla's Player.getDestroySpeed.
     private float DestroySpeed(IBlock block, ItemStack? tool)
     {
+        // Efficiency and Aqua Affinity reach these attributes as equipment modifiers (see UpdateEquipmentAttributes),
+        // which the player's client is sent, as vanilla's client only knows them from the server.
         var speed = ItemTools.MiningSpeed(block, tool);
         if (speed > 1)
-        {
-            var efficiency = EnchantmentAttributes.Modifiers(tool, "mainhand", "minecraft:mining_efficiency");
-            speed += this.GetAttributeValue("minecraft:mining_efficiency", efficiency);
-        }
+            speed += this.GetAttributeValue("minecraft:mining_efficiency");
 
         var haste = Math.Max(this.EffectAmplifier(PotionEffect.Haste), this.EffectAmplifier(PotionEffect.ConduitPower));
         if (haste >= 0)
@@ -52,16 +49,34 @@ public partial class PlayerBase
 
         speed *= this.GetAttributeValue("minecraft:block_break_speed");
 
-        if (new MobTerrain(this.Level).IsInFluid(EyePosition(this), water: true))
-        {
-            var helmet = this.Inventory.GetItem(HelmetSlot);
-            var aquaAffinity = EnchantmentAttributes.Modifiers(helmet, "head", "minecraft:submerged_mining_speed");
-            speed *= this.GetAttributeValue("minecraft:submerged_mining_speed", aquaAffinity);
-        }
+        if (this.IsEyeInWater())
+            speed *= this.GetAttributeValue("minecraft:submerged_mining_speed");
 
         if (!this.MovementFlags.HasFlag(MovementFlags.OnGround))
             speed /= 5;
 
         return speed;
+    }
+
+    // Vanilla's EntityFluidInteraction: the eyes are in water when the water in their block reaches them, its surface
+    // at the camera's height for it, which fills the block for a source under a sturdy ceiling.
+    private bool IsEyeInWater()
+    {
+        if (this.Level is not AbstractLevel level)
+            return false;
+
+        var eye = EyePosition(this);
+        var position = (Vector)eye.Floor();
+        var fluid = FluidState.Of(level.Fluids.GetBlock(position));
+        if (!fluid.IsWater)
+            return false;
+
+        // Water above fills the block too, as vanilla's getHeight has it.
+        var above = position + Vector.Up;
+        var ceiling = fluid.IsSource && level.IsFaceSturdy(above, BlockFace.Down);
+        var full = ceiling || FluidState.Of(level.Fluids.GetBlock(above)).IsWater;
+        var height = full ? 1 : fluid.OwnHeight;
+
+        return eye.Y <= position.Y + height;
     }
 }

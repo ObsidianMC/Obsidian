@@ -4,6 +4,7 @@ using Obsidian.API.Loot;
 using Obsidian.API.Registries;
 using Obsidian.Entities;
 using Obsidian.Net;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
@@ -50,6 +51,44 @@ public sealed class VanillaMining(ITestOutputHelper output)
         output.WriteLine($"Replayed {cases.Length} mining cases.");
     }
 
+    // Vanilla's client only knows Efficiency's mining bonus from the server's attribute sync: without it, the
+    // client mines slower than the server, which breaks blocks the client still shows as being mined.
+    [Fact]
+    public async Task EnchantmentModifiersReachTheClient()
+    {
+        await using var context = TestServerFactory.CreateServer($"mining-sync-{Guid.NewGuid():N}");
+        WorldBlockEntities.AddEmptyChunk(context.World);
+        var player = await WorldBlockEntities.JoinAsync(context);
+        var client = (TestClient)player.Client;
+
+        // Holding an Efficiency V pickaxe.
+        var pickaxe = new ItemStack(ItemsRegistry.DiamondPickaxe);
+        var efficiency = EnchantmentsRegistry.All.Single(entry => entry.Identifier == "minecraft:efficiency");
+        EnchantmentHelper.Enchant(pickaxe, efficiency, 5);
+        player.Inventory.SetItem(player.CurrentHeldItemSlot, pickaxe);
+        player.UpdateEquipmentAttributes();
+        client.ClearPackets();
+        player.SendAttributeChanges();
+
+        var sent = MiningEfficiency(client);
+        var modifier = Assert.Single(sent.Modifiers);
+        Assert.Equal("minecraft:enchantment.efficiency/mainhand", modifier.Id);
+        Assert.Equal(26, modifier.Amount);
+
+        // Putting it away takes the bonus away again.
+        player.Inventory.SetItem(player.CurrentHeldItemSlot, null);
+        player.UpdateEquipmentAttributes();
+        client.ClearPackets();
+        player.SendAttributeChanges();
+
+        Assert.Empty(MiningEfficiency(client).Modifiers);
+    }
+
+    private static AttributeSnapshot MiningEfficiency(TestClient client) => client.SentPackets
+        .OfType<UpdateAttributesPacket>()
+        .SelectMany(packet => packet.Attributes)
+        .Single(attribute => attribute.ProtocolId == AttributeIds.MiningEfficiency);
+
     private static async Task Replay(JsonElement probe, RealServerContext context, Chunk chunk, Obsidian.Entities.Player player)
     {
         var block = BlocksRegistry.Get(probe.GetProperty("block").GetString()!);
@@ -90,6 +129,9 @@ public sealed class VanillaMining(ITestOutputHelper output)
 
         player.Inventory.SetItem(player.CurrentHeldItemSlot, held);
         player.Inventory.SetItem(5, helmet);
+
+        // As the player's tick would: their equipment's modifiers, Efficiency's and Aqua Affinity's among them.
+        player.UpdateEquipmentAttributes();
     }
 
     // An item as the fixture names it: {"id": ..., "enchantments": {"minecraft:efficiency": 5}}.

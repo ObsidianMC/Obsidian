@@ -24,10 +24,11 @@ internal static class EnchantmentAttributes
         string[] Slots);
 
     /// <summary>
-    /// The modifiers <paramref name="item"/>'s enchantments put on <paramref name="attribute"/> while it's in
-    /// <paramref name="slot"/> (<c>mainhand</c>, <c>head</c>...), like vanilla's <c>EnchantmentHelper.forEachModifier</c>.
+    /// The attribute modifiers <paramref name="item"/>'s enchantments give while it's in <paramref name="slot"/>
+    /// (<c>mainhand</c>, <c>head</c>...), by attribute name, like vanilla's <c>EnchantmentHelper.forEachModifier</c>.
+    /// Each modifier's id is its effect's id with the slot appended, as vanilla names it.
     /// </summary>
-    public static IEnumerable<EntityAttributeModifier> Modifiers(ItemStack? item, string slot, string attribute)
+    public static IEnumerable<(string Attribute, EntityAttributeModifier Modifier)> Modifiers(ItemStack? item, string slot)
     {
         if (item is not { Count: > 0 })
             yield break;
@@ -44,11 +45,12 @@ internal static class EnchantmentAttributes
 
             foreach (var effect in entries)
             {
-                if (effect.Attribute != attribute || !effect.Slots.Any(group => CombatItems.MatchesSlot(group, slot)))
+                if (!effect.Slots.Any(group => CombatItems.MatchesSlot(group, slot)))
                     continue;
 
                 var id = $"{effect.Id}/{slot}";
-                yield return new EntityAttributeModifier(id, effect.Amount(enchantment.Level), effect.Operation);
+                var modifier = new EntityAttributeModifier(id, effect.Amount(enchantment.Level), effect.Operation);
+                yield return (effect.Attribute, modifier);
             }
         }
     }

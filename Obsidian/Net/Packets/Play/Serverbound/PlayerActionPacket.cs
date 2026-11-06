@@ -51,7 +51,7 @@ public partial class PlayerActionPacket
             notes.PlayNoteBlock(Position, player);
         }
 
-        if (Status == PlayerActionStatus.FinishedDigging || this.BreaksAtOnce(player, block))
+        if (Status == PlayerActionStatus.FinishedDigging || await this.BreaksAtOnceAsync(player, block))
         {
             var args = new BlockBreakEventArgs(server, player, block, Position, player.Level)
             {
@@ -68,8 +68,9 @@ public partial class PlayerActionPacket
 
     // Like vanilla's ServerPlayerGameMode: a creative player breaks a block as they start, and so does a survival player
     // whose first tick of mining breaks it all (grass by hand, leaves with shears, stone with a fast enough pickaxe).
-    // Their client breaks those at once and only ever sends the start, never a finish.
-    private bool BreaksAtOnce(IClientPlayer player, IBlock block)
+    // Their client breaks those at once and only ever sends the start, never a finish. The progress reads the held
+    // tool and its components, so it's taken while the inventory can't change under it.
+    private async ValueTask<bool> BreaksAtOnceAsync(IClientPlayer player, IBlock block)
     {
         if (this.Status != PlayerActionStatus.StartedDigging || player.GameMode == GameMode.Spectator)
             return false;
@@ -77,7 +78,11 @@ public partial class PlayerActionPacket
         if (player.GameMode == GameMode.Creative)
             return true;
 
-        return !block.IsAir && player is PlayerBase miner && miner.DestroyProgress(block) >= 1;
+        if (block.IsAir || player is not PlayerBase miner)
+            return false;
+
+        using (await player.Inventory.LockAsync())
+            return miner.DestroyProgress(block) >= 1;
     }
 
     private void BroadcastPlayerAction(IClientPlayer player)
