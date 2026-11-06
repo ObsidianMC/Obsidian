@@ -125,12 +125,14 @@ public partial class Extensions
         ? new(0, provider.Value) : new((float)Number(value));
 
     // A number tag of any type, read like vanilla's numeric tags: a data pack's JSON writes a float's 1 as an int.
+    // Like vanilla's, a float's conversion to an int floors and saturates, and NaN is 0.
     private static double Number(INbtTag tag) =>
         NumberOf(tag) ?? throw new InvalidDataException($"{tag.Name} isn't a number.");
 
+    // NBT bytes are signed, though they're held as bytes.
     private static double? NumberOf(INbtTag tag) => tag switch
     {
-        NbtTag<byte> value => value.Value,
+        NbtTag<byte> value => unchecked((sbyte)value.Value),
         NbtTag<short> value => value.Value,
         NbtTag<int> value => value.Value,
         NbtTag<long> value => value.Value,
