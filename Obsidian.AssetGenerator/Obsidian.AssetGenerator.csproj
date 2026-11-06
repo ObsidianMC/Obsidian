@@ -106,7 +106,9 @@
 	     server (docs/vanilla-captures.md). Slow, so only on request:
 	     dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen
 	     CaptureSections and CaptureCases record only some sections or files and cases, by '+'-separated patterns, e.g.
-	     -p:CaptureSections=features/09-trees+terrain -p:CaptureCases=tree_oak_* -->
+	     -p:CaptureSections=features/09-trees+terrain -p:CaptureCases=tree_oak_*
+	     CaptureDataPacks creates the capture worlds with a directory's data packs, for a fixture of their own:
+	     -p:CaptureDataPacks=(directory) -p:VanillaWorldgenFixture=(directory) -->
 	<PropertyGroup>
 		<VanillaWorldgenFixture>$(MSBuildThisFileDirectory)..\Obsidian.Tests\Assets\vanilla_worldgen_26.3</VanillaWorldgenFixture>
 	</PropertyGroup>
@@ -119,7 +121,8 @@
 			<VanillaCaptureCommand>$(VanillaCaptureCommand) &quot;$(VanillaWorldgenFixture)&quot;</VanillaCaptureCommand>
 			<CaptureSectionsOption Condition="'$(CaptureSections)' != ''">--sections &quot;$(CaptureSections)&quot;</CaptureSectionsOption>
 			<CaptureCasesOption Condition="'$(CaptureCases)' != ''">--cases &quot;$(CaptureCases)&quot;</CaptureCasesOption>
-			<VanillaCaptureCommand>$(VanillaCaptureCommand) $(CaptureSectionsOption) $(CaptureCasesOption)</VanillaCaptureCommand>
+			<CaptureDataPacksOption Condition="'$(CaptureDataPacks)' != ''">--datapacks &quot;$(CaptureDataPacks)&quot;</CaptureDataPacksOption>
+			<VanillaCaptureCommand>$(VanillaCaptureCommand) $(CaptureSectionsOption) $(CaptureCasesOption) $(CaptureDataPacksOption)</VanillaCaptureCommand>
 		</PropertyGroup>
 
 		<Exec IgnoreStandardErrorWarningFormat="true" Command="$(VanillaCaptureCommand)" />

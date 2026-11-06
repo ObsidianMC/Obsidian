@@ -82,9 +82,18 @@ byte for byte as they were. The files are written deterministically (keys in the
 spelled them, two-space indentation, LF and a trailing newline), so a full re-record reproduces the committed files
 byte for byte when vanilla's values haven't changed. The folder's `.gitattributes` keeps them LF in checkouts too.
 
+To record references with data packs, point `CaptureDataPacks` at a folder of packs (zips or folders) and
+`VanillaWorldgenFixture` at a fixture folder of their own: the capture worlds are created with the packs in their
+`datapacks` folder, which vanilla enables as it creates the world. Keep such fixtures out of the repository when the
+packs are third-party content.
+
+```sh
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaWorldgen -p:CaptureDataPacks=<packs> -p:VanillaWorldgenFixture=<dir>
+```
+
 The underlying command is
 `Obsidian.AssetGenerator capture-worldgen <minecraft version> <cache directory> <scratch directory> <fixture directory>
-[--sections <patterns>] [--cases <patterns>]`. It gathers the selected cases into one fixture json by section, which
+[--sections <patterns>] [--cases <patterns>] [--datapacks <directory>]`. It gathers the selected cases into one fixture json by section, which
 the probe records (in `<scratch directory>/<version>/captures`), and puts them back in their files once every world
 succeeded, so a failed capture leaves the files alone.
 
