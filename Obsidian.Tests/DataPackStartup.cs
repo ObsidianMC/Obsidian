@@ -399,9 +399,18 @@ public sealed class DataPackStartup : IDisposable
             Assert.Equal(5, horn.MaxDamage);
             Assert.Equal(1, horn.MaxStackSize);
 
-            // A list of a string and an object is a text with the rest as its extras.
+            // Numbers of mixed types in a list read as numbers.
+            var model = horn.GetComponent<CustomModelDataComponent>(DataComponentType.CustomModelData)!;
+            Assert.Equal<float>([1f, 1.5f], model.Floats);
+
+            // A list of texts mixing strings, objects and lists is its first text with the rest as its extras, at any
+            // depth, so a nested list's first text styles the rest.
             Assert.Equal("Wintry ", horn.CustomName!.Text);
-            Assert.Equal("Horn", Assert.Single(horn.CustomName.GetExtras()).Text);
+            var nested = Assert.Single(horn.CustomName.GetExtras());
+            Assert.Equal("Ho", nested.Text);
+            Assert.True(nested.Bold);
+            Assert.Equal("rn", Assert.Single(nested.GetExtras()).Text);
+            Assert.Equal("Horn", Assert.Single(horn.ItemName!.GetExtras()).Text);
         }
         finally
         {
@@ -479,16 +488,27 @@ public sealed class DataPackStartup : IDisposable
                   "components": {
                     "minecraft:enchantment_glint_override": true,
                     "minecraft:use_cooldown": { "seconds": 2 },
-                    "minecraft:max_damage": 5
+                    "minecraft:max_damage": 5,
+                    "minecraft:custom_model_data": { "floats": [1, 1.5] },
+                    "minecraft:item_name": ["Goat ", { "text": "Horn" }]
                   }
                 },
                 { "type": "minecraft:set_components", "components": { "minecraft:max_stack_size": 16 } },
                 {
                   "type": "minecraft:set_name",
                   "entity": "this",
-                  "name": ["Wintry ", { "text": "Horn", "italic": false }]
+                  "name": ["Wintry ", [{ "text": "Ho", "bold": true }, "rn"]]
                 },
-                { "type": "minecraft:set_lore", "mode": "append", "lore": [{ "text": "Found in an igloo" }] }
+                {
+                  "type": "minecraft:set_lore",
+                  "mode": "append",
+                  "lore": [
+                    {
+                      "text": "Found in an igloo",
+                      "hover_event": { "action": "show_text", "value": ["Cold ", { "text": "and snowy" }] }
+                    }
+                  ]
+                }
               ]
             }
           ]
@@ -571,7 +591,7 @@ public sealed class DataPackStartup : IDisposable
             Func<TState, Exception?, string> formatter)
         {
             if (this.IsEnabled(logLevel))
-                this.Messages.Add(formatter(state, exception));
+                this.Messages.Add($"{formatter(state, exception)} {exception?.Message}");
         }
     }
 

@@ -185,6 +185,9 @@ public partial class Extensions
     /// </summary>
     internal static ChatMessage? TextFromNbt(this INbtTag tag) => tag switch
     {
+        // An element of a list that mixes strings, compounds and lists, wrapped under an empty key, as vanilla saves
+        // such lists (see JsonNbt).
+        NbtCompound { Count: 1 } wrapper when wrapper.TryGetTag(string.Empty, out var wrapped) => wrapped.TextFromNbt(),
         NbtTag<string> text => ChatMessage.Simple(text.Value ?? string.Empty),
         NbtCompound compound => ChatMessage.Empty.FromNbt(compound),
         NbtList { Count: > 0 } list when list[0].TextFromNbt() is { } first =>

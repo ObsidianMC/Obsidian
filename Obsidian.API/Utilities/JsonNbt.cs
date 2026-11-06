@@ -49,7 +49,7 @@ internal static class JsonNbt
 
         var type = elements.Count > 0 ? elements[0].Type : NbtTagType.End;
         if (elements.Any(element => element.Type != type))
-            throw new JsonException($"The elements of an NBT list must be of one type, unlike those of {name}.");
+            return MixedList(name, elements);
 
         var list = new NbtList(type, name);
         foreach (var element in elements)
@@ -57,6 +57,50 @@ internal static class JsonNbt
 
         return list;
     }
+
+    // A list whose elements differ in type. Numbers are all doubles, so that a list like [1, 1.5] reads as numbers.
+    // Other elements are saved like vanilla saves a mixed list: as compounds, each element that isn't one (or is one
+    // that looks wrapped) under an empty key, which readers unwrap (see TextFromNbt).
+    private static NbtList MixedList(string name, List<INbtTag> elements)
+    {
+        var numbers = elements.Select(NumberOf).ToList();
+        if (numbers.All(number => number is not null))
+        {
+            var doubles = new NbtList(NbtTagType.Double, name);
+            foreach (var number in numbers)
+                doubles.Add(new NbtTag<double>(string.Empty, number!.Value));
+
+            return doubles;
+        }
+
+        var list = new NbtList(NbtTagType.Compound, name);
+        foreach (var element in elements)
+            list.Add(IsUnwrapped(element) ? element : Wrap(element));
+
+        return list;
+    }
+
+    // Compounds only take named tags when built, so the element goes in as a read tag, like a palette entry.
+    private static NbtCompound Wrap(INbtTag element)
+    {
+        var wrapper = new NbtCompound();
+        element.Name = string.Empty;
+        wrapper.SetReadTag(string.Empty, element);
+
+        return wrapper;
+    }
+
+    private static bool IsUnwrapped(INbtTag element) =>
+        element is NbtCompound compound && !(compound.Count == 1 && compound.HasTag(string.Empty));
+
+    private static double? NumberOf(INbtTag element) => element switch
+    {
+        NbtTag<int> number => number.Value,
+        NbtTag<long> number => number.Value,
+        NbtTag<float> number => number.Value,
+        NbtTag<double> number => number.Value,
+        _ => null
+    };
 
     private static INbtTag NumberToNbt(string name, JsonElement value)
     {

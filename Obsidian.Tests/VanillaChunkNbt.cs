@@ -134,7 +134,7 @@ public sealed class VanillaChunkNbt
         };
         var entities = new NbtList(NbtTagType.Compound, "block_entities")
         {
-            new NbtCompound { new NbtTag<string>("id", "minecraft:furnace"), new NbtTag<short>("cooking_time_spent", 5), new NbtTag<short>("cooking_total_time", 200), new NbtTag<short>("lit_time_remaining", 100), new NbtTag<short>("lit_total_time", 300) },
+            new NbtCompound { new NbtTag<string>("id", "minecraft:furnace"), new NbtTag<short>("cooking_time_spent", 5), new NbtTag<short>("cooking_total_time", 200), new NbtTag<short>("lit_time_remaining", 100), new NbtTag<int>("lit_total_time", 40000) },
             new NbtCompound { new NbtTag<string>("id", "minecraft:brewing_stand"), new NbtTag<short>("BrewTime", 123), new NbtTag<byte>("Fuel", 19) },
             new NbtCompound { new NbtTag<string>("id", "minecraft:decorated_pot"), new NbtList(NbtTagType.String, "sherds") { new NbtTag<string>("", "minecraft:angler_pottery_sherd"), new NbtTag<string>("", "minecraft:brick"), new NbtTag<string>("", "minecraft:brick"), new NbtTag<string>("", "minecraft:arms_up_pottery_sherd") }, new NbtCompound("item") { new NbtTag<string>("id", "minecraft:emerald"), new NbtTag<int>("count", 5) } },
             new NbtCompound { new NbtTag<string>("id", "minecraft:bed") }
@@ -162,7 +162,10 @@ public sealed class VanillaChunkNbt
         Assert.Equal(5, furnace.GetInt("cooking_time_spent"));
         Assert.Equal(200, furnace.GetInt("cooking_total_time"));
         Assert.Equal(100, furnace.GetInt("lit_time_remaining"));
-        Assert.Equal(300, furnace.GetInt("lit_total_time"));
+
+        // Shorts become ints; an int already that wide stays as it is, not cut to a short.
+        Assert.IsType<NbtTag<int>>(furnace["cooking_total_time"]);
+        Assert.Equal(40000, Assert.IsType<NbtTag<int>>(furnace["lit_total_time"]).Value);
         Assert.Equal(1f, furnace.GetFloat("speed_multiplier"));
         var stand = (NbtCompound)entities[1];
         Assert.Equal(123, stand.GetInt("BrewTime"));

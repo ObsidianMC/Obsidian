@@ -379,12 +379,13 @@ internal static class LegacyChunkUpgrade
         BlockEntityNbt.EnsureSaveDefaults(entity);
     }
 
+    // Only a short or byte tag is widened: TryGetTagValue would read an int that's already wide as a short too.
     private static void Widen(NbtCompound compound, string key)
     {
-        if (compound.TryGetTagValue<short>(key, out var small))
-            Set(compound, new NbtTag<int>(key, small));
-        else if (compound.TryGetTagValue<byte>(key, out var tiny))
-            Set(compound, new NbtTag<int>(key, tiny));
+        if (compound.TryGetTag<NbtTag<short>>(key, out var small))
+            Set(compound, new NbtTag<int>(key, small.Value));
+        else if (compound.TryGetTag<NbtTag<byte>>(key, out var tiny))
+            Set(compound, new NbtTag<int>(key, tiny.Value));
     }
 
     private static void SetVersion(NbtCompound compound) => Set(compound, new NbtTag<int>("DataVersion", ServerConstants.DataVersion));
