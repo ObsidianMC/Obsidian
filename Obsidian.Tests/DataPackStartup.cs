@@ -383,9 +383,11 @@ public sealed class DataPackStartup : IDisposable
                 .GetProperty("marker").GetString());
             Assert.NotNull(PluginFeatures.CurrentRegistry.FeatureSet!.FindPlaced("startuptest:patch"));
 
-            // The template's old blocks are 26.3's, not just any block that loads.
-            var template = PluginStructures.ParseTemplate("startuptest:hut", "older", LegacyTemplate(), 1 << 20)
-                .File.Template;
+            // The pool with its old "name" loads, and the template startup read has 26.3's blocks for its old ones,
+            // not just any block that loads.
+            var structures = PluginStructures.CurrentRegistry;
+            Assert.Contains("startuptest:hut", structures.Pools.Keys);
+            var template = structures.Templates["startuptest:hut"];
             Assert.Single(template.FilterBlocks(Vector.Zero, new StructurePlaceSettings(), BlockIds.ShortGrass));
             Assert.Single(template.FilterBlocks(Vector.Zero, new StructurePlaceSettings(), BlockIds.IronChain));
 
@@ -436,6 +438,7 @@ public sealed class DataPackStartup : IDisposable
             PluginDimensions.Apply([], NullLogger.Instance);
             PluginFeatures.Apply([], [], [], new HashSet<string>(), NullLogger.Instance);
             PluginLootTables.Apply([]);
+            PluginStructures.Apply([], [], PluginFeatures.Current, [], NullLogger.Instance);
         }
     }
 
