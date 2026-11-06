@@ -49,10 +49,9 @@ internal sealed class StructureStartCache
     private readonly ConcurrentDictionary<
         (int X, int Z, StructureLayout Layout, ChunkStarts? Previous), Creation> creating = new();
 
-    // Factories can dispatch nested requests to tasks and synchronously await them. Carry nesting with that logical
-    // flow, including across caches, so those requests recompute instead of waiting for the creator they must release.
-    // Captured contexts retain only an integer, never a cache or a plugin; each factory restores its incoming depth.
-    private static readonly AsyncLocal<int> creationDepth = new();
+    // Captured contexts share each factory's lifetime token: ending the factory must also end the exemption from
+    // coordination in copies of its context. Tokens link only to live ancestors, never to caches or plugin objects.
+    private static readonly AsyncLocal<CreationScope?> creationScope = new();
 
     // Ordinary starts take milliseconds; allow a second for cold/template-heavy work before duplicating it. Dispatch
     // that suppresses context flow can hide a dependency on this creator, so waiting must still be bounded. On expiry
@@ -259,8 +258,10 @@ internal sealed class StructureStartCache
     {
         result = null;
         var creationKey = (key.X, key.Z, layout, previous);
+        var incomingScope = creationScope.Value;
+        var parentScope = CreationScope.Active(incomingScope);
         Creation? owned = null;
-        if (creationDepth.Value == 0)
+        if (parentScope is null)
         {
             var candidate = new Creation();
             var pending = this.creating.GetOrAdd(creationKey, candidate);
@@ -279,7 +280,10 @@ internal sealed class StructureStartCache
                     return false;
                 }
 
-                // The wait expired: compute independently, without owning or removing the pending notice.
+                // Do not serialize timed-out fallbacks: a fallback may synchronously wait for another context-free
+                // request to this key. Making that child wait for a fallback slot would recreate the cycle. Each
+                // waiting caller can therefore compute once, the same worst-case duplication as the base algorithm,
+                // while ordinary starts still share their notice. Never own or remove the original creator's notice.
             }
         }
 
@@ -293,15 +297,16 @@ internal sealed class StructureStartCache
                 return false;
 
             ChunkStarts made;
-            var incomingDepth = creationDepth.Value;
-            creationDepth.Value = incomingDepth + 1;
+            var scope = new CreationScope(parentScope);
+            creationScope.Value = scope;
             try
             {
                 made = ChunkStarts.Make(layout, previous, key.X, key.Z, create);
             }
             finally
             {
-                creationDepth.Value = incomingDepth;
+                scope.End();
+                creationScope.Value = incomingScope;
             }
 
             // No factory or wait runs under the publication gate. In particular, nested creation may have
@@ -340,6 +345,30 @@ internal sealed class StructureStartCache
                 owned.Complete(failure);
             }
         }
+    }
+
+    private sealed class CreationScope(CreationScope? parent)
+    {
+        private readonly CreationScope? parent = parent;
+        private int active = 1;
+
+        public static CreationScope? Active(CreationScope? scope)
+        {
+            // An ended child's captured context can still depend on a live parent. Skip ended ancestors when
+            // starting another factory, so reusing old contexts cannot accumulate chains across exploration.
+            while (scope is not null)
+            {
+                if (Volatile.Read(ref scope.active) != 0)
+                    return scope;
+
+                scope = scope.parent;
+            }
+
+            return null;
+        }
+
+        // A child can outlive its parent, so every factory owns and ends its own token.
+        public void End() => Volatile.Write(ref this.active, 0);
     }
 
     private sealed class Creation

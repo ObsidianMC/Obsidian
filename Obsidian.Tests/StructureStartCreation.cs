@@ -445,6 +445,174 @@ public sealed class StructureStartCreation
         return Request(read).Result;
     }
 
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ReviewEndedCapturedContextMustJoinAnUnrelatedCreator()
+    {
+        ExecutionContext? captured = null;
+        var layout = Layout();
+        var firstCache = new StructureStartCache();
+
+        StructureStart Capture(StructureLayout _, StructureSet set, int x, int z, out bool refused)
+        {
+            refused = false;
+            captured = ExecutionContext.Capture();
+            return Start(set, x, z);
+        }
+
+        // Capture during one factory, then let that factory and its entire request finish.
+        Assert.NotNull(firstCache.Get(0, 0, layout, Capture));
+        Assert.NotNull(captured);
+        using var entered = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        var decision = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cache = new StructureStartCache
+        {
+            ObserveCreationWait = step =>
+            {
+                if (step == StructureStartCache.CreationWaitStep.Waiting)
+                {
+                    decision.TrySetResult(false);
+                }
+            }
+        };
+
+        StructureStart Owner(StructureLayout _, StructureSet set, int x, int z, out bool refused)
+        {
+            refused = false;
+            entered.Set();
+            Assert.True(release.Wait(Timeout));
+            return Start(set, x, z);
+        }
+
+        StructureStart Duplicate(StructureLayout _, StructureSet set, int x, int z, out bool refused)
+        {
+            refused = false;
+            decision.TrySetResult(true);
+            return Start(set, x, z);
+        }
+
+        var owner = Request(() => cache.Get(0, 0, layout, Owner));
+        Task<StructureStartCache.ChunkStarts?>? waiter = null;
+        var duplicated = false;
+        try
+        {
+            Assert.True(entered.Wait(Timeout));
+            waiter = Request(() =>
+            {
+                StructureStartCache.ChunkStarts? result = null;
+                ExecutionContext.Run(captured, _ => result = cache.Get(0, 0, layout, Duplicate), null);
+                return result;
+            }).Result;
+            duplicated = await decision.Task.WaitAsync(Timeout);
+        }
+        finally
+        {
+            release.Set();
+        }
+
+        await owner.Result.WaitAsync(Timeout);
+        Assert.NotNull(waiter);
+        await waiter.WaitAsync(Timeout);
+        Assert.False(duplicated, "A context from an ended factory bypassed an unrelated cache's active creator.");
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task EndedChildContextStillRecognizesItsActiveParent()
+    {
+        var cache = new StructureStartCache
+        {
+            ObserveCreationWait = _ => Assert.Fail("A captured child context must not wait on its active parent.")
+        };
+        var layout = Layout();
+        ExecutionContext? captured = null;
+        Task<StructureStartCache.ChunkStarts?>? nested = null;
+        var completedBeforeOwnerReturned = false;
+
+        StructureStart Leaf(StructureLayout _, StructureSet set, int x, int z, out bool refused)
+        {
+            refused = false;
+            return Start(set, x, z);
+        }
+
+        StructureStart Capture(StructureLayout _, StructureSet set, int x, int z, out bool refused)
+        {
+            refused = false;
+            captured = ExecutionContext.Capture();
+            return Start(set, x, z);
+        }
+
+        StructureStart Create(StructureLayout _, StructureSet set, int x, int z, out bool refused)
+        {
+            refused = false;
+            Assert.NotNull(cache.Get(x + 1, z, layout, Capture));
+            Assert.NotNull(captured);
+            nested = Task.Run(() =>
+            {
+                StructureStartCache.ChunkStarts? result = null;
+                ExecutionContext.Run(captured, _ => result = cache.Get(x, z, layout, Leaf), null);
+                return result;
+            });
+            completedBeforeOwnerReturned = nested.Wait(TimeSpan.FromSeconds(2));
+            return Start(set, x, z);
+        }
+
+        var owner = Request(() => cache.Get(0, 0, layout, Create));
+        var result = await owner.Result.WaitAsync(Timeout);
+        Assert.NotNull(nested);
+        var nestedResult = await nested.WaitAsync(Timeout);
+
+        Assert.True(completedBeforeOwnerReturned);
+        Assert.Same(Assert.Single(nestedResult!.Starts), Assert.Single(result!.Starts));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task AContextFreeChildOfAFallbackFinishesBeforeEitherParentReturns()
+    {
+        var cache = new StructureStartCache();
+        var layout = Layout();
+        Task<StructureStartCache.ChunkStarts?>? fallback = null;
+        Task<StructureStartCache.ChunkStarts?>? leaf = null;
+        var fallbackCompletedBeforeOwnerReturned = false;
+        var leafCompletedBeforeFallbackReturned = false;
+
+        StructureStart Leaf(StructureLayout _, StructureSet set, int x, int z, out bool refused)
+        {
+            refused = false;
+            return Start(set, x, z);
+        }
+
+        StructureStart Fallback(StructureLayout _, StructureSet set, int x, int z, out bool refused)
+        {
+            refused = false;
+            leaf = DispatchWithoutContext(() => cache.Get(x, z, layout, Leaf), ContextFreeDispatch.UnsafeWorkItem);
+            leafCompletedBeforeFallbackReturned = leaf.Wait(TimeSpan.FromSeconds(3));
+            return Start(set, x, z);
+        }
+
+        StructureStart Create(StructureLayout _, StructureSet set, int x, int z, out bool refused)
+        {
+            refused = false;
+            fallback = DispatchWithoutContext(
+                () => cache.Get(x, z, layout, Fallback), ContextFreeDispatch.SuppressedTask);
+
+            // Both waits are bounded so a fallback cap that restores this dependency cycle fails without hanging.
+            fallbackCompletedBeforeOwnerReturned = fallback.Wait(TimeSpan.FromSeconds(5));
+            return Start(set, x, z);
+        }
+
+        var owner = Request(() => cache.Get(0, 0, layout, Create));
+        var result = await owner.Result.WaitAsync(Timeout);
+        Assert.NotNull(fallback);
+        Assert.NotNull(leaf);
+        var fallbackResult = await fallback.WaitAsync(Timeout);
+        var leafResult = await leaf.WaitAsync(Timeout);
+
+        Assert.True(fallbackCompletedBeforeOwnerReturned);
+        Assert.True(leafCompletedBeforeFallbackReturned, "A fallback slot blocked the context-free child it needed.");
+        Assert.Same(Assert.Single(leafResult!.Starts), Assert.Single(fallbackResult!.Starts));
+        Assert.Same(Assert.Single(leafResult.Starts), Assert.Single(result!.Starts));
+    }
+
     private static StructureLayout Layout(long version = 1)
     {
         var structure = new ProbeStructure
