@@ -190,6 +190,7 @@ internal sealed class SplineFunction : DensityFunction
 
     private readonly CubicSpline spline;
     private readonly DensityFunction[] coordinates;
+    private readonly bool flat;
 
     public SplineFunction(CubicSpline spline)
     {
@@ -199,9 +200,10 @@ internal sealed class SplineFunction : DensityFunction
         // Bound, so that evaluating reads each coordinate by index rather than searching for it.
         this.coordinates = [.. coordinates];
         this.spline = spline.Bind(this.coordinates);
+        this.flat = this.coordinates.All(coordinate => coordinate.IsFlat);
     }
 
-    public override bool IsFlat => this.coordinates.All(coordinate => coordinate.IsFlat);
+    public override bool IsFlat => this.flat;
 
     public override float Sample(int x, int y, int z)
     {
@@ -217,6 +219,13 @@ internal sealed class SplineFunction : DensityFunction
 
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
     {
+        // Data packs' terrain splines are often sampled uncached over cell corners, where each column has one value.
+        if (this.flat && volume.SizeY > 1)
+        {
+            this.SampleLayer(output, volume);
+            return;
+        }
+
         var count = this.coordinates.Length;
 
         // One buffer holds every coordinate's values over the volume, one coordinate after another.
