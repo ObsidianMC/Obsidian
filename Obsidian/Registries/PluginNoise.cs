@@ -13,10 +13,11 @@ using System.Threading;
 namespace Obsidian.Registries;
 
 /// <summary>
-/// Plugins' and data packs' noise settings, density functions, noises and multi-noise parameter lists, from their data
-/// files: <c>data/&lt;namespace&gt;/worldgen/noise_settings/&lt;path&gt;.json</c>,
-/// <c>worldgen/density_function/...</c>, <c>worldgen/noise/...</c> and
-/// <c>worldgen/multi_noise_biome_source_parameter_list/...</c> are the entries <c>&lt;namespace&gt;:&lt;path&gt;</c>,
+/// Plugins' and data packs' noise settings, density functions, noises, multi-noise parameter lists and surface rules,
+/// from their data files: <c>data/&lt;namespace&gt;/worldgen/noise_settings/&lt;path&gt;.json</c>,
+/// <c>worldgen/density_function/...</c>, <c>worldgen/noise/...</c>,
+/// <c>worldgen/multi_noise_biome_source_parameter_list/...</c>, <c>worldgen/material_rule/...</c> and
+/// <c>worldgen/material_condition/...</c> are the entries <c>&lt;namespace&gt;:&lt;path&gt;</c>,
 /// which the 26.3 pipeline reads (see <see cref="PluginWorldgen"/>).
 /// </summary>
 /// <remarks>
@@ -36,10 +37,21 @@ internal static partial class PluginNoise
     public const string ParameterList = "worldgen/multi_noise_biome_source_parameter_list";
 
     /// <summary>
-    /// The folders of noise settings, density function, noise and parameter list files.
+    /// 26.3's surface rules, which noise settings name by identifier, like <c>minecraft:overworld</c>.
+    /// </summary>
+    public const string MaterialRule = "worldgen/material_rule";
+
+    /// <summary>
+    /// 26.3's surface rule conditions, which material rules name by identifier.
+    /// </summary>
+    public const string MaterialCondition = "worldgen/material_condition";
+
+    /// <summary>
+    /// The folders of noise settings, density function, noise, parameter list, material rule and material condition
+    /// files.
     /// </summary>
     public static FrozenSet<string> Registries { get; } =
-        FrozenSet.Create(NoiseSettings, DensityFunction, Noise, ParameterList);
+        FrozenSet.Create(NoiseSettings, DensityFunction, Noise, ParameterList, MaterialRule, MaterialCondition);
 
     private static readonly Lock applying = new();
 

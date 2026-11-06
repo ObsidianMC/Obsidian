@@ -146,28 +146,68 @@ public static partial class LootTableJson
             && (!json.TryGetProperty("state", out var properties)
                 || MatchesProperties(context.BlockProperties, properties)));
 
+    // A location predicate's position, biomes and block, each tested when it's given, like vanilla's.
     private static ILootCondition LocationPredicate(JsonElement json)
     {
         var predicate = json.GetProperty("predicate");
+        if (predicate.EnumerateObject().Any(value => value.Name is not ("position" or "biomes" or "block")))
+            throw new InvalidDataException("Location checks support position, biomes and block.");
+
+        var tests = new List<Func<LootContext, bool>>();
+
+        if (predicate.TryGetProperty("position", out var position))
+        {
+            var bounds = position.Clone();
+            var offset = new VectorD(OffsetOf(json, "offsetX"), OffsetOf(json, "offsetY"), OffsetOf(json, "offsetZ"));
+            tests.Add(context => MatchesOriginPosition(context, bounds, offset));
+        }
+
         if (predicate.TryGetProperty("biomes", out var biomes))
         {
-            if (predicate.EnumerateObject().Any(value => value.Name != "biomes"))
-                throw new InvalidDataException("Biome location checks support only biomes.");
-
             var set = biomes.Clone();
-            return new PredicateCondition(context => MatchesOriginBiome(context, set));
+            tests.Add(context => MatchesOriginBiome(context, set));
         }
 
-        if (predicate.EnumerateObject().Any(value => value.Name != "block"))
-            throw new InvalidDataException("Only block predicates are supported by block loot location checks.");
-
-        if (predicate.TryGetProperty("block", out var block)
-            && block.EnumerateObject().Any(value => value.Name is not ("blocks" or "state")))
+        if (predicate.TryGetProperty("block", out var block))
         {
-            throw new InvalidDataException("Location block predicates support blocks and state.");
+            if (block.EnumerateObject().Any(value => value.Name is not ("blocks" or "state")))
+                throw new InvalidDataException("Location block predicates support blocks and state.");
+
+            tests.Add(context => context.TestLocation?.Invoke(json) == true);
         }
 
-        return new PredicateCondition(context => context.TestLocation?.Invoke(json) == true);
+        // An empty predicate tests only that there's a location, like the block test does.
+        if (tests.Count == 0)
+            return new PredicateCondition(context => context.TestLocation?.Invoke(json) == true);
+
+        return new PredicateCondition(context => tests.All(test => test(context)));
+    }
+
+    private static int OffsetOf(JsonElement json, string name) =>
+        json.TryGetProperty(name, out var offset) ? offset.GetInt32() : 0;
+
+    // Vanilla's position predicate tests the origin's exact coordinates, moved by the check's offset, against
+    // inclusive bounds. A context without an origin has no location to test.
+    private static bool MatchesOriginPosition(LootContext context, JsonElement bounds, VectorD offset)
+    {
+        if (context.Origin is not VectorD origin)
+            return false;
+
+        return MatchesAxis(bounds, "x", origin.X + offset.X)
+            && MatchesAxis(bounds, "y", origin.Y + offset.Y)
+            && MatchesAxis(bounds, "z", origin.Z + offset.Z);
+    }
+
+    private static bool MatchesAxis(JsonElement bounds, string axis, double value)
+    {
+        if (!bounds.TryGetProperty(axis, out var range))
+            return true;
+
+        if (range.ValueKind == JsonValueKind.Number)
+            return value == range.GetDouble();
+
+        return (!range.TryGetProperty("min", out var min) || value >= min.GetDouble())
+            && (!range.TryGetProperty("max", out var max) || value <= max.GetDouble());
     }
 
     private static bool MatchesOriginBiome(LootContext context, JsonElement set)
@@ -460,6 +500,7 @@ public static partial class LootTableJson
             "item" => ItemsRegistry.Get(id).UnlocalizedName,
             "potion" => "minecraft:" + ((Potion)id).ToString().ToSnakeCase(),
             "enchantment" => EnchantmentsRegistry.All[id].Identifier,
+            "instrument" => InstrumentsRegistry.All[id].Identifier,
             _ => throw new InvalidDataException($"Unsupported registry set {registry}.")
         });
     }

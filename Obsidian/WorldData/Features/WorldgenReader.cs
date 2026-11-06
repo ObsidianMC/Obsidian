@@ -353,8 +353,10 @@ internal sealed partial class WorldgenReader(
                 var member = FindProperty(type, name);
                 var memberPath = Field(path, property.Name);
 
+                // Like vanilla's record codecs, fields the type doesn't have are ignored: packs keep old ones, like a
+                // template pool's "name".
                 if (member?.SetMethod is null)
-                    throw Error(memberPath, $"{type.Name} has no such field");
+                    continue;
 
                 Set(member, instance, this.ReadValue(member.PropertyType, property.Value, memberPath), memberPath);
                 assigned.Add(name);

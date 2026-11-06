@@ -387,7 +387,7 @@ public sealed class VanillaSulfurBlocks(ITestOutputHelper output)
                         arrow.ReadNbt(new NbtCompound
                         {
                             new NbtTag<bool>("inGround", true),
-                            Obsidian.Utilities.Converters.JsonNbt.ToNbt("inBlockState", state)
+                            Obsidian.API.Utilities.JsonNbt.ToNbt("inBlockState", state)
                         });
                     }
 

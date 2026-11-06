@@ -59,6 +59,7 @@ public sealed class StructureTemplate
 
         var size = root.TryGetTag<NbtList>("size", out var sizeList) ? ReadVector(sizeList) : Vector.Zero;
         var blocks = root.TryGetTag<NbtList>("blocks", out var blockList) ? blockList : null;
+        int? dataVersion = root.TryGetTag<NbtTag<int>>("DataVersion", out var versionTag) ? versionTag.Value : null;
 
         var templateBlocks = new List<TemplateBlock>();
         foreach (NbtCompound entry in (IEnumerable<INbtTag>?)blocks ?? [])
@@ -72,11 +73,11 @@ public sealed class StructureTemplate
         if (root.TryGetTag<NbtList>("palettes", out var paletteList))
         {
             foreach (var palette in paletteList)
-                palettes.Add(BuildPalette(ReadPaletteStates((NbtList)palette), templateBlocks));
+                palettes.Add(BuildPalette(ReadPaletteStates((NbtList)palette, dataVersion), templateBlocks));
         }
         else if (root.TryGetTag<NbtList>("palette", out var palette))
         {
-            palettes.Add(BuildPalette(ReadPaletteStates(palette), templateBlocks));
+            palettes.Add(BuildPalette(ReadPaletteStates(palette, dataVersion), templateBlocks));
         }
 
         var entities = new List<StructureEntityInfo>();
@@ -570,11 +571,13 @@ public sealed class StructureTemplate
     /// Vanilla <c>loadPalette</c>: full collision cubes first, then other blocks, then blocks with block entity data,
     /// each sorted by Y, X, Z. Processors draw random values in this order.
     /// </summary>
-    private static List<IBlock> ReadPaletteStates(NbtList palette)
+    /// <param name="dataVersion">The template's <c>DataVersion</c>, which renames its old blocks (see
+    /// <see cref="LegacyBlockNames"/>).</param>
+    private static List<IBlock> ReadPaletteStates(NbtList palette, int? dataVersion)
     {
         var states = new List<IBlock>(palette.Count);
         foreach (var entry in palette)
-            states.Add(BlockStateNbt.Read(entry));
+            states.Add(BlockStateNbt.Read(entry, name => LegacyBlockNames.Upgrade(name, dataVersion)));
 
         return states;
     }
@@ -648,8 +651,9 @@ public sealed class StructureTemplate
         var size = Vector.Zero;
         var blocks = new List<TemplateBlock>();
         var blockEntries = 0L;
-        List<List<IBlock>>? paletteStates = null;
-        List<IBlock>? singlePaletteStates = null;
+        int? dataVersion = null;
+        List<List<PaletteEntry>>? paletteStates = null;
+        List<PaletteEntry>? singlePaletteStates = null;
         var entities = new List<StructureEntityInfo>();
 
         while (true)
@@ -659,7 +663,11 @@ public sealed class StructureTemplate
                 break;
 
             var name = ReadFieldName(reader, nameBuffer);
-            if (type != NbtTagType.List)
+            if (type == NbtTagType.Int && name.SequenceEqual("DataVersion"u8))
+            {
+                dataVersion = reader.ReadInt32();
+            }
+            else if (type != NbtTagType.List)
             {
                 SkipPayload(reader, type, limits, 1);
             }
@@ -691,7 +699,7 @@ public sealed class StructureTemplate
             {
                 var (elementType, count) = ReadListHeader(reader, limits);
                 limits.Charge(count);
-                paletteStates = new List<List<IBlock>>(count);
+                paletteStates = new List<List<PaletteEntry>>(count);
 
                 for (var i = 0; i < count; i++)
                 {
@@ -731,12 +739,12 @@ public sealed class StructureTemplate
         {
             limits.Charge(paletteStates.Count * blockEntries);
             foreach (var states in paletteStates)
-                palettes.Add(BuildPalette(states, blocks));
+                palettes.Add(BuildPalette(ResolveStates(states, dataVersion), blocks));
         }
         else if (singlePaletteStates is not null)
         {
             limits.Charge(blockEntries);
-            palettes.Add(BuildPalette(singlePaletteStates, blocks));
+            palettes.Add(BuildPalette(ResolveStates(singlePaletteStates, dataVersion), blocks));
         }
 
         return new StructureTemplate(size, palettes, entities);
@@ -887,18 +895,19 @@ public sealed class StructureTemplate
         return new TemplateBlock(position, state, nbt);
     }
 
-    private static List<IBlock> ReadPaletteStates(NbtReader reader, ReadLimits limits)
+    // A palette's states by name: they're resolved once the whole template is read (see ResolveStates).
+    private static List<PaletteEntry> ReadPaletteStates(NbtReader reader, ReadLimits limits)
     {
         Span<byte> nameBuffer = stackalloc byte[MaxFieldName];
         var (elementType, count) = ReadListHeader(reader, limits);
         limits.Charge(count);
 
-        var states = new List<IBlock>(count);
+        var states = new List<PaletteEntry>(count);
         for (var i = 0; i < count; i++)
         {
             if (elementType == NbtTagType.String)
             {
-                states.Add(BlockStateProperties.GetState(reader.ReadString()));
+                states.Add(new PaletteEntry(reader.ReadString(), null));
                 continue;
             }
             if (elementType != NbtTagType.Compound)
@@ -924,11 +933,28 @@ public sealed class StructureTemplate
                     SkipPayload(reader, type, limits, 4);
             }
 
-            states.Add(BlockStateProperties.GetState(blockName!, properties));
+            states.Add(new PaletteEntry(blockName!, properties));
         }
 
         return states;
     }
+
+    // A template's DataVersion may come after its palettes, and decides the names of their old blocks.
+    private static List<IBlock> ResolveStates(List<PaletteEntry> entries, int? dataVersion)
+    {
+        var states = new List<IBlock>(entries.Count);
+
+        foreach (var entry in entries)
+        {
+            var name = LegacyBlockNames.Upgrade(entry.Name, dataVersion);
+            states.Add(BlockStateProperties.GetState(name, entry.Properties));
+        }
+
+        return states;
+    }
+
+    // A palette state as a template saves it: its block's name and its properties, if it has any.
+    private readonly record struct PaletteEntry(string Name, Dictionary<string, string>? Properties);
 
     private static Dictionary<string, string> ReadProperties(NbtReader reader, ReadLimits limits)
     {

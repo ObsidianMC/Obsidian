@@ -41,10 +41,11 @@ internal sealed class Assets
         Dictionary<string, Codec[]> codecs = GetCodecs(files);
         BiomeEntry[] biomes = [.. codecs["biomes"].Select(biome => new BiomeEntry(biome.Name, biome.RegistryId))];
         EnchantmentEntry[] enchantments = GetEnchantments(files.GetJsonFromArray("enchantments"));
+        InstrumentEntry[] instruments = GetInstruments(files.GetJsonFromArray("instruments"));
         EntityTypeEntry[] entityTypes = GetEntityTypes(files.GetJsonFromArray("entities"));
         PotionEntry[] potions = GetPotions(files.GetJsonFromArray("enums"));
         Tag[] tags = GetTags(files.GetJsonFromArray("tags"), blocks, items, fluids, biomes,
-            enchantments, entityTypes, potions);
+            enchantments, instruments, entityTypes, potions);
 
         IDictionary<string, List<Sound>> sounds = GetSounds(files.GetJsonFromArray("sounds"));
 
@@ -191,6 +192,20 @@ internal sealed class Assets
             .Select((name, id) => new EnchantmentEntry(name, id))];
     }
 
+    public static InstrumentEntry[] GetInstruments(string? json)
+    {
+        if (json is null)
+            return [];
+
+        using var document = JsonDocument.Parse(json);
+
+        // Like the enchantments, vanilla's instrument registry is sorted by id (as in InstrumentsRegistry).
+        return [.. document.RootElement.EnumerateObject()
+            .Select(property => property.Name)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .Select((name, id) => new InstrumentEntry(name, id))];
+    }
+
     public static Block[] GetBlocks(string? json, string? placementClassesJson, string? saplingGrowersJson,
         string? fireOddsJson, string? ignitedByLavaJson, string? tntBlocksJson, Dictionary<string, string?> overrideClassesJson)
     {
@@ -298,7 +313,8 @@ internal sealed class Assets
     }
 
     public static Tag[] GetTags(string? json, Block[] blocks, Item[] items, Fluid[] fluids, BiomeEntry[] biomes,
-        EnchantmentEntry[] enchantments, EntityTypeEntry[] entityTypes, PotionEntry[] potions)
+        EnchantmentEntry[] enchantments, InstrumentEntry[] instruments, EntityTypeEntry[] entityTypes,
+        PotionEntry[] potions)
     {
         if (json is null)
             return [];
@@ -310,6 +326,7 @@ internal sealed class Assets
         taggables.AddRange(fluids);
         taggables.AddRange(biomes);
         taggables.AddRange(enchantments);
+        taggables.AddRange(instruments);
         taggables.AddRange(entityTypes);
         taggables.AddRange(potions);
 

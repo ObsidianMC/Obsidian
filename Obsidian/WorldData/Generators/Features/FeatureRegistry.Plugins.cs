@@ -71,6 +71,7 @@ internal sealed partial class FeatureRegistry
                 PluginFeatures.ConfiguredFeature or PluginFeatures.Feature => "feature",
                 PluginFeatures.PlacedFeature => "placed_feature",
                 PluginFeatures.ProcessorList => "processor_list",
+                PluginFeatures.BlockStateProvider => "block_state_provider",
                 _ => null
             };
 

@@ -20,7 +20,7 @@ internal abstract class TrunkPlacer(JsonElement json)
 
     public static TrunkPlacer Read(FeatureRegistry registry, JsonElement json)
     {
-        var type = json.GetProperty("type").GetString();
+        var type = FeatureRegistry.TypeOf(json);
 
         return type switch
         {

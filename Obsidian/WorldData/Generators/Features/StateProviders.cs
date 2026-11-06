@@ -44,7 +44,7 @@ internal sealed partial class FeatureRegistry
             return (_, _, _) => block;
         }
 
-        var type = typeJson.GetString();
+        var type = typeJson.GetString() is { } written ? WorldgenData.Qualify(written) : null;
 
         switch (type)
         {
@@ -87,7 +87,10 @@ internal sealed partial class FeatureRegistry
 
         try
         {
-            return this.dependencies.Track(() => this.Provider(this.Data.Read("block_state_provider", id)));
+            // Plugins' and data packs' files win over vanilla's entries, like their features.
+            var entry = this.Entry("block_state_provider", WorldgenData.Qualify(id));
+
+            return this.dependencies.Track(() => this.Provider(entry));
         }
         finally
         {

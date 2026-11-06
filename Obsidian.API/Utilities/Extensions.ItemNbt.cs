@@ -118,6 +118,41 @@ public partial class Extensions
         return stack;
     }
 
+    /// <summary>
+    /// Reads a component patch written as JSON, like a loot table's <c>set_components</c>: the components it sets,
+    /// read like a saved stack's, and the types its <c>!</c> entries remove.
+    /// </summary>
+    /// <exception cref="InvalidDataException">It sets a component Obsidian doesn't model, or removes one that doesn't
+    /// exist.</exception>
+    internal static (ImmutableArray<DataComponent> Set, ImmutableArray<DataComponentType> Removed)
+        ComponentPatchFromJson(System.Text.Json.JsonElement json)
+    {
+        var set = ImmutableArray.CreateBuilder<DataComponent>();
+        var removed = ImmutableArray.CreateBuilder<DataComponentType>();
+
+        foreach (var property in json.EnumerateObject())
+        {
+            // Like vanilla's identifiers, a component's id without a namespace is vanilla's.
+            var removes = property.Name.StartsWith('!');
+            var id = removes ? property.Name[1..] : property.Name;
+            var name = id.Contains(':') ? id : $"minecraft:{id}";
+
+            if (removes)
+            {
+                removed.Add(componentTypesById.TryGetValue(name, out var type)
+                    ? type
+                    : throw new InvalidDataException($"There is no component {name} to remove."));
+                continue;
+            }
+
+            var tag = JsonNbt.ToNbt(name, property.Value);
+            set.Add(ComponentFromNbt(name, tag)
+                ?? throw new InvalidDataException($"Obsidian can't set the component {name} yet."));
+        }
+
+        return (set.ToImmutable(), removed.ToImmutable());
+    }
+
     // The fields of Obsidian's previous item tag.
     private static IEnumerable<DataComponent> LegacyComponents(NbtCompound tag)
     {

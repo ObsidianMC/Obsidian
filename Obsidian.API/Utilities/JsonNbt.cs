@@ -1,11 +1,11 @@
 using Obsidian.Nbt;
 using System.Text.Json;
 
-namespace Obsidian.Utilities.Converters;
+namespace Obsidian.API.Utilities;
 
 /// <summary>
-/// Converts JSON to NBT, so that a data pack file's components can be read like a saved stack's: vanilla's component
-/// codecs read either.
+/// Converts JSON to NBT, so that a data pack file's components (a recipe result's, a loot table's set_components)
+/// can be read like a saved stack's: vanilla's component codecs read either.
 /// </summary>
 /// <remarks>
 /// Vanilla converts a whole number to the smallest NBT number that holds it and reads any NBT number back. Obsidian's

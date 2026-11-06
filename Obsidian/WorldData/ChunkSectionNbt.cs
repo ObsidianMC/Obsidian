@@ -203,12 +203,24 @@ internal static class ChunkSectionNbt
 /// </summary>
 internal static class BlockStateNbt
 {
-    public static IBlock Read(INbtTag tag) => TryRead(tag, true, out var block) ? block : BlocksRegistry.Air;
+    public static IBlock Read(INbtTag tag) => Read(tag, rename: null);
+
+    /// <summary>
+    /// Reads a state like <see cref="Read(INbtTag)"/>, after <paramref name="rename"/> gives its block's name, such
+    /// as an old template's block as it's called now.
+    /// </summary>
+    public static IBlock Read(INbtTag tag, Func<string, string>? rename) =>
+        TryRead(tag, true, rename, out var block) ? block : BlocksRegistry.Air;
 
     // Vanilla's current codec keeps an unknown or malformed state absent instead of replacing it with air.
-    public static bool TryRead(INbtTag tag, [NotNullWhen(true)] out IBlock? block) => TryRead(tag, false, out block);
+    public static bool TryRead(INbtTag tag, [NotNullWhen(true)] out IBlock? block) =>
+        TryRead(tag, false, rename: null, out block);
 
-    private static bool TryRead(INbtTag tag, bool allowLegacy, [NotNullWhen(true)] out IBlock? block)
+    private static bool TryRead(
+        INbtTag tag,
+        bool allowLegacy,
+        Func<string, string>? rename,
+        [NotNullWhen(true)] out IBlock? block)
     {
         if (allowLegacy && tag is NbtCompound compound && compound.Count == 1
             && compound.TryGetTag("", out var wrapped))
@@ -238,6 +250,9 @@ internal static class BlockStateNbt
                     .ToDictionary(entry => entry.Key, entry => ((NbtTag<string>)entry.Value).Value!);
             }
         }
+
+        if (name is not null && rename is not null)
+            name = rename(name);
 
         block = null;
         if (name is null || !BlockStateProperties.TryGetState(name, allowLegacy ? properties : null, out block))

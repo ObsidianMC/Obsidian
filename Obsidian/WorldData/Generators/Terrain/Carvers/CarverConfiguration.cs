@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.WorldData.Generators.Density;
 using System.IO;
 using System.Text.Json;
 using FloatProvider = Obsidian.WorldData.Generators.Mojang.Carvers.FloatProvider;
@@ -24,7 +25,7 @@ internal abstract class CarverConfiguration
 
         var y = HeightProvider.Parse(json.GetProperty("y"));
 
-        switch (json.GetProperty("type").GetString())
+        switch (WorldgenData.Qualify(json.GetProperty("type").GetString()!))
         {
             case "minecraft:cave":
                 return new CaveCarverConfiguration
@@ -141,7 +142,7 @@ internal sealed class CarverCount(string type, int min, int max)
             return new CarverCount("minecraft:constant", value, value);
         }
 
-        var type = json.GetProperty("type").GetString()!;
+        var type = WorldgenData.Qualify(json.GetProperty("type").GetString()!);
 
         if (type == "minecraft:constant")
         {

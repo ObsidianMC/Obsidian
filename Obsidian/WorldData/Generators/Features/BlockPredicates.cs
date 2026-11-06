@@ -17,7 +17,7 @@ internal sealed partial class FeatureRegistry
 {
     public BlockPredicate Predicate(JsonElement json)
     {
-        var type = json.GetProperty("type").GetString();
+        var type = TypeOf(json);
 
         // Vanilla's predicates that test an offset position read it; a plugin's type may have a field of the name.
 
@@ -243,7 +243,7 @@ internal sealed partial class FeatureRegistry
 
     public RuleTest Rule(JsonElement json)
     {
-        var type = json.GetProperty("predicate_type").GetString();
+        var type = TypeOf(json, "predicate_type");
 
         switch (type)
         {
@@ -323,28 +323,50 @@ internal sealed partial class FeatureRegistry
         return [ReadBlock(json).RegistryId];
     }
 
+    // A fluid holder set: a fluid, a list of them or a fluid tag, like "#minecraft:water".
     private static HashSet<FluidKind> Fluids(JsonElement json)
     {
         var names = json.ValueKind == JsonValueKind.Array
-            ? json.EnumerateArray().Select(entry => WorldgenData.Qualify(entry.GetString()!)).ToArray()
-            : [WorldgenData.Qualify(json.GetString()!)];
+            ? json.EnumerateArray().Select(entry => entry.GetString()!).ToArray()
+            : [json.GetString()!];
         var result = new HashSet<FluidKind>();
 
         foreach (var name in names)
         {
-            var fluid = name switch
-            {
-                "minecraft:water" => FluidKind.Water,
-                "minecraft:flowing_water" => FluidKind.FlowingWater,
-                "minecraft:lava" => FluidKind.Lava,
-                "minecraft:flowing_lava" => FluidKind.FlowingLava,
-                "minecraft:empty" => FluidKind.Empty,
-                _ => throw new InvalidDataException($"Unknown fluid {name}.")
-            };
-            result.Add(fluid);
+            if (name.StartsWith('#'))
+                result.UnionWith(FluidTag(WorldgenData.Qualify(name[1..])));
+            else
+                result.Add(Fluid(WorldgenData.Qualify(name)));
         }
 
         return result;
+    }
+
+    private static FluidKind Fluid(string name) => name switch
+    {
+        "minecraft:water" => FluidKind.Water,
+        "minecraft:flowing_water" => FluidKind.FlowingWater,
+        "minecraft:lava" => FluidKind.Lava,
+        "minecraft:flowing_lava" => FluidKind.FlowingLava,
+        "minecraft:empty" => FluidKind.Empty,
+        _ => throw new InvalidDataException($"Unknown fluid {name}.")
+    };
+
+    // A fluid tag's entries are the fluids' registry ids, those of Assets/fluids.json.
+    private static IEnumerable<FluidKind> FluidTag(string tag)
+    {
+        if (!TagsRegistry.TryGet("fluid", tag, out var entries))
+            throw new InvalidDataException($"Unknown fluid tag #{tag}.");
+
+        return entries.Entries.Select(id => id switch
+        {
+            0 => FluidKind.Empty,
+            1 => FluidKind.FlowingWater,
+            2 => FluidKind.Water,
+            3 => FluidKind.FlowingLava,
+            4 => FluidKind.Lava,
+            _ => throw new InvalidDataException($"Fluid tag #{tag} has an unknown fluid {id}.")
+        });
     }
 
     private static Vector Offset(JsonElement json)

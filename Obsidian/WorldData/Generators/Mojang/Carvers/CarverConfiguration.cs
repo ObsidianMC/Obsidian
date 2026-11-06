@@ -1,4 +1,6 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.WorldData.Generators.Density;
+using Obsidian.WorldData.Generators.Features;
 using System.Text.Json;
 
 namespace Obsidian.WorldData.Generators.Mojang.Carvers;
@@ -92,7 +94,7 @@ internal enum CarverAnchorKind
 }
 
 /// <summary>
-/// Samples a float, like vanilla's FloatProvider. Supports the types used by vanilla carvers.
+/// Samples a float, like vanilla's FloatProvider: a constant, or a uniform, trapezoid or clamped normal one.
 /// </summary>
 internal abstract class FloatProvider
 {
@@ -103,13 +105,20 @@ internal abstract class FloatProvider
         if (element.ValueKind == JsonValueKind.Number)
             return new Constant(element.GetSingle());
 
-        return element.GetProperty("type").GetString() switch
+        var type = WorldgenData.Qualify(element.GetProperty("type").GetString()!);
+
+        return type switch
         {
             "minecraft:constant" => new Constant(element.GetProperty("value").GetSingle()),
             "minecraft:uniform" => new Uniform(element.GetProperty("min_inclusive").GetSingle(), element.GetProperty("max_exclusive").GetSingle()),
             "minecraft:trapezoid" => new Trapezoid(element.GetProperty("min").GetSingle(), element.GetProperty("max").GetSingle(),
                 element.GetProperty("plateau").GetSingle()),
-            var type => throw new NotSupportedException($"Unsupported float provider '{type}'.")
+            "minecraft:clamped_normal" => new ClampedNormal(
+                element.GetProperty("mean").GetSingle(),
+                element.GetProperty("deviation").GetSingle(),
+                element.GetProperty("min").GetSingle(),
+                element.GetProperty("max").GetSingle()),
+            _ => throw new NotSupportedException($"Unsupported float provider '{type}'.")
         };
     }
 
@@ -142,6 +151,13 @@ internal abstract class FloatProvider
             return this.min + random.NextFloat() * rest + random.NextFloat() * slope;
         }
     }
+
+    // Draws like the 26.3 features' clamped normal provider, since carvers share the chunk's carving random.
+    private sealed class ClampedNormal(float mean, float deviation, float min, float max) : FloatProvider
+    {
+        public override float Sample(IRandomSource random) =>
+            ValueProviders.ClampedNormal(random, mean, deviation, min, max);
+    }
 }
 
 /// <summary>
@@ -156,7 +172,7 @@ internal abstract class HeightProvider
         if (!element.TryGetProperty("type", out var type))
             return new Constant(CarverAnchor.Parse(element));
 
-        return type.GetString() switch
+        return WorldgenData.Qualify(type.GetString()!) switch
         {
             "minecraft:constant" => new Constant(CarverAnchor.Parse(element.GetProperty("value"))),
             "minecraft:uniform" => new Uniform(CarverAnchor.Parse(element.GetProperty("min_inclusive")),
