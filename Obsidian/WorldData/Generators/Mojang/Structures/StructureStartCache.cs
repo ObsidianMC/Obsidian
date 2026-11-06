@@ -2,7 +2,6 @@ using Obsidian.Nbt;
 using Obsidian.Plugins;
 using Obsidian.Registries;
 using Obsidian.WorldData.Structures;
-using System.Runtime.ExceptionServices;
 using System.Threading;
 
 namespace Obsidian.WorldData.Generators.Mojang.Structures;
@@ -56,7 +55,7 @@ internal sealed class StructureStartCache
     // Ordinary starts take milliseconds; allow a second for cold/template-heavy work before duplicating it. Dispatch
     // that suppresses context flow can hide a dependency on this creator, so waiting must still be bounded. On expiry
     // use the original deterministic computation and publication checks, without disturbing the creator's notice.
-    private const int CreationWaitMilliseconds = 1000;
+    internal TimeSpan CreationWait { get; init; } = TimeSpan.FromSeconds(1);
 
     // Test barriers at the wait/retry boundaries, both outside the publication gate.
     internal Action<CreationWaitStep>? ObserveCreationWait { get; init; }
@@ -274,7 +273,7 @@ internal sealed class StructureStartCache
                 // This is a completion notice, not a cached result: eviction or pruning can replace the published
                 // entry before this thread wakes. Re-read it rather than returning a possibly retired start.
                 this.ObserveCreationWait?.Invoke(CreationWaitStep.Waiting);
-                if (pending.Wait())
+                if (pending.Wait(this.CreationWait))
                 {
                     this.ObserveCreationWait?.Invoke(CreationWaitStep.Retrying);
                     return false;
@@ -287,7 +286,6 @@ internal sealed class StructureStartCache
             }
         }
 
-        ExceptionDispatchInfo? failure = null;
         try
         {
             // Another creator may have published and removed its notice after Get read the previous entry but
@@ -329,20 +327,16 @@ internal sealed class StructureStartCache
                 return true;
             }
         }
-        catch (Exception exception)
-        {
-            failure = ExceptionDispatchInfo.Capture(exception);
-            throw;
-        }
         finally
         {
             if (owned is not null)
             {
                 // Remove before waking waiters so failures never poison future requests. Every exit, including a
-                // stale layout or lost publication race, releases them; successful waiters retry the current entry.
+                // stale layout or lost publication race, releases them to re-read the current entry. A failure belongs
+                // only to its creator: a fallback may already have published, or a waiter can try its own factory.
                 this.creating.TryRemove(new KeyValuePair<
                     (int X, int Z, StructureLayout Layout, ChunkStarts? Previous), Creation>(creationKey, owned));
-                owned.Complete(failure);
+                owned.Complete();
             }
         }
     }
@@ -373,21 +367,12 @@ internal sealed class StructureStartCache
 
     private sealed class Creation
     {
-        // A fault is a successful notification carrying its original exception, not an unobserved faulted task
-        // when there are no waiters. This task and its exception disappear with the last pending caller.
-        private readonly TaskCompletionSource<ExceptionDispatchInfo?> completion =
+        private readonly TaskCompletionSource completion =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public bool Wait()
-        {
-            if (!this.completion.Task.Wait(CreationWaitMilliseconds))
-                return false;
+        public bool Wait(TimeSpan wait) => this.completion.Task.Wait(wait);
 
-            this.completion.Task.GetAwaiter().GetResult()?.Throw();
-            return true;
-        }
-
-        public void Complete(ExceptionDispatchInfo? failure) => this.completion.SetResult(failure);
+        public void Complete() => this.completion.SetResult();
     }
 
     // Replaces the chunk's starts with those kept of them, unless they changed meanwhile or the layout asking is older

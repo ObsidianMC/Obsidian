@@ -27,7 +27,18 @@ public sealed class StructureStartCreation
     [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task ConcurrentRequestsCreateOneStartAndRecreateItAfterEviction()
     {
-        var cache = new StructureStartCache();
+        using var joined = new CountdownEvent(3);
+        var cache = new StructureStartCache
+        {
+            CreationWait = System.Threading.Timeout.InfiniteTimeSpan,
+            ObserveCreationWait = step =>
+            {
+                if (step == StructureStartCache.CreationWaitStep.Waiting)
+                {
+                    joined.Signal();
+                }
+            }
+        };
         var layout = Layout();
         var resident = new Chunk(0, 0);
         cache.Track(resident);
@@ -54,7 +65,7 @@ public sealed class StructureStartCreation
                 waiters.Add(Request(() => cache.Get(0, 0, layout, Create)));
             }
 
-            WaitUntilBlocked(waiters.Select(waiter => waiter.Thread));
+            Assert.True(joined.Wait(Timeout));
         }
         finally
         {
@@ -78,29 +89,41 @@ public sealed class StructureStartCreation
     [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task FailedCreationReleasesEveryWaiterAndAllowsRetry()
     {
-        var cache = new StructureStartCache();
+        using var joined = new CountdownEvent(3);
+        var cache = new StructureStartCache
+        {
+            CreationWait = System.Threading.Timeout.InfiniteTimeSpan,
+            ObserveCreationWait = step =>
+            {
+                if (step == StructureStartCache.CreationWaitStep.Waiting && joined.CurrentCount > 0)
+                {
+                    joined.Signal();
+                }
+            }
+        };
         var layout = Layout();
         using var entered = new ManualResetEventSlim();
         using var release = new ManualResetEventSlim();
         var failure = new InvalidOperationException("Injected structure creation failure.");
-        var failing = true;
         var attempts = 0;
+
+        StructureStart Fail(StructureLayout _, StructureSet set, int x, int z, out bool refused)
+        {
+            refused = false;
+            Interlocked.Increment(ref attempts);
+            entered.Set();
+            Assert.True(release.Wait(Timeout));
+            throw failure;
+        }
 
         StructureStart Create(StructureLayout _, StructureSet set, int x, int z, out bool refused)
         {
             refused = false;
             Interlocked.Increment(ref attempts);
-            if (failing)
-            {
-                entered.Set();
-                Assert.True(release.Wait(Timeout));
-                throw failure;
-            }
-
             return Start(set, x, z);
         }
 
-        var owner = Request(() => cache.Get(0, 0, layout, Create));
+        var owner = Request(() => cache.Get(0, 0, layout, Fail));
         var waiters = new List<(Thread Thread, Task<StructureStartCache.ChunkStarts?> Result)>();
         try
         {
@@ -110,28 +133,102 @@ public sealed class StructureStartCreation
                 waiters.Add(Request(() => cache.Get(0, 0, layout, Create)));
             }
 
-            WaitUntilBlocked(waiters.Select(waiter => waiter.Thread));
+            Assert.True(joined.Wait(Timeout));
         }
         finally
         {
             release.Set();
         }
 
-        var errors = await Task.WhenAll(waiters.Select(waiter => waiter.Result).Prepend(owner.Result)
-            .Select(result => Record.ExceptionAsync(async () => await result))).WaitAsync(Timeout);
-        Assert.All(errors, error => Assert.Same(failure, error));
-        Assert.Equal(1, attempts);
+        var error = await Record.ExceptionAsync(async () => await owner.Result.WaitAsync(Timeout));
+        Assert.Same(failure, error);
+        var results = await Task.WhenAll(waiters.Select(waiter => waiter.Result)).WaitAsync(Timeout);
+        var retried = Assert.Single(results[0]!.Starts);
+        Assert.All(results, result => Assert.Same(retried, Assert.Single(result!.Starts)));
 
-        failing = false;
-        var retried = Assert.Single(cache.Get(0, 0, layout, Create)!.Starts);
         Assert.Same(retried, Assert.Single(cache.Get(0, 0, layout, Create)!.Starts));
         Assert.Equal(2, attempts);
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task AWaiterUsesThePublishedFallbackWhenItsOriginalCreatorFails()
+    {
+        using var entered = new ManualResetEventSlim();
+        using var releaseOwner = new ManualResetEventSlim();
+        using var joined = new ManualResetEventSlim();
+        using var resumeWaiter = new ManualResetEventSlim();
+        var waits = 0;
+        var cache = new StructureStartCache
+        {
+            CreationWait = TimeSpan.Zero,
+            ObserveCreationWait = step =>
+            {
+                if (step == StructureStartCache.CreationWaitStep.Waiting
+                    && Interlocked.Increment(ref waits) == 1)
+                {
+                    joined.Set();
+                    Assert.True(resumeWaiter.Wait(Timeout));
+                }
+            }
+        };
+        var layout = Layout();
+        var failure = new InvalidOperationException("Injected owner failure after fallback publication.");
+
+        StructureStart Fail(StructureLayout _, StructureSet set, int x, int z, out bool refused)
+        {
+            refused = false;
+            entered.Set();
+            Assert.True(releaseOwner.Wait(Timeout));
+            throw failure;
+        }
+
+        StructureStart Create(StructureLayout _, StructureSet set, int x, int z, out bool refused)
+        {
+            refused = false;
+            return Start(set, x, z);
+        }
+
+        StructureStart MustNotCreate(StructureLayout _, StructureSet set, int x, int z, out bool refused)
+        {
+            refused = false;
+            Assert.Fail("The waiter must use the fallback's already published entry.");
+            return Start(set, x, z);
+        }
+
+        var owner = Request(() => cache.Get(0, 0, layout, Fail));
+        Task<StructureStartCache.ChunkStarts?>? waiter = null;
+        StructureStart? published = null;
+        try
+        {
+            Assert.True(entered.Wait(Timeout));
+            waiter = Request(() => cache.Get(0, 0, layout, MustNotCreate)).Result;
+            Assert.True(joined.Wait(Timeout));
+
+            // Hold the first waiter before its wait, then let a second requester time out and publish.
+            var fallback = Request(() => cache.Get(0, 0, layout, Create));
+            published = Assert.Single((await fallback.Result.WaitAsync(Timeout))!.Starts);
+            releaseOwner.Set();
+            var error = await Record.ExceptionAsync(async () => await owner.Result.WaitAsync(Timeout));
+            Assert.Same(failure, error);
+        }
+        finally
+        {
+            releaseOwner.Set();
+            resumeWaiter.Set();
+        }
+
+        Assert.NotNull(waiter);
+        var result = await waiter.WaitAsync(Timeout);
+        Assert.Same(published, Assert.Single(result!.Starts));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task ReentrantCreationCanPublishItsOwnKey()
     {
-        var cache = new StructureStartCache();
+        var cache = new StructureStartCache
+        {
+            CreationWait = System.Threading.Timeout.InfiniteTimeSpan
+        };
         var layout = Layout();
         var first = true;
         StructureStart? nested = null;
@@ -159,7 +256,10 @@ public sealed class StructureStartCreation
     [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task NestedRequestsForEachOthersKeysDoNotWaitOnTheOtherCreator()
     {
-        var cache = new StructureStartCache();
+        var cache = new StructureStartCache
+        {
+            CreationWait = System.Threading.Timeout.InfiniteTimeSpan
+        };
         var layout = Layout();
         using var entered = new Barrier(2);
         using var nested = new ThreadLocal<bool>();
@@ -199,7 +299,10 @@ public sealed class StructureStartCreation
     [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task RefreshDuringCreationRejectsOldStartsWithoutBlockingTheNewLayout()
     {
-        var cache = new StructureStartCache();
+        var cache = new StructureStartCache
+        {
+            CreationWait = System.Threading.Timeout.InfiniteTimeSpan
+        };
         var oldLayout = Layout();
         var newLayout = Layout(version: 2);
         using var entered = new ManualResetEventSlim();
@@ -239,7 +342,10 @@ public sealed class StructureStartCreation
     [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task NewerPublicationWinsWhenTheOldCreatorFinishesWithoutAPrune()
     {
-        var cache = new StructureStartCache();
+        var cache = new StructureStartCache
+        {
+            CreationWait = System.Threading.Timeout.InfiniteTimeSpan
+        };
         var oldLayout = Layout();
         var newLayout = Layout(version: 2);
         using var entered = new ManualResetEventSlim();
@@ -279,8 +385,10 @@ public sealed class StructureStartCreation
     [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task TaskDispatchedReentrancyCompletesBeforeItsOwnerReturns()
     {
+        using var started = new ManualResetEventSlim();
         var cache = new StructureStartCache
         {
+            CreationWait = System.Threading.Timeout.InfiniteTimeSpan,
             ObserveCreationWait = _ => Assert.Fail("A logically nested request must not join its creator's notice.")
         };
         var layout = Layout();
@@ -296,15 +404,20 @@ public sealed class StructureStartCreation
         StructureStart Create(StructureLayout _, StructureSet set, int x, int z, out bool refused)
         {
             refused = false;
-            nested = Task.Run(() => cache.Get(x, z, layout, Leaf));
+            nested = Task.Run(() =>
+            {
+                started.Set();
+                return cache.Get(x, z, layout, Leaf);
+            });
 
             // Bound the reproduction so a cycle is released and every task is joined before the test exits.
-            completedBeforeOwnerReturned = nested.Wait(TimeSpan.FromSeconds(2));
+            Assert.True(started.Wait(Timeout));
+            completedBeforeOwnerReturned = nested.Wait(Timeout);
             return Start(set, x, z);
         }
 
         var owner = Request(() => cache.Get(0, 0, layout, Create));
-        await owner.Result.WaitAsync(Timeout);
+        await owner.Result.WaitAsync(TimeSpan.FromSeconds(25));
         Assert.NotNull(nested);
         await nested.WaitAsync(Timeout);
 
@@ -318,7 +431,11 @@ public sealed class StructureStartCreation
     [InlineData(ContextFreeDispatch.DedicatedThread)]
     public async Task ContextFreeReentrancyRecomputesBeforeItsOwnerReturns(ContextFreeDispatch dispatch)
     {
-        var cache = new StructureStartCache();
+        using var started = new ManualResetEventSlim();
+        var cache = new StructureStartCache
+        {
+            CreationWait = TimeSpan.FromMilliseconds(20)
+        };
         var layout = Layout();
         Task<StructureStartCache.ChunkStarts?>? nested = null;
         var completedBeforeOwnerReturned = false;
@@ -332,15 +449,21 @@ public sealed class StructureStartCreation
         StructureStart Create(StructureLayout _, StructureSet set, int x, int z, out bool refused)
         {
             refused = false;
-            nested = DispatchWithoutContext(() => cache.Get(x, z, layout, Leaf), dispatch);
+            nested = DispatchWithoutContext(() =>
+            {
+                started.Set();
+                return cache.Get(x, z, layout, Leaf);
+            }, dispatch);
 
-            // The bounded parent wait also releases a broken implementation, so both requests can be joined on failure.
-            completedBeforeOwnerReturned = nested.Wait(TimeSpan.FromSeconds(3));
+            // Queue latency is separate from the short fallback deadline. A bounded parent wait releases a broken
+            // implementation too, so both requests can be joined on failure instead of hanging the test runner.
+            Assert.True(started.Wait(Timeout));
+            completedBeforeOwnerReturned = nested.Wait(Timeout);
             return Start(set, x, z);
         }
 
         var owner = Request(() => cache.Get(0, 0, layout, Create));
-        var result = await owner.Result.WaitAsync(Timeout);
+        var result = await owner.Result.WaitAsync(TimeSpan.FromSeconds(25));
         Assert.NotNull(nested);
         var nestedResult = await nested.WaitAsync(Timeout);
 
@@ -360,6 +483,7 @@ public sealed class StructureStartCreation
         using var resume = new ManualResetEventSlim();
         var cache = new StructureStartCache
         {
+            CreationWait = System.Threading.Timeout.InfiniteTimeSpan,
             ObserveCreationWait = step =>
             {
                 if (step == StructureStartCache.CreationWaitStep.Waiting)
@@ -467,6 +591,7 @@ public sealed class StructureStartCreation
         var decision = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var cache = new StructureStartCache
         {
+            CreationWait = System.Threading.Timeout.InfiniteTimeSpan,
             ObserveCreationWait = step =>
             {
                 if (step == StructureStartCache.CreationWaitStep.Waiting)
@@ -519,8 +644,10 @@ public sealed class StructureStartCreation
     [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task EndedChildContextStillRecognizesItsActiveParent()
     {
+        using var started = new ManualResetEventSlim();
         var cache = new StructureStartCache
         {
+            CreationWait = System.Threading.Timeout.InfiniteTimeSpan,
             ObserveCreationWait = _ => Assert.Fail("A captured child context must not wait on its active parent.")
         };
         var layout = Layout();
@@ -548,16 +675,18 @@ public sealed class StructureStartCreation
             Assert.NotNull(captured);
             nested = Task.Run(() =>
             {
+                started.Set();
                 StructureStartCache.ChunkStarts? result = null;
                 ExecutionContext.Run(captured, _ => result = cache.Get(x, z, layout, Leaf), null);
                 return result;
             });
-            completedBeforeOwnerReturned = nested.Wait(TimeSpan.FromSeconds(2));
+            Assert.True(started.Wait(Timeout));
+            completedBeforeOwnerReturned = nested.Wait(Timeout);
             return Start(set, x, z);
         }
 
         var owner = Request(() => cache.Get(0, 0, layout, Create));
-        var result = await owner.Result.WaitAsync(Timeout);
+        var result = await owner.Result.WaitAsync(TimeSpan.FromSeconds(25));
         Assert.NotNull(nested);
         var nestedResult = await nested.WaitAsync(Timeout);
 
@@ -568,7 +697,11 @@ public sealed class StructureStartCreation
     [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task AContextFreeChildOfAFallbackFinishesBeforeEitherParentReturns()
     {
-        var cache = new StructureStartCache();
+        using var leafStarted = new ManualResetEventSlim();
+        var cache = new StructureStartCache
+        {
+            CreationWait = TimeSpan.FromMilliseconds(20)
+        };
         var layout = Layout();
         Task<StructureStartCache.ChunkStarts?>? fallback = null;
         Task<StructureStartCache.ChunkStarts?>? leaf = null;
@@ -584,8 +717,13 @@ public sealed class StructureStartCreation
         StructureStart Fallback(StructureLayout _, StructureSet set, int x, int z, out bool refused)
         {
             refused = false;
-            leaf = DispatchWithoutContext(() => cache.Get(x, z, layout, Leaf), ContextFreeDispatch.UnsafeWorkItem);
-            leafCompletedBeforeFallbackReturned = leaf.Wait(TimeSpan.FromSeconds(3));
+            leaf = DispatchWithoutContext(() =>
+            {
+                leafStarted.Set();
+                return cache.Get(x, z, layout, Leaf);
+            }, ContextFreeDispatch.UnsafeWorkItem);
+            Assert.True(leafStarted.Wait(Timeout));
+            leafCompletedBeforeFallbackReturned = leaf.Wait(Timeout);
             return Start(set, x, z);
         }
 
@@ -596,12 +734,14 @@ public sealed class StructureStartCreation
                 () => cache.Get(x, z, layout, Fallback), ContextFreeDispatch.SuppressedTask);
 
             // Both waits are bounded so a fallback cap that restores this dependency cycle fails without hanging.
-            fallbackCompletedBeforeOwnerReturned = fallback.Wait(TimeSpan.FromSeconds(5));
+            // Starting the leaf also proves that the intermediate fallback has started its factory.
+            Assert.True(leafStarted.Wait(Timeout));
+            fallbackCompletedBeforeOwnerReturned = fallback.Wait(Timeout);
             return Start(set, x, z);
         }
 
         var owner = Request(() => cache.Get(0, 0, layout, Create));
-        var result = await owner.Result.WaitAsync(Timeout);
+        var result = await owner.Result.WaitAsync(TimeSpan.FromSeconds(25));
         Assert.NotNull(fallback);
         Assert.NotNull(leaf);
         var fallbackResult = await fallback.WaitAsync(Timeout);
@@ -659,15 +799,6 @@ public sealed class StructureStartCreation
         thread.Start();
 
         return (thread, result.Task);
-    }
-
-    private static void WaitUntilBlocked(IEnumerable<Thread> threads)
-    {
-        // The creator remains blocked until every requester has either joined it or entered a duplicate factory.
-        // This makes the one-creation assertion distinguish coordination from a lucky cache hit after publication.
-        var waiting = threads.ToArray();
-        Assert.True(SpinWait.SpinUntil(
-            () => waiting.All(thread => (thread.ThreadState & ThreadState.WaitSleepJoin) != 0), Timeout));
     }
 
     private sealed class ProbeStructure : Structure
