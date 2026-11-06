@@ -43,6 +43,29 @@ internal sealed class StructureStartCache
 
     private readonly ConcurrentDictionary<(int X, int Z), ChunkStarts> starts = new();
 
+    // Only pending creations are kept here, keyed by the inputs publication must still match. A refresh can start
+    // its new layout without waiting for plugin code making an obsolete one. Completed entries never retain layouts.
+    private readonly ConcurrentDictionary<
+        (int X, int Z, StructureLayout Layout, ChunkStarts? Previous), Creation> creating = new();
+
+    // Captured contexts share each factory's lifetime token: ending the factory must also end the exemption from
+    // coordination in copies of its context. Tokens link only to live ancestors, never to caches or plugin objects.
+    private static readonly AsyncLocal<CreationScope?> creationScope = new();
+
+    // Ordinary starts take milliseconds; allow a second for cold/template-heavy work before duplicating it. Dispatch
+    // that suppresses context flow can hide a dependency on this creator, so waiting must still be bounded. On expiry
+    // use the original deterministic computation and publication checks, without disturbing the creator's notice.
+    internal TimeSpan CreationWait { get; init; } = TimeSpan.FromSeconds(1);
+
+    // Test barriers at the wait/retry boundaries, both outside the publication gate.
+    internal Action<CreationWaitStep>? ObserveCreationWait { get; init; }
+
+    internal enum CreationWaitStep
+    {
+        Waiting,
+        Retrying
+    }
+
     // Residents and generation leases pin every start chunk within the reference radius. Under the gate.
     private readonly HashSet<IChunk> residents = [];
     private readonly Dictionary<(int X, int Z), int> usage = [];
@@ -221,26 +244,135 @@ internal sealed class StructureStartCache
                 continue;
             }
 
-            var made = ChunkStarts.Make(layout, previous, chunkX, chunkZ, create);
+            if (this.TryCreate(key, layout, previous, create, out var made))
+            {
+                return made;
+            }
+        }
+    }
 
+    // True means this request finished (null asks its caller for a newer layout); false retries the current entry.
+    private bool TryCreate((int X, int Z) key, StructureLayout layout, ChunkStarts? previous,
+        StartFactory create, out ChunkStarts? result)
+    {
+        result = null;
+        var creationKey = (key.X, key.Z, layout, previous);
+        var incomingScope = creationScope.Value;
+        var parentScope = CreationScope.Active(incomingScope);
+        Creation? owned = null;
+        if (parentScope is null)
+        {
+            var candidate = new Creation();
+            var pending = this.creating.GetOrAdd(creationKey, candidate);
+            if (ReferenceEquals(pending, candidate))
+            {
+                owned = candidate;
+            }
+            else
+            {
+                // This is a completion notice, not a cached result: eviction or pruning can replace the published
+                // entry before this thread wakes. Re-read it rather than returning a possibly retired start.
+                this.ObserveCreationWait?.Invoke(CreationWaitStep.Waiting);
+                if (pending.Wait(this.CreationWait))
+                {
+                    this.ObserveCreationWait?.Invoke(CreationWaitStep.Retrying);
+                    return false;
+                }
+
+                // Do not serialize timed-out fallbacks: a fallback may synchronously wait for another context-free
+                // request to this key. Making that child wait for a fallback slot would recreate the cycle. Each
+                // waiting caller can therefore compute once, the same worst-case duplication as the base algorithm,
+                // while ordinary starts still share their notice. Never own or remove the original creator's notice.
+            }
+        }
+
+        try
+        {
+            // Another creator may have published and removed its notice after Get read the previous entry but
+            // before we registered ours. Avoid making it again; the checks after the factory still decide publication.
+            this.starts.TryGetValue(key, out var observed);
+            if (!ReferenceEquals(observed, previous))
+                return false;
+
+            ChunkStarts made;
+            var scope = new CreationScope(parentScope);
+            creationScope.Value = scope;
+            try
+            {
+                made = ChunkStarts.Make(layout, previous, key.X, key.Z, create);
+            }
+            finally
+            {
+                scope.End();
+                creationScope.Value = incomingScope;
+            }
+
+            // No factory or wait runs under the publication gate. In particular, nested creation may have
+            // published its result already, and refresh/eviction may have changed the entry while we made ours.
             lock (this.gate)
             {
                 if (layout.Version < this.prunedVersion)
-                    return null;
+                    return true;
 
-                // Another thread published the chunk's starts meanwhile, or pruned them: start over from those.
                 this.starts.TryGetValue(key, out var current);
                 if (!ReferenceEquals(current, previous) || this.retiring.ContainsKey(key))
-                    continue;
+                    return false;
 
                 // The previous starts are all of the layout's sets (see above), so the new ones keep every one.
                 made.Saved = previous?.Saved ?? false;
                 made.Revision = previous?.Revision ?? 0;
                 this.Adopt(key, made, previous);
                 this.starts[key] = made;
-                return made;
+                result = made;
+                return true;
             }
         }
+        finally
+        {
+            if (owned is not null)
+            {
+                // Remove before waking waiters so failures never poison future requests. Every exit, including a
+                // stale layout or lost publication race, releases them to re-read the current entry. A failure belongs
+                // only to its creator: a fallback may already have published, or a waiter can try its own factory.
+                this.creating.TryRemove(new KeyValuePair<
+                    (int X, int Z, StructureLayout Layout, ChunkStarts? Previous), Creation>(creationKey, owned));
+                owned.Complete();
+            }
+        }
+    }
+
+    private sealed class CreationScope(CreationScope? parent)
+    {
+        private readonly CreationScope? parent = parent;
+        private int active = 1;
+
+        public static CreationScope? Active(CreationScope? scope)
+        {
+            // An ended child's captured context can still depend on a live parent. Skip ended ancestors when
+            // starting another factory, so reusing old contexts cannot accumulate chains across exploration.
+            while (scope is not null)
+            {
+                if (Volatile.Read(ref scope.active) != 0)
+                    return scope;
+
+                scope = scope.parent;
+            }
+
+            return null;
+        }
+
+        // A child can outlive its parent, so every factory owns and ends its own token.
+        public void End() => Volatile.Write(ref this.active, 0);
+    }
+
+    private sealed class Creation
+    {
+        private readonly TaskCompletionSource completion =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public bool Wait(TimeSpan wait) => this.completion.Task.Wait(wait);
+
+        public void Complete() => this.completion.SetResult();
     }
 
     // Replaces the chunk's starts with those kept of them, unless they changed meanwhile or the layout asking is older
