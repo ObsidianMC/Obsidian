@@ -8,7 +8,7 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Guards the eight-point noise sampler, which only runs on machines with AVX2: every lane must equal the single-point
+/// Guards the eight-point noise samplers, which only run on machines with AVX2: every lane must equal the single-point
 /// sampler bit for bit, or worldgen output would depend on the CPU.
 /// </summary>
 public class VectorizedNoise
@@ -39,6 +39,69 @@ public class VectorizedNoise
         var firstMismatches = mismatches.GetRange(0, Math.Min(10, mismatches.Count));
         Assert.True(mismatches.Count == 0, $"{mismatches.Count} lanes differ:{Environment.NewLine}"
             + string.Join(Environment.NewLine, firstMismatches));
+    }
+
+    [Fact]
+    public void ColumnSamplingMatchesSinglePoints()
+    {
+        if (!PerlinNoise.CanSampleEight)
+            return;
+
+        PerlinNoise[] noises =
+        [
+            new PerlinNoise(new XoroshiroRandomSource(1L)),
+            new SmearedPerlinNoise(new XoroshiroRandomSource(2L), 0.5),
+            new SmearedPerlinNoise(new XoroshiroRandomSource(3L), 8.0 * 684.412),
+        ];
+
+        var random = new Random(54321);
+        var mismatches = new List<string>();
+        foreach (var noise in noises)
+        {
+            for (var batch = 0; batch < Batches; batch++)
+                CompareColumn(noise, random, mismatches);
+        }
+
+        var firstMismatches = mismatches.GetRange(0, Math.Min(10, mismatches.Count));
+        Assert.True(mismatches.Count == 0, $"{mismatches.Count} lanes differ:{Environment.NewLine}"
+            + string.Join(Environment.NewLine, firstMismatches));
+    }
+
+    // Eight y of one column: half the batches step through a single lattice cell, which shares its corners between the
+    // lanes, and half spread over many cells.
+    private static void CompareColumn(PerlinNoise noise, Random random, List<string> mismatches)
+    {
+        var x = Coordinate(random);
+        var z = Coordinate(random);
+        double[] y;
+
+        if (random.Next(2) == 0)
+        {
+            var start = Math.Floor(Coordinate(random)) + random.NextDouble() * 0.5;
+            var step = random.NextDouble() * 0.06;
+            y = new double[8];
+
+            for (var i = 0; i < y.Length; i++)
+                y[i] = start + i * step;
+        }
+        else
+        {
+            y = Coordinates(random);
+        }
+
+        var sampled = noise.GetColumn8(
+            x,
+            z,
+            Vector256.Create(y[0], y[1], y[2], y[3]),
+            Vector256.Create(y[4], y[5], y[6], y[7]));
+
+        for (var lane = 0; lane < 8; lane++)
+        {
+            var expected = noise.Get(x, y[lane], z);
+            var actual = sampled.GetElement(lane);
+            if (BitConverter.SingleToInt32Bits(expected) != BitConverter.SingleToInt32Bits(actual))
+                mismatches.Add($"{noise.GetType().Name} at ({x}, {y[lane]}, {z}): {expected} vs {actual}");
+        }
     }
 
     private static void CompareBatch(PerlinNoise noise, Random random, List<string> mismatches)
