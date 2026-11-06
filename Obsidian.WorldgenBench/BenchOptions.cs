@@ -28,23 +28,23 @@ internal sealed record BenchOptions(IReadOnlyList<BenchDimension> Dimensions, in
             switch (args[i])
             {
                 case "--dimension":
-                    var name = args[++i];
+                    var name = Value(args, ref i);
                     dimensions = name == "all"
                         ? BenchDimension.All
                         : [BenchDimension.All.FirstOrDefault(dimension => dimension.Name == name)
                             ?? throw new ArgumentException($"Unknown dimension '{name}'.")];
                     break;
                 case "--radius":
-                    radius = int.Parse(args[++i]);
+                    radius = int.Parse(Value(args, ref i));
                     break;
                 case "--seed":
-                    seed = long.Parse(args[++i]);
+                    seed = long.Parse(Value(args, ref i));
                     break;
                 case "--cold":
                     cold = true;
                     break;
                 case "--datapacks":
-                    dataPacks = args[++i];
+                    dataPacks = Value(args, ref i);
                     break;
                 default:
                     throw new ArgumentException($"Unknown option '{args[i]}'.");
@@ -52,6 +52,17 @@ internal sealed record BenchOptions(IReadOnlyList<BenchDimension> Dimensions, in
         }
 
         return new BenchOptions(dimensions, radius, seed, cold, dataPacks);
+    }
+
+    // Reads the value after the option at i, reporting a missing one as a usage error.
+    private static string Value(ReadOnlySpan<string> args, ref int i)
+    {
+        var option = args[i];
+        i++;
+        if (i >= args.Length)
+            throw new ArgumentException($"{option} needs a value.");
+
+        return args[i];
     }
 }
 

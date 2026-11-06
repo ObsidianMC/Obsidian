@@ -49,7 +49,16 @@ using (var httpClient = new HttpClient())
 }
 
 if (options.DataPacks is string dataPacks)
+{
+    // A missing folder would otherwise run without packs, and its timings could pass for datapack results.
+    if (!Directory.Exists(dataPacks))
+    {
+        Console.Error.WriteLine($"Data pack folder '{dataPacks}' doesn't exist.");
+        return 2;
+    }
+
     DataPacks.Load(dataPacks);
+}
 
 var failed = false;
 foreach (var dimension in options.Dimensions)

@@ -31,6 +31,10 @@ internal static class WorldgenCaptures
         if (unmatched.Count > 0)
             throw new ArgumentException($"Nothing in {fixtureDirectory} matches {string.Join(", ", unmatched)}.");
 
+        // Without any pack, the capture would record vanilla's own values over a fixture meant for the packs.
+        if (dataPacks is not null && !HasDataPacks(dataPacks))
+            throw new ArgumentException($"{dataPacks} holds no data packs (zips or folders with a pack.mcmeta).");
+
         // The probe captures the selected cases in a fixture of their own, by section, which replaces them in their
         // files only once every world succeeded. A failed capture never leaves files mixing versions.
         var selected = Select(files, selection);
@@ -147,6 +151,17 @@ internal static class WorldgenCaptures
                 Directory.Delete(world, recursive: true);
             }
         }
+    }
+
+    private static bool HasDataPacks(string folder)
+    {
+        if (!Directory.Exists(folder))
+            return false;
+
+        var zips = Directory.EnumerateFiles(folder, "*.zip");
+        var folders = Directory.EnumerateDirectories(folder)
+            .Where(pack => File.Exists(Path.Combine(pack, "pack.mcmeta")));
+        return zips.Any() || folders.Any();
     }
 
     private static void CopyDataPacks(string source, string destination)
