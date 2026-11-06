@@ -21,12 +21,19 @@ internal static class WorldgenCaptures
 
     private static string Source(string name) => Path.Combine(AppContext.BaseDirectory, name);
 
-    public static async Task RunAsync(VanillaServer server, string fixtureDirectory, CaptureSelection selection)
+    /// <param name="dataPacks">A directory of data packs (zips or folders) to create the capture worlds with, or null
+    /// for vanilla's data alone.</param>
+    public static async Task RunAsync(VanillaServer server, string fixtureDirectory, CaptureSelection selection,
+        string? dataPacks = null)
     {
         var files = WorldgenFixtureFile.Load(fixtureDirectory);
         var unmatched = selection.Unmatched(files).ToList();
         if (unmatched.Count > 0)
             throw new ArgumentException($"Nothing in {fixtureDirectory} matches {string.Join(", ", unmatched)}.");
+
+        // Without any pack, the capture would record vanilla's own values over a fixture meant for the packs.
+        if (dataPacks is not null && !HasDataPacks(dataPacks))
+            throw new ArgumentException($"{dataPacks} holds no data packs (zips or folders with a pack.mcmeta).");
 
         // The probe captures the selected cases in a fixture of their own, by section, which replaces them in their
         // files only once every world succeeded. A failed capture never leaves files mixing versions.
@@ -40,7 +47,7 @@ internal static class WorldgenCaptures
         {
             var batch = group.ToList();
             await File.WriteAllTextAsync(capturing, WorldgenFixtureFile.Serialize(Fixture(batch)));
-            await CaptureWorldsAsync(server, capturing, Seeds(batch));
+            await CaptureWorldsAsync(server, capturing, Seeds(batch), dataPacks);
 
             var captured = JsonNode.Parse(await File.ReadAllTextAsync(capturing))!.AsObject();
             Replace(batch, captured);
@@ -102,7 +109,8 @@ internal static class WorldgenCaptures
         }
     }
 
-    private static async Task CaptureWorldsAsync(VanillaServer server, string capturing, List<long> seeds)
+    private static async Task CaptureWorldsAsync(VanillaServer server, string capturing, List<long> seeds,
+        string? dataPacks)
     {
         var classpath = string.Join(Path.PathSeparator, server.ClassPath);
         var source = Source(Path.Combine("Captures", "WorldgenCaptures.java"));
@@ -116,6 +124,11 @@ internal static class WorldgenCaptures
                 if (Directory.Exists(world))
                     Directory.Delete(world, recursive: true);
                 Directory.CreateDirectory(world);
+
+                // The server's world folder (level-name "world") enables the packs in its datapacks folder as the
+                // world is created, like a world's own packs.
+                if (dataPacks is not null)
+                    CopyDataPacks(dataPacks, Path.Combine(world, "world", "datapacks"));
 
                 Console.WriteLine($"Capturing seed {seed} with structures {(structures ? "on" : "off")}...");
                 string[] arguments =
@@ -136,6 +149,36 @@ internal static class WorldgenCaptures
 
                 await VanillaServer.RunJavaAsync(world, WorldTimeout, arguments);
                 Directory.Delete(world, recursive: true);
+            }
+        }
+    }
+
+    private static bool HasDataPacks(string folder)
+    {
+        if (!Directory.Exists(folder))
+            return false;
+
+        var zips = Directory.EnumerateFiles(folder, "*.zip");
+        var folders = Directory.EnumerateDirectories(folder)
+            .Where(pack => File.Exists(Path.Combine(pack, "pack.mcmeta")));
+        return zips.Any() || folders.Any();
+    }
+
+    private static void CopyDataPacks(string source, string destination)
+    {
+        Directory.CreateDirectory(destination);
+
+        foreach (var file in Directory.EnumerateFiles(source, "*.zip"))
+            File.Copy(file, Path.Combine(destination, Path.GetFileName(file)));
+
+        foreach (var folder in Directory.EnumerateDirectories(source))
+        {
+            var target = Path.Combine(destination, Path.GetFileName(folder));
+            foreach (var file in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
+            {
+                var copy = Path.Combine(target, Path.GetRelativePath(folder, file));
+                Directory.CreateDirectory(Path.GetDirectoryName(copy)!);
+                File.Copy(file, copy);
             }
         }
     }

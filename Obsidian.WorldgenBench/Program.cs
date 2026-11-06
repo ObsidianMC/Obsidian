@@ -18,6 +18,8 @@ using WorldgenBench;
 //   --radius N                            (default 16: 1,024 chunks)
 //   --seed N                              (default 12345)
 //   --cold                                skip the warmup
+//   --datapacks DIR                       generate with the data packs in DIR, as the server's startup applies them
+//                                         (no recorded hashes)
 //
 // Each dimension is centred where a server pregenerates it for seed 12345: the overworld on its spawn chunk (6, -2), the
 // nether on (0, 0) and the end on its spawn platform's chunk (6, 0). Run a Release build.
@@ -44,6 +46,18 @@ using (var httpClient = new HttpClient())
     var current = await VanillaServerJar.ExtractStructuresAsync(httpClient, cache, ServerConstants.ProtocolDescription,
         NullLogger.Instance);
     StructureRegistry.InitializeCurrent(() => Task.FromResult(current));
+}
+
+if (options.DataPacks is string dataPacks)
+{
+    // A missing folder would otherwise run without packs, and its timings could pass for datapack results.
+    if (!Directory.Exists(dataPacks))
+    {
+        Console.Error.WriteLine($"Data pack folder '{dataPacks}' doesn't exist.");
+        return 2;
+    }
+
+    DataPacks.Load(dataPacks);
 }
 
 var failed = false;

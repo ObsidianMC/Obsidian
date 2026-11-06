@@ -4,7 +4,8 @@ using System.Linq;
 
 namespace WorldgenBench;
 
-internal sealed record BenchOptions(IReadOnlyList<BenchDimension> Dimensions, int Radius, long Seed, bool Cold)
+internal sealed record BenchOptions(IReadOnlyList<BenchDimension> Dimensions, int Radius, long Seed, bool Cold,
+    string? DataPacks)
 {
     public const int DefaultRadius = 16;
     public const long DefaultSeed = 12345L;
@@ -12,7 +13,7 @@ internal sealed record BenchOptions(IReadOnlyList<BenchDimension> Dimensions, in
     /// <summary>
     /// Whether the run generates the chunks whose hashes are recorded.
     /// </summary>
-    public bool HasExpectedHashes => this.Radius == DefaultRadius && this.Seed == DefaultSeed;
+    public bool HasExpectedHashes => this.Radius == DefaultRadius && this.Seed == DefaultSeed && this.DataPacks is null;
 
     public static BenchOptions Parse(ReadOnlySpan<string> args)
     {
@@ -20,33 +21,48 @@ internal sealed record BenchOptions(IReadOnlyList<BenchDimension> Dimensions, in
         var radius = DefaultRadius;
         var seed = DefaultSeed;
         var cold = false;
+        string? dataPacks = null;
 
         for (var i = 0; i < args.Length; i++)
         {
             switch (args[i])
             {
                 case "--dimension":
-                    var name = args[++i];
+                    var name = Value(args, ref i);
                     dimensions = name == "all"
                         ? BenchDimension.All
                         : [BenchDimension.All.FirstOrDefault(dimension => dimension.Name == name)
                             ?? throw new ArgumentException($"Unknown dimension '{name}'.")];
                     break;
                 case "--radius":
-                    radius = int.Parse(args[++i]);
+                    radius = int.Parse(Value(args, ref i));
                     break;
                 case "--seed":
-                    seed = long.Parse(args[++i]);
+                    seed = long.Parse(Value(args, ref i));
                     break;
                 case "--cold":
                     cold = true;
+                    break;
+                case "--datapacks":
+                    dataPacks = Value(args, ref i);
                     break;
                 default:
                     throw new ArgumentException($"Unknown option '{args[i]}'.");
             }
         }
 
-        return new BenchOptions(dimensions, radius, seed, cold);
+        return new BenchOptions(dimensions, radius, seed, cold, dataPacks);
+    }
+
+    // Reads the value after the option at i, reporting a missing one as a usage error.
+    private static string Value(ReadOnlySpan<string> args, ref int i)
+    {
+        var option = args[i];
+        i++;
+        if (i >= args.Length)
+            throw new ArgumentException($"{option} needs a value.");
+
+        return args[i];
     }
 }
 

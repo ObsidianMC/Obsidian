@@ -19,7 +19,7 @@ internal static class SerialRun
         if (!options.Cold)
             Warm(bench, options);
 
-        var builder = new BenchGenerator(bench, options.Seed);
+        var builder = new BenchGenerator(bench, options.Seed, options.DataPacks is not null);
 
         // Stronghold rings are placed on first use, in parallel; placing them first keeps them out of the stages.
         var setup = Stopwatch.StartNew();
@@ -79,7 +79,7 @@ internal static class SerialRun
     /// </summary>
     private static void Warm(BenchDimension bench, BenchOptions options)
     {
-        var builder = new BenchGenerator(bench, options.Seed + 1);
+        var builder = new BenchGenerator(bench, options.Seed + 1, options.DataPacks is not null);
         var generator = new SerialGenerator(builder);
         for (var x = 500; x < 503; x++)
         {

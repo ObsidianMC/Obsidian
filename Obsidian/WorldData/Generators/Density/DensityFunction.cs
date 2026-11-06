@@ -69,6 +69,29 @@ internal abstract class DensityFunction
         }
     }
 
+    /// <summary>
+    /// Samples a flat function (see <see cref="IsFlat"/>) over the bottom layer of <paramref name="volume"/> and copies
+    /// each column's value down it, which writes the values sampling every point would.
+    /// </summary>
+    /// <remarks>
+    /// Vanilla samples an uncached flat function at every point of a volume. Data packs name such functions outside
+    /// interpolation, like Terratonic's lava tunnels, whose noises would otherwise be sampled at each block of a chunk.
+    /// </remarks>
+    protected void SampleLayer(Span<float> output, in DensityVolume volume)
+    {
+        var layer = volume with { SizeY = 1 };
+        using var values = DensityBuffer.Sample(this, layer);
+
+        for (var indexZ = 0; indexZ < volume.SizeZ; indexZ++)
+        {
+            for (var indexX = 0; indexX < volume.SizeX; indexX++)
+            {
+                var value = values.Span[layer.Index(indexX, 0, indexZ)];
+                output.Slice(volume.Index(indexX, 0, indexZ), volume.SizeY).Fill(value);
+            }
+        }
+    }
+
     /// <summary>Writes the value at each point of <paramref name="volume"/> to <paramref name="output"/>.</summary>
     public virtual void SampleVolume(Span<float> output, in DensityVolume volume)
     {

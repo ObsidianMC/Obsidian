@@ -67,7 +67,9 @@ internal sealed class NoiseFunction(
     }
 
     // y times a zero scale is zero or negative zero, which noise reads alike.
-    public override bool IsFlat => yScale == 0.0 && IsFlatShift(shiftX) && IsFlatShift(shiftY) && IsFlatShift(shiftZ);
+    private readonly bool flat = yScale == 0.0 && IsFlatShift(shiftX) && IsFlatShift(shiftY) && IsFlatShift(shiftZ);
+
+    public override bool IsFlat => this.flat;
 
     private bool Shifted => shiftX is not null || shiftY is not null || shiftZ is not null;
 
@@ -124,6 +126,12 @@ internal sealed class NoiseFunction(
 
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
     {
+        if (this.flat && volume.SizeY > 1)
+        {
+            this.SampleLayer(output, volume);
+            return;
+        }
+
         if (!this.Shifted)
         {
             output.Fill(0.0f);

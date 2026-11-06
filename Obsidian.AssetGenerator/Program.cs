@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 // Usage: Obsidian.AssetGenerator <minecraft version> <cache directory> <scratch directory> <assets directory>
 //        Obsidian.AssetGenerator capture-worldgen <minecraft version> <cache directory> <scratch directory>
-//            <fixture directory> [--sections <patterns>] [--cases <patterns>]
+//            <fixture directory> [--sections <patterns>] [--cases <patterns>] [--datapacks <directory>]
 //        Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory> <scratch directory>
 //            <test assets directory> [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces] [case names]
 //
@@ -14,7 +14,8 @@ using System.Diagnostics;
 // work in the scratch directory.
 //
 // capture-worldgen instead re-records the vanilla worldgen references in the fixture directory (in place) with the
-// version's server, or only the sections and cases the patterns select; see docs/vanilla-captures.md.
+// version's server, or only the sections and cases the patterns select; see docs/vanilla-captures.md. With
+// --datapacks, the capture worlds are created with the data packs (zips or folders) in that directory enabled.
 //
 // capture-scenarios re-records the redstone, fluid and daylight detector scenarios in the test assets directory (in
 // place) on a headless server of the version, or only the '+'-separated fixtures given; see ScenarioCaptures.
@@ -23,11 +24,20 @@ using var httpClient = new HttpClient();
 
 if (args is ["capture-worldgen", var captureVersion, var captureCache, var captureScratch, var fixture, .. var options])
 {
+    var dataPacksAt = Array.IndexOf(options, "--datapacks");
+    string? dataPacks = null;
+    if (dataPacksAt >= 0)
+    {
+        dataPacks = Path.GetFullPath(options.ElementAtOrDefault(dataPacksAt + 1)
+            ?? throw new ArgumentException("--datapacks needs a value."));
+        options = [.. options[..dataPacksAt], .. options[(dataPacksAt + 2)..]];
+    }
+
     var selection = CaptureSelection.Parse(options);
     var vanilla = await VanillaServer.PrepareAsync(httpClient, captureVersion,
         Path.Combine(Path.GetFullPath(captureCache), captureVersion),
         Path.Combine(Path.GetFullPath(captureScratch), captureVersion));
-    await WorldgenCaptures.RunAsync(vanilla, Path.GetFullPath(fixture), selection);
+    await WorldgenCaptures.RunAsync(vanilla, Path.GetFullPath(fixture), selection, dataPacks);
 
     var seconds = timer.Elapsed.TotalSeconds;
     Console.WriteLine($"Captured the {captureVersion} worldgen references into {fixture} in {seconds:0.0}s.");
@@ -55,7 +65,7 @@ if (args.Length != 4)
     Console.Error.WriteLine("           <assets directory>");
     Console.Error.WriteLine("       Obsidian.AssetGenerator capture-worldgen <minecraft version> <cache directory>");
     Console.Error.WriteLine("           <scratch directory> <fixture directory>");
-    Console.Error.WriteLine("           [--sections <patterns>] [--cases <patterns>]");
+    Console.Error.WriteLine("           [--sections <patterns>] [--cases <patterns>] [--datapacks <directory>]");
     Console.Error.WriteLine("       Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory>");
     Console.Error.WriteLine("           <scratch directory> <test assets directory>");
     Console.Error.WriteLine("           [redstone+fluids+daylight+sulfur+more_blocks+" +
