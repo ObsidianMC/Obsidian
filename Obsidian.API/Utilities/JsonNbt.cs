@@ -19,8 +19,10 @@ internal static class JsonNbt
         JsonValueKind.Object => ObjectToNbt(name, value),
         JsonValueKind.Array => ArrayToNbt(name, value),
         JsonValueKind.String => new NbtTag<string>(name, value.GetString()),
-        JsonValueKind.True => new NbtTag<byte>(name, 1),
-        JsonValueKind.False => new NbtTag<byte>(name, 0),
+        // Booleans stay booleans, which readers take as bytes too and which are saved as bytes, like vanilla's; a
+        // translation's argument shows one as true or false.
+        JsonValueKind.True => new NbtTag<bool>(name, true),
+        JsonValueKind.False => new NbtTag<bool>(name, false),
         JsonValueKind.Number => NumberToNbt(name, value),
         _ => throw new JsonException($"NBT can't hold a JSON {value.ValueKind}.")
     };

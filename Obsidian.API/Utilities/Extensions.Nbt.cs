@@ -143,8 +143,8 @@ public partial class Extensions
         return chatMessage;
     }
 
-    // Vanilla's translation arguments are texts, or numbers and booleans shown as written; a boolean from JSON is a
-    // byte here, so it shows as a number.
+    // Vanilla's translation arguments are texts, or numbers and booleans shown as Java writes them. A saved boolean is
+    // a byte, so like vanilla's it shows as a number once saved.
     private static ChatMessage? TranslationArgument(INbtTag argument)
     {
         if (argument.TextFromNbt() is ChatMessage text)
@@ -152,16 +152,68 @@ public partial class Extensions
 
         var written = argument switch
         {
+            NbtTag<bool> flag => flag.Value ? "true" : "false",
             NbtTag<byte> number => unchecked((sbyte)number.Value).ToString(CultureInfo.InvariantCulture),
             NbtTag<short> number => number.Value.ToString(CultureInfo.InvariantCulture),
             NbtTag<int> number => number.Value.ToString(CultureInfo.InvariantCulture),
             NbtTag<long> number => number.Value.ToString(CultureInfo.InvariantCulture),
-            NbtTag<float> number => number.Value.ToString(CultureInfo.InvariantCulture),
-            NbtTag<double> number => number.Value.ToString(CultureInfo.InvariantCulture),
+            NbtTag<float> number => JavaDecimal(number.Value.ToString(CultureInfo.InvariantCulture)),
+            NbtTag<double> number => JavaDecimal(number.Value.ToString(CultureInfo.InvariantCulture)),
             _ => null
         };
 
         return written is null ? null : ChatMessage.Simple(written);
+    }
+
+    /// <summary>
+    /// A float or double as Java's <c>toString</c> writes it, from the shortest digits .NET writes (which are Java's
+    /// too): at least one decimal, and scientific notation (<c>1.0E-5</c>) below 10^-3 and from 10^7.
+    /// </summary>
+    internal static string JavaDecimal(string shortest)
+    {
+        if (shortest is "NaN" or "∞" or "-∞" or "Infinity" or "-Infinity")
+            return shortest.Replace("∞", "Infinity");
+
+        var negative = shortest.StartsWith('-');
+        var unsigned = negative ? shortest[1..] : shortest;
+
+        // The digits without the point, and the power of ten of the first one.
+        var parts = unsigned.Split('E');
+        var mantissa = parts[0];
+        var exponent = parts.Length > 1 ? int.Parse(parts[1], CultureInfo.InvariantCulture) : 0;
+        var point = mantissa.IndexOf('.');
+        var digits = mantissa.Replace(".", string.Empty);
+        var leadingZeros = digits.Length - digits.TrimStart('0').Length;
+
+        digits = digits.TrimStart('0');
+        if (digits.Length == 0)
+            return negative ? "-0.0" : "0.0";
+
+        var power = (point < 0 ? mantissa.Length : point) - 1 - leadingZeros + exponent;
+        digits = digits.TrimEnd('0');
+        if (digits.Length == 0)
+            digits = "0";
+
+        var sign = negative ? "-" : string.Empty;
+
+        if (power is >= -3 and < 7)
+            return sign + Plain(digits, power);
+
+        var fraction = digits.Length > 1 ? digits[1..] : "0";
+
+        return $"{sign}{digits[0]}.{fraction}E{power}";
+    }
+
+    // Digits whose first is 10^power, written out with at least one decimal.
+    private static string Plain(string digits, int power)
+    {
+        if (power < 0)
+            return "0." + new string('0', -power - 1) + digits;
+
+        var whole = digits.Length > power + 1 ? digits[..(power + 1)] : digits.PadRight(power + 1, '0');
+        var fraction = digits.Length > power + 1 ? digits[(power + 1)..] : "0";
+
+        return $"{whole}.{fraction}";
     }
 
     public static ClickComponent ToClickComponent(this NbtCompound compound)

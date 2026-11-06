@@ -415,11 +415,14 @@ public sealed class DataPackStartup : IDisposable
             Assert.Equal("Horn", Assert.Single(horn.ItemName!.GetExtras()).Text);
 
             // A mixed list keeps each element's type, as vanilla's does: a plain page beside a filtered one, a
-            // translation's number argument beside a text, and a long a double can't hold beside a float.
+            // translation's number argument beside a text (written as Java writes them), and a long a double can't hold
+            // beside a float.
             var pages = horn.GetComponent<SimpleDataComponent<ImmutableArray<Page>>>(
                 DataComponentType.WritableBookContent)!.Value;
             Assert.Equal(["first", "second"], pages.Select(page => page.RawContent));
-            Assert.Equal(["12", "blocks"], horn.Lore[1].With!.Select(argument => argument.Text));
+            Assert.Equal(
+                ["12", "blocks", "true", "1.0E-5", "1.23456789E7", "100.0"],
+                horn.Lore[1].With!.Select(argument => argument.Text));
 
             var data = horn.GetComponent<SimpleDataComponent<NbtCompound>>(DataComponentType.CustomData)!.Value;
             var values = Obsidian.API.Utilities.Extensions.ListElements(data["values"]).ToList();
@@ -524,7 +527,7 @@ public sealed class DataPackStartup : IDisposable
                       "text": "Found in an igloo",
                       "hover_event": { "action": "show_text", "value": ["Cold ", { "text": "and snowy" }] }
                     },
-                    { "translate": "startuptest.depth", "with": [12, { "text": "blocks" }] }
+                    { "translate": "startuptest.depth", "with": [12, { "text": "blocks" }, true, 0.00001, 12345678.9, 100.0] }
                   ]
                 }
               ]
