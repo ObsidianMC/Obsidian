@@ -119,13 +119,22 @@ public partial class Extensions
         ? new NbtTag<string>(name, provider) : new NbtTag<float>(name, value.Constant);
 
     private static ComponentIntValue ComponentIntFromNbt(INbtTag value) => value is NbtTag<string> provider
-        ? new(0, provider.Value) : new((int)Math.Floor(Number(value)));
+        ? new(0, provider.Value) : new(CodecInt(value));
+
+    // Vanilla's Codec.INT reads a number like Java's Number.intValue: a floating value truncates (saturating, with NaN
+    // as 0), and a long keeps its low bits.
+    private static int CodecInt(INbtTag tag) => tag switch
+    {
+        NbtTag<long> value => unchecked((int)value.Value),
+        NbtTag<float> value => (int)value.Value,
+        NbtTag<double> value => (int)value.Value,
+        _ => (int)Number(tag)
+    };
 
     private static ComponentFloatValue ComponentFloatFromNbt(INbtTag value) => value is NbtTag<string> provider
         ? new(0, provider.Value) : new((float)Number(value));
 
     // A number tag of any type, read like vanilla's numeric tags: a data pack's JSON writes a float's 1 as an int.
-    // Like vanilla's, a float's conversion to an int floors and saturates, and NaN is 0.
     private static double Number(INbtTag tag) =>
         NumberOf(tag) ?? throw new InvalidDataException($"{tag.Name} isn't a number.");
 
@@ -141,22 +150,29 @@ public partial class Extensions
         _ => null
     };
 
-    // A list of numbers, saved as a list of number tags or a number array: JSON's lists of whole numbers become int
-    // arrays (see JsonNbt), and vanilla reads either.
-    private static IEnumerable<double> ListNumbers(NbtCompound tag, string name)
-    {
-        if (!tag.TryGetTag(name, out var list))
-            return [];
+    // A list of numbers, saved as a list of number tags, a number array or a mixed list: JSON's lists of whole numbers
+    // become int arrays and lists of mixed numbers mixed lists (see JsonNbt), and vanilla reads any of them.
+    private static IEnumerable<double> ListNumbers(NbtCompound tag, string name) =>
+        tag.TryGetTag(name, out var list) ? ListElements(list).Select(NumberOf).OfType<double>() : [];
 
-        return list switch
-        {
-            NbtArray<int> ints => ints.GetArray().Select(value => (double)value),
-            NbtArray<long> longs => longs.GetArray().Select(value => (double)value),
-            NbtArray<byte> bytes => bytes.GetArray().Select(value => (double)value),
-            NbtList numbers => numbers.Select(NumberOf).OfType<double>(),
-            _ => []
-        };
-    }
+    /// <summary>
+    /// A list's elements, however it's saved: a list, a number array as number tags, or a list mixing types, whose
+    /// elements vanilla wraps under an empty key, unwrapped (see <see cref="JsonNbt"/>).
+    /// </summary>
+    internal static IEnumerable<INbtTag> ListElements(INbtTag list) => list switch
+    {
+        NbtList elements => elements.Select(Unwrapped),
+        NbtArray<int> ints => ints.GetArray().Select(value => (INbtTag)new NbtTag<int>(string.Empty, value)),
+        NbtArray<long> longs => longs.GetArray().Select(value => (INbtTag)new NbtTag<long>(string.Empty, value)),
+        NbtArray<byte> bytes => bytes.GetArray().Select(value => (INbtTag)new NbtTag<byte>(string.Empty, value)),
+        _ => []
+    };
+
+    // An element of a list mixing types, which vanilla saves under an empty key, as itself.
+    private static INbtTag Unwrapped(INbtTag element) =>
+        element is NbtCompound { Count: 1 } wrapper && wrapper.TryGetTag(string.Empty, out var wrapped)
+            ? wrapped
+            : element;
 
     private static DataComponent? AdditionalComponentFromNbt(string name, INbtTag tag)
     {
@@ -255,7 +271,7 @@ public partial class Extensions
             return writable with
             {
                 Value = pages.TryGetTag<NbtList>("pages", out var savedPages)
-                    ? [.. savedPages.Select(page => page is NbtCompound wrapper
+                    ? [.. ListElements(savedPages).Select(page => page is NbtCompound wrapper
                         ? new Page
                         {
                             RawContent = wrapper.SavedString("raw")!,

@@ -58,21 +58,11 @@ internal static class JsonNbt
         return list;
     }
 
-    // A list whose elements differ in type. Numbers are all doubles, so that a list like [1, 1.5] reads as numbers.
-    // Other elements are saved like vanilla saves a mixed list: as compounds, each element that isn't one (or is one
-    // that looks wrapped) under an empty key, which readers unwrap (see TextFromNbt).
+    // A list whose elements differ in type, like [1, 1.5] or ["a", {"text": "b"}], saved like vanilla saves a mixed
+    // list: as compounds, each element that isn't one (or is one that looks wrapped) under an empty key, so that each
+    // keeps its type. Readers unwrap them (see Extensions.ListElements).
     private static NbtList MixedList(string name, List<INbtTag> elements)
     {
-        var numbers = elements.Select(NumberOf).ToList();
-        if (numbers.All(number => number is not null))
-        {
-            var doubles = new NbtList(NbtTagType.Double, name);
-            foreach (var number in numbers)
-                doubles.Add(new NbtTag<double>(string.Empty, number!.Value));
-
-            return doubles;
-        }
-
         var list = new NbtList(NbtTagType.Compound, name);
         foreach (var element in elements)
             list.Add(IsUnwrapped(element) ? element : Wrap(element));
@@ -92,15 +82,6 @@ internal static class JsonNbt
 
     private static bool IsUnwrapped(INbtTag element) =>
         element is NbtCompound compound && !(compound.Count == 1 && compound.HasTag(string.Empty));
-
-    private static double? NumberOf(INbtTag element) => element switch
-    {
-        NbtTag<int> number => number.Value,
-        NbtTag<long> number => number.Value,
-        NbtTag<float> number => number.Value,
-        NbtTag<double> number => number.Value,
-        _ => null
-    };
 
     private static INbtTag NumberToNbt(string name, JsonElement value)
     {

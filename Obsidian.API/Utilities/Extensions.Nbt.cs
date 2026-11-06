@@ -2,6 +2,7 @@
 using Obsidian.API.Registries;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
+using System.Globalization;
 using System.Text.Json;
 
 namespace Obsidian.API.Utilities;
@@ -133,10 +134,34 @@ public partial class Extensions
         if (root.TryGetTag<NbtList>("extra", out var extrasList))
             chatMessage.AddExtra(extrasList.Select(tag => tag.TextFromNbt()).OfType<ChatMessage>().ToList());
 
-        if (root.TryGetTag<NbtList>("with", out var withList))
-            chatMessage.AddChatComponent(withList.Select(tag => tag.TextFromNbt()).OfType<ChatMessage>().ToList());
+        if (root.TryGetTag("with", out var withList))
+        {
+            var arguments = ListElements(withList).Select(TranslationArgument).OfType<ChatMessage>().ToList();
+            chatMessage.AddChatComponent(arguments);
+        }
 
         return chatMessage;
+    }
+
+    // Vanilla's translation arguments are texts, or numbers and booleans shown as written; a boolean from JSON is a
+    // byte here, so it shows as a number.
+    private static ChatMessage? TranslationArgument(INbtTag argument)
+    {
+        if (argument.TextFromNbt() is ChatMessage text)
+            return text;
+
+        var written = argument switch
+        {
+            NbtTag<byte> number => unchecked((sbyte)number.Value).ToString(CultureInfo.InvariantCulture),
+            NbtTag<short> number => number.Value.ToString(CultureInfo.InvariantCulture),
+            NbtTag<int> number => number.Value.ToString(CultureInfo.InvariantCulture),
+            NbtTag<long> number => number.Value.ToString(CultureInfo.InvariantCulture),
+            NbtTag<float> number => number.Value.ToString(CultureInfo.InvariantCulture),
+            NbtTag<double> number => number.Value.ToString(CultureInfo.InvariantCulture),
+            _ => null
+        };
+
+        return written is null ? null : ChatMessage.Simple(written);
     }
 
     public static ClickComponent ToClickComponent(this NbtCompound compound)

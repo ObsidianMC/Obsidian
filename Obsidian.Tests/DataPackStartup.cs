@@ -17,8 +17,10 @@ using Obsidian.Services;
 using Obsidian.Tests.Fakes;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
@@ -391,7 +393,7 @@ public sealed class DataPackStartup : IDisposable
             var horn = Assert.Single(ChestItems());
             Assert.True(horn.ContainsKey(DataComponentType.Instrument));
             Assert.True(horn.HasEnchantmentGlint);
-            Assert.Single(horn.Lore);
+            Assert.Equal(2, horn.Lore.Count);
 
             // A float written as a whole number reads like vanilla's, and a patch making a damageable item
             // stackable is undone, as vanilla's applyComponentsAndValidate does.
@@ -411,6 +413,17 @@ public sealed class DataPackStartup : IDisposable
             Assert.True(nested.Bold);
             Assert.Equal("rn", Assert.Single(nested.GetExtras()).Text);
             Assert.Equal("Horn", Assert.Single(horn.ItemName!.GetExtras()).Text);
+
+            // A mixed list keeps each element's type, as vanilla's does: a plain page beside a filtered one, a
+            // translation's number argument beside a text, and a long a double can't hold beside a float.
+            var pages = horn.GetComponent<SimpleDataComponent<ImmutableArray<Page>>>(
+                DataComponentType.WritableBookContent)!.Value;
+            Assert.Equal(["first", "second"], pages.Select(page => page.RawContent));
+            Assert.Equal(["12", "blocks"], horn.Lore[1].With!.Select(argument => argument.Text));
+
+            var data = horn.GetComponent<SimpleDataComponent<NbtCompound>>(DataComponentType.CustomData)!.Value;
+            var values = Obsidian.API.Utilities.Extensions.ListElements(data["values"]).ToList();
+            Assert.Equal(9007199254740993L, Assert.IsType<NbtTag<long>>(values[0]).Value);
         }
         finally
         {
@@ -490,7 +503,11 @@ public sealed class DataPackStartup : IDisposable
                     "minecraft:use_cooldown": { "seconds": 2 },
                     "minecraft:max_damage": 5,
                     "minecraft:custom_model_data": { "floats": [1, 1.5] },
-                    "minecraft:item_name": ["Goat ", { "text": "Horn" }]
+                    "minecraft:item_name": ["Goat ", { "text": "Horn" }],
+                    "minecraft:writable_book_content": {
+                      "pages": ["first", { "raw": "second", "filtered": "safe" }]
+                    },
+                    "minecraft:custom_data": { "values": [9007199254740993, 0.5] }
                   }
                 },
                 { "type": "minecraft:set_components", "components": { "minecraft:max_stack_size": 16 } },
@@ -506,7 +523,8 @@ public sealed class DataPackStartup : IDisposable
                     {
                       "text": "Found in an igloo",
                       "hover_event": { "action": "show_text", "value": ["Cold ", { "text": "and snowy" }] }
-                    }
+                    },
+                    { "translate": "startuptest.depth", "with": [12, { "text": "blocks" }] }
                   ]
                 }
               ]
