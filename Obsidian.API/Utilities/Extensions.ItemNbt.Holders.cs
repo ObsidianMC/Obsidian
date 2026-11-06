@@ -106,8 +106,9 @@ public partial class Extensions
     private static PotionEffectData EffectDetailsFromNbt(NbtCompound tag, int id) => new()
     {
         Id = id,
-        Amplifier = tag.TryGetTagValue<byte>("amplifier", out var amplifier)
-            ? amplifier : SavedInt(tag, "amplifier"),
+        // Saved as a byte, or as an int a data pack's JSON writes, which reading as a byte would cut to its low bits.
+        Amplifier = tag.TryGetTag<NbtTag<byte>>("amplifier", out var amplifier)
+            ? amplifier.Value : SavedInt(tag, "amplifier"),
         Duration = SavedInt(tag, "duration"),
         Ambient = SavedBool(tag, "ambient"),
         ShowParticles = SavedBool(tag, "show_particles", true),

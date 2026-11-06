@@ -2,6 +2,7 @@
 using Obsidian.API.Registries;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
+using System.Globalization;
 using System.Text.Json;
 
 namespace Obsidian.API.Utilities;
@@ -133,10 +134,105 @@ public partial class Extensions
         if (root.TryGetTag<NbtList>("extra", out var extrasList))
             chatMessage.AddExtra(extrasList.Select(tag => tag.TextFromNbt()).OfType<ChatMessage>().ToList());
 
-        if (root.TryGetTag<NbtList>("with", out var withList))
-            chatMessage.AddChatComponent(withList.Select(tag => tag.TextFromNbt()).OfType<ChatMessage>().ToList());
+        if (root.TryGetTag("with", out var withList))
+        {
+            var arguments = ListElements(withList).Select(TranslationArgument).OfType<ChatMessage>().ToList();
+            chatMessage.AddChatComponent(arguments);
+        }
 
         return chatMessage;
+    }
+
+    // Vanilla's translation arguments are texts, or numbers and booleans shown as Java writes them. A saved boolean is
+    // a byte, so like vanilla's it shows as a number once saved.
+    private static ChatMessage? TranslationArgument(INbtTag argument)
+    {
+        if (argument.TextFromNbt() is ChatMessage text)
+            return text;
+
+        var written = argument switch
+        {
+            NbtTag<bool> flag => flag.Value ? "true" : "false",
+            NbtTag<byte> number => unchecked((sbyte)number.Value).ToString(CultureInfo.InvariantCulture),
+            NbtTag<short> number => number.Value.ToString(CultureInfo.InvariantCulture),
+            NbtTag<int> number => number.Value.ToString(CultureInfo.InvariantCulture),
+            NbtTag<long> number => number.Value.ToString(CultureInfo.InvariantCulture),
+            NbtTag<float> number => JavaDecimal(number.Value),
+            NbtTag<double> number => JavaDecimal(number.Value),
+            _ => null
+        };
+
+        return written is null ? null : ChatMessage.Simple(written);
+    }
+
+    /// <summary>
+    /// A double as Java's <c>Double.toString</c> writes it: at least one decimal, and scientific notation
+    /// (<c>1.0E-5</c>) below 10^-3 and from 10^7.
+    /// </summary>
+    internal static string JavaDecimal(double value) => JavaDecimal(
+        value.ToString(CultureInfo.InvariantCulture),
+        value.ToString("E1", CultureInfo.InvariantCulture));
+
+    /// <summary>
+    /// A float as Java's <c>Float.toString</c> writes it, like <see cref="JavaDecimal(double)"/>.
+    /// </summary>
+    internal static string JavaDecimal(float value) => JavaDecimal(
+        value.ToString(CultureInfo.InvariantCulture),
+        value.ToString("E1", CultureInfo.InvariantCulture));
+
+    // A number from the shortest digits .NET writes for it, which are Java's when there's more than one, and the two
+    // closest to it, rounded from its exact value.
+    private static string JavaDecimal(string shortest, string closestTwo)
+    {
+        if (shortest is "NaN" or "∞" or "-∞" or "Infinity" or "-Infinity")
+            return shortest.Replace("∞", "Infinity");
+
+        var negative = shortest.StartsWith('-');
+        var (digits, power) = Decimal(shortest.TrimStart('-'));
+        if (digits.Length == 0)
+            return negative ? "-0.0" : "0.0";
+
+        // Java writes at least two digits, and with one shortest digit picks the two closest to the number: those of a
+        // subnormal can differ from it (Double.MIN_VALUE is 4.9E-324, not 5.0E-324).
+        if (digits.Length == 1)
+            (digits, power) = Decimal(closestTwo.TrimStart('-'));
+
+        var sign = negative ? "-" : string.Empty;
+
+        if (power is >= -3 and < 7)
+            return sign + Plain(digits, power);
+
+        var fraction = digits.Length > 1 ? digits[1..] : "0";
+
+        return $"{sign}{digits[0]}.{fraction}E{power}";
+    }
+
+    // A written decimal's significant digits without trailing zeros, and the power of ten of the first; no digits for
+    // zero.
+    private static (string Digits, int Power) Decimal(string written)
+    {
+        var parts = written.Split('E');
+        var mantissa = parts[0];
+        var exponent = parts.Length > 1 ? int.Parse(parts[1], CultureInfo.InvariantCulture) : 0;
+        var point = mantissa.IndexOf('.');
+        var allDigits = mantissa.Replace(".", string.Empty);
+        var significant = allDigits.TrimStart('0');
+        var leadingZeros = allDigits.Length - significant.Length;
+        var power = (point < 0 ? mantissa.Length : point) - 1 - leadingZeros + exponent;
+
+        return (significant.TrimEnd('0'), power);
+    }
+
+    // Digits whose first is 10^power, written out with at least one decimal.
+    private static string Plain(string digits, int power)
+    {
+        if (power < 0)
+            return "0." + new string('0', -power - 1) + digits;
+
+        var whole = digits.Length > power + 1 ? digits[..(power + 1)] : digits.PadRight(power + 1, '0');
+        var fraction = digits.Length > power + 1 ? digits[(power + 1)..] : "0";
+
+        return $"{whole}.{fraction}";
     }
 
     public static ClickComponent ToClickComponent(this NbtCompound compound)

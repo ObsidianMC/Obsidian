@@ -1,11 +1,11 @@
 using Obsidian.Nbt;
 using System.Text.Json;
 
-namespace Obsidian.Utilities.Converters;
+namespace Obsidian.API.Utilities;
 
 /// <summary>
-/// Converts JSON to NBT, so that a data pack file's components can be read like a saved stack's: vanilla's component
-/// codecs read either.
+/// Converts JSON to NBT, so that a data pack file's components (a recipe result's, a loot table's set_components)
+/// can be read like a saved stack's: vanilla's component codecs read either.
 /// </summary>
 /// <remarks>
 /// Vanilla converts a whole number to the smallest NBT number that holds it and reads any NBT number back. Obsidian's
@@ -19,8 +19,10 @@ internal static class JsonNbt
         JsonValueKind.Object => ObjectToNbt(name, value),
         JsonValueKind.Array => ArrayToNbt(name, value),
         JsonValueKind.String => new NbtTag<string>(name, value.GetString()),
-        JsonValueKind.True => new NbtTag<byte>(name, 1),
-        JsonValueKind.False => new NbtTag<byte>(name, 0),
+        // Booleans stay booleans, which readers take as bytes too and which are saved as bytes, like vanilla's; a
+        // translation's argument shows one as true or false.
+        JsonValueKind.True => new NbtTag<bool>(name, true),
+        JsonValueKind.False => new NbtTag<bool>(name, false),
         JsonValueKind.Number => NumberToNbt(name, value),
         _ => throw new JsonException($"NBT can't hold a JSON {value.ValueKind}.")
     };
@@ -49,7 +51,7 @@ internal static class JsonNbt
 
         var type = elements.Count > 0 ? elements[0].Type : NbtTagType.End;
         if (elements.Any(element => element.Type != type))
-            throw new JsonException($"The elements of an NBT list must be of one type, unlike those of {name}.");
+            return MixedList(name, elements);
 
         var list = new NbtList(type, name);
         foreach (var element in elements)
@@ -57,6 +59,31 @@ internal static class JsonNbt
 
         return list;
     }
+
+    // A list whose elements differ in type, like [1, 1.5] or ["a", {"text": "b"}], saved like vanilla saves a mixed
+    // list: as compounds, each element that isn't one (or is one that looks wrapped) under an empty key, so that each
+    // keeps its type. Readers unwrap them (see Extensions.ListElements).
+    private static NbtList MixedList(string name, List<INbtTag> elements)
+    {
+        var list = new NbtList(NbtTagType.Compound, name);
+        foreach (var element in elements)
+            list.Add(IsUnwrapped(element) ? element : Wrap(element));
+
+        return list;
+    }
+
+    // Compounds only take named tags when built, so the element goes in as a read tag, like a palette entry.
+    private static NbtCompound Wrap(INbtTag element)
+    {
+        var wrapper = new NbtCompound();
+        element.Name = string.Empty;
+        wrapper.SetReadTag(string.Empty, element);
+
+        return wrapper;
+    }
+
+    private static bool IsUnwrapped(INbtTag element) =>
+        element is NbtCompound compound && !(compound.Count == 1 && compound.HasTag(string.Empty));
 
     private static INbtTag NumberToNbt(string name, JsonElement value)
     {

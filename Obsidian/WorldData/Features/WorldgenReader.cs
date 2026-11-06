@@ -354,7 +354,14 @@ internal sealed partial class WorldgenReader(
                 var memberPath = Field(path, property.Name);
 
                 if (member?.SetMethod is null)
+                {
+                    // Vanilla's record codecs ignore fields a type doesn't have, and packs keep old ones (a template
+                    // pool's "name"). A plugin's type is stricter, as its documentation says, so a typo isn't missed.
+                    if (owner is null)
+                        continue;
+
                     throw Error(memberPath, $"{type.Name} has no such field");
+                }
 
                 Set(member, instance, this.ReadValue(member.PropertyType, property.Value, memberPath), memberPath);
                 assigned.Add(name);

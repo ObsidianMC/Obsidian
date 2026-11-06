@@ -15,7 +15,7 @@ internal abstract class FeatureSize(int? minClippedHeight)
 
     public static FeatureSize Read(FeatureRegistry registry, JsonElement json)
     {
-        var type = json.GetProperty("type").GetString();
+        var type = FeatureRegistry.TypeOf(json);
         int? minClippedHeight = json.TryGetProperty("min_clipped_height", out var clipped) ? clipped.GetInt32() : null;
 
         return type switch

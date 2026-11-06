@@ -119,10 +119,60 @@ public partial class Extensions
         ? new NbtTag<string>(name, provider) : new NbtTag<float>(name, value.Constant);
 
     private static ComponentIntValue ComponentIntFromNbt(INbtTag value) => value is NbtTag<string> provider
-        ? new(0, provider.Value) : new(((NbtTag<int>)value).Value);
+        ? new(0, provider.Value) : new(CodecInt(value));
+
+    // Vanilla's Codec.INT reads a number like Java's Number.intValue: a floating value truncates (saturating, with NaN
+    // as 0), and a long keeps its low bits.
+    private static int CodecInt(INbtTag tag) => tag switch
+    {
+        NbtTag<long> value => unchecked((int)value.Value),
+        NbtTag<float> value => (int)value.Value,
+        NbtTag<double> value => (int)value.Value,
+        _ => (int)Number(tag)
+    };
 
     private static ComponentFloatValue ComponentFloatFromNbt(INbtTag value) => value is NbtTag<string> provider
-        ? new(0, provider.Value) : new(((NbtTag<float>)value).Value);
+        ? new(0, provider.Value) : new((float)Number(value));
+
+    // A number tag of any type, read like vanilla's numeric tags: a data pack's JSON writes a float's 1 as an int.
+    private static double Number(INbtTag tag) =>
+        NumberOf(tag) ?? throw new InvalidDataException($"{tag.Name} isn't a number.");
+
+    // NBT bytes are signed, though they're held as bytes.
+    private static double? NumberOf(INbtTag tag) => tag switch
+    {
+        NbtTag<byte> value => unchecked((sbyte)value.Value),
+        NbtTag<short> value => value.Value,
+        NbtTag<int> value => value.Value,
+        NbtTag<long> value => value.Value,
+        NbtTag<float> value => value.Value,
+        NbtTag<double> value => value.Value,
+        _ => null
+    };
+
+    // A list of numbers, saved as a list of number tags, a number array or a mixed list: JSON's lists of whole numbers
+    // become int arrays and lists of mixed numbers mixed lists (see JsonNbt), and vanilla reads any of them.
+    private static IEnumerable<double> ListNumbers(NbtCompound tag, string name) =>
+        tag.TryGetTag(name, out var list) ? ListElements(list).Select(NumberOf).OfType<double>() : [];
+
+    /// <summary>
+    /// A list's elements, however it's saved: a list, a number array as number tags, or a list mixing types, whose
+    /// elements vanilla wraps under an empty key, unwrapped (see <see cref="JsonNbt"/>).
+    /// </summary>
+    internal static IEnumerable<INbtTag> ListElements(INbtTag list) => list switch
+    {
+        NbtList elements => elements.Select(Unwrapped),
+        NbtArray<int> ints => ints.GetArray().Select(value => (INbtTag)new NbtTag<int>(string.Empty, value)),
+        NbtArray<long> longs => longs.GetArray().Select(value => (INbtTag)new NbtTag<long>(string.Empty, value)),
+        NbtArray<byte> bytes => bytes.GetArray().Select(value => (INbtTag)new NbtTag<byte>(string.Empty, value)),
+        _ => []
+    };
+
+    // An element of a list mixing types, which vanilla saves under an empty key, as itself.
+    private static INbtTag Unwrapped(INbtTag element) =>
+        element is NbtCompound { Count: 1 } wrapper && wrapper.TryGetTag(string.Empty, out var wrapped)
+            ? wrapped
+            : element;
 
     private static DataComponent? AdditionalComponentFromNbt(string name, INbtTag tag)
     {
@@ -221,7 +271,7 @@ public partial class Extensions
             return writable with
             {
                 Value = pages.TryGetTag<NbtList>("pages", out var savedPages)
-                    ? [.. savedPages.Select(page => page is NbtCompound wrapper
+                    ? [.. ListElements(savedPages).Select(page => page is NbtCompound wrapper
                         ? new Page
                         {
                             RawContent = wrapper.SavedString("raw")!,
@@ -537,10 +587,10 @@ public partial class Extensions
         DataComponentType.EntityData or DataComponentType.BlockEntityData => EntityDataFromNbt(type, tag),
         DataComponentType.CustomModelData => new CustomModelDataComponent
         {
-            Floats = [.. ListValues<float>(tag, "floats")],
+            Floats = [.. ListNumbers(tag, "floats").Select(value => (float)value)],
             Flags = tag.TryGetTag<NbtList>("flags", out var flags) ? [.. flags.Select(ReadBoolean)] : [],
             Strings = [.. ListValues<string>(tag, "strings")],
-            Colors = [.. ListValues<int>(tag, "colors")]
+            Colors = [.. ListNumbers(tag, "colors").Select(value => (int)value)]
         },
         DataComponentType.LodestoneTracker => new LodestoneTrackerDataComponent
         {

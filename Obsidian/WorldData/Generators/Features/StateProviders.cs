@@ -2,7 +2,6 @@ using Obsidian.API.World.Features;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Generators.Density;
 using Obsidian.WorldData.Features;
-using System.IO;
 using System.Text.Json;
 
 namespace Obsidian.WorldData.Generators.Features;
@@ -16,7 +15,6 @@ internal delegate IBlock? StateProvider(IWorldGenLevel level, IRandomSource rand
 internal sealed partial class FeatureRegistry
 {
     private readonly Dictionary<string, StateProvider> providers = [];
-    private readonly HashSet<string> readingProviders = [];
 
     /// <summary>
     /// A provider: a reference into the <c>block_state_provider</c> registry, a typed provider, or a block state, which
@@ -26,7 +24,7 @@ internal sealed partial class FeatureRegistry
     {
         if (json.ValueKind == JsonValueKind.String)
         {
-            var id = json.GetString()!;
+            var id = WorldgenData.Qualify(json.GetString()!);
 
             if (!this.providers.TryGetValue(id, out var provider))
             {
@@ -44,7 +42,7 @@ internal sealed partial class FeatureRegistry
             return (_, _, _) => block;
         }
 
-        var type = typeJson.GetString();
+        var type = typeJson.GetString() is { } written ? WorldgenData.Qualify(written) : null;
 
         switch (type)
         {
@@ -80,20 +78,12 @@ internal sealed partial class FeatureRegistry
     }
 
     // A provider of the block_state_provider registry, which may be made of plugins' types and could name itself.
-    private StateProvider NamedProvider(string id)
-    {
-        if (!this.readingProviders.Add(id))
-            throw new InvalidDataException($"The block state provider {id} refers back to itself.");
-
-        try
-        {
-            return this.dependencies.Track(() => this.Provider(this.Data.Read("block_state_provider", id)));
-        }
-        finally
-        {
-            this.readingProviders.Remove(id);
-        }
-    }
+    // Like features, a plugin's or data pack's file wins over vanilla's entry, and one that fails leaves vanilla's
+    // in its place on the next lookup.
+    private StateProvider NamedProvider(string id) => this.Resolve(
+        "block_state_provider",
+        id,
+        () => this.Provider(this.Entry("block_state_provider", id)));
 
     /// <summary>A provider's <c>getState</c>: rule-based providers without a state keep the existing block.</summary>
     public static IBlock State(StateProvider provider, IWorldGenLevel level, IRandomSource random, Vector position) =>

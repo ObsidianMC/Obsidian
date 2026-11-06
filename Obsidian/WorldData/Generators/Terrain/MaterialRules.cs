@@ -204,7 +204,7 @@ internal sealed partial class MaterialRules
             return this.CompileEntry(this.rules, "material_rule", id, this.CompileRule);
         }
 
-        var type = json.GetProperty("type").GetString()!;
+        var type = WorldgenData.Qualify(json.GetProperty("type").GetString()!);
 
         switch (type)
         {
@@ -318,7 +318,7 @@ internal sealed partial class MaterialRules
             return this.CompileEntry(this.conditions, "material_condition", id, this.CompileCondition);
         }
 
-        var type = json.GetProperty("type").GetString()!;
+        var type = WorldgenData.Qualify(json.GetProperty("type").GetString()!);
 
         switch (type)
         {

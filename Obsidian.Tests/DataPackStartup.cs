@@ -1,22 +1,31 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
 using Obsidian.API.Configuration;
+using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
+using Obsidian.API.Loot;
 using Obsidian.API.Registries;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Commands.Framework;
+using Obsidian.Nbt;
 using Obsidian.Plugins;
 using Obsidian.Registries;
 using Obsidian.Services;
 using Obsidian.Tests.Fakes;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Obsidian.Tests.Utilities;
+using Obsidian.WorldData.Structures;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -337,8 +346,284 @@ public sealed class DataPackStartup : IDisposable
         }
     }
 
+    [Fact(DisplayName = "A pack written for older versions loads whole, like Terralith's does in vanilla")]
+    public async Task ReadsPacksWrittenForOlderVersions()
+    {
+        // Each file holds what one of Terralith's left out: types without a namespace, a named block-state provider,
+        // a fluid tag, a template pool's old "name" field, a 1.20.1 template's renamed blocks, and the loot functions
+        // and location check its chests use. Material rules were left out silently, so they're checked by reading.
+        var files = new Dictionary<string, byte[]>
+        {
+            ["pack.mcmeta"] = Encoding.UTF8.GetBytes(PackMetadata),
+            ["data/startuptest/worldgen/material_rule/surface.json"] = Json(MaterialRule),
+            ["data/startuptest/worldgen/block_state_provider/patch.json"] = Json(StateProvider),
+            ["data/startuptest/worldgen/feature/patch.json"] = Json(Feature),
+            ["data/startuptest/worldgen/placed_feature/patch.json"] = Json(PlacedFeature),
+            ["data/startuptest/worldgen/template_pool/hut.json"] = Json(TemplatePool),
+            ["data/startuptest/structure/hut.nbt"] = LegacyTemplate(),
+            ["data/startuptest/loot_table/chest.json"] = Json(ChestLoot)
+        };
+
+        foreach (var (path, bytes) in files)
+        {
+            var file = Path.Join(this.folder, "older", path);
+            Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+            File.WriteAllBytes(file, bytes);
+        }
+
+        var logger = new WarningLogger();
+        var manager = CreateManager(logger);
+
+        try
+        {
+            manager.FinishStartup(this.folder);
+
+            Assert.Empty(logger.Messages);
+            Assert.Equal("startuptest", PluginWorldgen.Data.Read("material_rule", "startuptest:surface")
+                .GetProperty("marker").GetString());
+            Assert.NotNull(PluginFeatures.CurrentRegistry.FeatureSet!.FindPlaced("startuptest:patch"));
+
+            // The pool with its old "name" loads, and the template startup read has 26.3's blocks for its old ones,
+            // not just any block that loads.
+            var structures = PluginStructures.CurrentRegistry;
+            Assert.Contains("startuptest:hut", structures.Pools.Keys);
+            var template = structures.Templates["startuptest:hut"];
+            Assert.Single(template.FilterBlocks(Vector.Zero, new StructurePlaceSettings(), BlockIds.ShortGrass));
+            Assert.Single(template.FilterBlocks(Vector.Zero, new StructurePlaceSettings(), BlockIds.IronChain));
+
+            // The instrument comes from a vanilla instrument tag, which has to hold the instruments to pick one.
+            var horn = Assert.Single(ChestItems());
+            Assert.True(horn.ContainsKey(DataComponentType.Instrument));
+            Assert.True(horn.HasEnchantmentGlint);
+            Assert.Equal(2, horn.Lore.Count);
+
+            // A float written as a whole number reads like vanilla's, and a patch making a damageable item
+            // stackable is undone, as vanilla's applyComponentsAndValidate does.
+            Assert.Equal(2f, horn.GetComponent<UseCooldownDataComponent>(DataComponentType.UseCooldown)!.Seconds);
+            Assert.Equal(5, horn.MaxDamage);
+            Assert.Equal(1, horn.MaxStackSize);
+
+            // Numbers of mixed types in a list read as numbers.
+            var model = horn.GetComponent<CustomModelDataComponent>(DataComponentType.CustomModelData)!;
+            Assert.Equal<float>([1f, 1.5f], model.Floats);
+
+            // A list of texts mixing strings, objects and lists is its first text with the rest as its extras, at any
+            // depth, so a nested list's first text styles the rest.
+            Assert.Equal("Wintry ", horn.CustomName!.Text);
+            var nested = Assert.Single(horn.CustomName.GetExtras());
+            Assert.Equal("Ho", nested.Text);
+            Assert.True(nested.Bold);
+            Assert.Equal("rn", Assert.Single(nested.GetExtras()).Text);
+            Assert.Equal("Horn", Assert.Single(horn.ItemName!.GetExtras()).Text);
+
+            // A mixed list keeps each element's type, as vanilla's does: a plain page beside a filtered one, a
+            // translation's number argument beside a text (written as Java writes them), and a long a double can't hold
+            // beside a float.
+            var pages = horn.GetComponent<SimpleDataComponent<ImmutableArray<Page>>>(
+                DataComponentType.WritableBookContent)!.Value;
+            Assert.Equal(["first", "second"], pages.Select(page => page.RawContent));
+            Assert.Equal(
+                ["12", "blocks", "true", "1.0E-5", "1.23456789E7", "100.0", "4.9E-324"],
+                horn.Lore[1].With!.Select(argument => argument.Text));
+
+            var data = horn.GetComponent<SimpleDataComponent<NbtCompound>>(DataComponentType.CustomData)!.Value;
+            var values = Obsidian.API.Utilities.Extensions.ListElements(data["values"]).ToList();
+            Assert.Equal(9007199254740993L, Assert.IsType<NbtTag<long>>(values[0]).Value);
+        }
+        finally
+        {
+            await manager.DisposeAsync();
+            PluginCodecs.Apply([], NullLogger.Instance, levelsCreated: false);
+            PluginNoise.Apply([], [], NullLogger.Instance);
+            PluginDimensions.Apply([], NullLogger.Instance);
+            PluginFeatures.Apply([], [], [], new HashSet<string>(), NullLogger.Instance);
+            PluginLootTables.Apply([]);
+            PluginStructures.Apply([], [], PluginFeatures.Current, [], NullLogger.Instance);
+        }
+    }
+
+    private const string MaterialRule = """
+        { "type": "block", "result_state": { "id": "minecraft:stone" }, "marker": "startuptest" }
+        """;
+
+    private const string StateProvider = """
+        { "type": "simple", "state": { "id": "minecraft:moss_block" } }
+        """;
+
+    private const string Feature = """
+        { "type": "simple_block", "to_place": "startuptest:patch" }
+        """;
+
+    private const string PlacedFeature = """
+        {
+          "feature": "startuptest:patch",
+          "placement": [
+            { "type": "count", "count": { "type": "constant", "value": 1 } },
+            {
+              "type": "block_predicate_filter",
+              "predicate": {
+                "type": "all_of",
+                "predicates": [
+                  { "type": "not", "predicate": { "type": "matching_fluids", "fluids": "#minecraft:water" } }
+                ]
+              }
+            }
+          ]
+        }
+        """;
+
+    private const string TemplatePool = """
+        {
+          "name": "hut",
+          "fallback": "minecraft:empty",
+          "elements": [
+            {
+              "weight": 1,
+              "element": {
+                "element_type": "minecraft:single_pool_element",
+                "location": "startuptest:hut",
+                "processors": "minecraft:empty",
+                "projection": "rigid"
+              }
+            }
+          ]
+        }
+        """;
+
+    private const string ChestLoot = """
+        {
+          "pools": [
+            {
+              "rolls": 1,
+              "condition": {
+                "type": "minecraft:location_check",
+                "predicate": { "position": { "y": { "min": 0 } } }
+              },
+              "entries": [{ "type": "minecraft:item", "name": "minecraft:goat_horn" }],
+              "modifier": [
+                { "type": "minecraft:set_instrument", "options": "#minecraft:regular_goat_horns" },
+                {
+                  "type": "minecraft:set_components",
+                  "components": {
+                    "minecraft:enchantment_glint_override": true,
+                    "minecraft:use_cooldown": { "seconds": 2 },
+                    "minecraft:max_damage": 5,
+                    "minecraft:custom_model_data": { "floats": [1, 1.5] },
+                    "minecraft:item_name": ["Goat ", { "text": "Horn" }],
+                    "minecraft:writable_book_content": {
+                      "pages": ["first", { "raw": "second", "filtered": "safe" }]
+                    },
+                    "minecraft:custom_data": { "values": [9007199254740993, 0.5] }
+                  }
+                },
+                { "type": "minecraft:set_components", "components": { "minecraft:max_stack_size": 16 } },
+                {
+                  "type": "minecraft:set_name",
+                  "entity": "this",
+                  "name": ["Wintry ", [{ "text": "Ho", "bold": true }, "rn"]]
+                },
+                {
+                  "type": "minecraft:set_lore",
+                  "mode": "append",
+                  "lore": [
+                    {
+                      "text": "Found in an igloo",
+                      "hover_event": { "action": "show_text", "value": ["Cold ", { "text": "and snowy" }] }
+                    },
+                    {
+                      "translate": "startuptest.depth",
+                      "with": [12, { "text": "blocks" }, true, 0.00001, 12345678.9, 100.0, 5e-324]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+        """;
+
+    private static byte[] Json(string json) => Encoding.UTF8.GetBytes(json);
+
+    // The chest's loot for a chest above y 0, as its location check needs.
+    private static List<ItemStack> ChestItems()
+    {
+        var table = PluginLootTables.Resolve("startuptest:chest");
+        Assert.NotNull(table);
+
+        return table.GetRandomItems(new LootContext
+        {
+            Random = new LegacyRandomSource(1),
+            Origin = new VectorD(0.5, 64.5, 0.5)
+        });
+    }
+
+    // A 1.20.1 template (DataVersion 3465) of a grass block and a chain, which 26.3 calls short grass and an iron
+    // chain. Like vanilla's saves, its DataVersion comes after its palette.
+    private static byte[] LegacyTemplate()
+    {
+        using var stream = new MemoryStream();
+
+        using (var writer = new NbtWriterStream(stream, NbtCompression.GZip, ""))
+        {
+            writer.WriteTag(new NbtList(NbtTagType.Int, "size")
+            {
+                new NbtTag<int>(string.Empty, 1),
+                new NbtTag<int>(string.Empty, 2),
+                new NbtTag<int>(string.Empty, 1)
+            });
+            writer.WriteTag(new NbtList(NbtTagType.Compound, "palette")
+            {
+                new NbtCompound { new NbtTag<string>("Name", "minecraft:grass") },
+                new NbtCompound { new NbtTag<string>("Name", "minecraft:chain") }
+            });
+            writer.WriteTag(new NbtList(NbtTagType.Compound, "blocks")
+            {
+                LegacyBlock(y: 0, state: 0),
+                LegacyBlock(y: 1, state: 1)
+            });
+            writer.WriteTag(new NbtList(NbtTagType.Compound, "entities"));
+            writer.WriteTag(new NbtTag<int>("DataVersion", 3465));
+            writer.EndCompound();
+            writer.TryFinish();
+        }
+
+        return stream.ToArray();
+    }
+
+    private static NbtCompound LegacyBlock(int y, int state) => new()
+    {
+        new NbtList(NbtTagType.Int, "pos")
+        {
+            new NbtTag<int>(string.Empty, 0),
+            new NbtTag<int>(string.Empty, y),
+            new NbtTag<int>(string.Empty, 0)
+        },
+        new NbtTag<int>("state", state)
+    };
+
+    // Records what startup warns of or fails at; reading a pack logs only information when it reads every file.
+    private sealed class WarningLogger : ILogger<PluginManager>
+    {
+        public List<string> Messages { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => logLevel >= LogLevel.Warning;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            if (this.IsEnabled(logLevel))
+                this.Messages.Add($"{formatter(state, exception)} {exception?.Message}");
+        }
+    }
+
     // A plugin manager with no plugins, as the server creates it, during startup: no world is loaded yet.
-    private static PluginManager CreateManager()
+    private static PluginManager CreateManager(ILogger<PluginManager>? logger = null)
     {
         var world = TestWorldFactory.Create($"fake-server-{Guid.NewGuid():N}");
         var server = new FakeServer(world, worldManager: new FakeWorldManager(world, worldsLoaded: false));
@@ -356,7 +641,7 @@ public sealed class DataPackStartup : IDisposable
             provider,
             dispatcher,
             commands,
-            NullLogger<PluginManager>.Instance,
+            logger ?? NullLogger<PluginManager>.Instance,
             new ConfigurationBuilder().Build());
     }
 }

@@ -118,6 +118,57 @@ public partial class Extensions
         return stack;
     }
 
+    /// <summary>
+    /// Reads a component patch written as JSON, like a loot table's <c>set_components</c>: the components it sets,
+    /// read like a saved stack's, and the types its <c>!</c> entries remove.
+    /// </summary>
+    /// <exception cref="InvalidDataException">It sets a component Obsidian doesn't model, or removes one that doesn't
+    /// exist.</exception>
+    internal static (ImmutableArray<DataComponent> Set, ImmutableArray<DataComponentType> Removed)
+        ComponentPatchFromJson(System.Text.Json.JsonElement json)
+    {
+        var set = ImmutableArray.CreateBuilder<DataComponent>();
+        var removed = ImmutableArray.CreateBuilder<DataComponentType>();
+
+        foreach (var property in json.EnumerateObject())
+        {
+            // Like vanilla's identifiers, a component's id without a namespace is vanilla's.
+            var removes = property.Name.StartsWith('!');
+            var id = removes ? property.Name[1..] : property.Name;
+            var name = id.Contains(':') ? id : $"minecraft:{id}";
+
+            if (removes)
+            {
+                removed.Add(componentTypesById.TryGetValue(name, out var type)
+                    ? type
+                    : throw new InvalidDataException($"There is no component {name} to remove."));
+                continue;
+            }
+
+            set.Add(ComponentFromJson(name, property.Value));
+        }
+
+        return (set.ToImmutable(), removed.ToImmutable());
+    }
+
+    // The readers of saved components fail in many ways on a value that isn't one; any failure is the value's, so that
+    // only the file holding it is left out.
+    private static DataComponent ComponentFromJson(string name, System.Text.Json.JsonElement value)
+    {
+        DataComponent? component;
+
+        try
+        {
+            component = ComponentFromNbt(name, JsonNbt.ToNbt(name, value));
+        }
+        catch (Exception error) when (error is not (OutOfMemoryException or InvalidDataException))
+        {
+            throw new InvalidDataException($"{name} isn't a valid component: {error.Message}", error);
+        }
+
+        return component ?? throw new InvalidDataException($"Obsidian can't set the component {name} yet.");
+    }
+
     // The fields of Obsidian's previous item tag.
     private static IEnumerable<DataComponent> LegacyComponents(NbtCompound tag)
     {
@@ -134,6 +185,9 @@ public partial class Extensions
     /// </summary>
     internal static ChatMessage? TextFromNbt(this INbtTag tag) => tag switch
     {
+        // An element of a list that mixes strings, compounds and lists, wrapped under an empty key, as vanilla saves
+        // such lists (see JsonNbt).
+        NbtCompound { Count: 1 } wrapper when wrapper.HasTag(string.Empty) => Unwrapped(wrapper).TextFromNbt(),
         NbtTag<string> text => ChatMessage.Simple(text.Value ?? string.Empty),
         NbtCompound compound => ChatMessage.Empty.FromNbt(compound),
         NbtList { Count: > 0 } list when list[0].TextFromNbt() is { } first =>

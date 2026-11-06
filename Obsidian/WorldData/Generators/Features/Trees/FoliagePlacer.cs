@@ -25,7 +25,7 @@ internal abstract class FoliagePlacer
 
     public static FoliagePlacer Read(FeatureRegistry registry, JsonElement json)
     {
-        var type = json.GetProperty("type").GetString();
+        var type = FeatureRegistry.TypeOf(json);
 
         return type switch
         {

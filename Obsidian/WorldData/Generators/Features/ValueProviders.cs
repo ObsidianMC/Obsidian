@@ -1,4 +1,5 @@
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.WorldData.Generators.Density;
 using System.Text.Json;
 
 namespace Obsidian.WorldData.Generators.Features;
@@ -25,7 +26,7 @@ internal sealed partial class FeatureRegistry
             return _ => value;
         }
 
-        var type = json.GetProperty("type").GetString();
+        var type = TypeOf(json);
 
         switch (type)
         {
@@ -85,7 +86,7 @@ internal sealed partial class FeatureRegistry
             return _ => value;
         }
 
-        var type = json.GetProperty("type").GetString();
+        var type = TypeOf(json);
 
         switch (type)
         {
@@ -126,7 +127,7 @@ internal sealed partial class FeatureRegistry
             return (_, minY, height) => anchor(minY, height);
         }
 
-        var type = typeJson.GetString();
+        var type = typeJson.GetString() is { } written ? WorldgenData.Qualify(written) : null;
 
         switch (type)
         {

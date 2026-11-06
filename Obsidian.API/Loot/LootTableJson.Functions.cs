@@ -49,6 +49,17 @@ public static partial class LootTableJson
             .ToImmutableArray();
     }
 
+    internal static ImmutableArray<InstrumentDefinition>? ReadInstrumentOptions(JsonElement? options)
+    {
+        if (options is not JsonElement set)
+            return null;
+
+        return RegistrySetIds(set, "instrument")
+            .Select(id => InstrumentsRegistry.All.FirstOrDefault(definition => definition.Identifier == id)
+                ?? throw new InvalidDataException($"Unknown instrument option {id}."))
+            .ToImmutableArray();
+    }
+
     private static LootFunction ReadFunction(JsonElement json)
     {
         if (json.ValueKind == JsonValueKind.Array)
@@ -117,6 +128,34 @@ public static partial class LootTableJson
                 };
             case "minecraft:exploration_map":
                 return ReadExplorationMap(json, conditions);
+            case "minecraft:set_name":
+                return new SetNameFunction
+                {
+                    Conditions = conditions,
+                    Name = json.TryGetProperty("name", out var name) ? ReadText(name) : null,
+                    Target = ReadNameTarget(json)
+                };
+            case "minecraft:set_lore":
+                var lore = ReadArray(json, "lore", ReadText);
+                var operation = ReadLoreOperation(json);
+                return new DataFunction((stack, _) => SetLore(stack, lore, operation))
+                {
+                    Conditions = conditions
+                };
+            case "minecraft:set_components":
+                var (components, removed) = Extensions.ComponentPatchFromJson(json.GetProperty("components"));
+                return new DataFunction((stack, _) => SetComponents(stack, components, removed))
+                {
+                    Conditions = conditions
+                };
+            case "minecraft:set_instrument":
+                var instruments = json.GetProperty("options").Clone();
+                _ = ReadInstrumentOptions(instruments);
+                return new SetInstrumentFunction
+                {
+                    Conditions = conditions,
+                    OptionsSet = instruments
+                };
             case "minecraft:set_stew_effect":
                 return new SetStewEffectFunction
                 {
@@ -184,6 +223,92 @@ public static partial class LootTableJson
             default:
                 throw new InvalidDataException($"Unsupported loot function {type}.");
         }
+    }
+
+    // A text component as data packs write it, read like a saved one: vanilla's text codec reads either. Lists that
+    // mix strings and objects become NBT lists of wrapped elements, as vanilla saves them (see JsonNbt).
+    private static ChatMessage ReadText(JsonElement json) =>
+        JsonNbt.ToNbt(string.Empty, json).TextFromNbt()
+            ?? throw new InvalidDataException($"{json.GetRawText()} isn't a text component.");
+
+    private static NameTarget ReadNameTarget(JsonElement json)
+    {
+        if (!json.TryGetProperty("target", out var target))
+            return NameTarget.CustomName;
+
+        return target.GetString() switch
+        {
+            "custom_name" => NameTarget.CustomName,
+            "item_name" => NameTarget.ItemName,
+            var other => throw new InvalidDataException($"Unknown set_name target {other}.")
+        };
+    }
+
+    // Vanilla's ListOperation for set_lore's "mode": where the new lines go in the stack's lore.
+    private sealed record LoreOperation(string Mode, int Offset, int? Size);
+
+    private static LoreOperation ReadLoreOperation(JsonElement json)
+    {
+        var mode = Text(json, "mode");
+        if (mode is not ("append" or "insert" or "replace_all" or "replace_section"))
+            throw new InvalidDataException($"Unknown set_lore mode {mode}.");
+
+        var offset = json.TryGetProperty("offset", out var offsetJson) ? offsetJson.GetInt32() : 0;
+        int? size = json.TryGetProperty("size", out var sizeJson) ? sizeJson.GetInt32() : null;
+
+        // Vanilla's list operations take only offsets and sizes from 0.
+        if (offset < 0 || size < 0)
+            throw new InvalidDataException("set_lore's offset and size can't be negative.");
+
+        return new LoreOperation(mode, offset, size);
+    }
+
+    // Like vanilla's list operations, an offset past the lore's end, or lore longer than its 256 lines, keeps the
+    // lore as it was.
+    private static ItemStack SetLore(ItemStack stack, ImmutableArray<ChatMessage> lines, LoreOperation operation)
+    {
+        const int maxLines = 256;
+
+        var lore = stack.Lore;
+        var offset = operation.Offset;
+        if (operation.Mode is "insert" or "replace_section" && offset > lore.Count)
+            return stack;
+
+        // A replaced section is as long as the new lines unless the operation gives its size.
+        var replacedEnd = offset + (operation.Size ?? lines.Length);
+
+        List<ChatMessage> result = operation.Mode switch
+        {
+            "append" => [.. lore, .. lines],
+            "insert" => [.. lore.Take(offset), .. lines, .. lore.Skip(offset)],
+            "replace_section" => [.. lore.Take(offset), .. lines, .. lore.Skip(replacedEnd)],
+            _ => [.. lines]
+        };
+
+        if (result.Count > maxLines)
+            return stack;
+
+        LootItems.Set(stack, ComponentBuilder.Lore with { Value = [.. result] });
+        return stack;
+    }
+
+    // Vanilla's set_components applies its patch to the stack: each component it sets replaces the stack's, and each
+    // one it removes is gone. Like vanilla's applyComponentsAndValidate, a patch leaving the stack invalid (a
+    // damageable item made stackable) is undone. Components are immutable, so stacks can share them.
+    private static ItemStack SetComponents(
+        ItemStack stack,
+        ImmutableArray<DataComponent> components,
+        ImmutableArray<DataComponentType> removed)
+    {
+        var patched = new ItemStack(stack, stack.Count);
+
+        foreach (var component in components)
+            LootItems.Set(patched, component);
+
+        foreach (var type in removed)
+            patched.Remove(type);
+
+        return ItemStackValidation.IsValid(patched) ? patched : stack;
     }
 
     private static bool ReadFlag(JsonElement json, string name, bool fallback) =>

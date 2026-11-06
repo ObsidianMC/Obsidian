@@ -1,5 +1,6 @@
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
+using System.Text.Json;
 
 namespace Obsidian.API.Loot.Functions;
 
@@ -12,14 +13,18 @@ public sealed class SetInstrumentFunction : LootFunction
     /// <summary>
     /// The instruments of an instrument tag, in tag order.
     /// </summary>
-    public required ImmutableArray<InstrumentDefinition> Options { get; init; }
+    public ImmutableArray<InstrumentDefinition> Options { get; init; } = [];
+
+    // A data pack's options, resolved as the function runs so that it sees the current tags.
+    internal JsonElement? OptionsSet { get; init; }
 
     protected override ItemStack Run(ItemStack stack, LootContext context)
     {
-        if (this.Options.Length == 0)
+        var options = LootTableJson.ReadInstrumentOptions(this.OptionsSet) ?? this.Options;
+        if (options.Length == 0)
             return stack;
 
-        var instrument = this.Options[context.Random.NextInt(this.Options.Length)];
+        var instrument = options[context.Random.NextInt(options.Length)];
         LootItems.Set(stack, ComponentBuilder.Instrument with { Value = instrument.ToInstrumentData() });
         return stack;
     }

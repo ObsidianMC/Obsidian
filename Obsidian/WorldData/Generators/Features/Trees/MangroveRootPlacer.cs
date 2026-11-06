@@ -11,7 +11,7 @@ internal abstract class RootPlacer
 {
     public static RootPlacer Read(FeatureRegistry registry, JsonElement json)
     {
-        var type = json.GetProperty("type").GetString();
+        var type = FeatureRegistry.TypeOf(json);
 
         if (type == "minecraft:mangrove_root_placer")
         {

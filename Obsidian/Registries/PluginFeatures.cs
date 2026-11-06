@@ -59,11 +59,16 @@ internal static partial class PluginFeatures
     public const string ProcessorList = "worldgen/processor_list";
 
     /// <summary>
-    /// The folders of plugins' feature, carver, processor list and biome modifier files.
+    /// 26.3's block-state providers, which features name by identifier where they take a provider.
+    /// </summary>
+    public const string BlockStateProvider = "worldgen/block_state_provider";
+
+    /// <summary>
+    /// The folders of plugins' feature, carver, processor list, block-state provider and biome modifier files.
     /// </summary>
     public static FrozenSet<string> Registries { get; } =
         FrozenSet.Create(ConfiguredFeature, Feature, PlacedFeature, ConfiguredCarver, Carver,
-            BiomeModifier, ProcessorList);
+            BiomeModifier, ProcessorList, BlockStateProvider);
 
     private static readonly Lock applying = new();
 
@@ -164,7 +169,8 @@ internal static partial class PluginFeatures
             var modifier = registry switch
             {
                 BiomeModifier => BiomeModifierData.Read(root),
-                ConfiguredFeature or Feature or PlacedFeature or ConfiguredCarver or ProcessorList => null,
+                ConfiguredFeature or Feature or PlacedFeature or ConfiguredCarver or ProcessorList
+                    or BlockStateProvider => null,
                 _ => throw new ArgumentException($"{registry} isn't read from plugins' files.", nameof(registry))
             };
 

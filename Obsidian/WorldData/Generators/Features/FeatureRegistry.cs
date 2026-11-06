@@ -183,6 +183,18 @@ internal sealed partial class FeatureRegistry(WorldgenData data)
         return new PlacedFeature(id, feature, modifiers);
     }
 
+    /// <summary>
+    /// A value's type as vanilla's codecs read it: one without a namespace is vanilla's, so data packs may write
+    /// <c>all_of</c> for <c>minecraft:all_of</c>.
+    /// </summary>
+    /// <param name="property">The field naming the type, like <c>predicate_type</c> for rule tests.</param>
+    internal static string? TypeOf(JsonElement json, string property = "type")
+    {
+        var type = json.GetProperty(property).GetString();
+
+        return type is null ? null : WorldgenData.Qualify(type);
+    }
+
     private Feature CompileFeature(JsonElement json, string? id = null)
     {
         json = FlattenFeature(json);
