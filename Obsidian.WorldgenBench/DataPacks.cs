@@ -58,7 +58,7 @@ internal static class DataPacks
         };
     }
 
-    // Warnings and errors only, so a pack's unread or failing files show.
+    // Information and above, so which packs loaded and what their files replaced, left out or failed to read shows.
     private sealed class ConsoleLogger<T> : ILogger<T>
     {
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
