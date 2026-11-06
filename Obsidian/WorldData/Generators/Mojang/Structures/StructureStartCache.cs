@@ -49,11 +49,24 @@ internal sealed class StructureStartCache
     private readonly ConcurrentDictionary<
         (int X, int Z, StructureLayout Layout, ChunkStarts? Previous), Creation> creating = new();
 
-    // A factory can ask for starts in this or another cache. Nested requests must not wait: even different keys can
-    // form a cycle between two creators. They retain the original recomputation/publication path instead. Only a
-    // depth is kept, so idle threads cannot retain a cache or an unloaded plugin.
-    [ThreadStatic]
-    private static int creationDepth;
+    // Factories can dispatch nested requests to tasks and synchronously await them. Carry nesting with that logical
+    // flow, including across caches, so those requests recompute instead of waiting for the creator they must release.
+    // Captured contexts retain only an integer, never a cache or a plugin; each factory restores its incoming depth.
+    private static readonly AsyncLocal<int> creationDepth = new();
+
+    // Ordinary starts take milliseconds; allow a second for cold/template-heavy work before duplicating it. Dispatch
+    // that suppresses context flow can hide a dependency on this creator, so waiting must still be bounded. On expiry
+    // use the original deterministic computation and publication checks, without disturbing the creator's notice.
+    private const int CreationWaitMilliseconds = 1000;
+
+    // Test barriers at the wait/retry boundaries, both outside the publication gate.
+    internal Action<CreationWaitStep>? ObserveCreationWait { get; init; }
+
+    internal enum CreationWaitStep
+    {
+        Waiting,
+        Retrying
+    }
 
     // Residents and generation leases pin every start chunk within the reference radius. Under the gate.
     private readonly HashSet<IChunk> residents = [];
@@ -247,16 +260,26 @@ internal sealed class StructureStartCache
         result = null;
         var creationKey = (key.X, key.Z, layout, previous);
         Creation? owned = null;
-        if (creationDepth == 0)
+        if (creationDepth.Value == 0)
         {
-            owned = new Creation();
-            var pending = this.creating.GetOrAdd(creationKey, owned);
-            if (!ReferenceEquals(pending, owned))
+            var candidate = new Creation();
+            var pending = this.creating.GetOrAdd(creationKey, candidate);
+            if (ReferenceEquals(pending, candidate))
+            {
+                owned = candidate;
+            }
+            else
             {
                 // This is a completion notice, not a cached result: eviction or pruning can replace the published
                 // entry before this thread wakes. Re-read it rather than returning a possibly retired start.
-                pending.Wait();
-                return false;
+                this.ObserveCreationWait?.Invoke(CreationWaitStep.Waiting);
+                if (pending.Wait())
+                {
+                    this.ObserveCreationWait?.Invoke(CreationWaitStep.Retrying);
+                    return false;
+                }
+
+                // The wait expired: compute independently, without owning or removing the pending notice.
             }
         }
 
@@ -270,14 +293,15 @@ internal sealed class StructureStartCache
                 return false;
 
             ChunkStarts made;
-            creationDepth++;
+            var incomingDepth = creationDepth.Value;
+            creationDepth.Value = incomingDepth + 1;
             try
             {
                 made = ChunkStarts.Make(layout, previous, key.X, key.Z, create);
             }
             finally
             {
-                creationDepth--;
+                creationDepth.Value = incomingDepth;
             }
 
             // No factory or wait runs under the publication gate. In particular, nested creation may have
@@ -325,7 +349,14 @@ internal sealed class StructureStartCache
         private readonly TaskCompletionSource<ExceptionDispatchInfo?> completion =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public void Wait() => this.completion.Task.GetAwaiter().GetResult()?.Throw();
+        public bool Wait()
+        {
+            if (!this.completion.Task.Wait(CreationWaitMilliseconds))
+                return false;
+
+            this.completion.Task.GetAwaiter().GetResult()?.Throw();
+            return true;
+        }
 
         public void Complete(ExceptionDispatchInfo? failure) => this.completion.SetResult(failure);
     }

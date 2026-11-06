@@ -276,6 +276,175 @@ public sealed class StructureStartCreation
         Assert.Equal(newLayout.Version, resumed.Version);
     }
 
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ReviewTaskDispatchedReentrancyCompletesBeforeItsOwnerReturns()
+    {
+        var cache = new StructureStartCache
+        {
+            ObserveCreationWait = _ => Assert.Fail("A logically nested request must not join its creator's notice.")
+        };
+        var layout = Layout();
+        Task<StructureStartCache.ChunkStarts?>? nested = null;
+        var completedBeforeOwnerReturned = false;
+
+        StructureStart Leaf(StructureLayout _, StructureSet set, int x, int z, out bool refused)
+        {
+            refused = false;
+            return Start(set, x, z);
+        }
+
+        StructureStart Create(StructureLayout _, StructureSet set, int x, int z, out bool refused)
+        {
+            refused = false;
+            nested = Task.Run(() => cache.Get(x, z, layout, Leaf));
+
+            // Bound the reproduction so a cycle is released and every task is joined before the test exits.
+            completedBeforeOwnerReturned = nested.Wait(TimeSpan.FromSeconds(2));
+            return Start(set, x, z);
+        }
+
+        var owner = Request(() => cache.Get(0, 0, layout, Create));
+        await owner.Result.WaitAsync(Timeout);
+        Assert.NotNull(nested);
+        await nested.WaitAsync(Timeout);
+
+        Assert.True(completedBeforeOwnerReturned,
+            "The nested request waited for the owner that was synchronously waiting for the nested request.");
+    }
+
+    [Theory(Timeout = TestServerFactory.TestTimeout)]
+    [InlineData(ContextFreeDispatch.SuppressedTask)]
+    [InlineData(ContextFreeDispatch.UnsafeWorkItem)]
+    [InlineData(ContextFreeDispatch.DedicatedThread)]
+    public async Task ContextFreeReentrancyRecomputesBeforeItsOwnerReturns(ContextFreeDispatch dispatch)
+    {
+        var cache = new StructureStartCache();
+        var layout = Layout();
+        Task<StructureStartCache.ChunkStarts?>? nested = null;
+        var completedBeforeOwnerReturned = false;
+
+        StructureStart Leaf(StructureLayout _, StructureSet set, int x, int z, out bool refused)
+        {
+            refused = false;
+            return Start(set, x, z);
+        }
+
+        StructureStart Create(StructureLayout _, StructureSet set, int x, int z, out bool refused)
+        {
+            refused = false;
+            nested = DispatchWithoutContext(() => cache.Get(x, z, layout, Leaf), dispatch);
+
+            // The bounded parent wait also releases a broken implementation, so both requests can be joined on failure.
+            completedBeforeOwnerReturned = nested.Wait(TimeSpan.FromSeconds(3));
+            return Start(set, x, z);
+        }
+
+        var owner = Request(() => cache.Get(0, 0, layout, Create));
+        var result = await owner.Result.WaitAsync(Timeout);
+        Assert.NotNull(nested);
+        var nestedResult = await nested.WaitAsync(Timeout);
+
+        Assert.True(completedBeforeOwnerReturned, "Dispatch without context flow waited for its own parent creator.");
+        Assert.Same(Assert.Single(nestedResult!.Starts), Assert.Single(result!.Starts));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task AWaiterResumingAfterEvictionReadsTheRecreatedEntry()
+    {
+        var layout = Layout();
+        var resident = new Chunk(0, 0);
+        using var creating = new ManualResetEventSlim();
+        using var publish = new ManualResetEventSlim();
+        using var joined = new ManualResetEventSlim();
+        using var retrying = new ManualResetEventSlim();
+        using var resume = new ManualResetEventSlim();
+        var cache = new StructureStartCache
+        {
+            ObserveCreationWait = step =>
+            {
+                if (step == StructureStartCache.CreationWaitStep.Waiting)
+                {
+                    joined.Set();
+                }
+                else
+                {
+                    retrying.Set();
+                    Assert.True(resume.Wait(Timeout));
+                }
+            }
+        };
+        cache.Track(resident);
+
+        StructureStart Create(StructureLayout _, StructureSet set, int x, int z, out bool refused)
+        {
+            refused = false;
+            creating.Set();
+            Assert.True(publish.Wait(Timeout));
+            return Start(set, x, z);
+        }
+
+        var owner = Request(() => cache.Get(0, 0, layout, Create));
+        Task<StructureStartCache.ChunkStarts?>? waiter = null;
+        StructureStart? current = null;
+        try
+        {
+            Assert.True(creating.Wait(Timeout));
+            waiter = Request(() => cache.Get(0, 0, layout, Create)).Result;
+            Assert.True(joined.Wait(Timeout));
+            publish.Set();
+            var original = Assert.Single((await owner.Result.WaitAsync(Timeout))!.Starts);
+
+            // The owner has published and notified the joined waiter, whose retry is held before its cache read.
+            Assert.True(retrying.Wait(Timeout));
+            cache.Untrack(resident);
+            Assert.Equal(0, cache.Count);
+            current = Assert.Single(cache.Get(0, 0, layout, Create)!.Starts);
+            Assert.NotSame(original, current);
+        }
+        finally
+        {
+            publish.Set();
+            resume.Set();
+        }
+
+        Assert.NotNull(waiter);
+        var result = await waiter.WaitAsync(Timeout);
+        Assert.Same(current, Assert.Single(result!.Starts));
+    }
+
+    public enum ContextFreeDispatch
+    {
+        SuppressedTask,
+        UnsafeWorkItem,
+        DedicatedThread
+    }
+
+    private static Task<T> DispatchWithoutContext<T>(Func<T> read, ContextFreeDispatch dispatch)
+    {
+        if (dispatch == ContextFreeDispatch.UnsafeWorkItem)
+        {
+            var result = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+            ThreadPool.UnsafeQueueUserWorkItem(_ =>
+            {
+                try
+                {
+                    result.SetResult(read());
+                }
+                catch (Exception exception)
+                {
+                    result.SetException(exception);
+                }
+            }, null);
+            return result.Task;
+        }
+
+        using var flow = ExecutionContext.SuppressFlow();
+        if (dispatch == ContextFreeDispatch.SuppressedTask)
+            return Task.Run(read);
+
+        return Request(read).Result;
+    }
+
     private static StructureLayout Layout(long version = 1)
     {
         var structure = new ProbeStructure
