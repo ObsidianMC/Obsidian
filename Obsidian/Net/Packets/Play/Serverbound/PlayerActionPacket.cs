@@ -73,13 +73,14 @@ public partial class PlayerActionPacket
     // eyes is read first, as the level's tick lock goes before the inventory's.
     private async ValueTask<bool> BreaksAtOnceAsync(IClientPlayer player, IBlock block)
     {
-        if (this.Status != PlayerActionStatus.StartedDigging || player.GameMode == GameMode.Spectator)
+        // Air has nothing to break, in any game mode.
+        if (this.Status != PlayerActionStatus.StartedDigging || player.GameMode == GameMode.Spectator || block.IsAir)
             return false;
 
         if (player.GameMode == GameMode.Creative)
             return true;
 
-        if (block.IsAir || player is not PlayerBase miner)
+        if (player is not PlayerBase miner)
             return false;
 
         var eyeInWater = miner.IsEyeInWater();
