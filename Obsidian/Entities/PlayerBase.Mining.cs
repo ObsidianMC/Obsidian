@@ -18,7 +18,11 @@ public partial class PlayerBase
     /// eyes in water (unless Aqua Affinity) and off the ground, then divided by the block's hardness and 30 with the
     /// right tool for its drops, or 100 without.
     /// </remarks>
-    internal float DestroyProgress(IBlock block)
+    /// <param name="eyeInWater">
+    /// Whether the player's eyes are in water (<see cref="IsEyeInWater"/>), taken before the player's inventory is
+    /// locked for the rest: reading the level takes its tick lock, which placement takes before the inventory's.
+    /// </param>
+    internal float DestroyProgress(IBlock block, bool eyeInWater)
     {
         var hardness = BlockPhysics.MiningHardness(block.GetHashCode());
         if (hardness == -1)
@@ -27,11 +31,11 @@ public partial class PlayerBase
         var tool = this.GetHeldItem();
         var divisor = ItemTools.HasCorrectTool(block, tool) ? 30 : 100;
 
-        return this.DestroySpeed(block, tool) / hardness / divisor;
+        return this.DestroySpeed(block, tool, eyeInWater) / hardness / divisor;
     }
 
     // Vanilla's Player.getDestroySpeed.
-    private float DestroySpeed(IBlock block, ItemStack? tool)
+    private float DestroySpeed(IBlock block, ItemStack? tool, bool eyeInWater)
     {
         // Efficiency and Aqua Affinity reach these attributes as equipment modifiers (see UpdateEquipmentAttributes),
         // which the player's client is sent, as vanilla's client only knows them from the server.
@@ -49,7 +53,7 @@ public partial class PlayerBase
 
         speed *= this.GetAttributeValue("minecraft:block_break_speed");
 
-        if (this.IsEyeInWater())
+        if (eyeInWater)
             speed *= this.GetAttributeValue("minecraft:submerged_mining_speed");
 
         if (!this.MovementFlags.HasFlag(MovementFlags.OnGround))
@@ -58,25 +62,32 @@ public partial class PlayerBase
         return speed;
     }
 
-    // Vanilla's EntityFluidInteraction: the eyes are in water when the water in their block reaches them, its surface
-    // at the camera's height for it, which fills the block for a source under a sturdy ceiling.
-    private bool IsEyeInWater()
+    /// <summary>
+    /// Vanilla's <c>EntityFluidInteraction</c>: the eyes are in water when the water in their block reaches them, its
+    /// surface at the camera's height for it, which fills the block for a source under a sturdy ceiling.
+    /// </summary>
+    internal bool IsEyeInWater()
     {
         if (this.Level is not AbstractLevel level)
             return false;
 
         var eye = EyePosition(this);
         var position = (Vector)eye.Floor();
-        var fluid = FluidState.Of(level.Fluids.GetBlock(position));
-        if (!fluid.IsWater)
-            return false;
-
-        // Water above fills the block too, as vanilla's getHeight has it.
         var above = position + Vector.Up;
-        var ceiling = fluid.IsSource && level.IsFaceSturdy(above, BlockFace.Down);
-        var full = ceiling || FluidState.Of(level.Fluids.GetBlock(above)).IsWater;
-        var height = full ? 1 : fluid.OwnHeight;
 
-        return eye.Y <= position.Y + height;
+        // The level's chunks are only read under its tick lock, as they're tracked and untracked under it.
+        lock (level.Fluids.TickLock)
+        {
+            var fluid = FluidState.Of(level.Fluids.GetBlock(position));
+            if (!fluid.IsWater)
+                return false;
+
+            // Water above fills the block too, as vanilla's getHeight has it.
+            var ceiling = fluid.IsSource && level.IsFaceSturdy(above, BlockFace.Down);
+            var full = ceiling || FluidState.Of(level.Fluids.GetBlock(above)).IsWater;
+            var height = full ? 1 : fluid.OwnHeight;
+
+            return eye.Y <= position.Y + height;
+        }
     }
 }

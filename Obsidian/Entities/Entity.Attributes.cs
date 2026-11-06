@@ -98,25 +98,62 @@ public partial class Entity
         if (!this.Attributes.ContainsKey(name))
             return;
 
+        bool changed;
+        lock (this.attributeLock)
+            changed = this.StoreModifier(name, modifier, permanent);
+
+        if (changed)
+            this.OnAttributeChanged(name);
+    }
+
+    /// <summary>
+    /// Removes and adds transient modifiers as one change: a reader on another thread sees each attribute with all of
+    /// them applied or none, never between (an item's modifiers as it's swapped for another, say, which a player mining
+    /// at that moment must not see as gone).
+    /// </summary>
+    internal void ReplaceModifiers(
+        IEnumerable<(string Attribute, string Id)> removed,
+        IEnumerable<(string Attribute, EntityAttributeModifier Modifier)> added)
+    {
+        var changed = new HashSet<string>(StringComparer.Ordinal);
         lock (this.attributeLock)
         {
-            this.attributeModifiers ??= [];
+            foreach (var (name, id) in removed)
+            {
+                this.savedModifiers.Remove((name, id));
+                if (this.attributeModifiers?.GetValueOrDefault(name)?.Remove(id) == true)
+                    changed.Add(name);
+            }
 
-            if (!this.attributeModifiers.TryGetValue(name, out var modifiers))
-                this.attributeModifiers[name] = modifiers = [];
-
-            if (permanent)
-                this.savedModifiers.Add((name, modifier.Id));
-            else
-                this.savedModifiers.Remove((name, modifier.Id));
-
-            if (modifiers.TryGetValue(modifier.Id, out var existing) && existing == modifier)
-                return;
-
-            modifiers[modifier.Id] = modifier;
+            foreach (var (name, modifier) in added)
+            {
+                if (this.Attributes.ContainsKey(name) && this.StoreModifier(name, modifier, permanent: false))
+                    changed.Add(name);
+            }
         }
 
-        this.OnAttributeChanged(name);
+        foreach (var name in changed)
+            this.OnAttributeChanged(name);
+    }
+
+    // Adds or replaces a modifier, under the attribute lock. Returns whether that changed it.
+    private bool StoreModifier(string name, EntityAttributeModifier modifier, bool permanent)
+    {
+        this.attributeModifiers ??= [];
+
+        if (!this.attributeModifiers.TryGetValue(name, out var modifiers))
+            this.attributeModifiers[name] = modifiers = [];
+
+        if (permanent)
+            this.savedModifiers.Add((name, modifier.Id));
+        else
+            this.savedModifiers.Remove((name, modifier.Id));
+
+        if (modifiers.TryGetValue(modifier.Id, out var existing) && existing == modifier)
+            return false;
+
+        modifiers[modifier.Id] = modifier;
+        return true;
     }
 
     internal bool RemoveModifier(string name, string id)

@@ -111,7 +111,7 @@ public sealed class VanillaMining(ITestOutputHelper output)
         chunk.SetBlock(eye.X, eye.Y, eye.Z, eyeInWater ? BlocksRegistry.Water : BlocksRegistry.Air);
 
         // The progress itself.
-        Assert.Equal(expected, player.DestroyProgress(block));
+        Assert.Equal(expected, player.DestroyProgress(block, player.IsEyeInWater()));
 
         // Starting to mine breaks the block at once exactly when one tick of mining breaks it all.
         chunk.SetBlock(target.X, target.Y - 1, target.Z, BlocksRegistry.Stone);

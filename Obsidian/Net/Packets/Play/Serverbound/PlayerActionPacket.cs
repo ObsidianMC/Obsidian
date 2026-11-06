@@ -69,7 +69,8 @@ public partial class PlayerActionPacket
     // Like vanilla's ServerPlayerGameMode: a creative player breaks a block as they start, and so does a survival player
     // whose first tick of mining breaks it all (grass by hand, leaves with shears, stone with a fast enough pickaxe).
     // Their client breaks those at once and only ever sends the start, never a finish. The progress reads the held
-    // tool and its components, so it's taken while the inventory can't change under it.
+    // tool and its components, so it's taken while the inventory can't change under it; the water at the player's
+    // eyes is read first, as the level's tick lock goes before the inventory's.
     private async ValueTask<bool> BreaksAtOnceAsync(IClientPlayer player, IBlock block)
     {
         if (this.Status != PlayerActionStatus.StartedDigging || player.GameMode == GameMode.Spectator)
@@ -81,8 +82,9 @@ public partial class PlayerActionPacket
         if (block.IsAir || player is not PlayerBase miner)
             return false;
 
+        var eyeInWater = miner.IsEyeInWater();
         using (await player.Inventory.LockAsync())
-            return miner.DestroyProgress(block) >= 1;
+            return miner.DestroyProgress(block, eyeInWater) >= 1;
     }
 
     private void BroadcastPlayerAction(IClientPlayer player)
