@@ -74,6 +74,18 @@ internal sealed class NoiseStack(IReadOnlyList<NoiseStack.Layer> layers)
             {
                 for (; i + 8 <= values.Length; i += 8)
                 {
+                    // Indices are sorted, so eight that start and end in one column are all in it.
+                    if (xs[i] == xs[i + 7] && zs[i] == zs[i + 7])
+                    {
+                        var column = noise.GetColumn8(
+                            xs[i] * layerXzScale,
+                            zs[i] * layerXzScale,
+                            Scale(ys, i, layerYScale, upper: false),
+                            Scale(ys, i, layerYScale, upper: true));
+                        Accumulate(values, i, amplitude, column);
+                        continue;
+                    }
+
                     var sampled = noise.Get8(
                         Scale(xs, i, layerXzScale, upper: false),
                         Scale(xs, i, layerXzScale, upper: true),
@@ -120,19 +132,14 @@ internal sealed class NoiseStack(IReadOnlyList<NoiseStack.Layer> layers)
                     // Eight y of the column at once.
                     if (PerlinNoise.CanSampleEight)
                     {
-                        var xs = Vector256.Create(x);
-                        var zs = Vector256.Create(z);
-
                         for (; indexY + 8 <= volume.SizeY; indexY += 8)
                         {
                             var blockYs = Vector256.Create(volume.BlockY(indexY)) + steps;
-                            var sampled = noise.Get8(
-                                xs,
-                                xs,
+                            var sampled = noise.GetColumn8(
+                                x,
+                                z,
                                 Scale(blockYs.GetLower(), layerYScale),
-                                Scale(blockYs.GetUpper(), layerYScale),
-                                zs,
-                                zs);
+                                Scale(blockYs.GetUpper(), layerYScale));
                             Accumulate(buffer, index, layerAmplitude, sampled);
                             index += 8;
                         }

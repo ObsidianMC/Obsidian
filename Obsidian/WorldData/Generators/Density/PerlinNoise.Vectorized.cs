@@ -57,6 +57,106 @@ internal partial class PerlinNoise
         return this.SampleAndLerp8(cellX, cellY, cellZ, relativeX, cornerY, relativeZ, fadeY);
     }
 
+    /// <summary>
+    /// The noise at eight points of a column, each exactly as <see cref="Get"/> samples it: x and z are the same for
+    /// all of them, and y comes as two vectors, the first four points, then the last four. Needs
+    /// <see cref="CanSampleEight"/>.
+    /// </summary>
+    /// <remarks>
+    /// The x and z lattice positions are worked out once. When all eight y fall in one lattice cell, as they mostly do
+    /// at low frequencies, the cell's eight corner gradients are looked up once and shared by every point, rather than
+    /// gathered and picked per point. The arithmetic on each lane is the same either way.
+    /// </remarks>
+    public Vector256<float> GetColumn8(double x, double z, Vector256<double> yLow, Vector256<double> yHigh)
+    {
+        var wrappedX = Wrap(x) + this.OffsetX;
+        var wrappedZ = Wrap(z) + this.OffsetZ;
+        var cellX = (int)Math.Floor(wrappedX);
+        var cellZ = (int)Math.Floor(wrappedZ);
+        var relativeX = (float)(wrappedX - cellX);
+        var relativeZ = (float)(wrappedZ - cellZ);
+
+        var offsetY = Vector256.Create(this.OffsetY);
+        var wrappedYLow = Wrap(yLow) + offsetY;
+        var wrappedYHigh = Wrap(yHigh) + offsetY;
+        var floorYLow = Floor(wrappedYLow, out var cellYLow);
+        var floorYHigh = Floor(wrappedYHigh, out var cellYHigh);
+        var relativeYLow = wrappedYLow - floorYLow;
+        var relativeYHigh = wrappedYHigh - floorYHigh;
+        var cellY = Vector256.Create(cellYLow, cellYHigh);
+        var fadeY = Narrow(relativeYLow, relativeYHigh);
+
+        var cornerY = this.smearScaleY == 0.0
+            ? fadeY
+            : Narrow(this.Smear(relativeYLow, yLow), this.Smear(relativeYHigh, yHigh));
+
+        var firstCellY = cellY.ToScalar();
+        if (Vector256.EqualsAll(cellY, Vector256.Create(firstCellY)))
+            return this.SampleCell8(cellX, firstCellY, cellZ, relativeX, cornerY, relativeZ, fadeY);
+
+        return this.SampleAndLerp8(
+            Vector256.Create(cellX),
+            cellY,
+            Vector256.Create(cellZ),
+            Vector256.Create(relativeX),
+            cornerY,
+            Vector256.Create(relativeZ),
+            fadeY);
+    }
+
+    // SampleAndLerp8 for eight points in one lattice cell, which share its corner hashes, x and z.
+    private Vector256<float> SampleCell8(
+        int x,
+        int y,
+        int z,
+        float relativeX,
+        Vector256<float> relativeY,
+        float relativeZ,
+        Vector256<float> fadeY)
+    {
+        ref var permutations = ref this.Permutations;
+        var x0 = Permute(ref permutations, x);
+        var x1 = Permute(ref permutations, x + 1);
+        var xy00 = Permute(ref permutations, x0 + y);
+        var xy01 = Permute(ref permutations, x0 + y + 1);
+        var xy10 = Permute(ref permutations, x1 + y);
+        var xy11 = Permute(ref permutations, x1 + y + 1);
+
+        var nearX = Vector256.Create(relativeX);
+        var nearZ = Vector256.Create(relativeZ);
+        var farX = nearX - Vector256<float>.One;
+        var farY = relativeY - Vector256<float>.One;
+        var farZ = nearZ - Vector256<float>.One;
+
+        var d000 = DotCell8(Permute(ref permutations, xy00 + z), nearX, relativeY, nearZ);
+        var d100 = DotCell8(Permute(ref permutations, xy10 + z), farX, relativeY, nearZ);
+        var d010 = DotCell8(Permute(ref permutations, xy01 + z), nearX, farY, nearZ);
+        var d110 = DotCell8(Permute(ref permutations, xy11 + z), farX, farY, nearZ);
+        var d001 = DotCell8(Permute(ref permutations, xy00 + z + 1), nearX, relativeY, farZ);
+        var d101 = DotCell8(Permute(ref permutations, xy10 + z + 1), farX, relativeY, farZ);
+        var d011 = DotCell8(Permute(ref permutations, xy01 + z + 1), nearX, farY, farZ);
+        var d111 = DotCell8(Permute(ref permutations, xy11 + z + 1), farX, farY, farZ);
+
+        var alphaX = Smoothstep8(nearX);
+        var alphaY = Smoothstep8(fadeY);
+        var alphaZ = Smoothstep8(nearZ);
+
+        var bottom = Lerp8(alphaY, Lerp8(alphaX, d000, d100), Lerp8(alphaX, d010, d110));
+        var top = Lerp8(alphaY, Lerp8(alphaX, d001, d101), Lerp8(alphaX, d011, d111));
+
+        return Lerp8(alphaZ, bottom, top);
+    }
+
+    // Dot8 with one hash for every lane.
+    private static Vector256<float> DotCell8(int hash, Vector256<float> x, Vector256<float> y, Vector256<float> z)
+    {
+        var gradient = gradients[hash & 15];
+
+        return Vector256.Create((float)gradient.X) * x
+            + Vector256.Create((float)gradient.Y) * y
+            + Vector256.Create((float)gradient.Z) * z;
+    }
+
     // SampleSmeared's quantised y, before narrowing.
     private Vector256<double> Smear(Vector256<double> relativeY, Vector256<double> originalY)
     {
