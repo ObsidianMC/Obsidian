@@ -2,6 +2,7 @@ using Obsidian.Nbt;
 using Obsidian.Plugins;
 using Obsidian.Registries;
 using Obsidian.WorldData.Structures;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 
 namespace Obsidian.WorldData.Generators.Mojang.Structures;
@@ -42,6 +43,17 @@ internal sealed class StructureStartCache
     private readonly Lock gate = new();
 
     private readonly ConcurrentDictionary<(int X, int Z), ChunkStarts> starts = new();
+
+    // Only pending creations are kept here, keyed by the inputs publication must still match. A refresh can start
+    // its new layout without waiting for plugin code making an obsolete one. Completed entries never retain layouts.
+    private readonly ConcurrentDictionary<
+        (int X, int Z, StructureLayout Layout, ChunkStarts? Previous), Creation> creating = new();
+
+    // A factory can ask for starts in this or another cache. Nested requests must not wait: even different keys can
+    // form a cycle between two creators. They retain the original recomputation/publication path instead. Only a
+    // depth is kept, so idle threads cannot retain a cache or an unloaded plugin.
+    [ThreadStatic]
+    private static int creationDepth;
 
     // Residents and generation leases pin every start chunk within the reference radius. Under the gate.
     private readonly HashSet<IChunk> residents = [];
@@ -221,26 +233,101 @@ internal sealed class StructureStartCache
                 continue;
             }
 
-            var made = ChunkStarts.Make(layout, previous, chunkX, chunkZ, create);
+            if (this.TryCreate(key, layout, previous, create, out var made))
+            {
+                return made;
+            }
+        }
+    }
 
+    // True means this request finished (null asks its caller for a newer layout); false retries the current entry.
+    private bool TryCreate((int X, int Z) key, StructureLayout layout, ChunkStarts? previous,
+        StartFactory create, out ChunkStarts? result)
+    {
+        result = null;
+        var creationKey = (key.X, key.Z, layout, previous);
+        Creation? owned = null;
+        if (creationDepth == 0)
+        {
+            owned = new Creation();
+            var pending = this.creating.GetOrAdd(creationKey, owned);
+            if (!ReferenceEquals(pending, owned))
+            {
+                // This is a completion notice, not a cached result: eviction or pruning can replace the published
+                // entry before this thread wakes. Re-read it rather than returning a possibly retired start.
+                pending.Wait();
+                return false;
+            }
+        }
+
+        ExceptionDispatchInfo? failure = null;
+        try
+        {
+            // Another creator may have published and removed its notice after Get read the previous entry but
+            // before we registered ours. Avoid making it again; the checks after the factory still decide publication.
+            this.starts.TryGetValue(key, out var observed);
+            if (!ReferenceEquals(observed, previous))
+                return false;
+
+            ChunkStarts made;
+            creationDepth++;
+            try
+            {
+                made = ChunkStarts.Make(layout, previous, key.X, key.Z, create);
+            }
+            finally
+            {
+                creationDepth--;
+            }
+
+            // No factory or wait runs under the publication gate. In particular, nested creation may have
+            // published its result already, and refresh/eviction may have changed the entry while we made ours.
             lock (this.gate)
             {
                 if (layout.Version < this.prunedVersion)
-                    return null;
+                    return true;
 
-                // Another thread published the chunk's starts meanwhile, or pruned them: start over from those.
                 this.starts.TryGetValue(key, out var current);
                 if (!ReferenceEquals(current, previous) || this.retiring.ContainsKey(key))
-                    continue;
+                    return false;
 
                 // The previous starts are all of the layout's sets (see above), so the new ones keep every one.
                 made.Saved = previous?.Saved ?? false;
                 made.Revision = previous?.Revision ?? 0;
                 this.Adopt(key, made, previous);
                 this.starts[key] = made;
-                return made;
+                result = made;
+                return true;
             }
         }
+        catch (Exception exception)
+        {
+            failure = ExceptionDispatchInfo.Capture(exception);
+            throw;
+        }
+        finally
+        {
+            if (owned is not null)
+            {
+                // Remove before waking waiters so failures never poison future requests. Every exit, including a
+                // stale layout or lost publication race, releases them; successful waiters retry the current entry.
+                this.creating.TryRemove(new KeyValuePair<
+                    (int X, int Z, StructureLayout Layout, ChunkStarts? Previous), Creation>(creationKey, owned));
+                owned.Complete(failure);
+            }
+        }
+    }
+
+    private sealed class Creation
+    {
+        // A fault is a successful notification carrying its original exception, not an unobserved faulted task
+        // when there are no waiters. This task and its exception disappear with the last pending caller.
+        private readonly TaskCompletionSource<ExceptionDispatchInfo?> completion =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public void Wait() => this.completion.Task.GetAwaiter().GetResult()?.Throw();
+
+        public void Complete(ExceptionDispatchInfo? failure) => this.completion.SetResult(failure);
     }
 
     // Replaces the chunk's starts with those kept of them, unless they changed meanwhile or the layout asking is older
