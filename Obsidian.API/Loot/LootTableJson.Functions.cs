@@ -292,6 +292,10 @@ public static partial class LootTableJson
         var offset = json.TryGetProperty("offset", out var offsetJson) ? offsetJson.GetInt32() : 0;
         int? size = json.TryGetProperty("size", out var sizeJson) ? sizeJson.GetInt32() : null;
 
+        // Vanilla's list operations take only offsets and sizes from 0.
+        if (offset < 0 || size < 0)
+            throw new InvalidDataException("set_lore's offset and size can't be negative.");
+
         return new LoreOperation(mode, offset, size);
     }
 

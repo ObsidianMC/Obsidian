@@ -155,17 +155,19 @@ public static partial class LootTableJson
 
         var tests = new List<Func<LootContext, bool>>();
 
+        // Like vanilla's, the position and biome are tested at the origin moved by the check's offset.
+        var offset = new VectorD(OffsetOf(json, "offsetX"), OffsetOf(json, "offsetY"), OffsetOf(json, "offsetZ"));
+
         if (predicate.TryGetProperty("position", out var position))
         {
             var bounds = position.Clone();
-            var offset = new VectorD(OffsetOf(json, "offsetX"), OffsetOf(json, "offsetY"), OffsetOf(json, "offsetZ"));
             tests.Add(context => MatchesOriginPosition(context, bounds, offset));
         }
 
         if (predicate.TryGetProperty("biomes", out var biomes))
         {
             var set = biomes.Clone();
-            tests.Add(context => MatchesOriginBiome(context, set));
+            tests.Add(context => MatchesOriginBiome(context, set, offset));
         }
 
         if (predicate.TryGetProperty("block", out var block))
@@ -210,12 +212,13 @@ public static partial class LootTableJson
             && (!range.TryGetProperty("max", out var max) || value <= max.GetDouble());
     }
 
-    private static bool MatchesOriginBiome(LootContext context, JsonElement set)
+    private static bool MatchesOriginBiome(LootContext context, JsonElement set, VectorD offset)
     {
         if (context.Origin is not VectorD origin)
             return false;
 
-        var name = context.OriginBiome?.Invoke(origin);
+        var location = new VectorD(origin.X + offset.X, origin.Y + offset.Y, origin.Z + offset.Z);
+        var name = context.OriginBiome?.Invoke(location);
         if (name is null || !CodecRegistry.TryGetBiome(name, out var biome))
             return false;
 

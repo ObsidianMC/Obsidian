@@ -23,6 +23,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Obsidian.Tests.Utilities;
+using Obsidian.WorldData.Structures;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -380,6 +381,12 @@ public sealed class DataPackStartup : IDisposable
                 .GetProperty("marker").GetString());
             Assert.NotNull(PluginFeatures.CurrentRegistry.FeatureSet!.FindPlaced("startuptest:patch"));
 
+            // The template's old blocks are 26.3's, not just any block that loads.
+            var template = PluginStructures.ParseTemplate("startuptest:hut", "older", LegacyTemplate(), 1 << 20)
+                .File.Template;
+            Assert.Single(template.FilterBlocks(Vector.Zero, new StructurePlaceSettings(), BlockIds.ShortGrass));
+            Assert.Single(template.FilterBlocks(Vector.Zero, new StructurePlaceSettings(), BlockIds.IronChain));
+
             // The instrument comes from a vanilla instrument tag, which has to hold the instruments to pick one.
             var horn = Assert.Single(ChestItems());
             Assert.True(horn.ContainsKey(DataComponentType.Instrument));
@@ -522,7 +529,11 @@ public sealed class DataPackStartup : IDisposable
                 new NbtCompound { new NbtTag<string>("Name", "minecraft:grass") },
                 new NbtCompound { new NbtTag<string>("Name", "minecraft:chain") }
             });
-            writer.WriteTag(new NbtList(NbtTagType.Compound, "blocks"));
+            writer.WriteTag(new NbtList(NbtTagType.Compound, "blocks")
+            {
+                LegacyBlock(y: 0, state: 0),
+                LegacyBlock(y: 1, state: 1)
+            });
             writer.WriteTag(new NbtList(NbtTagType.Compound, "entities"));
             writer.WriteTag(new NbtTag<int>("DataVersion", 3465));
             writer.EndCompound();
@@ -531,6 +542,17 @@ public sealed class DataPackStartup : IDisposable
 
         return stream.ToArray();
     }
+
+    private static NbtCompound LegacyBlock(int y, int state) => new()
+    {
+        new NbtList(NbtTagType.Int, "pos")
+        {
+            new NbtTag<int>(string.Empty, 0),
+            new NbtTag<int>(string.Empty, y),
+            new NbtTag<int>(string.Empty, 0)
+        },
+        new NbtTag<int>("state", state)
+    };
 
     // Records what startup warns of or fails at; reading a pack logs only information when it reads every file.
     private sealed class WarningLogger : ILogger<PluginManager>
