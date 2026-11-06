@@ -86,6 +86,30 @@ public sealed class VanillaBlockPlacement(ITestOutputHelper output)
         output.WriteLine($"Replayed {cases.Length} placements.");
     }
 
+    // A bed's head goes in the same step as its foot. Where it can't be written (its chunk isn't loaded), the bed isn't
+    // placed and the item isn't used, rather than a foot without a head being placed for it.
+    [Fact]
+    public async Task BedWithoutRoomForItsHeadKeepsTheItem()
+    {
+        await using var context = TestServerFactory.CreateServer($"bed-edge-{Guid.NewGuid():N}");
+        var chunk = WorldBlockEntities.AddEmptyChunk(context.World);
+        var foot = new Vector(15, 70, 8);
+        chunk.SetBlock(foot.X, foot.Y - 1, foot.Z, BlocksRegistry.Stone);
+        await context.World.GetBlockAsync(foot);
+
+        // Facing east, at the chunk's east edge: the head would go in chunk (1, 0), which isn't loaded.
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Sleeper",
+            new VectorD(12.5, 70, 8.5));
+        player.GameMode = GameMode.Survival;
+        player.Yaw = -90;
+        player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Get("minecraft:red_bed"), 1));
+
+        await BlockUpdates.UseOn(foot + Vector.Down, BlockFace.Up).HandleAsync(context.Server, player);
+
+        Assert.True(chunk.GetBlock(foot.X, foot.Y, foot.Z).IsAir);
+        Assert.Equal(1, player.GetHeldItem()?.Count);
+    }
+
     private static async Task ReplayAsync(RealServerContext context, Obsidian.Entities.Player player, Vector target,
         Case placement)
     {

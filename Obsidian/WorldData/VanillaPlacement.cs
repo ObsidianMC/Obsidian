@@ -59,10 +59,18 @@ internal static class VanillaPlacement
     /// <summary>
     /// Whether the second half of <paramref name="state"/> still has room, as its placement found when it was worked
     /// out: something placed meanwhile (by a plugin's place event, say) refuses the whole placement rather than being
-    /// overwritten.
+    /// overwritten. So does a second half in a chunk that isn't loaded (it reads as void air), where it couldn't be
+    /// written: a bed's foot would be placed, and the item used, without its head.
     /// </summary>
-    public static bool SecondHalfFits(LevelBlockUpdates level, Vector position, IBlock state) =>
-        SecondHalf(state, position) is not Vector other || level.GetBlock(other).CanBeReplaced();
+    /// <remarks>Call it under the level's tick lock, with the placement it checks, so the chunk can't go between.</remarks>
+    public static bool SecondHalfFits(LevelBlockUpdates level, Vector position, IBlock state)
+    {
+        if (SecondHalf(state, position) is not Vector other)
+            return true;
+
+        var there = level.GetBlock(other);
+        return !there.Is(BlockIds.VoidAir) && there.CanBeReplaced();
+    }
 
     /// <summary>
     /// Vanilla <c>setPlacedBy</c>: a door's upper half goes on top of the lower half a player placed, a bed's head in
