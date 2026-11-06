@@ -32,6 +32,11 @@ public partial class UseItemOnPacket
         .. TagsRegistry.Block.ShulkerBoxes.Entries
     ];
 
+    // The vanilla block classes that implement GameMasterBlock, whose items (GameMasterBlockItem) only creative
+    // operators place.
+    private static readonly HashSet<string> gameMasterBlocks =
+        ["CommandBlock", "StructureBlock", "JigsawBlock", "TestBlock", "TestInstanceBlock"];
+
     [Field(0), ActualType(typeof(int)), VarLength]
     public InteractionHand Hand { get; private set; } // Hand it was placed from. 0 = Main, 1 = Off
 
@@ -479,62 +484,6 @@ public partial class UseItemOnPacket
             return;
         }
 
-        // Vanilla's BlockItem.canPlace: a block that can't survive where it would go isn't placed (a crop goes only on farmland).
-        if (!pouring && !PlacementSurvival.CanPlace(placeLevel.Fluids, block, position))
-        {
-            await this.RejectPlacementAsync(player, handSlot);
-            return;
-        }
-
-        if (block.Is(BlockIds.EndPortalFrame))
-        {
-            string[] facings = ["north", "east", "south", "west"];
-            block = block.WithProperty("facing", facings[(int)Math.Floor((player.Yaw.Degrees + 45) / 90) % 4]);
-        }
-
-        // Other vanilla blocks face, turn and pair up as the player places them.
-        if (currentItem.Holder.Block is not BlockType && !pouring)
-        {
-            IBlock? placedState = block;
-            var onWall = false;
-            lock (placeLevel.Fluids.TickLock)
-            {
-                // Vanilla's StandingAndWallBlockItem: a torch or sign goes on the wall it's placed against, if it holds.
-                if (StandingAndWallItems.TryGet(currentItem.Holder, out var attachment))
-                {
-                    var attached = StandingAndWallItems.Place(placeLevel.BlockUpdates, attachment, position, player, this.Face,
-                        replacesClicked);
-                    placedState = attached?.State;
-                    onWall = attached?.OnWall == true;
-                }
-
-                if (!onWall && placedState is not null)
-                {
-                    placedState = placedState.BlockClass() == "StandingSignBlock"
-                        ? Signs.GetStandingState(placeLevel.BlockUpdates, placedState, position, player)
-                        : VanillaPlacement.GetState(placeLevel.BlockUpdates, placedState, position, player,
-                            this.Face, this.Cursor, replacesClicked);
-                }
-            }
-
-            if (placedState is null || placeLevel.IsOutsideBuildHeight(position.Y + 1) && placedState.BlockClass() == "DoorBlock")
-            {
-                await this.RejectPlacementAsync(player, handSlot);
-                return;
-            }
-
-            block = placedState;
-        }
-
-        // Vanilla's BlockItem.canPlace also requires Level.isUnobstructed for the final state, so a slab that merges into
-        // a double slab is checked as the double: the block's collision shape can't overlap a mob or player (say, the
-        // placing player's own feet when they look down and place under themselves).
-        if (!pouring && !IsUnobstructed(placeLevel, position, block))
-        {
-            await this.RejectPlacementAsync(player, handSlot);
-            return;
-        }
-
         var context = new BlockPlaceContext
         {
             Level = placeLevel.BlockUpdates,
@@ -554,7 +503,7 @@ public partial class UseItemOnPacket
         // Like the block's other hooks, while the level's block updates wait, so what it reads stays as it read.
         IBlock? state;
         lock (placeLevel.Fluids.TickLock)
-            state = Plugins.BlockBehaviors.GetStateForPlacement(context, placeLevel.Logger);
+            state = pouring ? block : GetPlacementState(context, placeLevel);
 
         if (state is null)
         {
@@ -563,6 +512,15 @@ public partial class UseItemOnPacket
         }
 
         block = state;
+
+        // Vanilla's BlockItem.canPlace also requires Level.isUnobstructed for the final state, so a slab that merges into
+        // a double slab is checked as the double: the block's collision shape can't overlap a mob or player (say, the
+        // placing player's own feet when they look down and place under themselves).
+        if (!pouring && !IsUnobstructed(placeLevel, position, block))
+        {
+            await this.RejectPlacementAsync(player, handSlot);
+            return;
+        }
 
         // Like vanilla's buckets, water poured where it evaporates (the nether) hisses instead of being placed.
         if (block.Is(BlockIds.Water) && placeLevel.Evaporates(player, position))
@@ -624,6 +582,45 @@ public partial class UseItemOnPacket
         {
             SequenceID = Sequence
         });
+    }
+
+    /// <summary>
+    /// Vanilla <c>BlockItem.getPlacementState</c> and <c>canPlace</c>: what the item places where the context says,
+    /// or null where vanilla refuses it. A plugin's block decides for itself; a vanilla item's own rules come first
+    /// (blocks only creative operators place, torches and signs that go on a wall or stand), then the block's class
+    /// decides, and the state must survive there.
+    /// </summary>
+    internal static IBlock? GetPlacementState(BlockPlaceContext context, AbstractLevel level)
+    {
+        IBlock? GetState(BlockPlaceContext placing) =>
+            Plugins.BlockBehaviors.GetStateForPlacement(placing, level.Logger);
+
+        var item = context.Item;
+        if (item.Holder.Block is BlockType)
+            return GetState(context);
+
+        // Vanilla GameMasterBlockItem: command, structure, jigsaw and test blocks, for creative operators only.
+        var gameMaster = gameMasterBlocks.Contains(context.Block.BlockClass());
+        if (gameMaster && !Entities.CommandBlockMinecart.CanEdit(context.Player))
+            return null;
+
+        if (StandingAndWallItems.TryGet(item.Holder, out var attachment))
+            return StandingAndWallItems.Place(context, attachment, GetState);
+
+        // Vanilla ScaffoldingBlockItem: scaffolding goes nowhere it would fall straight away, and needn't survive.
+        var scaffolding = context.Block.Is(BlockIds.Scaffolding);
+        if (scaffolding
+            && !context.Level.GetBlock(context.Position).Is(BlockIds.Scaffolding)
+            && WorldData.Placement.BlockPlacements.ScaffoldingDistance(context.Level, context.Position) == 7)
+        {
+            return null;
+        }
+
+        var state = GetState(context);
+        if (state is null || scaffolding)
+            return state;
+
+        return PlacementSurvival.CanSurvive(context.Level, state, context.Position) ? state : null;
     }
 
     // Vanilla's Level.isUnobstructed for living entities: spectators don't block, and neither do items or projectiles here.

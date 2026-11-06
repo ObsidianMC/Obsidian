@@ -14,7 +14,8 @@ internal sealed class IronBarsPlacementBehavior : IBlockBehavior
     {
         var level = context.Level;
         var position = context.Position;
-        var state = context.Block;
+        // Vanilla's bars and panes take the water source they replace.
+        var state = context.Block.WithProperty("waterlogged", level.GetBlock(position).GetFluid() == FluidKind.Water);
         foreach (var face in new[] { BlockFace.North, BlockFace.East, BlockFace.South, BlockFace.West })
         {
             var neighbor = level.GetBlock(position + face.ToVector());

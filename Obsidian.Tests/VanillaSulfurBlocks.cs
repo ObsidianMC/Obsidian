@@ -177,26 +177,22 @@ public sealed class VanillaSulfurBlocks(ITestOutputHelper output)
             player.Sneaking = probe.GetProperty("secondary").GetBoolean();
             var block = ParseState(probe.GetProperty("block").GetString()!);
             var face = probe.GetProperty("face").GetString() == "up" ? BlockFace.Up : BlockFace.Down;
-            var behavior = PlacementBehaviors.For(block);
-            var placed = behavior is null
-                ? VanillaPlacement.GetState(world.BlockUpdates, block, origin, player, face,
-                    VectorD.Zero, replacesClicked: true)
-                : behavior.GetStateForPlacement(new BlockPlaceContext
-                {
-                    Level = world.BlockUpdates,
-                    Player = player,
-                    Hand = InteractionHand.MainHand,
-                    Item = null!,
-                    Block = block,
-                    Position = origin,
-                    ClickedPosition = origin,
-                    ClickedFace = face,
-                    ClickedAt = VectorD.Zero,
-                    ReplacesClicked = true,
-                    HorizontalDirection = BlockFace.North,
-                    NearestLookDirection = probe.GetProperty("look").GetString() == "down"
-                        ? BlockFace.Down : BlockFace.Up
-                });
+            var placed = PlacementBehaviors.GetState(new BlockPlaceContext
+            {
+                Level = world.BlockUpdates,
+                Player = player,
+                Hand = InteractionHand.MainHand,
+                Item = null!,
+                Block = block,
+                Position = origin,
+                ClickedPosition = origin,
+                ClickedFace = face,
+                ClickedAt = VectorD.Zero,
+                ReplacesClicked = true,
+                HorizontalDirection = BlockFace.North,
+                NearestLookDirection = probe.GetProperty("look").GetString() == "down"
+                    ? BlockFace.Down : BlockFace.Up
+            });
             var expected = probe.GetProperty("placed");
             if (expected.ValueKind == JsonValueKind.Null)
             {

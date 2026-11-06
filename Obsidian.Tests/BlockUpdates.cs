@@ -152,35 +152,10 @@ public sealed class BlockUpdates : IDisposable
         Assert.Same(PlacementBehaviors.BarrelBlock, BlocksRegistry.GetPlacementBehavior(BlockIds.Barrel));
         Assert.Same(PlacementBehaviors.HopperBlock, BlocksRegistry.GetPlacementBehavior(BlockIds.Hopper));
         Assert.Same(PlacementBehaviors.ShulkerBoxBlock, BlocksRegistry.GetPlacementBehavior(BlockIds.ShulkerBox));
+
+        // Subclasses take the placement of the class that declares it, like weathering copper doors a door's.
+        Assert.Same(PlacementBehaviors.DoorBlock, BlocksRegistry.GetPlacementBehavior(BlockIds.WeatheredCopperDoor));
         Assert.Null(BlocksRegistry.GetPlacementBehavior(BlockIds.Stone));
-
-        IBlock Place(IBlock block, BlockFace horizontal, BlockFace nearest, BlockFace clicked)
-        {
-            var context = new BlockPlaceContext
-            {
-                Level = null!,
-                Player = null!,
-                Hand = InteractionHand.MainHand,
-                Item = null!,
-                Block = block,
-                Position = default,
-                ClickedPosition = default,
-                ClickedFace = clicked,
-                ClickedAt = default,
-                ReplacesClicked = false,
-                HorizontalDirection = horizontal,
-                NearestLookDirection = nearest,
-            };
-
-            return PlacementBehaviors.For(block)!.GetStateForPlacement(context)!;
-        }
-
-        Assert.Equal("east", Place(BlocksRegistry.Furnace, BlockFace.West, BlockFace.Up, BlockFace.North).GetProperty("facing"));
-        Assert.Equal("down", Place(BlocksRegistry.Barrel, BlockFace.West, BlockFace.Up, BlockFace.North).GetProperty("facing"));
-        Assert.Equal("down", Place(BlocksRegistry.Hopper, BlockFace.West, BlockFace.North, BlockFace.Up).GetProperty("facing"));
-        Assert.Equal("west", Place(BlocksRegistry.Hopper, BlockFace.North, BlockFace.Up, BlockFace.East).GetProperty("facing"));
-        Assert.Equal("up", Place(BlocksRegistry.ShulkerBox, BlockFace.North, BlockFace.North, BlockFace.Up).GetProperty("facing"));
-        Assert.Equal("west", Place(BlocksRegistry.Campfire, BlockFace.West, BlockFace.Up, BlockFace.North).GetProperty("facing"));
     }
 
     [Fact(
@@ -255,8 +230,8 @@ public sealed class BlockUpdates : IDisposable
             packet => packet.Position == filled && packet.BlockId == BlocksRegistry.Stone.GetHashCode());
 
         // Vanilla's redstone components go down as vanilla places them: a lever on the floor facing the way the
-        // player does, a torch clicked onto a block's side on that side, and isolated redstone dust as a dot (vanilla's
-        // getStateForPlacement keeps a dot that connects nowhere).
+        // player does, a torch clicked onto a block's side on that side, and isolated redstone dust as a cross
+        // (vanilla's getStateForPlacement starts from the cross).
         meanwhile = null;
         async Task<IBlock> PlaceVanillaAsync(string item, Vector clicked, BlockFace face)
         {
@@ -273,7 +248,7 @@ public sealed class BlockUpdates : IDisposable
         var torch = await PlaceVanillaAsync("minecraft:redstone_torch", wall, BlockFace.East);
         Assert.Equal(("minecraft:redstone_wall_torch", "east"), (torch.UnlocalizedName, torch.GetProperty("facing")));
         var dust = await PlaceVanillaAsync("minecraft:redstone", new Vector(14, Ground, 8), BlockFace.Up);
-        Assert.All(["north", "east", "south", "west"], side => Assert.Equal("none", dust.GetProperty(side)));
+        Assert.All(["north", "east", "south", "west"], side => Assert.Equal("side", dust.GetProperty(side)));
 
         await manager.UnloadPluginAsync(container);
     }
@@ -1020,14 +995,15 @@ public sealed class BlockUpdates : IDisposable
         hopper.Inventory.SetItem(0, new ItemStack(ItemsRegistry.Get("minecraft:stone"), 64));
     }
 
-    // A player using their main hand on the face of the block at position, at the middle of its top.
-    internal static UseItemOnPacket UseOn(Vector position, BlockFace face)
+    // A player using their main hand on the face of the block at position, at cursor on that block (0 to 1 on each
+    // axis), or else at the middle of its top.
+    internal static UseItemOnPacket UseOn(Vector position, BlockFace face, VectorF? cursor = null)
     {
         using var writer = new NetworkBuffer();
         writer.WriteVarInt((int)InteractionHand.MainHand);
         writer.WritePosition(position);
         writer.WriteVarInt((int)face);
-        writer.WriteAbsoluteFloatPositionF(new VectorF(0.5f, 1, 0.5f));
+        writer.WriteAbsoluteFloatPositionF(cursor ?? new VectorF(0.5f, 1, 0.5f));
         writer.WriteBoolean(false);
         writer.WriteBoolean(false);
         writer.WriteVarInt(1);

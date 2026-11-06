@@ -158,7 +158,7 @@ internal static class ShapeUpdater
                     ? air : state;
             case "LeverBlock" or "ButtonBlock":
                 return UpdateFaceAttached(level, state, position, direction);
-            case "LanternBlock":
+            case "LanternBlock" or "WeatheringLanternBlock":
                 return UpdateLantern(level, state, position, direction);
             case "RedstoneWireBlock":
                 return UpdateRedstoneWire(level, state, position, direction, neighbor);
