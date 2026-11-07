@@ -43,8 +43,9 @@ public partial class PlayerBase
     /// </summary>
     internal override void UpdateEquipmentAttributes()
     {
-        var removed = new List<(string Attribute, string Id)>();
-        var added = new List<(string Attribute, EntityAttributeModifier Modifier)>();
+        // Made only when a slot changed: this runs every tick.
+        List<(string Attribute, string Id)>? removed = null;
+        List<(string Attribute, EntityAttributeModifier Modifier)>? added = null;
         for (var index = 0; index < attributeSlots.Length; index++)
         {
             var inventorySlot = attributeSlots[index].Inventory;
@@ -57,6 +58,8 @@ public partial class PlayerBase
 
             this.equippedStacks[index] = current;
             this.equippedVersions[index] = version;
+            removed ??= [];
+            added ??= [];
             removed.AddRange(this.equippedModifiers[index]);
             this.equippedModifiers[index].Clear();
 
@@ -70,7 +73,7 @@ public partial class PlayerBase
         // Vanilla removes every changed slot before adding replacements, in EquipmentSlot order, so a modifier id
         // shared by two slots isn't removed after its replacement was installed. The swap is one change, so a player
         // mining meanwhile (on the network thread) never sees an item's bonus gone between its removal and return.
-        if (removed.Count > 0 || added.Count > 0)
+        if (removed is not null && added is not null)
             this.ReplaceModifiers(removed, added);
 
         // Vanilla's setSprinting adds 0.3 times the total speed while sprinting.
