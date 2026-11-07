@@ -6,6 +6,11 @@ namespace Obsidian.WorldData.Generators.Density;
 // Eight points at once: every density volume samples its noises over many points.
 internal partial class PerlinNoise
 {
+    // Each direction component is stored in two bits as component + 1, so a plane's four gradients fit in an int.
+    private static readonly int[] packedGradients = Array.ConvertAll(
+        gradients,
+        gradient => (gradient.X + 1) | ((gradient.Y + 1) << 2) | ((gradient.Z + 1) << 4));
+
     // The gradients' components for hashes 0-7 and 8-15, picked by permuting a vector rather than loading per point.
     private static readonly Vector256<float> gradientXLow = GradientComponents(0, 0);
     private static readonly Vector256<float> gradientXHigh = GradientComponents(0, 8);
@@ -65,7 +70,8 @@ internal partial class PerlinNoise
     /// <remarks>
     /// The x and z lattice positions are worked out once. When all eight y fall in one lattice cell, as they mostly do
     /// at low frequencies, the cell's eight corner gradients are looked up once and shared by every point, rather than
-    /// gathered and picked per point. The arithmetic on each lane is the same either way.
+    /// gathered and picked per point. Columns spanning up to eight adjacent cells share a table of their y planes.
+    /// The arithmetic on each lane is the same in every path.
     /// </remarks>
     public Vector256<float> GetColumn8(double x, double z, Vector256<double> yLow, Vector256<double> yHigh)
     {
@@ -93,6 +99,21 @@ internal partial class PerlinNoise
         var firstCellY = cellY.ToScalar();
         if (Vector256.EqualsAll(cellY, Vector256.Create(firstCellY)))
             return this.SampleCell8(cellX, firstCellY, cellZ, relativeX, cornerY, relativeZ, fadeY);
+
+        var lastCellY = cellY.GetElement(7);
+        var minimumY = Math.Min(firstCellY, lastCellY);
+        var cellSpan = Math.Abs(lastCellY - firstCellY);
+        var planeIndices = cellY - Vector256.Create(minimumY);
+
+        // Endpoints bound a monotone column. Check every lane too: selected points need not be consecutive,
+        // and wrapping or an arbitrary caller can put an interior point outside the endpoints.
+        if (cellSpan <= 7
+            && Vector256.LessThanOrEqual(planeIndices.AsUInt32(), Vector256.Create((uint)cellSpan))
+                == Vector256<uint>.AllBitsSet)
+        {
+            return this.SampleColumnCells8(
+                cellX, minimumY, cellZ, cellSpan, planeIndices, relativeX, cornerY, relativeZ, fadeY);
+        }
 
         return this.SampleAndLerp8(
             Vector256.Create(cellX),
@@ -145,6 +166,78 @@ internal partial class PerlinNoise
         var top = Lerp8(alphaY, Lerp8(alphaX, d001, d101), Lerp8(alphaX, d011, d111));
 
         return Lerp8(alphaZ, bottom, top);
+    }
+
+    // A small column table replaces fourteen dependent permutation gathers with two plane gathers.
+    // Adjacent cells share their boundary plane; a plane stores four packed gradient directions.
+    private unsafe Vector256<float> SampleColumnCells8(
+        int x,
+        int minimumY,
+        int z,
+        int cellSpan,
+        Vector256<int> planeIndices,
+        float relativeX,
+        Vector256<float> relativeY,
+        float relativeZ,
+        Vector256<float> fadeY)
+    {
+        ref var permutations = ref this.Permutations;
+        var x0 = Permute(ref permutations, x);
+        var x1 = Permute(ref permutations, x + 1);
+        int* planes = stackalloc int[9];
+
+        for (var plane = 0; plane <= cellSpan + 1; plane++)
+        {
+            var y = minimumY + plane;
+            var xy0 = Permute(ref permutations, x0 + y);
+            var xy1 = Permute(ref permutations, x1 + y);
+            var near00 = packedGradients[Permute(ref permutations, xy0 + z) & 15];
+            var near10 = packedGradients[Permute(ref permutations, xy1 + z) & 15];
+            var far00 = packedGradients[Permute(ref permutations, xy0 + z + 1) & 15];
+            var far10 = packedGradients[Permute(ref permutations, xy1 + z + 1) & 15];
+            planes[plane] = near00 | (near10 << 6) | (far00 << 12) | (far10 << 18);
+        }
+
+        var lower = Avx2.GatherVector256(planes, planeIndices, 4);
+        var upper = Avx2.GatherVector256(planes, planeIndices + Vector256<int>.One, 4);
+        var nearX = Vector256.Create(relativeX);
+        var nearZ = Vector256.Create(relativeZ);
+        var farX = nearX - Vector256<float>.One;
+        var farY = relativeY - Vector256<float>.One;
+        var farZ = nearZ - Vector256<float>.One;
+
+        var d000 = DotPacked8(lower, nearX, relativeY, nearZ);
+        var d100 = DotPacked8(lower >> 6, farX, relativeY, nearZ);
+        var d010 = DotPacked8(upper, nearX, farY, nearZ);
+        var d110 = DotPacked8(upper >> 6, farX, farY, nearZ);
+        var d001 = DotPacked8(lower >> 12, nearX, relativeY, farZ);
+        var d101 = DotPacked8(lower >> 18, farX, relativeY, farZ);
+        var d011 = DotPacked8(upper >> 12, nearX, farY, farZ);
+        var d111 = DotPacked8(upper >> 18, farX, farY, farZ);
+
+        // Vanilla 26.3 evaluates gradient products and lerps in float in this order, without fused operations.
+        // Only the direction lookup changes; even zero components must still multiply their coordinate.
+        var alphaX = Smoothstep8(nearX);
+        var alphaY = Smoothstep8(fadeY);
+        var alphaZ = Smoothstep8(nearZ);
+        var bottom = Lerp8(alphaY, Lerp8(alphaX, d000, d100), Lerp8(alphaX, d010, d110));
+        var top = Lerp8(alphaY, Lerp8(alphaX, d001, d101), Lerp8(alphaX, d011, d111));
+
+        return Lerp8(alphaZ, bottom, top);
+    }
+
+    private static Vector256<float> DotPacked8(
+        Vector256<int> packed,
+        Vector256<float> x,
+        Vector256<float> y,
+        Vector256<float> z)
+    {
+        var mask = Vector256.Create(3);
+        var gradientX = Vector256.ConvertToSingle((packed & mask) - Vector256<int>.One);
+        var gradientY = Vector256.ConvertToSingle(((packed >> 2) & mask) - Vector256<int>.One);
+        var gradientZ = Vector256.ConvertToSingle(((packed >> 4) & mask) - Vector256<int>.One);
+
+        return gradientX * x + gradientY * y + gradientZ * z;
     }
 
     // Dot8 with one hash for every lane.

@@ -60,6 +60,34 @@ public class VectorizedNoise
         {
             for (var batch = 0; batch < Batches; batch++)
                 CompareColumn(noise, random, mismatches);
+
+            // Octave-scaled columns cover adjacent cells, skipped cells and permutation/wrap boundaries.
+            // A half-cell step or larger guarantees at least three cells across the eight points.
+            double[] scales = [0.25, 0.5, 0.75, 1.0, 2.0, 8.0, 64.0, 256.0];
+            double[] starts = [-33554432.25, -16777216.5, -256.0, -0.5, 0.0, 255.75, 16777215.5, 33554432.0];
+            foreach (var scale in scales)
+            {
+                foreach (var start in starts)
+                {
+                    foreach (var direction in new[] { -1, 1 })
+                    {
+                        var ys = new double[8];
+                        for (var lane = 0; lane < ys.Length; lane++)
+                            ys[lane] = start + direction * lane * scale;
+
+                        CompareColumn(noise, -257.25, 255.5, ys, mismatches);
+                    }
+                }
+            }
+
+            // Selected columns may revisit cells or have an interior point outside both endpoints.
+            double[][] selectedColumns =
+            [
+                [0.0, 0.5, 1.5, 1.0, 0.25, 2.0, 1.75, 2.5],
+                [0.0, 0.5, 1.0, 0.25, 0.75, 2.0, 1.5, 0.0],
+            ];
+            foreach (var ys in selectedColumns)
+                CompareColumn(noise, 255.75, -256.5, ys, mismatches);
         }
 
         var firstMismatches = mismatches.GetRange(0, Math.Min(10, mismatches.Count));
@@ -89,6 +117,16 @@ public class VectorizedNoise
             y = Coordinates(random);
         }
 
+        CompareColumn(noise, x, z, y, mismatches);
+    }
+
+    private static void CompareColumn(
+        PerlinNoise noise,
+        double x,
+        double z,
+        ReadOnlySpan<double> y,
+        List<string> mismatches)
+    {
         var sampled = noise.GetColumn8(
             x,
             z,
