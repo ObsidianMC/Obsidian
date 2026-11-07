@@ -33,6 +33,17 @@ internal sealed partial class MaterialRules
         private int? biomeId;
         private int? minSurface;
 
+        // Each biome test is classified lazily once per chunk. Mixed chunks still read the block's biome by y.
+        private BiomeMatch[] biomeMatches;
+
+        private enum BiomeMatch : byte
+        {
+            Unknown,
+            Never,
+            Always,
+            PerBlock
+        }
+
         // The block's index in the material volume, or -1 outside it, where densities are sampled at the point.
         private int volumeIndex = -1;
 
@@ -63,6 +74,7 @@ internal sealed partial class MaterialRules
             this.columnNoiseStamps = new int[owner.noiseSlots.Count];
             this.blockNoises = new float[owner.noiseSlots.Count];
             this.blockNoiseStamps = new int[owner.noiseSlots.Count];
+            this.biomeMatches = new BiomeMatch[owner.biomeConditionCount];
 
             if (biomeNames is not null)
             {
@@ -161,12 +173,43 @@ internal sealed partial class MaterialRules
         /// Whether the block's biome is one of <paramref name="ids"/>, numbered as <see cref="BiomeId"/> is. Biomes the
         /// chunk can't reach are ruled out without looking the block's biome up.
         /// </summary>
-        public bool IsBiome(int[] ids)
+        /// <param name="slot">The compiled biome test's slot, shared across this context's blocks.</param>
+        /// <param name="ids">The biome numbers accepted by that test.</param>
+        public bool IsBiome(int slot, int[] ids)
+        {
+            if (slot >= this.biomeMatches.Length)
+            {
+                Array.Resize(ref this.biomeMatches, this.owner.biomeConditionCount);
+            }
+
+            var match = this.biomeMatches[slot];
+
+            if (match == BiomeMatch.Unknown)
+            {
+                match = this.ClassifyBiomeMatch(ids);
+                this.biomeMatches[slot] = match;
+            }
+
+            return match == BiomeMatch.Always
+                || (match == BiomeMatch.PerBlock && ids.AsSpan().Contains(this.BiomeId));
+        }
+
+        private BiomeMatch ClassifyBiomeMatch(int[] ids)
         {
             if (this.reachableIds is bool[] reachable && !AnyReachable(reachable, ids))
-                return false;
+            {
+                return BiomeMatch.Never;
+            }
 
-            return ids.AsSpan().Contains(this.BiomeId);
+            // Vanilla's biome test uses the block's zoomed biome, which can vary vertically. Only a chunk known
+            // to contain one biome can share a successful result across blocks; no noise/random test is hoisted.
+            if (this.onlyBiome is string biome)
+            {
+                var id = this.owner.FindBiomeId(biome);
+                return ids.AsSpan().Contains(id) ? BiomeMatch.Always : BiomeMatch.Never;
+            }
+
+            return BiomeMatch.PerBlock;
         }
 
         private static bool AnyReachable(bool[] reachable, int[] ids)
