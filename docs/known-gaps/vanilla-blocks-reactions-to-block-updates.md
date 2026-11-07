@@ -14,8 +14,9 @@ Rails check their base and ascending end support and drop without a break effect
 reactions other than redstone components' (rails, doors and trapdoors opening when powered, TNT) aren't modelled,
 and scheduled ticks of vanilla blocks other than falling blocks and redstone components (an observer's, from a
 vanilla save) do nothing when they come due. Of vanilla's own blocks, only pressure plates and wooden buttons react
-to entities inside them, and none to entities standing on them; and placing a block other than a redstone component
-doesn't check that it can survive there, nor any block that no entity is in the way.
+to entities inside them, and none to entities standing on them. Some vanilla blocks' shape rules aren't modelled yet:
+a bell keeps its `single_wall` or `double_wall` attachment when a wall beside it is added or removed, and doesn't drop
+when it loses all support (vanilla's `BellBlock.updateShape`).
 
 Saved `block_ticks` and `fluid_ticks` lists are written in the order the ticks would run, where vanilla writes its
 priority queue's internal heap order. Both reload the list in file order, so after a save and reload Obsidian keeps

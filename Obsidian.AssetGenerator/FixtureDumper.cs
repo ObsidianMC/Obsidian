@@ -70,6 +70,21 @@ internal static class FixtureDumper
         return VanillaServer.RunJavaAsync(world, arguments.ToArray());
     }
 
+    // An on-request probe: a dedicated server of its own, in a new flat world under the scratch directory.
+    internal static Task DumpPlacementAsync(VanillaServer server, string fixture)
+    {
+        var world = Path.Combine(server.ScratchDirectory, "block-placement");
+        if (Directory.Exists(world))
+            Directory.Delete(world, recursive: true);
+
+        Directory.CreateDirectory(world);
+
+        // The probe finds the server in the shutdown hook vanilla's Main registers.
+        return VanillaServer.RunJavaAsync(world,
+            "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+            "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("PlacementFixtures.java"), fixture);
+    }
+
     public static async Task DumpServerAsync(VanillaServer server, string output)
     {
         var classpath = string.Join(Path.PathSeparator, server.ClassPath);

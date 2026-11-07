@@ -1,6 +1,7 @@
 using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
 using Obsidian.WorldData.Features;
+using Obsidian.WorldData.Placement;
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -26,44 +27,47 @@ internal static class StandingAndWallItems
     /// <summary>What an item attaches: the standing block, the wall block, and the direction the standing block needs.</summary>
     internal sealed record Attachment(IBlock Standing, IBlock Wall, BlockFace Direction);
 
-    /// <summary>The state an item places, and whether it's the wall block.</summary>
-    internal readonly record struct Placement(IBlock State, bool OnWall);
-
     /// <returns>Whether the item is one of vanilla's attaching items, whose owner Obsidian implements.</returns>
     public static bool TryGet(Item item, [NotNullWhen(true)] out Attachment? attachment) =>
         attachments.Value.TryGetValue(item.UnlocalizedName, out attachment);
 
     /// <summary>
     /// Vanilla <c>StandingAndWallBlockItem.getPlacementState</c>: of the nearest looking directions, skipping the one
-    /// opposite the attachment, the first where its block holds is taken. The attachment direction takes the
-    /// standing block; any other horizontal one takes the wall block, facing away from the wall.
+    /// opposite the attachment, the first whose block would survive there is taken. The attachment direction takes the
+    /// standing block's placement; any other takes the wall block's. A hanging sign item (vanilla
+    /// <c>HangingSignItem.canPlace</c>) also needs something beside a wall hanging sign to hold it.
     /// </summary>
-    /// <returns>The placement, or null when nothing holds the item there.</returns>
-    public static Placement? Place(LevelBlockUpdates level, Attachment attachment, Vector position, IPlayer player,
-        BlockFace face, bool replacesClicked)
+    /// <param name="context">The placement of the item's standing block.</param>
+    /// <param name="getState">The placement of a block, by its class's <c>getStateForPlacement</c>.</param>
+    /// <returns>The state to place, or null when nothing holds the item there.</returns>
+    public static IBlock? Place(
+        BlockPlaceContext context,
+        Attachment attachment,
+        Func<BlockPlaceContext, IBlock?> getState)
     {
-        foreach (var direction in PlacementDirections.NearestLooking(player.Yaw.Degrees, player.Pitch.Degrees, face, replacesClicked))
+        var wall = getState(context.WithBlock(attachment.Wall));
+        foreach (var direction in context.NearestLookingDirections())
         {
             if (direction == attachment.Direction.Opposite())
                 continue;
 
-            if (direction == attachment.Direction)
-            {
-                if (PlacementSurvival.CanAttach(level, attachment.Standing, position))
-                    return new Placement(attachment.Standing, OnWall: false);
-
-                continue;
-            }
-
-            if (direction.IsVertical())
-                continue;
-
-            var wall = attachment.Wall.WithProperty("facing", FeatureHelpers.FaceName(direction.Opposite()));
-            if (PlacementSurvival.CanAttach(level, wall, position))
-                return new Placement(VanillaPlacement.Waterlog(level, wall, position), OnWall: true);
+            var possible = direction == attachment.Direction
+                ? getState(context.WithBlock(attachment.Standing))
+                : wall;
+            if (possible is not null && CanPlace(context.Level, possible, context.Position))
+                return possible;
         }
 
         return null;
+    }
+
+    private static bool CanPlace(IBlockLevel level, IBlock state, Vector position)
+    {
+        var wallHangingSign = state.BlockClass() == "WallHangingSignBlock";
+        if (wallHangingSign && !BlockPlacements.WallHangingSignHolds(level, state, position))
+            return false;
+
+        return PlacementSurvival.CanSurvive(level, state, position);
     }
 
     private static FrozenDictionary<string, Attachment> Load()

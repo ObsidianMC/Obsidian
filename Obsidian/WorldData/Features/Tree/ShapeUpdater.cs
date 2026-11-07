@@ -133,7 +133,7 @@ internal static class ShapeUpdater
                 return UpdateWall(level, state, position, direction, neighbor);
             case "DoorBlock" or "WeatheringCopperDoorBlock":
                 return UpdateDoor(level, state, position, direction, neighbor);
-            case "BedBlock":
+            case "BedBlock" or "StrawBedBlock":
                 return UpdateBed(state, direction, neighbor);
             case "FenceGateBlock":
                 return UpdateFenceGate(level, state, position, direction, neighbor);
@@ -158,7 +158,7 @@ internal static class ShapeUpdater
                     ? air : state;
             case "LeverBlock" or "ButtonBlock":
                 return UpdateFaceAttached(level, state, position, direction);
-            case "LanternBlock":
+            case "LanternBlock" or "WeatheringLanternBlock":
                 return UpdateLantern(level, state, position, direction);
             case "RedstoneWireBlock":
                 return UpdateRedstoneWire(level, state, position, direction, neighbor);

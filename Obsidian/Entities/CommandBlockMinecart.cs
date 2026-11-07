@@ -53,11 +53,17 @@ public sealed partial class CommandBlockMinecart : AbstractMinecart
     public override ValueTask<bool> InteractAsync(PlayerBase player, InteractionHand hand) =>
         ValueTask.FromResult(CanEdit(player));
 
+    // Vanilla's Commands.LEVEL_GAMEMASTERS.
+    private const int GameMasterLevel = 2;
+
     /// <summary>
-    /// Vanilla's <c>canUseGameMasterBlocks</c>: a creative operator.
+    /// Vanilla's <c>canUseGameMasterBlocks</c>: a creative player with the game master permission level (2), which
+    /// vanilla also asks of game master commands like <c>/locate</c>.
     /// </summary>
     internal static bool CanEdit(IPlayer player) =>
-        player.GameMode == GameMode.Creative && player.Server.Operators.IsOperator(player);
+        player.GameMode == GameMode.Creative
+        && player.Server.Operators is OperatorList operators
+        && operators.GetPermissionLevel(player) >= GameMasterLevel;
 
     /// <summary>
     /// Sets the command and whether its output is kept, as an operator's command screen sends them.

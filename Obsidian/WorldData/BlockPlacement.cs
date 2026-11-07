@@ -8,6 +8,12 @@ namespace Obsidian.WorldData;
 /// <summary>Transfers the hand item to an unpublished block entity in the block mutation's critical section.</summary>
 internal sealed class BlockPlacement(IPlayer player, int slot, ItemStack item)
 {
+    /// <summary>
+    /// What else the placement changes in the same critical section, once the block is set and the item used: a
+    /// door's upper half, a bed's head (vanilla's <c>setPlacedBy</c>). Nothing can change the world in between.
+    /// </summary>
+    internal Action? Placed { get; init; }
+
     internal IDisposable LockHand() => player.Inventory.Lock();
 
     internal Prepared? Prepare(IBlock block, Vector position, ILogger logger)

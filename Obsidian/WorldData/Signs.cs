@@ -40,83 +40,6 @@ internal static class Signs
     public static bool IsSign(IBlock block) => block.BlockClass() is Standing or Wall or Ceiling or WallHanging;
 
     /// <summary>
-    /// A standing sign already chosen by <see cref="StandingAndWallItems"/>: turned to the player and kept standing,
-    /// without reselecting a wall variant from the clicked face.
-    /// </summary>
-    public static IBlock? GetStandingState(LevelBlockUpdates level, IBlock block, Vector position, IPlayer player)
-    {
-        var state = StandingState(level, block, position, player);
-        return state is null ? null : Waterlog(level, state, position);
-    }
-
-    /// <summary>
-    /// The sign a sign item places, like vanilla's <c>StandingAndWallBlockItem</c>: a sign on a block's side hangs on
-    /// it as a wall sign and one on top stands; a hanging sign hangs under a block or beside one.
-    /// </summary>
-    /// <param name="block">The item's own block: a standing sign, or a ceiling hanging sign.</param>
-    /// <returns>The state to place, or null when nothing would hold the sign there.</returns>
-    public static IBlock? GetState(LevelBlockUpdates level, IBlock block, Vector position, IPlayer player, BlockFace face)
-    {
-        var hanging = block.BlockClass() == Ceiling;
-
-        IBlock? state = hanging
-            ? face == BlockFace.Down
-                ? CeilingState(level, block, position, player) ?? WallHangingState(level, block, position, player, face)
-                : WallHangingState(level, block, position, player, face) ?? CeilingState(level, block, position, player)
-            : face.IsVertical()
-                ? face == BlockFace.Up ? StandingState(level, block, position, player) : null
-                : WallState(level, block, position, face) ?? StandingState(level, block, position, player);
-
-        return state is null ? null : Waterlog(level, state, position);
-    }
-
-    private static IBlock? StandingState(LevelBlockUpdates level, IBlock block, Vector position, IPlayer player)
-    {
-        if (!level.GetBlock(position + Vector.Down).IsSolid())
-            return null;
-
-        return block.WithProperty("rotation", Segment(player.Yaw.Degrees + 180));
-    }
-
-    private static IBlock? WallState(LevelBlockUpdates level, IBlock block, Vector position, BlockFace face)
-    {
-        if (!level.GetBlock(position - face.ToVector()).IsSolid() || WallVariant(block, "_sign", "_wall_sign") is not IBlock wall)
-            return null;
-
-        return wall.WithProperty("facing", Name(face));
-    }
-
-    // Vanilla CeilingHangingSignBlock: a sign under a full face hangs straight, facing the player; under anything
-    // else, or placed sneaking, it hangs from chains and turns as freely as a standing sign.
-    private static IBlock? CeilingState(LevelBlockUpdates level, IBlock block, Vector position, IPlayer player)
-    {
-        var above = position + Vector.Up;
-        if (!level.Level.IsFaceSturdy(above, BlockFace.Down, SupportType.Center))
-            return null;
-
-        var attached = !level.Level.IsFaceSturdy(above, BlockFace.Down, SupportType.Full) || player.Sneaking;
-        var rotation = attached
-            ? Segment(player.Yaw.Degrees + 180)
-            : HorizontalIndex(PlacementDirections.Horizontal(player.Yaw.Degrees).Opposite()) * 4;
-
-        return block.WithProperty("attached", attached).WithProperty("rotation", rotation);
-    }
-
-    // Vanilla WallHangingSignBlock: the sign hangs across the face clicked, from a block on either side of it.
-    private static IBlock? WallHangingState(LevelBlockUpdates level, IBlock block, Vector position, IPlayer player, BlockFace face)
-    {
-        if (WallVariant(block, "_hanging_sign", "_wall_hanging_sign") is not IBlock wall)
-            return null;
-
-        var facing = face.IsVertical()
-            ? PlacementDirections.Horizontal(player.Yaw.Degrees).Opposite()
-            : AcrossLook(player, face);
-
-        var state = wall.WithProperty("facing", Name(facing));
-        return WallHangingSupported(level, state, position) ? state : null;
-    }
-
-    /// <summary>
     /// Whether what holds a sign is still there, as vanilla's <c>canSurvive</c> checks after a neighbour changed.
     /// </summary>
     public static bool Survives(LevelBlockUpdates level, IBlock state, Vector position) => state.BlockClass() switch
@@ -356,52 +279,6 @@ internal static class Signs
         return builder.ToString();
     }
 
-    // The wall form of a standing or ceiling sign, like oak_wall_sign for oak_sign.
-    private static IBlock? WallVariant(IBlock block, string suffix, string wallSuffix)
-    {
-        var name = block.UnlocalizedName;
-        if (!name.EndsWith(suffix, StringComparison.Ordinal))
-            return null;
-
-        var wall = name[..^suffix.Length] + wallSuffix;
-        return BlockStateProperties.TryGetState(wall, null, out var state) ? state : null;
-    }
-
-    // Vanilla RotationSegment.convertToSegment: an angle as one of sixteen steps.
-    private static int Segment(float degrees) => (int)Math.Floor(degrees * 16 / 360 + 0.5) & 15;
-
-    // Vanilla's 2D direction values: south, west, north, east.
-    private static int HorizontalIndex(BlockFace face) => face switch
-    {
-        BlockFace.South => 0,
-        BlockFace.West => 1,
-        BlockFace.North => 2,
-        _ => 3
-    };
-
-    // The horizontal direction the player looks most along, of the two across the clicked face, turned to face them.
-    private static BlockFace AcrossLook(IPlayer player, BlockFace face)
-    {
-        var yaw = player.Yaw.Degrees * Math.PI / 180;
-        var lookX = -Math.Sin(yaw);
-        var lookZ = Math.Cos(yaw);
-
-        var direction = face is BlockFace.North or BlockFace.South
-            ? lookX >= 0 ? BlockFace.East : BlockFace.West
-            : lookZ >= 0 ? BlockFace.South : BlockFace.North;
-
-        return direction.Opposite();
-    }
-
-    private static IBlock Waterlog(LevelBlockUpdates level, IBlock block, Vector position)
-    {
-        if (block.GetProperty("waterlogged") is null)
-            return block;
-
-        var there = level.GetBlock(position);
-        return block.WithProperty("waterlogged", there.Is(BlockIds.Water) && there.GetProperty("level") is null or "0");
-    }
-
     private static void PlaySound(ILevel level, Vector position, string sound) =>
         level.PacketBroadcaster.QueuePacketToLevelInRange(level, (VectorD)position + new VectorD(0.5, 0.5, 0.5), new SoundPacket
         {
@@ -412,8 +289,6 @@ internal static class Signs
             Pitch = 1,
             Seed = Random.Shared.NextInt64()
         });
-
-    private static string Name(BlockFace face) => face.ToString().ToLowerInvariant();
 
     private static BlockFace? Face(string? name) => name switch
     {

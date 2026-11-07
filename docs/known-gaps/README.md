@@ -17,6 +17,7 @@ and where to start.
 ## Blocks and redstone
 
 - [26.3 blocks](26-3-blocks.md)
+- [Block item placement](block-item-placement.md)
 - [Bubble columns started by water](bubble-columns-started-by-water.md)
 - [Comparators reading unopened loot containers](comparators-reading-unopened-loot-containers.md)
 - [Plant growth beyond saplings](plant-growth-beyond-saplings.md)

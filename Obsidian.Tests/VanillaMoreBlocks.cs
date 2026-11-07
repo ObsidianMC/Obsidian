@@ -78,32 +78,25 @@ public sealed class VanillaMoreBlocks(ITestOutputHelper output)
             var face = Face(probe.GetProperty("face").GetString()!);
             var cursor = Location(probe.GetProperty("cursor"));
             var replaces = probe.GetProperty("replacesClicked").GetBoolean();
-            // The probe has already chosen the sign variant; item-side variant selection is a separate step.
-            if (block.BlockClass() == "StandingSignBlock")
+            // Like the probe, the block's own placement, kept only where it survives.
+            var placed = PlacementBehaviors.GetState(new BlockPlaceContext
             {
-                AssertPlacement(probe, Signs.GetStandingState(world.BlockUpdates, block, origin, player));
-                return;
-            }
+                Level = world.BlockUpdates,
+                Block = block,
+                Player = player,
+                Item = null!,
+                Hand = InteractionHand.MainHand,
+                Position = origin,
+                ClickedPosition = origin,
+                ClickedFace = face,
+                ClickedAt = cursor,
+                ReplacesClicked = replaces,
+                HorizontalDirection = Face(probe.GetProperty("horizontal").GetString()!),
+                NearestLookDirection = Face(probe.GetProperty("nearest").GetString()!)
+            });
+            if (placed is not null && !PlacementSurvival.CanSurvive(world.BlockUpdates, placed, origin))
+                placed = null;
 
-            var behavior = PlacementBehaviors.For(block);
-            var placed = behavior is null
-                ? VanillaPlacement.GetState(world.BlockUpdates, block, origin, player,
-                    block.BlockClass() == "CeilingHangingSignBlock" ? BlockFace.Down : face, cursor, replaces)
-                : behavior.GetStateForPlacement(new BlockPlaceContext
-                {
-                    Level = world.BlockUpdates,
-                    Block = block,
-                    Player = player,
-                    Item = null!,
-                    Hand = InteractionHand.MainHand,
-                    Position = origin,
-                    ClickedPosition = origin,
-                    ClickedFace = face,
-                    ClickedAt = cursor,
-                    ReplacesClicked = replaces,
-                    HorizontalDirection = Face(probe.GetProperty("horizontal").GetString()!),
-                    NearestLookDirection = Face(probe.GetProperty("nearest").GetString()!)
-                });
             AssertPlacement(probe, placed);
             return;
         }
