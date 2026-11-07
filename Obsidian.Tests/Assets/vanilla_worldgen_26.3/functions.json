@@ -6590,6 +6590,661 @@
       "z": 0,
       "value": "0.0",
       "bits": "0x00000000"
+    },
+    {
+      "name": "bounds_zero_left_volume_mul_clamped",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:mul",
+        "left": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": 0.0,
+          "to_value": 1.0
+        },
+        "right": {
+          "type": "minecraft:clamp",
+          "input": {
+            "type": "minecraft:add",
+            "left": 1.0,
+            "right": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:cave_cheese",
+              "xz_scale": 1.0,
+              "y_scale": 1.0
+            }
+          },
+          "min": 0.0,
+          "max": 1.0
+        }
+      },
+      "x": 17,
+      "y": -4,
+      "z": -23,
+      "sizeY": 9,
+      "values": [
+        "0.0",
+        "0.0",
+        "0.0",
+        "0.0",
+        "0.0",
+        "0.5",
+        "1.0",
+        "1.0",
+        "1.0"
+      ],
+      "bits": [
+        "0x00000000",
+        "0x00000000",
+        "0x00000000",
+        "0x00000000",
+        "0x00000000",
+        "0x3F000000",
+        "0x3F800000",
+        "0x3F800000",
+        "0x3F800000"
+      ]
+    },
+    {
+      "name": "bounds_negative_zero_left_volume_mul_clamped",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:mul",
+        "left": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": -0.0,
+          "to_value": -1.0
+        },
+        "right": {
+          "type": "minecraft:clamp",
+          "input": {
+            "type": "minecraft:add",
+            "left": 1.0,
+            "right": {
+              "type": "minecraft:noise",
+              "noise": "minecraft:cave_cheese",
+              "xz_scale": 1.0,
+              "y_scale": 1.0
+            }
+          },
+          "min": 0.0,
+          "max": 1.0
+        }
+      },
+      "x": 17,
+      "y": -4,
+      "z": -23,
+      "sizeY": 9,
+      "values": [
+        "-0.0",
+        "-0.0",
+        "-0.0",
+        "-0.0",
+        "-0.0",
+        "-0.5",
+        "-1.0",
+        "-1.0",
+        "-1.0"
+      ],
+      "bits": [
+        "0x80000000",
+        "0x80000000",
+        "0x80000000",
+        "0x80000000",
+        "0x80000000",
+        "0xBF000000",
+        "0xBF800000",
+        "0xBF800000",
+        "0xBF800000"
+      ]
+    },
+    {
+      "name": "bounds_negative_zero_left_volume_mul_river",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:mul",
+        "left": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": -0.0,
+          "to_value": -1.0
+        },
+        "right": {
+          "type": "minecraft:mul",
+          "left": {
+            "type": "minecraft:clamp",
+            "input": {
+              "type": "minecraft:add",
+              "left": 1.0,
+              "right": {
+                "type": "minecraft:mul",
+                "left": {
+                  "type": "minecraft:cache",
+                  "input": {
+                    "type": "minecraft:mul",
+                    "left": 0.1,
+                    "right": {
+                      "type": "minecraft:noise",
+                      "noise": "minecraft:ridge",
+                      "xz_scale": 0.5,
+                      "y_scale": 1.6
+                    }
+                  }
+                },
+                "right": {
+                  "type": "minecraft:abs",
+                  "input": {
+                    "type": "minecraft:add",
+                    "left": {
+                      "type": "minecraft:noise",
+                      "noise": "minecraft:jagged",
+                      "xz_scale": 0.6,
+                      "y_scale": 0.0
+                    },
+                    "right": {
+                      "type": "minecraft:spline",
+                      "spline": {
+                        "coordinate": "minecraft:y",
+                        "points": [
+                          {
+                            "location": 48.0,
+                            "derivative": 1.0,
+                            "value": 40.0
+                          },
+                          {
+                            "location": 60.0,
+                            "derivative": 1.0,
+                            "value": 60.0
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "min": 0.0,
+            "max": 1.0
+          },
+          "right": {
+            "type": "minecraft:clamp",
+            "input": {
+              "type": "minecraft:add",
+              "left": 1.0,
+              "right": {
+                "type": "minecraft:mul",
+                "left": {
+                  "type": "minecraft:add",
+                  "left": -0.5,
+                  "right": {
+                    "type": "minecraft:noise",
+                    "noise": "minecraft:erosion",
+                    "xz_scale": 0.6,
+                    "y_scale": 0.0
+                  }
+                },
+                "right": {
+                  "type": "minecraft:abs",
+                  "input": {
+                    "type": "minecraft:noise",
+                    "noise": "minecraft:ridge",
+                    "xz_scale": 0.25,
+                    "y_scale": 0.0,
+                    "shift_x": "minecraft:shift_x",
+                    "shift_y": 0.0,
+                    "shift_z": "minecraft:shift_z"
+                  }
+                }
+              }
+            },
+            "min": 0.0,
+            "max": 1.0
+          }
+        }
+      },
+      "x": 1203,
+      "y": -4,
+      "z": -817,
+      "sizeY": 9,
+      "values": [
+        "-0.0",
+        "-0.0",
+        "-0.0",
+        "-0.0",
+        "-0.0",
+        "-0.24142471",
+        "-0.48284942",
+        "-0.48284942",
+        "-0.48284942"
+      ],
+      "bits": [
+        "0x80000000",
+        "0x80000000",
+        "0x80000000",
+        "0x80000000",
+        "0x80000000",
+        "0xBE77380A",
+        "0xBEF7380A",
+        "0xBEF7380A",
+        "0xBEF7380A"
+      ]
+    },
+    {
+      "name": "bounds_negative_zero_left_selected_mul_clamped",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:range_choice",
+        "input": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": -4,
+          "to_coordinate": 4,
+          "from_value": -4.0,
+          "to_value": 4.0
+        },
+        "min_inclusive": -3.5,
+        "max_exclusive": 1.5,
+        "when_in_range": {
+          "type": "minecraft:mul",
+          "left": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": 0,
+            "to_coordinate": 2,
+            "from_value": -0.0,
+            "to_value": -1.0
+          },
+          "right": {
+            "type": "minecraft:clamp",
+            "input": {
+              "type": "minecraft:add",
+              "left": 1.0,
+              "right": {
+                "type": "minecraft:noise",
+                "noise": "minecraft:cave_cheese",
+                "xz_scale": 1.0,
+                "y_scale": 1.0
+              }
+            },
+            "min": 0.0,
+            "max": 1.0
+          }
+        },
+        "when_out_of_range": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:cave_cheese",
+          "xz_scale": 1.0,
+          "y_scale": 1.0
+        }
+      },
+      "x": 17,
+      "y": -4,
+      "z": -23,
+      "sizeY": 9,
+      "values": [
+        "0.4816255",
+        "-0.0",
+        "-0.0",
+        "-0.0",
+        "-0.0",
+        "-0.5",
+        "0.5668063",
+        "0.58383685",
+        "0.6018417"
+      ],
+      "bits": [
+        "0x3EF6979E",
+        "0x80000000",
+        "0x80000000",
+        "0x80000000",
+        "0x80000000",
+        "0xBF000000",
+        "0x3F111A38",
+        "0x3F157655",
+        "0x3F1A124C"
+      ]
+    },
+    {
+      "name": "bounds_zero_left_selected_mul_river",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:range_choice",
+        "input": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": -4,
+          "to_coordinate": 4,
+          "from_value": -4.0,
+          "to_value": 4.0
+        },
+        "min_inclusive": -3.5,
+        "max_exclusive": 1.5,
+        "when_in_range": {
+          "type": "minecraft:mul",
+          "left": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": 0,
+            "to_coordinate": 2,
+            "from_value": 0.0,
+            "to_value": 1.0
+          },
+          "right": {
+            "type": "minecraft:mul",
+            "left": {
+              "type": "minecraft:clamp",
+              "input": {
+                "type": "minecraft:add",
+                "left": 1.0,
+                "right": {
+                  "type": "minecraft:mul",
+                  "left": {
+                    "type": "minecraft:cache",
+                    "input": {
+                      "type": "minecraft:mul",
+                      "left": 0.1,
+                      "right": {
+                        "type": "minecraft:noise",
+                        "noise": "minecraft:ridge",
+                        "xz_scale": 0.5,
+                        "y_scale": 1.6
+                      }
+                    }
+                  },
+                  "right": {
+                    "type": "minecraft:abs",
+                    "input": {
+                      "type": "minecraft:add",
+                      "left": {
+                        "type": "minecraft:noise",
+                        "noise": "minecraft:jagged",
+                        "xz_scale": 0.6,
+                        "y_scale": 0.0
+                      },
+                      "right": {
+                        "type": "minecraft:spline",
+                        "spline": {
+                          "coordinate": "minecraft:y",
+                          "points": [
+                            {
+                              "location": 48.0,
+                              "derivative": 1.0,
+                              "value": 40.0
+                            },
+                            {
+                              "location": 60.0,
+                              "derivative": 1.0,
+                              "value": 60.0
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "min": 0.0,
+              "max": 1.0
+            },
+            "right": {
+              "type": "minecraft:clamp",
+              "input": {
+                "type": "minecraft:add",
+                "left": 1.0,
+                "right": {
+                  "type": "minecraft:mul",
+                  "left": {
+                    "type": "minecraft:add",
+                    "left": -0.5,
+                    "right": {
+                      "type": "minecraft:noise",
+                      "noise": "minecraft:erosion",
+                      "xz_scale": 0.6,
+                      "y_scale": 0.0
+                    }
+                  },
+                  "right": {
+                    "type": "minecraft:abs",
+                    "input": {
+                      "type": "minecraft:noise",
+                      "noise": "minecraft:ridge",
+                      "xz_scale": 0.25,
+                      "y_scale": 0.0,
+                      "shift_x": "minecraft:shift_x",
+                      "shift_y": 0.0,
+                      "shift_z": "minecraft:shift_z"
+                    }
+                  }
+                }
+              },
+              "min": 0.0,
+              "max": 1.0
+            }
+          }
+        },
+        "when_out_of_range": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:cave_cheese",
+          "xz_scale": 1.0,
+          "y_scale": 1.0
+        }
+      },
+      "x": 1203,
+      "y": -4,
+      "z": -817,
+      "sizeY": 9,
+      "values": [
+        "0.16731544",
+        "0.0",
+        "0.0",
+        "0.0",
+        "0.0",
+        "0.24142471",
+        "0.08319439",
+        "0.057769764",
+        "0.044241745"
+      ],
+      "bits": [
+        "0x3E2B54BD",
+        "0x00000000",
+        "0x00000000",
+        "0x00000000",
+        "0x00000000",
+        "0x3E77380A",
+        "0x3DAA61D2",
+        "0x3D6C9FFD",
+        "0x3D3536D5"
+      ]
+    },
+    {
+      "name": "bounds_zero_left_volume_mul_right_negative_zero",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:mul",
+        "left": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": 0.0,
+          "to_value": 1.0
+        },
+        "right": {
+          "type": "minecraft:clamp",
+          "input": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": 0,
+            "to_coordinate": 2,
+            "from_value": -0.0,
+            "to_value": -1.0
+          },
+          "min": 0.0,
+          "max": 1.0
+        }
+      },
+      "x": 0,
+      "y": -4,
+      "z": 0,
+      "sizeY": 9,
+      "values": [
+        "-0.0",
+        "-0.0",
+        "-0.0",
+        "-0.0",
+        "-0.0",
+        "0.0",
+        "0.0",
+        "0.0",
+        "0.0"
+      ],
+      "bits": [
+        "0x80000000",
+        "0x80000000",
+        "0x80000000",
+        "0x80000000",
+        "0x80000000",
+        "0x00000000",
+        "0x00000000",
+        "0x00000000",
+        "0x00000000"
+      ]
+    },
+    {
+      "name": "bounds_zero_left_volume_mul_right_nan",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:mul",
+        "left": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": 0.0,
+          "to_value": 1.0
+        },
+        "right": {
+          "type": "minecraft:clamp",
+          "input": {
+            "type": "minecraft:div",
+            "left": {
+              "type": "minecraft:gradient",
+              "axis": "y",
+              "from_coordinate": 0,
+              "to_coordinate": 2,
+              "from_value": 0.0,
+              "to_value": 1.0
+            },
+            "right": {
+              "type": "minecraft:gradient",
+              "axis": "y",
+              "from_coordinate": 0,
+              "to_coordinate": 2,
+              "from_value": 0.0,
+              "to_value": 1.0
+            }
+          },
+          "min": 0.0,
+          "max": 1.0
+        }
+      },
+      "x": 0,
+      "y": -4,
+      "z": 0,
+      "sizeY": 9,
+      "values": [
+        "NaN",
+        "NaN",
+        "NaN",
+        "NaN",
+        "NaN",
+        "0.5",
+        "1.0",
+        "1.0",
+        "1.0"
+      ],
+      "bits": [
+        "0x7FC00000",
+        "0x7FC00000",
+        "0x7FC00000",
+        "0x7FC00000",
+        "0x7FC00000",
+        "0x3F000000",
+        "0x3F800000",
+        "0x3F800000",
+        "0x3F800000"
+      ]
+    },
+    {
+      "name": "bounds_zero_left_volume_mul_right_infinite",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:mul",
+        "left": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": 0.0,
+          "to_value": 1.0
+        },
+        "right": {
+          "type": "minecraft:cube",
+          "input": {
+            "type": "minecraft:mul",
+            "left": 1000000.0,
+            "right": {
+              "type": "minecraft:mul",
+              "left": 1000000.0,
+              "right": {
+                "type": "minecraft:mul",
+                "left": 1000000.0,
+                "right": {
+                  "type": "minecraft:gradient",
+                  "axis": "y",
+                  "from_coordinate": 0,
+                  "to_coordinate": 2,
+                  "from_value": 1.0,
+                  "to_value": 1.0
+                }
+              }
+            }
+          }
+        }
+      },
+      "x": 0,
+      "y": -4,
+      "z": 0,
+      "sizeY": 9,
+      "values": [
+        "NaN",
+        "NaN",
+        "NaN",
+        "NaN",
+        "NaN",
+        "Infinity",
+        "Infinity",
+        "Infinity",
+        "Infinity"
+      ],
+      "bits": [
+        "0x7FC00000",
+        "0x7FC00000",
+        "0x7FC00000",
+        "0x7FC00000",
+        "0x7FC00000",
+        "0x7F800000",
+        "0x7F800000",
+        "0x7F800000",
+        "0x7F800000"
+      ]
     }
   ]
 }

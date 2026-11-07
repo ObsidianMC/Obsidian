@@ -18,6 +18,10 @@ internal abstract class CubicSpline
     /// holds every function <see cref="CollectCoordinates"/> adds. Only a bound spline can be evaluated.
     /// </summary>
     public abstract CubicSpline Bind(IReadOnlyList<DensityFunction> coordinates);
+
+    /// <summary>What the spline's values can be, from its coordinate functions' bounds (see <see cref="ValueBounds"/>).
+    /// </summary>
+    public abstract ValueBounds Bounds();
 }
 
 internal sealed class ConstantSpline(float value) : CubicSpline
@@ -29,6 +33,8 @@ internal sealed class ConstantSpline(float value) : CubicSpline
     }
 
     public override CubicSpline Bind(IReadOnlyList<DensityFunction> coordinates) => this;
+
+    public override ValueBounds Bounds() => ValueBounds.Of(value);
 }
 
 /// <param name="coordinateIndex">The coordinate function's index in the input, once bound (see
@@ -110,6 +116,67 @@ internal sealed class MultipointSpline(
     {
         var derivative = derivatives[index];
         return derivative == 0.0f ? value : value + derivative * (input - locations[index]);
+    }
+
+    // Joins the bounds of each part of the spline the coordinate can reach: the extensions before the first and from
+    // the last location, and the segments between. A NaN coordinate evaluates the last extension with NaN, and an
+    // infinite one extends to infinity, so both are unknown, as are locations and derivatives too large to subtract
+    // and multiply without overflowing.
+    public override ValueBounds Bounds()
+    {
+        const float maxPoint = 1e30f;
+        var input = coordinate.Bounds;
+
+        if (!input.IsFinite)
+            return ValueBounds.Unknown;
+
+        foreach (var number in locations.Concat(derivatives))
+        {
+            if (!(MathF.Abs(number) <= maxPoint))
+                return ValueBounds.Unknown;
+        }
+
+        var last = locations.Length - 1;
+        var valueBounds = values.Select(value => value.Bounds()).ToArray();
+        ValueBounds? bounds = null;
+
+        // An input below the first location.
+        if (input.Min < locations[0])
+        {
+            var to = MathF.Min(input.Max, locations[0]);
+            var extension = ValueBounds.SplineExtension(valueBounds[0], derivatives[0], locations[0], input.Min, to);
+            bounds = extension;
+        }
+
+        // An input at or above every location. A segment's input is at least its first location and below its second.
+        if (input.Max >= locations[last])
+        {
+            var from = MathF.Max(input.Min, locations[last]);
+            var extension = ValueBounds.SplineExtension(
+                valueBounds[last],
+                derivatives[last],
+                locations[last],
+                from,
+                input.Max);
+            bounds = bounds?.Union(extension) ?? extension;
+        }
+
+        for (var i = 0; i < last; i++)
+        {
+            if (input.Max < locations[i] || input.Min >= locations[i + 1])
+                continue;
+
+            var segment = ValueBounds.SplineSegment(
+                locations[i],
+                locations[i + 1],
+                valueBounds[i],
+                valueBounds[i + 1],
+                derivatives[i],
+                derivatives[i + 1]);
+            bounds = bounds?.Union(segment) ?? segment;
+        }
+
+        return bounds ?? ValueBounds.Unknown;
     }
 }
 
@@ -197,6 +264,7 @@ internal sealed class SplineFunction : DensityFunction
     {
         var coordinates = new HashSet<DensityFunction>(ReferenceEqualityComparer.Instance);
         spline.CollectCoordinates(coordinates);
+        this.Bounds = spline.Bounds();
 
         // Bound, so that evaluating reads each coordinate by index rather than searching for it.
         this.coordinates = [.. coordinates];
@@ -250,4 +318,6 @@ internal sealed class SplineFunction : DensityFunction
         for (var index = 0; index < output.Length; index++)
             output[index] = this.spline.Evaluate(new SplineInput(coordinateValues, size, index));
     }
+
+    public override ValueBounds Bounds { get; }
 }

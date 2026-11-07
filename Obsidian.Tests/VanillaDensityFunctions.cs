@@ -77,7 +77,9 @@ public class VanillaDensityFunctions
     // RandomState.sampleBlockValueUncached(function, x, y, z) samples it with the overworld's random. The cases cover
     // what no router reaches: nested interpolations and pow, near the world border and with Java's special cases.
     // Cases with a "sizeY" sample a column upwards from (x, y, z) through the volume path instead, where mul and div
-    // multiply and divide a zero left side like any other.
+    // multiply and divide a zero left side like any other. The bounds_* cases take both sides of Obsidian's skip of a
+    // product's right side where the left is zero: right sides proven finite, at least +0 and never -0 or NaN (which
+    // skip, keeping +0 and -0 left values), and right sides that are -0, NaN or infinite there (which must not).
     [Fact]
     public void FunctionsMatchVanilla()
     {

@@ -74,6 +74,8 @@ internal sealed class UnaryFunction(UnaryOperation operation, DensityFunction in
 
         return value;
     }
+
+    public override ValueBounds Bounds { get; } = ValueBounds.Apply(operation, input.Bounds);
 }
 
 /// <summary>The rounding types (<c>floor</c>, <c>round</c>, <c>ceil</c>, <c>truncate</c>).</summary>
@@ -228,6 +230,10 @@ internal abstract class BinaryFunction : DensityFunction
         public override void SampleSelected(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices)
         {
             left.SampleSelected(output, volume, indices);
+
+            if (this.SkipsRightOfZeros(output, volume, indices))
+                return;
+
             using var rights = new DensityBuffer(indices.Length);
             right.SampleSelected(rights.Span, volume, indices);
             DensityLoops.Combine(operation, output, rights.Span);
@@ -236,8 +242,66 @@ internal abstract class BinaryFunction : DensityFunction
         public override void SampleVolume(Span<float> output, in DensityVolume volume)
         {
             left.SampleVolume(output, volume);
+
+            if (this.SkipsRightOfZeros(output, volume, []))
+                return;
+
             using var rights = DensityBuffer.Sample(right, volume);
             DensityLoops.Combine(operation, output, rights.Span);
+        }
+
+        public override ValueBounds Bounds { get; } = operation switch
+        {
+            BinaryOperation.Add => ValueBounds.Add(left.Bounds, right.Bounds),
+            // Sampled as the left plus the negated right.
+            BinaryOperation.Sub => ValueBounds.Add(left.Bounds, ValueBounds.Negate(right.Bounds)),
+            BinaryOperation.Mul => ValueBounds.Multiply(left.Bounds, right.Bounds),
+            BinaryOperation.Min or BinaryOperation.Max => ValueBounds.Choose(operation, left.Bounds, right.Bounds),
+            _ => ValueBounds.Unknown
+        };
+
+        // Whether a zero left value can skip the right side over a volume (see SkipsRightOfZeros).
+        private readonly bool zerosSkipRight = operation == BinaryOperation.Mul && right.Bounds.KeepsZeroProduct;
+
+        /// <summary>
+        /// Multiplies the left values in <paramref name="lefts"/> by the right side where they aren't zero, when the
+        /// right side's bounds show that zero times any of its values is that zero, bit for bit, and enough of them
+        /// are zero to pay for selecting the others. Returns false, changing nothing, when it doesn't.
+        /// </summary>
+        /// <remarks>
+        /// Over a volume vanilla samples both sides and multiplies every value, unlike at a point, where it returns +0
+        /// for a zero left value without sampling the right. So a zero left lane keeps its own sign here: +0 or -0.
+        /// Skipping is exact only because the right side is finite, at least +0 and never -0 or NaN (see
+        /// <see cref="ValueBounds.KeepsZeroProduct"/>); then each skipped product is the left value itself. Sampling
+        /// the right side at fewer positions changes no other value: density functions are pure, the selected path
+        /// computes each position as the volume path does, and caches only remember values.
+        /// </remarks>
+        private bool SkipsRightOfZeros(Span<float> lefts, in DensityVolume volume, ReadOnlySpan<int> indices)
+        {
+            if (!this.zerosSkipRight)
+                return false;
+
+            var count = indices.IsEmpty ? volume.Size : indices.Length;
+            var values = lefts[..count];
+            var zeros = DensityLoops.CountZeros(values);
+
+            // Selecting the nonzero positions costs about as much as sampling the rest when few are zero.
+            if (zeros * 2 < count)
+                return false;
+
+            if (zeros == count)
+                return true;
+
+            // Ones where the left is zero, so that multiplying keeps those lanes as they are.
+            using var factors = new DensityBuffer(count);
+            var rights = factors.Span;
+            rights.Fill(1.0f);
+
+            using (var selection = new DensitySelection(values, indices, DensitySelectionKind.NotZero))
+                selection.Sample(right, rights, volume);
+
+            DensityLoops.Combine(BinaryOperation.Mul, values, rights);
+            return true;
         }
     }
 
@@ -275,6 +339,13 @@ internal abstract class BinaryFunction : DensityFunction
             input.SampleVolume(output, volume);
             DensityLoops.Combine(operation, output, constant);
         }
+
+        public override ValueBounds Bounds { get; } = operation switch
+        {
+            BinaryOperation.Add => ValueBounds.Add(input.Bounds, ValueBounds.Of(constant)),
+            BinaryOperation.Mul => ValueBounds.Multiply(input.Bounds, ValueBounds.Of(constant)),
+            _ => ValueBounds.Choose(operation, input.Bounds, ValueBounds.Of(constant))
+        };
     }
 
     /// <summary>A constant minus or divided by a function.</summary>
@@ -306,6 +377,11 @@ internal abstract class BinaryFunction : DensityFunction
         }
 
         private float Apply(float value) => operation == BinaryOperation.Sub ? constant - value : constant / value;
+
+        // A float subtraction is the sum with the negation, signed zeros included. Division has no rule.
+        public override ValueBounds Bounds { get; } = operation == BinaryOperation.Sub
+            ? ValueBounds.Add(ValueBounds.Of(constant), ValueBounds.Negate(input.Bounds))
+            : ValueBounds.Unknown;
     }
 
 }
