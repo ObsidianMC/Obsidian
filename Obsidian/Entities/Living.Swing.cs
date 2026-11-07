@@ -77,6 +77,7 @@ public partial class Living
         return fatigue >= 0 ? duration + (1 + fatigue) * 2 : duration;
     }
 
-    private int EffectAmplifier(PotionEffect effect) =>
+    // The amplifier of the entity's active effect, or -1 without it.
+    internal int EffectAmplifier(PotionEffect effect) =>
         this.ActivePotionEffects.TryGetValue((int)effect - 1, out var active) ? active.EffectData.Amplifier : -1;
 }

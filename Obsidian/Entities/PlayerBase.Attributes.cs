@@ -43,8 +43,9 @@ public partial class PlayerBase
     /// </summary>
     internal override void UpdateEquipmentAttributes()
     {
-        Span<bool> changed = stackalloc bool[attributeSlots.Length];
-        changed.Clear();
+        // Made only when a slot changed: this runs every tick.
+        List<(string Attribute, string Id)>? removed = null;
+        List<(string Attribute, EntityAttributeModifier Modifier)>? added = null;
         for (var index = 0; index < attributeSlots.Length; index++)
         {
             var inventorySlot = attributeSlots[index].Inventory;
@@ -55,30 +56,25 @@ public partial class PlayerBase
             if (ReferenceEquals(current, this.equippedStacks[index]) && version == this.equippedVersions[index])
                 continue;
 
-            changed[index] = true;
             this.equippedStacks[index] = current;
             this.equippedVersions[index] = version;
-
-            foreach (var (attribute, id) in this.equippedModifiers[index])
-                this.RemoveModifier(attribute, id);
-
+            removed ??= [];
+            added ??= [];
+            removed.AddRange(this.equippedModifiers[index]);
             this.equippedModifiers[index].Clear();
-        }
 
-        // Vanilla removes every changed slot before adding replacements, in EquipmentSlot order. A modifier id
-        // shared by two slots must not be removed after its replacement was installed.
-        for (var index = 0; index < attributeSlots.Length; index++)
-        {
-            if (!changed[index])
-                continue;
-
-            foreach (var (attribute, modifier) in CombatItems.Modifiers(
-                this.equippedStacks[index], attributeSlots[index].Slot))
+            foreach (var (attribute, modifier) in CombatItems.Modifiers(current, attributeSlots[index].Slot))
             {
-                this.SetModifier(attribute, modifier);
+                added.Add((attribute, modifier));
                 this.equippedModifiers[index].Add((attribute, modifier.Id));
             }
         }
+
+        // Vanilla removes every changed slot before adding replacements, in EquipmentSlot order, so a modifier id
+        // shared by two slots isn't removed after its replacement was installed. The swap is one change, so a player
+        // mining meanwhile (on the network thread) never sees an item's bonus gone between its removal and return.
+        if (removed is not null && added is not null)
+            this.ReplaceModifiers(removed, added);
 
         // Vanilla's setSprinting adds 0.3 times the total speed while sprinting.
         if (this.Sprinting != this.HasModifier("minecraft:movement_speed", SprintingModifier))

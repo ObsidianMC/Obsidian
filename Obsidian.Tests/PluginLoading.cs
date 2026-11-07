@@ -561,7 +561,7 @@ public sealed class PluginLoading : IDisposable
         var stack = new ItemStack(charm);
 
         Assert.Empty(stack.Patch);
-        Assert.True(BlockLoot.HasCorrectTool(BlocksRegistry.Stone, stack));
+        Assert.True(ItemTools.HasCorrectTool(BlocksRegistry.Stone, stack));
         Assert.Equal(2, CombatItems.ToolDamage(stack, BlocksRegistry.Stone));
         Assert.Equal((4, 0.3f, true, 1.6f), Obsidian.Entities.Player.GetFood(stack));
         Assert.Equal(5, CombatItems.PlayerArmorSlot(stack));

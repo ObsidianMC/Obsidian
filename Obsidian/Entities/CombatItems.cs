@@ -144,14 +144,25 @@ internal static class CombatItems
     /// <summary>
     /// The attribute modifiers an item applies in an equipment slot (<c>mainhand</c>, <c>offhand</c>, <c>head</c>,
     /// <c>chest</c>, <c>legs</c> or <c>feet</c>), like vanilla's <c>ItemStack.forEachModifier</c>: its own
-    /// <c>attribute_modifiers</c> component, or else its item's default, by attribute name.
+    /// <c>attribute_modifiers</c> component, or else its item's default, then its enchantments' (Efficiency's mining
+    /// efficiency, say), by attribute name.
     /// </summary>
     internal static List<(string Attribute, EntityAttributeModifier Modifier)> Modifiers(ItemStack? item, string slot)
     {
         var result = new List<(string, EntityAttributeModifier)>();
-        if (item is not { Count: > 0 } || item.RemoveComponents.Contains(DataComponentType.AttributeModifiers))
+        if (item is not { Count: > 0 })
             return result;
 
+        if (!item.RemoveComponents.Contains(DataComponentType.AttributeModifiers))
+            AddOwnModifiers(item, slot, result);
+
+        result.AddRange(EnchantmentAttributes.Modifiers(item, slot));
+        return result;
+    }
+
+    // The item's attribute_modifiers component, or its item's default one.
+    private static void AddOwnModifiers(ItemStack item, string slot, List<(string, EntityAttributeModifier)> result)
+    {
         // Effective components include the defaults captured when this stack was made, even after a plugin reload.
         var own = item.Holder.Id >= ItemsRegistry.VanillaCount
             ? item.GetComponent<SimpleDataComponent<ImmutableArray<AttributeModifier>>>(
@@ -193,11 +204,9 @@ internal static class CombatItems
                 result.Add((modifier.GetProperty("type").GetString()!, entry));
             }
         }
-
-        return result;
     }
 
-    private static bool MatchesSlot(string group, string slot) => group == "any" || group == slot ||
+    internal static bool MatchesSlot(string group, string slot) => group == "any" || group == slot ||
         group == "hand" && slot is "mainhand" or "offhand" ||
         group == "armor" && slot is "head" or "chest" or "legs" or "feet";
 
