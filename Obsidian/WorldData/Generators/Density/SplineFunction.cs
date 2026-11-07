@@ -191,6 +191,7 @@ internal sealed class SplineFunction : DensityFunction
     private readonly CubicSpline spline;
     private readonly DensityFunction[] coordinates;
     private readonly bool flat;
+    private readonly bool dependsOnlyOnY;
 
     public SplineFunction(CubicSpline spline)
     {
@@ -201,9 +202,12 @@ internal sealed class SplineFunction : DensityFunction
         this.coordinates = [.. coordinates];
         this.spline = spline.Bind(this.coordinates);
         this.flat = this.coordinates.All(coordinate => coordinate.IsFlat);
+        this.dependsOnlyOnY = this.coordinates.All(coordinate => coordinate.DependsOnlyOnY);
     }
 
     public override bool IsFlat => this.flat;
+
+    public override bool DependsOnlyOnY => this.dependsOnlyOnY;
 
     public override float Sample(int x, int y, int z)
     {
@@ -223,6 +227,13 @@ internal sealed class SplineFunction : DensityFunction
         if (this.flat && volume.SizeY > 1)
         {
             this.SampleLayer(output, volume);
+            return;
+        }
+
+        // And some over the height alone, like the one over the height above the bottom in Terratonic's lava tunnels.
+        if (this.SamplesByColumn(volume))
+        {
+            this.SampleColumn(output, volume);
             return;
         }
 

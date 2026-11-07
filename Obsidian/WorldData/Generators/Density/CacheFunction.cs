@@ -17,17 +17,21 @@ namespace Obsidian.WorldData.Generators.Density;
 /// <para>
 /// A flat input (see <see cref="DensityFunction.IsFlat"/>) is sampled over one layer of a volume and copied down each
 /// column, like vanilla's flat caches: the continents, erosion and ridges noises and the terrain splines built on
-/// them don't change with y.
+/// them don't change with y. An input that depends only on y (see <see cref="DensityFunction.DependsOnlyOnY"/>) is
+/// sampled over one column and copied across the others.
 /// </para>
 /// </remarks>
 internal sealed class CacheFunction(DensityFunction input) : DensityFunction
 {
     private readonly bool flat = input.IsFlat;
+    private readonly bool dependsOnlyOnY = input.DependsOnlyOnY;
     private readonly ThreadLocal<Remembered> remembered = new(() => new Remembered());
 
     public DensityFunction Input => input;
 
     public override bool IsFlat => this.flat;
+
+    public override bool DependsOnlyOnY => this.dependsOnlyOnY;
 
     public override float Sample(int x, int y, int z)
     {
@@ -83,6 +87,13 @@ internal sealed class CacheFunction(DensityFunction input) : DensityFunction
 
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
     {
+        // Remembers the column, so that sampling the whole volume again copies it from there.
+        if (!this.flat && this.SamplesByColumn(volume))
+        {
+            this.SampleColumn(output, volume);
+            return;
+        }
+
         if (!this.flat || volume.SizeY == 1)
         {
             this.SampleRemembered(output, volume);

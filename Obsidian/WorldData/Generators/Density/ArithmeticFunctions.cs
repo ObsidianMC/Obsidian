@@ -21,6 +21,8 @@ internal sealed class UnaryFunction(UnaryOperation operation, DensityFunction in
 {
     public override bool IsFlat => input.IsFlat;
 
+    public override bool DependsOnlyOnY => input.DependsOnlyOnY;
+
     public override bool SamplesCheaply => input.SamplesCheaply;
 
     public override float Sample(int x, int y, int z) => this.Apply(input.Sample(x, y, z));
@@ -90,6 +92,8 @@ internal sealed class RoundFunction(RoundingMode mode, DensityFunction input, De
     : DensityFunction
 {
     public override bool IsFlat => input.IsFlat && multiple.IsFlat;
+
+    public override bool DependsOnlyOnY => input.DependsOnlyOnY && multiple.DependsOnlyOnY;
 
     public override float Sample(int x, int y, int z)
     {
@@ -196,6 +200,8 @@ internal abstract class BinaryFunction : DensityFunction
     {
         public override bool IsFlat => left.IsFlat && right.IsFlat;
 
+        public override bool DependsOnlyOnY => left.DependsOnlyOnY && right.DependsOnlyOnY;
+
         public override bool SamplesCheaply => left.SamplesCheaply && right.SamplesCheaply;
 
         public override float Sample(int x, int y, int z)
@@ -241,6 +247,8 @@ internal abstract class BinaryFunction : DensityFunction
     {
         public override bool IsFlat => input.IsFlat;
 
+        public override bool DependsOnlyOnY => input.DependsOnlyOnY;
+
         public override bool SamplesCheaply => input.SamplesCheaply;
 
         public override float Sample(int x, int y, int z)
@@ -274,6 +282,8 @@ internal abstract class BinaryFunction : DensityFunction
         : BinaryFunction
     {
         public override bool IsFlat => input.IsFlat;
+
+        public override bool DependsOnlyOnY => input.DependsOnlyOnY;
 
         public override bool SamplesCheaply => input.SamplesCheaply;
 
@@ -322,6 +332,8 @@ internal sealed class PowFunction(DensityFunction baseFunction, DensityFunction 
     }
 
     public override bool IsFlat => baseFunction.IsFlat && exponent.IsFlat;
+
+    public override bool DependsOnlyOnY => baseFunction.DependsOnlyOnY && exponent.DependsOnlyOnY;
 
     public override float Sample(int x, int y, int z)
     {
