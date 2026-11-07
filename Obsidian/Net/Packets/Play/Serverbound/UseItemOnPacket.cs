@@ -438,6 +438,13 @@ public partial class UseItemOnPacket
         if (currentItem is null || player.Level is not AbstractLevel placeLevel)
             return;
 
+        // Vanilla's ServerPlayerGameMode.useItemOn: a spectator's use opens a container at most, and places nothing.
+        if (player.GameMode == GameMode.Spectator)
+        {
+            await this.RejectPlacementAsync(player, handSlot);
+            return;
+        }
+
         IBlock block;
         if (currentItem.Holder.Block is BlockType pluginBlock)
         {
@@ -625,7 +632,7 @@ public partial class UseItemOnPacket
         return PlacementSurvival.CanSurvive(context.Level, state, context.Position) ? state : null;
     }
 
-    // Vanilla's Level.isUnobstructed for living entities: spectators don't block, and neither do items or projectiles here.
+    // Vanilla's Level.isUnobstructed: an entity that blocks building can't be inside the block's collision shape.
     private static bool IsUnobstructed(AbstractLevel level, Vector position, IBlock block)
     {
         var shapes = BlockCollisionShapes.Get(level, position, block);
@@ -635,7 +642,7 @@ public partial class UseItemOnPacket
         var offset = (VectorD)position;
         foreach (var entity in level.GetEntitiesInRange(offset + new VectorD(0.5, 0.5, 0.5), 4))
         {
-            if (entity is not (Entities.Mob or IPlayer { GameMode: not GameMode.Spectator }))
+            if (!BlocksBuilding(entity))
                 continue;
 
             var bounds = entity.Dimension.CreateBBFromPosition(entity.Position);
@@ -648,6 +655,15 @@ public partial class UseItemOnPacket
 
         return true;
     }
+
+    // Vanilla's Entity.blocksBuilding: living entities (players but spectators, mobs, armor stands), boats and
+    // minecarts. Items, projectiles and the like don't keep a block from going where they are.
+    private static bool BlocksBuilding(IEntity entity) => entity switch
+    {
+        IPlayer player => player.GameMode != GameMode.Spectator,
+        Entities.Living or Entities.VehicleEntity => true,
+        _ => false
+    };
 
     // A placement that didn't happen: the player's client, which predicted it, gets the block and the item back.
     private async ValueTask RejectPlacementAsync(IClientPlayer player, int handSlot)

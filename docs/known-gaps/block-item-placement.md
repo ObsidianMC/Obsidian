@@ -17,8 +17,11 @@ What isn't covered yet:
   vanilla's `canSurvive` (on water, in air). They go where vanilla's survival allows, which the capture doesn't
   contradict, but not from a look at the water's surface.
 - **Clicking into blocks that stack.** Vanilla's `canBeReplaced` depends on the item: a candle, sea pickle, turtle egg,
-  flower bed or leaf litter used on one of its kind adds to it, a slab completes a slab, and snow layers stack.
-  `UseItemOnPacket` only handles slabs this way; the block placements already add to a block they replace.
+  flower bed or leaf litter used on one of its kind adds to it, a vine or glow lichen gains a face, a slab completes a
+  slab, and snow layers stack. `UseItemOnPacket` only handles slabs this way; the block placements already add to a
+  block they replace.
+- **Adventure mode.** Vanilla lets an adventure player place a block only on blocks the item's `can_place_on` allows.
+  Obsidian doesn't evaluate those predicates yet, so adventure players place blocks as survival players do.
 - **Extending scaffolding.** Vanilla's `ScaffoldingBlockItem` places scaffolding along a scaffolding tower or bridge
   that's clicked. Obsidian places it where it was clicked, and refuses it where nothing would hold it.
 - **Random ages.** Kelp and weeping, twisting and cave vines take an age from the level's random, which Obsidian draws
