@@ -132,9 +132,10 @@ replaces only what vanilla produced.
   routine behind a use-item-on packet, with a connectionless survival player whose head turns with it. The file's
   `contexts` are its input: blocks set around a target without updates, the clicked block, face and cursor, and the
   player's yaw, pitch and sneaking. They cover floors of stone, grass and farmland at three yaws and pitches, a wall
-  clicked high, low and from the east, a ceiling with and without sneaking, and a water source. Each item records one
-  result per context: every block within two of the target that changed, so doors' upper halves, beds' heads and tall
-  plants are included. A state lists only the properties that differ from its default, which keeps the 10,269 results
+  clicked high, low and from the east, a ceiling with and without sneaking, and a water source. A context with `items`
+  runs only for those (a bell between two walls; chests beside an oxidized copper chest) and records `null` for the
+  rest. Each item records one result per context: every block within two of the target that changed, so doors' upper halves, beds' heads and tall
+  plants are included. A state lists only the properties that differ from its default, which keeps the 10,276 results
   to about 500 KB. The replay shares one world and player, clears the area between cases and drives
   `UseItemOnPacket`. It compares kelp and vines without their random age (see
   [block item placement](known-gaps/block-item-placement.md)).
