@@ -5673,6 +5673,923 @@
       "z": -77,
       "value": "0.0",
       "bits": "0x00000000"
+    },
+    {
+      "name": "zero_left_volume_mul_negative",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:mul",
+        "left": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": 0.0,
+          "to_value": 1.0
+        },
+        "right": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": -2,
+          "to_coordinate": 2,
+          "from_value": -3.0,
+          "to_value": -1.0
+        }
+      },
+      "x": 0,
+      "y": -2,
+      "z": 0,
+      "sizeY": 5,
+      "values": [
+        "-0.0",
+        "-0.0",
+        "-0.0",
+        "-0.75",
+        "-1.0"
+      ],
+      "bits": [
+        "0x80000000",
+        "0x80000000",
+        "0x80000000",
+        "0xBF400000",
+        "0xBF800000"
+      ]
+    },
+    {
+      "name": "zero_left_volume_mul_positive",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:mul",
+        "left": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": 0.0,
+          "to_value": 1.0
+        },
+        "right": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": -2,
+          "to_coordinate": 2,
+          "from_value": 1.0,
+          "to_value": 3.0
+        }
+      },
+      "x": 0,
+      "y": -2,
+      "z": 0,
+      "sizeY": 5,
+      "values": [
+        "0.0",
+        "0.0",
+        "0.0",
+        "1.25",
+        "3.0"
+      ],
+      "bits": [
+        "0x00000000",
+        "0x00000000",
+        "0x00000000",
+        "0x3FA00000",
+        "0x40400000"
+      ]
+    },
+    {
+      "name": "zero_left_volume_mul_mixed",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:mul",
+        "left": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": 0.0,
+          "to_value": 1.0
+        },
+        "right": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": -2,
+          "to_coordinate": 2,
+          "from_value": -1.0,
+          "to_value": 1.0
+        }
+      },
+      "x": 0,
+      "y": -2,
+      "z": 0,
+      "sizeY": 5,
+      "values": [
+        "-0.0",
+        "-0.0",
+        "0.0",
+        "0.25",
+        "1.0"
+      ],
+      "bits": [
+        "0x80000000",
+        "0x80000000",
+        "0x00000000",
+        "0x3E800000",
+        "0x3F800000"
+      ]
+    },
+    {
+      "name": "zero_left_volume_mul_infinite",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:mul",
+        "left": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": 0.0,
+          "to_value": 1.0
+        },
+        "right": {
+          "type": "minecraft:div",
+          "left": 1.0,
+          "right": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": 0,
+            "to_coordinate": 2,
+            "from_value": 0.0,
+            "to_value": 1.0
+          }
+        }
+      },
+      "x": 0,
+      "y": -2,
+      "z": 0,
+      "sizeY": 5,
+      "values": [
+        "NaN",
+        "NaN",
+        "NaN",
+        "1.0",
+        "1.0"
+      ],
+      "bits": [
+        "0x7FC00000",
+        "0x7FC00000",
+        "0x7FC00000",
+        "0x3F800000",
+        "0x3F800000"
+      ]
+    },
+    {
+      "name": "zero_left_volume_mul_negative_infinite",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:mul",
+        "left": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": 0.0,
+          "to_value": 1.0
+        },
+        "right": {
+          "type": "minecraft:div",
+          "left": -1.0,
+          "right": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": 0,
+            "to_coordinate": 2,
+            "from_value": 0.0,
+            "to_value": 1.0
+          }
+        }
+      },
+      "x": 0,
+      "y": -2,
+      "z": 0,
+      "sizeY": 5,
+      "values": [
+        "NaN",
+        "NaN",
+        "NaN",
+        "-1.0",
+        "-1.0"
+      ],
+      "bits": [
+        "0x7FC00000",
+        "0x7FC00000",
+        "0x7FC00000",
+        "0xBF800000",
+        "0xBF800000"
+      ]
+    },
+    {
+      "name": "zero_left_volume_div_negative",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:div",
+        "left": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": 0.0,
+          "to_value": 1.0
+        },
+        "right": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": -2,
+          "to_coordinate": 2,
+          "from_value": -3.0,
+          "to_value": -1.0
+        }
+      },
+      "x": 0,
+      "y": -2,
+      "z": 0,
+      "sizeY": 5,
+      "values": [
+        "-0.0",
+        "-0.0",
+        "-0.0",
+        "-0.33333334",
+        "-1.0"
+      ],
+      "bits": [
+        "0x80000000",
+        "0x80000000",
+        "0x80000000",
+        "0xBEAAAAAB",
+        "0xBF800000"
+      ]
+    },
+    {
+      "name": "zero_left_volume_div_positive",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:div",
+        "left": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": 0.0,
+          "to_value": 1.0
+        },
+        "right": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": -2,
+          "to_coordinate": 2,
+          "from_value": 1.0,
+          "to_value": 3.0
+        }
+      },
+      "x": 0,
+      "y": -2,
+      "z": 0,
+      "sizeY": 5,
+      "values": [
+        "0.0",
+        "0.0",
+        "0.0",
+        "0.2",
+        "0.33333334"
+      ],
+      "bits": [
+        "0x00000000",
+        "0x00000000",
+        "0x00000000",
+        "0x3E4CCCCD",
+        "0x3EAAAAAB"
+      ]
+    },
+    {
+      "name": "zero_left_volume_div_mixed",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:div",
+        "left": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": 0.0,
+          "to_value": 1.0
+        },
+        "right": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": -2,
+          "to_coordinate": 2,
+          "from_value": -1.0,
+          "to_value": 1.0
+        }
+      },
+      "x": 0,
+      "y": -2,
+      "z": 0,
+      "sizeY": 5,
+      "values": [
+        "-0.0",
+        "-0.0",
+        "NaN",
+        "1.0",
+        "1.0"
+      ],
+      "bits": [
+        "0x80000000",
+        "0x80000000",
+        "0x7FC00000",
+        "0x3F800000",
+        "0x3F800000"
+      ]
+    },
+    {
+      "name": "zero_left_volume_div_infinite",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:div",
+        "left": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": 0.0,
+          "to_value": 1.0
+        },
+        "right": {
+          "type": "minecraft:div",
+          "left": 1.0,
+          "right": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": 0,
+            "to_coordinate": 2,
+            "from_value": 0.0,
+            "to_value": 1.0
+          }
+        }
+      },
+      "x": 0,
+      "y": -2,
+      "z": 0,
+      "sizeY": 5,
+      "values": [
+        "0.0",
+        "0.0",
+        "0.0",
+        "0.25",
+        "1.0"
+      ],
+      "bits": [
+        "0x00000000",
+        "0x00000000",
+        "0x00000000",
+        "0x3E800000",
+        "0x3F800000"
+      ]
+    },
+    {
+      "name": "zero_left_volume_div_negative_infinite",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:div",
+        "left": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": 0.0,
+          "to_value": 1.0
+        },
+        "right": {
+          "type": "minecraft:div",
+          "left": -1.0,
+          "right": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": 0,
+            "to_coordinate": 2,
+            "from_value": 0.0,
+            "to_value": 1.0
+          }
+        }
+      },
+      "x": 0,
+      "y": -2,
+      "z": 0,
+      "sizeY": 5,
+      "values": [
+        "-0.0",
+        "-0.0",
+        "-0.0",
+        "-0.25",
+        "-1.0"
+      ],
+      "bits": [
+        "0x80000000",
+        "0x80000000",
+        "0x80000000",
+        "0xBE800000",
+        "0xBF800000"
+      ]
+    },
+    {
+      "name": "zero_left_volume_div_zero",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:div",
+        "left": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": 0.0,
+          "to_value": 1.0
+        },
+        "right": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": 0.0,
+          "to_value": 1.0
+        }
+      },
+      "x": 0,
+      "y": -2,
+      "z": 0,
+      "sizeY": 5,
+      "values": [
+        "NaN",
+        "NaN",
+        "NaN",
+        "1.0",
+        "1.0"
+      ],
+      "bits": [
+        "0x7FC00000",
+        "0x7FC00000",
+        "0x7FC00000",
+        "0x3F800000",
+        "0x3F800000"
+      ]
+    },
+    {
+      "name": "negative_zero_left_volume_mul_positive",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:mul",
+        "left": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": -0.0,
+          "to_value": -1.0
+        },
+        "right": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": -2,
+          "to_coordinate": 2,
+          "from_value": 1.0,
+          "to_value": 3.0
+        }
+      },
+      "x": 0,
+      "y": -2,
+      "z": 0,
+      "sizeY": 5,
+      "values": [
+        "-0.0",
+        "-0.0",
+        "-0.0",
+        "-1.25",
+        "-3.0"
+      ],
+      "bits": [
+        "0x80000000",
+        "0x80000000",
+        "0x80000000",
+        "0xBFA00000",
+        "0xC0400000"
+      ]
+    },
+    {
+      "name": "negative_zero_left_volume_mul_negative",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:mul",
+        "left": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": -0.0,
+          "to_value": -1.0
+        },
+        "right": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": -2,
+          "to_coordinate": 2,
+          "from_value": -3.0,
+          "to_value": -1.0
+        }
+      },
+      "x": 0,
+      "y": -2,
+      "z": 0,
+      "sizeY": 5,
+      "values": [
+        "0.0",
+        "0.0",
+        "0.0",
+        "0.75",
+        "1.0"
+      ],
+      "bits": [
+        "0x00000000",
+        "0x00000000",
+        "0x00000000",
+        "0x3F400000",
+        "0x3F800000"
+      ]
+    },
+    {
+      "name": "zero_left_selected_mul_negative",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:range_choice",
+        "input": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": -2,
+          "to_coordinate": 2,
+          "from_value": -2.0,
+          "to_value": 2.0
+        },
+        "min_inclusive": -1.5,
+        "max_exclusive": 1.5,
+        "when_in_range": {
+          "type": "minecraft:mul",
+          "left": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": 0,
+            "to_coordinate": 2,
+            "from_value": 0.0,
+            "to_value": 1.0
+          },
+          "right": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": -2,
+            "to_coordinate": 2,
+            "from_value": -3.0,
+            "to_value": -1.0
+          }
+        },
+        "when_out_of_range": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:cave_cheese",
+          "xz_scale": 1.0,
+          "y_scale": 1.0
+        }
+      },
+      "x": 0,
+      "y": -2,
+      "z": 0,
+      "sizeY": 5,
+      "values": [
+        "0.57792455",
+        "-0.0",
+        "-0.0",
+        "-0.75",
+        "0.64228135"
+      ],
+      "bits": [
+        "0x3F13F2DD",
+        "0x80000000",
+        "0x80000000",
+        "0xBF400000",
+        "0x3F246C8D"
+      ]
+    },
+    {
+      "name": "zero_left_selected_mul_infinite",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:range_choice",
+        "input": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": -2,
+          "to_coordinate": 2,
+          "from_value": -2.0,
+          "to_value": 2.0
+        },
+        "min_inclusive": -1.5,
+        "max_exclusive": 1.5,
+        "when_in_range": {
+          "type": "minecraft:mul",
+          "left": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": 0,
+            "to_coordinate": 2,
+            "from_value": 0.0,
+            "to_value": 1.0
+          },
+          "right": {
+            "type": "minecraft:div",
+            "left": 1.0,
+            "right": {
+              "type": "minecraft:gradient",
+              "axis": "y",
+              "from_coordinate": 0,
+              "to_coordinate": 2,
+              "from_value": 0.0,
+              "to_value": 1.0
+            }
+          }
+        },
+        "when_out_of_range": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:cave_cheese",
+          "xz_scale": 1.0,
+          "y_scale": 1.0
+        }
+      },
+      "x": 0,
+      "y": -2,
+      "z": 0,
+      "sizeY": 5,
+      "values": [
+        "0.57792455",
+        "NaN",
+        "NaN",
+        "1.0",
+        "0.64228135"
+      ],
+      "bits": [
+        "0x3F13F2DD",
+        "0x7FC00000",
+        "0x7FC00000",
+        "0x3F800000",
+        "0x3F246C8D"
+      ]
+    },
+    {
+      "name": "zero_left_selected_div_negative",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:range_choice",
+        "input": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": -2,
+          "to_coordinate": 2,
+          "from_value": -2.0,
+          "to_value": 2.0
+        },
+        "min_inclusive": -1.5,
+        "max_exclusive": 1.5,
+        "when_in_range": {
+          "type": "minecraft:div",
+          "left": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": 0,
+            "to_coordinate": 2,
+            "from_value": 0.0,
+            "to_value": 1.0
+          },
+          "right": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": -2,
+            "to_coordinate": 2,
+            "from_value": -3.0,
+            "to_value": -1.0
+          }
+        },
+        "when_out_of_range": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:cave_cheese",
+          "xz_scale": 1.0,
+          "y_scale": 1.0
+        }
+      },
+      "x": 0,
+      "y": -2,
+      "z": 0,
+      "sizeY": 5,
+      "values": [
+        "0.57792455",
+        "-0.0",
+        "-0.0",
+        "-0.33333334",
+        "0.64228135"
+      ],
+      "bits": [
+        "0x3F13F2DD",
+        "0x80000000",
+        "0x80000000",
+        "0xBEAAAAAB",
+        "0x3F246C8D"
+      ]
+    },
+    {
+      "name": "zero_left_selected_div_infinite",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:range_choice",
+        "input": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": -2,
+          "to_coordinate": 2,
+          "from_value": -2.0,
+          "to_value": 2.0
+        },
+        "min_inclusive": -1.5,
+        "max_exclusive": 1.5,
+        "when_in_range": {
+          "type": "minecraft:div",
+          "left": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": 0,
+            "to_coordinate": 2,
+            "from_value": 0.0,
+            "to_value": 1.0
+          },
+          "right": {
+            "type": "minecraft:div",
+            "left": 1.0,
+            "right": {
+              "type": "minecraft:gradient",
+              "axis": "y",
+              "from_coordinate": 0,
+              "to_coordinate": 2,
+              "from_value": 0.0,
+              "to_value": 1.0
+            }
+          }
+        },
+        "when_out_of_range": {
+          "type": "minecraft:noise",
+          "noise": "minecraft:cave_cheese",
+          "xz_scale": 1.0,
+          "y_scale": 1.0
+        }
+      },
+      "x": 0,
+      "y": -2,
+      "z": 0,
+      "sizeY": 5,
+      "values": [
+        "0.57792455",
+        "0.0",
+        "0.0",
+        "0.25",
+        "0.64228135"
+      ],
+      "bits": [
+        "0x3F13F2DD",
+        "0x00000000",
+        "0x00000000",
+        "0x3E800000",
+        "0x3F246C8D"
+      ]
+    },
+    {
+      "name": "zero_left_point_mul_negative",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:mul",
+        "left": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": 0.0,
+          "to_value": 1.0
+        },
+        "right": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": -2,
+          "to_coordinate": 2,
+          "from_value": -3.0,
+          "to_value": -1.0
+        }
+      },
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "value": "0.0",
+      "bits": "0x00000000"
+    },
+    {
+      "name": "zero_left_point_mul_infinite",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:mul",
+        "left": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": 0.0,
+          "to_value": 1.0
+        },
+        "right": {
+          "type": "minecraft:div",
+          "left": 1.0,
+          "right": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": 0,
+            "to_coordinate": 2,
+            "from_value": 0.0,
+            "to_value": 1.0
+          }
+        }
+      },
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "value": "0.0",
+      "bits": "0x00000000"
+    },
+    {
+      "name": "zero_left_point_div_negative",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:div",
+        "left": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": 0.0,
+          "to_value": 1.0
+        },
+        "right": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": -2,
+          "to_coordinate": 2,
+          "from_value": -3.0,
+          "to_value": -1.0
+        }
+      },
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "value": "0.0",
+      "bits": "0x00000000"
+    },
+    {
+      "name": "zero_left_point_div_infinite",
+      "seed": 12345,
+      "function": {
+        "type": "minecraft:div",
+        "left": {
+          "type": "minecraft:gradient",
+          "axis": "y",
+          "from_coordinate": 0,
+          "to_coordinate": 2,
+          "from_value": 0.0,
+          "to_value": 1.0
+        },
+        "right": {
+          "type": "minecraft:div",
+          "left": 1.0,
+          "right": {
+            "type": "minecraft:gradient",
+            "axis": "y",
+            "from_coordinate": 0,
+            "to_coordinate": 2,
+            "from_value": 0.0,
+            "to_value": 1.0
+          }
+        }
+      },
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "value": "0.0",
+      "bits": "0x00000000"
     }
   ]
 }

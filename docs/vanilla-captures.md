@@ -134,7 +134,10 @@ Nothing is reimplemented:
 - **Router values:** `RandomState.create(noises, seed, settings)` for the case's noise settings, then
   `sampleBlockValueUncached(function, x, y, z)` for each function of its `noise_router` and `aquifers`.
 - **Functions:** `DensityFunction.CODEC` parses the case's `function` with the server's registries, then
-  `sampleBlockValueUncached(function, x, y, z)` samples it with the overworld's `RandomState`.
+  `sampleBlockValueUncached(function, x, y, z)` samples it with the overworld's `RandomState`. A case with a `sizeY`
+  samples a column of that many blocks upwards from its position through the volume path instead
+  (`getSampler(function).bind(SamplerContext.EMPTY_UNCACHED).sampleVolume(volume)`) and records `values` and `bits`
+  per block: the two paths differ, for example for `mul` and `div` with a zero left side.
 - **Terrain:** the dimension's chunk source generates a chunk to `ChunkStatus.TERRAIN`, with structures disabled.
   A separate empty protochunk runs vanilla's own fill, material and carver methods, sharing one `NoiseChunk`. The
   probe checks that this isolated run produces the same blocks as the actual terrain status before recording it.
