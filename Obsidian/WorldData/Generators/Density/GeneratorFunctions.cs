@@ -8,6 +8,8 @@ internal sealed class ConstantFunction(float value) : DensityFunction
 {
     public override bool IsFlat => true;
 
+    public override bool DependsOnlyOnY => true;
+
     public override bool SamplesCheaply => true;
 
     public float Value { get; } = value;
@@ -31,6 +33,8 @@ internal sealed class ConstantFunction(float value) : DensityFunction
 internal sealed class ContextFunction(string name, float defaultValue) : DensityFunction
 {
     public override bool IsFlat => true;
+
+    public override bool DependsOnlyOnY => true;
 
     public override bool SamplesCheaply => true;
 
@@ -306,6 +310,8 @@ internal sealed class GradientFunction : DensityFunction
 
     public override bool IsFlat => this.axis != DensityAxis.Y;
 
+    public override bool DependsOnlyOnY => this.axis == DensityAxis.Y;
+
     public override bool SamplesCheaply => true;
 
     public override float Sample(int x, int y, int z)
@@ -339,9 +345,16 @@ internal sealed class GradientFunction : DensityFunction
     public override void SampleSelected(Span<float> output, in DensityVolume volume, ReadOnlySpan<int> indices) =>
         this.SampleSelectedPoints(output, volume, indices);
 
-    // Each value as Sample computes it, without a call per point: terrain samples y gradients at every block.
+    // Each value as Sample computes it, without a call per point: terrain samples y gradients at every block. A y
+    // gradient computes one column and copies it.
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
     {
+        if (this.SamplesByColumn(volume))
+        {
+            this.SampleColumn(output, volume);
+            return;
+        }
+
         var index = 0;
 
         for (var indexZ = 0; indexZ < volume.SizeZ; indexZ++)

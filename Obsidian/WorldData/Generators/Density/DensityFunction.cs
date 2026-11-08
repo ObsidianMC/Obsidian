@@ -29,6 +29,16 @@ internal abstract class DensityFunction
     public virtual bool IsFlat => false;
 
     /// <summary>
+    /// Whether the value at a y is the same in every column, at a point and over a volume, so that a volume can be
+    /// sampled over one column and copied across (see <see cref="SampleColumn"/>). A function that can't tell says no.
+    /// </summary>
+    /// <remarks>
+    /// Over a volume the value may still depend on the volume's y origin and step, as an interpolation's rounding does,
+    /// but not on its x and z: the column keeps the volume's y extent.
+    /// </remarks>
+    public virtual bool DependsOnlyOnY => false;
+
+    /// <summary>
     /// Whether sampling every point of a volume costs little more than sampling most of them: the function samples
     /// no noise, spline or cache per point, only constants, coordinates, interpolated cell corners and arithmetic on
     /// them. Branching functions sample such branches at all their points rather than select each branch's points.
@@ -90,6 +100,38 @@ internal abstract class DensityFunction
                 output.Slice(volume.Index(indexX, 0, indexZ), volume.SizeY).Fill(value);
             }
         }
+    }
+
+    /// <summary>
+    /// Whether <see cref="SampleColumn"/> should sample <paramref name="volume"/>: the function depends only on y (see
+    /// <see cref="DependsOnlyOnY"/>) and the volume has more than one column.
+    /// </summary>
+    protected bool SamplesByColumn(in DensityVolume volume) =>
+        this.DependsOnlyOnY && (volume.SizeX > 1 || volume.SizeZ > 1);
+
+    /// <summary>
+    /// Samples a function that depends only on y (see <see cref="DependsOnlyOnY"/>) over the first column of
+    /// <paramref name="volume"/> and copies it to the others, which writes the values sampling every point would.
+    /// </summary>
+    /// <remarks>
+    /// Vanilla samples such a function at every point of a volume. Data packs name some outside interpolation, like the
+    /// spline over the height above the world's bottom in Terratonic's lava tunnels, which would otherwise be evaluated
+    /// at each block of a chunk.
+    /// </remarks>
+    protected void SampleColumn(Span<float> output, in DensityVolume volume)
+    {
+        var column = volume with
+        {
+            SizeX = 1,
+            SizeZ = 1
+        };
+
+        // The first column's indices are the same in both volumes, since y varies fastest.
+        var first = output[..volume.SizeY];
+        this.SampleVolume(first, column);
+
+        for (var start = volume.SizeY; start < volume.Size; start += volume.SizeY)
+            first.CopyTo(output.Slice(start, volume.SizeY));
     }
 
     /// <summary>Writes the value at each point of <paramref name="volume"/> to <paramref name="output"/>.</summary>

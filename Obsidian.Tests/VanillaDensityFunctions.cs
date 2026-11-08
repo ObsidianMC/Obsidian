@@ -76,6 +76,8 @@ public class VanillaDensityFunctions
     // Vanilla: DensityFunction.CODEC parses the case's inline function, then
     // RandomState.sampleBlockValueUncached(function, x, y, z) samples it with the overworld's random. The cases cover
     // what no router reaches: nested interpolations and pow, near the world border and with Java's special cases.
+    // Cases with a "sizeY" sample a column upwards from (x, y, z) through the volume path instead, where mul and div
+    // multiply and divide a zero left side like any other.
     [Fact]
     public void FunctionsMatchVanilla()
     {
@@ -86,15 +88,41 @@ public class VanillaDensityFunctions
 
     private static void AssertFunction(JsonElement entry)
     {
-        // Hex, since the bits of NaN and the infinities have no JSON number.
-        var bits = Convert.ToInt32(entry.GetProperty("bits").GetString(), 16);
         var compiler = new DensityCompiler(WorldgenData.Vanilla, Seed(entry), legacyRandomSource: false);
         var function = compiler.Compile(entry.GetProperty("function"), "function");
 
+        if (entry.TryGetProperty("sizeY", out var sizeY))
+        {
+            AssertFunctionVolume(entry, function, sizeY.GetInt32());
+            return;
+        }
+
         var value = function.Sample(Int(entry, "x"), Int(entry, "y"), Int(entry, "z"));
 
-        AssertSameFloat(BitConverter.Int32BitsToSingle(bits), value);
+        AssertSameFloat(Bits(entry.GetProperty("bits")), value);
     }
+
+    private static void AssertFunctionVolume(JsonElement entry, DensityFunction function, int sizeY)
+    {
+        var volume = new DensityVolume(1, sizeY, 1, Int(entry, "x"), Int(entry, "y"), Int(entry, "z"));
+        var values = new float[volume.Size];
+
+        function.SampleVolume(values, volume);
+
+        var expected = entry.GetProperty("bits").EnumerateArray().Select(Bits).ToArray();
+        var mismatches = new List<string>();
+        for (var i = 0; i < values.Length; i++)
+        {
+            if (!SameFloat(expected[i], values[i]))
+                mismatches.Add(Mismatch($"y {volume.BlockY(i)}", expected[i], values[i]));
+        }
+
+        Assert.Empty(mismatches);
+    }
+
+    // Hex, since the bits of NaN and the infinities have no JSON number.
+    private static float Bits(JsonElement bits) =>
+        BitConverter.Int32BitsToSingle(Convert.ToInt32(bits.GetString(), 16));
 
     private static long Seed(JsonElement entry) => entry.GetProperty("seed").GetInt64();
 
@@ -104,8 +132,14 @@ public class VanillaDensityFunctions
 
     private static string RouterName(JsonElement entry) => PointName(entry.GetProperty("settings").GetString()!, entry);
 
-    private static string FunctionName(JsonElement entry) =>
-        PointName(entry.GetProperty("function").GetRawText(), entry);
+    private static string FunctionName(JsonElement entry)
+    {
+        var subject = entry.TryGetProperty("name", out var name)
+            ? name.GetString()!
+            : entry.GetProperty("function").GetRawText();
+
+        return PointName(subject, entry);
+    }
 
     private static string PointName(string subject, JsonElement entry) =>
         $"{subject} at {entry.GetProperty("x")}, {entry.GetProperty("y")}, {entry.GetProperty("z")} "

@@ -27,6 +27,9 @@ internal sealed partial class MaterialRules
     // per condition (see MaterialContext.BiomeId).
     private readonly ConcurrentDictionary<string, int> biomeIds = new();
 
+    // Compiled biome tests also have slots for their per-context reachability classifications.
+    private int biomeConditionCount;
+
     // The noises and densities rules sample, numbered for the arrays a context caches their samples in. Like the
     // rule caches above, they're filled while compiling, which the constructor does for the settings' rule.
     private readonly Dictionary<NoiseStack, int> noiseSlots = new(ReferenceEqualityComparer.Instance);
@@ -216,7 +219,7 @@ internal sealed partial class MaterialRules
             case "minecraft:condition":
                 var condition = this.CompileCondition(json.GetProperty("if_true"));
                 var then = this.CompileRule(json.GetProperty("then_run"));
-                return context => condition(context) ? then(context) : null;
+                return RuleProgram.When(condition, then);
             case "minecraft:bandlands":
                 var offsetNoise = this.generator.Compiler.Noise("minecraft:clay_bands_offset");
                 return context =>
@@ -328,7 +331,8 @@ internal sealed partial class MaterialRules
                     ? [WorldgenData.Qualify(names.GetString()!)]
                     : names.EnumerateArray().Select(name => WorldgenData.Qualify(name.GetString()!)).ToArray();
                 var ids = biomes.Select(this.BiomeId).ToArray();
-                return context => context.IsBiome(ids);
+                var biomeConditionSlot = this.biomeConditionCount++;
+                return context => context.IsBiome(biomeConditionSlot, ids);
             case "minecraft:not":
                 var inverted = this.CompileCondition(json.GetProperty("invert"));
                 return context => !inverted(context);

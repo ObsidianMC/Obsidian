@@ -66,7 +66,7 @@ internal sealed partial class MaterialRules
             case ConditionSurfaceRule condition:
                 var test = this.Translate(condition.IfTrue);
                 var then = this.Translate(condition.ThenRun);
-                return context => test(context) ? then(context) : null;
+                return RuleProgram.When(test, then);
             default:
                 var json = Serialize(RuleJson(rule));
 
@@ -194,18 +194,6 @@ internal sealed partial class MaterialRules
             + "evaluate it.");
 
     // A sequence's rules: the first block one gives.
-    private static Func<MaterialContext, IBlock?> Sequence(Func<MaterialContext, IBlock?>[] rules) => context =>
-    {
-        foreach (var rule in rules)
-        {
-            var result = rule(context);
-
-            if (result is not null)
-            {
-                return result;
-            }
-        }
-
-        return null;
-    };
+    private static Func<MaterialContext, IBlock?> Sequence(Func<MaterialContext, IBlock?>[] rules) =>
+        RuleProgram.Sequence(rules);
 }

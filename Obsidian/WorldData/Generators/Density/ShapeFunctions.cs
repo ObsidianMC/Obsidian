@@ -8,7 +8,11 @@ namespace Obsidian.WorldData.Generators.Density;
 internal sealed class LerpFunction(DensityFunction alpha, DensityFunction first, DensityFunction second)
     : DensityFunction
 {
+    private readonly bool dependsOnlyOnY = alpha.DependsOnlyOnY && first.DependsOnlyOnY && second.DependsOnlyOnY;
+
     public override bool IsFlat => alpha.IsFlat && first.IsFlat && second.IsFlat;
+
+    public override bool DependsOnlyOnY => this.dependsOnlyOnY;
 
     public override float Sample(int x, int y, int z)
     {
@@ -28,6 +32,12 @@ internal sealed class LerpFunction(DensityFunction alpha, DensityFunction first,
 
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
     {
+        if (this.SamplesByColumn(volume))
+        {
+            this.SampleColumn(output, volume);
+            return;
+        }
+
         alpha.SampleVolume(output, volume);
         this.SampleBranches(output, volume, []);
     }
@@ -83,6 +93,8 @@ internal sealed class ClampFunction(DensityFunction input, float min, float max)
 {
     public override bool IsFlat => input.IsFlat;
 
+    public override bool DependsOnlyOnY => input.DependsOnlyOnY;
+
     public override bool SamplesCheaply => input.SamplesCheaply;
 
     public override float Sample(int x, int y, int z) => FloatMath.Clamp(input.Sample(x, y, z), min, max);
@@ -113,7 +125,12 @@ internal sealed class RangeChoiceFunction(
 {
     private readonly bool cheapBranches = whenInRange.SamplesCheaply && whenOutOfRange.SamplesCheaply;
 
+    private readonly bool dependsOnlyOnY =
+        input.DependsOnlyOnY && whenInRange.DependsOnlyOnY && whenOutOfRange.DependsOnlyOnY;
+
     public override bool IsFlat => input.IsFlat && whenInRange.IsFlat && whenOutOfRange.IsFlat;
+
+    public override bool DependsOnlyOnY => this.dependsOnlyOnY;
 
     public override bool SamplesCheaply => input.SamplesCheaply && this.cheapBranches;
 
@@ -127,6 +144,12 @@ internal sealed class RangeChoiceFunction(
 
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
     {
+        if (this.SamplesByColumn(volume))
+        {
+            this.SampleColumn(output, volume);
+            return;
+        }
+
         using var inputs = DensityBuffer.Sample(input, volume);
         this.SampleBranches(output, inputs.Span, volume, []);
     }
@@ -214,7 +237,12 @@ internal sealed class IntervalSelectFunction(
     ImmutableArray<float> thresholds,
     ImmutableArray<DensityFunction> functions) : DensityFunction
 {
+    private readonly bool dependsOnlyOnY =
+        input.DependsOnlyOnY && functions.All(function => function.DependsOnlyOnY);
+
     public override bool IsFlat => input.IsFlat && functions.All(function => function.IsFlat);
+
+    public override bool DependsOnlyOnY => this.dependsOnlyOnY;
 
     public override float Sample(int x, int y, int z)
     {
@@ -224,6 +252,12 @@ internal sealed class IntervalSelectFunction(
 
     public override void SampleVolume(Span<float> output, in DensityVolume volume)
     {
+        if (this.SamplesByColumn(volume))
+        {
+            this.SampleColumn(output, volume);
+            return;
+        }
+
         using var controls = DensityBuffer.Sample(input, volume);
         this.SampleBranches(output, controls.Span, volume, []);
     }
@@ -652,6 +686,8 @@ internal sealed class SliceFunction(DensityFunction input, int? fixedX, int? fix
     }
 
     public override bool IsFlat => fixedY is not null || input.IsFlat;
+
+    public override bool DependsOnlyOnY => input.DependsOnlyOnY;
 
     public override float Sample(int x, int y, int z) => input.Sample(fixedX ?? x, fixedY ?? y, fixedZ ?? z);
 

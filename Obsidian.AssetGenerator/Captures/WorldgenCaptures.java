@@ -32,6 +32,7 @@ import net.minecraft.world.level.levelgen.*;
 import net.minecraft.world.level.levelgen.blending.Blender;
 import net.minecraft.world.level.levelgen.densityfunction.DensityFunction;
 import net.minecraft.world.level.levelgen.densityfunction.DensityVolume;
+import net.minecraft.world.level.levelgen.densityfunction.SamplerContext;
 import net.minecraft.world.level.levelgen.material.MaterialRuleContext;
 import net.minecraft.world.level.levelgen.material.rule.MaterialRule;
 import net.minecraft.world.level.levelgen.placement.FeaturePlacer;
@@ -447,10 +448,19 @@ class WorldgenCaptures {
     // Vanilla: DensityFunction.CODEC parses the case's inline function, then
     // RandomState.sampleBlockValueUncached(function, x, y, z) samples it with the overworld's random. Besides the
     // value, it records Float.floatToIntBits of it in hex, since JSON numbers hold neither NaN nor infinities.
+    //
+    // A case with a "sizeY" samples a column of that many blocks upwards from (x, y, z) through the volume path
+    // instead: RandomState.getSampler(function).bind(SamplerContext.EMPTY_UNCACHED).sampleVolume(volume), recording
+    // "values" and "bits" per block. The two paths differ, for example in how mul and div treat a zero left side.
     static void function(JsonObject entry) {
         var random = randomState(entry, overworld());
         var ops = RegistryOps.create(JsonOps.INSTANCE, server.registryAccess());
         var function = DensityFunction.CODEC.parse(ops, entry.get("function")).getOrThrow();
+
+        if (entry.has("sizeY")) {
+            functionVolume(entry, random, function);
+            return;
+        }
 
         var value = random.sampleBlockValueUncached(
             function,
@@ -460,6 +470,32 @@ class WorldgenCaptures {
 
         entry.addProperty("value", Float.toString(value));
         entry.addProperty("bits", String.format("0x%08X", Float.floatToIntBits(value)));
+    }
+
+    // Vanilla: the case's function sampled over a one-block-wide column of "sizeY" blocks from (x, y, z), through the
+    // volume path that terrain uses.
+    static void functionVolume(JsonObject entry, RandomState random, DensityFunction function) {
+        var volume = new DensityVolume(
+            1,
+            entry.get("sizeY").getAsInt(),
+            1,
+            entry.get("x").getAsInt(),
+            entry.get("y").getAsInt(),
+            entry.get("z").getAsInt());
+        var sampler = random.getSampler(function).bind(SamplerContext.EMPTY_UNCACHED);
+        var values = new JsonArray();
+        var bits = new JsonArray();
+
+        try (var buffer = sampler.sampleVolume(volume)) {
+            for (int index = 0; index < volume.size(); index++) {
+                float value = buffer.get(index);
+                values.add(Float.toString(value));
+                bits.add(String.format("0x%08X", Float.floatToIntBits(value)));
+            }
+        }
+
+        entry.add("values", values);
+        entry.add("bits", bits);
     }
 
     // Terrain is captured at its actual saved status. Separate calls to vanilla's own private stages expose the
