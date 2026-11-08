@@ -110,6 +110,8 @@ internal sealed class ClampFunction(DensityFunction input, float min, float max)
         input.SampleVolume(output, volume);
         DensityLoops.Clamp(output, min, max);
     }
+
+    public override ValueBounds Bounds { get; } = ValueBounds.Clamp(input.Bounds, min, max);
 }
 
 /// <summary>
@@ -226,6 +228,9 @@ internal sealed class RangeChoiceFunction(
     }
 
     private bool InRange(float value) => value >= minInclusive && value < maxExclusive;
+
+    // Each value is one of the branches'.
+    public override ValueBounds Bounds { get; } = whenInRange.Bounds.Union(whenOutOfRange.Bounds);
 }
 
 /// <summary>
@@ -301,6 +306,11 @@ internal sealed class IntervalSelectFunction(
 
         return functions.Length - 1;
     }
+
+    // Each value is one of the functions'.
+    public override ValueBounds Bounds { get; } = functions
+        .Select(function => function.Bounds)
+        .Aggregate((first, second) => first.Union(second));
 }
 
 /// <summary>
@@ -729,6 +739,8 @@ internal sealed class SliceFunction(DensityFunction input, int? fixedX, int? fix
             }
         }
     }
+
+    public override ValueBounds Bounds => input.Bounds;
 }
 
 /// <summary>

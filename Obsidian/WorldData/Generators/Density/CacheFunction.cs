@@ -128,6 +128,8 @@ internal sealed class CacheFunction(DensityFunction input) : DensityFunction
         last.RememberVolume(volume, output);
     }
 
+    public override ValueBounds Bounds => input.Bounds;
+
     private sealed class Remembered
     {
         private bool hasSelection;

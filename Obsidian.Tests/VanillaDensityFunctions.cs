@@ -77,7 +77,9 @@ public class VanillaDensityFunctions
     // RandomState.sampleBlockValueUncached(function, x, y, z) samples it with the overworld's random. The cases cover
     // what no router reaches: nested interpolations and pow, near the world border and with Java's special cases.
     // Cases with a "sizeY" sample a column upwards from (x, y, z) through the volume path instead, where mul and div
-    // multiply and divide a zero left side like any other.
+    // multiply and divide a zero left side like any other. The bounds_* cases take both sides of Obsidian's skip of a
+    // product's right side where the left is zero: right sides proven finite, at least +0 and never -0 or NaN (which
+    // skip, keeping +0 and -0 left values), and right sides that are -0, NaN or infinite there (which must not).
     [Fact]
     public void FunctionsMatchVanilla()
     {
@@ -156,6 +158,17 @@ public class VanillaDensityFunctions
             compiler.Function(id).Sample(17, 63, -29);
 
         Assert.NotEmpty(ids);
+    }
+
+    // Obsidian-only: a gradient whose coordinate range overflows an int wraps its offsets, so at y = -1 this one gives
+    // -2, outside its end values. Its bounds must not claim it stays at least +0, or a product would skip it.
+    [Fact]
+    public void OverflowingGradientProvesNothing()
+    {
+        var gradient = new GradientFunction(DensityAxis.Y, GradientTiling.ClampToEdge, int.MinValue, 0, 1.0f, 4.0f);
+
+        Assert.Equal(-2.0f, gradient.Sample(0, -1, 0));
+        Assert.Equal(ValueBounds.Unknown, gradient.Bounds);
     }
 
     // Floats must match bit for bit, so 0 and -0 differ. NaNs match each other: Java and .NET give NaNs different

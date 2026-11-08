@@ -47,6 +47,13 @@ internal abstract class DensityFunction
     public virtual bool SamplesCheaply => false;
 
     /// <summary>
+    /// What the function's values can be at a point, over a volume and at selected positions (see
+    /// <see cref="ValueBounds"/>). Functions work it out from their inputs' bounds as they're built; one that can't
+    /// tell reports <see cref="ValueBounds.Unknown"/>.
+    /// </summary>
+    public virtual ValueBounds Bounds => ValueBounds.Unknown;
+
+    /// <summary>
     /// Samples sorted, distinct indices of the original volume into a compact output buffer.
     /// Selection never changes the volume's origin: vanilla's interpolation accumulates rounding from that origin.
     /// Functions without a selective implementation retain their full-volume arithmetic and gather its results.

@@ -20,6 +20,8 @@ internal sealed class ConstantFunction(float value) : DensityFunction
         output.Fill(this.Value);
 
     public override void SampleVolume(Span<float> output, in DensityVolume volume) => output.Fill(this.Value);
+
+    public override ValueBounds Bounds { get; } = ValueBounds.Of(value);
 }
 
 /// <summary>
@@ -182,6 +184,27 @@ internal sealed class NoiseFunction(
 
         return zeros;
     }
+
+    public override ValueBounds Bounds { get; } = NoiseBounds(noise, xzScale, yScale, shiftX, shiftY, shiftZ);
+
+    // The noise's bounds at the coordinates it can be sampled at: block coordinates times the larger scale, plus the
+    // largest shift.
+    private static ValueBounds NoiseBounds(
+        NoiseStack noise,
+        double xzScale,
+        double yScale,
+        DensityFunction? shiftX,
+        DensityFunction? shiftY,
+        DensityFunction? shiftZ)
+    {
+        var unshifted = ValueBounds.Of(0.0f);
+        var shifts = (shiftX?.Bounds ?? unshifted)
+            .Union(shiftY?.Bounds ?? unshifted)
+            .Union(shiftZ?.Bounds ?? unshifted);
+        var scale = Math.Max(Math.Abs(xzScale), Math.Abs(yScale));
+
+        return ValueBounds.Noise(noise, ValueBounds.NoiseCoordinate(scale, shifts));
+    }
 }
 
 /// <summary>Which coordinates a shift noise reads (<c>shift</c>, <c>shift_a</c>, <c>shift_b</c>).</summary>
@@ -253,6 +276,11 @@ internal sealed class ShiftFunction(NoiseStack noise, ShiftKind kind) : DensityF
             }
         }
     }
+
+    // The noise at a quarter of the coordinates, times 4 (exact, as a power of two).
+    public override ValueBounds Bounds { get; } = ValueBounds.Multiply(
+        ValueBounds.Noise(noise, ValueBounds.NoiseCoordinate(0.25, ValueBounds.Of(0.0f))),
+        ValueBounds.Of(4.0f));
 }
 
 /// <summary>An axis a gradient or slice runs along.</summary>
@@ -387,6 +415,25 @@ internal sealed class GradientFunction : DensityFunction
         DensityAxis.Y => y,
         _ => z
     };
+
+    public override ValueBounds Bounds => this.GradientBounds();
+
+    // Every tiling adds the from value to an int offset between 0 and the coordinate range times the slope, which
+    // is monotonic in the offset, so the values lie between those at the two ends. The sum is -0 only when the from
+    // value is. A range that overflows an int wraps the offsets past those ends, so it proves nothing.
+    private ValueBounds GradientBounds()
+    {
+        var range = (long)this.maxCoordinate - this.minCoordinate;
+        if (range > int.MaxValue)
+            return ValueBounds.Unknown;
+
+        var start = ValueBounds.Of(this.fromValue + 0 * this.slope);
+        var end = ValueBounds.Of(this.fromValue + this.coordinateRange * this.slope);
+        var between = start.Union(end);
+        var negativeZero = this.fromValue == 0.0f && float.IsNegative(this.fromValue);
+
+        return between with { NegativeZero = negativeZero };
+    }
 }
 
 /// <summary>How <c>distance_to_point</c> measures (<c>metric</c>).</summary>

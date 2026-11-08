@@ -134,6 +134,28 @@ internal static class DensityLoops
         }
     }
 
+    /// <summary>How many values are +0 or -0.</summary>
+    public static int CountZeros(ReadOnlySpan<float> values)
+    {
+        var vectors = MemoryMarshal.Cast<float, Vector<float>>(values);
+        var tail = vectors.Length * Vector<float>.Count;
+        var counts = Vector<int>.Zero;
+
+        // Each equal lane is -1, so subtracting the masks counts them.
+        for (var i = 0; i < vectors.Length; i++)
+            counts -= Vector.Equals(vectors[i], Vector<float>.Zero);
+
+        var zeros = Vector.Sum(counts);
+
+        for (var i = tail; i < values.Length; i++)
+        {
+            if (values[i] == 0.0f)
+                zeros++;
+        }
+
+        return zeros;
+    }
+
     /// <summary><see cref="FloatMath.Clamp"/> of each value: NaN stays NaN.</summary>
     public static void Clamp(Span<float> values, float min, float max)
     {
