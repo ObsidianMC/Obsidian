@@ -160,6 +160,17 @@ public class VanillaDensityFunctions
         Assert.NotEmpty(ids);
     }
 
+    // Obsidian-only: a gradient whose coordinate range overflows an int wraps its offsets, so at y = -1 this one gives
+    // -2, outside its end values. Its bounds must not claim it stays at least +0, or a product would skip it.
+    [Fact]
+    public void OverflowingGradientProvesNothing()
+    {
+        var gradient = new GradientFunction(DensityAxis.Y, GradientTiling.ClampToEdge, int.MinValue, 0, 1.0f, 4.0f);
+
+        Assert.Equal(-2.0f, gradient.Sample(0, -1, 0));
+        Assert.Equal(ValueBounds.Unknown, gradient.Bounds);
+    }
+
     // Floats must match bit for bit, so 0 and -0 differ. NaNs match each other: Java and .NET give NaNs different
     // sign and payload bits, which vanilla never looks at.
     private static bool SameFloat(float expected, float actual) => JavaBits(expected) == JavaBits(actual);

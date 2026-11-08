@@ -420,9 +420,13 @@ internal sealed class GradientFunction : DensityFunction
 
     // Every tiling adds the from value to an int offset between 0 and the coordinate range times the slope, which
     // is monotonic in the offset, so the values lie between those at the two ends. The sum is -0 only when the from
-    // value is.
+    // value is. A range that overflows an int wraps the offsets past those ends, so it proves nothing.
     private ValueBounds GradientBounds()
     {
+        var range = (long)this.maxCoordinate - this.minCoordinate;
+        if (range > int.MaxValue)
+            return ValueBounds.Unknown;
+
         var start = ValueBounds.Of(this.fromValue + 0 * this.slope);
         var end = ValueBounds.Of(this.fromValue + this.coordinateRange * this.slope);
         var between = start.Union(end);
