@@ -537,6 +537,42 @@ public sealed class PluginDimensionFiles : IDisposable
         Assert.IsType<InvalidOperationException>(error.InnerException);
     }
 
+    [Trait("Category", TestCategory.Worldgen)]
+    [Fact(DisplayName = "The 26.3 pipeline compiles named rules that each refer to the one before twice")]
+    public void CompilesSharedNamedRulesWithoutCopyingThem()
+    {
+        // Each rule holds the one before twice, so copying every reference would compile 2^24 conditions.
+        var entries = new List<WorldgenEntry>
+        {
+            new("material_rule", "probe:nest0", Json("""
+                {
+                  "type": "minecraft:condition",
+                  "if_true": { "type": "minecraft:y_above", "anchor": { "absolute": 1000 }, "surface_depth_multiplier": 0, "add_stone_depth": false },
+                  "then_run": { "type": "minecraft:block", "result_state": { "id": "minecraft:stone" } }
+                }
+                """))
+        };
+
+        for (var level = 1; level <= 24; level++)
+        {
+            var before = $"\"probe:nest{level - 1}\"";
+            var rule = $$"""{ "type": "minecraft:sequence", "sequence": [{{before}}, {{before}}] }""";
+            entries.Add(new WorldgenEntry("material_rule", $"probe:nest{level}", Json(rule)));
+        }
+
+        var (noise, shelf) = ShelfData();
+        var stem = ShelfStem(ShelfWith("\"probe:nest24\""));
+        var dimension = Read26("stemfiles:nested", stem, noise, shelf.With(entries));
+
+        // Creating the terrain compiles its rules: copied, they'd take hundreds of megabytes. Evaluating them would
+        // still test every reference, so it isn't run.
+        var start = GC.GetAllocatedBytesForCurrentThread();
+        Assert.NotNull(BiomeTerrain.Create(dimension, 1));
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - start;
+
+        Assert.True(allocated < 64 << 20, $"Compiling allocated {allocated >> 20} MB");
+    }
+
     // The plugin's shelf terrain functions and noise, in 26.3's schema, laid over vanilla's 26.3 data.
     private static (WorldgenNoise Noise, WorldgenData Data) ShelfData()
     {

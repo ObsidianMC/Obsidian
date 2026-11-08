@@ -8,6 +8,9 @@ internal sealed partial class MaterialRules
     /// </summary>
     private sealed class RuleProgram(Instruction[] instructions)
     {
+        // Inlining children no longer than this bounds a program by its direct children's count times this.
+        private const int MaxInlined = 256;
+
         private readonly Instruction[] instructions = instructions;
 
         public static Func<MaterialContext, IBlock?> Sequence(Func<MaterialContext, IBlock?>[] rules)
@@ -35,7 +38,9 @@ internal sealed partial class MaterialRules
 
         private static void Append(List<Instruction> target, Func<MaterialContext, IBlock?> rule)
         {
-            if (rule.Target is not RuleProgram program)
+            // A larger child stays a call. Named rules can be referenced from many places, and each reference would
+            // copy the whole child, so data that nests such references would grow the program exponentially.
+            if (rule.Target is not RuleProgram program || program.instructions.Length > MaxInlined)
             {
                 target.Add(new Instruction(null, rule, 0));
                 return;
