@@ -31,6 +31,8 @@
 		<EmbeddedResource Include="Assets\mining_progress.json" />
 		<EmbeddedResource Include="Assets\block_placement.json" />
 		<EmbeddedResource Include="Assets\ticking_blocks.json" />
+		<EmbeddedResource Include="Assets\block_use.json" />
+
 		<EmbeddedResource Include="Assets\heightmaps.json" />
 		<EmbeddedResource Include="Assets\saved_heightmaps.json" />
 		<EmbeddedResource Include="Assets\structure_pieces.json" />
