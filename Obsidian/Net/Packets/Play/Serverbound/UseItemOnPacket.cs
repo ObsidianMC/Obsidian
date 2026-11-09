@@ -121,7 +121,8 @@ public partial class UseItemOnPacket
         }
 
         var result = await this.UseBlockAsync(use);
-        await this.CompleteAsync(use, result);
+        if (!use.CompletionDeferred)
+            await this.CompleteAsync(use, result);
 
         return result;
     }
@@ -186,7 +187,7 @@ public partial class UseItemOnPacket
             return UseResult.Pass;
 
         var itemResult = await this.UseItemAsync(use);
-        if (itemResult.ConsumesAction())
+        if (itemResult.ConsumesAction() && !use.CompletionDeferred)
         {
             if (use.AwardsItemUse)
                 player.Statistics.Increment(use.Item!.Holder.UnlocalizedName, type: "minecraft:used");

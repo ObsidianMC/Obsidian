@@ -99,6 +99,9 @@ internal sealed class BlockUse
     /// </summary>
     public bool AwardsItemUse { get; set; } = true;
 
+    /// <summary>A queued action owns rewards and the packet response once it commits or refuses the use.</summary>
+    public bool CompletionDeferred { get; set; }
+
     public bool CanCommit => this.Player.Alive && !this.Player.Respawning && this.Player.Level == this.Level;
 
     /// <summary>

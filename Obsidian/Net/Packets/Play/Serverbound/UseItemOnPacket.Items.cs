@@ -21,7 +21,7 @@ public partial class UseItemOnPacket
         ["EnderEyeItem"] = (packet, use) => packet.UseIgniterAsync(use),
         ["FlintAndSteelItem"] = (packet, use) => packet.UseIgniterAsync(use),
         ["FireChargeItem"] = (packet, use) => packet.UseIgniterAsync(use),
-        ["BoneMealItem"] = (_, use) => UseBoneMealAsync(use),
+        ["BoneMealItem"] = (packet, use) => packet.UseBoneMealAsync(use),
         ["HangingEntityItem"] = (packet, use) => packet.HangAsync(use)
     };
 
@@ -109,13 +109,33 @@ public partial class UseItemOnPacket
         });
 
     // Vanilla's BoneMealItem.useOn: bone meal grows a block that takes it, and is used up unless the player is in
-    // creative mode, on the level's tick (see UseBoneMeal).
-    private static ValueTask<UseResult> UseBoneMealAsync(BlockUse use)
+    // creative mode, with rewards and the response following the committed action on the level's tick.
+    private ValueTask<UseResult> UseBoneMealAsync(BlockUse use)
     {
-        if (!use.Level.UseBoneMeal(use.Position, use.Player, use.HandSlot))
+        if (!Growth.IsValidBonemealTarget(use.Level, use.Position, use.Block))
             return ValueTask.FromResult(UseResult.Pass);
 
-        use.Level.EmitGameEvent(MobGameEvent.ItemInteractFinish, use.Player.Position, use.Player);
+        use.CompletionDeferred = true;
+        use.Level.EnqueueEntityAction(async () =>
+        {
+            var committed = use.TryCommit(() =>
+            {
+                if (!Growth.IsValidBonemealTarget(use.Level, use.Position, use.Block))
+                    return false;
+
+                Growth.ApplyBonemeal(use.Level, use.Position, use.Block, use.Level.GrowthRandom);
+                return true;
+            }, consumeItem: true);
+            if (committed)
+            {
+                use.Level.BroadcastLevelEvent(Growth.BoneMealEvent, use.Position, Growth.BoneMealParticles);
+                use.Level.EmitGameEvent(MobGameEvent.ItemInteractFinish, use.Player.Position, use.Player);
+                use.Player.Statistics.Increment(use.Item!.Holder.UnlocalizedName, type: "minecraft:used");
+                await FireAsync(use, "item_used_on_block");
+            }
+
+            await this.CompleteAsync(use, committed ? UseResult.SuccessServer : UseResult.Fail);
+        });
         return ValueTask.FromResult(UseResult.SuccessServer);
     }
 
@@ -250,7 +270,6 @@ internal static class ItemDamage
             if (damage.Value >= maxDamage)
                 player.Inventory.RemoveItem(slot, 1);
         }
-
     }
 
     /// <summary>Whether a use damages the tool, which Unbreaking makes less likely.</summary>

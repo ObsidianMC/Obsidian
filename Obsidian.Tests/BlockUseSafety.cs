@@ -132,4 +132,56 @@ public sealed class BlockUseSafety
         }
     }
 
+    [Fact]
+    public async Task QueuedBoneMealClicksRewardOnlyCommittedItems()
+    {
+        await using var context = TestServerFactory.CreateServer($"queued-bone-meal-{Guid.NewGuid():N}");
+        var world = context.World;
+        WorldBlockEntities.AddEmptyChunk(world);
+        var target = new Vector(8, 64, 8);
+        await world.GetBlockAsync(target);
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "User",
+            new VectorD(8.5, 64, 10.5));
+        player.GameMode = GameMode.Survival;
+        var client = (TestClient)player.Client;
+
+        foreach (var interference in new[] { "none", "hand", "block", "death" })
+        {
+            player.Health = 20;
+            world.BlockUpdates.SetBlock(target + Vector.Down, BlocksRegistry.Farmland,
+                BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);
+            world.BlockUpdates.SetBlock(target, BlocksRegistry.Wheat,
+                BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);
+            player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.BoneMeal, 1));
+            var before = player.Statistics.Get("minecraft:bone_meal", "minecraft:used");
+            client.ClearPackets();
+            world.TakeGameEvents();
+
+            for (var click = 0; click < 3; click++)
+            {
+                var packet = BlockUpdates.UseOn(target, BlockFace.Up, new VectorF(0.5f, 0.5f, 0.5f));
+                await packet.UseAsync(context.Server, player);
+            }
+
+            Assert.Equal(before, player.Statistics.Get("minecraft:bone_meal", "minecraft:used"));
+            Assert.Empty(world.TakeGameEvents());
+            if (interference == "hand")
+                player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Diamond, 2));
+            if (interference == "block")
+                world.BlockUpdates.SetBlock(target, BlocksRegistry.Stone);
+            if (interference == "death")
+                player.Health = 0;
+
+            await world.RunQueuedEntityActionsAsync();
+
+            var committed = interference == "none" ? 1 : 0;
+            Assert.Equal(before + committed, player.Statistics.Get("minecraft:bone_meal", "minecraft:used"));
+            Assert.Equal(committed, world.TakeGameEvents().Count(e => e.Kind == MobGameEvent.ItemInteractFinish));
+            Assert.Equal(3, client.SentPackets.OfType<BlockChangedAckPacket>().Count());
+            if (interference == "none")
+                Assert.Null(player.GetHeldItem());
+            if (interference == "hand")
+                Assert.Equal(2, player.GetHeldItem()?.Count);
+        }
+    }
 }
