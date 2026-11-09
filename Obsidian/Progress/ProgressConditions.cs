@@ -34,7 +34,8 @@ internal static class ProgressConditions
                 "levels" when trigger == "enchanted_item" =>
                     levels is int value && NumberRange(condition.Value)
                         && LootTableJson.MatchesRange(value, condition.Value),
-                "location" when trigger is "placed_block" or "item_used_on_block" =>
+                "location" when trigger is "placed_block" or "item_used_on_block" or "default_block_use"
+                    or "any_block_use" =>
                     LocationEvent(player, condition.Value, item, block, position),
                 _ => false
             };

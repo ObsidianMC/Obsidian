@@ -15,27 +15,18 @@ public partial class UseItemOnPacket
 {
     // 1.21.11 SpawnEggItem resolves the type from entity_data, including per-stack overrides. There is no
     // colour-tinted generic egg model: each item supplies its own model and texture through normal assets.
-    private async ValueTask<bool> TryUseSpawnEggAsync(
-        IClientPlayer player,
-        int slot,
-        ItemStack? stack,
-        IBlock block)
+    private async ValueTask<UseResult> UseSpawnEggAsync(BlockUse use)
     {
-        var component = stack?.GetComponent<EntityDataComponent>(DataComponentType.EntityData);
-        if (stack is not { Count: > 0 } || component is null)
-        {
-            return false;
-        }
+        var player = use.Player;
+        var stack = use.Item!;
+        var block = use.Block;
+        var level = use.Level;
+        var component = stack.GetComponent<EntityDataComponent>(DataComponentType.EntityData) ?? DefaultEntity(stack);
+        if (component is null)
+            return UseResult.Pass;
 
-        player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
-        if (player.Level is not AbstractLevel level
-            || !Plugins.ItemBehaviors.CanUseItems(player)
-            || player.GameMode == GameMode.Adventure
-            || (uint)this.Face > (uint)BlockFace.East
-            || (player.Position - (VectorD)this.Position).MagnitudeSquared() > 36)
-        {
-            return true;
-        }
+        if (!Plugins.ItemBehaviors.CanUseItems(player) || (uint)this.Face > (uint)BlockFace.East)
+            return UseResult.Fail;
 
         var definition = EntityDefinitionsRegistry.PluginDefinitions
             .FirstOrDefault(type => type.Id == component.RegistryId);
@@ -45,7 +36,7 @@ public partial class UseItemOnPacket
                 ? (Mob)PluginEntity.Create(definition, level)
                 : null;
         if (mob is null)
-            return true;
+            return UseResult.Fail;
 
         var id = EntityNbt.TypeId(mob);
         if (block.Is(BlockIds.Spawner)
@@ -64,7 +55,7 @@ public partial class UseItemOnPacket
             var clickedShape = BlockCollisionShapes.Get(level, this.Position, block);
             var target = clickedShape.Count == 0 ? this.Position : this.Position + this.Face.ToVector();
             if (level.IsOutsideBuildHeight(target.Y))
-                return true;
+                return UseResult.Fail;
 
             mob.EntityId = Server.GetNextEntityId();
             mob.Position = (VectorD)target + new VectorD(0.5, 0, 0.5);
@@ -98,20 +89,23 @@ public partial class UseItemOnPacket
 
             mob.ReadNbt(saved);
             level.SpawnEntity(mob);
+            level.EmitGameEvent(MobGameEvent.EntityPlace, mob.Position, player);
         }
 
-        if (player.GameMode != GameMode.Creative)
-        {
-            stack.Count--;
-            player.Inventory.SetItem(slot, stack.Count > 0 ? stack : null);
-            await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
-            {
-                ContainerId = 0,
-                Slot = (short)slot,
-                SlotData = player.Inventory.GetItem(slot)
-            });
-        }
+        await use.ConsumeItemAsync();
+        return UseResult.Success;
+    }
 
-        return true;
+    // The entity a spawn egg's own entity_data names, for a stack that doesn't carry the component itself.
+    private static EntityDataComponent? DefaultEntity(ItemStack stack)
+    {
+        var data = CombatItems.Component(stack, "entity_data");
+        if (data.ValueKind != System.Text.Json.JsonValueKind.Object || !data.TryGetProperty("id", out var id))
+            return null;
+
+        if (!EntityNbt.TryParseType(id.GetString(), out var type))
+            return null;
+
+        return new EntityDataComponent(DataComponentType.EntityData) { RegistryId = (int)type };
     }
 }

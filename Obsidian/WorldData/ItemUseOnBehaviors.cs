@@ -13,6 +13,10 @@ internal static partial class ItemUseOnBehaviors
 {
     private static readonly FrozenDictionary<string, JsonElement> transformers = Load("block_transformer.json");
 
+    /// <summary>The vanilla class declaring each overridden item <c>useOn</c>, by item identifier.</summary>
+    internal static readonly FrozenDictionary<string, string> Owners = Load("item_use_on_classes.json")
+        .ToFrozenDictionary(entry => entry.Key, entry => entry.Value.GetString()!);
+
     internal sealed record Transformation(IBlock State, JsonElement Data)
     {
         public string Sound => Data.GetProperty("sound").GetString()!;

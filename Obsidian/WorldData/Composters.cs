@@ -56,7 +56,8 @@ internal static class Composters
     {
         level.PacketBroadcaster.BroadcastToLevelInRange(level, position, new SoundPacket
         {
-            SoundLocation = sound,
+            // SoundId's names have no namespace, which vanilla's sound packet carries.
+            SoundLocation = "minecraft:" + sound,
             SoundPosition = new SoundPosition(position.X + 0.5, position.Y + 0.5, position.Z + 0.5),
             Category = SoundCategory.Blocks,
             Volume = 1,

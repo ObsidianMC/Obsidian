@@ -1,6 +1,4 @@
-using Obsidian.API.Inventory;
 using Obsidian.Entities;
-using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -9,32 +7,18 @@ public partial class UseItemOnPacket
 {
     // Vanilla's MinecartItem.useOn: a minecart item used on a rail puts the cart on it; on anything else it does
     // nothing.
-    private async ValueTask<bool> TryPlaceMinecartAsync(IClientPlayer player, int handSlot, ItemStack? item, IBlock block)
+    private async ValueTask<UseResult> PlaceMinecartAsync(BlockUse use)
     {
-        if (item is not { Count: > 0 } || VehicleItems.MinecartFor(item.Holder) is not EntityType type)
-            return false;
+        if (VehicleItems.MinecartFor(use.Item!.Holder) is not EntityType type)
+            return UseResult.Pass;
 
-        player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
-        if (player.GameMode is GameMode.Spectator or GameMode.Adventure
-            || player.Health <= 0
-            || player.Level is not AbstractLevel level
-            || VehicleItems.PlaceMinecart(level, type, this.Position, block, item) is null)
-        {
-            return true;
-        }
+        var cart = VehicleItems.PlaceMinecart(use.Level, type, this.Position, use.Block, use.Item);
+        if (cart is null)
+            return UseResult.Fail;
 
-        if (player.GameMode != GameMode.Creative)
-        {
-            player.Inventory.RemoveItem(handSlot, 1);
-            await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
-            {
-                ContainerId = 0,
-                Slot = (short)handSlot,
-                SlotData = player.Inventory.GetItem(handSlot)
-            });
-        }
+        use.Level.EmitGameEvent(MobGameEvent.EntityPlace, cart.Position, use.Player);
+        await use.ConsumeItemAsync();
 
-        player.Statistics.Increment(item.Holder.UnlocalizedName, type: "minecraft:used");
-        return true;
+        return UseResult.Success;
     }
 }

@@ -179,7 +179,9 @@ public sealed class BlockUpdates : IDisposable
         var container = await this.LoadProbeAsync(manager);
 
         Assert.True(BlocksRegistry.TryGetPluginBlock("probe:relay", out var relay));
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Placer");
+        // Within reach of the blocks it clicks, as vanilla requires.
+        var standing = new VectorD(9.5, Ground + 1, 6.5);
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Placer", standing);
         player.GameMode = GameMode.Survival;
         player.Yaw = 90;
         player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(relay.Item!, 2));
@@ -272,7 +274,9 @@ public sealed class BlockUpdates : IDisposable
         await using var context = TestServerFactory.CreateServer($"vanilla-placement-{Guid.NewGuid():N}");
         var world = context.World;
         await AddChunksAsync(world);
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Facer");
+        // Within reach of the blocks it clicks, as vanilla requires.
+        var standing = new VectorD(5.5, Ground + 1, 6.5);
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Facer", standing);
         player.GameMode = GameMode.Survival;
         player.Yaw = 90;
 

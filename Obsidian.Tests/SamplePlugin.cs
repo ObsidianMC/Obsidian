@@ -422,8 +422,13 @@ public sealed partial class SamplePlugin : IDisposable
         var second = first + Vector.West;
         await world.SetBlockAsync(machine, grinder.DefaultState);
         player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(cable.Item!, 2));
+
+        // Within reach of both, as vanilla requires.
+        var standing = player.Position;
+        player.Position = new VectorD(6.5, BlockUpdates.Ground + 1, 5.5);
         await BlockUpdates.UseOn(first + Vector.Down, BlockFace.Up).HandleAsync(context.Server, player);
         await BlockUpdates.UseOn(second + Vector.Down, BlockFace.Up).HandleAsync(context.Server, player);
+        player.Position = standing;
 
         Assert.Equal(["south", "west"], Connected(first));
         Assert.Equal(["east"], Connected(second));

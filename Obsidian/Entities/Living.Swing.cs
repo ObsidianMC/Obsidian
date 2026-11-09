@@ -30,6 +30,14 @@ public partial class Living
         return this.Swing(hand, animation, includeSelf: false);
     }
 
+    /// <summary>
+    /// Swings the arm in <paramref name="hand"/> for a use that succeeded, with the used item's interact animation,
+    /// like vanilla's <c>swingAndResetAttackStrength</c>. The user's own client is shown it only for a use it doesn't
+    /// predict (<see cref="WorldData.UseResult.SuccessServer"/>).
+    /// </summary>
+    internal bool SwingForUse(InteractionHand hand, ItemStack? used, bool includeSelf) =>
+        this.Swing(hand, Animation(used, "interact_animation"), includeSelf);
+
     internal bool Swing(InteractionHand hand, SwingAnimation animation, bool includeSelf)
     {
 
@@ -51,9 +59,12 @@ public partial class Living
         return true;
     }
 
-    private static SwingAnimation AttackAnimation(ItemStack? item)
+    private static SwingAnimation AttackAnimation(ItemStack? item) => Animation(item, "attack_animation");
+
+    // The item's swing animation component of that name, or vanilla's default whack.
+    private static SwingAnimation Animation(ItemStack? item, string componentName)
     {
-        var component = CombatItems.Component(item, "attack_animation");
+        var component = CombatItems.Component(item, componentName);
         if (component.ValueKind != System.Text.Json.JsonValueKind.Object)
             return defaultSwing;
 

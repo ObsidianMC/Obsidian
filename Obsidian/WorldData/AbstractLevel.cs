@@ -1020,6 +1020,9 @@ public abstract partial class AbstractLevel : ILevel
     /// with. Called under the simulation gate.
     /// </summary>
     /// <param name="timings">The tick's timings, which time the actions apart from the spawns; none outside a tick.</param>
+    /// <summary>Runs the entity actions queued so far, as the level's tick does.</summary>
+    internal Task RunQueuedEntityActionsAsync() => this.RunEntityActionsAsync();
+
     private async Task RunEntityActionsAsync(TickTimings? timings = null)
     {
         var simulationCount = simulationActions.Count;
