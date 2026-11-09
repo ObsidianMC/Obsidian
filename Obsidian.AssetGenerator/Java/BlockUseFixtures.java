@@ -12,6 +12,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Set;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.block.entity.SignText;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
@@ -82,7 +85,9 @@ public final class BlockUseFixtures {
             forceArea(root);
             server.submit(() -> {
                 try {
-                    capture(root);
+                    var selected = args.length > 1 && !args[1].isBlank()
+                        ? Set.of(args[1].split("\\+")) : Set.<String>of();
+                    capture(root, selected);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -127,7 +132,7 @@ public final class BlockUseFixtures {
             && level.isPositionEntityTicking(target);
     }
 
-    private static void capture(JsonObject root) throws Exception {
+    private static void capture(JsonObject root, Set<String> selected) throws Exception {
         var level = server.overworld();
         var target = position(root.getAsJsonArray("target"));
         var standing = root.getAsJsonArray("player");
@@ -154,6 +159,8 @@ public final class BlockUseFixtures {
 
         for (var element : root.getAsJsonArray("cases")) {
             var input = element.getAsJsonObject();
+            if (!selected.isEmpty() && !selected.contains(input.get("name").getAsString()))
+                continue;
 
             // Clearing the last case's blocks can drop what they held (a jukebox's disc), which goes too.
             clear(level, target);
@@ -162,6 +169,16 @@ public final class BlockUseFixtures {
                 var placement = setup.getAsJsonObject();
                 var pos = target.offset(position(placement.getAsJsonArray("offset")));
                 level.setBlock(pos, state(placement.get("state").getAsString()), QuietFlags);
+                if (placement.has("text") && level.getBlockEntity(pos) instanceof SignBlockEntity sign) {
+                    var text = new SignText(
+                        List.of(Component.literal(placement.get("text").getAsString()),
+                            Component.empty(), Component.empty(), Component.empty()),
+                        List.of(Component.literal(placement.get("text").getAsString()),
+                            Component.empty(), Component.empty(), Component.empty()),
+                        net.minecraft.world.item.DyeColor.BLACK, false);
+                    sign.setText(text, SignTextSlot.FRONT);
+                    sign.setText(text, SignTextSlot.BACK);
+                }
             }
 
             prepare(user, standing, input);
@@ -170,16 +187,59 @@ public final class BlockUseFixtures {
             heard.clear();
             gameEvents.clear();
             user.awarded.clear();
+            user.editor = null;
+
+            if (input.has("checkAttack"))
+                user.chargeAttack();
+
+            var advancement = prepareCriteria(level, user, input);
+            var usedStack = user.getItemInHand(hand(input));
 
             var result = use(level, user, target, input);
+            if (advancement != null && result.consumesAction()) {
+                var clicked = target.offset(position(input.getAsJsonArray("clicked")));
+                net.minecraft.advancements.triggers.CriteriaTriggers.ANY_BLOCK_USE.trigger(user, clicked, usedStack);
+            }
             runBlockEvents(level);
+
+            if (advancement != null) {
+                var progress = user.getAdvancements().getOrStartProgress(advancement);
+                var awarded = new JsonArray();
+                for (var name : input.getAsJsonObject("criteria").keySet()) {
+                    if (progress.getCriterion(name).isDone())
+                        awarded.add(name);
+                }
+                input.add("awardedCriteria", awarded);
+            }
 
             input.addProperty("result", result(result));
             input.addProperty("changes", changes(level, target, before));
-            input.addProperty("hand", stack(user.getItemInHand(InteractionHand.MAIN_HAND)));
+            input.addProperty("hand", stack(user.getItemInHand(hand(input))));
+            if (input.has("checkSign")) {
+                var clicked = target.offset(position(input.getAsJsonArray("clicked")));
+                var sign = (SignBlockEntity) level.getBlockEntity(clicked);
+                var text = sign.getText(sign.getSlotPlayerIsFacing(user));
+                input.addProperty("signColor", text.getColor().getName());
+                input.addProperty("signGlowing", text.hasGlowingText());
+                input.addProperty("signWaxed", sign.isWaxed());
+                input.addProperty("editor", user.editor);
+            }
             input.add("entities", entities(level, target));
             record(input, heard, gameEvents);
             input.add("stats", strings(user.awarded));
+            if (input.has("checkAttack")) {
+                user.swingAndResetAttackStrength(hand(input),
+                    net.minecraft.world.item.component.SwingAnimation.DEFAULT, true);
+                input.addProperty("attackCharge", user.getAttackStrengthScale(0.5f));
+
+                var swingField = net.minecraft.world.entity.LivingEntity.class.getDeclaredField("swingState");
+                swingField.setAccessible(true);
+                ((net.minecraft.world.entity.LivingEntity.SwingState) swingField.get(user)).tick();
+                user.chargeAttack();
+                user.swingAndResetAttackStrength(hand(input),
+                    net.minecraft.world.item.component.SwingAnimation.DEFAULT, true);
+                input.addProperty("blockedAttackCharge", user.getAttackStrengthScale(0.5f));
+            }
             input.add("menu", null);
 
             for (var packet : userPackets) {
@@ -199,6 +259,25 @@ public final class BlockUseFixtures {
                 record(closed, heard, gameEvents);
                 input.add("closed", closed);
             }
+
+            if (input.has("checkCloseSources")) {
+                use(level, user, target, input);
+                use(level, bystander, target, input);
+                runBlockEvents(level);
+                gameEvents.clear();
+                user.closeContainer();
+                bystander.closeContainer();
+                runBlockEvents(level);
+                input.add("explicitCloseEvents", strings(gameEvents));
+
+                use(level, user, target, input);
+                runBlockEvents(level);
+                gameEvents.clear();
+                user.containerMenu = user.inventoryMenu;
+                ((net.minecraft.world.level.block.entity.ChestBlockEntity) level.getBlockEntity(target)).recheckOpen();
+                runBlockEvents(level);
+                input.add("periodicCloseEvents", strings(gameEvents));
+            }
         }
 
         clear(level, target);
@@ -207,6 +286,48 @@ public final class BlockUseFixtures {
 
     private static GameProfile profile(String name) {
         return new GameProfile(UUID.nameUUIDFromBytes(name.getBytes(StandardCharsets.UTF_8)), name);
+    }
+
+    private static net.minecraft.advancements.AdvancementHolder prepareCriteria(
+        ServerLevel level, ProbePlayer user, JsonObject input) throws Exception {
+        if (!input.has("criteria"))
+            return null;
+
+        var definition = new JsonObject();
+        var criteria = input.getAsJsonObject("criteria").deepCopy();
+        // The fixture lists location terms directly; 26.3 encodes that conjunction as an all_of predicate.
+        for (var criterion : criteria.entrySet()) {
+            var conditions = criterion.getValue().getAsJsonObject().getAsJsonObject("conditions");
+            var conjunction = new JsonObject();
+            conjunction.addProperty("type", "minecraft:all_of");
+            for (var term : conditions.getAsJsonArray("location")) {
+                var predicate = term.getAsJsonObject();
+                predicate.add("type", predicate.remove("condition"));
+                if (predicate.get("type").getAsString().equals("minecraft:block_state_property")) {
+                    var block = new JsonObject();
+                    block.add("blocks", predicate.remove("block"));
+                    if (predicate.has("properties"))
+                        block.add("state", predicate.remove("properties"));
+
+                    predicate.addProperty("type", "minecraft:match_block");
+                    for (var property : block.entrySet())
+                        predicate.add(property.getKey(), property.getValue());
+                }
+            }
+            conjunction.add("terms", conditions.get("location"));
+            conditions.add("location", conjunction);
+        }
+        definition.add("criteria", criteria);
+        var ops = level.registryAccess().createSerializationContext(com.mojang.serialization.JsonOps.INSTANCE);
+        var value = net.minecraft.advancements.Advancement.CODEC.parse(ops, definition).getOrThrow();
+        var id = Identifier.parse("probe:" + input.get("name").getAsString());
+        var holder = new net.minecraft.advancements.AdvancementHolder(id, value);
+        user.getAdvancements().getOrStartProgress(holder);
+        var register = net.minecraft.server.PlayerAdvancements.class.getDeclaredMethod(
+            "registerListeners", net.minecraft.advancements.AdvancementHolder.class);
+        register.setAccessible(true);
+        register.invoke(user.getAdvancements(), holder);
+        return holder;
     }
 
     // The case's game mode, sneaking and held item, with the user standing where the fixture says.
@@ -244,9 +365,15 @@ public final class BlockUseFixtures {
             clicked.getZ() + (cursor == null ? 0.5 : cursor.get(2).getAsDouble()));
         var face = Direction.valueOf(input.get("face").getAsString().toUpperCase(Locale.ROOT));
         var hit = new BlockHitResult(location, face, clicked, false);
-        var stack = user.getItemInHand(InteractionHand.MAIN_HAND);
+        var hand = hand(input);
+        var stack = user.getItemInHand(hand);
 
-        return user.gameMode.useItemOn(user, level, stack, InteractionHand.MAIN_HAND, hit);
+        return user.gameMode.useItemOn(user, level, stack, hand, hit);
+    }
+
+    private static InteractionHand hand(JsonObject input) {
+        return input.has("handUsed") && input.get("handUsed").getAsString().equals("offhand")
+            ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
     }
 
     // The result's kind as the packet handler reads it: whether it consumed the action and how the arm swings.
@@ -514,12 +641,18 @@ public final class BlockUseFixtures {
     /** A player whose statistics are recorded, and who has no sign editor to open. */
     private static final class ProbePlayer extends ServerPlayer {
         final List<String> awarded = new ArrayList<>();
+        String editor;
 
         ProbePlayer(MinecraftServer server, ServerLevel level, GameProfile profile) {
             super(server, level, profile, ClientInformation.createDefault());
         }
 
+        void chargeAttack() {
+            this.attackStrengthTicker = 30;
+        }
+
         @Override public void openTextEdit(SignBlockEntity sign, SignTextSlot slot) {
+            editor = slot.toString().toLowerCase(Locale.ROOT);
         }
 
         @Override public void awardStat(Stat<?> stat, int amount) {

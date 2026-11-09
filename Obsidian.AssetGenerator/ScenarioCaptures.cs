@@ -62,12 +62,12 @@ internal static class ScenarioCaptures
 
     // The fixtures whose probes record only the cases asked for.
     private static readonly string[] SelectableCases =
-        [Redstone, Sulfur, MoreBlocks, StructurePieces, Fire, TickingBlocks];
+        [Redstone, Sulfur, MoreBlocks, StructurePieces, Fire, TickingBlocks, BlockUse];
+
 
     public static readonly string[] All =
         [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps, Mining,
             Placement, CopperWeathering, Fire, TickingBlocks, BlockUse];
-
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -110,7 +110,8 @@ internal static class ScenarioCaptures
         {
             throw new ArgumentException(
                 "Case selection requires CaptureFixtures=redstone, sulfur, more_blocks, structure_pieces, "
-                + "fire or ticking_blocks.");
+                + "fire, ticking_blocks or block_use.");
+
         }
 
         if (fixtures.Contains(CopperWeathering))
@@ -138,7 +139,7 @@ internal static class ScenarioCaptures
 
         if (fixtures.Contains(BlockUse))
         {
-            await FixtureDumper.DumpBlockUseAsync(server, Path.Combine(assetsDirectory, "block_use.json"));
+            await FixtureDumper.DumpBlockUseAsync(server, Path.Combine(assetsDirectory, "block_use.json"), cases);
 
             if (fixtures.Count == 1)
                 return;

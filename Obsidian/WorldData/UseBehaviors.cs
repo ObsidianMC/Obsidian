@@ -159,24 +159,6 @@ internal sealed class BlockUse
         }
     }
 
-    /// <summary>Takes one of the captured item, refusing a hand that changed while the use awaited.</summary>
-    public async ValueTask ConsumeItemAsync()
-    {
-        if (this.Player.GameMode == GameMode.Creative || !this.HasItem)
-            return;
-
-        using (this.Player.Inventory.Lock())
-        {
-            if (!this.CanCommit || !ReferenceEquals(this.Player.Inventory.GetItem(this.HandSlot), this.Item)
-                || !this.Item!.Equals(this.UsedItem))
-                return;
-
-            this.Player.Inventory.RemoveItem(this.HandSlot, 1);
-        }
-
-        await this.Player.SyncInventorySlotAsync(this.HandSlot);
-    }
-
     /// <summary>Awards one of a <c>minecraft:custom</c> statistic, such as <c>minecraft:open_chest</c>.</summary>
     public void Award(string statistic) => this.Player.Statistics.Increment(statistic);
 }

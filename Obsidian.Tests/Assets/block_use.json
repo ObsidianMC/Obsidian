@@ -2566,6 +2566,290 @@
       "gameEvents": [],
       "stats": [],
       "menu": null
+    },
+    {
+      "name": "sign_text_dye",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_sign",
+          "text": "Hello"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkSign": true,
+      "item": "minecraft:red_dye",
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:red_dye x1",
+      "signColor": "red",
+      "signGlowing": false,
+      "signWaxed": false,
+      "editor": null,
+      "entities": [],
+      "sounds": [
+        "minecraft:item.dye.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:red_dye 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "sign_text_glow",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_sign",
+          "text": "Hello"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkSign": true,
+      "item": "minecraft:glow_ink_sac",
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:glow_ink_sac x1",
+      "signColor": "black",
+      "signGlowing": true,
+      "signWaxed": false,
+      "editor": null,
+      "entities": [],
+      "sounds": [
+        "minecraft:item.glow_ink_sac.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:glow_ink_sac 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "sign_honeycomb",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_sign",
+          "text": "Hello"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkSign": true,
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:honeycomb x1",
+      "signColor": "black",
+      "signGlowing": false,
+      "signWaxed": true,
+      "editor": null,
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "sign_empty_hand_edit",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_sign"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkSign": true,
+      "result": "success_server",
+      "changes": "",
+      "hand": "empty",
+      "signColor": "black",
+      "signGlowing": false,
+      "signWaxed": false,
+      "editor": "front",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "sign_offhand_empty",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_sign"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkSign": true,
+      "handUsed": "offhand",
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "signColor": "black",
+      "signGlowing": false,
+      "signWaxed": false,
+      "editor": null,
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "sign_offhand_dye",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_sign",
+          "text": "Hello"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkSign": true,
+      "offhand": "minecraft:red_dye",
+      "handUsed": "offhand",
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:red_dye x1",
+      "signColor": "red",
+      "signGlowing": false,
+      "signWaxed": false,
+      "editor": null,
+      "entities": [],
+      "sounds": [
+        "minecraft:item.dye.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:red_dye 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "hanging_sign_text_dye",
+      "setup": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_hanging_sign",
+          "text": "Hello"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkSign": true,
+      "item": "minecraft:red_dye",
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:red_dye x1",
+      "signColor": "red",
+      "signGlowing": false,
+      "signWaxed": false,
+      "editor": null,
+      "entities": [],
+      "sounds": [
+        "minecraft:item.dye.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:red_dye 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "hanging_sign_empty_hand",
+      "setup": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_hanging_sign"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkSign": true,
+      "result": "success_server",
+      "changes": "",
+      "hand": "empty",
+      "signColor": "black",
+      "signGlowing": false,
+      "signWaxed": false,
+      "editor": "front",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
     }
   ],
   "version": "26.3"

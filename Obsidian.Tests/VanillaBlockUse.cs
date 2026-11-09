@@ -2,10 +2,12 @@ using Obsidian.API;
 using Obsidian.API.Blocks;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
+using Obsidian.Nbt;
 using Obsidian.API.Registries;
 using Obsidian.API.Utilities;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.Tests.Utilities;
@@ -27,6 +29,7 @@ namespace Obsidian.Tests;
 /// use-item-on packet players send, in one shared world: the result, the blocks, the hand, the entities, what a
 /// player beside the block hears, the game events, the statistics and the menu, and what closing the menu does.
 /// </summary>
+[Collection(nameof(PluginTagFiles))]
 public sealed class VanillaBlockUse(ITestOutputHelper output)
 {
     // How far from the target the compared area reaches, as in the capture.
@@ -42,7 +45,7 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
     // play one as the mob appears: those sounds aren't compared.
     private static readonly HashSet<string> withoutAmbientSounds = ["spawn_egg_on_stone"];
 
-    private sealed record Setup(Vector Offset, IBlock State);
+    private sealed record Setup(Vector Offset, IBlock State, string? Text);
 
     private sealed record Effects(
         string Changes,
@@ -70,7 +73,8 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         string? Offhand,
         GameMode GameMode,
         bool Sneaking,
-        Outcome Expected);
+        Outcome Expected,
+        JsonElement Reference);
 
     private sealed record Harness(RealServerContext Context, ServerPlayer User, ServerPlayer Bystander);
 
@@ -87,7 +91,33 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         var harness = await StartAsync(root);
         await using var context = harness.Context;
 
-        await FixtureCases.AssertAllAsync(cases, use => use.Name, use => ReplayAsync(harness, use));
+        var previous = AdvancementsRegistry.Current.Values.ToArray();
+        try
+        {
+            await FixtureCases.AssertAllAsync(cases, use => use.Name, async use =>
+            {
+                if (use.Reference.TryGetProperty("criteria", out var criteria))
+                {
+                    using var definition = JsonDocument.Parse("{\"criteria\":" + criteria.GetRawText() + "}");
+                    var advancement = AdvancementsRegistry.Parse("probe:" + use.Name, definition.RootElement);
+                    AdvancementsRegistry.Apply(previous.Append(advancement));
+                }
+
+                try
+                {
+                    await ReplayAsync(harness, use);
+                }
+                finally
+                {
+                    if (use.Reference.TryGetProperty("criteria", out _))
+                        AdvancementsRegistry.Apply(previous);
+                }
+            });
+        }
+        finally
+        {
+            AdvancementsRegistry.Apply(previous);
+        }
         output.WriteLine($"Replayed {cases.Length} block uses.");
     }
 
@@ -137,15 +167,39 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         // The case's blocks in a cleared area, and the user as the case has them.
         await ClearAsync(world);
         foreach (var setup in use.Setup)
+        {
             world.BlockUpdates.SetBlock(target + setup.Offset, setup.State, Quiet);
+            if (setup.Text is string text
+                && world.GetResidentBlockEntity(target + setup.Offset) is DataBlockEntity sign)
+            {
+                foreach (var side in new[] { "front_text", "back_text" })
+                {
+                    var messages = new NbtList(NbtTagType.String, "messages")
+                    {
+                        new NbtTag<string>("", text),
+                        new NbtTag<string>("", ""),
+                        new NbtTag<string>("", ""),
+                        new NbtTag<string>("", "")
+                    };
+                    sign.Set(new NbtCompound(side) { messages });
+                }
+            }
+        }
 
         Prepare(user, use);
+        if (use.Reference.TryGetProperty("checkAttack", out _))
+            ChargeAttack(user);
+
         var before = Snapshot(world);
         var statistics = user.ProgressStatistics.Save();
         Forget(harness);
 
         // The use, the block updates it caused and the tick's block events.
+        var offhand = OptionalString(use.Reference, "handUsed") == "offhand";
         var packet = BlockUpdates.UseOn(target + use.Clicked, use.Face, new VectorF(0.5f, 0.5f, 0.5f));
+        if (offhand)
+            typeof(UseItemOnPacket).GetProperty(nameof(UseItemOnPacket.Hand))!.SetValue(packet, InteractionHand.OffHand);
+
         var result = await packet.UseAsync(harness.Context.Server, user);
         await world.RunQueuedEntityActionsAsync();
         await world.BlockNotifications.DrainAsync();
@@ -156,7 +210,7 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         var swings = Swings(harness);
         var outcome = new Outcome(
             Name(result),
-            Text(user.GetHeldItem()),
+            Text(offhand ? user.GetOffHandItem() : user.GetHeldItem()),
             Entities(world),
             effects,
             Awarded(statistics, user.ProgressStatistics.Save()),
@@ -166,7 +220,91 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         var expected = withoutAmbientSounds.Contains(use.Name) ? WithoutAmbientSounds(use.Expected) : use.Expected;
         var differences = Compare(expected, outcome).ToList();
         differences.AddRange(CompareSwings(use.Expected.Result, swings));
+        if (use.Reference.TryGetProperty("criteria", out var criteria))
+        {
+            var awarded = criteria.EnumerateObject()
+                .Where(criterion => user.Advancements.HasCriterion("probe:" + use.Name, criterion.Name))
+                .Select(criterion => criterion.Name)
+                .ToArray();
+            differences.AddRange(CompareSets("advancement criteria",
+                Strings(use.Reference.GetProperty("awardedCriteria")), awarded));
+        }
+
+        if (use.Reference.TryGetProperty("checkAttack", out _))
+        {
+            Assert.Equal(use.Reference.GetProperty("attackCharge").GetSingle(), user.AttackCharge);
+            world.LevelData.GameTime++;
+            ChargeAttack(user);
+            Assert.False(user.SwingForUse(InteractionHand.MainHand, user.GetHeldItem(), includeSelf: true));
+            Assert.Equal(use.Reference.GetProperty("blockedAttackCharge").GetSingle(), user.AttackCharge);
+            world.LevelData.GameTime += 6;
+        }
+
+        if (use.Reference.TryGetProperty("checkSign", out _))
+        {
+            var sign = (DataBlockEntity)world.GetResidentBlockEntity(target + use.Clicked)!;
+            var data = sign.SnapshotData();
+            if (!data.TryGetTag<NbtCompound>("front_text", out var text))
+                text = new NbtCompound("front_text");
+            var color = text.TryGetTag<NbtTag<string>>("color", out var dye) ? dye.Value : "black";
+            var glowing = text.TryGetBool("has_glowing_text", out var glow) && glow;
+            var waxed = data.TryGetBool("is_waxed", out var wax) && wax;
+            var editor = ((TestClient)user.Client).SentPackets.OfType<OpenSignEditorPacket>().LastOrDefault();
+            var edited = editor?.Slot.ToString().ToLowerInvariant();
+            if (color != use.Reference.GetProperty("signColor").GetString()
+                || glowing != use.Reference.GetProperty("signGlowing").GetBoolean()
+                || waxed != use.Reference.GetProperty("signWaxed").GetBoolean()
+                || edited != OptionalString(use.Reference, "editor"))
+            {
+                differences.Add($"sign: color={color}, glowing={glowing}, waxed={waxed}, editor={edited}");
+            }
+        }
         Assert.True(differences.Count == 0, string.Join("; ", differences));
+
+        if (use.Reference.TryGetProperty("checkCloseSources", out _))
+            await CheckCloseSourcesAsync(harness, use);
+    }
+
+    private static void ChargeAttack(ServerPlayer player) =>
+        typeof(PlayerBase).GetField("attackTicks", System.Reflection.BindingFlags.NonPublic
+            | System.Reflection.BindingFlags.Instance)!.SetValue(player, 30);
+
+    private static async Task CheckCloseSourcesAsync(Harness harness, Case use)
+    {
+        var world = harness.Context.World;
+        var other = harness.Bystander;
+        other.GameMode = GameMode.Survival;
+
+        async Task OpenAsync(ServerPlayer player)
+        {
+            await BlockMenus.OpenAsync(player, world.BlockUpdates.GetBlock(target), target);
+            await world.ProcessBlockEventsAsync();
+        }
+
+        async Task CloseAsync(ServerPlayer player)
+        {
+            await harness.Context.EventDispatcher.ExecuteEventAsync(new ContainerClosedEventArgs(
+                player, harness.Context.Server, player.OpenedContainer!, player.CurrentContainerId));
+        }
+
+        await OpenAsync(harness.User);
+        await OpenAsync(other);
+        world.TakeGameEvents();
+        await CloseAsync(harness.User);
+        await CloseAsync(other);
+        await world.ProcessBlockEventsAsync();
+        var explicitEvents = world.TakeGameEvents().Select(e => GameEvent(e, harness.User)).ToArray();
+        Assert.Equal(Strings(use.Reference.GetProperty("explicitCloseEvents")), explicitEvents);
+
+        await OpenAsync(harness.User);
+        world.TakeGameEvents();
+        harness.User.Health = 0;
+        world.LevelData.GameTime += AbstractLevel.ContainerLidRecheckDelay;
+        await world.ProcessBlockEventsAsync();
+        var periodicEvents = world.TakeGameEvents().Select(e => GameEvent(e, harness.User)).ToArray();
+        Assert.Equal(Strings(use.Reference.GetProperty("periodicCloseEvents")), periodicEvents);
+        harness.User.Health = 20;
+        await CloseAsync(harness.User);
     }
 
     private static void Prepare(ServerPlayer user, Case use)
@@ -497,7 +635,8 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         var setup = use.GetProperty("setup").EnumerateArray()
             .Select(block => new Setup(
                 Position(block.GetProperty("offset")),
-                VanillaSulfurBlocks.ParseState(block.GetProperty("state").GetString()!)))
+                VanillaSulfurBlocks.ParseState(block.GetProperty("state").GetString()!),
+                OptionalString(block, "text")))
             .ToArray();
         var mode = use.TryGetProperty("gameMode", out var gameMode) ? gameMode.GetString()! : "survival";
 
@@ -511,7 +650,8 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
             OptionalString(use, "offhand"),
             Enum.Parse<GameMode>(mode, ignoreCase: true),
             use.TryGetProperty("sneaking", out var sneaking) && sneaking.GetBoolean(),
-            ReadOutcome(use));
+            ReadOutcome(use),
+            use);
     }
 
     private static Outcome ReadOutcome(JsonElement use)

@@ -325,17 +325,27 @@ internal static partial class UseBehaviors
     {
         public async ValueTask<UseResult> UseItemOnAsync(BlockUse use)
         {
-            var (used, consume) = Signs.Use(use.Level, use.Position, use.Block, use.Player, use.Item);
-            if (!used)
-                return UseResult.Pass;
-
-            if (consume)
+            Action? complete = null;
+            if (!use.HasItem || !use.MayBuild || !use.TryCommit(() =>
             {
-                use.Player.Statistics.Increment(use.Item!.Holder.UnlocalizedName, type: "minecraft:used");
-                await use.ConsumeItemAsync();
-            }
+                var (used, after) = Signs.Use(use.Level, use.Position, use.Block, use.Player, use.Item);
+                complete = after;
+                return used;
+            }, consumeItem: true))
+                return UseResult.TryWithEmptyHand;
 
-            return UseResult.SuccessServer;
+            complete?.Invoke();
+            use.Player.Statistics.Increment(use.Item!.Holder.UnlocalizedName, type: "minecraft:used");
+            await use.Player.SyncInventorySlotAsync(use.HandSlot);
+            use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center, use.Player);
+            return UseResult.Success;
+        }
+
+        public ValueTask<UseResult> UseWithoutItemAsync(BlockUse use)
+        {
+            var used = use.TryCommit(() =>
+                Signs.UseWithoutItem(use.Level, use.Position, use.Block, use.Player));
+            return ValueTask.FromResult(used ? UseResult.SuccessServer : UseResult.Pass);
         }
     }
 

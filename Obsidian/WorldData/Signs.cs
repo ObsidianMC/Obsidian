@@ -82,23 +82,19 @@ internal static class Signs
 
     /// <summary>
     /// A player uses a sign, like vanilla's <c>SignBlock.useItemOn</c>: a dye colors the text on the side they face,
-    /// a glow ink sac makes it glow and an ink sac stops it glowing, honeycomb waxes the sign, and anything else
-    /// opens that side to write on. A waxed sign takes none of it.
+    /// a glow ink sac makes it glow and an ink sac stops it glowing, and honeycomb waxes the sign.
     /// </summary>
     /// <returns>Whether the sign used the interaction, and the item to use up, if any.</returns>
-    public static (bool Used, bool ConsumeItem) Use(ILevel level, Vector position, IBlock state, IPlayer player, ItemStack? held)
+    public static (bool Used, Action? Complete) Use(ILevel level, Vector position, IBlock state, IPlayer player, ItemStack? held)
     {
         if (!IsSign(state) || level.GetLoadedBlockEntity(position) is not DataBlockEntity sign)
-            return (false, false);
+            return (false, null);
 
         var data = sign.SnapshotData();
         var front = IsFacingFront(state, position, player);
 
         if (data.TryGetBool("is_waxed", out var waxed) && waxed)
-        {
-            PlaySound(level, position, "minecraft:block.sign.waxed_interact_fail");
-            return (true, false);
-        }
+            return (false, null);
 
         var side = front ? "front_text" : "back_text";
         var text = Text(data, side);
@@ -114,42 +110,64 @@ internal static class Signs
             if (dye is not null && dyes.Contains(dye) && HasText(text))
             {
                 if (text.TryGetTag<NbtTag<string>>("color", out var color) && color.Value == dye)
-                    return (false, false);
+                    return (false, null);
 
                 text.Set(new NbtTag<string>("color", dye));
-                Store(sign, side, text);
-                PlaySound(level, position, "minecraft:item.dye.use");
-                return (true, true);
+                Store(sign, side, text, sendUpdate: false);
+                return (true, Applied("minecraft:item.dye.use"));
             }
 
             if (name is "minecraft:glow_ink_sac" or "minecraft:ink_sac" && HasText(text))
             {
                 var glowing = name == "minecraft:glow_ink_sac";
                 if ((text.TryGetBool("has_glowing_text", out var current) && current) == glowing)
-                    return (false, false);
+                    return (false, null);
 
                 text.Set(new NbtTag<bool>("has_glowing_text", glowing));
-                Store(sign, side, text);
-                PlaySound(level, position, glowing ? "minecraft:item.glow_ink_sac.use" : "minecraft:item.ink_sac.use");
-                return (true, true);
+                Store(sign, side, text, sendUpdate: false);
+                return (true, Applied(glowing ? "minecraft:item.glow_ink_sac.use" : "minecraft:item.ink_sac.use"));
             }
 
             if (name == "minecraft:honeycomb")
             {
                 sign.Set(new NbtTag<bool>("is_waxed", true));
                 sign.SetChanged();
-                sign.SendUpdate();
-                level.SpawnParticles(new WaxParticle(), (VectorD)position + new VectorD(0.5, 0.5, 0.5), 6, new VectorF(0.3f, 0.3f, 0.3f));
-                PlaySound(level, position, "minecraft:item.honeycomb.wax_on");
-                return (true, true);
+                return (true, () =>
+                {
+                    if (level is AbstractLevel world)
+                        world.BroadcastLevelEvent(3003, position, 0);
+
+                    Applied("minecraft:item.honeycomb.wax_on")();
+                });
             }
         }
 
-        if (adventure)
-            return (false, false);
+        return (false, null);
 
-        OpenEditor(level, position, player, front);
-        return (true, false);
+        Action Applied(string sound) => () =>
+        {
+            sign.SendUpdate();
+            PlaySound(level, position, sound);
+        };
+    }
+
+    /// <summary>Opens the side the player faces through the block's main-hand-only empty-hand hook.</summary>
+    internal static bool UseWithoutItem(ILevel level, Vector position, IBlock state, IPlayer player)
+    {
+        if (!IsSign(state) || level.GetLoadedBlockEntity(position) is not DataBlockEntity sign)
+            return false;
+
+        if (sign.SnapshotData().TryGetBool("is_waxed", out var waxed) && waxed)
+        {
+            PlaySound(level, position, "minecraft:block.sign.waxed_interact_fail");
+            return true;
+        }
+
+        if (player.GameMode is not (GameMode.Survival or GameMode.Creative))
+            return false;
+
+        OpenEditor(level, position, player, IsFacingFront(state, position, player));
+        return true;
     }
 
     /// <summary>
@@ -254,7 +272,7 @@ internal static class Signs
         text.TryGetTag<NbtList>("messages", out var messages)
         && messages.Any(line => line is NbtTag<string> { Value.Length: > 0 } || line is NbtCompound);
 
-    private static void Store(DataBlockEntity sign, string side, NbtCompound text)
+    private static void Store(DataBlockEntity sign, string side, NbtCompound text, bool sendUpdate = true)
     {
         var named = new NbtCompound(side);
         foreach (var (name, tag) in text)
@@ -262,7 +280,8 @@ internal static class Signs
 
         sign.Set(named);
         sign.SetChanged();
-        sign.SendUpdate();
+        if (sendUpdate)
+            sign.SendUpdate();
     }
 
     private static string StripFormatting(string line)
