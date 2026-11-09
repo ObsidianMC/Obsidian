@@ -236,9 +236,11 @@ block, looks up its block entity type by block name, compares it to the block en
 `TickAsync`, including for chests, signs, beds and banners, which do nothing. Vanilla keeps a list of tickers per
 chunk and only walks that.
 
-The same loop also does upkeep that isn't ticking: it restores and attaches block entities, runs pending loads,
-and polls each plugin container's inventory revision so that changes made without the inventory's lock still reach
-`OnItemsChanged` and get saved. That upkeep must keep running for every container, ticking or not, on its own path.
+The same loop also does upkeep that isn't ticking. For block entities of every type, in every generated chunk
+whether or not it is block-ticking, it restores kept ones (`RestoreKeptBlockEntities`), attaches them and runs
+their pending loads. For plugin containers it also polls the inventory revision, so that changes made without the
+inventory's lock still reach `OnItemsChanged` and get saved. All of that must keep running on its own path,
+whatever the block entity's type and whether or not it ticks.
 
 Keep a per-chunk list of block entities whose type ticks, maintained where block entities are added and removed,
 and validate the block against the block entity when either changes rather than every tick.

@@ -47,9 +47,9 @@ Four defects found on the way are worse than a missing feature, because the bloc
 
 1. **Ender chests lose items.** Opening one creates a new empty container instead of the player's saved
    `EnderInventory` (`Obsidian/Events/MainEventHandler.cs:235`). Whatever goes in is gone when the window closes.
-2. **Fire from fireballs, explosions and end crystals never spreads or burns out.** Only fire a player lights with
-   flint and steel or a fire charge gets its first tick scheduled (`UseItemOnPacket.cs:377`); fire has no on-place
-   behaviour to do it for the others.
+2. **Fire from fireballs, explosions and end crystals never spreads or burns out.** Fire a player lights with
+   flint and steel or a fire charge gets its first tick scheduled (`UseItemOnPacket.cs:377`), and so does fire that
+   spreads from other fire (`FireBlockBehavior.cs`). Fire has no on-place behaviour to do it for any other source.
 3. **Dispensers and droppers open as a 9×1 row** instead of 3×3 (`OpenScreenPacket.cs:27`), and shulker boxes open
    with the generic chest menu, which lets players put shulker boxes inside them.
 4. **An observer facing a container probably pulses forever.** The block entity tick sends a neighbour update around
@@ -470,7 +470,7 @@ adds.
 | Copper: oxidize | Missing | |
 | Leaves: decay | Works | |
 | Ice, snow layers: melt | Missing | No weather pass either |
-| Fire | Partial | Draws out of vanilla's order; fire a player didn't light (fireballs, explosions, end crystals) never ticks |
+| Fire | Partial | Draws out of vanilla's order; fire from fireballs, explosions and end crystals never ticks |
 | Lava, water | Works | Flow is captured; lava's ignition isn't |
 | Farmland: hydrate | Works | |
 | Turtle eggs: hatch | Partial | Wrong time window; `Random.Shared`; sand and red sand only |
