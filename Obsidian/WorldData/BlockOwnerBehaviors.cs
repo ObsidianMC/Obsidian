@@ -34,6 +34,8 @@ internal static class OnPlaceBehaviors
     internal static IOnPlaceBehavior ComposterBlock { get; } = new ComposterBlockBehavior();
 
     internal static IOnPlaceBehavior FireBlock { get; } = new FireBlockBehavior();
+
+    internal static IOnPlaceBehavior FrostedIceBlock { get; } = new FrostedIceBlockBehavior();
 }
 
 /// <summary>
@@ -84,6 +86,8 @@ internal static class TickBehaviors
     internal static IScheduledTickBehavior GrowingPlantBlock { get; } = new KelpBlockBehavior();
 
     internal static IScheduledTickBehavior ComposterBlock { get; } = new ComposterBlockBehavior();
+
+    internal static IScheduledTickBehavior FrostedIceBlock { get; } = new FrostedIceBlockBehavior();
 }
 
 /// <summary>

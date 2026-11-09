@@ -31,6 +31,8 @@ internal static class ScenarioCaptures
     public const string CopperWeathering = "copper_weathering";
     public const string Fire = "fire";
 
+    public const string MeltingWeather = "melting_weather";
+
     private const string Symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     // Scenario entities and arrows carry this tag, so they can be removed again.
@@ -61,7 +63,7 @@ internal static class ScenarioCaptures
 
     public static readonly string[] All =
         [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps, Mining,
-            Placement, CopperWeathering, Fire];
+            Placement, CopperWeathering, Fire, MeltingWeather];
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -117,6 +119,14 @@ internal static class ScenarioCaptures
         if (fixtures.Contains(Placement))
         {
             await FixtureDumper.DumpPlacementAsync(server, Path.Combine(assetsDirectory, "block_placement.json"));
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(MeltingWeather))
+        {
+            var path = Path.Combine(assetsDirectory, "melting_weather.json");
+            await FixtureDumper.DumpMeltingWeatherAsync(server, path);
             if (fixtures.Count == 1)
                 return;
         }
