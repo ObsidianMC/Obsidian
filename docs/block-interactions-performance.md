@@ -32,8 +32,9 @@ as benchmarks.
 
 Three things follow from it.
 
-- **Lookups by name cost four to ten times a lookup by id.** Every block behaviour bound through a name or class
-  string pays 16 to 45 ns per lookup, against 4 ns for the generated per-id bindings the newer code uses.
+- **Lookups by name cost more than a lookup by id; the multiplier varies.** This probe measured 16 to 45 ns for
+  name/class lookups against 4 ns for generated per-id bindings. The warmed baseline below measured `BlockClass()`
+  at 8.43 ns against 3.78 ns for id-bound tick dispatch, about 2.2 times as much.
 - **A block change that nothing reacts to still costs about 1.8 µs** in the pipeline alone: six shape steps and six
   neighbour steps, each reading two blocks and looking for a behaviour that isn't there.
 - **Redstone dust is the expensive case.** One toggle of a 15-dust line is about 255 µs. Vanilla's dust algorithm
@@ -94,7 +95,7 @@ Four dispatchers look blocks up by string today:
 
 Resolve all of them into arrays indexed by registry id when they're registered or loaded: a class registration
 expands to every block of that class, `BlockClass` becomes a generated integer per block (the strings stay for logs
-and plugins), and `IsSignalSource` becomes a flag bit in the existing per-state flags. `ShapeUpdater` switches on
+and plugins), and `IsSignalSource` becomes a boolean array read by registry id. `ShapeUpdater` switches on
 the integer. Plugin blocks keep their own path, which already tests the state id first.
 
 This is the same shape as the generated owner bindings (`BlocksGenerator.OwnedHooks`: `GetTickBehavior`,
@@ -286,56 +287,34 @@ Every item should land with its before and after from the same harness, and with
 
 ## Re-runnable block probe
 
-Build once with `dotnet build Obsidian.WorldgenBench -c Release -m:1`, then run:
-
 ```sh
+dotnet build Obsidian.WorldgenBench -c Release -m:1
 dotnet run --project Obsidian.WorldgenBench -c Release --no-build -- block > block.csv
 ```
 
-The block mode runs before the worldgen mode's jar/structure setup. It uses the same `RedstoneTestWorld` source
-as the replay tests (linked into the benchmark), real chunks, the live notification pipeline and redstone engine.
-It needs neither network access nor a world directory at runtime; a fresh build still needs the usual generated assets.
-Setup is excluded. Each case warms for at least 250 ms, then reports the median of seven samples, including delegate
-and loop overhead. Allocations use the current thread; the harness rejects an operation that yields. One dust operation
-is one alternating on/off transition, not an entire on/off pair. CSV names and units are stable for diffing.
-
-The baseline in `Obsidian.WorldgenBench/Results/block-before.csv` was captured at the docs branch point `15309c34b`,
-with only this probe and its shared-harness access added. Runs recorded 2026-11-09 on an AMD Ryzen 9 9950X,
-Windows 11 (10.0.22631), x64, .NET SDK 10.0.403, runtime .NET 10.0.14, Release. Other work on this machine means small timing differences should be read cautiously.
-
-The after run uses the same probe, settings and machine. Raw runs, including the unchanged control operations,
-are in `Obsidian.WorldgenBench/Results/block-before.csv` and `block-after.csv`.
+The probe shares `RedstoneTestWorld`, runs offline, excludes setup, and reports the median of seven samples after
+250 ms warmup per case; one dust operation is an alternating on/off transition.
+Before: docs branch point `15309c34b`; both runs: 2026-11-09, AMD Ryzen 9 9950X, Windows 11 (10.0.22631), x64,
+.NET SDK 10.0.403, runtime .NET 10.0.14, Release. Shared-machine timings include load and JIT variation.
 
 | Operation | Before (ns/op) | After (ns/op) | Before (B/op) | After (B/op) |
 |---|---:|---:|---:|---:|
-| BlockClass / stone | 8.43 | 2.60 | 0.00 | 0.00 |
-| IsSignalSource / stone | 6.05 | 1.87 | 0.00 | 0.00 |
-| IsSignalSource / wire | 13.06 | 3.31 | 0.00 | 0.00 |
-| IsGravityAffected / stone | 18.94 | 2.26 | 0.00 | 0.00 |
-| NeighborBehaviors.TryGet / stone | 13.16 | 2.74 | 0.00 | 0.00 |
-| NeighborBehaviors.TryGet / wire | 7.24 | 5.42 | 0.00 | 0.00 |
-| RedstoneBehaviors.For / stone | 12.84 | 3.53 | 0.00 | 0.00 |
-| RedstoneBehaviors.For / wire | 20.32 | 5.98 | 0.00 | 0.00 |
-| ContactFor / air | 15.66 | 2.78 | 0.00 | 0.00 |
-| BlockEntityType / chest | 7.45 | 2.21 | 0.00 | 0.00 |
-| UpdateShape / stone | 18.27 | 11.67 | 0.00 | 0.00 |
-| UpdateShape / air | 26.74 | 18.52 | 0.00 | 0.00 |
-| Pipeline / change inside solid stone | 1131.65 | 876.58 | 32.05 | 32.05 |
-| Pipeline / toggle 15 dust | 275583.20 | 191517.60 | 18293.95 | 18293.95 |
-| Pipeline / toggle 30 dust | 267843.20 | 190686.80 | 18493.95 | 18493.95 |
+| BlockClass / stone | 8.43 | 2.66 | 0.00 | 0.00 |
+| IsSignalSource / stone | 6.05 | 1.72 | 0.00 | 0.00 |
+| IsSignalSource / wire | 13.06 | 3.37 | 0.00 | 0.00 |
+| IsGravityAffected / stone | 18.94 | 2.30 | 0.00 | 0.00 |
+| NeighborBehaviors.TryGet / stone | 13.16 | 2.43 | 0.00 | 0.00 |
+| NeighborBehaviors.TryGet / wire | 7.24 | 5.21 | 0.00 | 0.00 |
+| RedstoneBehaviors.For / stone | 12.84 | 2.84 | 0.00 | 0.00 |
+| RedstoneBehaviors.For / wire | 20.32 | 4.49 | 0.00 | 0.00 |
+| ContactFor / air | 15.66 | 2.56 | 0.00 | 0.00 |
+| BlockEntityType / chest | 7.45 | 2.32 | 0.00 | 0.00 |
+| UpdateShape / stone | 18.27 | 11.59 | 0.00 | 0.00 |
+| UpdateShape / air | 26.74 | 19.25 | 0.00 | 0.00 |
+| Pipeline / change inside solid stone | 1131.65 | 833.63 | 32.05 | 32.05 |
+| Pipeline / toggle 15 dust | 275583.20 | 185805.40 | 18293.95 | 18293.95 |
+| Pipeline / toggle 30 dust | 267843.20 | 188184.60 | 18493.95 | 18493.95 |
 
-Item 2 now binds vanilla neighbor, placement, removal, redstone and contact registrations to arrays by registry id.
-Class names and block entity types also bind to registry-id arrays; all vanilla classes get an integer identity once
-from the physics metadata, with named constants for the shape and gravity switches. The string `BlockClass()` API
-stays. `IsSignalSource()` reads bit 8 in a private augmented copy of the second per-state physics word (the first word
-already uses all 32 bits). Plugin ids remain outside the fixed vanilla arrays: named registrations and the generic
-class still resolve at runtime, and the redstone fallback and plugin block entity lookup still read the live binding.
-A plugin's behavior is never copied into a vanilla table, so registration after a level is built and unloading keep
-their existing paths. Named duplicate errors and block-specific precedence over classes remain unchanged.
-
-The 15-dust toggle is about 31% faster in these runs, and the solid-stone change about 23% faster, with unchanged
-allocations. These are harness costs, not measured server tick savings. Some unchanged property operations also
-varied (up to about 19%), so the exact percentages include machine/JIT variation. The old "four to ten times" lookup
-claim is not a reliable multiplier: this warmed baseline's class lookup is only about 2.2 times its id-bound tick
-lookup, although resolving the targeted name lookups still brings a clear improvement. The old probe's allocation
-and dust-cost estimates remain representative. No level-side engine, packet or gameplay changes are included here.
+Vanilla neighbor, placement, removal, redstone and contact dispatch now binds to arrays by registry id.
+Class and block entity metadata also bind by id, shape/gravity dispatch uses integer classes, and `IsSignalSource()`
+reads a per-block boolean. Named APIs, block-specific precedence and dynamic plugin registration/unloading remain intact.

@@ -10,7 +10,9 @@ using System.Runtime.InteropServices;
 
 namespace WorldgenBench;
 
-/// <summary>An offline, repeatable probe over the same chunks and live update engines as the redstone replays.</summary>
+/// <summary>
+/// An offline, repeatable probe over the same chunks and live update engines as the redstone replays.
+/// </summary>
 internal static class BlockRun
 {
     // Observe lookup results without boxing or allowing the JIT to discard the operation.
@@ -25,11 +27,15 @@ internal static class BlockRun
             return 2;
         }
 
-        Console.WriteLine($"# {RuntimeInformation.FrameworkDescription}; {RuntimeInformation.OSDescription}; {RuntimeInformation.ProcessArchitecture}");
-        Console.WriteLine("# 250 ms warmup per case; median of 7 samples; delegate/loop overhead included; setup excluded");
+        Console.WriteLine($"# {RuntimeInformation.FrameworkDescription}; {RuntimeInformation.OSDescription}; "
+            + $"{RuntimeInformation.ProcessArchitecture}");
+        Console.WriteLine("# 250 ms warmup per case; median of 7 samples; "
+            + "delegate/loop overhead included; setup excluded");
         Console.WriteLine("operation,iterations,ns/op,B/op");
+
         var world = new RedstoneTestWorld();
         world.Load(0, 31, 62, 66, 0, 15);
+
         var stone = BlocksRegistry.Stone;
         var air = BlocksRegistry.Air;
         var wire = BlocksRegistry.RedstoneWire;
@@ -41,8 +47,13 @@ internal static class BlockRun
         Measure("IsSignalSource/wire", 2_000_000, () => flag = wire.IsSignalSource());
         Measure("IsGravityAffected/stone", 2_000_000, () => flag = stone.IsGravityAffected());
         Measure("GetProperty/stone-waterlogged", 2_000_000, () => result = stone.GetProperty("waterlogged"));
-        Measure("ParseProperty/wire-power", 2_000_000, () => flag = int.Parse(wire.GetProperty("power")!, CultureInfo.InvariantCulture) != 0);
+        Measure("ParseProperty/wire-power", 2_000_000, () =>
+        {
+            var power = wire.GetProperty("power")!;
+            flag = int.Parse(power, CultureInfo.InvariantCulture) != 0;
+        });
         Measure("WithProperty/wire-power", 2_000_000, () => result = wire.WithProperty("power", 7));
+
         Measure("NeighborTryGet/stone", 2_000_000, () => flag = world.Neighbors.TryGet(stone, out _));
         Measure("NeighborTryGet/wire", 2_000_000, () => flag = world.Neighbors.TryGet(wire, out _));
         Measure("RedstoneFor/stone", 2_000_000, () => result = world.Redstone.For(stone));
@@ -70,10 +81,14 @@ internal static class BlockRun
         Measure("Pipeline/solid-stone-change", 20_000, () =>
         {
             toggle = !toggle;
-            Complete(world.Place(position, toggle ? BlocksRegistry.Granite : stone));
+            var block = toggle ? BlocksRegistry.Granite : stone;
+            var operation = world.Place(position, block);
+            Complete(operation);
         });
+
         DustLine(15);
         DustLine(30);
+
         GC.KeepAlive(result);
         GC.KeepAlive(flag);
         return 0;
@@ -83,19 +98,27 @@ internal static class BlockRun
     {
         var world = new RedstoneTestWorld();
         world.Load(-1, length + 1, 62, 66, -1, 1);
+
         for (var x = 0; x <= length; x++)
             world.Commit(new Vector(x, 63, 0), BlocksRegistry.Stone);
 
         for (var x = 1; x <= length; x++)
-            Complete(world.Place(new Vector(x, 64, 0), BlocksRegistry.RedstoneWire));
+        {
+            var position = new Vector(x, 64, 0);
+            var operation = world.Place(position, BlocksRegistry.RedstoneWire);
+            Complete(operation);
+        }
 
         var source = new Vector(0, 64, 0);
         var powered = false;
         Measure($"Pipeline/toggle-{length}-dust", 500, () =>
         {
             powered = !powered;
-            Complete(world.Place(source, powered ? BlocksRegistry.RedstoneBlock : BlocksRegistry.Air));
+            var block = powered ? BlocksRegistry.RedstoneBlock : BlocksRegistry.Air;
+            var operation = world.Place(source, block);
+            Complete(operation);
         });
+
         if (world.Pipeline.DroppedWork != 0)
             throw new InvalidOperationException("Dust benchmark exceeded the pipeline work limit.");
     }
@@ -116,7 +139,8 @@ internal static class BlockRun
         {
             for (var i = 0; i < 1_000; i++)
                 action();
-        } while (warm.ElapsedMilliseconds < 250);
+        }
+        while (warm.ElapsedMilliseconds < 250);
 
         var samples = new (double Nanoseconds, double Bytes)[7];
         for (var sample = 0; sample < samples.Length; sample++)
@@ -124,8 +148,10 @@ internal static class BlockRun
             GC.Collect();
             GC.WaitForPendingFinalizers();
             GC.Collect();
+
             var allocated = GC.GetAllocatedBytesForCurrentThread();
             var start = Stopwatch.GetTimestamp();
+
             for (var i = 0; i < iterations; i++)
                 action();
 
@@ -136,6 +162,7 @@ internal static class BlockRun
 
         Array.Sort(samples, (a, b) => a.Nanoseconds.CompareTo(b.Nanoseconds));
         var median = samples[samples.Length / 2];
-        Console.WriteLine(FormattableString.Invariant($"{name},{iterations},{median.Nanoseconds:F2},{median.Bytes:F2}"));
+        var row = FormattableString.Invariant($"{name},{iterations},{median.Nanoseconds:F2},{median.Bytes:F2}");
+        Console.WriteLine(row);
     }
 }

@@ -51,9 +51,14 @@ internal sealed class RedstoneBehaviors(IRedstoneBehavior? pluginBehaviors = nul
             this.contactsById[id] = contact;
     }
 
-    public IRedstoneContact? ContactFor(IBlock state) =>
-        (uint)state.RegistryId < (uint)this.contactsById.Length ? this.contactsById[state.RegistryId]
-            : this.contacts.GetValueOrDefault(state.BlockClass());
+    public IRedstoneContact? ContactFor(IBlock state)
+    {
+        var id = state.RegistryId;
+        if ((uint)id < (uint)this.contactsById.Length)
+            return this.contactsById[id];
+
+        return this.contacts.GetValueOrDefault(state.BlockClass());
+    }
 
     public void Register(string blockClass, IRedstoneBehavior behavior)
     {
@@ -65,12 +70,17 @@ internal sealed class RedstoneBehaviors(IRedstoneBehavior? pluginBehaviors = nul
     }
 
     /// <summary>
-    /// The behavior of a block: its vanilla class's registration, else the plugin behaviors' (which answer for plugin blocks only),
-    /// else none.
+    /// The behavior of a block: its vanilla class's registration, else the plugin behaviors'
+    /// (which answer for plugin blocks only), else none.
     /// </summary>
-    public IRedstoneBehavior For(IBlock state) =>
-        ((uint)state.RegistryId < (uint)this.byId.Length ? this.byId[state.RegistryId]
-            : this.behaviors.GetValueOrDefault(state.BlockClass())) ?? pluginBehaviors ?? Inert;
+    public IRedstoneBehavior For(IBlock state)
+    {
+        var id = state.RegistryId;
+        var behavior = (uint)id < (uint)this.byId.Length
+            ? this.byId[id] : this.behaviors.GetValueOrDefault(state.BlockClass());
+
+        return behavior ?? pluginBehaviors ?? Inert;
+    }
 
     private sealed class InertBehavior : IRedstoneBehavior { }
 

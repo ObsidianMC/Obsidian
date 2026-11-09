@@ -40,48 +40,52 @@ internal static class BlockPhysics
         public static readonly BlockClassId[] ClassIds;
         public static readonly string?[] BlockEntityTypes;
         public static readonly Dictionary<string, int[]> BlocksByClass;
-        public static readonly int[] SignalFlags;
+        public static readonly bool[] SignalSources;
 
         static ClassTables()
         {
             var physics = data.Value;
-            var names = BlocksRegistry.ResourceIds;
-            Classes = new string[names.Length];
-            ClassIds = new BlockClassId[names.Length];
-            BlockEntityTypes = new string?[names.Length];
-            var ids = Enum.GetValues<BlockClassId>().ToDictionary(id => id.ToString(), id => id, StringComparer.Ordinal);
-            var members = new Dictionary<string, List<int>>(StringComparer.Ordinal);
-            var signalSources = new bool[names.Length];
-            for (var id = 0; id < names.Length; id++)
+            var blockNames = BlocksRegistry.ResourceIds;
+
+            // Build the per-block metadata tables.
+            Classes = new string[blockNames.Length];
+            ClassIds = new BlockClassId[blockNames.Length];
+            BlockEntityTypes = new string?[blockNames.Length];
+            SignalSources = new bool[blockNames.Length];
+
+            // Seed the named switch cases; assign other captured classes distinct ids as they appear.
+            var classIdsByName = Enum.GetValues<BlockClassId>()
+                .ToDictionary(id => id.ToString(), id => id, StringComparer.Ordinal);
+            var blocksByClass = new Dictionary<string, List<int>>(StringComparer.Ordinal);
+
+            for (var id = 0; id < blockNames.Length; id++)
             {
-                var name = names[id];
+                var name = blockNames[id];
                 var blockClass = physics.BlockClasses.GetValueOrDefault(name, "Block");
-                if (!ids.TryGetValue(blockClass, out var classId))
+
+                if (!classIdsByName.TryGetValue(blockClass, out var classId))
                 {
-                    // Classes without a special switch arm still have distinct identities, including future assets.
-                    classId = (BlockClassId)ids.Count;
-                    ids.Add(blockClass, classId);
+                    classId = (BlockClassId)classIdsByName.Count;
+                    classIdsByName.Add(blockClass, classId);
                 }
 
                 Classes[id] = blockClass;
                 ClassIds[id] = classId;
                 BlockEntityTypes[id] = physics.BlockEntityTypes.GetValueOrDefault(name);
-                signalSources[id] = physics.SignalSources.Contains(name);
-                if (!members.TryGetValue(blockClass, out var blocks))
-                    members.Add(blockClass, blocks = []);
+                SignalSources[id] = physics.SignalSources.Contains(name);
+
+                // Collect the ids a class registration will bind.
+                if (!blocksByClass.TryGetValue(blockClass, out var blocks))
+                {
+                    blocks = [];
+                    blocksByClass.Add(blockClass, blocks);
+                }
 
                 blocks.Add(id);
             }
 
-            BlocksByClass = members.ToDictionary(pair => pair.Key, pair => pair.Value.ToArray(), StringComparer.Ordinal);
-            // The first physics word uses all 32 bits. Bit 8 in the second word is free; augment a private copy
-            // so its captured fluid/shape data stays unchanged. Plugin states are outside this array and answer false.
-            SignalFlags = (int[])physics.FluidFlags.Clone();
-            for (var state = 0; state < SignalFlags.Length; state++)
-            {
-                if (signalSources[BlocksRegistry.StateToNumeric[state]])
-                    SignalFlags[state] |= 1 << 8;
-            }
+            BlocksByClass = blocksByClass
+                .ToDictionary(pair => pair.Key, pair => pair.Value.ToArray(), StringComparer.Ordinal);
         }
     }
 
@@ -132,19 +136,24 @@ internal static class BlockPhysics
     /// </summary>
     public static bool IsSignalSource(this IBlock block)
     {
-        var flags = ClassTables.SignalFlags;
-        var state = block.StateId();
-        return (uint)state < (uint)flags.Length && (flags[state] & (1 << 8)) != 0;
+        var sources = ClassTables.SignalSources;
+        var id = block.RegistryId;
+        return (uint)id < (uint)sources.Length && sources[id];
     }
 
     /// <summary>
     /// The type of the block entity the block has (e.g. <c>minecraft:mob_spawner</c> for spawners): vanilla's, or the
     /// one a plugin registered for its block. <c>null</c> when it has none.
     /// </summary>
-    public static string? BlockEntityType(this IBlock block) => block is API.Blocks.PluginBlock plugin
-        ? BlockEntityTypesRegistry.Of(plugin.Type)?.Identifier
-        : (uint)block.RegistryId < (uint)ClassTables.BlockEntityTypes.Length
-            ? ClassTables.BlockEntityTypes[block.RegistryId] : null;
+    public static string? BlockEntityType(this IBlock block)
+    {
+        if (block is API.Blocks.PluginBlock plugin)
+            return BlockEntityTypesRegistry.Of(plugin.Type)?.Identifier;
+
+        var id = block.RegistryId;
+        var types = ClassTables.BlockEntityTypes;
+        return (uint)id < (uint)types.Length ? types[id] : null;
+    }
 
     /// <summary>
     /// Vanilla <c>isFaceSturdy(..., face, SupportType.FULL)</c>.
@@ -196,14 +205,15 @@ internal static class BlockPhysics
     /// Whether the block is a vanilla <c>FallingBlock</c> (sand, gravel, concrete powder, anvils, dragon eggs).
     /// </summary>
     public static bool IsFallingBlock(this IBlock block) =>
-        block.ClassId() is BlockClassId.ColoredFallingBlock or BlockClassId.SandBlock or BlockClassId.ConcretePowderBlock
-            or BlockClassId.AnvilBlock or BlockClassId.DragonEggBlock;
+        block.ClassId() is BlockClassId.ColoredFallingBlock or BlockClassId.SandBlock
+            or BlockClassId.ConcretePowderBlock or BlockClassId.AnvilBlock or BlockClassId.DragonEggBlock;
 
     /// <summary>
     /// Whether the block falls when there's nothing below it: a vanilla <c>FallingBlock</c> or a <c>BrushableBlock</c>
     /// (suspicious sand and gravel).
     /// </summary>
-    public static bool IsGravityAffected(this IBlock block) => block.IsFallingBlock() || block.ClassId() == BlockClassId.BrushableBlock;
+    public static bool IsGravityAffected(this IBlock block) =>
+        block.IsFallingBlock() || block.ClassId() == BlockClassId.BrushableBlock;
 
     /// <summary>
     /// Vanilla <c>FallingBlock.isFree</c>: a falling block can fall into the block.
@@ -227,14 +237,17 @@ internal static class BlockPhysics
     /// The vanilla block class (e.g. <c>LeavesBlock</c>, <c>FlowerBlock</c>), which decides placement rules.
     /// </summary>
     public static string BlockClass(this IBlock block) =>
-        (uint)block.RegistryId < (uint)ClassTables.Classes.Length ? ClassTables.Classes[block.RegistryId] : "Block";
+        (uint)block.RegistryId < (uint)ClassTables.Classes.Length
+            ? ClassTables.Classes[block.RegistryId] : "Block";
 
     /// <summary>The class's integer identity for dispatch. Plugin blocks keep the generic Block class.</summary>
     public static BlockClassId ClassId(this IBlock block) =>
-        (uint)block.RegistryId < (uint)ClassTables.ClassIds.Length ? ClassTables.ClassIds[block.RegistryId] : BlockClassId.Block;
+        (uint)block.RegistryId < (uint)ClassTables.ClassIds.Length
+            ? ClassTables.ClassIds[block.RegistryId] : BlockClassId.Block;
 
     /// <summary>Expands a class registration to vanilla registry ids, once at registration time.</summary>
-    public static int[] BlocksOfClass(string blockClass) => ClassTables.BlocksByClass.GetValueOrDefault(blockClass) ?? [];
+    public static int[] BlocksOfClass(string blockClass) =>
+        ClassTables.BlocksByClass.GetValueOrDefault(blockClass) ?? [];
 
     /// <summary>
     /// The block's state id: the same id vanilla uses, unique per block and property combination.
@@ -681,7 +694,6 @@ internal enum BlockClassId
     ShortDryGrassBlock,
     TallDryGrassBlock,
     LeafLitterBlock,
-    VegetationBlock,
     EyeblossomBlock,
     WitherRoseBlock,
     AzaleaBlock,

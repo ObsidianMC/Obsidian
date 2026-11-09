@@ -48,11 +48,16 @@ internal sealed class NeighborBehaviors
     private readonly Dictionary<string, INeighborChangedBehavior> classBehaviors = [];
     private readonly Dictionary<string, IPlacementBehavior> placements = [];
     private readonly Dictionary<string, IRemovalBehavior> removals = [];
-    private readonly INeighborChangedBehavior?[] byId = new INeighborChangedBehavior?[BlocksRegistry.ResourceIds.Length];
+    private readonly INeighborChangedBehavior?[] byId =
+        new INeighborChangedBehavior?[BlocksRegistry.ResourceIds.Length];
     private readonly IPlacementBehavior?[] placedById = new IPlacementBehavior?[BlocksRegistry.ResourceIds.Length];
     private readonly IRemovalBehavior?[] removedById = new IRemovalBehavior?[BlocksRegistry.ResourceIds.Length];
 
-    public void RegisterRemoved(int blockId, IRemovalBehavior behavior) => this.RegisterRemoved(BlocksRegistry.GetDefault(blockId).UnlocalizedName, behavior);
+    public void RegisterRemoved(int blockId, IRemovalBehavior behavior)
+    {
+        var blockName = BlocksRegistry.GetDefault(blockId).UnlocalizedName;
+        this.RegisterRemoved(blockName, behavior);
+    }
 
     public void RegisterRemoved(string blockName, IRemovalBehavior behavior)
     {
@@ -71,7 +76,11 @@ internal sealed class NeighborBehaviors
         return behavior is not null;
     }
 
-    public void RegisterPlaced(int blockId, IPlacementBehavior behavior) => this.RegisterPlaced(BlocksRegistry.GetDefault(blockId).UnlocalizedName, behavior);
+    public void RegisterPlaced(int blockId, IPlacementBehavior behavior)
+    {
+        var blockName = BlocksRegistry.GetDefault(blockId).UnlocalizedName;
+        this.RegisterPlaced(blockName, behavior);
+    }
 
     public void RegisterPlaced(string blockName, IPlacementBehavior behavior)
     {
@@ -90,8 +99,15 @@ internal sealed class NeighborBehaviors
         return behavior is not null;
     }
 
-    /// <summary>Registers by generated block id (<see cref="Obsidian.API.Registries.BlockIds"/>); named registration and duplicate checks keep their existing contract.</summary>
-    public void Register(int blockId, INeighborChangedBehavior behavior) => this.Register(BlocksRegistry.GetDefault(blockId).UnlocalizedName, behavior);
+    /// <summary>
+    /// Registers by generated block id (<see cref="Obsidian.API.Registries.BlockIds"/>).
+    /// Named registration and duplicate checks keep their existing contract.
+    /// </summary>
+    public void Register(int blockId, INeighborChangedBehavior behavior)
+    {
+        var blockName = BlocksRegistry.GetDefault(blockId).UnlocalizedName;
+        this.Register(blockName, behavior);
+    }
 
     public void Register(string blockName, INeighborChangedBehavior behavior)
     {
