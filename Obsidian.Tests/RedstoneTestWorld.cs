@@ -4,6 +4,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Obsidian.API;
 using Obsidian.API.BlockEntities;
+using Obsidian.API.Blocks;
+using Obsidian.API.Inventory;
+using Obsidian.API.World;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.API.Registries;
 using Obsidian.Registries;
 using Obsidian.Utilities;
@@ -22,7 +26,7 @@ namespace Obsidian.Tests;
 /// <summary>An arrow that enters <see cref="Block"/> at <see cref="Location"/> through <see cref="Face"/>.</summary>
 public sealed record ArrowHit(Vector Block, VectorD Location, BlockFace Face);
 
-internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, IBlockTickLevel
+internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, IBlockTickLevel, IBlockLevel
 {
     private readonly Dictionary<long, Chunk> chunks = [];
     private readonly Queue<Func<ValueTask>> simulation = new();
@@ -186,6 +190,54 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
     }
 
     int IBlockChangeWorld.GetRawBrightness(Vector position) => this.SkyLight;
+
+    IBlock? IBlockChangeWorld.UpdateShape(Vector position, IBlock state, BlockFace face,
+        Vector neighborPosition, IBlock neighbor) =>
+        BlocksRegistry.GetShapeUpdateBehavior(state.RegistryId)?.UpdateShape(
+            this, position, state, face, neighborPosition, neighbor);
+
+    ILevel IBlockLevel.Level => throw new NotSupportedException();
+
+    IRandomSource IBlockLevel.Random => throw new NotSupportedException();
+
+    IBlock IBlockLevel.GetBlock(Vector position) => this.GetLoadedBlock(position) ?? BlocksRegistry.VoidAir;
+
+    IBlockEntity? IBlockLevel.GetBlockEntity(Vector position) => ((IRedstoneLevel)this).GetBlockEntityAt(position);
+
+    bool IBlockLevel.SetBlock(Vector position, IBlock block, BlockUpdateFlags flags)
+    {
+        var change = this.Commit(position, block);
+        this.Pipeline.Enqueue(change, flags);
+        return !change.Old.IsSameState(block);
+    }
+
+    bool IBlockLevel.RemoveBlock(Vector position) =>
+        ((IBlockLevel)this).SetBlock(position, BlocksRegistry.Air);
+
+    void IBlockLevel.ScheduleTick(Vector position, IBlock block, int delay, API.Blocks.TickPriority priority) =>
+        ((IRedstoneLevel)this).ScheduleBlockTick(position, block, delay, priority);
+
+    bool IBlockLevel.HasScheduledTick(Vector position, IBlock block) =>
+        this.BlockTicks.IsScheduled(position, block.UnlocalizedName);
+
+    void IBlockLevel.UpdateNeighbors(Vector position, IBlock source) => this.Pipeline.EnqueueNeighbors(position);
+
+    void IBlockLevel.UpdateAnalogOutput(Vector position) =>
+        ((IRedstoneLevel)this).NotifyComparatorsAroundAsync(position).GetAwaiter().GetResult();
+
+    IItemAccess? IBlockLevel.GetItemAccess(Vector position, BlockFace? side) => throw new NotSupportedException();
+
+    public int GetSignal(Vector position, BlockFace direction) => this.Engine.GetSignal(position, direction);
+
+    public int GetDirectSignal(Vector position, BlockFace direction) => this.Engine.GetDirectSignal(position, direction);
+
+    public int GetDirectSignalTo(Vector position) => this.Engine.GetDirectSignalTo(position);
+
+    public bool HasSignal(Vector position, BlockFace direction) => this.GetSignal(position, direction) > 0;
+
+    public bool HasNeighborSignal(Vector position) => this.Engine.HasNeighborSignal(position);
+
+    public int GetBestNeighborSignal(Vector position) => this.Engine.GetBestNeighborSignal(position);
 
     ValueTask IBlockChangeWorld.SetBlockAsync(Vector position, IBlock block) => this.Place(position, block);
 

@@ -1115,6 +1115,13 @@ public sealed class ProbePlugin : PluginBase
         var crate = pluginRegistry.RegisterBlock("probe:crate", new BlockProperties { Item = null });
         pluginRegistry.RegisterBlockEntity<ProbeCrate>("probe:crate", crate);
 
+        var machine = pluginRegistry.RegisterBlock("probe:machine", new BlockProperties
+        {
+            Item = null,
+            Behavior = new ProbeMachineBehavior()
+        });
+        pluginRegistry.RegisterBlockEntity<ProbeMachine>("probe:machine", machine);
+
         // Its blocks generated from data/probe/blocks, and blocks recording their hooks for BlockUpdates' tests.
         ProbeBlocks.Register(pluginRegistry);
         ProbeRelay.Register(pluginRegistry);

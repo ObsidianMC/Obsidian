@@ -10,6 +10,13 @@ namespace Obsidian.WorldData;
 /// </summary>
 public abstract partial class AbstractLevel
 {
+    /// <summary>The observer's shape work while a command derives its block input, before committing it.</summary>
+    internal void PrepareObserverCommandPlacement(Vector position, IBlock state)
+    {
+        lock (this.Fluids.TickLock)
+            RedstoneObserver.PrepareCommandPlacement(this.BlockUpdates, position, state);
+    }
+
     // Vanilla's Direction.Plane.HORIZONTAL, the directions updateNeighbourForOutputSignal looks for comparators in.
     private static readonly BlockFace[] comparatorDirections =
         [BlockFace.North, BlockFace.East, BlockFace.South, BlockFace.West];
@@ -105,7 +112,8 @@ public abstract partial class AbstractLevel
     {
         lock (this.Fluids.TickLock)
         {
-            container.ComparatorRevision = container.Inventory.Revision;
+            var revision = container.Inventory.Revision;
+            var dropped = this.BlockNotifications.DroppedWork;
 
             var position = container.BlockPosition;
             this.EnqueueComparatorsAround(position);
@@ -115,6 +123,10 @@ public abstract partial class AbstractLevel
                 this.EnqueueComparatorsAround(partner);
 
             this.BlockNotifications.DrainAsync().GetAwaiter().GetResult();
+
+            // Keep the next-tick retry if notification delivery throws or hits the bounded drain's limit.
+            if (this.BlockNotifications.DroppedWork == dropped)
+                container.ComparatorRevision = revision;
         }
     }
 

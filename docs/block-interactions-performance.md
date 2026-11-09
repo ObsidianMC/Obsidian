@@ -58,6 +58,10 @@ Ordered by how much they should save for how little risk. "Measured" means the p
 
 *Done. The defect below was real: an observer facing an idle chest pulsed every four ticks.*
 
+The revision gate covers item changes. Consumed plugin `SetChanged()` calls also notify comparators, since a
+container may expose saved machine state through `GetAnalogOutput` without changing slots. Notification failures
+and bounded-drain drops retain the old comparator revision so the next block entity tick can retry.
+
 *From the code. Small change, no behaviour change intended.*
 
 `AbstractLevel.TickBlockEntitiesAsync` (`Obsidian/WorldData/AbstractLevel.BlockEntities.cs:262`) calls

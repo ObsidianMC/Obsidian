@@ -322,15 +322,15 @@ public abstract partial class AbstractLevel
     /// <see cref="BlockEntity.Save"/> wrote now, on the level's thread, so that the plugin changing what it wrote
     /// later doesn't change what's saved. Runs at the end of the tick, and before a save (a flush, or a chunk or
     /// region unloading), under the simulation gate either way and holding no lock while it calls the plugins. Like
-    /// vanilla's <c>setChanged</c>, the comparators reading a changed block entity's block hear of it then (a
-    /// container's hear when its items move, see <c>UpdateComparatorsOf</c>).
+    /// vanilla's <c>setChanged</c>, the comparators reading a changed block entity's block hear of it then, including
+    /// containers whose output derives from saved machine state rather than their items.
     /// </summary>
     internal void TakeBlockEntityChanges()
     {
         if (this.blockEntityHost is not LevelBlockEntityHost host)
             return;
 
-        List<Vector>? outputsChanged = null;
+        List<BlockEntity>? outputsChanged = null;
 
         while (host.Changed.TryDequeue(out var blockEntity))
         {
@@ -363,13 +363,20 @@ public abstract partial class AbstractLevel
 
             if (blockEntity is ContainerBlockEntity container && revision is long saved)
                 container.SavedRevision = saved;
-            else
-                (outputsChanged ??= []).Add(blockEntity.BlockPosition);
+
+            // A plugin container may expose saved machine state rather than its inventory as analog output.
+            // Consuming SetChanged must publish that output even when no slot revision changed.
+            (outputsChanged ??= []).Add(blockEntity);
         }
 
         // Outside the calls into the plugins: the comparators ask the blocks' analog output in calls of their own.
-        foreach (var position in outputsChanged ?? [])
-            this.BlockUpdates.OnContainerChanged(position);
+        foreach (var changed in outputsChanged ?? [])
+        {
+            if (changed is ContainerBlockEntity container)
+                this.UpdateComparatorsOf(container);
+            else
+                this.BlockUpdates.OnContainerChanged(changed.BlockPosition);
+        }
     }
 
     /// <summary>

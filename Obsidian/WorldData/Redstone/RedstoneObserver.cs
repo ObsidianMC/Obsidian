@@ -1,6 +1,7 @@
-using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.BlockTicks;
+using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.Features;
+using Obsidian.API.Blocks;
 
 namespace Obsidian.WorldData.Redstone;
 
@@ -12,7 +13,7 @@ namespace Obsidian.WorldData.Redstone;
 /// updates that change nothing (a container's items moving).
 /// </summary>
 internal sealed class RedstoneObserver(IRedstoneLevel level)
-    : IRedstoneBehavior, INeighborChangedBehavior, IShapeChangedBehavior, IPlacementBehavior
+    : IRedstoneBehavior
 {
     public const int BlockId = BlockIds.Observer;
 
@@ -28,8 +29,6 @@ internal sealed class RedstoneObserver(IRedstoneLevel level)
     {
         var observer = new RedstoneObserver(level);
         redstone.Register(BlocksRegistry.GetDefault(BlockId).BlockClass(), observer);
-        neighbors.Register(BlockId, observer);
-        neighbors.RegisterPlaced(BlockId, observer);
         ticks.Register(BlockId, (position, _) => level.EnqueueSimulation(() => observer.TickAsync(position)));
     }
 
@@ -38,30 +37,19 @@ internal sealed class RedstoneObserver(IRedstoneLevel level)
 
     public int GetDirectSignal(IBlock state, Vector position, BlockFace direction, bool wiresGiveSignal) => this.GetSignal(state, position, direction, wiresGiveSignal);
 
-    // Vanilla onPlace: a newly placed observer schedules one pulse (oracle: on at the placement's next tick, off two ticks later).
-    public ValueTask OnPlacedAsync(BlockChange change, IBlockChangeWorld world) => this.SchedulePulse(change.Position, change.New);
-
-    // Vanilla startSignal: a shape update from the watched block schedules a pulse, and the tick turns the output on.
-    // One that arrives while the output is on is ignored, and a pulse already scheduled is not added again (scheduled
-    // ticks are deduplicated).
-    public ValueTask OnShapeChangedAsync(ShapeChange change, IBlockChangeWorld world)
+    /// <summary>
+    /// Command block inputs derive their state from neighbors before placement. For observers this sends a shape
+    /// update from the watched side even when it is air. Player placement does not run that derivation.
+    /// </summary>
+    internal static void PrepareCommandPlacement(IBlockLevel level, Vector position, IBlock state)
     {
-        if (change.Direction == Facing(change.State))
-            return this.SchedulePulse(change.Position, change.State);
+        if (!IsObserver(state))
+            return;
 
-        return ValueTask.CompletedTask;
-    }
-
-    // Vanilla's observer has no neighbor reaction. It is registered as a neighbor behavior so that the notification
-    // pipeline finds its shape reaction.
-    public ValueTask OnNeighborChangedAsync(NeighborChange change, IBlockChangeWorld world) => ValueTask.CompletedTask;
-
-    private ValueTask SchedulePulse(Vector position, IBlock state)
-    {
-        if (state.GetProperty("powered") != "true")
-            level.ScheduleBlockTick(position, state, PulseTicks);
-
-        return ValueTask.CompletedTask;
+        var facing = Facing(state);
+        var neighborPosition = position.Offset(facing);
+        ShapeUpdateBehaviors.ObserverBlock.UpdateShape(
+            level, position, state, facing, neighborPosition, level.GetBlock(neighborPosition));
     }
 
     // Vanilla ObserverBlock.tick: an on output goes off; an off output goes on and schedules its own turn-off.
@@ -83,4 +71,21 @@ internal sealed class RedstoneObserver(IRedstoneLevel level)
     }
 
     private static BlockFace Facing(IBlock state) => FeatureHelpers.ParseFace(state.GetProperty("facing"));
+}
+
+/// <summary>The observer's shape hook, shared by the fluid and block notification engines.</summary>
+internal sealed class ObserverShapeBehavior : IShapeUpdateBehavior
+{
+    public IBlock UpdateShape(IBlockLevel level, Vector position, IBlock state, BlockFace direction,
+        Vector neighborPosition, IBlock neighbor)
+    {
+        if (state.GetProperty("powered") != "true"
+            && direction == FeatureHelpers.ParseFace(state.GetProperty("facing")))
+        {
+            // ScheduleTick deduplicates the same change delivered by both engines.
+            level.ScheduleTick(position, state, 2);
+        }
+
+        return state;
+    }
 }

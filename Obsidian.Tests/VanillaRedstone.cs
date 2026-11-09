@@ -6,6 +6,7 @@ using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.Tests.Utilities;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Redstone;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -50,17 +51,29 @@ public class VanillaRedstone
 
         Assert.Equal(ServerConstants.ProtocolDescription, Fixture.Shared.Document.GetProperty("version").GetString());
         Assert.Empty(RequiredCoverage.Where(tag => !covered.Contains(tag)));
+        await using var levelWorld = new LevelScenarioWorld();
         await FixtureCases.AssertAllAsync(
             Fixture.Shared.Scenarios,
             scenario => scenario.Key,
-            scenario => AssertScenarioMatchesVanillaAsync(scenario.Key, scenario.Value));
+            scenario => AssertScenarioMatchesVanillaAsync(scenario.Key, scenario.Value, levelWorld));
     }
 
-    private static async Task AssertScenarioMatchesVanillaAsync(string name, JsonElement scenario)
+    private static async Task AssertScenarioMatchesVanillaAsync(
+        string name, JsonElement scenario, LevelScenarioWorld levelWorld)
     {
         AssertScenarioIsWellFormed(name, scenario);
 
-        await using var world = CreateWorld(scenario);
+        IRedstoneScenarioWorld world;
+        if (scenario.TryGetProperty("level", out var onLevel) && onLevel.GetBoolean())
+        {
+            await levelWorld.PrepareAsync(scenario);
+            world = levelWorld;
+        }
+        else
+        {
+            world = new EngineScenarioWorld(scenario);
+        }
+
         var diffs = await RedstoneReplay.CompareAsync(world, scenario);
         Assert.True(diffs.Count == 0, $"{diffs.Count} blocks differ from vanilla:\n{string.Join("\n", diffs.Take(20))}");
     }
@@ -139,15 +152,6 @@ public class VanillaRedstone
         }
     }
 
-    private static IRedstoneScenarioWorld CreateWorld(JsonElement scenario)
-    {
-        var onLevel = scenario.TryGetProperty("level", out var level) && level.GetBoolean();
-        if (onLevel)
-            return new LevelScenarioWorld(scenario);
-
-        return new EngineScenarioWorld(scenario);
-    }
-
     /// <summary>
     /// The replay's world on the live pipeline and the directional engine: real chunks loaded over the scenario's box, and setblock
     /// through the same path as a placement.
@@ -166,6 +170,7 @@ public class VanillaRedstone
         public ValueTask SetBlockAsync(Vector position, IBlock block, IReadOnlyList<ScenarioItem> items)
         {
             Assert.Empty(items);
+            RedstoneObserver.PrepareCommandPlacement(this.world, position, block);
             return this.world.Place(position, block);
         }
 
@@ -193,17 +198,17 @@ public class VanillaRedstone
     /// the scenario's box and a player above it, so that its blocks and block entities tick. Blocks are set with block
     /// updates, like <c>/setblock</c>, and the server's world ticks as a whole.
     /// </summary>
-    private sealed class LevelScenarioWorld(JsonElement scenario) : IRedstoneScenarioWorld
+    private sealed class LevelScenarioWorld : IRedstoneScenarioWorld
     {
         // Chunks loaded on each side of the box's chunks, so that the box's chunks tick as a player's do.
         private const int ChunkRing = 2;
 
         private readonly RealServerContext context = TestServerFactory.CreateServer($"redstone-{Guid.NewGuid():N}");
-        private bool started;
+        private readonly HashSet<(int X, int Z)> loaded = [];
 
         public async ValueTask SetBlockAsync(Vector position, IBlock block, IReadOnlyList<ScenarioItem> items)
         {
-            await this.StartAsync();
+            this.context.World.PrepareObserverCommandPlacement(position, block);
             await this.context.World.SetBlockAsync(position, block, doBlockUpdate: true);
             if (items.Count == 0)
                 return;
@@ -220,7 +225,6 @@ public class VanillaRedstone
             Assert.Empty(contacts);
             Assert.Empty(arrowHits);
 
-            await this.StartAsync();
             await this.context.World.DoWorldTickAsync();
         }
 
@@ -234,13 +238,10 @@ public class VanillaRedstone
 
         public ValueTask DisposeAsync() => this.context.DisposeAsync();
 
-        // Loads the chunks and joins the player before the first block is set.
-        private async ValueTask StartAsync()
+        // The fixture's level boxes are disjoint and farther apart than redstone reaches. Keep their terrain
+        // and server across cases; a player above each box keeps it ticking without replacing shared chunks.
+        public async ValueTask PrepareAsync(JsonElement scenario)
         {
-            if (this.started)
-                return;
-
-            this.started = true;
             var min = ReadVector(scenario.GetProperty("min"));
             var max = ReadVector(scenario.GetProperty("max"));
             var world = this.context.World;
@@ -252,7 +253,10 @@ public class VanillaRedstone
             for (var chunkX = fromX; chunkX <= toX; chunkX++)
             {
                 for (var chunkZ = fromZ; chunkZ <= toZ; chunkZ++)
-                    WorldBlockEntities.AddEmptyChunk(world, chunkX, chunkZ);
+                {
+                    if (this.loaded.Add((chunkX, chunkZ)))
+                        WorldBlockEntities.AddEmptyChunk(world, chunkX, chunkZ);
+                }
             }
 
             for (var chunkX = fromX; chunkX <= toX; chunkX++)
@@ -262,7 +266,8 @@ public class VanillaRedstone
             }
 
             var above = new VectorD((min.X + max.X) / 2.0, max.Y + 2, (min.Z + max.Z) / 2.0);
-            var player = TestServerFactory.CreateConnectedPlayer(this.context.Server, world, "Watcher", above);
+            var player = TestServerFactory.CreateConnectedPlayer(
+                this.context.Server, world, $"Watcher{this.context.World.Players.Count}", above);
             await TestServerFactory.JoinConnectedPlayerAsync(this.context.Server, player);
         }
     }

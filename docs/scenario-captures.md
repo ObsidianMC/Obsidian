@@ -7,8 +7,12 @@ replaces only what vanilla produced.
 - `redstone_scenarios.json` (`VanillaRedstone`) defines each scenario's box, setup, actions, reloads, entity contacts
   and arrows; the capture records a checkpoint per tick and each reload's `ticks`. A setup placement's `items` (slot,
   id and count) go into its block entity, as the `/setblock`'s `Items` data. Scenarios marked `level` need block
-  entities (containers and hoppers), so the replay runs them on a whole level of a test server, with a player beside
-  the box, instead of on the redstone test world; they can't use reloads, entities or arrows.
+  entities (containers and hoppers), so the replay runs them on one shared test server and reuses loaded chunks,
+  with a player beside each disjoint box, instead of on the redstone test world; they can't use reloads, entities
+  or arrows. `observer_watches_state_changes` also uses the whole level so both update engines deliver shape
+  work for the same changes; its recorded pulses guard scheduled-tick deduplication. The chest obstruction cases
+  retain vanilla's stale comparator output when a solid block is placed
+  above the chest and removed, including above either half of a double chest, without moving items.
 - `fluid_scenarios.json` (`VanillaFluids`) defines the box, setup fills, actions, dimension and checkpoint ticks; the
   capture records the checkpoints.
 - `daylight_detector.json` (`DaylightDetectorTests`) defines the clock times to sample; the capture records the
@@ -101,6 +105,11 @@ replaces only what vanilla produced.
   `review_container_periodic_opener_recheck` invokes the native chest's `ContainerOpenersCounter.recheckOpeners`
   with a stale count and no viewers, recording its closing event and five-tick interval. The replay loses a viewer
   without notifying the window lifecycle, then checks silence before the per-container deadline and repair at it.
+  The two `observer_player_faces_*` cases instead run `PlacementFixtures.java` on a real dedicated server's level
+  through `ServerPlayerGameMode.useItemOn`. Both facing air and facing stone, placement consumes one item and
+  schedules no observer tick. Their replay drives `UseItemOnPacket` and checks the state, scheduled tick and hand.
+  Command placement's initial pulse remains covered by `redstone_scenarios.json`: command block inputs derive
+  their state with shape updates before placement, unlike block items.
 
 - `structure_pieces.json` (`VanillaStructureSaves.StartsSaveLikeVanilla`) holds what vanilla 26.3 saves of
   structure starts (`StructureStart.createTag`), from `Java/StructurePieceFixtures.java`, which runs a dedicated

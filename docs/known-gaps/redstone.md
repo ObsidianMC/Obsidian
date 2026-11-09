@@ -16,6 +16,10 @@ the redstone lamp work (see [plugin content](../plugin-content.md#redstone)); th
   item access) or on its next one (players' clicks), and only near players, where vanilla's `setChanged` tells them
   at once; and entities press plates and arrows press buttons after they tick, where vanilla's do as they move.
   Cats sitting on a chest don't stop comparators reading it.
+  Solid-block obstruction above a single chest or either double-chest half leaves the comparator's output stale
+  until another notification, as captured in vanilla; removing it alone does too. Observers use the shape owner
+  through both update engines. Captured player placement facing air or stone schedules no tick; command placement
+  gets its initial pulse from state derivation before placement.
 - **Game events.** Levers, buttons and pressure plates don't emit vanilla's `block_activate` and `block_deactivate`
   vibrations.
 - **Experiments.** The `redstone_experiments` feature's wire evaluator and update orientations aren't modelled.

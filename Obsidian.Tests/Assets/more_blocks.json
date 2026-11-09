@@ -30067,6 +30067,96 @@
           ]
         }
       ]
+    },
+    {
+      "name": "observer_player_faces_air",
+      "kind": "observer_placement",
+      "origin": [
+        8,
+        70,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            69,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "player": [
+        8.5,
+        70,
+        5
+      ],
+      "yaw": 0,
+      "pitch": 0,
+      "sneaking": false,
+      "clicked": [
+        0,
+        -1,
+        0
+      ],
+      "cursor": [
+        0.5,
+        1,
+        0.5
+      ],
+      "face": "up",
+      "placed": "minecraft:observer",
+      "scheduled": false,
+      "remaining": 1
+    },
+    {
+      "name": "observer_player_faces_block",
+      "kind": "observer_placement",
+      "origin": [
+        24,
+        70,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            24,
+            69,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            24,
+            70,
+            9
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "player": [
+        24.5,
+        70,
+        5
+      ],
+      "yaw": 0,
+      "pitch": 0,
+      "sneaking": false,
+      "clicked": [
+        0,
+        -1,
+        0
+      ],
+      "cursor": [
+        0.5,
+        1,
+        0.5
+      ],
+      "face": "up",
+      "placed": "minecraft:observer",
+      "scheduled": false,
+      "remaining": 1
     }
   ]
 }

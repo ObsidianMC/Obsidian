@@ -37,7 +37,7 @@ The per-line status is in [the appendix](#appendix-a-status-of-every-line).
 dandelions and the poplar sapling. Apart from placing a straw bed, none of it works yet (see section 10 of the
 appendix).
 
-Two limits on these numbers. Parity is mostly unproven: only redstone (20 scenarios), fluids, daylight detectors,
+Two limits on these numbers. Parity is mostly unproven: only redstone (22 scenarios), fluids, daylight detectors,
 block transformers, block item placement, note blocks and door use are replayed against captured vanilla output, and the rest has
 hand-written tests or none. And a few vanilla details below come from memory rather than the jar; they're marked
 "confirm by capture".
@@ -57,7 +57,8 @@ Four defects found on the way are worse than a missing feature, because the bloc
    with the generic chest menu, which lets players put shulker boxes inside them.
 4. **An observer facing a container pulsed forever.** Fixed: the block entity tick sent a neighbour update around
    every container every tick, and observers reacted to neighbour updates from the block they face. Containers now
-   tell only comparators, only when their items change (performance item 1), and observers react to shape updates.
+   tell only comparators when their items change or a plugin consumes `SetChanged()` (performance item 1), and
+   observers react through the generated shape owner shared by both update engines.
    Captured in `redstone_scenarios.json`.
 
 Two more from the first audit were fixed by #695 before this plan started: unwaxed copper doors and trapdoors
@@ -458,7 +459,7 @@ adds.
 |---|---|---|
 | Dust, torches, burnout, repeaters (delay, lock), comparators (compare, subtract) | Works | Captured (`redstone_scenarios.json`) |
 | Comparators: read containers | Works | Captured, through conductors and double chests too. Several blocks read 0 (phase 4); unopened loot containers read stored contents on purpose |
-| Observers | Works | Captured, including containers and state changes without neighbour updates |
+| Observers | Works | Captured: containers, state changes without neighbour updates, command placement, and player placement facing air or stone (no initial tick) |
 | Pistons, sticky pistons | Works | No contract sound; slime doesn't launch entities; captured for the basic cases only |
 | Redstone lamps | Works | |
 | Copper bulbs | Works | No sounds; comparator reads 0 |
@@ -549,7 +550,6 @@ Statements the code contradicts, to correct in phase 0.
 
 To confirm by capture or by running a server before the work that depends on it:
 
-- Whether an observer facing a container pulses continuously (defect 4).
 - Whether powder snow's recorded collision shape lets mobs fall through.
 - Whether a bubble column's motion packet also reaches the pushed player, doubling the push on their client.
 - Vanilla values quoted from memory: the pressure plate touch box, the calibrated sensor's active time, the
