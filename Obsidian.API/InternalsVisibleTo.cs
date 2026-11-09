@@ -2,5 +2,6 @@
 
 [assembly: InternalsVisibleTo("Obsidian")]
 [assembly: InternalsVisibleTo("Obsidian.Tests")]
+[assembly: InternalsVisibleTo("Obsidian.WorldgenBench")]
 [assembly: InternalsVisibleTo("Obsidian.ClientApp")]
 [assembly: InternalsVisibleTo("Obsidian.ClientApp.Tests")]

@@ -39,7 +39,8 @@ internal interface IRemovalBehavior
 internal sealed record NeighborChange(Vector Position, IBlock State, Vector Source, IBlock? SourceState);
 
 /// <summary>
-/// Neighbor behaviors keyed by block name. Blocks without a registration have no reaction.
+/// Neighbor behaviors bound by vanilla registry id. Named registrations remain available for plugin blocks.
+/// Blocks without a registration have no reaction.
 /// </summary>
 internal sealed class NeighborBehaviors
 {
@@ -47,44 +48,108 @@ internal sealed class NeighborBehaviors
     private readonly Dictionary<string, INeighborChangedBehavior> classBehaviors = [];
     private readonly Dictionary<string, IPlacementBehavior> placements = [];
     private readonly Dictionary<string, IRemovalBehavior> removals = [];
+    private readonly INeighborChangedBehavior?[] byId =
+        new INeighborChangedBehavior?[BlocksRegistry.ResourceIds.Length];
+    private readonly IPlacementBehavior?[] placedById = new IPlacementBehavior?[BlocksRegistry.ResourceIds.Length];
+    private readonly IRemovalBehavior?[] removedById = new IRemovalBehavior?[BlocksRegistry.ResourceIds.Length];
 
-    public void RegisterRemoved(int blockId, IRemovalBehavior behavior) => this.RegisterRemoved(BlocksRegistry.GetDefault(blockId).UnlocalizedName, behavior);
+    public void RegisterRemoved(int blockId, IRemovalBehavior behavior)
+    {
+        var blockName = BlocksRegistry.GetDefault(blockId).UnlocalizedName;
+        this.RegisterRemoved(blockName, behavior);
+    }
 
     public void RegisterRemoved(string blockName, IRemovalBehavior behavior)
     {
         if (!this.removals.TryAdd(blockName, behavior))
             throw new InvalidOperationException($"A removal behavior is already registered for {blockName}.");
+
+        Bind(blockName, behavior, this.removedById);
     }
 
-    public bool TryGetRemoved(IBlock state, [MaybeNullWhen(false)] out IRemovalBehavior behavior) =>
-        this.removals.TryGetValue(state.UnlocalizedName, out behavior);
+    public bool TryGetRemoved(IBlock state, [MaybeNullWhen(false)] out IRemovalBehavior behavior)
+    {
+        if ((uint)state.RegistryId >= (uint)this.removedById.Length)
+            return this.removals.TryGetValue(state.UnlocalizedName, out behavior);
 
-    public void RegisterPlaced(int blockId, IPlacementBehavior behavior) => this.RegisterPlaced(BlocksRegistry.GetDefault(blockId).UnlocalizedName, behavior);
+        behavior = this.removedById[state.RegistryId];
+        return behavior is not null;
+    }
+
+    public void RegisterPlaced(int blockId, IPlacementBehavior behavior)
+    {
+        var blockName = BlocksRegistry.GetDefault(blockId).UnlocalizedName;
+        this.RegisterPlaced(blockName, behavior);
+    }
 
     public void RegisterPlaced(string blockName, IPlacementBehavior behavior)
     {
         if (!this.placements.TryAdd(blockName, behavior))
             throw new InvalidOperationException($"A placement behavior is already registered for {blockName}.");
+
+        Bind(blockName, behavior, this.placedById);
     }
 
-    public bool TryGetPlaced(IBlock state, [MaybeNullWhen(false)] out IPlacementBehavior behavior) =>
-        this.placements.TryGetValue(state.UnlocalizedName, out behavior);
+    public bool TryGetPlaced(IBlock state, [MaybeNullWhen(false)] out IPlacementBehavior behavior)
+    {
+        if ((uint)state.RegistryId >= (uint)this.placedById.Length)
+            return this.placements.TryGetValue(state.UnlocalizedName, out behavior);
 
-    /// <summary>Registers by generated block id (<see cref="Obsidian.API.Registries.BlockIds"/>); keys stay the block's unlocalized name.</summary>
-    public void Register(int blockId, INeighborChangedBehavior behavior) => this.Register(BlocksRegistry.GetDefault(blockId).UnlocalizedName, behavior);
+        behavior = this.placedById[state.RegistryId];
+        return behavior is not null;
+    }
+
+    /// <summary>
+    /// Registers by generated block id (<see cref="Obsidian.API.Registries.BlockIds"/>).
+    /// Named registration and duplicate checks keep their existing contract.
+    /// </summary>
+    public void Register(int blockId, INeighborChangedBehavior behavior)
+    {
+        var blockName = BlocksRegistry.GetDefault(blockId).UnlocalizedName;
+        this.Register(blockName, behavior);
+    }
 
     public void Register(string blockName, INeighborChangedBehavior behavior)
     {
         if (!this.behaviors.TryAdd(blockName, behavior))
             throw new InvalidOperationException($"A neighbor behavior is already registered for {blockName}.");
+
+        Bind(blockName, behavior, this.byId);
     }
 
     public void RegisterClass(string blockClass, INeighborChangedBehavior behavior)
     {
         if (!this.classBehaviors.TryAdd(blockClass, behavior))
             throw new InvalidOperationException($"A neighbor behavior is already registered for {blockClass}.");
+
+        foreach (var id in BlockPhysics.BlocksOfClass(blockClass))
+        {
+            // A block-specific registration wins regardless of which registration happened first.
+            if (!this.behaviors.ContainsKey(BlocksRegistry.ResourceIds[id]))
+                this.byId[id] = behavior;
+        }
     }
 
-    public bool TryGet(IBlock state, [MaybeNullWhen(false)] out INeighborChangedBehavior behavior) =>
-        this.behaviors.TryGetValue(state.UnlocalizedName, out behavior) || this.classBehaviors.TryGetValue(state.BlockClass(), out behavior);
+    public bool TryGet(IBlock state, [MaybeNullWhen(false)] out INeighborChangedBehavior behavior)
+    {
+        if ((uint)state.RegistryId >= (uint)this.byId.Length)
+        {
+            return this.behaviors.TryGetValue(state.UnlocalizedName, out behavior)
+                || this.classBehaviors.TryGetValue(state.BlockClass(), out behavior);
+        }
+
+        behavior = this.byId[state.RegistryId];
+        return behavior is not null;
+    }
+
+    private static void Bind<T>(string blockName, T behavior, T?[] table) where T : class
+    {
+        // Retain exact, case-sensitive registration names, even though the registry also accepts aliases/casing.
+        // Unknown names and plugin ids stay in the dictionaries, including registrations made before the block exists.
+        if (BlocksRegistry.TryGetDefault(blockName, out var block) && block.UnlocalizedName == blockName
+            && (uint)block.RegistryId < (uint)table.Length)
+        {
+            table[block.RegistryId] = behavior;
+        }
+    }
 }
