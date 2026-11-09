@@ -22,6 +22,8 @@ public partial class OpenScreenPacket
             Type = (WindowType)menu.Menu.Id;
         else if (inventory is Container { Size: 5 })
             Type = WindowType.Hopper;
+        else if (inventory is Container { Size: 9, Id: "dispenser" or "dropper" })
+            Type = WindowType.Generic3x3;
         else if (inventory.Type == InventoryType.Crafter)
             Type = WindowType.CRAFTER3x3;
         else if (Enum.TryParse<WindowType>(inventory.Type.ToString(), true, out var type))

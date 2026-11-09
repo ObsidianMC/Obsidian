@@ -127,8 +127,10 @@ public abstract partial class PlayerBase : Avatar, IPlayer
                 if (field is MenuContainer closing)
                     this.RecordMenuClosed(closing);
 
-                // Only mark positions here: never count players or take world locks under menuStateGate.
-                if (!this.reconcilingInvalidWindow)
+                // Only mark positions here: never count players or take world locks under menuStateGate. Like
+                // vanilla's openers counters, a spectator's window doesn't open or close a lid.
+                var countsAsViewer = this.GameMode != GameMode.Spectator;
+                if (!this.reconcilingInvalidWindow && countsAsViewer)
                 {
                     this.containerWindowLevel?.ContainerWindowChanged(field);
                 }
@@ -137,7 +139,8 @@ public abstract partial class PlayerBase : Avatar, IPlayer
                 value?.AddViewer(this);
                 field = value;
                 this.containerWindowLevel = this.Level as AbstractLevel;
-                this.containerWindowLevel?.ContainerWindowChanged(value);
+                if (countsAsViewer)
+                    this.containerWindowLevel?.ContainerWindowChanged(value);
                 this.menuSync = null;
 
                 this.IsDragging = false;

@@ -13,6 +13,9 @@ public abstract partial class AbstractLevel
     private readonly Dictionary<Vector, (int Block, int Count, long RecheckAt)> openContainerLids = [];
     private readonly PriorityQueue<Vector, long> containerLidDeadlines = new();
     private readonly HashSet<Vector> inactiveContainerLids = [];
+
+    // The player who opened each open container first, whom its closing game event comes from too.
+    private readonly Dictionary<Vector, IPlayer> containerLidOpeners = [];
     private long nextInactiveContainerLidCheck = long.MaxValue;
 
     internal long ContainerLidViewerScans { get; private set; }
@@ -64,7 +67,7 @@ public abstract partial class AbstractLevel
         }
     }
 
-    private IEnumerable<Vector> ViewedContainerPositions()
+    private IEnumerable<(Vector Position, IPlayer Viewer)> ViewedContainerPositions()
     {
         this.ContainerLidViewerScans++;
         foreach (var (_, viewer) in this.Players)
@@ -93,7 +96,7 @@ public abstract partial class AbstractLevel
             {
                 if (!this.inactiveContainerLids.Contains(position))
                 {
-                    yield return position;
+                    yield return (position, viewer);
                 }
             }
         }
@@ -152,9 +155,11 @@ public abstract partial class AbstractLevel
         }
 
         var counts = new Dictionary<Vector, int>();
-        foreach (var position in this.ViewedContainerPositions())
+        var firstViewers = new Dictionary<Vector, IPlayer>();
+        foreach (var (position, viewer) in this.ViewedContainerPositions())
         {
             counts[position] = counts.GetValueOrDefault(position) + 1;
+            firstViewers.TryAdd(position, viewer);
         }
 
         foreach (var position in changed)
@@ -181,7 +186,7 @@ public abstract partial class AbstractLevel
             var wasOpen = previous.Block == block.RegistryId && previous.Count > 0;
             if (wasOpen != (count > 0))
             {
-                this.PlayContainerLidSound(position, block, count > 0);
+                this.ContainerOpenedOrClosed(position, block, firstViewers.GetValueOrDefault(position));
             }
 
             if (block.RegistryId != BlockIds.Barrel)
@@ -189,7 +194,8 @@ public abstract partial class AbstractLevel
                 // A later lifecycle change can coalesce a pending count key. Read the payload at dispatch too,
                 // so an older queued request can never close a lid that has acquired a new viewer meanwhile.
                 this.QueueBlockEvent(position, block.RegistryId, 1, count,
-                    parameterAtDispatch: () => this.ViewedContainerPositions().Count(viewed => viewed == position));
+                    parameterAtDispatch: () => this.ViewedContainerPositions()
+                        .Count(viewed => viewed.Position == position));
             }
 
             if (count > 0)
@@ -209,18 +215,57 @@ public abstract partial class AbstractLevel
         }
     }
 
+    // Vanilla's ContainerOpenersCounter onOpen and onClose with their game events: the lid's sound, a barrel's open
+    // state, and container_open from the first viewer or container_close from the one who opened it.
+    private void ContainerOpenedOrClosed(Vector position, IBlock block, IPlayer? viewer)
+    {
+        var opening = viewer is not null;
+        this.PlayContainerLidSound(position, block, opening);
+
+        if (block.RegistryId == BlockIds.Barrel)
+        {
+            lock (this.Fluids.TickLock)
+                this.BlockUpdates.SetBlock(position, block.WithProperty("open", opening));
+        }
+
+        var center = (VectorD)position + new VectorD(0.5, 0.5, 0.5);
+        if (opening)
+        {
+            this.containerLidOpeners[position] = viewer!;
+            this.EmitGameEvent(MobGameEvent.ContainerOpen, center, viewer);
+            return;
+        }
+
+        this.containerLidOpeners.Remove(position, out var opener);
+        this.EmitGameEvent(MobGameEvent.ContainerClose, center, opener);
+    }
+
     private static bool HasContainerOpeners(IBlock block) =>
         block.RegistryId is BlockIds.Chest or BlockIds.TrappedChest or BlockIds.EnderChest or BlockIds.Barrel
         || TagsRegistry.Block.CopperChests.Entries.Contains(block.RegistryId)
         || TagsRegistry.Block.ShulkerBoxes.Entries.Contains(block.RegistryId);
+
+    // Vanilla's CopperChestBlock sounds: weathered and oxidized chests have their own.
+    private static string CopperChestSound(IBlock block)
+    {
+        var name = block.UnlocalizedName;
+        if (name.Contains("oxidized", StringComparison.Ordinal))
+            return "copper_chest_oxidized";
+
+        if (name.Contains("weathered", StringComparison.Ordinal))
+            return "copper_chest_weathered";
+
+        return "copper_chest";
+    }
 
     private void PlayContainerLidSound(Vector position, IBlock block, bool opening)
     {
         var sound = block.RegistryId switch
         {
             BlockIds.Chest or BlockIds.TrappedChest => "chest",
+            BlockIds.EnderChest => "ender_chest",
             BlockIds.Barrel => "barrel",
-            _ when !opening && TagsRegistry.Block.CopperChests.Entries.Contains(block.RegistryId) => "chest",
+            _ when TagsRegistry.Block.CopperChests.Entries.Contains(block.RegistryId) => CopperChestSound(block),
             _ when TagsRegistry.Block.ShulkerBoxes.Entries.Contains(block.RegistryId) => "shulker_box",
             _ => null
         };
