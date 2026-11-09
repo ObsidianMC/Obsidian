@@ -4,6 +4,7 @@ using Obsidian.Registries;
 using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.Redstone;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -11,7 +12,7 @@ using Xunit;
 
 namespace Obsidian.Tests;
 
-/// <summary>Obsidian's registration contracts, independent of gameplay rules.</summary>
+/// <summary>Obsidian's registration contracts and block metadata bindings against captured vanilla data.</summary>
 public class BehaviorBindings
 {
     [Fact]
@@ -80,7 +81,7 @@ public class BehaviorBindings
     }
 
     [Fact]
-    public void PluginBlocksRegisteredAfterDispatchersKeepNamedAndFallbackBindings()
+    public void PluginBlocksCreatedAfterDispatchersKeepNamedAndFallbackBindings()
     {
         const string name = "behavior_bindings:late_block";
         var neighbors = new NeighborBehaviors();
@@ -94,8 +95,14 @@ public class BehaviorBindings
         neighbors.RegisterPlaced(name, specific);
         neighbors.RegisterRemoved(name, specific);
 
-        var type = BlocksRegistry.Register(name, properties);
-        var state = type.DefaultState.WithProperty("lit", true);
+        // These lookups need a plugin block's name and ids, not a mutation of the process-wide registry.
+        var type = new BlockType(
+            id: BlocksRegistry.ResourceIds.Length,
+            firstStateId: BlocksRegistry.StateToNumeric.Length,
+            identifier: name,
+            properties: properties.StateProperties,
+            defaultState: properties.DefaultState);
+        var state = type.With(type.DefaultState, "lit", "true");
 
         Assert.True(state.StateId() >= BlocksRegistry.StateToNumeric.Length);
         Assert.True(neighbors.TryGet(state, out var found));
@@ -128,19 +135,86 @@ public class BehaviorBindings
     }
 
     [Fact]
-    public void NamedClassIdsExistInCapturedPhysics()
+    public void BlockMetadataBindingsMatchCapturedPhysics()
     {
-        using var stream = typeof(BlocksRegistry).Assembly
+        using var physicsStream = typeof(BlocksRegistry).Assembly
             .GetManifestResourceStream("Obsidian.Assets.block_physics.json")!;
-        using var physics = JsonDocument.Parse(stream);
-        var capturedClasses = physics.RootElement.GetProperty("blockClasses")
-            .EnumerateObject()
-            .Select(entry => entry.Value.GetString()!)
+        using var physics = JsonDocument.Parse(physicsStream);
+        using var blocksStream = typeof(BlocksRegistry).Assembly
+            .GetManifestResourceStream("Obsidian.Assets.blocks.json")!;
+        using var blocks = JsonDocument.Parse(blocksStream);
+
+        var capturedClasses = physics.RootElement.GetProperty("blockClasses");
+        var capturedTypes = physics.RootElement.GetProperty("blockEntityTypes");
+        var capturedSources = physics.RootElement.GetProperty("signalSources")
+            .EnumerateArray()
+            .Select(entry => entry.GetString()!)
             .ToHashSet(StringComparer.Ordinal);
 
-        var missing = Enum.GetNames<BlockClassId>().Except(capturedClasses);
+        var mismatches = new List<string>();
+        var idsByClass = new Dictionary<string, BlockClassId>(StringComparer.Ordinal);
+        var classesById = new Dictionary<BlockClassId, string>();
 
-        Assert.Empty(missing);
+        // Compare each block's public lookup results with its captured metadata.
+        foreach (var capturedBlock in blocks.RootElement.EnumerateObject())
+        {
+            var name = capturedBlock.Name;
+            var block = BlocksRegistry.Get(name);
+            var expectedClass = capturedClasses.GetProperty(name).GetString()!;
+            var actualClassId = block.ClassId();
+
+            CompareCapturedValue(mismatches, name, "BlockClass", expectedClass, block.BlockClass());
+            CompareClassIdentity(mismatches, name, expectedClass, actualClassId, idsByClass, classesById);
+
+            var expectedType = capturedTypes.TryGetProperty(name, out var capturedType)
+                ? capturedType.GetString() : null;
+            CompareCapturedValue(mismatches, name, "BlockEntityType", expectedType, block.BlockEntityType());
+
+            // State ids come from the jar's block report, independently of Obsidian's generated id tables.
+            var expectedSource = capturedSources.Contains(name);
+            foreach (var capturedState in capturedBlock.Value.GetProperty("states").EnumerateArray())
+            {
+                var stateId = capturedState.GetProperty("id").GetInt32();
+                var state = BlocksRegistry.Get(stateId);
+                var field = $"IsSignalSource at state {stateId}";
+
+                CompareCapturedValue(mismatches, name, field, expectedSource, state.IsSignalSource());
+            }
+        }
+
+        Assert.True(mismatches.Count == 0, string.Join(Environment.NewLine, mismatches));
+    }
+
+    private static void CompareClassIdentity(
+        List<string> mismatches,
+        string blockName,
+        string capturedClass,
+        BlockClassId actualId,
+        Dictionary<string, BlockClassId> idsByClass,
+        Dictionary<BlockClassId, string> classesById)
+    {
+        // Named classes must resolve to their matching member; other classes need distinct, unnamed ids.
+        if (Enum.TryParse<BlockClassId>(capturedClass, out var namedId))
+            CompareCapturedValue(mismatches, blockName, "ClassId", namedId, actualId);
+        else if (Enum.IsDefined(actualId))
+            mismatches.Add($"{blockName}: class {capturedClass} incorrectly resolves to named id {actualId}.");
+
+        if (idsByClass.TryGetValue(capturedClass, out var previousId))
+            CompareCapturedValue(mismatches, blockName, $"ClassId for {capturedClass}", previousId, actualId);
+        else
+            idsByClass.Add(capturedClass, actualId);
+
+        if (classesById.TryGetValue(actualId, out var previousClass) && previousClass != capturedClass)
+            mismatches.Add($"{blockName}: classes {previousClass} and {capturedClass} share ClassId {actualId}.");
+        else
+            classesById.TryAdd(actualId, capturedClass);
+    }
+
+    private static void CompareCapturedValue<T>(
+        List<string> mismatches, string blockName, string field, T expected, T actual)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected, actual))
+            mismatches.Add($"{blockName}: {field} expected '{expected}', got '{actual}'.");
     }
 
     private sealed class Behavior : INeighborChangedBehavior, IPlacementBehavior, IRemovalBehavior,
