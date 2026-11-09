@@ -10,11 +10,14 @@ changes players, plugins and explosions make: fences, walls, panes and stairs co
 plants pop off with tool-less loot and break effects; doors, beds and double plants react when their partner goes.
 Removal is queued on the serial level tick so loot never runs under the tick lock. Shape destruction respects
 `SuppressDrops` and `block_drops`. Water washout drops loot without the break effect; lava only fizzes.
-Rails check their base and ascending end support and drop without a break effect. Vanilla's `neighborChanged`
-reactions other than redstone components' (rails, doors and trapdoors opening when powered, TNT) aren't modelled,
-and scheduled ticks of vanilla blocks other than falling blocks and redstone components (an observer's, from a
-vanilla save) do nothing when they come due. Of vanilla's own blocks, only pressure plates and wooden buttons react
-to entities inside them, and none to entities standing on them. Some vanilla blocks' shape rules aren't modelled yet:
+Rails check their base and ascending end support and drop without a break effect. Doors, trapdoors, fence gates,
+rails and TNT react to power (see [Redstone](redstone.md)). Scheduled ticks run for the vanilla classes that have a
+tick behaviour (`TickBehaviors`: leaves, fire, farmland, sugar cane, cactus, bamboo, kelp, bubble columns,
+composters, sulfur spikes) and for redstone components and falling blocks; the rest do nothing when they come due.
+Of vanilla's own blocks, pressure plates, tripwire, wooden buttons, detector rails and bubble columns react to
+entities inside them; none has a stepped-on reaction, though magma, turtle eggs and sculk shriekers are handled by
+checks of their own. The [block interactions plan](../block-interactions-plan.md) lists what is missing, phase by
+phase. Some vanilla blocks' shape rules aren't modelled yet:
 a bell keeps its `single_wall` or `double_wall` attachment when a wall beside it is added or removed, and doesn't drop
 when it loses all support (vanilla's `BellBlock.updateShape`).
 
@@ -25,7 +28,8 @@ different one. Obsidian deliberately doesn't emulate Java's heap layout for this
 
 **Where to start:**
 
-- Vanilla blocks' `neighborChanged` goes in `LevelBlockUpdates.NeighborChanged`, and their ticks in
-  `LevelBlockUpdates.RunScheduledTick`, next to falling blocks'.
+- A vanilla class's tick, random tick, shape update, entity contact or on-place reaction is a member named after
+  the Mojang class that declares it, in `Obsidian/WorldData/BlockOwnerBehaviors.cs` or `RandomTickBehaviors.cs`; the
+  generator binds its blocks. Redstone reactions to neighbours are registered in `Obsidian/WorldData/Redstone`.
 - Placement checks belong in `UseItemOnPacket`'s placement, before the place event: vanilla's `canSurvive` and
   `isUnobstructed`.

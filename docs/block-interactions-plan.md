@@ -262,6 +262,39 @@ isn't. Scenarios marked `level` replay on a whole test level, for blocks that ne
 Performance alongside: item 4 (typed properties for dust, repeaters, comparators). Item 1 is done. Items 5 and 6
 are their own PRs after this phase.
 
+### Shape rules by declaring class (M, its own PR)
+
+`ShapeUpdater.UpdateShape` picks a block's shape rule from its concrete vanilla class, so every subclass has to be
+listed by hand: `WeatheringCopperDoorBlock` beside `DoorBlock`, `StrawBedBlock` beside `BedBlock`, and about thirty
+plant classes that all inherit one rule. A subclass nobody lists silently gets no rule, which is the bug #695 fixed
+for placement. Vanilla dispatches by the class that *declares* `updateShape`, and
+`Assets/block_update_shape_classes.json` already records that for every block: 108 declaring classes over 854
+blocks, where the switch has 29 arms. The generator binds 17 of them through `ShapeUpdateBehaviors` today.
+
+Tags are not the key to use. Vanilla chooses the rule by class, a datapack can change a tag without changing a
+block's shape logic, and most of these rules (torches, ladders, lanterns, vines, dust, double plants) have no tag.
+Tags stay where vanilla reads them, inside the rules: what a fence or wall connects to.
+
+1. **Key the existing rules by declaring class.** Each arm of the switch becomes the rule of the Mojang class that
+   declares it (`DoorBlock`, `AbstractBedBlock`, `LanternBlock`, `VegetationBlock`, ...), bound by the generator
+   like the 17 owners that exist. The hand-listed subclasses and their `BlockClassId` members go.
+2. **Keep worldgen working.** Trees, structure templates and terrain call `ShapeUpdater` through `IWorldGenLevel`,
+   while the generated owners take the live `IBlockLevel`. The rules need one read-only view both can supply; shape
+   rules return a state and schedule ticks, they don't write.
+3. **List what the dump has and Obsidian doesn't.** The dump names declaring classes with no rule yet: slabs,
+   flower pots, candles and candle cakes, pressure plates, coral, chains, lightning rods, shelves, amethyst
+   clusters and more. Don't implement them here; record each in appendix A or a known-gaps file with the phase
+   that owns it.
+
+No behaviour change is intended for blocks that have a rule today, so the existing replays guard it
+(`VanillaMoreBlocks` and `VanillaSulfurBlocks` shape cases, `VanillaBlockPlacement`, `VanillaRedstone`, the worldgen
+feature and structure captures). Where a subclass gains a rule it was missing, capture it first.
+
+The observer fix has landed (#703) and moved the observer onto the same generated hook, so this can start. That
+work also showed a gap this refactor should close: structure templates and worldgen call `ShapeUpdater` directly
+and never reach the generated owners, so an observer placed by a template gets no shape reaction. The shared view
+in step 2 is where that is fixed.
+
 ### Phase 5: ticking (L)
 
 Section 8 is 20 of 31 working. The pattern for most of what's left is one `RandomTickBehaviors` or `TickBehaviors`
@@ -318,7 +351,8 @@ Capture: `block_use` cases for the opening rules and the dragon egg; RCON scenar
 1. Phase 0 and the four fixes. The fixes don't need phase 1 and shouldn't wait for it.
 2. Phase 1, with performance items 2 and 7.
 3. Phases 2 and 3 side by side. Phase 2's seven batches are independent of each other.
-4. Phase 4, then performance items 5 and 6 on their own.
+4. Phase 4, then performance items 5 and 6 on their own. The shape-rule refactor can run beside any phase once
+   the observer fix has merged; it shares files only with performance item 6.
 5. Phases 5 and 6 in either order.
 
 For delegated batches, `AGENTS.md` allows two agents per model family at once. Give each batch its own behaviour file

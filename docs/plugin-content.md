@@ -281,8 +281,9 @@ levers, buttons (pressed by players and wind charges, and wooden ones by arrows)
 wooden ones feel any entity, stone ones mobs and players, weighted ones count them), the block of redstone and the
 redstone lamp. Players place them as vanilla does: facing and attached from where they click and look, where they can
 stay. Those that lose their support pop off, dropping their loot. A comparator's output is saved in its block
-entity, and vanilla saves' scheduled ticks of these blocks run. Other powered blocks (doors, pistons and the like)
-don't react yet (see [known gaps](known-gaps/redstone.md)).
+entity, and vanilla saves' scheduled ticks of these blocks run. Doors, trapdoors, fence gates, pistons, rails, TNT,
+note blocks, hoppers, droppers, dispensers and crafters react to power too; bells and a few others don't yet (see
+[known gaps](known-gaps/redstone.md)).
 
 ### Saplings
 
