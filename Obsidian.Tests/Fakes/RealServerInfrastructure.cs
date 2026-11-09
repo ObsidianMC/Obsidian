@@ -228,6 +228,11 @@ internal sealed class RealServerContext : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        // The server's loop never ran, so nothing stops it, and a stop is what waits for the work the ticks left to the
+        // background, such as the save of a player who changed level from a tick. That work writes into the world's
+        // folder, so it ends before the world is disposed and its folder deleted, as the stop has it end first.
+        await this.Server.DrainBackgroundWorkAsync();
+
         this.Server.Dispose();
         this.EventDispatcher.Dispose();
         await this.World.DisposeAsync();
