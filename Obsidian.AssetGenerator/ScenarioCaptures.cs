@@ -53,7 +53,7 @@ internal static class ScenarioCaptures
     };
 
     // The fixtures whose probes record only the cases asked for.
-    private static readonly string[] SelectableCases = [Sulfur, MoreBlocks, StructurePieces];
+    private static readonly string[] SelectableCases = [Redstone, Sulfur, MoreBlocks, StructurePieces];
 
     public static readonly string[] All =
         [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps, Mining,
@@ -69,7 +69,9 @@ internal static class ScenarioCaptures
         straight into the face at the location, without gravity) happen first, at the previous game time, then the
         game advances one tick. Checkpoints hold the box after each tick: one string per (y, z) row, y then z
         ascending, with a character per x giving the block's palette index in 0-9a-zA-Z. Palette states are full
-        states with every property, sorted by name.
+        states with every property, sorted by name. A setup placement's `items` are its block entity's items, placed
+        with it as the /setblock's Items data. Scenarios marked `level` are replayed on a whole Obsidian level,
+        because they need its block entities (containers and hoppers).
         """;
 
     private const string FluidNotes = """
@@ -96,7 +98,7 @@ internal static class ScenarioCaptures
         if (cases is not null && (fixtures.Count != 1 || !SelectableCases.Any(fixtures.Contains)))
         {
             throw new ArgumentException(
-                "Case selection requires CaptureFixtures=sulfur, more_blocks or structure_pieces.");
+                "Case selection requires CaptureFixtures=redstone, sulfur, more_blocks or structure_pieces.");
         }
 
         if (fixtures.Contains(CopperWeathering))
@@ -169,7 +171,8 @@ internal static class ScenarioCaptures
         if (fixtures.Contains(Redstone))
         {
             var path = Path.Combine(assetsDirectory, "redstone_scenarios.json");
-            await CaptureFileAsync(path, server.Version, RedstoneNotes, root => CaptureRedstoneAsync(vanilla, root));
+            await CaptureFileAsync(path, server.Version, RedstoneNotes,
+                root => CaptureRedstoneAsync(vanilla, root, cases));
         }
 
         if (fixtures.Contains(Fluids))
@@ -217,13 +220,17 @@ internal static class ScenarioCaptures
     /// <summary>
     /// Each scenario's setup is placed live with <c>/setblock</c>, and checkpoint 0 is read. Then each tick: its
     /// reloads (a save and restart, which runs one tick of its own), its block actions, its entity and arrow events,
-    /// one stepped tick, and its checkpoint.
+    /// one stepped tick, and its checkpoint. With <paramref name="cases"/>, only the scenarios it names are recorded.
     /// </summary>
-    private static async Task CaptureRedstoneAsync(ScenarioServer vanilla, JsonObject root)
+    private static async Task CaptureRedstoneAsync(ScenarioServer vanilla, JsonObject root,
+        IReadOnlyCollection<string>? cases)
     {
         foreach (var scenario in root["scenarios"]!.AsArray().Select(node => node!.AsObject()))
         {
             var name = scenario["name"]!.GetValue<string>();
+            if (cases is not null && !cases.Contains(name))
+                continue;
+
             Console.WriteLine($"Capturing redstone scenario {name}...");
 
             var box = Box.Read(scenario);
@@ -233,7 +240,10 @@ internal static class ScenarioCaptures
             await ClearAsync(vanilla, dimension, box.Grow(1));
 
             foreach (var placement in scenario["setup"]!.AsArray())
-                await SetBlockAsync(vanilla, dimension, ReadPosition(placement!["pos"]!), placement["state"]!);
+            {
+                var state = WithItems(placement!["state"]!.GetValue<string>(), placement["items"]?.AsArray());
+                await SetBlockAsync(vanilla, dimension, ReadPosition(placement["pos"]!), state);
+            }
 
             var reader = new BoxReader(vanilla, dimension, box, StatesIn(scenario));
             var checkpoints = new JsonArray { await reader.ReadAsync(0) };
@@ -260,6 +270,24 @@ internal static class ScenarioCaptures
             await RemoveEntitiesAsync(vanilla, dimension);
             await ClearAsync(vanilla, dimension, box.Grow(1));
         }
+    }
+
+    // A placement's state with its block entity's items as /setblock data: each item's slot, id and count.
+    private static string WithItems(string state, JsonArray? items)
+    {
+        if (items is null)
+            return state;
+
+        var stacks = items.Select(item => ItemData(item!));
+        return $"{state}{{Items:[{string.Join(",", stacks)}]}}";
+    }
+
+    private static string ItemData(JsonNode item)
+    {
+        var slot = item["slot"]!.GetValue<int>();
+        var id = item["id"]!.GetValue<string>();
+        var count = item["count"]!.GetValue<int>();
+        return FormattableString.Invariant($"{{Slot:{slot}b,id:\"{id}\",count:{count}}}");
     }
 
     // A reload saves the world and restarts the server, which runs one tick before the data pack freezes the game.
@@ -446,10 +474,13 @@ internal static class ScenarioCaptures
             .Select(state => state.Split('[')[0]);
     }
 
-    private static async Task SetBlockAsync(ScenarioServer vanilla, string dimension, Position position, JsonNode state)
+    private static Task SetBlockAsync(ScenarioServer vanilla, string dimension, Position position, JsonNode state) =>
+        SetBlockAsync(vanilla, dimension, position, state.GetValue<string>());
+
+    private static async Task SetBlockAsync(ScenarioServer vanilla, string dimension, Position position, string state)
     {
         // Fails (harmlessly) when the block already has the state.
-        await vanilla.RunInAsync(dimension, $"setblock {position} {state.GetValue<string>()}");
+        await vanilla.RunInAsync(dimension, $"setblock {position} {state}");
     }
 
     // Force-loads the chunks around an area, which keeps them loaded and ticking across restarts.

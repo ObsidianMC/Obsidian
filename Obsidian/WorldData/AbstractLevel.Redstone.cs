@@ -1,5 +1,6 @@
 using Obsidian.API.BlockEntities;
 using Obsidian.WorldData.BlockNotifications;
+using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Redstone;
 
 namespace Obsidian.WorldData;
@@ -9,6 +10,10 @@ namespace Obsidian.WorldData;
 /// </summary>
 public abstract partial class AbstractLevel
 {
+    // Vanilla's Direction.Plane.HORIZONTAL, the directions updateNeighbourForOutputSignal looks for comparators in.
+    private static readonly BlockFace[] comparatorDirections =
+        [BlockFace.North, BlockFace.East, BlockFace.South, BlockFace.West];
+
     /// <inheritdoc/>
     public int GetSignal(Vector position, BlockFace direction)
     {
@@ -91,15 +96,55 @@ public abstract partial class AbstractLevel
         this.RedstoneInstall.Targets.HitAsync(block, location, face, TargetBlock.ArrowPulseTicks);
 
     /// <summary>
-    /// Tells the neighbors of a container whose items changed. Comparators don't read containers in the redstone engine yet,
-    /// so this only queues the neighbor reactions.
+    /// Vanilla's <c>updateNeighbourForOutputSignal</c> for a container whose items changed: the comparators beside
+    /// it, or behind a conductor beside it, hear of it and read it again. A double chest is one container to a
+    /// comparator, so the comparators of its other half hear too. Remembers the revision they heard of (see
+    /// <c>ComparatorRevision</c>), so that the block entity tick tells them only of a change.
     /// </summary>
     internal void UpdateComparatorsOf(ContainerBlockEntity container)
     {
         lock (this.Fluids.TickLock)
         {
-            this.BlockNotifications.EnqueueNeighbors(container.BlockPosition);
+            container.ComparatorRevision = container.Inventory.Revision;
+
+            var position = container.BlockPosition;
+            this.EnqueueComparatorsAround(position);
+
+            var state = this.BlockUpdates.GetBlock(position);
+            if (IsChest(state) && ChestPartner(this.BlockUpdates, position, state) is Vector partner)
+                this.EnqueueComparatorsAround(partner);
+
             this.BlockNotifications.DrainAsync().GetAwaiter().GetResult();
+        }
+    }
+
+    /// <summary>
+    /// Queues vanilla's <c>updateNeighbourForOutputSignal</c> reach of <paramref name="position"/>: each comparator
+    /// beside it, and each one behind a redstone conductor beside it, hears that the block there changed. Doesn't
+    /// drain.
+    /// </summary>
+    private void EnqueueComparatorsAround(Vector position)
+    {
+        IBlockChangeWorld world = this;
+        foreach (var direction in comparatorDirections)
+        {
+            var beside = position.Offset(direction);
+            var state = world.GetLoadedBlock(beside);
+            if (state is null)
+                continue;
+
+            if (state.Is(BlockIds.Comparator))
+            {
+                this.BlockNotifications.EnqueueNeighbor(beside, position);
+                continue;
+            }
+
+            if (!state.IsRedstoneConductor())
+                continue;
+
+            var behind = beside.Offset(direction);
+            if (world.GetLoadedBlock(behind) is IBlock comparator && comparator.Is(BlockIds.Comparator))
+                this.BlockNotifications.EnqueueNeighbor(behind, position);
         }
     }
 

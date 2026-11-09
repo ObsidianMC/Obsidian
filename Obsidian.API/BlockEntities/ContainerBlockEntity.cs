@@ -90,6 +90,10 @@ public partial class ContainerBlockEntity : BlockEntity, IItemAccessProvider
     // its level.
     internal long NotifiedRevision { get; set; } = -1;
 
+    // The inventory's revision when the comparators reading the container last heard of its items; -1 tells them once
+    // after the block entity joins its level.
+    internal long ComparatorRevision { get; set; } = -1;
+
     /// <summary>
     /// Called at the end of the level's tick after <see cref="Inventory"/>'s items changed, once however many changes
     /// the tick made, and once after the block entity joins its level (placed, loaded with its chunk, or its plugin

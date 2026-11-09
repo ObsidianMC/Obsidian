@@ -1,11 +1,17 @@
 using Obsidian.API;
+using Obsidian.API.BlockEntities;
+using Obsidian.API.Inventory;
+using Obsidian.API.Registries;
 using Obsidian.Registries;
+using Obsidian.Tests.Fakes;
 using Obsidian.Tests.Utilities;
+using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Obsidian.Tests;
@@ -18,8 +24,11 @@ namespace Obsidian.Tests;
 /// </summary>
 /// <remarks>
 /// Each scenario is validated for completeness and known block states, then replayed on the live directional power
-/// engine with <see cref="RedstoneReplay"/> using the timing the fixture documents.
+/// engine with <see cref="RedstoneReplay"/> using the timing the fixture documents. Scenarios marked <c>level</c> need
+/// block entities (containers and hoppers), so they replay on a whole level of a test server instead.
 /// </remarks>
+// The level scenarios start servers, which merge plugin tags into vanilla's, as PluginTagFiles does.
+[Collection(nameof(PluginTagFiles))]
 public class VanillaRedstone
 {
     private const string Symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -28,11 +37,12 @@ public class VanillaRedstone
     private static readonly string[] RequiredCoverage =
     [
         "source_timing", "dust_attenuation", "repeater_delay", "repeater_lock", "comparator_modes", "observer_pulses",
-        "torch_inversion", "torch_burnout", "save_reload",
+        "torch_inversion", "torch_burnout", "save_reload", "observer_containers", "observer_shape_updates",
+        "container_comparators",
     ];
 
     [Fact]
-    public void ScenariosMatchVanilla()
+    public async Task ScenariosMatchVanilla()
     {
         var covered = Fixture.Shared.Scenarios.Values
             .SelectMany(scenario => scenario.GetProperty("coverage").EnumerateArray().Select(tag => tag.GetString()!))
@@ -40,17 +50,18 @@ public class VanillaRedstone
 
         Assert.Equal(ServerConstants.ProtocolDescription, Fixture.Shared.Document.GetProperty("version").GetString());
         Assert.Empty(RequiredCoverage.Where(tag => !covered.Contains(tag)));
-        FixtureCases.AssertAll(
+        await FixtureCases.AssertAllAsync(
             Fixture.Shared.Scenarios,
             scenario => scenario.Key,
-            scenario => AssertScenarioMatchesVanilla(scenario.Key, scenario.Value));
+            scenario => AssertScenarioMatchesVanillaAsync(scenario.Key, scenario.Value));
     }
 
-    private static void AssertScenarioMatchesVanilla(string name, JsonElement scenario)
+    private static async Task AssertScenarioMatchesVanillaAsync(string name, JsonElement scenario)
     {
         AssertScenarioIsWellFormed(name, scenario);
 
-        var diffs = RedstoneReplay.Compare(CreateWorld(scenario), scenario);
+        await using var world = CreateWorld(scenario);
+        var diffs = await RedstoneReplay.CompareAsync(world, scenario);
         Assert.True(diffs.Count == 0, $"{diffs.Count} blocks differ from vanilla:\n{string.Join("\n", diffs.Take(20))}");
     }
 
@@ -128,7 +139,14 @@ public class VanillaRedstone
         }
     }
 
-    private static IRedstoneScenarioWorld CreateWorld(JsonElement scenario) => new EngineScenarioWorld(scenario);
+    private static IRedstoneScenarioWorld CreateWorld(JsonElement scenario)
+    {
+        var onLevel = scenario.TryGetProperty("level", out var level) && level.GetBoolean();
+        if (onLevel)
+            return new LevelScenarioWorld(scenario);
+
+        return new EngineScenarioWorld(scenario);
+    }
 
     /// <summary>
     /// The replay's world on the live pipeline and the directional engine: real chunks loaded over the scenario's box, and setblock
@@ -145,17 +163,112 @@ public class VanillaRedstone
             this.world.Load(min.X, max.X, min.Y, max.Y, min.Z, max.Z, ringChunks: 1);
         }
 
-        public void SetBlock(Vector position, IBlock block) => this.world.Place(position, block).AsTask().GetAwaiter().GetResult();
-
+        public ValueTask SetBlockAsync(Vector position, IBlock block, IReadOnlyList<ScenarioItem> items)
+        {
+            Assert.Empty(items);
+            return this.world.Place(position, block);
+        }
 
         // One game tick: block ticks, then the simulation work and notifications they queued (the level's order).
-        public void Tick(IReadOnlyList<Vector> contacts, IReadOnlyList<ArrowHit> arrowHits) =>
-            this.world.Advance(contacts, arrowHits).AsTask().GetAwaiter().GetResult();
+        public ValueTask TickAsync(IReadOnlyList<Vector> contacts, IReadOnlyList<ArrowHit> arrowHits) =>
+            this.world.Advance(contacts, arrowHits);
 
-        public void Reload() => this.world.Restart();
+        public ValueTask ReloadAsync()
+        {
+            this.world.Restart();
+            return ValueTask.CompletedTask;
+        }
 
-        public IBlock GetBlock(Vector position) => this.world.GetLoadedBlock(position) ?? throw new InvalidOperationException($"{position} isn't loaded.");
+        public ValueTask<IBlock> GetBlockAsync(Vector position)
+        {
+            var block = this.world.GetLoadedBlock(position);
+            return ValueTask.FromResult(block ?? throw new InvalidOperationException($"{position} isn't loaded."));
+        }
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
+
+    /// <summary>
+    /// The replay's world for scenarios that need block entities: a level of a test server, with empty chunks around
+    /// the scenario's box and a player above it, so that its blocks and block entities tick. Blocks are set with block
+    /// updates, like <c>/setblock</c>, and the server's world ticks as a whole.
+    /// </summary>
+    private sealed class LevelScenarioWorld(JsonElement scenario) : IRedstoneScenarioWorld
+    {
+        // Chunks loaded on each side of the box's chunks, so that the box's chunks tick as a player's do.
+        private const int ChunkRing = 2;
+
+        private readonly RealServerContext context = TestServerFactory.CreateServer($"redstone-{Guid.NewGuid():N}");
+        private bool started;
+
+        public async ValueTask SetBlockAsync(Vector position, IBlock block, IReadOnlyList<ScenarioItem> items)
+        {
+            await this.StartAsync();
+            await this.context.World.SetBlockAsync(position, block, doBlockUpdate: true);
+            if (items.Count == 0)
+                return;
+
+            // Like /setblock with Items data: the block entity holds them from its placement.
+            var entity = await this.context.World.GetBlockEntityAsync(position);
+            var container = Assert.IsAssignableFrom<ContainerBlockEntity>(entity);
+            foreach (var item in items)
+                container.Inventory.SetItem(item.Slot, new ItemStack(ItemsRegistry.Get(item.Id), item.Count));
+        }
+
+        public async ValueTask TickAsync(IReadOnlyList<Vector> contacts, IReadOnlyList<ArrowHit> arrowHits)
+        {
+            Assert.Empty(contacts);
+            Assert.Empty(arrowHits);
+
+            await this.StartAsync();
+            await this.context.World.DoWorldTickAsync();
+        }
+
+        public ValueTask ReloadAsync() => throw new NotSupportedException("Level scenarios don't reload.");
+
+        public async ValueTask<IBlock> GetBlockAsync(Vector position)
+        {
+            var block = await this.context.World.GetBlockAsync(position);
+            return block ?? throw new InvalidOperationException($"{position} isn't loaded.");
+        }
+
+        public ValueTask DisposeAsync() => this.context.DisposeAsync();
+
+        // Loads the chunks and joins the player before the first block is set.
+        private async ValueTask StartAsync()
+        {
+            if (this.started)
+                return;
+
+            this.started = true;
+            var min = ReadVector(scenario.GetProperty("min"));
+            var max = ReadVector(scenario.GetProperty("max"));
+            var world = this.context.World;
+
+            var fromX = (min.X >> 4) - ChunkRing;
+            var toX = (max.X >> 4) + ChunkRing;
+            var fromZ = (min.Z >> 4) - ChunkRing;
+            var toZ = (max.Z >> 4) + ChunkRing;
+            for (var chunkX = fromX; chunkX <= toX; chunkX++)
+            {
+                for (var chunkZ = fromZ; chunkZ <= toZ; chunkZ++)
+                    WorldBlockEntities.AddEmptyChunk(world, chunkX, chunkZ);
+            }
+
+            for (var chunkX = fromX; chunkX <= toX; chunkX++)
+            {
+                for (var chunkZ = fromZ; chunkZ <= toZ; chunkZ++)
+                    await world.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false);
+            }
+
+            var above = new VectorD((min.X + max.X) / 2.0, max.Y + 2, (min.Z + max.Z) / 2.0);
+            var player = TestServerFactory.CreateConnectedPlayer(this.context.Server, world, "Watcher", above);
+            await TestServerFactory.JoinConnectedPlayerAsync(this.context.Server, player);
+        }
+    }
+
+    /// <summary>An item a setup placement puts in its block entity's <see cref="Slot"/>.</summary>
+    public sealed record ScenarioItem(int Slot, string Id, int Count);
 
     private static void AssertStateRoundTrips(string state, string context)
     {
@@ -187,21 +300,21 @@ public class VanillaRedstone
         position.X >= min.X && position.X <= max.X && position.Y >= min.Y && position.Y <= max.Y && position.Z >= min.Z && position.Z <= max.Z;
 
     /// <summary>
-    /// The world a replay drives. Mirrors the oracle: <see cref="SetBlock"/> is a live block change with neighbor updates
-    /// (like <c>/setblock</c>), <see cref="Tick"/> advances one game tick and runs the work due in it, and
-    /// <see cref="Reload"/> saves and loads the world, which must keep scheduled work (block ticks) with its delays.
+    /// The world a replay drives. Mirrors the oracle: <see cref="SetBlockAsync"/> is a live block change with neighbor
+    /// updates (like <c>/setblock</c>, with its block entity's items), <see cref="TickAsync"/> advances one game tick
+    /// and runs the work due in it, and <see cref="ReloadAsync"/> saves and loads the world, which must keep scheduled
+    /// work (block ticks) with its delays.
     /// </summary>
-    public interface IRedstoneScenarioWorld
+    public interface IRedstoneScenarioWorld : IAsyncDisposable
     {
-        void SetBlock(Vector position, IBlock block);
-
+        ValueTask SetBlockAsync(Vector position, IBlock block, IReadOnlyList<ScenarioItem> items);
 
         /// <summary>One game tick, with the entities' contact cells for that tick.</summary>
-        void Tick(IReadOnlyList<Vector> contacts, IReadOnlyList<ArrowHit> arrowHits);
+        ValueTask TickAsync(IReadOnlyList<Vector> contacts, IReadOnlyList<ArrowHit> arrowHits);
 
-        void Reload();
+        ValueTask ReloadAsync();
 
-        IBlock GetBlock(Vector position);
+        ValueTask<IBlock> GetBlockAsync(Vector position);
     }
 
     /// <summary>
@@ -211,11 +324,15 @@ public class VanillaRedstone
     /// </summary>
     public static class RedstoneReplay
     {
-        public static List<string> Compare(IRedstoneScenarioWorld world, JsonElement scenario)
+        public static async Task<List<string>> CompareAsync(IRedstoneScenarioWorld world, JsonElement scenario)
         {
             var (min, max) = (ReadVector(scenario.GetProperty("min")), ReadVector(scenario.GetProperty("max")));
             foreach (var placement in scenario.GetProperty("setup").EnumerateArray())
-                world.SetBlock(ReadVector(placement.GetProperty("pos")), ParseState(placement.GetProperty("state").GetString()!));
+            {
+                var position = ReadVector(placement.GetProperty("pos"));
+                var state = ParseState(placement.GetProperty("state").GetString()!);
+                await world.SetBlockAsync(position, state, ReadItems(placement));
+            }
 
             var actions = scenario.GetProperty("actions").EnumerateArray().ToArray();
             var entities = scenario.TryGetProperty("entities", out var entityEvents) ? entityEvents.EnumerateArray().ToArray() : [];
@@ -223,20 +340,24 @@ public class VanillaRedstone
             IReadOnlyList<Vector> contacts = [];
             var checkpoints = scenario.GetProperty("checkpoints").EnumerateArray().ToDictionary(checkpoint => checkpoint.GetProperty("tick").GetInt32());
             var diffs = new List<string>();
-            diffs.AddRange(Compare(world, checkpoints[0], min, max));
+            diffs.AddRange(await CompareAsync(world, checkpoints[0], min, max));
 
             for (var tick = 1; tick < checkpoints.Count; tick++)
             {
                 var tickActions = actions.Where(action => action.GetProperty("tick").GetInt32() == tick).ToArray();
                 foreach (var action in tickActions.Where(action => action.TryGetProperty("reload", out _)))
                 {
-                    world.Reload();
+                    await world.ReloadAsync();
                     for (var reloadTick = 0; reloadTick < action.GetProperty("ticks").GetInt32(); reloadTick++)
-                        world.Tick(contacts, []);
+                        await world.TickAsync(contacts, []);
                 }
 
                 foreach (var action in tickActions.Where(action => !action.TryGetProperty("reload", out _)))
-                    world.SetBlock(ReadVector(action.GetProperty("pos")), ParseState(action.GetProperty("state").GetString()!));
+                {
+                    var position = ReadVector(action.GetProperty("pos"));
+                    var state = ParseState(action.GetProperty("state").GetString()!);
+                    await world.SetBlockAsync(position, state, []);
+                }
 
                 // The entity contact set changes at its events and holds until the next one, as entities do in the level.
                 foreach (var contact in entities.Where(contact => contact.GetProperty("tick").GetInt32() == tick))
@@ -247,15 +368,33 @@ public class VanillaRedstone
                     .Select(arrow => new ArrowHit(ReadVector(arrow.GetProperty("block")), ReadLocation(arrow.GetProperty("location")),
                         Enum.Parse<BlockFace>(arrow.GetProperty("face").GetString()!, ignoreCase: true))).ToArray();
 
-                world.Tick(contacts, hits);
-                diffs.AddRange(Compare(world, checkpoints[tick], min, max));
+                await world.TickAsync(contacts, hits);
+                diffs.AddRange(await CompareAsync(world, checkpoints[tick], min, max));
             }
 
             return diffs;
         }
 
-        private static IEnumerable<string> Compare(IRedstoneScenarioWorld world, JsonElement checkpoint, Vector min, Vector max)
+        private static ScenarioItem[] ReadItems(JsonElement placement)
         {
+            if (!placement.TryGetProperty("items", out var items))
+                return [];
+
+            return items.EnumerateArray()
+                .Select(item => new ScenarioItem(
+                    item.GetProperty("slot").GetInt32(),
+                    item.GetProperty("id").GetString()!,
+                    item.GetProperty("count").GetInt32()))
+                .ToArray();
+        }
+
+        private static async Task<List<string>> CompareAsync(
+            IRedstoneScenarioWorld world,
+            JsonElement checkpoint,
+            Vector min,
+            Vector max)
+        {
+            var differences = new List<string>();
             var tick = checkpoint.GetProperty("tick").GetInt32();
             var paletteText = checkpoint.GetProperty("palette").EnumerateArray().Select(state => state.GetString()!).ToArray();
             var palette = paletteText.Select(ParseState).ToArray();
@@ -270,12 +409,17 @@ public class VanillaRedstone
                     {
                         var index = Symbols.IndexOf(row[x - min.X]);
                         var expected = palette[index];
-                        var actual = world.GetBlock(new Vector(x, y, z));
-                        if (!actual.IsSameState(expected))
-                            yield return $"tick {tick} ({x},{y},{z}): vanilla {paletteText[index]}, ours {Describe(actual, paletteText[index])}";
+                        var actual = await world.GetBlockAsync(new Vector(x, y, z));
+                        if (actual.IsSameState(expected))
+                            continue;
+
+                        var ours = Describe(actual, paletteText[index]);
+                        differences.Add($"tick {tick} ({x},{y},{z}): vanilla {paletteText[index]}, ours {ours}");
                     }
                 }
             }
+
+            return differences;
         }
 
         // The block's state with the same properties, in the order the vanilla state text lists them.

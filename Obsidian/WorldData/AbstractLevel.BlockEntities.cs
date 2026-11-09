@@ -259,8 +259,14 @@ public abstract partial class AbstractLevel
                         this.QueueItemsChanged(container);
                 }
 
-                if (blockEntity is ContainerBlockEntity watched)
+                // Comparators hear of items that moved since they last did: changes made outside the level's tick, like
+                // players' clicks, and the container's own tick. Changes made through item access are told at the end
+                // of this tick (FlushItemAccessChangesAsync). An unchanged container tells nobody.
+                if (blockEntity is ContainerBlockEntity watched
+                    && watched.Inventory.Revision != watched.ComparatorRevision)
+                {
                     this.UpdateComparatorsOf(watched);
+                }
             }
         }
 

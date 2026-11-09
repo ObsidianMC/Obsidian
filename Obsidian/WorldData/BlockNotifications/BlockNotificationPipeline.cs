@@ -5,6 +5,29 @@ using Obsidian.WorldData.Features.Tree;
 namespace Obsidian.WorldData.BlockNotifications;
 
 /// <summary>
+/// Reacts to a shape update from a neighbor (vanilla <c>updateShape</c>) without working out a new state: an observer
+/// starts its pulse when the block it faces changes. Shape updates reach a block whenever a neighbor's state changes,
+/// unless the write skips them (<see cref="BlockUpdateFlags.KnownShape"/>), including writes that skip neighbor
+/// updates. Implemented by a behavior registered in <see cref="NeighborBehaviors"/>, and called before the block's
+/// shape rules run.
+/// </summary>
+internal interface IShapeChangedBehavior
+{
+    ValueTask OnShapeChangedAsync(ShapeChange change, IBlockChangeWorld world);
+}
+
+/// <summary>
+/// A shape update for the block at <see cref="Position"/>, whose neighbor in <see cref="Direction"/>, at
+/// <see cref="Source"/>, is now <see cref="SourceState"/>.
+/// </summary>
+internal sealed record ShapeChange(
+    Vector Position,
+    IBlock State,
+    BlockFace Direction,
+    Vector Source,
+    IBlock SourceState);
+
+/// <summary>
 /// The live work a committed block change causes: vanilla's shape updates for the six neighbors, then their
 /// <c>neighborChanged</c> reactions. Work is queued in FIFO order, coalesced while pending, and drained in a bounded loop, so
 /// nothing recurses. Callers queue after committing a change; the drain runs now or at the level's next drain point.
@@ -183,6 +206,12 @@ internal sealed class BlockNotificationPipeline
         {
             if (source is null)
                 return;
+
+            if (this.behaviors.TryGet(state, out var reaction) && reaction is IShapeChangedBehavior shaped)
+            {
+                var shapeChange = new ShapeChange(work.Position, state, work.Face, work.Source, source);
+                await shaped.OnShapeChangedAsync(shapeChange, this.world);
+            }
 
             var rawBrightness = state.BlockClass() == "MushroomBlock" ? this.world.GetRawBrightness(work.Position) : 15;
             ShapeUpdater.ScheduleFluidTick(this.shapeView, state, work.Position, source);

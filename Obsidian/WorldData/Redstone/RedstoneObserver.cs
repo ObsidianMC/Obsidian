@@ -5,11 +5,14 @@ using Obsidian.WorldData.Features;
 namespace Obsidian.WorldData.Redstone;
 
 /// <summary>
-/// An observer (vanilla <c>ObserverBlock</c>). It watches the block in front of its <c>facing</c> side. When that block changes, it
-/// pulses: <c>powered</c> goes on for two game ticks, and the back side (opposite <c>facing</c>) gives full power while it is on.
-/// Changes to the observer's own output are not watched, because it only reacts to its front block.
+/// An observer (vanilla <c>ObserverBlock</c>). It watches the block in front of its <c>facing</c> side. When that
+/// block's state changes, it pulses: <c>powered</c> goes on for two game ticks, and the back side (opposite
+/// <c>facing</c>) gives full power while it is on. It hears of the change through the shape update the change sends
+/// it, so it sees changes written without neighbor updates (dust power, a repeater's output) and ignores neighbor
+/// updates that change nothing (a container's items moving).
 /// </summary>
-internal sealed class RedstoneObserver(IRedstoneLevel level) : IRedstoneBehavior, INeighborChangedBehavior, IPlacementBehavior
+internal sealed class RedstoneObserver(IRedstoneLevel level)
+    : IRedstoneBehavior, INeighborChangedBehavior, IShapeChangedBehavior, IPlacementBehavior
 {
     public const int BlockId = BlockIds.Observer;
 
@@ -38,15 +41,20 @@ internal sealed class RedstoneObserver(IRedstoneLevel level) : IRedstoneBehavior
     // Vanilla onPlace: a newly placed observer schedules one pulse (oracle: on at the placement's next tick, off two ticks later).
     public ValueTask OnPlacedAsync(BlockChange change, IBlockChangeWorld world) => this.SchedulePulse(change.Position, change.New);
 
-    // Vanilla startSignal: a change to the watched block schedules a pulse, and the tick turns the output on. A pulse already
-    // scheduled is not added again, because scheduled ticks are deduplicated.
-    public ValueTask OnNeighborChangedAsync(NeighborChange change, IBlockChangeWorld world)
+    // Vanilla startSignal: a shape update from the watched block schedules a pulse, and the tick turns the output on.
+    // One that arrives while the output is on is ignored, and a pulse already scheduled is not added again (scheduled
+    // ticks are deduplicated).
+    public ValueTask OnShapeChangedAsync(ShapeChange change, IBlockChangeWorld world)
     {
-        if (change.Source == change.Position.Offset(Facing(change.State)))
+        if (change.Direction == Facing(change.State))
             return this.SchedulePulse(change.Position, change.State);
 
         return ValueTask.CompletedTask;
     }
+
+    // Vanilla's observer has no neighbor reaction. It is registered as a neighbor behavior so that the notification
+    // pipeline finds its shape reaction.
+    public ValueTask OnNeighborChangedAsync(NeighborChange change, IBlockChangeWorld world) => ValueTask.CompletedTask;
 
     private ValueTask SchedulePulse(Vector position, IBlock state)
     {
