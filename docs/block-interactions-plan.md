@@ -21,9 +21,9 @@ trigger (packet, tick or hook) to the state change, reading the code and its tes
 | 5. Tool and item dependent | 24 | 12 | 1 | 11 |
 | 6. Entity and environment | 24 | 7 | 12 | 5 |
 | 7. Redstone | 33 | 27 | 3 | 3 |
-| 8. Scheduled and world tick | 31 | 19 | 3 | 9 |
+| 8. Scheduled and world tick | 31 | 20 | 3 | 8 |
 | 9. Special blocks | 18 | 8 | 1 | 9 |
-| **Total** | **210** | **124** | **27** | **59** |
+| **Total** | **210** | **125** | **27** | **58** |
 
 - **Works** means the behaviour the line names works. Many of these still lack a statistic, a game event (sculk
   vibration) or an advancement trigger. Phase 1 adds those for every interaction at once, so they don't count
@@ -263,11 +263,11 @@ comparators). Items 5 and 6 are their own PRs after this phase.
 
 ### Phase 5: ticking (L)
 
-Section 8 is 19 of 31 working. The pattern for most of what's left is one `RandomTickBehaviors` or `TickBehaviors`
+Section 8 is 20 of 31 working. The pattern for most of what's left is one `RandomTickBehaviors` or `TickBehaviors`
 member per Mojang class; the generator binds it.
 
-- **Copper weathering:** 13 `Weathering*` classes, one shared behaviour over a dumped next-stage table. About fifty
-  blocks never age today.
+- **Copper weathering (done):** all 13 `Weathering*` owners share the jar-derived age/next-stage table.
+  `copper_weathering.json` captures every family and stage, draw order, neighborhood effects and connected halves.
 - **Growing plants:** kelp, cave vines (with glow berries), weeping and twisting vines (`GrowingPlantHeadBlock`),
   melon and pumpkin stems, vines, the pitcher crop, the poplar sapling (needs weighted tree growers, see
   `saplings-that-26-3-added.md`).
@@ -485,7 +485,7 @@ adds.
 | Bamboo, sugar cane, cactus, nether wart, cocoa, sweet berries | Works | No capture of growth draws |
 | Cave vines | Missing | Kelp and the nether vines too (`GrowingPlantHeadBlock`) |
 | Grass, mycelium: spread | Works | |
-| Copper: oxidize | Missing | |
+| Copper: oxidize | Works | Captured random draws, all 13 owners, connected doors/chests and retained block entities |
 | Leaves: decay | Works | |
 | Ice, snow layers: melt | Missing | No weather pass either |
 | Fire | Partial | Draws out of vanilla's order; fire from fireballs, explosions and end crystals never ticks |

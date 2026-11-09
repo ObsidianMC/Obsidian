@@ -52,6 +52,14 @@ replaces only what vanilla produced.
   seed and checks exact vectors and the next draw for all three projectile types. The probe suppresses weather and
   unrelated block-inside effects; it retains vanilla's release transition and nearby collision query.
 
+- `copper_weathering.json` (`VanillaCopperWeathering.ReplayWeatheringReference`) records bounded random ticks from
+  `Java/CopperWeatheringFixtures.java`. Capture it with `-p:CaptureFixtures=copper_weathering`. All 13 weathering
+  owners and 15 block families cover fresh, exposed, weathered, oxidized and waxed states, exact seeded draws and
+  the next integer, neighborhood age effects, Manhattan scan boundaries, and connected doors/chests. The view runs
+  native shape updates for connected halves and records block entity types and their native state compatibility;
+  chunk lifecycle side effects are outside the probe. The replay uses the generated owner dispatch and live block
+  mutation path, checking states, random consumption and resident block entity identity in one test.
+
 - `more_blocks.json` (`VanillaMoreBlocks.ReplayConstructionAndMusicReference`) holds bounded 26.3 construction
   and music probes from `Java/MoreBlockFixtures.java`. Placement runs the chosen block's placement routine and
   survival check; signs are already a standing or ceiling variant. It records full states for every wool/concrete

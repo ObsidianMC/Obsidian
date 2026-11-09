@@ -5,6 +5,10 @@ internal static class FixtureDumper
 {
     private static string Source(string name) => Path.Combine(AppContext.BaseDirectory, "Java", name);
 
+    internal static Task DumpCopperWeatheringAsync(VanillaServer server, string fixture) =>
+        VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
+            Source("CopperWeatheringFixtures.java"), fixture);
+
     internal static Task DumpSavedHeightmapsAsync(VanillaServer server, string fixture)
     {
         var world = Path.Combine(server.ScratchDirectory, $"saved-heightmaps-{Guid.NewGuid():N}");

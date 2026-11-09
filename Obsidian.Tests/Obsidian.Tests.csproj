@@ -27,6 +27,7 @@
 		<EmbeddedResource Include="Assets\sulfur_scenarios.json" />
 		<EmbeddedResource Include="Assets\sulfur_fixtures.json" />
 		<EmbeddedResource Include="Assets\more_blocks.json" />
+		<EmbeddedResource Include="Assets\copper_weathering.json" />
 		<EmbeddedResource Include="Assets\mining_progress.json" />
 		<EmbeddedResource Include="Assets\block_placement.json" />
 		<EmbeddedResource Include="Assets\heightmaps.json" />

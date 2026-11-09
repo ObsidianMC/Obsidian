@@ -28,6 +28,7 @@ internal static class ScenarioCaptures
     public const string SavedHeightmaps = "saved_heightmaps";
     public const string Mining = "mining";
     public const string Placement = "placement";
+    public const string CopperWeathering = "copper_weathering";
 
     private const string Symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -56,7 +57,7 @@ internal static class ScenarioCaptures
 
     public static readonly string[] All =
         [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps, Mining,
-            Placement];
+            Placement, CopperWeathering];
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -92,6 +93,14 @@ internal static class ScenarioCaptures
     public static async Task RunAsync(VanillaServer server, string assetsDirectory,
         IReadOnlyCollection<string> fixtures, IReadOnlyCollection<string>? cases = null)
     {
+        if (fixtures.Contains(CopperWeathering))
+        {
+            await FixtureDumper.DumpCopperWeatheringAsync(server,
+                Path.Combine(assetsDirectory, "copper_weathering.json"));
+            if (fixtures.Count == 1)
+                return;
+        }
+
         if (cases is not null && (fixtures.Count != 1 || !SelectableCases.Any(fixtures.Contains)))
         {
             throw new ArgumentException(
