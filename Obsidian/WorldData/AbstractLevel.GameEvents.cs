@@ -1,6 +1,7 @@
 using Obsidian.Entities;
 using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData.Redstone;
 
 namespace Obsidian.WorldData;
 
@@ -8,7 +9,23 @@ internal enum MobGameEvent
 {
     Step, Land, Swim, ProjectileShoot, ProjectileLand, BlockPlace, BlockDestroy, BlockChange,
     EntityDamage, EntityDie, EntityInteract, NoteBlockPlay, JukeboxPlay, JukeboxStop, SculkSensorClick,
-    BlockActivate, BlockDeactivate
+    BlockActivate, BlockDeactivate, BlockOpen, BlockClose, ContainerOpen, ContainerClose, Eat, FluidPickup,
+    FluidPlace, PrimeFuse, EntityPlace, ItemInteractFinish
+}
+
+internal static class MobGameEvents
+{
+    /// <summary>The game event's identifier in vanilla's <c>minecraft:game_event</c> registry.</summary>
+    internal static string Identifier(this MobGameEvent kind) => kind switch
+    {
+        MobGameEvent.ProjectileShoot => "minecraft:projectile_shoot",
+        MobGameEvent.ProjectileLand => "minecraft:projectile_land",
+        MobGameEvent.NoteBlockPlay => "minecraft:note_block_play",
+        MobGameEvent.JukeboxStop => "minecraft:jukebox_stop_play",
+        MobGameEvent.SculkSensorClick => "minecraft:sculk_sensor_tendrils_clicking",
+        MobGameEvent.Land => "minecraft:hit_ground",
+        _ => "minecraft:" + kind.ToString().ToSnakeCase()
+    };
 }
 
 internal readonly record struct MobVibration(
@@ -58,6 +75,25 @@ public abstract partial class AbstractLevel
     private sealed record PendingMobVibration(MobVibration Event, long SelectedAt, long ArrivalAt, double Distance);
 
     private sealed record WardenWarning(int Level, long LastWarning);
+
+    void IRedstoneLevel.EmitGameEvent(MobGameEvent kind, Vector position, IEntity? source) =>
+        this.EmitGameEvent(kind, (VectorD)position + new VectorD(0.5, 0.5, 0.5), source);
+
+    void IPressurePlateWorld.EmitGameEvent(MobGameEvent kind, Vector position) =>
+        this.EmitGameEvent(kind, (VectorD)position + new VectorD(0.5, 0.5, 0.5));
+
+    /// <summary>
+    /// Takes the game events emitted since the level last dispatched them, in order, without dispatching them. Parity
+    /// replays compare these with vanilla's.
+    /// </summary>
+    internal List<MobVibration> TakeGameEvents()
+    {
+        var taken = new List<MobVibration>();
+        while (this.mobGameEvents.TryDequeue(out var vibration))
+            taken.Add(vibration);
+
+        return taken;
+    }
 
     internal void EmitGameEvent(
         MobGameEvent kind,
@@ -298,7 +334,7 @@ public abstract partial class AbstractLevel
         pending[key] = new(vibration, gameEventTick, gameEventTick + travelTicks, distance);
     }
 
-    private IBlock? GameEventBlock(Vector point) =>
+    internal IBlock? GameEventBlock(Vector point) =>
         IsOutsideBuildHeight(point.Y) ? null : GetLoadedChunk(point.X >> 4, point.Z >> 4)?.GetBlock(point);
 
     private IEnumerable<Vector> NearbySculk(Vector origin, int radius, string? id = null)
@@ -434,12 +470,18 @@ public abstract partial class AbstractLevel
         MobGameEvent.Step or MobGameEvent.Swim => 1,
         MobGameEvent.ProjectileLand => 2,
         MobGameEvent.Land => 3,
+        MobGameEvent.ItemInteractFinish => 3,
+        MobGameEvent.Eat => 8,
+        MobGameEvent.BlockClose or MobGameEvent.ContainerClose => 9,
+        MobGameEvent.BlockOpen or MobGameEvent.ContainerOpen or MobGameEvent.PrimeFuse => 10,
         MobGameEvent.NoteBlockPlay => 10,
         MobGameEvent.BlockChange => 11,
         MobGameEvent.BlockActivate => 10,
         MobGameEvent.BlockDeactivate => 9,
         MobGameEvent.BlockDestroy or MobGameEvent.EntityDie => 12,
-        MobGameEvent.BlockPlace => 13,
+        MobGameEvent.FluidPickup => 12,
+        MobGameEvent.BlockPlace or MobGameEvent.FluidPlace => 13,
+        MobGameEvent.EntityPlace => 14,
         MobGameEvent.EntityInteract => 6,
         MobGameEvent.EntityDamage => 7,
         MobGameEvent.ProjectileShoot => 3,
