@@ -18,5 +18,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Obsidian\Obsidian.csproj" />
+		<!-- One harness for replay tests and the offline block probe; no test assembly dependency. -->
+		<Compile Include="..\Obsidian.Tests\RedstoneTestWorld.cs" Link="RedstoneTestWorld.cs" />
 	</ItemGroup>
 </Project>

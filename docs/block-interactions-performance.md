@@ -283,3 +283,40 @@ None of the level-side items above has a number yet. Before starting on them:
 
 Every item should land with its before and after from the same harness, and with the non-worldgen suite green, as
 `AGENTS.md` asks.
+
+## Re-runnable block probe
+
+Build once with `dotnet build Obsidian.WorldgenBench -c Release -m:1`, then run:
+
+```sh
+dotnet run --project Obsidian.WorldgenBench -c Release --no-build -- block > block.csv
+```
+
+The block mode runs before the worldgen mode's jar/structure setup. It uses the same `RedstoneTestWorld` source
+as the replay tests (linked into the benchmark), real chunks, the live notification pipeline and redstone engine.
+It needs neither network access nor a world directory at runtime; a fresh build still needs the usual generated assets.
+Setup is excluded. Each case warms for at least 250 ms, then reports the median of seven samples, including delegate
+and loop overhead. Allocations use the current thread; the harness rejects an operation that yields. One dust operation
+is one alternating on/off transition, not an entire on/off pair. CSV names and units are stable for diffing.
+
+The baseline in `Obsidian.WorldgenBench/Results/block-before.csv` was captured at the docs branch point `15309c34b`,
+with only this probe and its shared-harness access added. Machine: Windows 11 (10.0.22631), x64, .NET SDK 10.0.403,
+runtime .NET 10.0.14, Release. Other work on this machine means small timing differences should be read cautiously.
+
+| Operation | Before (ns/op) | Before (B/op) |
+|---|---:|---:|
+| BlockClass / stone | 8.43 | 0 |
+| IsSignalSource / stone | 6.05 | 0 |
+| IsSignalSource / wire | 13.06 | 0 |
+| IsGravityAffected / stone | 18.94 | 0 |
+| NeighborBehaviors.TryGet / stone | 13.16 | 0 |
+| NeighborBehaviors.TryGet / wire | 7.24 | 0 |
+| RedstoneBehaviors.For / stone | 12.84 | 0 |
+| RedstoneBehaviors.For / wire | 20.32 | 0 |
+| ContactFor / air | 15.66 | 0 |
+| BlockEntityType / chest | 7.45 | 0 |
+| UpdateShape / stone | 18.27 | 0 |
+| UpdateShape / air | 26.74 | 0 |
+| Pipeline / change inside solid stone | 1131.65 | 32.05 |
+| Pipeline / toggle 15 dust | 275583.20 | 18293.95 |
+| Pipeline / toggle 30 dust | 267843.20 | 18493.95 |

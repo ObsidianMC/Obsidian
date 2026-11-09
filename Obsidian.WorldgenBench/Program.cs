@@ -31,9 +31,13 @@ if (args.Length > 0 && !args[0].StartsWith("--"))
     optionArgs = optionArgs[1..];
 }
 
+// The block probe needs only embedded registry assets and in-memory chunks, with no jar download or world files.
+if (mode == "block")
+    return BlockRun.Run(optionArgs);
+
 if (mode != "serial")
 {
-    Console.Error.WriteLine($"Unknown mode '{mode}'. Use serial.");
+    Console.Error.WriteLine($"Unknown mode '{mode}'. Use serial or block.");
     return 2;
 }
 
