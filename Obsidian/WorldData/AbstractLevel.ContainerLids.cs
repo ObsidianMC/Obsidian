@@ -9,13 +9,13 @@ public abstract partial class AbstractLevel
     // Vanilla ContainerOpenersCounter schedules an opener recheck every five ticks while a container is open.
     internal const int ContainerLidRecheckDelay = 5;
 
-    private readonly ConcurrentDictionary<Vector, byte> changedContainerLids = [];
+    private readonly record struct ContainerLidChange(IPlayer? ClosingPlayer);
+
+    private readonly ConcurrentDictionary<Vector, ContainerLidChange> changedContainerLids = [];
     private readonly Dictionary<Vector, (int Block, int Count, long RecheckAt)> openContainerLids = [];
     private readonly PriorityQueue<Vector, long> containerLidDeadlines = new();
     private readonly HashSet<Vector> inactiveContainerLids = [];
 
-    // The player who opened each open container first, whom its closing game event comes from too.
-    private readonly Dictionary<Vector, IPlayer> containerLidOpeners = [];
     private long nextInactiveContainerLidCheck = long.MaxValue;
 
     internal long ContainerLidViewerScans { get; private set; }
@@ -43,11 +43,14 @@ public abstract partial class AbstractLevel
         return !owner.IsRemoved && ReferenceEquals(owner, this.GetResidentBlockEntity(ender.BlockPosition));
     }
 
-    internal void ContainerWindowChanged(BaseContainer? container)
+    internal void ContainerWindowChanged(BaseContainer? container, IPlayer? closingPlayer = null)
     {
         foreach (var position in ContainerLidPositions(container))
         {
-            this.changedContainerLids.TryAdd(position, 0);
+            if (closingPlayer is null)
+                this.changedContainerLids.TryAdd(position, default);
+            else
+                this.changedContainerLids[position] = new(closingPlayer);
         }
     }
 
@@ -115,11 +118,13 @@ public abstract partial class AbstractLevel
         }
 
         var changed = new HashSet<Vector>();
+        var closingPlayers = new Dictionary<Vector, IPlayer?>();
         foreach (var (position, _) in this.changedContainerLids)
         {
-            if (this.changedContainerLids.TryRemove(position, out _))
+            if (this.changedContainerLids.TryRemove(position, out var change))
             {
                 changed.Add(position);
+                closingPlayers[position] = change.ClosingPlayer;
             }
         }
 
@@ -167,7 +172,6 @@ public abstract partial class AbstractLevel
             if (!this.IsBlockTicking(position))
             {
                 this.openContainerLids.Remove(position);
-                this.containerLidOpeners.Remove(position);
                 this.inactiveContainerLids.Add(position);
                 this.nextInactiveContainerLidCheck = Math.Min(this.nextInactiveContainerLidCheck,
                     now + ContainerLidRecheckDelay);
@@ -179,19 +183,17 @@ public abstract partial class AbstractLevel
             if (block is null || !HasContainerOpeners(block))
             {
                 this.openContainerLids.Remove(position);
-                this.containerLidOpeners.Remove(position);
                 continue;
             }
 
             var count = counts.GetValueOrDefault(position);
             var previous = this.openContainerLids.GetValueOrDefault(position);
-            if (previous.Block != block.RegistryId)
-                this.containerLidOpeners.Remove(position);
-
             var wasOpen = previous.Block == block.RegistryId && previous.Count > 0;
             if (wasOpen != (count > 0))
             {
-                this.ContainerOpenedOrClosed(position, block, firstViewers.GetValueOrDefault(position));
+                var source = count > 0
+                    ? firstViewers.GetValueOrDefault(position) : closingPlayers.GetValueOrDefault(position);
+                this.ContainerOpenedOrClosed(position, block, count > 0, source);
             }
 
             if (block.RegistryId != BlockIds.Barrel)
@@ -221,10 +223,10 @@ public abstract partial class AbstractLevel
     }
 
     // Vanilla's ContainerOpenersCounter onOpen and onClose with their game events: the lid's sound, a barrel's open
-    // state, and container_open from the first viewer or container_close from the one who opened it.
-    private void ContainerOpenedOrClosed(Vector position, IBlock block, IPlayer? viewer)
+    // state, and container_open from the first viewer or container_close from the final closing player. A periodic
+    // recheck has no acting player and emits its close without a source.
+    private void ContainerOpenedOrClosed(Vector position, IBlock block, bool opening, IPlayer? viewer)
     {
-        var opening = viewer is not null;
         this.PlayContainerLidSound(position, block, opening);
 
         if (block.RegistryId == BlockIds.Barrel)
@@ -236,13 +238,11 @@ public abstract partial class AbstractLevel
         var center = (VectorD)position + new VectorD(0.5, 0.5, 0.5);
         if (opening)
         {
-            this.containerLidOpeners[position] = viewer!;
             this.EmitGameEvent(MobGameEvent.ContainerOpen, center, viewer);
             return;
         }
 
-        this.containerLidOpeners.Remove(position, out var opener);
-        this.EmitGameEvent(MobGameEvent.ContainerClose, center, opener);
+        this.EmitGameEvent(MobGameEvent.ContainerClose, center, viewer);
     }
 
     private static bool HasContainerOpeners(IBlock block) =>

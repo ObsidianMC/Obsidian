@@ -2886,6 +2886,59 @@
       "checkAttack": true,
       "attackCharge": 0.1,
       "blockedAttackCharge": 1.0
+    },
+    {
+      "name": "chest_close_sources",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chest"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.chest.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:chest 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:open_chest 1"
+      ],
+      "menu": "minecraft:generic_9x3",
+      "closed": {
+        "changes": "",
+        "sounds": [
+          "minecraft:block.chest.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:chest 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      },
+      "checkCloseSources": true,
+      "explicitCloseEvents": [
+        "minecraft:container_close 0,0,0 minecraft:player"
+      ],
+      "periodicCloseEvents": [
+        "minecraft:container_close 0,0,0 none"
+      ]
     }
   ],
   "version": "26.3"

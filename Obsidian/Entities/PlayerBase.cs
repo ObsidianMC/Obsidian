@@ -132,7 +132,7 @@ public abstract partial class PlayerBase : Avatar, IPlayer
                 var countsAsViewer = this.GameMode != GameMode.Spectator;
                 if (!this.reconcilingInvalidWindow && countsAsViewer)
                 {
-                    this.containerWindowLevel?.ContainerWindowChanged(field);
+                    this.containerWindowLevel?.ContainerWindowChanged(field, this);
                 }
 
                 field?.RemoveViewer(this);
