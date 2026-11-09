@@ -1,8 +1,9 @@
 # 26.3 entities
 
 **Status:** open. The entities and mob changes 26.3 added are not implemented. They were left out of the 26.3 port
-(see [26.3 gameplay left out of the port](26-3-gameplay-left-out-of-the-port.md)) and are not part of the
-[block interactions plan](../block-interactions-plan.md), which covers 26.3's blocks only.
+(see [26.3 gameplay left out of the port](26-3-gameplay-left-out-of-the-port.md)). The
+[block interactions plan](../block-interactions-plan.md) covers 26.3's blocks, and of everything below only age
+locking, which golden dandelions set; nothing else here has a plan.
 
 Both new entities exist as types, so they load, save their common fields and sync their metadata to clients. Neither
 does anything.

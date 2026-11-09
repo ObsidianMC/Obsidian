@@ -47,8 +47,9 @@ Four defects found on the way are worse than a missing feature, because the bloc
 
 1. **Ender chests lose items.** Opening one creates a new empty container instead of the player's saved
    `EnderInventory` (`Obsidian/Events/MainEventHandler.cs:235`). Whatever goes in is gone when the window closes.
-2. **Fire from fireballs, explosions and end crystals never spreads or burns out.** Only flint and steel schedules
-   the fire's first tick (`UseItemOnPacket.cs:377`); fire has no on-place behaviour to do it for the others.
+2. **Fire from fireballs, explosions and end crystals never spreads or burns out.** Only fire a player lights with
+   flint and steel or a fire charge gets its first tick scheduled (`UseItemOnPacket.cs:377`); fire has no on-place
+   behaviour to do it for the others.
 3. **Dispensers and droppers open as a 9×1 row** instead of 3×3 (`OpenScreenPacket.cs:27`), and shulker boxes open
    with the generic chest menu, which lets players put shulker boxes inside them.
 4. **An observer facing a container probably pulses forever.** The block entity tick sends a neighbour update around
@@ -131,7 +132,8 @@ The foundation for sections 1 to 5 and 9.
 1. **Dump and bind use hooks.** Extend `VanillaDumper` to record which classes override `useWithoutItem`,
    `useItemOn` and `attack`. Add the three to `OwnedHooks` with a `UseBehaviors` class of members. A use behaviour
    returns a result with vanilla's shapes: success, success on the server only, consume, pass, fail, try with an
-   empty hand. The result decides whether the item's own use runs next and whether the arm swings.
+   empty hand. The result decides whether the item's own use runs next and whether the arm swings. Attacks don't
+   arrive as uses: dispatch the `attack` hook from `PlayerActionPacket`'s start-digging path.
 2. **One dispatcher in `UseItemOnPacket`.** In order: reach (`PlayerBase.BlockInteractionRange`, which only some
    branches check today), spectator and adventure rules, the sneak bypass (`BypassesBlockUse`, which the door, music
    and menu branches replace with a blanket sneak check), the block's use, the item's use on the block, placement,
@@ -161,7 +163,7 @@ they can go to separate agents with one file per batch.
 
 | Batch | Lines | What it needs beyond a use behaviour | Size |
 |---|---|---|---|
-| **A. Food and harvest** | cake, candle cake, sweet berry and cave vine harvest, pumpkin carving, hive and nest honey and honeycomb, smoke from a campfire below | Hive harvest resets honey, angers or releases bees, and checks for smoke. Cave vine harvest needs the growth from phase 5. | M |
+| **A. Food and harvest** | cake, candle cake, sweet berry and cave vine harvest, pumpkin carving, vine trimming with shears, hive and nest honey and honeycomb, smoke from a campfire below | Hive harvest resets honey, angers or releases bees, and checks for smoke. Cave vine harvest needs the growth from phase 5. "Vines: trim" is ambiguous in the issue (appendix C): capture what shears do to a growing vine head and to wall vines, then implement what vanilla does or record that the line names nothing. | M |
 | **B. Lighting** | candles and both campfires: light with flint and steel or a fire charge, put out by hand or shovel | Ignition today only places fire in the neighbouring cell. Projectiles lighting campfires waits for phase 3's projectile path. | S |
 | **C. Cauldrons** | fill and empty with buckets and bottles, wash dyed items and banners | A table keyed by cauldron kind and item, as vanilla has. Exchanging the held item is where duplication bugs hide: hand-written tests for that are justified. Rain and dripstone filling come in phase 5. | M |
 | **D. Blocks that hold items** | flower pots, chiseled bookshelves, decorated pots, lodestone compasses, jukebox comparator output | Bookshelves and pots become typed block entities with item access (hoppers) and analog output, instead of retained NBT. The bookshelf picks its slot from where the face was clicked. | M |
@@ -273,9 +275,11 @@ Performance alongside: items 8 (tick only block entities that tick) and 4 (typed
 
 ### Phase 6: special blocks and trial chambers (L)
 
-- **Chest, ender chest and shulker opening rules:** refuse to open under a solid block or a sitting cat; ender chest
-  sounds; shulker lids checking for room, growing their collision box and pushing entities (the piston's entity
-  pushing in `MovingPistonBlockEntity.cs:135` is the model).
+- **Chest and ender chest opening rules:** a chest refuses to open under a solid block or a sitting cat, for both
+  halves of a double chest; an ender chest refuses under a solid block. Ender chest sounds.
+- **Shulker lids** follow their own rule: the lid needs room in the direction the box faces, not above it. While
+  open, the box grows its collision box and pushes entities (the piston's entity pushing in
+  `MovingPistonBlockEntity.cs:135` is the model). Confirm both rules by capture.
 - **Dragon egg** teleporting on use and on attack. **Conduits** as a typed block entity. **End gateways:** the
   beam, and the safe-exit search when `ExactTeleport` is false.
 - **Trial spawners and vaults.** Both are untyped saved data today. Each is a typed block entity with a state
@@ -466,7 +470,7 @@ adds.
 | Copper: oxidize | Missing | |
 | Leaves: decay | Works | |
 | Ice, snow layers: melt | Missing | No weather pass either |
-| Fire | Partial | Draws out of vanilla's order; fire not placed by flint and steel never ticks |
+| Fire | Partial | Draws out of vanilla's order; fire a player didn't light (fireballs, explosions, end crystals) never ticks |
 | Lava, water | Works | Flow is captured; lava's ignition isn't |
 | Farmland: hydrate | Works | |
 | Turtle eggs: hatch | Partial | Wrong time window; `Random.Shared`; sand and red sand only |

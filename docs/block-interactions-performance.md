@@ -68,7 +68,9 @@ It also looks like a bug: observers react to a neighbour update from the block t
 stopping. That is from reading the code, not from running it.
 
 Notify only when the container's `Inventory.Revision` differs from the revision last notified, as the lines just
-above already do for plugin containers. A double chest must notify for both halves when either changes, since a
+above already do for plugin containers. Notify the way vanilla's `updateNeighbourForOutputSignal` does, which
+`NotifyComparatorsAroundAsync` already implements: the comparators beside the container and those behind a
+conductor beside it. Today's six plain neighbour updates never reach a comparator behind a conductor. A double chest must notify for both halves when either changes, since a
 comparator beside one half reads the combined inventory. This also removes most of the known gap's "comparators hear
 on the next block entity tick" polling.
 
@@ -233,6 +235,10 @@ Rides with: plan phase 1.
 block, looks up its block entity type by block name, compares it to the block entity's id ignoring case, and awaits
 `TickAsync`, including for chests, signs, beds and banners, which do nothing. Vanilla keeps a list of tickers per
 chunk and only walks that.
+
+The same loop also does upkeep that isn't ticking: it restores and attaches block entities, runs pending loads,
+and polls each plugin container's inventory revision so that changes made without the inventory's lock still reach
+`OnItemsChanged` and get saved. That upkeep must keep running for every container, ticking or not, on its own path.
 
 Keep a per-chunk list of block entities whose type ticks, maintained where block entities are added and removed,
 and validate the block against the block entity when either changes rather than every tick.
