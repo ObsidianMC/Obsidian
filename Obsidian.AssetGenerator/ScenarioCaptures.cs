@@ -29,6 +29,7 @@ internal static class ScenarioCaptures
     public const string Mining = "mining";
     public const string Placement = "placement";
     public const string CopperWeathering = "copper_weathering";
+    public const string Fire = "fire";
 
     private const string Symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -60,7 +61,7 @@ internal static class ScenarioCaptures
 
     public static readonly string[] All =
         [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps, Mining,
-            Placement, CopperWeathering];
+            Placement, CopperWeathering, Fire];
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -123,6 +124,13 @@ internal static class ScenarioCaptures
         if (fixtures.Contains(SavedHeightmaps))
         {
             await FixtureDumper.DumpSavedHeightmapsAsync(server, Path.Combine(assetsDirectory, "saved_heightmaps.json"));
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(Fire))
+        {
+            await FixtureDumper.DumpFireAsync(server, Path.Combine(assetsDirectory, "fire_ticks.json"));
             if (fixtures.Count == 1)
                 return;
         }

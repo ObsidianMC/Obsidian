@@ -171,6 +171,21 @@ replaces only what vanilla produced.
   `UseItemOnPacket`. It compares kelp and vines without their random age (see
   [block item placement](known-gaps/block-item-placement.md)).
 
+- `fire_ticks.json` (`VanillaFire.ReplayFireReference`) records vanilla's fire from `Java/FireFixtures.java`
+  (`CaptureFixtures=fire`): `FireBlock.tick` on the block at the origin, or a block set there with `Level.setBlock`
+  so that its `onPlace` runs, on a bounded block view that runs what `LevelChunk.setBlockState` and `Level.setBlock`
+  run (block entity removal, `onPlace`, neighbour and shape updates). A case lists blocks relative to the origin, the
+  rain, difficulty, dimension type and biome, and the seeds to run it with; each run records every draw from the
+  level's random in order, the next int, the final state of each block it touched, the block ticks scheduled and the
+  entities added. The cases cover ageing, burning out with and without a sturdy floor or fuel, fire that can't
+  survive (vanilla carries on with the tick after putting it out, and ageing it places it again), spreading to wool
+  in every direction and into the floor, igniting the air around hay, rain with and without a roof, netherrack,
+  magma and the End's bedrock, jungle's faster burnout, soul fire spreading over soul soil, TNT and a lectern with a
+  book burning, and placing fire and soul fire. The replay runs each seed at its own spot in one shared world, with
+  a level random that records its draws, and places fire through `AbstractLevel.SetBlockAsync`, the path
+  fireballs, explosions and end crystals use. It compares blocks and dropped items once the level has ticked, as
+  Obsidian removes fire a shape update destroys, and drops a removed block entity's items, later in that tick.
+
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.
 
@@ -194,6 +209,8 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=heightmaps
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=placement
+
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=fire
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur -p:CaptureCases=spike_shatters_after_falling+review_spike_pending_fall_keeps_frustum
 ```

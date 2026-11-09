@@ -76,6 +76,11 @@ internal static class FixtureDumper
         VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
             Source("MiningFixtures.java"), fixture);
 
+    // An on-request gameplay probe: fire's tick and placement on a bounded block view.
+    internal static Task DumpFireAsync(VanillaServer server, string fixture) =>
+        VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
+            Source("FireFixtures.java"), fixture);
+
     internal static Task DumpSulfurAsync(VanillaServer server, string fixture) =>
         VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
             Source("SulfurFixtures.java"), fixture);
