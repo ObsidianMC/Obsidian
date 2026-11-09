@@ -2850,6 +2850,42 @@
       "gameEvents": [],
       "stats": [],
       "menu": null
+    },
+    {
+      "name": "use_swing_attack_strength",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_door"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:oak_door[half=upper]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "0,0,0=minecraft:oak_door[open=true];0,1,0=minecraft:oak_door[half=upper,open=true]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.wooden_door.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_open 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null,
+      "checkAttack": true,
+      "attackCharge": 0.1,
+      "blockedAttackCharge": 1.0
     }
   ],
   "version": "26.3"

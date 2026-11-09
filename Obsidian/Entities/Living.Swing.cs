@@ -35,8 +35,16 @@ public partial class Living
     /// like vanilla's <c>swingAndResetAttackStrength</c>. The user's own client is shown it only for a use it doesn't
     /// predict (<see cref="WorldData.UseResult.SuccessServer"/>).
     /// </summary>
-    internal bool SwingForUse(InteractionHand hand, ItemStack? used, bool includeSelf) =>
-        this.Swing(hand, Animation(used, "interact_animation"), includeSelf);
+    internal bool SwingForUse(InteractionHand hand, ItemStack? used, bool includeSelf)
+    {
+        if (!this.Swing(hand, Animation(used, "interact_animation"), includeSelf))
+            return false;
+
+        if (this is PlayerBase player)
+            player.ResetAttackStrength();
+
+        return true;
+    }
 
     internal bool Swing(InteractionHand hand, SwingAnimation animation, bool includeSelf)
     {
