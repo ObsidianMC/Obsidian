@@ -63,8 +63,14 @@ public final class FireFixtures {
         var root = JsonParser.parseString(Files.readString(Path.of(arguments[0]))).getAsJsonObject();
         root.addProperty("version", version);
 
+        // An optional second argument names the cases to record, '+'-separated; the others keep their runs.
+        var selected = arguments.length > 1 ? Set.of(arguments[1].split("[+]")) : null;
         for (var entry : root.getAsJsonArray("cases")) {
             var input = entry.getAsJsonObject();
+            if (selected != null && !selected.contains(input.get("name").getAsString())) {
+                continue;
+            }
+
             var runs = new JsonArray();
             for (var seed : input.getAsJsonArray("seeds")) {
                 runs.add(run(input, seed.getAsLong(), registries));
@@ -248,6 +254,7 @@ public final class FireFixtures {
         RecordingRandom recording;
         GameRules rules;
         DimensionType dimension;
+        ResourceKey<Level> levelKey;
         Biome biome;
         Difficulty difficulty;
         boolean raining;
@@ -274,6 +281,9 @@ public final class FireFixtures {
             var dimension = ResourceKey.create(Registries.DIMENSION_TYPE,
                 Identifier.parse(stringOr(input, "dimension", "minecraft:overworld")));
             level.dimension = registries.lookupOrThrow(Registries.DIMENSION_TYPE).getOrThrow(dimension).value();
+            // The level of the dimension's own name: BaseFireBlock.onPlace lights portals in the overworld and the
+            // nether only.
+            level.levelKey = ResourceKey.create(Registries.DIMENSION, dimension.identifier());
             var biome = ResourceKey.create(Registries.BIOME,
                 Identifier.parse(stringOr(input, "biome", "minecraft:plains")));
             level.biome = registries.lookupOrThrow(Registries.BIOME).getOrThrow(biome).value();
@@ -318,6 +328,10 @@ public final class FireFixtures {
 
         @Override public GameRules getGameRules() {
             return rules;
+        }
+
+        @Override public ResourceKey<Level> dimension() {
+            return levelKey;
         }
 
         @Override public DimensionType dimensionType() {

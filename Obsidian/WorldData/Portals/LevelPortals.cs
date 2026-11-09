@@ -1,3 +1,4 @@
+using Obsidian.API.Blocks;
 using Obsidian.API.World;
 using Obsidian.API.Inventory;
 using System.Threading;
@@ -108,6 +109,44 @@ internal sealed class LevelPortals(AbstractLevel level)
                     continue;
 
                 await this.FillAsync(frame, type, properties);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Whether fire at <paramref name="position"/> lights a portal, as vanilla's <c>BaseFireBlock.onPlace</c> checks
+    /// before it puts out fire that can't survive: an empty frame of a type that fire lights is around it. If so, the
+    /// position is queued, and <see cref="TickAsync"/> lights the portal later in the level's tick if the fire is
+    /// still there (lighting checks the frame is empty, so a position queued twice lights it once).
+    /// </summary>
+    /// <remarks>
+    /// It reads <paramref name="blocks"/> as they are and doesn't wait, so fire's placement can call it under the
+    /// level's tick lock.
+    /// </remarks>
+    internal bool QueueFireIgnition(IBlockLevel blocks, Vector position)
+    {
+        Func<Vector, ValueTask<IBlock?>> read = at => ValueTask.FromResult<IBlock?>(blocks.GetBlock(at));
+        foreach (var type in PortalTypesRegistry.ActiveTypes())
+        {
+            if (!PortalTypesRegistry.TryEnter(type, out var properties, out var call))
+                continue;
+
+            using var behavior = call;
+            if (!properties.IgnitesFromFire || properties.ResolveTarget(level) is null)
+                continue;
+
+            foreach (var axis in new[] { "x", "z" })
+            {
+                // The reads complete at once, so the search does too.
+                var search = PortalFrame.FindAsync(read, position, axis, level.MinY, properties);
+                var frame = search.IsCompletedSuccessfully ? search.Result : null;
+                if (frame is not { PortalBlocks: 0 })
+                    continue;
+
+                this.OnBlockChanged(position);
                 return true;
             }
         }

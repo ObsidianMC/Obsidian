@@ -46,7 +46,13 @@ public sealed class VanillaFire(ITestOutputHelper output)
     // What Obsidian did in a run, read right after it. Blocks and dropped items are read once the level has ticked:
     // Obsidian removes a block that a shape update destroys, and drops a removed block entity's items, later in the
     // level's tick, where vanilla does both at once.
-    private sealed record Observed(Run Run, string[] Draws, int NextRandom, string[] Ticks, string[] Tnt);
+    private sealed record Observed(
+        Run Run,
+        AbstractLevel Level,
+        string[] Draws,
+        int NextRandom,
+        string[] Ticks,
+        string[] Tnt);
 
     [Fact]
     public async Task ReplayFireReference()
@@ -64,16 +70,29 @@ public sealed class VanillaFire(ITestOutputHelper output)
         world.LevelData.GameRules["random_tick_speed"] = "0";
         // The probe's fire spreads with no player around.
         world.LevelData.GameRules["fire_spread_radius_around_player"] = "-1";
-        await AddChunksAsync(world);
+
+        // A case runs in a level of its dimension; the nether is also where the overworld's portals lead, without
+        // which Obsidian lights none.
+        var levels = new Dictionary<string, AbstractLevel>
+        {
+            ["minecraft:overworld"] = world,
+            ["minecraft:the_nether"] = AddDimension(context, "minecraft:the_nether"),
+            ["minecraft:the_end"] = AddDimension(context, "minecraft:the_end")
+        };
+        foreach (var level in levels.Values)
+            await AddChunksAsync(level);
 
         var observed = new List<Observed>();
         foreach (var run in runs)
-            observed.Add(await ReplayAsync(world, run));
+        {
+            var level = levels[StringOr(run.Case, "dimension", "minecraft:overworld")];
+            observed.Add(await ReplayAsync(level, run));
+        }
 
-        // The destruction and drops the runs queued.
+        // The destruction, drops and portals the runs queued; the world's tick ticks its dimensions too.
         await world.DoWorldTickAsync();
 
-        FixtureCases.AssertAll(observed, seen => seen.Run.Name, seen => AssertMatches(world, seen));
+        FixtureCases.AssertAll(observed, seen => seen.Run.Name, AssertMatches);
         output.WriteLine($"Replayed {runs.Length} fire runs.");
     }
 
@@ -92,7 +111,7 @@ public sealed class VanillaFire(ITestOutputHelper output)
         }
     }
 
-    private static async Task<Observed> ReplayAsync(WorldData.World world, Run run)
+    private static async Task<Observed> ReplayAsync(AbstractLevel world, Run run)
     {
         var fireCase = run.Case;
         var origin = run.Origin;
@@ -130,21 +149,17 @@ public sealed class VanillaFire(ITestOutputHelper output)
         var draws = random.Draws.ToArray();
         var nextRandom = random.Inner.NextInt();
 
-        return new Observed(run, draws, nextRandom, await TicksAsync(world, origin), Tnt(world, origin));
+        return new Observed(run, world, draws, nextRandom, await TicksAsync(world, origin), Tnt(world, origin));
     }
 
-    // Rain, difficulty, the dimension's infiniburn blocks and the biome; rain reaches the blocks with nothing that
-    // blocks motion above them among the case's, as in the probe.
-    private static void PrepareEnvironment(WorldData.World world, Run run, (Vector At, IBlock State)[] setup)
+    // Rain, difficulty and the biome; rain reaches the blocks with nothing that blocks motion above them among the
+    // case's, as in the probe.
+    private static void PrepareEnvironment(AbstractLevel world, Run run, (Vector At, IBlock State)[] setup)
     {
         var fireCase = run.Case;
         world.LevelData.Raining = fireCase.TryGetProperty("raining", out var raining) && raining.GetBoolean();
         var difficulty = StringOr(fireCase, "difficulty", "normal");
         world.LevelData.Difficulty = Enum.Parse<Difficulty>(difficulty, ignoreCase: true);
-
-        var dimension = StringOr(fireCase, "dimension", "minecraft:overworld");
-        Assert.True(CodecRegistry.TryGetDimension(dimension, out var dimensionCodec));
-        world.DimensionType.Element.Infiniburn = dimensionCodec!.Element.Infiniburn;
 
         var biomeName = StringOr(fireCase, "biome", "minecraft:plains");
         Assert.True(CodecRegistry.TryGetBiome(biomeName, out var biome));
@@ -169,7 +184,7 @@ public sealed class VanillaFire(ITestOutputHelper output)
     }
 
     // The block ticks scheduled within the run's reach, relative to its origin, sorted.
-    private static async Task<string[]> TicksAsync(WorldData.World world, Vector origin)
+    private static async Task<string[]> TicksAsync(AbstractLevel world, Vector origin)
     {
         var ticks = new List<string>();
         var chunks = new HashSet<(int, int)>();
@@ -194,13 +209,14 @@ public sealed class VanillaFire(ITestOutputHelper output)
         return [.. ticks];
     }
 
-    private static string[] Tnt(WorldData.World world, Vector origin) =>
+    private static string[] Tnt(AbstractLevel world, Vector origin) =>
         [.. world.GetEntitiesInRange((VectorD)origin, Reach).OfType<PrimedTnt>()
             .Select(tnt => Location(tnt.Position - (VectorD)origin))
             .Order(StringComparer.Ordinal)];
 
-    private static void AssertMatches(WorldData.World world, Observed seen)
+    private static void AssertMatches(Observed seen)
     {
+        var world = seen.Level;
         var captured = seen.Run.Captured;
         var draws = captured.GetProperty("draws").EnumerateArray().Select(draw => draw.GetString()!).ToArray();
         Assert.Equal(draws, seen.Draws);
@@ -258,7 +274,7 @@ public sealed class VanillaFire(ITestOutputHelper output)
         new(values[0].GetDouble(), values[1].GetDouble(), values[2].GetDouble());
 
     // Empty, complete chunks around the runs' spots, with a ring around them so that every spot's chunk ticks.
-    private static async Task AddChunksAsync(WorldData.World world)
+    private static async Task AddChunksAsync(AbstractLevel world)
     {
         for (var chunkX = -5; chunkX <= 5; chunkX++)
         {
@@ -275,6 +291,22 @@ public sealed class VanillaFire(ITestOutputHelper output)
             for (var chunkZ = -5; chunkZ <= 5; chunkZ++)
                 await world.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false);
         }
+    }
+
+    private static WorldData.Dimension AddDimension(RealServerContext context, string identifier)
+    {
+        var world = context.World;
+        var dimension = new WorldData.Dimension(
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<WorldData.Dimension>.Instance,
+            context.Broadcaster,
+            new TestOptionsMonitor<Obsidian.API.Configuration.ServerConfiguration>(world.Configuration),
+            context.EventDispatcher,
+            new Obsidian.WorldData.Generators.EmptyWorldGenerator(),
+            identifier,
+            world);
+        dimension.Initialize(CodecRegistry.Dimensions.All[identifier]);
+        world.RegisterDimension(dimension);
+        return dimension;
     }
 
     /// <summary>A legacy random that records each draw, named as the Java probe names them.</summary>

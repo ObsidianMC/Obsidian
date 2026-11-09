@@ -11500,6 +11500,1360 @@
           "entities": []
         }
       ]
+    },
+    {
+      "name": "portal_frame_lower_cell",
+      "kind": "place",
+      "place": "minecraft:fire",
+      "seeds": [
+        1
+      ],
+      "setup": [
+        {
+          "at": [
+            0,
+            -1,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            0,
+            3,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            1,
+            -1,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            1,
+            3,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            -1,
+            0,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            2,
+            0,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            -1,
+            1,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            2,
+            1,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            -1,
+            2,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            2,
+            2,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        }
+      ],
+      "runs": [
+        {
+          "seed": 1,
+          "draws": [
+            "int(10)=5"
+          ],
+          "nextRandom": 431529176,
+          "after": [
+            {
+              "at": [
+                -1,
+                0,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                -1,
+                1,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                -1,
+                2,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                0,
+                -1,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                0,
+                0,
+                0
+              ],
+              "state": "minecraft:nether_portal[axis=x]"
+            },
+            {
+              "at": [
+                0,
+                1,
+                0
+              ],
+              "state": "minecraft:nether_portal[axis=x]"
+            },
+            {
+              "at": [
+                0,
+                2,
+                0
+              ],
+              "state": "minecraft:nether_portal[axis=x]"
+            },
+            {
+              "at": [
+                0,
+                3,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                1,
+                -1,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                1,
+                0,
+                0
+              ],
+              "state": "minecraft:nether_portal[axis=x]"
+            },
+            {
+              "at": [
+                1,
+                1,
+                0
+              ],
+              "state": "minecraft:nether_portal[axis=x]"
+            },
+            {
+              "at": [
+                1,
+                2,
+                0
+              ],
+              "state": "minecraft:nether_portal[axis=x]"
+            },
+            {
+              "at": [
+                1,
+                3,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                2,
+                0,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                2,
+                1,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                2,
+                2,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            }
+          ],
+          "ticks": [
+            {
+              "at": [
+                0,
+                0,
+                0
+              ],
+              "block": "minecraft:fire",
+              "delay": 35
+            }
+          ],
+          "entities": []
+        }
+      ]
+    },
+    {
+      "name": "portal_frame_upper_cell",
+      "kind": "place",
+      "place": "minecraft:fire",
+      "seeds": [
+        1
+      ],
+      "setup": [
+        {
+          "at": [
+            0,
+            -3,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            1,
+            -3,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            1,
+            1,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            -1,
+            -2,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            2,
+            -2,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            -1,
+            -1,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            2,
+            -1,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            -1,
+            0,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            2,
+            0,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        }
+      ],
+      "runs": [
+        {
+          "seed": 1,
+          "draws": [
+            "int(10)=5"
+          ],
+          "nextRandom": 431529176,
+          "after": [
+            {
+              "at": [
+                -1,
+                -2,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                -1,
+                -1,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                -1,
+                0,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                0,
+                -3,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                0,
+                -2,
+                0
+              ],
+              "state": "minecraft:nether_portal[axis=x]"
+            },
+            {
+              "at": [
+                0,
+                -1,
+                0
+              ],
+              "state": "minecraft:nether_portal[axis=x]"
+            },
+            {
+              "at": [
+                0,
+                0,
+                0
+              ],
+              "state": "minecraft:nether_portal[axis=x]"
+            },
+            {
+              "at": [
+                0,
+                1,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                1,
+                -3,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                1,
+                -2,
+                0
+              ],
+              "state": "minecraft:nether_portal[axis=x]"
+            },
+            {
+              "at": [
+                1,
+                -1,
+                0
+              ],
+              "state": "minecraft:nether_portal[axis=x]"
+            },
+            {
+              "at": [
+                1,
+                0,
+                0
+              ],
+              "state": "minecraft:nether_portal[axis=x]"
+            },
+            {
+              "at": [
+                1,
+                1,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                2,
+                -2,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                2,
+                -1,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                2,
+                0,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            }
+          ],
+          "ticks": [
+            {
+              "at": [
+                0,
+                0,
+                0
+              ],
+              "block": "minecraft:fire",
+              "delay": 35
+            }
+          ],
+          "entities": []
+        }
+      ]
+    },
+    {
+      "name": "portal_frame_z_axis_upper_cell",
+      "kind": "place",
+      "place": "minecraft:fire",
+      "seeds": [
+        1
+      ],
+      "setup": [
+        {
+          "at": [
+            0,
+            -3,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            0,
+            -3,
+            1
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            0,
+            1,
+            1
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            0,
+            -2,
+            -1
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            0,
+            -2,
+            2
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            0,
+            -1,
+            -1
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            0,
+            -1,
+            2
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            0,
+            0,
+            -1
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            0,
+            0,
+            2
+          ],
+          "state": "minecraft:obsidian"
+        }
+      ],
+      "runs": [
+        {
+          "seed": 1,
+          "draws": [
+            "int(10)=5"
+          ],
+          "nextRandom": 431529176,
+          "after": [
+            {
+              "at": [
+                0,
+                -3,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                0,
+                -3,
+                1
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                0,
+                -2,
+                -1
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                0,
+                -2,
+                0
+              ],
+              "state": "minecraft:nether_portal[axis=z]"
+            },
+            {
+              "at": [
+                0,
+                -2,
+                1
+              ],
+              "state": "minecraft:nether_portal[axis=z]"
+            },
+            {
+              "at": [
+                0,
+                -2,
+                2
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                0,
+                -1,
+                -1
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                0,
+                -1,
+                0
+              ],
+              "state": "minecraft:nether_portal[axis=z]"
+            },
+            {
+              "at": [
+                0,
+                -1,
+                1
+              ],
+              "state": "minecraft:nether_portal[axis=z]"
+            },
+            {
+              "at": [
+                0,
+                -1,
+                2
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                0,
+                0,
+                -1
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                0,
+                0,
+                0
+              ],
+              "state": "minecraft:nether_portal[axis=z]"
+            },
+            {
+              "at": [
+                0,
+                0,
+                1
+              ],
+              "state": "minecraft:nether_portal[axis=z]"
+            },
+            {
+              "at": [
+                0,
+                0,
+                2
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                0,
+                1,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                0,
+                1,
+                1
+              ],
+              "state": "minecraft:obsidian"
+            }
+          ],
+          "ticks": [
+            {
+              "at": [
+                0,
+                0,
+                0
+              ],
+              "block": "minecraft:fire",
+              "delay": 35
+            }
+          ],
+          "entities": []
+        }
+      ]
+    },
+    {
+      "name": "incomplete_portal_frame_upper_cell",
+      "kind": "place",
+      "place": "minecraft:fire",
+      "seeds": [
+        1
+      ],
+      "setup": [
+        {
+          "at": [
+            0,
+            -3,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            1,
+            -3,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            1,
+            1,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            -1,
+            -2,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            2,
+            -2,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            -1,
+            -1,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            2,
+            -1,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            -1,
+            0,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        }
+      ],
+      "runs": [
+        {
+          "seed": 1,
+          "draws": [
+            "int(10)=5"
+          ],
+          "nextRandom": 431529176,
+          "after": [
+            {
+              "at": [
+                -1,
+                -2,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                -1,
+                -1,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                -1,
+                0,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                0,
+                -3,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                0,
+                0,
+                0
+              ],
+              "state": "minecraft:air"
+            },
+            {
+              "at": [
+                0,
+                1,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                1,
+                -3,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                1,
+                1,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                2,
+                -2,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                2,
+                -1,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            }
+          ],
+          "ticks": [
+            {
+              "at": [
+                0,
+                0,
+                0
+              ],
+              "block": "minecraft:fire",
+              "delay": 35
+            }
+          ],
+          "entities": []
+        }
+      ]
+    },
+    {
+      "name": "portal_frame_upper_cell_in_the_nether",
+      "kind": "place",
+      "place": "minecraft:fire",
+      "dimension": "minecraft:the_nether",
+      "biome": "minecraft:nether_wastes",
+      "seeds": [
+        1
+      ],
+      "setup": [
+        {
+          "at": [
+            0,
+            -3,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            1,
+            -3,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            1,
+            1,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            -1,
+            -2,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            2,
+            -2,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            -1,
+            -1,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            2,
+            -1,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            -1,
+            0,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            2,
+            0,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        }
+      ],
+      "runs": [
+        {
+          "seed": 1,
+          "draws": [
+            "int(10)=5"
+          ],
+          "nextRandom": 431529176,
+          "after": [
+            {
+              "at": [
+                -1,
+                -2,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                -1,
+                -1,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                -1,
+                0,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                0,
+                -3,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                0,
+                -2,
+                0
+              ],
+              "state": "minecraft:nether_portal[axis=x]"
+            },
+            {
+              "at": [
+                0,
+                -1,
+                0
+              ],
+              "state": "minecraft:nether_portal[axis=x]"
+            },
+            {
+              "at": [
+                0,
+                0,
+                0
+              ],
+              "state": "minecraft:nether_portal[axis=x]"
+            },
+            {
+              "at": [
+                0,
+                1,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                1,
+                -3,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                1,
+                -2,
+                0
+              ],
+              "state": "minecraft:nether_portal[axis=x]"
+            },
+            {
+              "at": [
+                1,
+                -1,
+                0
+              ],
+              "state": "minecraft:nether_portal[axis=x]"
+            },
+            {
+              "at": [
+                1,
+                0,
+                0
+              ],
+              "state": "minecraft:nether_portal[axis=x]"
+            },
+            {
+              "at": [
+                1,
+                1,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                2,
+                -2,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                2,
+                -1,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                2,
+                0,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            }
+          ],
+          "ticks": [
+            {
+              "at": [
+                0,
+                0,
+                0
+              ],
+              "block": "minecraft:fire",
+              "delay": 35
+            }
+          ],
+          "entities": []
+        }
+      ]
+    },
+    {
+      "name": "portal_frame_upper_cell_in_the_end",
+      "kind": "place",
+      "place": "minecraft:fire",
+      "dimension": "minecraft:the_end",
+      "biome": "minecraft:the_end",
+      "seeds": [
+        1
+      ],
+      "setup": [
+        {
+          "at": [
+            0,
+            -3,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            0,
+            1,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            1,
+            -3,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            1,
+            1,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            -1,
+            -2,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            2,
+            -2,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            -1,
+            -1,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            2,
+            -1,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            -1,
+            0,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "at": [
+            2,
+            0,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        }
+      ],
+      "runs": [
+        {
+          "seed": 1,
+          "draws": [
+            "int(10)=5"
+          ],
+          "nextRandom": 431529176,
+          "after": [
+            {
+              "at": [
+                -1,
+                -2,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                -1,
+                -1,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                -1,
+                0,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                0,
+                -3,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                0,
+                0,
+                0
+              ],
+              "state": "minecraft:air"
+            },
+            {
+              "at": [
+                0,
+                1,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                1,
+                -3,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                1,
+                1,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                2,
+                -2,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                2,
+                -1,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            },
+            {
+              "at": [
+                2,
+                0,
+                0
+              ],
+              "state": "minecraft:obsidian"
+            }
+          ],
+          "ticks": [
+            {
+              "at": [
+                0,
+                0,
+                0
+              ],
+              "block": "minecraft:fire",
+              "delay": 35
+            }
+          ],
+          "entities": []
+        }
+      ]
     }
   ]
 }

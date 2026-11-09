@@ -492,7 +492,7 @@ adds.
 | Copper: oxidize | Works | Captured random draws, all 13 owners, connected doors/chests and retained block entities |
 | Leaves: decay | Works | |
 | Ice, snow layers: melt | Missing | No weather pass either |
-| Fire | Works | Captured (`fire_ticks.json`). Fire that isn't a player's doesn't light portals; soul fire placed off a soul fire base isn't put out on placement (`BaseFireBlock.onPlace` is unbound); fire a shape update destroys goes later in the tick |
+| Fire | Works | Captured (`fire_ticks.json`). Fire lights a portal later in the tick than vanilla's; soul fire placed off a soul fire base isn't put out on placement (`BaseFireBlock.onPlace` is unbound); fire a shape update destroys goes later in the tick |
 | Lava, water | Works | Flow is captured; lava's ignition isn't |
 | Farmland: hydrate | Works | |
 | Turtle eggs: hatch | Partial | Wrong time window; `Random.Shared`; sand and red sand only |

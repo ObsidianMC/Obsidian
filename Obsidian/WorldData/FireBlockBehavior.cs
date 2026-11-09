@@ -13,9 +13,9 @@ namespace Obsidian.WorldData;
 /// </summary>
 /// <remarks>
 /// Flammability is vanilla's <c>FireBlock.bootStrap</c> data, dumped as <c>fire_odds.json</c>. The tick and the
-/// placement draw from the level's random in vanilla's order, which the <c>fire_ticks.json</c> capture checks. Not
-/// ported: <c>BaseFireBlock.onPlace</c> lighting a nether portal around fire that isn't a player's (Obsidian's portals
-/// light from the block change itself, before the fire's own placement runs).
+/// placement draw from the level's random in vanilla's order, which the <c>fire_ticks.json</c> capture checks. Where
+/// vanilla's placement lights a portal at once, Obsidian's keeps the fire and queues the portal, which the level's
+/// portal pass lights later in the same tick (see <see cref="Portals.LevelPortals.QueueFireIgnition"/>).
 /// </remarks>
 internal sealed partial class FireBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior, IOnPlaceBehavior
 {
@@ -108,17 +108,24 @@ internal sealed partial class FireBlockBehavior : IScheduledTickBehavior, IShape
     }
 
     /// <summary>
-    /// Vanilla's <c>FireBlock.onPlace</c>, after <c>BaseFireBlock</c>'s: a new fire that can't survive goes out, then
-    /// the fire's tick is scheduled. Every placement draws the delay from the level's random, even one that went out
-    /// or whose tick is already scheduled (scheduling it again does nothing).
+    /// Vanilla's <c>FireBlock.onPlace</c>, after <c>BaseFireBlock</c>'s: a new fire in an empty portal frame lights the
+    /// portal, and otherwise goes out if it can't survive; then the fire's tick is scheduled. Every placement draws the
+    /// delay from the level's random, even one that lit a portal, went out or whose tick is already scheduled
+    /// (scheduling it again does nothing).
     /// </summary>
     public void OnPlace(IBlockLevel level, Vector position, IBlock state, IBlock oldState)
     {
-        if (oldState.RegistryId != state.RegistryId && !CanSurvive(level, position))
+        var newFire = oldState.RegistryId != state.RegistryId;
+        if (newFire && !LightsPortal(level, position) && !CanSurvive(level, position))
             level.RemoveBlock(position);
 
         level.ScheduleTick(position, state, TickDelay(level.Random));
     }
+
+    // BaseFireBlock.onPlace tries the portal before the fire's survival, so fire in an empty frame stays, even with
+    // nothing to hold it, until the level's portal pass replaces it.
+    private static bool LightsPortal(IBlockLevel level, Vector position) =>
+        level.Level is AbstractLevel concrete && concrete.Portals.QueueFireIgnition(level, position);
 
     /// <summary>
     /// Vanilla's <c>FireBlock.updateShape</c>: fire that can no longer survive goes out; otherwise its faces are
