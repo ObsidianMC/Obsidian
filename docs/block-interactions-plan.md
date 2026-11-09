@@ -34,7 +34,8 @@ trigger (packet, tick or hook) to the state change, reading the code and its tes
 The per-line status is in [the appendix](#appendix-a-status-of-every-line).
 
 26.3's own block gameplay is part of this plan too, though the issue doesn't list it: shelves, straw beds, golden
-dandelions and the poplar sapling. None of it works yet (see section 10 of the appendix).
+dandelions and the poplar sapling. Apart from placing a straw bed, none of it works yet (see section 10 of the
+appendix).
 
 Two limits on these numbers. Parity is mostly unproven: only redstone (15 scenarios), fluids, daylight detectors,
 block transformers, block item placement, note blocks and door use are replayed against captured vanilla output, and the rest has
@@ -47,9 +48,11 @@ Four defects found on the way are worse than a missing feature, because the bloc
 
 1. **Ender chests lose items.** Opening one creates a new empty container instead of the player's saved
    `EnderInventory` (`Obsidian/Events/MainEventHandler.cs:235`). Whatever goes in is gone when the window closes.
-2. **Fire from fireballs, explosions and end crystals never spreads or burns out.** Fire a player lights with
-   flint and steel or a fire charge gets its first tick scheduled (`UseItemOnPacket.cs:377`), and so does fire that
-   spreads from other fire (`FireBlockBehavior.cs`). Fire has no on-place behaviour to do it for any other source.
+2. **Fire from fireballs, explosions and end crystals never spreads or burns out.** Fire gets its first tick
+   scheduled where a player lights it (`UseItemOnPacket.cs:377`), where it spreads from other fire
+   (`FireBlockBehavior.cs:201`) and where lava lights it (`AbstractLevel.Growth.cs:395`). Fire has no on-place
+   behaviour to do it for any other source. Moving the scheduling into on-place must not schedule or draw twice
+   for those three.
 3. **Dispensers and droppers open as a 9×1 row** instead of 3×3 (`OpenScreenPacket.cs:27`), and shulker boxes open
    with the generic chest menu, which lets players put shulker boxes inside them.
 4. **An observer facing a container probably pulses forever.** The block entity tick sends a neighbour update around
@@ -65,7 +68,7 @@ Also wrong, but less visible: turtle eggs hatch in a hard-coded window (15600 to
 
 ## How blocks get their behaviour today
 
-Eight mechanisms dispatch block behaviour. New work should use the first.
+Eight mechanisms dispatch vanilla blocks' behaviour. New work should use the first.
 
 | Mechanism | Covers | Bound by |
 |---|---|---|
@@ -80,7 +83,14 @@ Eight mechanisms dispatch block behaviour. New work should use the first.
 
 The owner hooks are the model: `VanillaDumper` records which Mojang class declares an override, the generator binds
 each block to an Obsidian member named after that class, and a class without a member reports `OBSGEN001` and keeps
-the old path. Adding a behaviour is then one class and one member, and the binding costs an array read.
+the old path. Adding a behaviour is then one class and one member, and the binding is a generated switch on the
+block's id.
+
+The table leaves out what isn't a vanilla block dispatcher but sits on the same paths, and must keep working:
+plugins' block and item behaviours (`Plugins/BlockBehaviors.cs`, `Plugins/ItemBehaviors.cs`), block entity ticks,
+scheduled-tick callbacks registered on `LevelBlockTicks` (which run before the generated tick owner), and the egg,
+music and vibration state machines in `AbstractLevel.Eggs.cs`, `AbstractLevel.Music.cs` and
+`AbstractLevel.GameEvents.cs`.
 
 Three hooks are missing from that set, and most of the remaining checklist needs one of them:
 
@@ -106,7 +116,10 @@ Two capture routes already exist (`docs/scenario-captures.md`):
 - **Java probes** registered in `FixtureDumper.cs` and run with `CaptureFixtures=<name>`. `MoreBlockFixtures.java`
   already calls `ServerPlayerGameMode.useItemOn` for note blocks. This is the route for single interactions: the
   starting blocks, the held item, the game mode and the click go in; block states, the hand, drops, sounds, level
-  events, game events and statistics come out.
+  events, game events and statistics come out. The existing probe records fewer outputs than that: it discards
+  statistics and game events (`MoreBlockFixtures.java:486` and `:708`), so recording them is part of adding the
+  `block_use` fixture. A new fixture name also needs routing in `ScenarioCaptures.cs`, not only a method in
+  `FixtureDumper.cs`.
 - **RCON scenarios** on a headless server (`ScenarioCaptures.cs`), with a checkpoint per tick. This is the route for
   anything that plays out over ticks: redstone, growth, fire, entity contact.
 
@@ -130,7 +143,10 @@ until then, so update the appendix as lines land.
 The foundation for sections 1 to 5 and 9.
 
 1. **Dump and bind use hooks.** Extend `VanillaDumper` to record which classes override `useWithoutItem`,
-   `useItemOn` and `attack`. Add the three to `OwnedHooks` with a `UseBehaviors` class of members. A use behaviour
+   `useItemOn` and `attack`. Add the three to `OwnedHooks` with a `UseBehaviors` class of members, and add each new
+   class dump to `Assets.Get` (`Obsidian.SourceGenerators/Registry/Models/Assets.cs:31`), which imports only the
+   five existing ones: a hook whose dump isn't imported gets a getter that never binds, with no diagnostic. The same
+   goes for phase 3's contact hooks and phase 4's neighbour hook. A use behaviour
    returns a result with vanilla's shapes: success, success on the server only, consume, pass, fail, try with an
    empty hand. The result decides whether the item's own use runs next and whether the arm swings. Attacks don't
    arrive as uses: dispatch the `attack` hook from `PlayerActionPacket`'s start-digging path.
@@ -169,7 +185,7 @@ they can go to separate agents with one file per batch.
 | **D. Blocks that hold items** | flower pots, chiseled bookshelves, decorated pots, lodestone compasses, jukebox comparator output | Bookshelves and pots become typed block entities with item access (hoppers) and analog output, instead of retained NBT. The bookshelf picks its slot from where the face was clicked. | M |
 | **E. Copper waxing, bells, redstone ore** | wax with honeycomb, ring a bell, redstone ore lighting | Waxing isn't in `block_transformer.json`; capture how 26.3 routes it before assuming. Bells also ring from projectiles and redstone (phases 3 and 4) and alert villagers. Ore also lights when stepped on and goes dark on a random tick. | S |
 | **F. Brushing and armor stands** | suspicious sand and gravel, armor stand equipment | Brushing is a held use over time aimed at a block: stroke cadence, progress that decays, loot, the final conversion. Armor stands are entity interactions at a clicked height, not block uses. | M |
-| **G. 26.3 additions** | shelf storage, quick swapping and connections for every wood; straw bed placement and sleep rules; golden dandelion interactions and age locking | Shelves are a typed block entity with item access and a comparator output, like batch D's. Straw beds have their own environment attribute, spawn behaviour and break on waking. Age locking is sent to clients already but never set or saved. `26-3-blocks.md` is the starting point; nothing about these is captured yet, so capture comes first. | M |
+| **G. 26.3 additions** | shelf storage, quick swapping and connections for every wood; straw bed sleep rules; golden dandelion interactions and age locking | Shelves are a typed block entity with item access and a comparator output, like batch D's. Straw beds already place (captured in `block_placement.json`); their sleep rules are missing: their own environment attribute, spawn behaviour and break on waking. Age locking is sent to clients already but never set or saved. `26-3-blocks.md` is the starting point; apart from straw bed placement nothing about these is captured yet, so capture comes first. | M |
 
 Capture: more cases in the `block_use` fixture; batch F's brushing and batch G's sleep rules need RCON scenarios
 because they run over ticks.
@@ -184,9 +200,10 @@ The foundation for section 6, and performance item 3.
 1. **One contact pass.** Replace `TouchPluginBlocksAsync`, the pressure plate pass and the tripwire pass with one
    pass per entity that reads each touched cell once and dispatches by a per-state flag. Add generated
    **stepped on** and **fallen on** hooks beside `entityInside`.
-2. **A real box for players.** A player's `Dimension` is zero by default (`PlayerBase.Food.cs:323` works around
-   it), and the contact pass, plates and tripwires all size entities from it. Confirm, then give players their pose
-   box.
+2. **Pose boxes for players.** Players have their standing box (0.6 by 1.8, generated from the entity data), and
+   the contact pass, plates and tripwires all size entities from it. What's missing is the box changing with the
+   pose: sneaking, swimming, gliding, sleeping. The comment at `PlayerBase.Food.cs:323` that says a player's
+   dimension is zero is stale.
 3. **Block speed and stuck-in-block in mob and item movement.** `EntityMovement` and `MovementControls` read only
    friction. Until they read the block's speed factor, jump factor and stuck multiplier, soul sand, honey, cobwebs,
    powder snow and berry bushes don't slow anything the server moves. Players are unaffected because the client
@@ -194,7 +211,8 @@ The foundation for section 6, and performance item 3.
 4. **Collision that depends on the entity**, for powder snow (leather boots) and scaffolding.
    `BlockCollisionShapes.Get` takes no entity.
 5. **A projectile-hits-block path** used by every projectile. Only `Arrow.cs:461` calls
-   `OnProjectileHitBlockAsync`, so target blocks ignore everything else.
+   `OnProjectileHitBlockAsync`. Spectral arrows and tridents inherit it; snowballs, eggs, potions, wind charges
+   and the rest never reach it, so target blocks ignore them.
 
 Then the lines, each a behaviour on one of the hooks:
 
@@ -422,7 +440,7 @@ adds.
 | Honey blocks: slide | Missing | |
 | Magma blocks | Works | `in_fire` damage type instead of `hot_floor`; frost walker |
 | Soul sand, cobwebs | Partial | Nothing slows mobs, items or arrows |
-| Powder snow: sink | Partial | No leather boots, slowdown or fire interaction |
+| Powder snow: sink | Partial | No leather boots, stuck-in-block slowdown or fire interaction (mobs do slow as they freeze) |
 | Powder snow: freezing | Works | Judged from the feet block only |
 | Bubble columns | Partial | Pushing works; water doesn't start a column, and two tests are skipped |
 | Big dripleaf | Missing | |
@@ -432,7 +450,7 @@ adds.
 | Campfires: damage | Missing | |
 | Sculk sensors | Partial | Few event sources; timers not saved; no sound or particles |
 | Sculk shriekers: react, summon | Partial | Warning levels not saved; darkness timing (confirm by capture) |
-| Target blocks | Partial | Arrows only |
+| Target blocks | Partial | Arrows, spectral arrows and tridents only |
 
 ### 7. Redstone and reactive behaviour
 
@@ -500,7 +518,7 @@ adds.
 | Line | Status | What's left |
 |---|---|---|
 | Shelves: storage, quick swapping, connections | Missing | Placement only, for every wood; comparator reads 0 |
-| Straw beds: placement, sleep rules | Missing | Its environment attribute, spawn behaviour and break on waking |
+| Straw beds: placement, sleep rules | Partial | Placement works and is captured; its sleep rules don't exist (environment attribute, spawn behaviour, break on waking) |
 | Golden dandelions: interactions, age locking | Missing | The lock is sent to clients but never set or saved |
 | Poplar saplings: grow | Missing | Needs weighted tree growers (`saplings-that-26-3-added.md`) |
 
@@ -531,9 +549,7 @@ Statements the code contradicts, to correct in phase 0.
 
 To confirm by capture or by running a server before the work that depends on it:
 
-- Whether a player's `Dimension` is zero at runtime, and so whether players press plates and trip wires only at the
-  cell under their position.
-- Whether an observer facing a container pulses continuously (defect 6).
+- Whether an observer facing a container pulses continuously (defect 4).
 - Whether powder snow's recorded collision shape lets mobs fall through.
 - Whether a bubble column's motion packet also reaches the pushed player, doubling the push on their client.
 - Vanilla values quoted from memory: the pressure plate touch box, the calibrated sensor's active time, the

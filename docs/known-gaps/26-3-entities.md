@@ -15,8 +15,9 @@ does anything.
 - **Cushion** (`Obsidian/Entities/Cushion.cs`). It sends its colour. Missing: seating, movement, placing it from
   its item and dropping it. Its colour isn't saved.
 - **Mob changes.** Age locking is sent to clients but never set or saved (golden dandelions set it; those are in
-  the block interactions plan, phase 2 batch G). 26.3's baby hitboxes, persistent mobs idling when no player is
-  near, and spectators using portals are not modelled.
+  the block interactions plan, phase 2 batch G). 26.3's baby hitboxes and persistent mobs idling when no player is
+  near are not modelled. Spectators already travel through nether and end portals; end gateways still refuse them
+  (`AbstractLevel.EndFight.cs:307`).
 
 Poplar boats and chest boats work: they use the existing boat implementation.
 

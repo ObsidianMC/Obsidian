@@ -107,18 +107,21 @@ Rides with: plan phase 1, before the new behaviours are added, so they're bound 
 
 *From the code. Changes when plates and tripwires fire, towards vanilla's timing.*
 
-After entities tick, three separate passes walk the blocks each entity touches:
+Three separate passes walk the blocks each entity touches. The first runs straight after each entity's own tick;
+the other two run once every entity has ticked:
 
 - `TouchPluginBlocksAsync` (`AbstractLevel.BlockUpdates.cs:39`), per entity: every block its box overlaps, then the
   block it stands on. Each cell reads the block, then asks `RedstoneRules.ContactFor` (a class-name lookup) and
   `BlockBehaviors.HasBehavior`, through an async call per cell. Most cells are air.
-- `PressurePlates.UpdateAsync` (`Redstone/PressurePlates.cs:99`): copies the entity list, puts every entity's
+- `PressurePlates.UpdateAsync` (`Redstone/PressurePlates.cs:99`), over a fresh entity snapshot: puts every entity's
   footprint into two dictionaries and two hash sets, then reads the block under each cell to see whether it's a
   plate. This runs in full when the level has no plates.
 - `TripWire.UpdateAsync` (`Redstone/TripWire.cs:250`): reads every cell of every entity's box again, looking for wire.
 
 Replace them with one pass that reads each touched cell once and checks a per-state "reacts to contact" flag before
-doing anything else. A cell without the flag costs one array read. Cells with it go to an id-bound contact
+doing anything else. Run it per entity, straight after that entity's tick, as the first pass does today and as
+vanilla does: a single pass at the end of the entity loop would change the order in which entities affect each
+other. A cell without the flag costs one array read. Cells with it go to an id-bound contact
 behaviour: plates, tripwire, detector rails and bubble columns today, and the section 6 blocks the plan adds
 (cobweb, sweet berry bush, powder snow, cactus, magma, campfire, honey, slime, big dripleaf, turtle eggs, farmland).
 Without the flag those additions would each add a lookup per entity per cell per tick.
@@ -156,7 +159,9 @@ Rides with: plan phases 4 and 5, for the components each batch touches.
 `LevelFluids.OnBlockStored` broadcasts a `BlockUpdatePacket` for every block write as it happens, and
 `PlayersWithChunk` walks every player in the level for each one. Vanilla collects changed positions per chunk
 section and sends them at the end of the tick: one block update, or one section update listing each changed block's
-final state. `ClientboundSectionBlocksUpdate` is generated but nothing sends it.
+final state. Obsidian can't send that packet yet: `SectionBlocksUpdatePacket` is a generated shell with an id and no
+fields, because the packet generator skips packed and repeated fields (`Packets/Encodings.cs:47`), so it writes
+nothing. Its fields and a packed serializer are the first step of this item.
 
 Depowering a 15-dust line writes on the order of a hundred intermediate states. Obsidian sends each to every player
 in range; vanilla sends fifteen final states in one packet. Fluids spreading, pistons, explosions and falling
@@ -179,15 +184,21 @@ Rides with: its own PR after plan phase 4. Worth doing before large redstone bui
 *From the code. The largest structural item. It moves update order to vanilla's, which can change what redstone
 does today, so it needs order-sensitive captures first. Approved 2026-11-09.*
 
-Every level block write runs two engines in turn (`AbstractLevel.AfterBlockSet`):
+A level block write that changes the state and asks for updates runs two engines in turn
+(`AbstractLevel.AfterBlockSet`):
 
 1. `FluidLevel.OnChanged` with `Fluids/NeighborUpdater.cs`, which mirrors vanilla's collecting neighbour updater:
    six `neighborChanged` calls for liquids, falling blocks and plugin hooks, then six shape updates.
 2. `BlockNotificationPipeline`: six shape steps and six neighbour steps again, for the redstone behaviours.
 
-Both run the same shape rules (`IBlockReactions.UpdateShape`, then `ShapeUpdater.UpdateShape`) for the same six
-neighbours, so each change evaluates twelve shape updates where vanilla evaluates six, and schedules each fluid tick
-twice (the scheduler drops the duplicate). The first engine also allocates seven small objects per change.
+Both run shape rules for the same six neighbours, so such a change evaluates up to twelve shape updates where
+vanilla evaluates six, and schedules each fluid tick twice (the scheduler drops the duplicate). The first engine
+also allocates seven small objects per change. The two don't dispatch identically: both end in
+`ShapeUpdater.UpdateShape`, but the first also asks plugins, signs, placement rules and falling blocks
+(`BlockUpdates.cs:211`), while the pipeline only asks the generated shape owners first
+(`AbstractLevel.BlockNotifications.cs:51`). Writes that skip updates don't pay any of this: the default public
+`SetBlockAsync` sets `KnownShape`, unchanged states return early, and shapes and neighbours each follow their own
+flag.
 
 The two engines order work differently. The first is depth-first like vanilla. The pipeline is first-in, first-out
 with pending duplicates coalesced and a 10,000-step limit, and redstone only runs in the pipeline. So redstone
@@ -249,10 +260,12 @@ Rides with: plan phase 5 (furnaces, brewing, campfires and the other ticking blo
 
 ### 9. Smaller items
 
-- **Pipeline bookkeeping.** `BlockNotificationPipeline` takes its own lock for every enqueue and dequeue although
-  the level only calls it under the tick lock, makes an async call per step, and dedupes steps in a hash set of
-  five-field records. Check the block's behaviour flag before queueing a neighbour step's work, and keep the
-  per-step path synchronous when the behaviour completes synchronously. Fold into item 2 or 6.
+- **Pipeline bookkeeping.** `BlockNotificationPipeline` takes its own lock for every enqueue and dequeue, makes an
+  async call per step, and dedupes steps in a hash set of five-field records. Check the block's behaviour flag
+  before queueing a neighbour step's work, and keep the per-step path synchronous when the behaviour completes
+  synchronously. Fold into item 2 or 6. Keep the pipeline's own lock: not every caller holds the tick lock.
+  `NotifyNeighborsAsync` (`AbstractLevel.BlockNotifications.cs:76`) enqueues and drains without it, and pressure
+  plates and lever and button use reach it that way. Removing the lock needs those callers serialized first.
 - **Hoppers.** Besides the property reads in item 4, each transfer resolves item access for the hopper and its
   targets again, allocating a combined access for double chests. Measure a hopper line before changing anything:
   the timings contraptions depend on are easy to break.
