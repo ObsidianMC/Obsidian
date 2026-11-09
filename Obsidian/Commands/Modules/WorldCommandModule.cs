@@ -96,7 +96,7 @@ public sealed class WorldCommandModule : CommandModuleBase
             level.DestroyBlock(pos, dropItems: true);
 
         if (level is WorldData.AbstractLevel world)
-            state = world.DeriveNeighborShapes(pos, state);
+            world.PrepareObserverCommandPlacement(pos, state);
 
         await level.SetBlockAsync(pos, state, doBlockUpdate: true);
         await this.CommandContext.SuccessAsync($"Changed the block at {Format(pos)}");
@@ -166,7 +166,7 @@ public sealed class WorldCommandModule : CommandModuleBase
                         level.DestroyBlock(position, dropItems: true);
 
                     if (level is WorldData.AbstractLevel world)
-                        target = world.DeriveNeighborShapes(position, target);
+                        world.PrepareObserverCommandPlacement(position, target);
 
                     await level.SetBlockAsync(position, target, doBlockUpdate: true);
                     changed++;

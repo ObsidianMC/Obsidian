@@ -2,11 +2,12 @@ using Obsidian.API;
 using Obsidian.API.BlockEntities;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
+using Obsidian.Entities;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.Tests.Utilities;
 using Obsidian.WorldData;
-using Obsidian.WorldData.BlockNotifications;
+using Obsidian.WorldData.Redstone;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -111,6 +112,10 @@ public class VanillaRedstone
             });
             foreach (var state in palette)
                 AssertStateRoundTrips(state, $"{name} tick {tick}");
+
+            Assert.True(
+                checkpoint.TryGetProperty("items", out _) == scenario.TryGetProperty("item", out _),
+                $"{name} tick {tick}: item counts must be recorded exactly when the scenario names an item");
         }
 
         foreach (var action in scenario.GetProperty("actions").EnumerateArray())
@@ -170,7 +175,7 @@ public class VanillaRedstone
         public ValueTask SetBlockAsync(Vector position, IBlock block, IReadOnlyList<ScenarioItem> items)
         {
             Assert.Empty(items);
-            block = NeighborShapeDerivation.Derive(this.world, position, block);
+            RedstoneObserver.PrepareCommandPlacement(this.world, position, block);
             return this.world.Place(position, block);
         }
 
@@ -190,6 +195,9 @@ public class VanillaRedstone
             return ValueTask.FromResult(block ?? throw new InvalidOperationException($"{position} isn't loaded."));
         }
 
+        public ValueTask<int> CountItemsAsync(Vector min, Vector max, string item) =>
+            throw new NotSupportedException("Dropped items need a level scenario.");
+
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 
@@ -208,7 +216,7 @@ public class VanillaRedstone
 
         public async ValueTask SetBlockAsync(Vector position, IBlock block, IReadOnlyList<ScenarioItem> items)
         {
-            block = this.context.World.DeriveNeighborShapes(position, block);
+            this.context.World.PrepareObserverCommandPlacement(position, block);
             await this.context.World.SetBlockAsync(position, block, doBlockUpdate: true);
             if (items.Count == 0)
                 return;
@@ -236,7 +244,27 @@ public class VanillaRedstone
             return block ?? throw new InvalidOperationException($"{position} isn't loaded.");
         }
 
+        // Like the capture's dx/dy/dz selector: items whose boxes reach into the blocks from min to max.
+        public ValueTask<int> CountItemsAsync(Vector min, Vector max, string item)
+        {
+            var from = new VectorD(min.X, min.Y, min.Z);
+            var to = new VectorD(max.X + 1, max.Y + 1, max.Z + 1);
+            var center = (from + to) / 2;
+            var radius = (float)VectorD.Distance(from, to);
+
+            var count = this.context.World.GetEntitiesInRange(center, radius)
+                .OfType<ItemEntity>()
+                .Where(drop => drop.Item.Holder.UnlocalizedName == item && Overlaps(drop.BoundingBox, from, to))
+                .Sum(drop => drop.Item.Count);
+            return ValueTask.FromResult(count);
+        }
+
         public ValueTask DisposeAsync() => this.context.DisposeAsync();
+
+        private static bool Overlaps(BoundingBox box, VectorD from, VectorD to) =>
+            box.Min.X <= to.X && box.Max.X >= from.X
+            && box.Min.Y <= to.Y && box.Max.Y >= from.Y
+            && box.Min.Z <= to.Z && box.Max.Z >= from.Z;
 
         // The fixture's level boxes are disjoint and farther apart than redstone reaches. Keep their terrain
         // and server across cases; a player above each box keeps it ticking without replacing shared chunks.
@@ -320,6 +348,11 @@ public class VanillaRedstone
         ValueTask ReloadAsync();
 
         ValueTask<IBlock> GetBlockAsync(Vector position);
+
+        /// <summary>
+        /// The total count of <paramref name="item"/> lying as item entities in the blocks from min to max.
+        /// </summary>
+        ValueTask<int> CountItemsAsync(Vector min, Vector max, string item);
     }
 
     /// <summary>
@@ -344,8 +377,9 @@ public class VanillaRedstone
             var arrows = scenario.TryGetProperty("arrows", out var arrowShots) ? arrowShots.EnumerateArray().ToArray() : [];
             IReadOnlyList<Vector> contacts = [];
             var checkpoints = scenario.GetProperty("checkpoints").EnumerateArray().ToDictionary(checkpoint => checkpoint.GetProperty("tick").GetInt32());
+            var item = scenario.TryGetProperty("item", out var itemId) ? itemId.GetString() : null;
             var diffs = new List<string>();
-            diffs.AddRange(await CompareAsync(world, checkpoints[0], min, max));
+            diffs.AddRange(await CompareAsync(world, checkpoints[0], min, max, item));
 
             for (var tick = 1; tick < checkpoints.Count; tick++)
             {
@@ -374,7 +408,7 @@ public class VanillaRedstone
                         Enum.Parse<BlockFace>(arrow.GetProperty("face").GetString()!, ignoreCase: true))).ToArray();
 
                 await world.TickAsync(contacts, hits);
-                diffs.AddRange(await CompareAsync(world, checkpoints[tick], min, max));
+                diffs.AddRange(await CompareAsync(world, checkpoints[tick], min, max, item));
             }
 
             return diffs;
@@ -397,10 +431,22 @@ public class VanillaRedstone
             IRedstoneScenarioWorld world,
             JsonElement checkpoint,
             Vector min,
-            Vector max)
+            Vector max,
+            string? item)
         {
             var differences = new List<string>();
             var tick = checkpoint.GetProperty("tick").GetInt32();
+
+            // The capture counts the item within two blocks of the box.
+            if (item is not null)
+            {
+                var margin = new Vector(2, 2, 2);
+                var expectedItems = checkpoint.GetProperty("items").GetInt32();
+                var actualItems = await world.CountItemsAsync(min - margin, max + margin, item);
+                if (actualItems != expectedItems)
+                    differences.Add($"tick {tick}: vanilla has {expectedItems} {item} dropped, ours {actualItems}");
+            }
+
             var paletteText = checkpoint.GetProperty("palette").EnumerateArray().Select(state => state.GetString()!).ToArray();
             var palette = paletteText.Select(ParseState).ToArray();
             var rows = checkpoint.GetProperty("rows").EnumerateArray().Select(row => row.GetString()!).ToArray();

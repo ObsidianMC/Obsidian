@@ -37,6 +37,21 @@ internal sealed class RedstoneObserver(IRedstoneLevel level)
 
     public int GetDirectSignal(IBlock state, Vector position, BlockFace direction, bool wiresGiveSignal) => this.GetSignal(state, position, direction, wiresGiveSignal);
 
+    /// <summary>
+    /// Command block inputs derive their state from neighbors before placement. For observers this sends a shape
+    /// update from the watched side even when it is air. Player placement does not run that derivation.
+    /// </summary>
+    internal static void PrepareCommandPlacement(IBlockLevel level, Vector position, IBlock state)
+    {
+        if (!IsObserver(state))
+            return;
+
+        var facing = Facing(state);
+        var neighborPosition = position.Offset(facing);
+        ShapeUpdateBehaviors.ObserverBlock.UpdateShape(
+            level, position, state, facing, neighborPosition, level.GetBlock(neighborPosition));
+    }
+
     // Vanilla ObserverBlock.tick: an on output goes off; an off output goes on and schedules its own turn-off.
     public async ValueTask TickAsync(Vector position)
     {

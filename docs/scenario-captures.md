@@ -17,7 +17,12 @@ replaces only what vanilla produced.
   pushed or pulled observer finishes moving, both watching unchanged air and ending beside pre-existing stone.
   Movement finishes at tick 10 and the pulse runs at ticks 12–13; sticky retraction finishes at 22 and pulses at
   24–25. `piston_fence_derives_connections` records a moved fence deriving its destination connections at tick 10,
-  so the pre-placement derivation is shared by all moved states, rather than special-casing observers.
+  so the pre-placement derivation is shared by all moved states, rather than special-casing observers. Its setup
+  gives the fence `west=true`, the connection vanilla's `/setblock` derives beside the piston, because Obsidian's
+  commands don't derive placed states; recording again with the property given left every checkpoint unchanged.
+  `piston_pushes_carpet_off_support` pushes a carpet over air: the finished move breaks it at tick 6 and one carpet
+  drops. A scenario naming an `item` also records in each checkpoint the total count of that item lying as item
+  entities within two blocks of its box, and the replay counts Obsidian's the same way, so it must be `level`.
 - `fluid_scenarios.json` (`VanillaFluids`) defines the box, setup fills, actions, dimension and checkpoint ticks; the
   capture records the checkpoints.
 - `daylight_detector.json` (`DaylightDetectorTests`) defines the clock times to sample; the capture records the

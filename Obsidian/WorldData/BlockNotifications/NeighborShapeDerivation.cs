@@ -3,7 +3,14 @@ using Obsidian.WorldData.Features;
 
 namespace Obsidian.WorldData.BlockNotifications;
 
-/// <summary>Derives a state before placement, through live owner hooks and the shared neighbor shape rules.</summary>
+/// <summary>
+/// Derives a state from its six neighbors before placement (vanilla <c>updateFromNeighbourShapes</c>), through live
+/// owner hooks and the shared neighbor shape rules. Pistons use it for the block they finish moving.
+/// </summary>
+/// <remarks>
+/// A fluid tick asked for on the way goes through the level, which reads the block still at the position (the moving
+/// piston), so none is scheduled from the candidate state. See docs/known-gaps/redstone.md.
+/// </remarks>
 internal static class NeighborShapeDerivation
 {
     // The order of vanilla's state derivation matters when several neighbors affect the same state.

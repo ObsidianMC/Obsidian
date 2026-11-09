@@ -37,7 +37,7 @@ The per-line status is in [the appendix](#appendix-a-status-of-every-line).
 dandelions and the poplar sapling. Apart from placing a straw bed, none of it works yet (see section 10 of the
 appendix).
 
-Two limits on these numbers. Parity is mostly unproven: only redstone (26 scenarios), fluids, daylight detectors,
+Two limits on these numbers. Parity is mostly unproven: only redstone (27 scenarios), fluids, daylight detectors,
 block transformers, block item placement, note blocks and door use are replayed against captured vanilla output, and the rest has
 hand-written tests or none. And a few vanilla details below come from memory rather than the jar; they're marked
 "confirm by capture".

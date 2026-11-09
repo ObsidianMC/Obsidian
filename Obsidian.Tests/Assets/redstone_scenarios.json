@@ -1,5 +1,5 @@
 {
- "_notes": "Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a headless vanilla server in a void world, whose game is frozen and stepped one tick at a time, with block states read with execute if block. Coordinates are absolute. Setup blocks are placed first, live, in order, with neighbor updates (/setblock). Each tick t from 1 to the scenario's ticks: its reloads (world saved and server restarted, which runs `ticks` game ticks of its own before the server is frozen again), actions, entity events (an armor stand standing in each contact cell until the next event) and arrows (flying straight into the face at the location, without gravity) happen first, at the previous game time, then the game advances one tick. Checkpoints hold the box after each tick: one string per (y, z) row, y then z ascending, with a character per x giving the block's palette index in 0-9a-zA-Z. Palette states are full states with every property, sorted by name. A setup placement's `items` are its block entity's items, placed with it as the /setblock's Items data. Scenarios marked `level` are replayed on a whole Obsidian level, because they need its block entities (containers and hoppers).",
+ "_notes": "Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a headless vanilla server in a void world, whose game is frozen and stepped one tick at a time, with block states read with execute if block. Coordinates are absolute. Setup blocks are placed first, live, in order, with neighbor updates (/setblock). Each tick t from 1 to the scenario's ticks: its reloads (world saved and server restarted, which runs `ticks` game ticks of its own before the server is frozen again), actions, entity events (an armor stand standing in each contact cell until the next event) and arrows (flying straight into the face at the location, without gravity) happen first, at the previous game time, then the game advances one tick. Checkpoints hold the box after each tick: one string per (y, z) row, y then z ascending, with a character per x giving the block's palette index in 0-9a-zA-Z. Palette states are full states with every property, sorted by name. A setup placement's `items` are its block entity's items, placed with it as the /setblock's Items data. Scenarios marked `level` are replayed on a whole Obsidian level, because they need its block entities (containers and hoppers). A scenario naming an `item` also records in each checkpoint's `items` the total count of that item lying as item entities within two blocks of its box.",
  "version": "26.3",
  "scenarios": [
   {
@@ -24417,7 +24417,7 @@
       64,
       9
      ],
-     "state": "minecraft:oak_fence"
+     "state": "minecraft:oak_fence[west=true]"
     },
     {
      "pos": [
@@ -24822,6 +24822,484 @@
       "1234511",
       "1111011"
      ]
+    }
+   ]
+  },
+  {
+   "name": "piston_pushes_carpet_off_support",
+   "description": "A piston pushes a wool carpet off its stone support over air; completion finds it can't survive there.",
+   "coverage": [
+    "piston_shape_derivation"
+   ],
+   "level": true,
+   "item": "minecraft:white_carpet",
+   "min": [
+    840,
+    62,
+    8
+   ],
+   "max": [
+    845,
+    64,
+    10
+   ],
+   "setup": [
+    {
+     "pos": [
+      840,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      841,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      842,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      840,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      841,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      842,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      840,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      841,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      842,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      843,
+      62,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      844,
+      62,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      845,
+      62,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      843,
+      62,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      844,
+      62,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      845,
+      62,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      843,
+      62,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      844,
+      62,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      845,
+      62,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      841,
+      64,
+      9
+     ],
+     "state": "minecraft:piston[extended=false,facing=east]"
+    },
+    {
+     "pos": [
+      842,
+      64,
+      9
+     ],
+     "state": "minecraft:white_carpet"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 4,
+     "pos": [
+      840,
+      64,
+      9
+     ],
+     "state": "minecraft:redstone_block"
+    }
+   ],
+   "entities": [],
+   "arrows": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:white_carpet"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "023000",
+      "000000"
+     ],
+     "items": 0
+    },
+    {
+     "tick": 1,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:white_carpet"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "023000",
+      "000000"
+     ],
+     "items": 0
+    },
+    {
+     "tick": 2,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:white_carpet"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "023000",
+      "000000"
+     ],
+     "items": 0
+    },
+    {
+     "tick": 3,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:white_carpet"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "023000",
+      "000000"
+     ],
+     "items": 0
+    },
+    {
+     "tick": 4,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:moving_piston[facing=east,type=normal]"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "234400",
+      "000000"
+     ],
+     "items": 0
+    },
+    {
+     "tick": 5,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:moving_piston[facing=east,type=normal]"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "234400",
+      "000000"
+     ],
+     "items": 0
+    },
+    {
+     "tick": 6,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "234000",
+      "000000"
+     ],
+     "items": 1
+    },
+    {
+     "tick": 7,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "234000",
+      "000000"
+     ],
+     "items": 1
+    },
+    {
+     "tick": 8,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "234000",
+      "000000"
+     ],
+     "items": 1
+    },
+    {
+     "tick": 9,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "234000",
+      "000000"
+     ],
+     "items": 1
+    },
+    {
+     "tick": 10,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "234000",
+      "000000"
+     ],
+     "items": 1
+    },
+    {
+     "tick": 11,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "234000",
+      "000000"
+     ],
+     "items": 1
+    },
+    {
+     "tick": 12,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "234000",
+      "000000"
+     ],
+     "items": 1
     }
    ]
   }

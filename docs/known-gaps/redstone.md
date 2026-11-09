@@ -18,9 +18,18 @@ the redstone lamp work (see [plugin content](../plugin-content.md#redstone)); th
   Cats sitting on a chest don't stop comparators reading it.
   Solid-block obstruction above a single chest or either double-chest half leaves the comparator's output stale
   until another notification, as captured in vanilla; removing it alone does too. Observers use the shape owner
-  through both update engines. Captured player placement facing air or stone schedules no tick; command placement
-  gets its initial pulse from state derivation before placement. Piston completion also derives the moved state:
-  pushed and pulled observers pulse even while watching unchanged air, as captured in `redstone_scenarios.json`.
+  through both update engines. Captured player placement facing air or stone schedules no tick; `/setblock` and
+  `/fill` give a placed observer the shape reaction from the side it watches, its part of vanilla's state derivation
+  (they derive nothing else, see [26.3 commands](26-3-commands.md)). A piston's finished move derives the moved
+  state from its new neighbours: pushed and pulled observers pulse even while watching unchanged air, fences
+  reconnect, and a block that can't stay where it lands (a carpet pushed over air) breaks with its drops, as
+  captured in `redstone_scenarios.json`.
+- **Pistons and water.** A pushed or pulled waterlogged block keeps `waterlogged=true`, where vanilla's finished
+  move dries it (captured once: a waterlogged slab arrives dry and no water flows; not kept as a scenario, since it
+  fails here). The fluid tick vanilla schedules while deriving the moved state isn't scheduled either: the level
+  reads the block still at the destination, the moving piston, and finds no fluid. That only shows once the block
+  is dried properly, and in a move cut short (vanilla's `finalTick`, from the jar), which keeps the water, so vanilla
+  lets it flow and Obsidian leaves it still until a neighbour updates it.
 - **Game events.** Levers, buttons and pressure plates don't emit vanilla's `block_activate` and `block_deactivate`
   vibrations.
 - **Experiments.** The `redstone_experiments` feature's wire evaluator and update orientations aren't modelled.

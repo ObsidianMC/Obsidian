@@ -35,6 +35,9 @@ internal static class ScenarioCaptures
     // Scenario entities and arrows carry this tag, so they can be removed again.
     private const string EntityTag = "scenario";
 
+    // The scoreboard objective dropped item counts are summed in.
+    private const string ItemObjective = "redstone_items";
+
     // Ticks run after a scenario's blocks are cleared, so that work it left scheduled finds air and is dropped before
     // the next scenario places blocks there.
     private const int DrainTicks = 40;
@@ -71,7 +74,8 @@ internal static class ScenarioCaptures
         ascending, with a character per x giving the block's palette index in 0-9a-zA-Z. Palette states are full
         states with every property, sorted by name. A setup placement's `items` are its block entity's items, placed
         with it as the /setblock's Items data. Scenarios marked `level` are replayed on a whole Obsidian level,
-        because they need its block entities (containers and hoppers).
+        because they need its block entities (containers and hoppers). A scenario naming an `item` also records in
+        each checkpoint's `items` the total count of that item lying as item entities within two blocks of its box.
         """;
 
     private const string FluidNotes = """
@@ -225,6 +229,9 @@ internal static class ScenarioCaptures
     private static async Task CaptureRedstoneAsync(ScenarioServer vanilla, JsonObject root,
         IReadOnlyCollection<string>? cases)
     {
+        // Fails (harmlessly) when the objective is left from an earlier capture.
+        await vanilla.RunInAsync(ScenarioServer.Overworld, $"scoreboard objectives add {ItemObjective} dummy");
+
         foreach (var scenario in root["scenarios"]!.AsArray().Select(node => node!.AsObject()))
         {
             var name = scenario["name"]!.GetValue<string>();
@@ -236,8 +243,10 @@ internal static class ScenarioCaptures
             var box = Box.Read(scenario);
             var ticks = scenario["checkpoints"]!.AsArray().Count - 1;
             var dimension = ScenarioServer.Overworld;
+            var item = scenario["item"]?.GetValue<string>();
             await LoadAsync(vanilla, dimension, box.Grow(2));
             await ClearAsync(vanilla, dimension, box.Grow(1));
+            await KillItemsAsync(vanilla, dimension, box.Grow(2));
 
             foreach (var placement in scenario["setup"]!.AsArray())
             {
@@ -246,7 +255,7 @@ internal static class ScenarioCaptures
             }
 
             var reader = new BoxReader(vanilla, dimension, box, StatesIn(scenario));
-            var checkpoints = new JsonArray { await reader.ReadAsync(0) };
+            var checkpoints = new JsonArray { await ReadCheckpointAsync(vanilla, dimension, reader, box, item, 0) };
             var actions = scenario["actions"]!.AsArray();
             for (var tick = 1; tick <= ticks; tick++)
             {
@@ -263,13 +272,56 @@ internal static class ScenarioCaptures
                     await ShootAsync(vanilla, dimension, arrow);
 
                 await vanilla.StepAsync();
-                checkpoints.Add(await reader.ReadAsync(tick));
+                checkpoints.Add(await ReadCheckpointAsync(vanilla, dimension, reader, box, item, tick));
             }
 
             scenario["checkpoints"] = checkpoints;
             await RemoveEntitiesAsync(vanilla, dimension);
+            await KillItemsAsync(vanilla, dimension, box.Grow(2));
             await ClearAsync(vanilla, dimension, box.Grow(1));
         }
+    }
+
+    // The box's blocks, and with an item named, how many of it lie as item entities within two blocks of the box.
+    private static async Task<JsonObject> ReadCheckpointAsync(ScenarioServer vanilla, string dimension,
+        BoxReader reader, Box box, string? item, int tick)
+    {
+        var checkpoint = await reader.ReadAsync(tick);
+        if (item is not null)
+            checkpoint["items"] = await CountItemsAsync(vanilla, dimension, box.Grow(2), item);
+
+        return checkpoint;
+    }
+
+    // Sums the stack counts of the item entities holding the item whose boxes reach into the area.
+    private static async Task<int> CountItemsAsync(ScenarioServer vanilla, string dimension, Box area, string item)
+    {
+        var items = ItemsIn(area, $",nbt={{Item:{{id:\"{item}\"}}}}");
+        await vanilla.RunInAsync(dimension, $"scoreboard players set total {ItemObjective} 0");
+        await vanilla.RunInAsync(dimension,
+            $"execute as {items} store result score @s {ItemObjective} run data get entity @s Item.count");
+        await vanilla.RunInAsync(dimension,
+            $"execute as {items} run scoreboard players operation total {ItemObjective} += @s {ItemObjective}");
+
+        var feedback = await vanilla.RunInAsync(dimension, $"scoreboard players get total {ItemObjective}");
+        var number = feedback.Split(' ').Single(word => int.TryParse(word, out _));
+        return int.Parse(number, System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    // Removes the item entities a scenario dropped, so they aren't counted again.
+    private static async Task KillItemsAsync(ScenarioServer vanilla, string dimension, Box area)
+    {
+        await vanilla.RunInAsync(dimension, $"kill {ItemsIn(area)}");
+    }
+
+    // The item entities in the area, narrowed by any further selector arguments in filter.
+    private static string ItemsIn(Box area, string filter = "")
+    {
+        var dx = area.Max.X - area.Min.X;
+        var dy = area.Max.Y - area.Min.Y;
+        var dz = area.Max.Z - area.Min.Z;
+        var volume = $"x={area.Min.X},y={area.Min.Y},z={area.Min.Z},dx={dx},dy={dy},dz={dz}";
+        return $"@e[type=minecraft:item,{volume}{filter}]";
     }
 
     // A placement's state with its block entity's items as /setblock data: each item's slot, id and count.

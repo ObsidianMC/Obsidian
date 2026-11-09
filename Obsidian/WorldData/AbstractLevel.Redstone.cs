@@ -10,11 +10,11 @@ namespace Obsidian.WorldData;
 /// </summary>
 public abstract partial class AbstractLevel
 {
-    /// <summary>Derives a placed state's shape and scheduled work from its current neighbors.</summary>
-    internal IBlock DeriveNeighborShapes(Vector position, IBlock state)
+    /// <summary>The observer's shape work while a command derives its block input, before committing it.</summary>
+    internal void PrepareObserverCommandPlacement(Vector position, IBlock state)
     {
         lock (this.Fluids.TickLock)
-            return NeighborShapeDerivation.Derive(this, position, state);
+            RedstoneObserver.PrepareCommandPlacement(this.BlockUpdates, position, state);
     }
 
     // Vanilla's Direction.Plane.HORIZONTAL, the directions updateNeighbourForOutputSignal looks for comparators in.

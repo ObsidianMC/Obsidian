@@ -105,7 +105,7 @@ internal sealed class MovingPistonBlockEntity : BlockEntity
         this.progressO = this.progress;
         if (this.progressO >= 1f)
         {
-            await this.FinishAsync(level);
+            await this.PlaceMovedStateAsync(level, completedMove: true);
             return;
         }
 
@@ -113,8 +113,15 @@ internal sealed class MovingPistonBlockEntity : BlockEntity
         await this.MoveEntitiesAsync(level, this.progress - this.progressO);
     }
 
-    /// <summary>Vanilla <c>finalTick</c>: places the block the piston stands for, or air for a source that retracts.</summary>
-    internal async ValueTask FinishAsync(IRedstoneLevel level)
+    /// <summary>
+    /// Vanilla <c>finalTick</c>: cuts the move short and places the block the piston stands for now, as another piston
+    /// event does to a block still moving.
+    /// </summary>
+    internal ValueTask FinishAsync(IRedstoneLevel level) => this.PlaceMovedStateAsync(level, completedMove: false);
+
+    // Places the moved state, shaped by its new neighbors. A move that ran its course (completedMove) breaks a block
+    // that can't stay there, with its drops; one cut short just places what the shape rules leave, air included.
+    private async ValueTask PlaceMovedStateAsync(IRedstoneLevel level, bool completedMove)
     {
         if (this.finished)
             return;
@@ -130,6 +137,15 @@ internal sealed class MovingPistonBlockEntity : BlockEntity
         // Derivation runs for every moved state: observers schedule their pulse, and fences reconnect even when
         // none of the destination's neighbors changed. The captured piston scenarios cover both effects.
         var placed = NeighborShapeDerivation.Derive(level, position, this.movedState);
+        if (completedMove && placed.IsAir)
+        {
+            // Like vanilla, the moved state is installed first and then broken, so it drops as itself (a carpet
+            // pushed over air), as captured in piston_pushes_carpet_off_support.
+            await level.WriteAsync(position, this.movedState, notifyNeighbors: false);
+            await level.DestroyBlockNowAsync(position, this.movedState, playEffect: true);
+            return;
+        }
+
         await level.WriteAsync(position, placed, notifyNeighbors: true);
     }
 
