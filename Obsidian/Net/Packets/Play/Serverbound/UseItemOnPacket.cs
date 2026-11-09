@@ -85,24 +85,40 @@ public partial class UseItemOnPacket
             return null;
         }
 
-        var handSlot = this.Hand == InteractionHand.OffHand ? OffhandSlot : user.CurrentHeldItemSlot;
-        var item = user.Inventory.GetItem(handSlot);
-        var use = new BlockUse
+        BlockUse? use = null;
+        lock (level.Fluids.TickLock)
         {
-            Server = server,
-            Level = level,
-            Player = user,
-            Position = this.Position,
-            Block = block,
-            BlockEntity = level.GetResidentBlockEntity(this.Position),
-            Face = this.Face,
-            Cursor = this.Cursor,
-            Hand = this.Hand,
-            HandSlot = handSlot,
-            Item = item,
-            UsedItem = item is null ? null : new ItemStack(item, item.Count),
-            Sequence = this.Sequence
-        };
+            if (user.Inventory.TryLock(out var handLock))
+            {
+                using (handLock)
+                {
+                    var handSlot = this.Hand == InteractionHand.OffHand ? OffhandSlot : user.CurrentHeldItemSlot;
+                    var item = user.Inventory.GetItem(handSlot);
+                    use = new BlockUse
+                    {
+                        Server = server,
+                        Level = level,
+                        Player = user,
+                        Position = this.Position,
+                        Block = level.BlockUpdates.GetBlock(this.Position),
+                        BlockEntity = level.GetResidentBlockEntity(this.Position),
+                        Face = this.Face,
+                        Cursor = this.Cursor,
+                        Hand = this.Hand,
+                        HandSlot = handSlot,
+                        Item = item,
+                        UsedItem = item is null ? null : new ItemStack(item, item.Count),
+                        Sequence = this.Sequence
+                    };
+                }
+            }
+        }
+
+        if (use is null)
+        {
+            this.Acknowledge(user);
+            return null;
+        }
 
         var result = await this.UseBlockAsync(use);
         await this.CompleteAsync(use, result);

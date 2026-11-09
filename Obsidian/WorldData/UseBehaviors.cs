@@ -136,12 +136,18 @@ internal sealed class BlockUse
 
                 IDisposable? destinationLock = null;
                 if (destination is not null && !destination.TryLock(out destinationLock))
+                {
+                    this.ResyncHand = true;
                     return false;
+                }
 
                 using (destinationLock)
                 {
                     if (destination?.ShowsRetired == true || !change())
+                    {
+                        this.ResyncHand = true;
                         return false;
+                    }
 
                     if (consumeItem && this.Player.GameMode != GameMode.Creative)
                     {
