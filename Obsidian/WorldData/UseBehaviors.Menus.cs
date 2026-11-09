@@ -79,21 +79,24 @@ internal static partial class UseBehaviors
     {
         public override bool OpensForSpectators => false;
 
-        public override ValueTask<BaseContainer?> CreateAsync(IPlayer player, AbstractLevel level, IBlock block,
+        public override async ValueTask<BaseContainer?> CreateAsync(IPlayer player, AbstractLevel level, IBlock block,
             Vector position)
         {
             var above = level.GameEventBlock(position + Vector.Up);
             if (above?.IsRedstoneConductor() == true || player is not PlayerBase owner)
-                return ValueTask.FromResult<BaseContainer?>(null);
+                return null;
 
             // Like vanilla's PlayerEnderChestContainer.setActiveChest: the inventory is shown at the chest it was
             // opened from, whose lid opens while it's viewed.
             var inventory = owner.EnderInventory;
+            if (ReferenceEquals(owner.OpenedContainer, inventory))
+                await owner.CloseContainerAsync();
+
             inventory.Id = "ender_chest";
             inventory.BlockPosition = position;
             inventory.WindowBlockEntity = null;
 
-            return ValueTask.FromResult<BaseContainer?>(inventory);
+            return inventory;
         }
     }
 

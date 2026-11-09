@@ -3,6 +3,7 @@ using Obsidian.API.Blocks;
 using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
@@ -42,6 +43,17 @@ public sealed class EnderChests
         var window = await OpenAsync(context, owner, first);
         Assert.Same(owner.EnderInventory, window);
         window.SetItem(0, new ItemStack(ItemsRegistry.Get("minecraft:diamond"), 3));
+        await world.ProcessBlockEventsAsync();
+
+        // Retargeting the same inventory must close A's lid and open B's without a client close in between.
+        var client = Assert.IsType<TestClient>(owner.Client);
+        client.ClearPackets();
+        Assert.Same(window, await OpenAsync(context, owner, second));
+        await world.ProcessBlockEventsAsync();
+        var lids = client.SentPackets.OfType<BlockEventPacket>().ToArray();
+        Assert.Contains(lids, lid => lid.Position == first && lid.ActionParam == 0);
+        Assert.Contains(lids, lid => lid.Position == second && lid.ActionParam == 1);
+        Assert.Equal(3, Diamonds(window));
         await CloseAsync(context, owner);
 
         // ...are there, once, through the other.
