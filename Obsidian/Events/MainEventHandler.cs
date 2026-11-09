@@ -174,7 +174,7 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             return;
 
         // A block's menu, which the block's use asked for (see UseBehaviors).
-        if (block is not null && e.BlockLocation is Vector blockPosition)
+        if (e.OpensBlockMenu && block is not null && e.BlockLocation is Vector blockPosition)
             await BlockMenus.OpenAsync(player, block, blockPosition);
     }
 

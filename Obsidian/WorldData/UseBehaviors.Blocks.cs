@@ -1,5 +1,6 @@
 using Obsidian.API.Containers;
 using Obsidian.API.Inventory;
+using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Serverbound;
@@ -342,6 +343,27 @@ internal static partial class UseBehaviors
             var book = use.HasItem && TagsRegistry.Item.LecternBooks.Entries.Contains(use.Item!.Holder.Id);
             if (use.Block.GetProperty("has_book") == "true" || !book)
                 return UseResult.TryWithEmptyHand;
+
+            var interaction = new PlayerInteractEventArgs(use.Player, use.Server)
+            {
+                Item = use.Item,
+                Block = use.Block,
+                BlockLocation = use.Position,
+                Hand = use.Hand,
+                OpensBlockMenu = false
+            };
+            await use.Server.EventDispatcher.ExecuteEventAsync(interaction);
+            if (interaction.IsCancelled)
+            {
+                use.ResyncHand = true;
+                return UseResult.Fail;
+            }
+
+            if (!use.Player.Alive || use.Player.Respawning
+                || !use.Level.BlockUpdates.GetBlock(use.Position).IsSameState(use.Block)
+                || !ReferenceEquals(use.Player.Inventory.GetItem(use.HandSlot), use.Item)
+                || use.Item is not { Count: > 0 })
+                return UseResult.Fail;
 
             if (await use.Level.GetOrCreateBlockEntityAsync(use.Position) is not LecternBlockEntity lectern)
                 return UseResult.TryWithEmptyHand;
