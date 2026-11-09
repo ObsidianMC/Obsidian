@@ -50,8 +50,9 @@ internal sealed class CopperWeatheringBehavior : IRandomTickBehavior
         if (!stages.Value.TryGetValue(block.RegistryId, out var stage) || stage.Next is null)
             return;
 
-        var chest = block.BlockClass() == "WeatheringCopperChestBlock";
-        if (block.BlockClass() == "WeatheringCopperDoorBlock" && block.GetProperty("half") == "upper")
+        var blockClass = block.ClassId();
+        var chest = blockClass == BlockClassId.WeatheringCopperChestBlock;
+        if (blockClass == BlockClassId.WeatheringCopperDoorBlock && block.GetProperty("half") == "upper")
             return;
 
         if (chest && !CanAgeChest(level, position, block))
@@ -63,28 +64,9 @@ internal sealed class CopperWeatheringBehavior : IRandomTickBehavior
         if (!BlockStateProperties.TryGetState(stage.Next, block.GetProperties(), out var next))
             return;
 
-        // Copper chest shape synchronization is not part of Obsidian's generic chest shape updater yet.
-        // Resolve the connected half before notifying neighbors, preserving its properties and inventory.
-        Vector? partnerPosition = null;
-        IBlock? partnerState = null;
-        if (chest && block.GetProperty("type") == "left")
-        {
-            var partner = position.Offset(FeatureHelpers.ParseFace(block.GetProperty("facing")).ClockWise());
-            var other = Growth.BlockAt(level, partner);
-            if (other.BlockClass() is "CopperChestBlock" or "WeatheringCopperChestBlock"
-                && other.GetProperty("type") == "right"
-                && other.GetProperty("facing") == block.GetProperty("facing")
-                && BlockStateProperties.TryGetState(stage.Next, other.GetProperties(), out var following))
-            {
-                partnerPosition = partner;
-                partnerState = following;
-            }
-        }
-
-        // The normal mutation path retains compatible block entities and propagates door halves.
+        // Shape updates synchronize connected halves and honor re-entrant plugin mutations of those neighbors.
+        // The normal mutation path also retains compatible block entities.
         level.BlockUpdates.SetBlock(position, next);
-        if (partnerPosition is Vector connected && partnerState is not null)
-            level.BlockUpdates.SetBlock(connected, partnerState);
     }
 
     private static bool CanAgeChest(AbstractLevel level, Vector position, IBlock block)
@@ -147,6 +129,9 @@ internal sealed class CopperWeatheringBehavior : IRandomTickBehavior
                 throw new InvalidOperationException($"Unknown copper block {entry.Name}.");
 
             var next = entry.Value.TryGetProperty("next", out var value) ? value.GetString() : null;
+            if (next is not null && !BlockStateProperties.TryGetState(next, null, out _))
+                throw new InvalidOperationException($"Unknown copper next stage {next} for {entry.Name}.");
+
             result.Add(block.RegistryId, new Stage(entry.Value.GetProperty("age").GetInt32(), next));
         }
 

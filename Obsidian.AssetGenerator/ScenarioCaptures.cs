@@ -93,18 +93,18 @@ internal static class ScenarioCaptures
     public static async Task RunAsync(VanillaServer server, string assetsDirectory,
         IReadOnlyCollection<string> fixtures, IReadOnlyCollection<string>? cases = null)
     {
+        if (cases is not null && (fixtures.Count != 1 || !SelectableCases.Any(fixtures.Contains)))
+        {
+            throw new ArgumentException(
+                "Case selection requires CaptureFixtures=sulfur, more_blocks or structure_pieces.");
+        }
+
         if (fixtures.Contains(CopperWeathering))
         {
             await FixtureDumper.DumpCopperWeatheringAsync(server,
                 Path.Combine(assetsDirectory, "copper_weathering.json"));
             if (fixtures.Count == 1)
                 return;
-        }
-
-        if (cases is not null && (fixtures.Count != 1 || !SelectableCases.Any(fixtures.Contains)))
-        {
-            throw new ArgumentException(
-                "Case selection requires CaptureFixtures=sulfur, more_blocks or structure_pieces.");
         }
 
         if (fixtures.Contains(Placement))
