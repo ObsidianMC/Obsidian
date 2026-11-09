@@ -32,33 +32,45 @@ internal interface IRedstoneContact
 }
 
 /// <summary>
-/// Redstone behaviors keyed by vanilla block class (for example <c>RedstoneWireBlock</c>), so every state of a class shares one
-/// rule. Registrations are made once when the level is created.
+/// Redstone behaviors registered by vanilla class and expanded to registry ids, so every state of a class shares one
+/// rule. Registrations are made once when the level is created; plugin behavior is resolved dynamically.
 /// </summary>
 internal sealed class RedstoneBehaviors(IRedstoneBehavior? pluginBehaviors = null)
 {
     private readonly Dictionary<string, IRedstoneBehavior> behaviors = [];
     private readonly Dictionary<string, IRedstoneContact> contacts = [];
+    private readonly IRedstoneBehavior?[] byId = new IRedstoneBehavior?[BlocksRegistry.ResourceIds.Length];
+    private readonly IRedstoneContact?[] contactsById = new IRedstoneContact?[BlocksRegistry.ResourceIds.Length];
 
     public void RegisterContact(string blockClass, IRedstoneContact contact)
     {
         if (!this.contacts.TryAdd(blockClass, contact))
             throw new InvalidOperationException($"A redstone contact is already registered for {blockClass}.");
+
+        foreach (var id in BlockPhysics.BlocksOfClass(blockClass))
+            this.contactsById[id] = contact;
     }
 
-    public IRedstoneContact? ContactFor(IBlock state) => this.contacts.GetValueOrDefault(state.BlockClass());
+    public IRedstoneContact? ContactFor(IBlock state) =>
+        (uint)state.RegistryId < (uint)this.contactsById.Length ? this.contactsById[state.RegistryId]
+            : this.contacts.GetValueOrDefault(state.BlockClass());
 
     public void Register(string blockClass, IRedstoneBehavior behavior)
     {
         if (!this.behaviors.TryAdd(blockClass, behavior))
             throw new InvalidOperationException($"A redstone behavior is already registered for {blockClass}.");
+
+        foreach (var id in BlockPhysics.BlocksOfClass(blockClass))
+            this.byId[id] = behavior;
     }
 
     /// <summary>
     /// The behavior of a block: its vanilla class's registration, else the plugin behaviors' (which answer for plugin blocks only),
     /// else none.
     /// </summary>
-    public IRedstoneBehavior For(IBlock state) => this.behaviors.GetValueOrDefault(state.BlockClass()) ?? pluginBehaviors ?? Inert;
+    public IRedstoneBehavior For(IBlock state) =>
+        ((uint)state.RegistryId < (uint)this.byId.Length ? this.byId[state.RegistryId]
+            : this.behaviors.GetValueOrDefault(state.BlockClass())) ?? pluginBehaviors ?? Inert;
 
     private sealed class InertBehavior : IRedstoneBehavior { }
 

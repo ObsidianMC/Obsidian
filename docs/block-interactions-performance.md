@@ -300,23 +300,42 @@ and loop overhead. Allocations use the current thread; the harness rejects an op
 is one alternating on/off transition, not an entire on/off pair. CSV names and units are stable for diffing.
 
 The baseline in `Obsidian.WorldgenBench/Results/block-before.csv` was captured at the docs branch point `15309c34b`,
-with only this probe and its shared-harness access added. Machine: Windows 11 (10.0.22631), x64, .NET SDK 10.0.403,
-runtime .NET 10.0.14, Release. Other work on this machine means small timing differences should be read cautiously.
+with only this probe and its shared-harness access added. Runs recorded 2026-11-09 on an AMD Ryzen 9 9950X,
+Windows 11 (10.0.22631), x64, .NET SDK 10.0.403, runtime .NET 10.0.14, Release. Other work on this machine means small timing differences should be read cautiously.
 
-| Operation | Before (ns/op) | Before (B/op) |
-|---|---:|---:|
-| BlockClass / stone | 8.43 | 0 |
-| IsSignalSource / stone | 6.05 | 0 |
-| IsSignalSource / wire | 13.06 | 0 |
-| IsGravityAffected / stone | 18.94 | 0 |
-| NeighborBehaviors.TryGet / stone | 13.16 | 0 |
-| NeighborBehaviors.TryGet / wire | 7.24 | 0 |
-| RedstoneBehaviors.For / stone | 12.84 | 0 |
-| RedstoneBehaviors.For / wire | 20.32 | 0 |
-| ContactFor / air | 15.66 | 0 |
-| BlockEntityType / chest | 7.45 | 0 |
-| UpdateShape / stone | 18.27 | 0 |
-| UpdateShape / air | 26.74 | 0 |
-| Pipeline / change inside solid stone | 1131.65 | 32.05 |
-| Pipeline / toggle 15 dust | 275583.20 | 18293.95 |
-| Pipeline / toggle 30 dust | 267843.20 | 18493.95 |
+The after run uses the same probe, settings and machine. Raw runs, including the unchanged control operations,
+are in `Obsidian.WorldgenBench/Results/block-before.csv` and `block-after.csv`.
+
+| Operation | Before (ns/op) | After (ns/op) | Before (B/op) | After (B/op) |
+|---|---:|---:|---:|---:|
+| BlockClass / stone | 8.43 | 2.60 | 0.00 | 0.00 |
+| IsSignalSource / stone | 6.05 | 1.87 | 0.00 | 0.00 |
+| IsSignalSource / wire | 13.06 | 3.31 | 0.00 | 0.00 |
+| IsGravityAffected / stone | 18.94 | 2.26 | 0.00 | 0.00 |
+| NeighborBehaviors.TryGet / stone | 13.16 | 2.74 | 0.00 | 0.00 |
+| NeighborBehaviors.TryGet / wire | 7.24 | 5.42 | 0.00 | 0.00 |
+| RedstoneBehaviors.For / stone | 12.84 | 3.53 | 0.00 | 0.00 |
+| RedstoneBehaviors.For / wire | 20.32 | 5.98 | 0.00 | 0.00 |
+| ContactFor / air | 15.66 | 2.78 | 0.00 | 0.00 |
+| BlockEntityType / chest | 7.45 | 2.21 | 0.00 | 0.00 |
+| UpdateShape / stone | 18.27 | 11.67 | 0.00 | 0.00 |
+| UpdateShape / air | 26.74 | 18.52 | 0.00 | 0.00 |
+| Pipeline / change inside solid stone | 1131.65 | 876.58 | 32.05 | 32.05 |
+| Pipeline / toggle 15 dust | 275583.20 | 191517.60 | 18293.95 | 18293.95 |
+| Pipeline / toggle 30 dust | 267843.20 | 190686.80 | 18493.95 | 18493.95 |
+
+Item 2 now binds vanilla neighbor, placement, removal, redstone and contact registrations to arrays by registry id.
+Class names and block entity types also bind to registry-id arrays; all vanilla classes get an integer identity once
+from the physics metadata, with named constants for the shape and gravity switches. The string `BlockClass()` API
+stays. `IsSignalSource()` reads bit 8 in a private augmented copy of the second per-state physics word (the first word
+already uses all 32 bits). Plugin ids remain outside the fixed vanilla arrays: named registrations and the generic
+class still resolve at runtime, and the redstone fallback and plugin block entity lookup still read the live binding.
+A plugin's behavior is never copied into a vanilla table, so registration after a level is built and unloading keep
+their existing paths. Named duplicate errors and block-specific precedence over classes remain unchanged.
+
+The 15-dust toggle is about 31% faster in these runs, and the solid-stone change about 23% faster, with unchanged
+allocations. These are harness costs, not measured server tick savings. Some unchanged property operations also
+varied (up to about 19%), so the exact percentages include machine/JIT variation. The old "four to ten times" lookup
+claim is not a reliable multiplier: this warmed baseline's class lookup is only about 2.2 times its id-bound tick
+lookup, although resolving the targeted name lookups still brings a clear improvement. The old probe's allocation
+and dust-cost estimates remain representative. No level-side engine, packet or gameplay changes are included here.

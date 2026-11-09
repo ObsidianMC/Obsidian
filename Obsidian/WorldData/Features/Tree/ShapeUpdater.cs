@@ -87,9 +87,9 @@ internal static class ShapeUpdater
             ScheduleFluidTick(level, state, position, neighbor);
         }
 
-        switch (state.BlockClass())
+        switch (state.ClassId())
         {
-            case "BubbleColumnBlock":
+            case BlockClassId.BubbleColumnBlock:
                 if (!BubbleColumns.CanSurvive(level.GetBlock(position + Vector.Down))
                     || direction == BlockFace.Down
                     || direction == BlockFace.Up && !neighbor.Is(BlockIds.BubbleColumn)
@@ -98,86 +98,86 @@ internal static class ShapeUpdater
                     scheduleBlockTick?.Invoke(position, state, BubbleColumns.CheckPeriod);
                 }
                 return state;
-            case "MossyCarpetBlock":
+            case BlockClassId.MossyCarpetBlock:
                 return Generators.Features.FeatureRegistry.UpdateMossCarpetShape(state, level, position);
-            case "PointedDripstoneBlock" or "SulfurSpikeBlock":
+            case BlockClassId.PointedDripstoneBlock or BlockClassId.SulfurSpikeBlock:
                 return Generators.Features.SpeleothemShapes.Update(level, state, position, direction);
-            case "FenceBlock":
+            case BlockClassId.FenceBlock:
                 return IsHorizontal(direction)
                     ? state.WithProperty(direction.PropertyName(), FenceConnectsTo(state, neighbor, direction.Opposite()))
                     : state;
-            case "IronBarsBlock" or "StainedGlassPaneBlock" or "WeatheringCopperBarsBlock":
+            case BlockClassId.IronBarsBlock or BlockClassId.StainedGlassPaneBlock or BlockClassId.WeatheringCopperBarsBlock:
                 return IsHorizontal(direction)
                     ? state.WithProperty(direction.PropertyName(), BarsAttachTo(neighbor, neighbor.IsFaceSturdy(direction.Opposite())))
                     : state;
-            case "TorchBlock":
+            case BlockClassId.TorchBlock:
                 return direction == BlockFace.Down && !level.GetBlock(position + Vector.Down).IsTopCenterSturdy() ? air : state;
-            case "WallTorchBlock":
+            case BlockClassId.WallTorchBlock:
                 return IsUnsupportedWallBlock(level, state, position, direction) ? air : state;
-            case "LadderBlock":
+            case BlockClassId.LadderBlock:
                 return IsUnsupportedWallBlock(level, state, position, direction) ? air : state;
-            case "VineBlock":
+            case BlockClassId.VineBlock:
                 return direction == BlockFace.Down ? state : UpdateVine(level, state, position);
-            case "DoublePlantBlock" or "TallFlowerBlock" or "TallSeagrassBlock" or "SmallDripleafBlock":
+            case BlockClassId.DoublePlantBlock or BlockClassId.TallFlowerBlock or BlockClassId.TallSeagrassBlock or BlockClassId.SmallDripleafBlock:
                 return UpdateDoublePlant(level, state, position, direction, neighbor);
-            case "HangingMossBlock":
+            case BlockClassId.HangingMossBlock:
                 if (direction == BlockFace.Up && !state.CanSurvive(level, position))
                     return air;
 
                 return state.WithProperty("tip", level.GetBlock(position + Vector.Down).RegistryId != state.RegistryId);
-            case "StairBlock" or "WeatheringCopperStairBlock":
+            case BlockClassId.StairBlock or BlockClassId.WeatheringCopperStairBlock:
                 return IsHorizontal(direction) ? state.WithProperty("shape", GetStairsShape(level, state, position)) : state;
-            case "ChestBlock" or "TrappedChestBlock":
+            case BlockClassId.ChestBlock or BlockClassId.TrappedChestBlock:
                 return UpdateChest(state, direction, neighbor);
-            case "WallBlock":
+            case BlockClassId.WallBlock:
                 return UpdateWall(level, state, position, direction, neighbor);
-            case "DoorBlock" or "WeatheringCopperDoorBlock":
+            case BlockClassId.DoorBlock or BlockClassId.WeatheringCopperDoorBlock:
                 return UpdateDoor(level, state, position, direction, neighbor);
-            case "BedBlock" or "StrawBedBlock":
+            case BlockClassId.BedBlock or BlockClassId.StrawBedBlock:
                 return UpdateBed(state, direction, neighbor);
-            case "FenceGateBlock":
+            case BlockClassId.FenceGateBlock:
                 return UpdateFenceGate(level, state, position, direction, neighbor);
-            case "AttachedStemBlock":
+            case BlockClassId.AttachedStemBlock:
                 if (direction == FeatureHelpers.ParseFace(state.GetProperty("facing")) && !IsStemFruit(state, neighbor))
                     return BlockStateProperties.GetState(StemFor(state)).WithProperty("age", 7);
 
                 return state.CanSurvive(level, position) ? state : air;
-            case "WallBannerBlock" or "WallSignBlock":
+            case BlockClassId.WallBannerBlock or BlockClassId.WallSignBlock:
                 // These drop when the block behind them isn't solid.
                 return direction == FeatureHelpers.ParseFace(state.GetProperty("facing")).Opposite()
                     && !level.GetBlock(position.Offset(direction)).IsSolid() ? air : state;
-            case "BannerBlock" or "StandingSignBlock":
+            case BlockClassId.BannerBlock or BlockClassId.StandingSignBlock:
                 return direction == BlockFace.Down && !level.GetBlock(position + Vector.Down).IsSolid() ? air : state;
-            case "CeilingHangingSignBlock":
+            case BlockClassId.CeilingHangingSignBlock:
                 return direction == BlockFace.Up
                     && !level.GetBlock(position + Vector.Up).IsFaceSturdy(BlockFace.Down, SupportType.Center)
                     ? air : state;
-            case "WallHangingSignBlock":
+            case BlockClassId.WallHangingSignBlock:
                 var sideways = FeatureHelpers.ParseFace(state.GetProperty("facing")).ClockWise();
                 return SameAxis(direction, sideways) && !WallHangingSignSupported(level, state, position, sideways)
                     ? air : state;
-            case "LeverBlock" or "ButtonBlock":
+            case BlockClassId.LeverBlock or BlockClassId.ButtonBlock:
                 return UpdateFaceAttached(level, state, position, direction);
-            case "LanternBlock" or "WeatheringLanternBlock":
+            case BlockClassId.LanternBlock or BlockClassId.WeatheringLanternBlock:
                 return UpdateLantern(level, state, position, direction);
-            case "RedstoneWireBlock":
+            case BlockClassId.RedstoneWireBlock:
                 return UpdateRedstoneWire(level, state, position, direction, neighbor);
-            case "RedstoneTorchBlock":
+            case BlockClassId.RedstoneTorchBlock:
                 return direction == BlockFace.Down && !level.GetBlock(position + Vector.Down).IsTopCenterSturdy() ? air : state;
-            case "RedstoneWallTorchBlock":
+            case BlockClassId.RedstoneWallTorchBlock:
                 return IsUnsupportedWallBlock(level, state, position, direction) ? air : state;
-            case "CarpetBlock" or "WoolCarpetBlock" or "FlowerBlock" or "TallGrassBlock"
-                or "SweetBerryBushBlock" or "BushBlock" or "SaplingBlock" or "CropBlock"
-                or "CarrotBlock" or "PotatoBlock" or "BeetrootBlock" or "StemBlock" or "MushroomBlock"
-                or "LilyPadBlock" or "FlowerBedBlock" or "FireflyBushBlock"
-                or "DryVegetationBlock" or "ShortDryGrassBlock"
-                or "TallDryGrassBlock" or "LeafLitterBlock" or "VegetationBlock" or "EyeblossomBlock"
-                or "WitherRoseBlock" or "AzaleaBlock" or "NetherFungusBlock" or "NetherRootsBlock" or "NetherSproutsBlock"
-                or "SeagrassBlock" or "SnowLayerBlock" or "HangingRootsBlock" or "SporeBlossomBlock"
-                or "CocoaBlock" or "CactusFlowerBlock":
+            case BlockClassId.CarpetBlock or BlockClassId.WoolCarpetBlock or BlockClassId.FlowerBlock or BlockClassId.TallGrassBlock
+                or BlockClassId.SweetBerryBushBlock or BlockClassId.BushBlock or BlockClassId.SaplingBlock or BlockClassId.CropBlock
+                or BlockClassId.CarrotBlock or BlockClassId.PotatoBlock or BlockClassId.BeetrootBlock or BlockClassId.StemBlock or BlockClassId.MushroomBlock
+                or BlockClassId.LilyPadBlock or BlockClassId.FlowerBedBlock or BlockClassId.FireflyBushBlock
+                or BlockClassId.DryVegetationBlock or BlockClassId.ShortDryGrassBlock
+                or BlockClassId.TallDryGrassBlock or BlockClassId.LeafLitterBlock or BlockClassId.VegetationBlock or BlockClassId.EyeblossomBlock
+                or BlockClassId.WitherRoseBlock or BlockClassId.AzaleaBlock or BlockClassId.NetherFungusBlock or BlockClassId.NetherRootsBlock or BlockClassId.NetherSproutsBlock
+                or BlockClassId.SeagrassBlock or BlockClassId.SnowLayerBlock or BlockClassId.HangingRootsBlock or BlockClassId.SporeBlossomBlock
+                or BlockClassId.CocoaBlock or BlockClassId.CactusFlowerBlock:
                 // Vegetation and carpets turn into air whenever they're updated without support.
                 return state.CanSurvive(level, position, rawBrightness) ? state : air;
-            case "KelpBlock":
+            case BlockClassId.KelpBlock:
                 if (direction == BlockFace.Up
                     && neighbor.RegistryId is BlockIds.Kelp or BlockIds.KelpPlant)
                 {

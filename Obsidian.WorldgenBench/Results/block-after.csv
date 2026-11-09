@@ -1,0 +1,23 @@
+# .NET 10.0.14; Microsoft Windows 10.0.22631; X64
+# 250 ms warmup per case; median of 7 samples; delegate/loop overhead included; setup excluded
+operation,iterations,ns/op,B/op
+IsRedstoneConductor/stone,2000000,1.87,0.00
+GetTickBehavior/stone,2000000,3.70,0.00
+BlockClass/stone,2000000,2.60,0.00
+IsSignalSource/stone,2000000,1.87,0.00
+IsSignalSource/wire,2000000,3.31,0.00
+IsGravityAffected/stone,2000000,2.26,0.00
+GetProperty/stone-waterlogged,2000000,7.64,0.00
+ParseProperty/wire-power,2000000,18.43,0.00
+WithProperty/wire-power,2000000,19.40,0.00
+NeighborTryGet/stone,2000000,2.74,0.00
+NeighborTryGet/wire,2000000,5.42,0.00
+RedstoneFor/stone,2000000,3.53,0.00
+RedstoneFor/wire,2000000,5.98,0.00
+ContactFor/air,2000000,2.78,0.00
+BlockEntityType/chest,2000000,2.21,0.00
+UpdateShape/stone,1000000,11.67,0.00
+UpdateShape/air,1000000,18.52,0.00
+Pipeline/solid-stone-change,20000,876.58,32.05
+Pipeline/toggle-15-dust,500,191517.60,18293.95
+Pipeline/toggle-30-dust,500,190686.80,18493.95
