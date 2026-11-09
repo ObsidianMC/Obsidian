@@ -59,8 +59,10 @@ Ordered by how much they should save for how little risk. "Measured" means the p
 *Done. The defect below was real: an observer facing an idle chest pulsed every four ticks.*
 
 The revision gate covers item changes. Consumed plugin `SetChanged()` calls also notify comparators, since a
-container may expose saved machine state through `GetAnalogOutput` without changing slots. Notification failures
-and bounded-drain drops retain the old comparator revision so the next block entity tick can retry.
+container may expose saved machine state through `GetAnalogOutput` without changing slots. The inventory revision
+and the plugin's `SetChanged()` generation are acknowledged only after delivery; notification failures and bounded
+drain drops leave either kind of change pending for the next block entity tick. Item access, the block entity pass
+and save consumption skip the same already-delivered pair, keeping the earliest notification without extra drains.
 
 *From the code. Small change, no behaviour change intended.*
 

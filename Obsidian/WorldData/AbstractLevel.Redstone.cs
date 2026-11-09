@@ -10,11 +10,11 @@ namespace Obsidian.WorldData;
 /// </summary>
 public abstract partial class AbstractLevel
 {
-    /// <summary>The observer's shape work while a command derives its block input, before committing it.</summary>
-    internal void PrepareObserverCommandPlacement(Vector position, IBlock state)
+    /// <summary>Derives a placed state's shape and scheduled work from its current neighbors.</summary>
+    internal IBlock DeriveNeighborShapes(Vector position, IBlock state)
     {
         lock (this.Fluids.TickLock)
-            RedstoneObserver.PrepareCommandPlacement(this.BlockUpdates, position, state);
+            return NeighborShapeDerivation.Derive(this, position, state);
     }
 
     // Vanilla's Direction.Plane.HORIZONTAL, the directions updateNeighbourForOutputSignal looks for comparators in.
@@ -106,13 +106,19 @@ public abstract partial class AbstractLevel
     /// Vanilla's <c>updateNeighbourForOutputSignal</c> for a container whose items changed: the comparators beside
     /// it, or behind a conductor beside it, hear of it and read it again. A double chest is one container to a
     /// comparator, so the comparators of its other half hear too. Remembers the revision they heard of (see
-    /// <c>ComparatorRevision</c>), so that the block entity tick tells them only of a change.
+    /// <c>ComparatorRevision</c> and <c>ComparatorChangeRevision</c>), so that item access, the block entity pass
+    /// and consumed SetChanged calls deliver each change once. Undelivered saved-field changes retry too.
     /// </summary>
     internal void UpdateComparatorsOf(ContainerBlockEntity container)
     {
         lock (this.Fluids.TickLock)
         {
             var revision = container.Inventory.Revision;
+            var changeRevision = container.ChangeRevision;
+            if (revision == container.ComparatorRevision
+                && (container.SavesOnAnyThread || changeRevision == container.ComparatorChangeRevision))
+                return;
+
             var dropped = this.BlockNotifications.DroppedWork;
 
             var position = container.BlockPosition;
@@ -126,7 +132,10 @@ public abstract partial class AbstractLevel
 
             // Keep the next-tick retry if notification delivery throws or hits the bounded drain's limit.
             if (this.BlockNotifications.DroppedWork == dropped)
+            {
                 container.ComparatorRevision = revision;
+                container.ComparatorChangeRevision = changeRevision;
+            }
         }
     }
 

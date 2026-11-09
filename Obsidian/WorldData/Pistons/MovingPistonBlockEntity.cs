@@ -127,9 +127,10 @@ internal sealed class MovingPistonBlockEntity : BlockEntity
         if (current is null || !PistonRules.IsMoving(current))
             return;
 
-        // The moved state is placed (the extended head, the retracted base, or a pushed block). Checked against the
-        // vanilla oracle: a finished retraction leaves the base in place.
-        await level.WriteAsync(position, this.movedState, notifyNeighbors: true);
+        // Derivation runs for every moved state: observers schedule their pulse, and fences reconnect even when
+        // none of the destination's neighbors changed. The captured piston scenarios cover both effects.
+        var placed = NeighborShapeDerivation.Derive(level, position, this.movedState);
+        await level.WriteAsync(position, placed, notifyNeighbors: true);
     }
 
     // Vanilla moveCollidedEntities / moveStuckEntities: entities in the moving block's path are pushed along it, and

@@ -263,7 +263,9 @@ public abstract partial class AbstractLevel
                 // players' clicks, and the container's own tick. Changes made through item access are told at the end
                 // of this tick (FlushItemAccessChangesAsync). An unchanged container tells nobody.
                 if (blockEntity is ContainerBlockEntity watched
-                    && watched.Inventory.Revision != watched.ComparatorRevision)
+                    && (watched.Inventory.Revision != watched.ComparatorRevision
+                        || (!watched.SavesOnAnyThread
+                            && watched.ChangeRevision != watched.ComparatorChangeRevision)))
                 {
                     this.UpdateComparatorsOf(watched);
                 }

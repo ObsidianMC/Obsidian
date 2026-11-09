@@ -13,6 +13,11 @@ replaces only what vanilla produced.
   work for the same changes; its recorded pulses guard scheduled-tick deduplication. The chest obstruction cases
   retain vanilla's stale comparator output when a solid block is placed
   above the chest and removed, including above either half of a double chest, without moving items.
+  The `piston_*observer` / `piston_observer_*` and `sticky_piston_pull_idle_observer` cases record pulses after a
+  pushed or pulled observer finishes moving, both watching unchanged air and ending beside pre-existing stone.
+  Movement finishes at tick 10 and the pulse runs at ticks 12–13; sticky retraction finishes at 22 and pulses at
+  24–25. `piston_fence_derives_connections` records a moved fence deriving its destination connections at tick 10,
+  so the pre-placement derivation is shared by all moved states, rather than special-casing observers.
 - `fluid_scenarios.json` (`VanillaFluids`) defines the box, setup fills, actions, dimension and checkpoint ticks; the
   capture records the checkpoints.
 - `daylight_detector.json` (`DaylightDetectorTests`) defines the clock times to sample; the capture records the

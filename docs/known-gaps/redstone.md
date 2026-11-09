@@ -19,7 +19,8 @@ the redstone lamp work (see [plugin content](../plugin-content.md#redstone)); th
   Solid-block obstruction above a single chest or either double-chest half leaves the comparator's output stale
   until another notification, as captured in vanilla; removing it alone does too. Observers use the shape owner
   through both update engines. Captured player placement facing air or stone schedules no tick; command placement
-  gets its initial pulse from state derivation before placement.
+  gets its initial pulse from state derivation before placement. Piston completion also derives the moved state:
+  pushed and pulled observers pulse even while watching unchanged air, as captured in `redstone_scenarios.json`.
 - **Game events.** Levers, buttons and pressure plates don't emit vanilla's `block_activate` and `block_deactivate`
   vibrations.
 - **Experiments.** The `redstone_experiments` feature's wire evaluator and update orientations aren't modelled.

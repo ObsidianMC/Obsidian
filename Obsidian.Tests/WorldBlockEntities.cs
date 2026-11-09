@@ -28,6 +28,7 @@ using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.Utilities;
 using Obsidian.WorldData;
+using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.Features;
 using System;
 using System.Collections.Generic;
@@ -478,6 +479,37 @@ public sealed class WorldBlockEntities : IDisposable
             // The loaded plugin has its own assembly copy. Its public method changes a saved field and calls
             // SetChanged; no slot or block state changes to accidentally wake the comparator.
             machine.GetType().GetMethod(nameof(ProbeMachine.SetOutput))!.Invoke(machine, [output]);
+            await AssertPublishedOutputAsync(output);
+        }
+
+        // Lose delivery after SetChanged was consumed, with unchanged items. Filling the bounded drain ahead
+        // of the comparator prevents a retained queue entry from accidentally repairing a missing retry.
+        var blocker = position + Vector.South * 3;
+        await context.World.SetBlockAsync(blocker, BlocksRegistry.Dirt);
+        var deliveryFailure = new FailingNotification();
+        context.World.Neighbors.Register(BlockIds.Dirt, deliveryFailure);
+        foreach (var (throwFirst, output) in new[] { (false, 5), (true, 9) })
+        {
+            deliveryFailure.ThrowNext = throwFirst;
+            for (var work = 0; work <= BlockNotificationPipeline.MaxWorkPerDrain; work++)
+                context.World.BlockNotifications.EnqueueNeighbor(blocker, new Vector(work, 64, -20));
+
+            machine.GetType().GetMethod(nameof(ProbeMachine.SetOutput))!.Invoke(machine, [output]);
+            if (throwFirst)
+            {
+                Assert.Throws<InvalidOperationException>(() => context.World.TakeBlockEntityChanges());
+                await context.World.BlockNotifications.DrainAsync();
+            }
+            else
+            {
+                context.World.TakeBlockEntityChanges();
+            }
+
+            await AssertPublishedOutputAsync(output);
+        }
+
+        async Task AssertPublishedOutputAsync(int output)
+        {
             for (var tick = 0; tick < 4; tick++)
                 await context.World.DoWorldTickAsync();
 
@@ -485,6 +517,22 @@ public sealed class WorldBlockEntities : IDisposable
             var dust = await context.World.GetBlockAsync(position + Vector.East * 2);
             Assert.Equal(output.ToString(), dust!.GetProperty("power"));
             Assert.Equal(output, machine.SavedData!.GetInt("output"));
+        }
+    }
+
+    private sealed class FailingNotification : INeighborChangedBehavior
+    {
+        internal bool ThrowNext { get; set; }
+
+        public ValueTask OnNeighborChangedAsync(NeighborChange change, IBlockChangeWorld world)
+        {
+            if (this.ThrowNext)
+            {
+                this.ThrowNext = false;
+                throw new InvalidOperationException("Injected notification failure");
+            }
+
+            return ValueTask.CompletedTask;
         }
     }
 

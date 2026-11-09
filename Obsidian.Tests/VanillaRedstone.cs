@@ -6,7 +6,7 @@ using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.Tests.Utilities;
 using Obsidian.WorldData;
-using Obsidian.WorldData.Redstone;
+using Obsidian.WorldData.BlockNotifications;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -170,7 +170,7 @@ public class VanillaRedstone
         public ValueTask SetBlockAsync(Vector position, IBlock block, IReadOnlyList<ScenarioItem> items)
         {
             Assert.Empty(items);
-            RedstoneObserver.PrepareCommandPlacement(this.world, position, block);
+            block = NeighborShapeDerivation.Derive(this.world, position, block);
             return this.world.Place(position, block);
         }
 
@@ -208,7 +208,7 @@ public class VanillaRedstone
 
         public async ValueTask SetBlockAsync(Vector position, IBlock block, IReadOnlyList<ScenarioItem> items)
         {
-            this.context.World.PrepareObserverCommandPlacement(position, block);
+            block = this.context.World.DeriveNeighborShapes(position, block);
             await this.context.World.SetBlockAsync(position, block, doBlockUpdate: true);
             if (items.Count == 0)
                 return;
