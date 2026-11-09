@@ -42,18 +42,25 @@ public partial class UseItemOnPacket
         if (!terrain.IsFree(mob.Dimension.CreateBBFromPosition(mob.Position)))
             return UseResult.Fail;
 
-        await level.SetBlockAsync(destination, BlocksRegistry.Water, true);
         mob.InitializeAi();
         mob.ReadSave(SavedBucketMob(mob, bucket));
         mob.PersistenceRequired = true;
-        level.SpawnEntity(mob);
+        if (!use.TryCommit(() =>
+        {
+            var current = terrain.GetBlock(destination);
+            if (current is null || !current.IsSameState(existing)
+                || !terrain.IsFree(mob.Dimension.CreateBBFromPosition(mob.Position)))
+                return false;
+
+            level.BlockUpdates.SetBlock(destination, BlocksRegistry.Water);
+            level.SpawnEntity(mob);
+            return true;
+        }, consumeItem: true, replacement: ItemsRegistry.GetSingleItem(ItemsRegistry.Bucket)))
+            return UseResult.Fail;
+
         level.EmitGameEvent(MobGameEvent.FluidPlace, (VectorD)destination + new VectorD(0.5, 0.5, 0.5), use.Player);
 
-        if (use.Player.GameMode != GameMode.Creative)
-        {
-            use.Player.Inventory.SetItem(use.HandSlot, ItemsRegistry.GetSingleItem(ItemsRegistry.Bucket));
-            await use.Player.SyncInventorySlotAsync(use.HandSlot);
-        }
+        await use.Player.SyncInventorySlotAsync(use.HandSlot);
 
         // Vanilla doesn't count these as uses on the block.
         use.AwardsItemUse = false;

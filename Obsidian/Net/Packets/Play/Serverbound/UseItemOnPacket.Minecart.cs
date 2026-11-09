@@ -12,12 +12,16 @@ public partial class UseItemOnPacket
         if (VehicleItems.MinecartFor(use.Item!.Holder) is not EntityType type)
             return UseResult.Pass;
 
-        var cart = VehicleItems.PlaceMinecart(use.Level, type, this.Position, use.Block, use.Item);
-        if (cart is null)
+        AbstractMinecart? cart = null;
+        if (!use.TryCommit(() =>
+        {
+            cart = VehicleItems.PlaceMinecart(use.Level, type, this.Position, use.Block, use.Item);
+            return cart is not null;
+        }, consumeItem: true))
             return UseResult.Fail;
 
-        use.Level.EmitGameEvent(MobGameEvent.EntityPlace, cart.Position, use.Player);
-        await use.ConsumeItemAsync();
+        use.Level.EmitGameEvent(MobGameEvent.EntityPlace, cart!.Position, use.Player);
+        await use.Player.SyncInventorySlotAsync(use.HandSlot);
 
         return UseResult.Success;
     }

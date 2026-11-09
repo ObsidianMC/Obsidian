@@ -94,6 +94,7 @@ public partial class UseItemOnPacket
             Player = user,
             Position = this.Position,
             Block = block,
+            BlockEntity = level.GetResidentBlockEntity(this.Position),
             Face = this.Face,
             Cursor = this.Cursor,
             Hand = this.Hand,
@@ -135,7 +136,6 @@ public partial class UseItemOnPacket
     private async ValueTask<UseResult> UseBlockAsync(BlockUse use)
     {
         var player = use.Player;
-        var block = use.Block;
         if (player.GameMode == GameMode.Spectator)
             return await SpectateAsync(use);
 
@@ -144,6 +144,9 @@ public partial class UseItemOnPacket
         if (!bypass)
         {
             var withItem = await UseWithItemAsync(use);
+            if (withItem == UseResult.Fail)
+                return withItem;
+
             if (withItem.ConsumesAction())
             {
                 await FireAsync(use, "item_used_on_block");
@@ -153,9 +156,12 @@ public partial class UseItemOnPacket
             var withoutItem = withItem == UseResult.TryWithEmptyHand && use.Hand == InteractionHand.MainHand
                 ? await UseWithoutItemAsync(use)
                 : UseResult.Pass;
+            if (withoutItem == UseResult.Fail)
+                return withoutItem;
+
             if (withoutItem.ConsumesAction())
             {
-                await player.FireProgressAsync("default_block_use", block: block, position: use.Position);
+                await player.FireProgressAsync("default_block_use", block: use.Block, position: use.Position);
                 return withoutItem;
             }
         }
@@ -195,6 +201,9 @@ public partial class UseItemOnPacket
         }
 
         var behavior = BlocksRegistry.GetUseItemOnBehavior(use.Block.RegistryId);
+        if (!use.CanCommit)
+            return UseResult.Fail;
+
         if (behavior is null)
             return UseResult.TryWithEmptyHand;
 
@@ -205,6 +214,9 @@ public partial class UseItemOnPacket
     private static ValueTask<UseResult> UseWithoutItemAsync(BlockUse use)
     {
         var behavior = BlocksRegistry.GetUseWithoutItemBehavior(use.Block.RegistryId);
+        if (!use.CanCommit)
+            return ValueTask.FromResult(UseResult.Fail);
+
         if (behavior is null)
             return ValueTask.FromResult(UseResult.Pass);
 

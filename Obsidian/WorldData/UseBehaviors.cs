@@ -1,4 +1,5 @@
 using Obsidian.API.Containers;
+using Obsidian.API.BlockEntities;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
 
@@ -57,6 +58,9 @@ internal sealed class BlockUse
     /// <summary>The clicked block, as it was read when the click arrived.</summary>
     public required IBlock Block { get; init; }
 
+    /// <summary>The resident block entity captured with the clicked state, if any.</summary>
+    public IBlockEntity? BlockEntity { get; init; }
+
     public required BlockFace Face { get; init; }
 
     /// <summary>Where on the block the click landed, from 0 to 1 on each axis.</summary>
@@ -95,13 +99,81 @@ internal sealed class BlockUse
     /// </summary>
     public bool AwardsItemUse { get; set; } = true;
 
-    /// <summary>Takes one of the used item, unless the player is in creative mode, and tells the client.</summary>
+    public bool CanCommit => this.Player.Alive && !this.Player.Respawning && this.Player.Level == this.Level;
+
+    /// <summary>
+    /// Commits a synchronous destination change and its hand exchange together. The tick lock comes first, then
+    /// the hand and destination inventories. Busy inventories refuse the click rather than waiting under the tick
+    /// lock. The callback must validate its destination before writing, and must not await or invoke plugin hooks.
+    /// Send packets and run awaited hooks only after this returns.
+    /// </summary>
+    public bool TryCommit(Func<bool> change, bool consumeItem = false, BaseContainer? destination = null,
+        ItemStack? replacement = null)
+    {
+        lock (this.Level.Fluids.TickLock)
+        {
+            if (!this.CanCommit
+                || this.Hand == InteractionHand.MainHand && this.Player.CurrentHeldItemSlot != this.HandSlot
+                || this.BlockEntity is BlockEntity { IsRemoved: true }
+                || !this.Level.BlockUpdates.GetBlock(this.Position).IsSameState(this.Block)
+                || !ReferenceEquals(this.Level.GetResidentBlockEntity(this.Position), this.BlockEntity)
+                || !this.Player.Inventory.TryLock(out var handLock))
+            {
+                this.ResyncHand = true;
+                return false;
+            }
+
+            using (handLock)
+            {
+                var held = this.Player.Inventory.GetItem(this.HandSlot);
+                if (!ReferenceEquals(held, this.Item)
+                    || held is not null && (held.Count <= 0 || !held.Equals(this.UsedItem))
+                    || consumeItem && held is null)
+                {
+                    this.ResyncHand = true;
+                    return false;
+                }
+
+                IDisposable? destinationLock = null;
+                if (destination is not null && !destination.TryLock(out destinationLock))
+                    return false;
+
+                using (destinationLock)
+                {
+                    if (destination?.ShowsRetired == true || !change())
+                        return false;
+
+                    if (consumeItem && this.Player.GameMode != GameMode.Creative)
+                    {
+                        if (replacement is null)
+                            this.Player.Inventory.RemoveItem(this.HandSlot, 1);
+                        else
+                            this.Player.Inventory.SetItem(this.HandSlot, replacement);
+
+                        this.ResyncHand = true;
+                    }
+
+                    return true;
+                }
+            }
+        }
+    }
+
+    /// <summary>Takes one of the captured item, refusing a hand that changed while the use awaited.</summary>
     public async ValueTask ConsumeItemAsync()
     {
         if (this.Player.GameMode == GameMode.Creative || !this.HasItem)
             return;
 
-        this.Player.Inventory.RemoveItem(this.HandSlot, 1);
+        using (this.Player.Inventory.Lock())
+        {
+            if (!this.CanCommit || !ReferenceEquals(this.Player.Inventory.GetItem(this.HandSlot), this.Item)
+                || !this.Item!.Equals(this.UsedItem))
+                return;
+
+            this.Player.Inventory.RemoveItem(this.HandSlot, 1);
+        }
+
         await this.Player.SyncInventorySlotAsync(this.HandSlot);
     }
 

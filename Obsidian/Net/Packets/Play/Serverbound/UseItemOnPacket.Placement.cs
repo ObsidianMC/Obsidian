@@ -106,7 +106,7 @@ public partial class UseItemOnPacket
             position,
             block,
             BlockUpdateFlags.All,
-            current => (pouring || current.CanBeReplaced()
+            current => use.CanCommit && (pouring || current.CanBeReplaced()
                     || VanillaPlacement.SlabCanBeReplaced(current, placed, replacesClicked, this.Face, upperHit))
                 && VanillaPlacement.SecondHalfFits(placeLevel.BlockUpdates, position, placed)
                 && ReferenceEquals(player.Inventory.GetItem(use.HandSlot), currentItem)

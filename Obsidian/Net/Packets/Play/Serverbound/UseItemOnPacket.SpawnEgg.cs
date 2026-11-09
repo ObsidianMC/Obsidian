@@ -38,61 +38,68 @@ public partial class UseItemOnPacket
         if (mob is null)
             return UseResult.Fail;
 
-        var id = EntityNbt.TypeId(mob);
-        if (block.Is(BlockIds.Spawner)
-            && await level.GetBlockEntityAsync(this.Position) is DataBlockEntity spawner)
+        if (!use.TryCommit(() =>
         {
-            spawner.Set(new NbtCompound("SpawnData")
+            var id = EntityNbt.TypeId(mob);
+            if (block.Is(BlockIds.Spawner)
+                && use.BlockEntity is DataBlockEntity spawner)
             {
-                new NbtCompound("entity") { new NbtTag<string>("id", id) }
-            });
-            spawner.Remove("SpawnPotentials");
-            spawner.SetChanged();
-            spawner.SendUpdate();
-        }
-        else
-        {
-            var clickedShape = BlockCollisionShapes.Get(level, this.Position, block);
-            var target = clickedShape.Count == 0 ? this.Position : this.Position + this.Face.ToVector();
-            if (level.IsOutsideBuildHeight(target.Y))
-                return UseResult.Fail;
+                spawner.Set(new NbtCompound("SpawnData")
+                {
+                    new NbtCompound("entity") { new NbtTag<string>("id", id) }
+                });
+                spawner.Remove("SpawnPotentials");
+                spawner.SetChanged();
+            }
+            else
+            {
+                var clickedShape = BlockCollisionShapes.Get(level, this.Position, block);
+                var target = clickedShape.Count == 0 ? this.Position : this.Position + this.Face.ToVector();
+                if (level.IsOutsideBuildHeight(target.Y))
+                    return false;
 
-            mob.EntityId = Server.GetNextEntityId();
-            mob.Position = (VectorD)target + new VectorD(0.5, 0, 0.5);
-            // SpawnEggItem / EntityType.getYOffset starts one block up and settles against block collisions.
-            // A click on the upper face can settle through the target and onto the clicked block below it.
-            var raised = mob.Dimension.CreateBBFromPosition(mob.Position + new VectorD(0, 1, 0));
-            var search = new BoundingBox((VectorD)target, (VectorD)target + new VectorD(1, 1, 1));
-            var descent = -1d;
-            if (target != this.Position && this.Face == BlockFace.Up)
-            {
-                search = new BoundingBox(search.Min - new VectorD(0, 1, 0), search.Max);
-                descent = -2;
+                mob.EntityId = Server.GetNextEntityId();
+                mob.Position = (VectorD)target + new VectorD(0.5, 0, 0.5);
+                // SpawnEggItem / EntityType.getYOffset starts one block up and settles against block collisions.
+                // A click on the upper face can settle through the target and onto the clicked block below it.
+                var raised = mob.Dimension.CreateBBFromPosition(mob.Position + new VectorD(0, 1, 0));
+                var search = new BoundingBox((VectorD)target, (VectorD)target + new VectorD(1, 1, 1));
+                var descent = -1d;
+                if (target != this.Position && this.Face == BlockFace.Up)
+                {
+                    search = new BoundingBox(search.Min - new VectorD(0, 1, 0), search.Max);
+                    descent = -2;
+                }
+
+                var terrain = new MobTerrain(level);
+                var collisions = terrain.GetCollisions(search).Where(shape =>
+                    shape.Max.X > search.Min.X && shape.Min.X < search.Max.X
+                    && shape.Max.Y > search.Min.Y && shape.Min.Y < search.Max.Y
+                    && shape.Max.Z > search.Min.Z && shape.Min.Z < search.Max.Z).ToArray();
+                var offset = EntityMovement.Clip(
+                    raised, new VectorD(0, descent, 0), collisions).Y;
+                mob.Position += new VectorD(0, 1 + offset, 0);
+                mob.Yaw = Random.Shared.NextSingle() * 360;
+                mob.InitializeAi();
+                var saved = EntityNbt.Save(mob)!;
+                foreach (var (name, value) in component.Data)
+                {
+                    if (name is not ("id" or "UUID" or "Pos" or "Motion" or "Rotation"))
+                        saved.Set(value);
+                }
+
+                mob.ReadNbt(saved);
+                level.SpawnEntity(mob);
+                level.EmitGameEvent(MobGameEvent.EntityPlace, mob.Position, player);
             }
 
-            var terrain = new MobTerrain(level);
-            var collisions = terrain.GetCollisions(search).Where(shape =>
-                shape.Max.X > search.Min.X && shape.Min.X < search.Max.X
-                && shape.Max.Y > search.Min.Y && shape.Min.Y < search.Max.Y
-                && shape.Max.Z > search.Min.Z && shape.Min.Z < search.Max.Z).ToArray();
-            var offset = EntityMovement.Clip(
-                raised, new VectorD(0, descent, 0), collisions).Y;
-            mob.Position += new VectorD(0, 1 + offset, 0);
-            mob.Yaw = Random.Shared.NextSingle() * 360;
-            mob.InitializeAi();
-            var saved = EntityNbt.Save(mob)!;
-            foreach (var (name, value) in component.Data)
-            {
-                if (name is not ("id" or "UUID" or "Pos" or "Motion" or "Rotation"))
-                    saved.Set(value);
-            }
+            return true;
+        }, consumeItem: true))
+            return UseResult.Fail;
 
-            mob.ReadNbt(saved);
-            level.SpawnEntity(mob);
-            level.EmitGameEvent(MobGameEvent.EntityPlace, mob.Position, player);
-        }
-
-        await use.ConsumeItemAsync();
+        if (use.BlockEntity is DataBlockEntity updatedSpawner && block.Is(BlockIds.Spawner))
+            updatedSpawner.SendUpdate();
+        await use.Player.SyncInventorySlotAsync(use.HandSlot);
         return UseResult.Success;
     }
 

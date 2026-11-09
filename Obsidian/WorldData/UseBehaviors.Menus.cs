@@ -142,6 +142,7 @@ internal static class BlockMenus
     internal static async ValueTask OpenAsync(IPlayer player, IBlock block, Vector position)
     {
         if (player.Level is not AbstractLevel level
+            || player is PlayerBase { Alive: false } or PlayerBase { Respawning: true }
             || BlocksRegistry.GetUseWithoutItemBehavior(block.RegistryId) is not IBlockMenu menu)
         {
             return;
@@ -152,6 +153,9 @@ internal static class BlockMenus
             return;
 
         container = await StoredContainerAsync(player, level, position, container);
+        if (player.Level != level || player is PlayerBase { Alive: false } or PlayerBase { Respawning: true })
+            return;
+
         await player.OpenInventoryAsync(container);
 
         // Like vanilla, a spectator's look inside counts for nothing.

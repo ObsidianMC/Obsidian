@@ -13,29 +13,36 @@ public partial class UseItemOnPacket
         if (use.Block.RegistryId is not BlockIds.Obsidian and not BlockIds.Bedrock)
             return UseResult.Fail;
 
-        var above = this.Position + Vector.Up;
-        var terrain = new MobTerrain(level);
-        if (level.IsOutsideBuildHeight(above.Y) || terrain.GetBlock(above)?.IsAir != true)
-            return UseResult.Fail;
-
-        var bounds = new BoundingBox((VectorD)above, (VectorD)above + new VectorD(1, 2, 1));
-        // Vanilla's AABB overlap, which boxes that only touch don't count as.
-        var occupied = level.GetEntitiesInRange((VectorD)above, 4)
-            .Any(entity => MobTerrain.Overlaps(bounds, entity.Dimension.CreateBBFromPosition(entity.Position)));
-        if (occupied)
-            return UseResult.Fail;
-
-        var crystal = new EndCrystal
+        EndCrystal? crystal = null;
+        if (!use.TryCommit(() =>
         {
-            Level = level,
-            EntityId = Server.GetNextEntityId(),
-            Position = (VectorD)above + new VectorD(0.5, 0, 0.5),
-            ShowBottom = false
-        };
-        level.SpawnEntity(crystal);
-        level.EmitGameEvent(MobGameEvent.EntityPlace, crystal.Position, use.Player);
+            var above = this.Position + Vector.Up;
+            var terrain = new MobTerrain(level);
+            if (level.IsOutsideBuildHeight(above.Y) || terrain.GetBlock(above)?.IsAir != true)
+                return false;
 
-        await use.ConsumeItemAsync();
+            var bounds = new BoundingBox((VectorD)above, (VectorD)above + new VectorD(1, 2, 1));
+            // Vanilla's AABB overlap, which boxes that only touch don't count as.
+            var occupied = level.GetEntitiesInRange((VectorD)above, 4)
+                .Any(entity => MobTerrain.Overlaps(bounds, entity.Dimension.CreateBBFromPosition(entity.Position)));
+            if (occupied)
+                return false;
+
+            crystal = new EndCrystal
+            {
+                Level = level,
+                EntityId = Server.GetNextEntityId(),
+                Position = (VectorD)above + new VectorD(0.5, 0, 0.5),
+                ShowBottom = false
+            };
+            level.SpawnEntity(crystal);
+            return true;
+        }, consumeItem: true))
+            return UseResult.Fail;
+
+        level.EmitGameEvent(MobGameEvent.EntityPlace, crystal!.Position, use.Player);
+
+        await use.Player.SyncInventorySlotAsync(use.HandSlot);
         return UseResult.Success;
     }
 }

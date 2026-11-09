@@ -1,6 +1,7 @@
 using Obsidian.API.Containers;
 using Obsidian.API.Inventory;
 using Obsidian.API.Events;
+using Obsidian.API.Crafting;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Serverbound;
@@ -23,7 +24,12 @@ internal static partial class UseBehaviors
             var level = use.Level;
             string? sound;
             lock (level.Fluids.TickLock)
+            {
+                if (!use.CanCommit || !level.BlockUpdates.GetBlock(use.Position).IsSameState(use.Block))
+                    return ValueTask.FromResult(UseResult.Fail);
+
                 sound = VanillaPlacement.Use(level.BlockUpdates, use.Position, use.Block, use.Player);
+            }
 
             if (sound is null)
                 return ValueTask.FromResult(UseResult.Pass);
@@ -115,45 +121,56 @@ internal static partial class UseBehaviors
             if (full || song < 0 || Jukebox(use) is not DataBlockEntity jukebox)
                 return UseResult.TryWithEmptyHand;
 
-            jukebox.Set(new ItemStack(use.Item!, 1).ToNbt("RecordItem"));
-            jukebox.Set("IsPlaying", true);
-            jukebox.Set("ObsidianSongElapsed", 0);
+            if (!use.TryCommit(() =>
+            {
+                if (jukebox.SnapshotData().HasTag("RecordItem"))
+                    return false;
 
-            var playing = use.Block.WithProperty("has_record", true);
-            await use.Level.SetBlockAsync(use.Position, playing, true);
+                jukebox.Set(new ItemStack(use.Item!, 1).ToNbt("RecordItem"));
+                jukebox.Set("IsPlaying", true);
+                jukebox.Set("ObsidianSongElapsed", 0);
+                use.Level.BlockUpdates.SetBlock(use.Position, use.Block.WithProperty("has_record", true));
+                return true;
+            }, consumeItem: true))
+                return UseResult.Fail;
+
+            await use.Player.SyncInventorySlotAsync(use.HandSlot);
             use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center);
             use.Level.StartJukebox(use.Position, song);
 
-            await use.ConsumeItemAsync();
             use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center, use.Player);
             use.Award("minecraft:play_record");
 
             return UseResult.Success;
         }
 
-        public async ValueTask<UseResult> UseWithoutItemAsync(BlockUse use)
+        public ValueTask<UseResult> UseWithoutItemAsync(BlockUse use)
         {
             if (use.Block.GetProperty("has_record") != "true")
-                return UseResult.Pass;
+                return ValueTask.FromResult(UseResult.Pass);
 
-            if (Jukebox(use) is DataBlockEntity jukebox
-                && jukebox.SnapshotData().TryGetTag<NbtCompound>("RecordItem", out var record)
-                && record.ItemFromNbt() is { IsAir: false } stack)
+            ItemStack? stack = null;
+            if (Jukebox(use) is not DataBlockEntity jukebox || !use.TryCommit(() =>
             {
-                await EjectAsync(use, jukebox, stack);
-            }
+                if (!jukebox.SnapshotData().TryGetTag<NbtCompound>("RecordItem", out var record)
+                    || record.ItemFromNbt() is not { IsAir: false } stored)
+                    return false;
 
-            return UseResult.Success;
+                stack = stored;
+                jukebox.Remove("RecordItem");
+                use.Level.BlockUpdates.SetBlock(use.Position, use.Block.WithProperty("has_record", false));
+                return true;
+            }))
+                return ValueTask.FromResult(UseResult.Fail);
+
+            Eject(use, stack!);
+            return ValueTask.FromResult(UseResult.Success);
         }
 
-        private static async ValueTask EjectAsync(BlockUse use, DataBlockEntity jukebox, ItemStack stack)
+        private static void Eject(BlockUse use, ItemStack stack)
         {
             var level = use.Level;
             level.StopJukebox(use.Position);
-            lock (jukebox.Data)
-                jukebox.Data.Remove("RecordItem");
-
-            await level.SetBlockAsync(use.Position, use.Block.WithProperty("has_record", false), true);
 
             var motion = new VectorD(
                 (Random.Shared.NextDouble() - 0.5) * 0.2,
@@ -184,8 +201,16 @@ internal static partial class UseBehaviors
     {
         public async ValueTask<UseResult> UseItemOnAsync(BlockUse use)
         {
-            if (!await use.Level.UseCampfireAsync(use.Player, use.Position, use.HandSlot))
+            if (use.BlockEntity is not CampfireBlockEntity campfire || !use.TryCommit(() =>
+            {
+                var recipe = use.Item is null ? null : use.Level.CookingRecipes.FindCooking(
+                    CraftingType.CampfireCooking, use.Item);
+                return recipe is not null && campfire.Place(use.Item!, recipe.CookingTime);
+            }, consumeItem: true, destination: campfire.Inventory))
                 return UseResult.TryWithEmptyHand;
+
+            await use.Player.SyncInventorySlotAsync(use.HandSlot);
+            campfire.SendUpdate();
 
             use.Award("minecraft:interact_with_campfire");
             use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center, use.Player);
@@ -208,8 +233,18 @@ internal static partial class UseBehaviors
                 return UseResult.TryWithEmptyHand;
 
             var used = use.Item!.Holder.UnlocalizedName;
-            if (!await use.Level.UseComposterAsync(use.Player, use.Position, use.Block, use.HandSlot))
+            if (!use.TryCommit(() =>
+            {
+                var layers = Composters.LayersOf(use.Item!);
+                if (layers is null)
+                    return false;
+
+                use.Level.Fill(use.Position, layers.Value);
+                return true;
+            }, consumeItem: true))
                 return UseResult.TryWithEmptyHand;
+
+            await use.Player.SyncInventorySlotAsync(use.HandSlot);
 
             use.Player.Statistics.Increment(used, type: "minecraft:used");
             use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center, use.Player);
@@ -222,7 +257,13 @@ internal static partial class UseBehaviors
             if (Composters.LevelOf(use.Block) != Composters.Ready)
                 return UseResult.Pass;
 
-            await use.Level.UseComposterAsync(use.Player, use.Position, use.Block, use.HandSlot);
+            if (!use.TryCommit(() =>
+            {
+                use.Level.TakeBoneMeal(use.Position);
+                return true;
+            }))
+                return UseResult.Fail;
+
             use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center, use.Player);
 
             return UseResult.Success;
@@ -257,7 +298,12 @@ internal static partial class UseBehaviors
             if (!charging)
                 return UseResult.TryWithEmptyHand;
 
-            await use.Level.UseRespawnAnchorAsync(use.Player, use.Position, use.Block, use.HandSlot);
+            if (!use.TryCommit(() => use.Level.BlockUpdates.SetBlock(use.Position,
+                use.Block.WithProperty("charges", charges + 1)), consumeItem: true))
+                return UseResult.Fail;
+
+            await use.Player.SyncInventorySlotAsync(use.HandSlot);
+            use.Level.BlockUpdates.PlaySound(use.Position, "minecraft:block.respawn_anchor.charge");
             use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center, use.Player);
 
             return UseResult.Success;
@@ -302,12 +348,21 @@ internal static partial class UseBehaviors
             if (!igniter || !use.Level.LevelData.GetBooleanRule("tnt_explodes"))
                 return UseResult.TryWithEmptyHand;
 
-            await use.Level.SetBlockAsync(use.Position, BlocksRegistry.Air, true);
-            PrimedTnt.Prime(use.Level, use.Position, use.Player);
+            if (!use.TryCommit(() =>
+            {
+                if (!use.Level.BlockUpdates.SetBlock(use.Position, BlocksRegistry.Air))
+                    return false;
+
+                PrimedTnt.Prime(use.Level, use.Position, use.Player);
+                ItemDamage.ApplyIgniterCost(use, use.Item!);
+                return true;
+            }))
+                return UseResult.Fail;
+
             use.Level.EmitGameEvent(MobGameEvent.PrimeFuse, use.Center, use.Player);
 
             var item = use.Item!;
-            await ItemDamage.UseIgniterAsync(use, item);
+            await use.Player.SyncInventorySlotAsync(use.HandSlot);
             use.Player.Statistics.Increment(item.Holder.UnlocalizedName, type: "minecraft:used");
 
             return UseResult.Success;
@@ -359,17 +414,18 @@ internal static partial class UseBehaviors
                 return UseResult.Fail;
             }
 
-            if (!use.Player.Alive || use.Player.Respawning
-                || !use.Level.BlockUpdates.GetBlock(use.Position).IsSameState(use.Block)
-                || !ReferenceEquals(use.Player.Inventory.GetItem(use.HandSlot), use.Item)
-                || use.Item is not { Count: > 0 })
+            if (use.BlockEntity is not LecternBlockEntity lectern || !use.TryCommit(() =>
+            {
+                if (lectern.Lectern.Book is not null)
+                    return false;
+
+                lectern.PlaceBook(use.Item!);
+                return true;
+            }, consumeItem: true, destination: lectern.Inventory))
                 return UseResult.Fail;
 
-            if (await use.Level.GetOrCreateBlockEntityAsync(use.Position) is not LecternBlockEntity lectern)
-                return UseResult.TryWithEmptyHand;
-
-            lectern.PlaceBook(use.Item!);
-            await use.ConsumeItemAsync();
+            use.Level.BlockUpdates.PlaySound(use.Position, "minecraft:item.book.put");
+            await use.Player.SyncInventorySlotAsync(use.HandSlot);
             use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center, use.Player);
 
             return UseResult.Success;

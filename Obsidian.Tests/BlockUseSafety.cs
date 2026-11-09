@@ -67,7 +67,7 @@ public sealed class BlockUseSafety
         }));
 
         var packet = BlockUpdates.UseOn(target, BlockFace.Up, new VectorF(0.5f, 0.5f, 0.5f));
-        await packet.UseAsync(context.Server, player);
+        Assert.Equal(UseResult.Fail, await packet.UseAsync(context.Server, player));
 
         Assert.True(requested);
         Assert.Same(book, player.GetHeldItem());

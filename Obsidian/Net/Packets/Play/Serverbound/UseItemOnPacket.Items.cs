@@ -72,6 +72,9 @@ public partial class UseItemOnPacket
             return UseResult.Pass;
         }
 
+        if (!use.CanCommit)
+            return UseResult.Fail;
+
         var result = UseResult.Pass;
         if (itemUsesOn.TryGetValue(item.Holder.Id, out var own))
             result = await own(this, use);
@@ -131,7 +134,7 @@ public partial class UseItemOnPacket
         if (hanging is ItemFrame frame)
             frame.Hang(hangAt, use.Face);
 
-        if (hanging is null || !await HangingEntity.PlaceAsync(hanging, level, use.Player, use.HandSlot))
+        if (hanging is null || !await HangingEntity.PlaceAsync(hanging, level, use.Player, use.HandSlot, use))
         {
             use.ResyncHand = true;
             return UseResult.Fail;
@@ -152,10 +155,10 @@ public partial class UseItemOnPacket
 
         if (item.Is(ItemsRegistry.EnderEye))
         {
-            if (!await level.Portals.TryInsertEyeAsync(use.Position))
+            if (!await level.Portals.TryInsertEyeAsync(use.Position, use))
                 return UseResult.Pass;
 
-            await use.ConsumeItemAsync();
+            await use.Player.SyncInventorySlotAsync(use.HandSlot);
             return UseResult.Success;
         }
 
@@ -164,18 +167,26 @@ public partial class UseItemOnPacket
         if (existing is not { IsAir: true } || level.IsOutsideBuildHeight(firePosition.Y))
             return UseResult.Pass;
 
-        var used = await level.Portals.TryIgniteAsync(firePosition, igniter: item);
+        var used = await level.Portals.TryIgniteAsync(firePosition, igniter: item, use: use);
         var fireItem = item.Holder.Id is ItemIds.FlintAndSteel or ItemIds.FireCharge;
 
         // Vanilla's BaseFireBlock.canBePlacedAt: an empty space that fire would survive in.
-        if (!used && fireItem && FireBlockBehavior.CanBePlaced(level.BlockUpdates, firePosition))
+        if (!used && fireItem)
         {
-            var fire = FireBlockBehavior.StateFor(level.BlockUpdates, firePosition);
-            await level.SetBlockAsync(firePosition, fire, true);
+            used = use.TryCommit(() =>
+            {
+                if (!level.BlockUpdates.GetBlock(firePosition).IsSameState(existing)
+                    || !FireBlockBehavior.CanBePlaced(level.BlockUpdates, firePosition))
+                    return false;
 
-            // Vanilla's FireBlock.onPlace: the fire's first tick, 30 + random(10) ticks on.
-            level.ScheduleBlockTick(firePosition, fire, 30 + Random.Shared.Next(10));
-            used = true;
+                var fire = FireBlockBehavior.StateFor(level.BlockUpdates, firePosition);
+                if (!level.BlockUpdates.SetBlock(firePosition, fire))
+                    return false;
+
+                level.ScheduleBlockTick(firePosition, fire, 30 + Random.Shared.Next(10));
+                ItemDamage.ApplyIgniterCost(use, item);
+                return true;
+            });
         }
 
         if (!used)
@@ -187,7 +198,7 @@ public partial class UseItemOnPacket
             level.EmitGameEvent(MobGameEvent.BlockPlace, use.Center, use.Player);
         }
 
-        await ItemDamage.UseIgniterAsync(use, item);
+        await use.Player.SyncInventorySlotAsync(use.HandSlot);
         return UseResult.Success;
     }
 
@@ -218,7 +229,7 @@ internal static class ItemDamage
     /// and breaks when worn out; anything else is used up. Creative players keep theirs, but eyes of ender are used
     /// up in any mode.
     /// </summary>
-    internal static async ValueTask UseIgniterAsync(BlockUse use, ItemStack item)
+    internal static void ApplyIgniterCost(BlockUse use, ItemStack item)
     {
         var player = use.Player;
         var slot = use.HandSlot;
@@ -240,7 +251,6 @@ internal static class ItemDamage
                 player.Inventory.RemoveItem(slot, 1);
         }
 
-        await player.SyncInventorySlotAsync(slot);
     }
 
     /// <summary>Whether a use damages the tool, which Unbreaking makes less likely.</summary>

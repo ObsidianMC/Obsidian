@@ -157,23 +157,52 @@ public abstract class HangingEntity : Entity, IPlayerInteractable
     /// <c>HangingEntityItem.useOn</c> does.
     /// </summary>
     /// <returns>Whether it was placed.</returns>
-    internal static async ValueTask<bool> PlaceAsync(HangingEntity entity, AbstractLevel level, PlayerBase player, int slot)
+    internal static async ValueTask<bool> PlaceAsync(HangingEntity entity, AbstractLevel level, PlayerBase player,
+        int slot, BlockUse? use = null)
     {
         entity.Level = level;
         entity.EntityId = Server.GetNextEntityId();
 
-        if (!await entity.SurvivesAsync(level) || !level.TrySpawnEntity(entity))
+        if (!await entity.SurvivesAsync(level))
             return false;
+
+        if (use is not null)
+        {
+            if (!use.TryCommit(() => entity.SurvivesLoaded(level) && level.TrySpawnEntity(entity), consumeItem: true))
+                return false;
+        }
+        else if (!level.TrySpawnEntity(entity))
+        {
+            return false;
+        }
 
         entity.PlaySound(entity.PlaceSound);
 
         if (player.GameMode != GameMode.Creative)
         {
-            player.Inventory.RemoveItem(slot, 1);
+            if (use is null)
+                player.Inventory.RemoveItem(slot, 1);
             await player.SyncInventorySlotAsync(slot);
         }
 
         return true;
+    }
+
+    private bool SurvivesLoaded(AbstractLevel level)
+    {
+        foreach (var cell in this.CoveredBlocks())
+        {
+            var behind = level.GameEventBlock(cell - this.Facing.ToVector());
+            var inside = level.GameEventBlock(cell);
+            if (behind is null || !behind.IsSolid() && !IsDiode(behind)
+                || inside is null || inside.IsSolid())
+                return false;
+        }
+
+        var bounds = this.BoundingBox;
+        return !level.GetNonPlayerEntitiesInRange(this.Position, 4)
+            .OfType<HangingEntity>()
+            .Any(other => !ReferenceEquals(other, this) && other.BoundingBox.Intersects(bounds));
     }
 
     public override void Write(INetStreamWriter writer)
