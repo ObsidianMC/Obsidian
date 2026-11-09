@@ -40,6 +40,7 @@ and where to start.
 
 ## Entities and players
 
+- [26.3 entities](26-3-entities.md)
 - [26.3 gameplay left out of the port](26-3-gameplay-left-out-of-the-port.md)
 - [Entities lost when an unloading save fails](entities-lost-when-an-unloading-save-fails.md)
 - [Entity behavior beyond 26.3 metadata](entity-behavior-beyond-26-3-metadata.md)
