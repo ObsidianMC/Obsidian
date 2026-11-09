@@ -167,6 +167,7 @@ public abstract partial class AbstractLevel
             if (!this.IsBlockTicking(position))
             {
                 this.openContainerLids.Remove(position);
+                this.containerLidOpeners.Remove(position);
                 this.inactiveContainerLids.Add(position);
                 this.nextInactiveContainerLidCheck = Math.Min(this.nextInactiveContainerLidCheck,
                     now + ContainerLidRecheckDelay);
@@ -178,11 +179,15 @@ public abstract partial class AbstractLevel
             if (block is null || !HasContainerOpeners(block))
             {
                 this.openContainerLids.Remove(position);
+                this.containerLidOpeners.Remove(position);
                 continue;
             }
 
             var count = counts.GetValueOrDefault(position);
             var previous = this.openContainerLids.GetValueOrDefault(position);
+            if (previous.Block != block.RegistryId)
+                this.containerLidOpeners.Remove(position);
+
             var wasOpen = previous.Block == block.RegistryId && previous.Count > 0;
             if (wasOpen != (count > 0))
             {
