@@ -119,7 +119,8 @@ internal static class LevelEnvironment
         }.ToFrozenDictionary();
 
     // Vanilla's biomes' own values of the attributes the server applies (data/minecraft/worldgen/biome/*.json): hot
-    // biomes melt snow golems, and patrols don't spawn in mushroom fields.
+    // biomes melt snow golems, fire burns out sooner in humid and high biomes, and patrols don't spawn in mushroom
+    // fields.
     private static readonly FrozenDictionary<string, FrozenDictionary<string, bool>> vanillaBiomeGameplay =
         new Dictionary<string, FrozenDictionary<string, bool>>
         {
@@ -130,9 +131,17 @@ internal static class LevelEnvironment
             ["minecraft:savanna_plateau"] = Melts(),
             ["minecraft:windswept_savanna"] = Melts(),
             ["minecraft:wooded_badlands"] = Melts(),
+            ["minecraft:bamboo_jungle"] = BurnsOut(),
+            ["minecraft:frozen_peaks"] = BurnsOut(),
+            ["minecraft:jagged_peaks"] = BurnsOut(),
+            ["minecraft:jungle"] = BurnsOut(),
+            ["minecraft:mangrove_swamp"] = BurnsOut(),
+            ["minecraft:snowy_slopes"] = BurnsOut(),
+            ["minecraft:swamp"] = BurnsOut(),
             ["minecraft:mushroom_fields"] = new Dictionary<string, bool>
             {
-                [CanPillagerPatrolSpawn] = false
+                [CanPillagerPatrolSpawn] = false,
+                [IncreasedFireBurnout] = true
             }.ToFrozenDictionary()
         }.ToFrozenDictionary();
 
@@ -235,6 +244,9 @@ internal static class LevelEnvironment
 
     private static FrozenDictionary<string, bool> Melts() =>
         new Dictionary<string, bool> { [SnowGolemMelts] = true }.ToFrozenDictionary();
+
+    private static FrozenDictionary<string, bool> BurnsOut() =>
+        new Dictionary<string, bool> { [IncreasedFireBurnout] = true }.ToFrozenDictionary();
 
     private const float WeatherSkyLightLevel = 4f;
     private const float RainSkyLightAlpha = 0.3125f;

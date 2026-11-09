@@ -391,13 +391,9 @@ public abstract partial class AbstractLevel
         return false;
     }
 
-    // Vanilla's setBlockAndUpdate with BaseFireBlock.getState, which schedules the fire's first tick.
-    private void SetLavaFire(Vector position)
-    {
-        var fire = FireBlockBehavior.StateFor(this.BlockUpdates, position);
-        this.BlockUpdates.SetBlock(position, fire);
-        this.BlockUpdates.ScheduleTick(position, fire, 30 + this.GrowthRandom.NextInt(10));
-    }
+    // Vanilla's setBlockAndUpdate with BaseFireBlock.getState; the fire's placement schedules its first tick.
+    private void SetLavaFire(Vector position) =>
+        this.BlockUpdates.SetBlock(position, FireBlockBehavior.StateFor(this.BlockUpdates, position));
 
     // Vanilla's canSpreadFireAround: the game rule's radius around a player that isn't a spectator, or everywhere.
     private bool CanSpreadFireAround(Vector position, List<VectorD> players)

@@ -48,11 +48,13 @@ Four defects found on the way are worse than a missing feature, because the bloc
 
 1. **Ender chests lose items.** Opening one creates a new empty container instead of the player's saved
    `EnderInventory` (`Obsidian/Events/MainEventHandler.cs:235`). Whatever goes in is gone when the window closes.
-2. **Fire from fireballs, explosions and end crystals never spreads or burns out.** Fire gets its first tick
-   scheduled where a player lights it (`UseItemOnPacket.cs:377`), where it spreads from other fire
-   (`FireBlockBehavior.cs:201`) and where lava lights it (`AbstractLevel.Growth.cs:395`). Fire has no on-place
-   behaviour to do it for any other source. Moving the scheduling into on-place must not schedule or draw twice
-   for those three.
+2. **Fixed: fire from fireballs, explosions and end crystals never spread or burned out.** Fire's first tick was
+   scheduled by hand where a player lit it, where it spread and where lava lit it, and by nothing else. Fire now
+   has vanilla's on-place behaviour (`OnPlaceBehaviors.FireBlock`), which schedules the tick for every placement
+   and draws its delay once from the level's random; the hand-written scheduling in `FireBlockBehavior` and
+   `AbstractLevel.Growth.cs` is gone. `UseItemOnPacket` still schedules once more after placing, which does nothing
+   (the tick is already scheduled) but draws from `Random.Shared`; that line can go. The `fire_ticks.json` capture
+   checks it.
 3. **Dispensers and droppers open as a 9×1 row** instead of 3×3 (`OpenScreenPacket.cs:27`), and shulker boxes open
    with the generic chest menu, which lets players put shulker boxes inside them.
 4. **An observer facing a container pulsed forever.** Fixed: the block entity tick sent a neighbour update around
@@ -278,7 +280,8 @@ member per Mojang class; the generator binds it.
   returns early for anything that isn't a sulfur spike.
 - **Budding amethyst, sculk catalysts** (spreading on mob deaths), **nylium, eyeblossoms, dried ghasts, coral
   dying, dirt paths, chorus plant survival, zombified piglins from portals.**
-- **Fire:** an on-place behaviour that schedules the first tick, and the draws in vanilla's order.
+- **Fire (done):** an on-place behaviour that schedules the first tick, and the draws in vanilla's order, checked
+  by the `fire_ticks.json` probe fixture.
 - **Turtle eggs** from the timeline and the `#sand` tag; **frogspawn** that hatches however it was placed.
 - **Furnaces:** unlock the recipe and fire `recipe_unlocked` when the result is taken.
 
@@ -287,8 +290,8 @@ draws, and neither does the missing weather pass, so the level's random sequence
 would draw. Captures of growth draws only match once the blocks ticked before them in the same chunk are done.
 Capture each behaviour through a Java probe with its own seeded random rather than through a whole-level scenario.
 
-Capture: a `random_ticks` Java probe fixture (state in, draws consumed and state out), and RCON scenarios for fire
-and dripstone.
+Capture: a `random_ticks` Java probe fixture (state in, draws consumed and state out), and an RCON scenario for
+dripstone. Fire turned out to fit a Java probe (`fire_ticks.json`), so it has no RCON scenario.
 
 Performance alongside: items 8 (tick only block entities that tick) and 4 (typed properties for leaves and crops).
 
@@ -489,7 +492,7 @@ adds.
 | Copper: oxidize | Works | Captured random draws, all 13 owners, connected doors/chests and retained block entities |
 | Leaves: decay | Works | |
 | Ice, snow layers: melt | Missing | No weather pass either |
-| Fire | Partial | Draws out of vanilla's order; fire from fireballs, explosions and end crystals never ticks |
+| Fire | Works | Captured (`fire_ticks.json`). Fire that isn't a player's doesn't light portals; soul fire placed off a soul fire base isn't put out on placement (`BaseFireBlock.onPlace` is unbound); fire a shape update destroys goes later in the tick |
 | Lava, water | Works | Flow is captured; lava's ignition isn't |
 | Farmland: hydrate | Works | |
 | Turtle eggs: hatch | Partial | Wrong time window; `Random.Shared`; sand and red sand only |
@@ -531,7 +534,7 @@ Statements the code contradicts, to correct in phase 0.
   bells is still true); the sources list (only trapped chests and lightning rods are still true); "detector rails
   read 0".
 - **`docs/known-gaps/plant-growth-beyond-saplings.md`:** "only saplings and the propagule do anything", "crops don't
-  grow on random ticks", "leaves don't decay", "no fire spread or flammability", and its "Where to start". Still
+  grow on random ticks", "leaves don't decay", and its "Where to start". Still
   true: ice, snow, copper, weather, bone meal on other plants.
 - **`docs/known-gaps/vanilla-blocks-reactions-to-block-updates.md`:** doors, trapdoors, rails and TNT "aren't
   modelled"; scheduled ticks of other vanilla blocks "do nothing"; "only pressure plates and wooden buttons react to

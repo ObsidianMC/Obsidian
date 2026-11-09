@@ -32,6 +32,8 @@ internal static class OnPlaceBehaviors
     internal static IOnPlaceBehavior MagmaBlock { get; } = new MagmaBlockBehavior();
 
     internal static IOnPlaceBehavior ComposterBlock { get; } = new ComposterBlockBehavior();
+
+    internal static IOnPlaceBehavior FireBlock { get; } = new FireBlockBehavior();
 }
 
 /// <summary>
