@@ -2939,6 +2939,260 @@
       "periodicCloseEvents": [
         "minecraft:container_close 0,0,0 none"
       ]
+    },
+    {
+      "name": "trigger_open_door",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_door"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:oak_door[half=upper]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "0,0,0=minecraft:oak_door[open=true];0,1,0=minecraft:oak_door[half=upper,open=true]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.wooden_door.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_open 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null,
+      "criteria": {
+        "default_open": {
+          "trigger": "minecraft:default_block_use",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:oak_door",
+                "properties": {
+                  "open": "true"
+                }
+              }
+            ]
+          }
+        },
+        "any_open": {
+          "trigger": "minecraft:any_block_use",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:oak_door",
+                "properties": {
+                  "open": "true"
+                }
+              }
+            ]
+          }
+        },
+        "default_closed": {
+          "trigger": "minecraft:default_block_use",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:oak_door",
+                "properties": {
+                  "open": "false"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "awardedCriteria": [
+        "default_open",
+        "any_open"
+      ]
+    },
+    {
+      "name": "trigger_dye_stack",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_sign",
+          "text": "Hello"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkSign": true,
+      "item": "minecraft:red_dye",
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:red_dye x1",
+      "signColor": "red",
+      "signGlowing": false,
+      "signWaxed": false,
+      "editor": null,
+      "entities": [],
+      "sounds": [
+        "minecraft:item.dye.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:red_dye 1"
+      ],
+      "menu": null,
+      "criteria": {
+        "item_before": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:match_tool",
+                "predicate": {
+                  "items": "minecraft:red_dye",
+                  "count": 2
+                }
+              }
+            ]
+          }
+        },
+        "item_after": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:match_tool",
+                "predicate": {
+                  "items": "minecraft:red_dye",
+                  "count": 1
+                }
+              }
+            ]
+          }
+        },
+        "any_after": {
+          "trigger": "minecraft:any_block_use",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:oak_sign"
+              },
+              {
+                "condition": "minecraft:match_tool",
+                "predicate": {
+                  "items": "minecraft:red_dye",
+                  "count": 1
+                }
+              }
+            ]
+          }
+        },
+        "any_before": {
+          "trigger": "minecraft:any_block_use",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:match_tool",
+                "predicate": {
+                  "items": "minecraft:red_dye",
+                  "count": 2
+                }
+              }
+            ]
+          }
+        }
+      },
+      "awardedCriteria": [
+        "item_before",
+        "any_after"
+      ]
+    },
+    {
+      "name": "trigger_sign_editor",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_sign"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkSign": true,
+      "result": "success_server",
+      "changes": "",
+      "hand": "empty",
+      "signColor": "black",
+      "signGlowing": false,
+      "signWaxed": false,
+      "editor": "front",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null,
+      "criteria": {
+        "default_sign": {
+          "trigger": "minecraft:default_block_use",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:oak_sign"
+              }
+            ]
+          }
+        },
+        "item_sign": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:oak_sign"
+              }
+            ]
+          }
+        },
+        "any_sign": {
+          "trigger": "minecraft:any_block_use",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:oak_sign"
+              }
+            ]
+          }
+        }
+      },
+      "awardedCriteria": [
+        "default_sign",
+        "any_sign"
+      ]
     }
   ],
   "version": "26.3"

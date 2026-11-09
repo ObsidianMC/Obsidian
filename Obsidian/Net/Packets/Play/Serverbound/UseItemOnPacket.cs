@@ -178,7 +178,8 @@ public partial class UseItemOnPacket
 
             if (withoutItem.ConsumesAction())
             {
-                await player.FireProgressAsync("default_block_use", block: use.Block, position: use.Position);
+                var current = await use.Level.GetBlockAsync(use.Position);
+                await player.FireProgressAsync("default_block_use", block: current, position: use.Position);
                 return withoutItem;
             }
         }
@@ -263,7 +264,11 @@ public partial class UseItemOnPacket
     {
         var player = use.Player;
         if (result.ConsumesAction())
-            await player.FireProgressAsync("any_block_use", item: use.UsedItem, position: use.Position);
+        {
+            var current = await use.Level.GetBlockAsync(use.Position);
+            var held = player.Inventory.GetItem(use.HandSlot);
+            await player.FireProgressAsync("any_block_use", item: held, block: current, position: use.Position);
+        }
 
         if (result.Swings())
             player.SwingForUse(use.Hand, use.Item, includeSelf: result == UseResult.SuccessServer);
@@ -275,8 +280,11 @@ public partial class UseItemOnPacket
         this.Acknowledge(player);
     }
 
-    private static ValueTask FireAsync(BlockUse use, string trigger) =>
-        use.Player.FireProgressAsync(trigger, item: use.UsedItem, block: use.Block, position: use.Position);
+    private static async ValueTask FireAsync(BlockUse use, string trigger)
+    {
+        var current = await use.Level.GetBlockAsync(use.Position);
+        await use.Player.FireProgressAsync(trigger, item: use.UsedItem, block: current, position: use.Position);
+    }
 
     // The clicked block and the one on the clicked face, as vanilla sends them after every click.
     private async ValueTask ResendBlocksAsync(BlockUse use)
