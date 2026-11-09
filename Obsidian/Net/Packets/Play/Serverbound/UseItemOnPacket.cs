@@ -1,4 +1,4 @@
-﻿using Obsidian.API.Blocks;
+using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -68,12 +68,18 @@ public partial class UseItemOnPacket
         if (player is not Player user || user.Level is not AbstractLevel level)
             return null;
 
+        if (!user.Alive || user.Respawning)
+        {
+            this.Acknowledge(user);
+            return null;
+        }
+
         // Like vanilla's handleUseItemOn, a click out of reach, beyond the clicked block or outside the build height
         // is acknowledged and otherwise ignored.
         var block = this.InReach(user) && !level.IsOutsideBuildHeight(this.Position.Y)
             ? await level.GetBlockAsync(this.Position)
             : null;
-        if (block is null)
+        if (block is null || !user.Alive || user.Respawning)
         {
             this.Acknowledge(user);
             return null;
