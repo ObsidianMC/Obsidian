@@ -7,7 +7,7 @@ the redstone lamp work (see [plugin content](../plugin-content.md#redstone)); th
 - **Consumers.** Doors, trapdoors and fence gates, pistons, note blocks, powered, activator and detector rails, TNT,
   bells and copper bulbs don't react to power. Hoppers lock, droppers and dispensers fire, and crafters craft (see
   [item access](item-access-beyond-containers.md)).
-- **Sources.** Observers, daylight detectors, target blocks, trapped chests, tripwire hooks, detector rails,
+- **Sources.** Daylight detectors, target blocks, trapped chests, tripwire hooks, detector rails,
   lightning rods and sculk sensors give no power (a lectern pulses as its page turns), though dust connects to them as to any signal source.
 - **Analog outputs.** Comparators read 0 from jukeboxes, chiseled bookshelves, decorated pots,
   shelves, command blocks, sculk sensors, detector rails, creaking hearts, copper bulbs, copper golem statues and

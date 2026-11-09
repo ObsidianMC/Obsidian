@@ -5,7 +5,10 @@ server. Each fixture in `Obsidian.Tests/Assets` is its own input: it holds every
 replaces only what vanilla produced.
 
 - `redstone_scenarios.json` (`VanillaRedstone`) defines each scenario's box, setup, actions, reloads, entity contacts
-  and arrows; the capture records a checkpoint per tick and each reload's `ticks`.
+  and arrows; the capture records a checkpoint per tick and each reload's `ticks`. A setup placement's `items` (slot,
+  id and count) go into its block entity, as the `/setblock`'s `Items` data. Scenarios marked `level` need block
+  entities (containers and hoppers), so the replay runs them on a whole level of a test server, with a player beside
+  the box, instead of on the redstone test world; they can't use reloads, entities or arrows.
 - `fluid_scenarios.json` (`VanillaFluids`) defines the box, setup fills, actions, dimension and checkpoint ticks; the
   capture records the checkpoints.
 - `daylight_detector.json` (`DaylightDetectorTests`) defines the clock times to sample; the capture records the
@@ -179,6 +182,9 @@ This uses the server of the Minecraft version `Obsidian.csproj` targets, from th
 [vanilla captures](vanilla-captures.md#the-vanilla-cache)), and needs Java 25. The sulfur capture takes about 30 seconds.
 To add a scenario, add its definition with placeholder checkpoints (the redstone capture records as many ticks as the
 scenario has checkpoints) and capture again; the tests pick it up.
+
+For redstone, `CaptureCases` accepts exact `+`-separated scenario names and records only those; the other
+scenarios keep what they hold.
 
 For sulfur, `CaptureCases` accepts exact scenario names separated by `+`. It replaces only those cases' checkpoints
 and skips the Java probes. Other scenarios retain their stored absolute times and are replayed independently.

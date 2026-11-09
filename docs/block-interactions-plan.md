@@ -37,7 +37,7 @@ The per-line status is in [the appendix](#appendix-a-status-of-every-line).
 dandelions and the poplar sapling. Apart from placing a straw bed, none of it works yet (see section 10 of the
 appendix).
 
-Two limits on these numbers. Parity is mostly unproven: only redstone (15 scenarios), fluids, daylight detectors,
+Two limits on these numbers. Parity is mostly unproven: only redstone (20 scenarios), fluids, daylight detectors,
 block transformers, block item placement, note blocks and door use are replayed against captured vanilla output, and the rest has
 hand-written tests or none. And a few vanilla details below come from memory rather than the jar; they're marked
 "confirm by capture".
@@ -55,10 +55,10 @@ Four defects found on the way are worse than a missing feature, because the bloc
    for those three.
 3. **Dispensers and droppers open as a 9×1 row** instead of 3×3 (`OpenScreenPacket.cs:27`), and shulker boxes open
    with the generic chest menu, which lets players put shulker boxes inside them.
-4. **An observer facing a container probably pulses forever.** The block entity tick sends a neighbour update around
-   every container every tick (`AbstractLevel.BlockEntities.cs:262`), and observers react to neighbour updates from
-   the block they face rather than to its state changing (`RedstoneObserver.cs:43`). This is from reading the code,
-   not from running it. Performance item 1 removes the per-tick update; phase 4 moves observers onto shape updates.
+4. **An observer facing a container pulsed forever.** Fixed: the block entity tick sent a neighbour update around
+   every container every tick, and observers reacted to neighbour updates from the block they face. Containers now
+   tell only comparators, only when their items change (performance item 1), and observers react to shape updates.
+   Captured in `redstone_scenarios.json`.
 
 Two more from the first audit were fixed by #695 before this plan started: unwaxed copper doors and trapdoors
 now open by hand, and nether wart only plants on blocks that support it.
@@ -239,14 +239,13 @@ that changes when they fire.
 
 ### Phase 4: redstone leftovers (M)
 
-Section 7 is 27 of 33 working. What's left:
+Section 7 is 28 of 33 working. What's left:
 
 - **Dispenser item behaviours** (the largest piece). Only boats and minecarts dispense; everything else drops as an
   item. Add a registry keyed by item, called from `RedstoneDispenser.Fire`: projectiles, fire charges, buckets,
   bone meal, flint and steel, TNT, shears, armor, shulker boxes, pumpkins and skulls, bottles, honeycomb, spawn
   eggs, fireworks, glowstone into anchors. Many reuse phase 2's behaviours (cauldrons, hives, waxing), so this
   follows phase 2.
-- **Observers** react to the shape update from the block they face, not to neighbour updates.
 - **Trapped chests** give power from their viewer count (`AbstractLevel.ContainerLids.cs:179` already counts).
 - **Comparator outputs that read 0:** jukebox, chiseled bookshelf, decorated pot, copper bulb, sculk sensors,
   command block, creaking heart, copper golem statue, shelf. Cats on chests don't block the reading.
@@ -255,11 +254,12 @@ Section 7 is 27 of 33 working. What's left:
 - **Sounds and events:** piston contract sound, copper bulb sounds, slime blocks launching entities off pistons.
 - **Move the consumers onto a generated neighbour-changed hook**, off the name-keyed dictionaries.
 
-Capture: more scenarios in `redstone_scenarios.json`. Doors, TNT, rails, crafters, droppers and hoppers work but have
-no capture; add one each while here. The hopper timings are reasoned from the jar, not captured.
+Capture: more scenarios in `redstone_scenarios.json`. Doors, TNT, rails, crafters and droppers work but have no
+capture; add one each while here. Hoppers pulling from a chest are captured (`hopper_feeds_comparator`), pushing
+isn't. Scenarios marked `level` replay on a whole test level, for blocks that need block entities.
 
-Performance alongside: items 1 (per-tick comparator updates) and 4 (typed properties for dust, repeaters,
-comparators). Items 5 and 6 are their own PRs after this phase.
+Performance alongside: item 4 (typed properties for dust, repeaters, comparators). Item 1 is done. Items 5 and 6
+are their own PRs after this phase.
 
 ### Phase 5: ticking (L)
 
@@ -457,8 +457,8 @@ adds.
 | Line | Status | What's left |
 |---|---|---|
 | Dust, torches, burnout, repeaters (delay, lock), comparators (compare, subtract) | Works | Captured (`redstone_scenarios.json`) |
-| Comparators: read containers | Works | Several blocks read 0 (phase 4); unopened loot containers read stored contents on purpose |
-| Observers | Partial | React to neighbour updates, not the watched block's state |
+| Comparators: read containers | Works | Captured, through conductors and double chests too. Several blocks read 0 (phase 4); unopened loot containers read stored contents on purpose |
+| Observers | Works | Captured, including containers and state changes without neighbour updates |
 | Pistons, sticky pistons | Works | No contract sound; slime doesn't launch entities; captured for the basic cases only |
 | Redstone lamps | Works | |
 | Copper bulbs | Works | No sounds; comparator reads 0 |
