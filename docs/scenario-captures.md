@@ -216,6 +216,19 @@ replaces only what vanilla produced.
   An optional `dimension` supplies that dimension type's environment attributes; optional `actions` are subsequent
   `UPDATE_ALL` writes. `findTip` takes `maxLength` and `includeMerged` and records the returned position or null.
 
+- `block_use.json` (`VanillaBlockUse.ReplayBlockUseReference`) records what using a block does, from
+  `Java/BlockUseFixtures.java`. Like the placement probe it runs a dedicated server of its own in a flat world of air,
+  and each case uses its main hand's item through `ServerPlayerGameMode.useItemOn`; the area's chunks are forced, so
+  block events run as a tick runs them. A case names its blocks, the clicked face, the item and count, the off hand,
+  the game mode and sneaking. It records the result (which decides the swing), the blocks that changed, the hand,
+  the entities that appeared, the sounds, level events and block events a second player beside the target received,
+  the game events within 16 blocks (with their source), the statistics awarded and the menu opened, and when a menu
+  opened, what closing it changed and played. The replay drives `UseItemOnPacket` in one world, with full sky light
+  as the capture's open sky has, runs the queued entity actions and the tick's block events, and checks swings from
+  the result. The 78 cases cover every right-click the dispatcher handles; mob ambient sounds aren't compared (see
+  [mob ambient sounds](known-gaps/mob-ambient-sounds.md)).
+
+
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.
 
@@ -243,6 +256,10 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=fire
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=ticking_blocks
+
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=block_use
+
+
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur -p:CaptureCases=spike_shatters_after_falling+review_spike_pending_fall_keeps_frustum
 ```
@@ -275,7 +292,8 @@ Java probes. No RCON server is started and no other fixture is changed. Its sour
 instrument dumper are separate so editing these probes does not regenerate unrelated assets.
 
 The `placement` capture takes about 10 seconds after the server starts and re-records every item; to add a context,
-add it to `contexts` and capture again.
+add it to `contexts` and capture again. The `block_use` capture re-records every case in a few seconds; to add one,
+add its inputs to `cases` and capture again.
 
 A `structure_pieces` case with `captureReferences: true` also records `referenceChunks`: the saved
 `structures.References` from vanilla's chunk serializer at STRUCTURE_REFERENCES, across its bounding box plus
@@ -287,7 +305,8 @@ capture takes about 15 seconds after the server starts. `StructurePieceFixtures.
 other dumpers, so editing it regenerates the assets once.
 
 The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory>
-<scratch directory> <test assets directory> [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+placement]
+<scratch directory> <test assets directory>
+[redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+placement+block_use]
 [case names]`.
 
 ## How it captures

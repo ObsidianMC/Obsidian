@@ -44,6 +44,7 @@ and where to start.
 - [26.3 gameplay left out of the port](26-3-gameplay-left-out-of-the-port.md)
 - [Entities lost when an unloading save fails](entities-lost-when-an-unloading-save-fails.md)
 - [Entity behavior beyond 26.3 metadata](entity-behavior-beyond-26-3-metadata.md)
+- [Mob ambient sounds](mob-ambient-sounds.md)
 - [Movement and swing details](movement-and-swing-details.md)
 - [Plugin entities](plugin-entities.md)
 - [Saved passenger trees and leads](saved-passenger-trees-and-leads.md)

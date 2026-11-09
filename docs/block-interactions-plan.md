@@ -387,10 +387,10 @@ adds.
 
 | Line | Status | What's left |
 |---|---|---|
-| Wooden and copper doors and trapdoors, fence gates: open and close | Works | Feedback; sneaking with empty hands is refused; copper has no capture |
-| Levers | Works | Feedback |
-| Buttons | Works | Feedback; no capture of press and release |
-| Note blocks | Works | Custom player-head sounds; refused in adventure mode |
+| Wooden and copper doors and trapdoors, fence gates: open and close | Works | Captured (`block_use`) |
+| Levers | Works | Captured |
+| Buttons | Works | Press captured; the release isn't |
+| Note blocks | Works | Custom player-head sounds |
 | Repeaters, comparators, daylight detectors: toggle by hand | Works | Daylight detector's adventure rule unconfirmed |
 | Redstone ore lights up | Missing | Use and step-on; the random tick that turns lit ore off works (`ticking_blocks.json`) |
 | Bells ring | Missing | No activation at all; the block event queue already carries bell events |
@@ -401,14 +401,14 @@ adds.
 
 | Line | Status | What's left |
 |---|---|---|
-| Chests, double chests | Works | Obstruction is section 9's line; lock enforcement; feedback |
+| Chests, double chests | Works | Obstruction is section 9's line; lock enforcement |
 | Trapped chests | Partial | No redstone signal from viewers |
-| Ender chests | Partial | **Not the player's inventory: items are lost** (`Events/MainEventHandler.cs:235`); no sound |
-| Barrels | Partial | Never sets `open` |
-| Shulker boxes | Partial | Generic chest menu, so shulkers nest; no lid room check |
-| Hoppers | Works | Feedback |
-| Dispensers, droppers | Partial | 9×1 menu instead of 3×3 (`Net/Packets/Play/Clientbound/OpenScreenPacket.cs:27`) |
-| Furnaces, blast furnaces, smokers, brewing stands | Works | Feedback |
+| Ender chests | Works | Captured |
+| Barrels | Works | Captured |
+| Shulker boxes | Partial | No lid room check |
+| Hoppers | Works | |
+| Dispensers, droppers | Works | Captured |
+| Furnaces, blast furnaces, smokers, brewing stands | Works | |
 | Chiseled bookshelves | Missing | No use handler; saved books only drop on break |
 | Decorated pots | Partial | Break and save work; no insertion, wobble, hopper access or comparator |
 
@@ -418,13 +418,13 @@ adds.
 |---|---|---|
 | Crafting tables | Works | |
 | Enchanting tables | Works | No sound; offers not captured |
-| Anvils (all three), grindstones, stonecutters | Works | Feedback; results not captured |
+| Anvils (all three), grindstones, stonecutters | Works | Results not captured |
 | Smithing tables | Works | Trim material from a fixed list, not `provides_trim_material` |
 | Looms | Works | Built-in patterns only |
 | Cartography tables | Works | Capacity check stricter than vanilla |
-| Lecterns: books and pages | Works | Feedback |
+| Lecterns: books and pages | Works | |
 | Beacons | Works | No `construct_beacon`; pyramid measured at once |
-| Jukeboxes | Works | Comparator reads 0; refused in adventure mode |
+| Jukeboxes | Works | Comparator reads 0 |
 | End portal frames | Works | Portal-opening sound sent locally, not globally |
 | Respawn anchors: charge, set respawn | Works | Explodes next to water, unlike vanilla; no set-spawn sound |
 | Lodestones | Missing | The tracker component exists; nothing binds a compass |
@@ -597,5 +597,5 @@ To confirm by capture or by running a server before the work that depends on it:
   shrieker's darkness and cooldown rules.
 - Whether survival players may change a spawner with a spawn egg in 26.3, and whether creative mode consumes eyes of
   ender.
-- How 26.3 routes honeycomb waxing, and what the issue means by "vines trim" (stopping a growing vine head, or
-  shearing wall vines).
+- What the issue means by "vines trim" (stopping a growing vine head, or shearing wall vines). Honeycomb waxing is
+  settled: `HoneycombItem.useOn` (batch E).
