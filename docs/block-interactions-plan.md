@@ -157,6 +157,8 @@ The foundation for sections 1 to 5 and 9.
    branches check today), spectator and adventure rules, the sneak bypass (`BypassesBlockUse`, which the door, music
    and menu branches replace with a blanket sneak check), the block's use, the item's use on the block, placement,
    the acknowledgement.
+   Adventure mode still runs block interactions and plugin item callbacks. Vanilla item uses and item placement
+   are refused until Obsidian evaluates `can_place_on`, including where that predicate would permit them.
 3. **One completion step** for what every interaction owes when it succeeds, driven by the result and by the
    behaviour: the `minecraft:used` statistic, custom statistics such as `interact_with_furnace` and `open_chest`,
    the `item_used_on_block` trigger, the game event, and the swing. This closes the "no statistic, no game event"

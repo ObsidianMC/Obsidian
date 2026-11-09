@@ -20,9 +20,9 @@ What isn't covered yet:
   flower bed or leaf litter used on one of its kind adds to it, a vine or glow lichen gains a face, a slab completes a
   slab, and snow layers stack. `UseItemOnPacket` only handles slabs this way; the block placements already add to a
   block they replace.
-- **Adventure mode.** Vanilla lets an adventure player use an item on a block, placing included, only on blocks the
-  item's `can_place_on` allows. Obsidian doesn't evaluate those predicates yet, so adventure players don't use items
-  on blocks at all, even where `can_place_on` would let them.
+- **Adventure mode.** Block interactions and plugin item callbacks still run. Obsidian refuses vanilla item uses
+  on blocks and item placement until it evaluates the item's `can_place_on` predicates, including where those
+  predicates would permit the use.
 - **Extending scaffolding.** Vanilla's `ScaffoldingBlockItem` places scaffolding along a scaffolding tower or bridge
   that's clicked. Obsidian places it where it was clicked, and refuses it where nothing would hold it.
 - **Random ages.** Kelp and weeping, twisting and cave vines take an age from the level's random, which Obsidian draws

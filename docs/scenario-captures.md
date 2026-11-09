@@ -225,7 +225,8 @@ replaces only what vanilla produced.
   the game events within 16 blocks (with their source), the statistics awarded and the menu opened, and when a menu
   opened, what closing it changed and played. The replay drives `UseItemOnPacket` in one world, with full sky light
   as the capture's open sky has, runs the queued entity actions and the tick's block events, and checks swings from
-  the result. The 78 cases cover every right-click the dispatcher handles; mob ambient sounds aren't compared (see
+  the result. The 91 cases cover the dispatcher, sign applications and editing, advancement context, use swing charge and
+  container close sources; mob ambient sounds aren't compared (see
   [mob ambient sounds](known-gaps/mob-ambient-sounds.md)).
 
 
@@ -292,8 +293,12 @@ Java probes. No RCON server is started and no other fixture is changed. Its sour
 instrument dumper are separate so editing these probes does not regenerate unrelated assets.
 
 The `placement` capture takes about 10 seconds after the server starts and re-records every item; to add a context,
-add it to `contexts` and capture again. The `block_use` capture re-records every case in a few seconds; to add one,
-add its inputs to `cases` and capture again.
+add it to `contexts` and capture again. For `block_use`, add inputs to `cases` and use `CaptureCases` with exact
+`+`-separated names to record only the added cases. A setup's `text` seeds both sign faces, and `handUsed: offhand`
+selects the other hand. Optional checks record sign text flags and editor, attack charge after a started and a
+refused swing, explicit and periodic container close sources, and awarded advancement criteria. The fixture lists
+location predicate terms in Obsidian's existing format; the probe converts them to 26.3's `all_of` and `match_block`
+encoding before registering them with vanilla's advancement system.
 
 A `structure_pieces` case with `captureReferences: true` also records `referenceChunks`: the saved
 `structures.References` from vanilla's chunk serializer at STRUCTURE_REFERENCES, across its bounding box plus
