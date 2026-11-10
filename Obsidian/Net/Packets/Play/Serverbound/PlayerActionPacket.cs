@@ -42,6 +42,13 @@ public partial class PlayerActionPacket
             await player.StabAsync();
             return;
         }
+        if (player is PlayerBase actor
+            && Status is PlayerActionStatus.StartedDigging or PlayerActionStatus.FinishedDigging
+                or PlayerActionStatus.ChangeDestroyDirection or PlayerActionStatus.CancelledDigging)
+        {
+            actor.QueueBlockAcknowledgement(this.Sequence);
+        }
+
         if (await player.Level.GetBlockAsync(Position) is not IBlock block)
             return;
 
@@ -110,9 +117,7 @@ public partial class PlayerActionPacket
             case PlayerActionStatus.StartedDigging:
             case PlayerActionStatus.ChangeDestroyDirection:
             case PlayerActionStatus.CancelledDigging:
-                if (player is PlayerBase actor)
-                    actor.QueueBlockAcknowledgement(this.Sequence);
-                else
+                if (player is not PlayerBase)
                     player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
                 break;
             case PlayerActionStatus.FinishedDigging:

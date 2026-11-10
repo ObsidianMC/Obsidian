@@ -33,9 +33,8 @@ public partial class MainEventHandler
         var world = args.Level;
         var location = args.Location;
 
-        if (player is PlayerBase actor)
-            actor.QueueBlockAcknowledgement(sequence);
-        else
+        // Network players queued this sequence at receipt; a plugin block break may complete on a later tick.
+        if (player is not PlayerBase)
             player.SendPacket(new BlockChangedAckPacket { SequenceID = sequence });
 
         if (player.Level != world)

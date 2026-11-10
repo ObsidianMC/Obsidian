@@ -7,7 +7,6 @@ public partial class PlayerBase
 {
     private readonly Lock blockAcknowledgementLock = new();
     private int pendingBlockSequence = -1;
-    private int acknowledgedBlockSequence = -1;
 
     /// <summary>
     /// Records the highest received block prediction sequence. Vanilla acknowledges that maximum once per tick.
@@ -23,11 +22,8 @@ public partial class PlayerBase
     {
         lock (this.blockAcknowledgementLock)
         {
-            if (this.pendingBlockSequence > this.acknowledgedBlockSequence)
-            {
+            if (this.pendingBlockSequence >= 0)
                 this.SendPacket(new BlockChangedAckPacket { SequenceID = this.pendingBlockSequence });
-                this.acknowledgedBlockSequence = this.pendingBlockSequence;
-            }
 
             this.pendingBlockSequence = -1;
         }
