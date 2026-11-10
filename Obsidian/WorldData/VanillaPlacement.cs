@@ -108,28 +108,12 @@ internal static class VanillaPlacement
     private static bool IsWater(IBlock block) => block.GetFluid() is FluidKind.Water or FluidKind.FlowingWater;
 
     /// <summary>
-    /// Vanilla <c>updateShape</c> for doors (each half follows the other, and goes without it or its support) and
-    /// chests (pairing up with a chest placed beside, and back to single when it goes).
+    /// Vanilla <c>updateShape</c> for chests (pairing up with a chest placed beside, and back to single when it goes).
+    /// Doors follow their partner and support through the shared pass's rule (<see cref="ShapeRules.DoorShapeRule"/>).
     /// </summary>
     /// <returns>The new state, or null for a block this doesn't handle.</returns>
     public static IBlock? UpdateShape(IBlock state, BlockFace direction, IBlock neighbor)
     {
-        if (IsDoor(state))
-        {
-            var lower = state.GetProperty("half") == "lower";
-            if (direction.IsVertical() && lower == (direction == BlockFace.Up))
-            {
-                // Any door is a partner, as in vanilla's instanceof check: a copper door's upper half takes the lower
-                // half's new kind when it weathers or is waxed.
-                var otherHalf = IsDoor(neighbor) && neighbor.GetProperty("half") != state.GetProperty("half");
-                return otherHalf ? neighbor.WithProperty("half", lower ? "lower" : "upper") : BlocksRegistry.Air;
-            }
-
-            // Vanilla DoorBlock.canSurvive: the block below has a sturdy top face.
-            var unsupported = lower && direction == BlockFace.Down && !neighbor.IsFaceSturdy(BlockFace.Up);
-            return unsupported ? BlocksRegistry.Air : state;
-        }
-
         if (!IsChest(state))
             return null;
 
