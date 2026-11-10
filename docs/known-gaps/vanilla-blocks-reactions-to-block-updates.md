@@ -69,9 +69,11 @@ different one. Obsidian deliberately doesn't emulate Java's heap layout for this
 - New reactions go in as generated owners: a vanilla class's tick, random tick, shape update, entity contact or
   on-place reaction is a member named after the Mojang class that declares it, in
   `Obsidian/WorldData/BlockOwnerBehaviors.cs` or `RandomTickBehaviors.cs`, and the generator binds its blocks. Shape
-  rules are all bound this way; a rule's `Reach` says whether the live engines run it first, only the shared pass
-  (`ShapeUpdater`, which generation and placement use too) runs it, or both. Redstone components still register
-  their neighbour reactions, contact and ticks in `Obsidian/WorldData/Redstone`.
+  rules are all bound this way. A rule's `Reach` says whether the live engines run it first or only the shared pass
+  (`ShapeUpdater`, which generation and placement use too) runs it; a live owner names in `SharedPassRule` what the
+  shared pass runs for its blocks, if anything, and that rule must not schedule ticks it never scheduled before or
+  draw from a random. Redstone components still register their neighbour reactions, contact and ticks in
+  `Obsidian/WorldData/Redstone`.
 - Placement checks belong in `UseItemOnPacket`'s placement, before the place event: vanilla's `canSurvive` and
   `isUnobstructed`.
 
@@ -103,7 +105,7 @@ before it is implemented. "Phase" refers to the [block interactions plan](../blo
 | `ComparatorBlock`, `RepeaterBlock` | comparator, repeater | Redstone's rules lock repeaters; neither drops from a shape update | 4 |
 | `ConcretePowderBlock` | concrete powder | Falls; doesn't harden beside water | 5 |
 | `ConduitBlock` | conduit | Fluid tick only | 6 |
-| `CopperChestBlock` | copper chests | Don't pair or unpair on shape updates | 2 (batch E) |
+| `CopperChestBlock` | copper chests | Pair and unpair on the live level (`VanillaPlacement`); generation and placement's derivation leave them | 2 (batch E) |
 | `CopperGolemStatueBlock` | copper golem statues | Fluid tick only | 4 |
 | `CreakingHeartBlock` | creaking heart | Doesn't re-check its logs | 5 |
 | `DecoratedPotBlock` | decorated pot | Fluid tick only | 2 (batch D) |
@@ -131,9 +133,13 @@ before it is implemented. "Phase" refers to the [block interactions plan](../blo
 | `SoulFireBlock` | soul fire | Doesn't go out off a soul fire base | 5 (fire) |
 | `TripWireBlock`, `TripWireHookBlock` | tripwire, hooks | Don't reconnect or drop on shape updates | 3 |
 
-Two kinds of block have their class's rule but miss part of it:
+Three kinds of block have their class's rule but miss part of it:
 
 - Torchflower crops have `VegetationBlock`'s rule, but Obsidian's survival check knows no torchflower crop, so one
   never breaks; vanilla's crops also need light, which no crop checks yet. The `more_blocks` probe can't record
   crops: their survival reads light, and its bounded level has no light engine. Phase 5.
 - Mushrooms (`VegetationBlock`) read the live level's light; generation's shape pass reads 15, as it always has.
+- Pointed dripstone, sulfur spikes and kelp only reshape in the shared pass: one that has lost its support during
+  chunk completion keeps its state and gets no tick. Vanilla's completion (`LevelChunk.postProcessGeneration`) runs
+  `updateFromNeighbourShapes` against the live level, so vanilla would schedule the fall, break or support check
+  there. Obsidian keeps what it always did until a completion capture shows the ticks. Phase 5.

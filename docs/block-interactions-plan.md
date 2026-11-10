@@ -307,12 +307,21 @@ Done. Every arm of the switch is now a member of `ShapeUpdateBehaviors` named af
 pipeline, the fluid engine and generation all supply. Step 2's "return a state and schedule ticks" turned out too
 narrow: the view also checks for a pending tick and hands out the live level's random, which coral's rule (#708)
 draws its death delay from; it still has no way to write. Each member's `Reach` keeps the split between the two
-update engines as it was: live owners (coral, dirt paths and chorus plants among them) run first in both, the former
-arms run only in the shared pass (`ShapeUpdater`), and fences, bars, kelp, bubble columns and speleothems run in
-both. Generation's view schedules no ticks and has no random, so speleothems there only reshape, as before.
-Grindstones and nether wart gained a rule (both captured in `more_blocks.json`); torchflower crops gained one that
-has no effect yet. The generator now binds 55 of the 108 declaring classes; the 53 still without a rule (dead coral
-among them; live coral has one since #708) are listed in
+update engines as it was: live owners (coral, dirt paths and chorus plants among them) run first in both, and the
+former arms run only in the shared pass (`ShapeUpdater`). A live owner names what the shared pass runs for its blocks
+(`SharedPassRule`): fences, bars and bubble columns name their own rule, which only reshapes (the bubble column's
+check is scheduled in the region during completion, as before); speleothems and kelp name a rule that reshapes
+without scheduling their fall, break or support check, as their old shared copies did; other owners name none.
+Fences now refuse leaves by class on both paths, as vanilla's `isExceptionForConnection` does; the live rule used
+the `#leaves` tag, which differs only under a datapack that changes that tag. Plugin blocks keep the shared pass's
+`snowy` fallback.
+
+Blocks whose shared-pass rule changed: grindstones and nether wart gained a rule (both captured in
+`more_blocks.json`); torchflower crops gained one that has no effect yet; kelp_plant and the cave, weeping and
+twisting vines, heads and bodies, are now bound to the kelp shared rule, which leaves them as they are. The
+`more_blocks` shape replay also runs each case through the shared pass as generation reads it, wherever that pass
+has a rule for the block. The generator now binds 55 of the 108 declaring classes; the 53 still without a rule
+(dead coral among them; live coral has one since #708) are listed in
 [known gaps](known-gaps/vanilla-blocks-reactions-to-block-updates.md#shape-rules-not-implemented-yet).
 
 The observer gap is still open. Generation's shape pass has no block ticks to schedule, so an observer placed by a
