@@ -124,9 +124,13 @@ public partial class Mob
             writer.WriteString("id", item.Holder.UnlocalizedName);
             writer.WriteInt("count", item.Count);
 
-            var buffer = new NetworkBuffer();
-            buffer.WriteItemStack(item);
-            writer.WriteArray("data", buffer.AsSpan(0, buffer.Size));
+            var data = InventorySnapshot.NetworkItemData(item, static stack =>
+            {
+                using var buffer = new NetworkBuffer();
+                buffer.WriteItemStack(stack);
+                return buffer.AsSpan(0, buffer.Size).ToArray();
+            });
+            writer.WriteArray("data", data.Span);
             writer.EndCompound();
         }
 

@@ -11,6 +11,7 @@ public abstract record DataComponent
     /// <summary>Reads a new value without changing this component.</summary>
     public DataComponent Read(INetStreamReader reader)
     {
+        ComponentExecutionGuard.CheckOverride(this);
         var component = this with { };
         component.ReadCore(reader);
         return component;

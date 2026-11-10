@@ -39,6 +39,7 @@ public partial class NetworkBuffer
             var read = binding?.ReadNetwork
                 ?? throw new InvalidDataException($"{plugin.Identifier} isn't read from the network.");
 
+            ComponentExecutionGuard.Check($"network decoder ({plugin.Identifier})");
             return new PluginDataComponent(type, plugin.Identifier, read(this));
         }
 
@@ -57,6 +58,7 @@ public partial class NetworkBuffer
                 throw new InvalidDataException($"The {type} model consumed {reader.Offset} of {bytes.Length} bytes.");
 
             var normalized = new NetworkBuffer { IdMaps = this.IdMaps };
+            ComponentExecutionGuard.CheckOverride(component);
             component.Write(normalized);
             ComponentEncodings.Add(component, new(bytes, normalized.data.AsSpan(0, normalized.Offset).ToArray()));
             return component;
@@ -72,6 +74,7 @@ public partial class NetworkBuffer
 
     public void WriteDataComponent(DataComponent component)
     {
+        ComponentExecutionGuard.CheckOverride(component);
         if (ComponentEncodings.TryGetValue(component, out var encoding))
         {
             var current = new NetworkBuffer { IdMaps = this.IdMaps };

@@ -70,7 +70,7 @@ public sealed class Container : BaseContainer
 
             if (invItem == null)
             {
-                this.SetItem(i, item);
+                this[i] = item;
 
                 return i;
             }

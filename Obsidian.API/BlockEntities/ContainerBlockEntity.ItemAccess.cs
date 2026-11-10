@@ -195,7 +195,7 @@ internal sealed class ContainerItemAccess(ContainerBlockEntity owner, BlockFace?
             if (!simulate)
             {
                 owner.OnInserting();
-                owner.Inventory.SetItem(index, new ItemStack(stack, empty ? moved : existing!.Count + moved));
+                owner.Inventory[index] = new ItemStack(stack, empty ? moved : existing!.Count + moved);
                 gate.Changed = true;
             }
 
@@ -223,7 +223,7 @@ internal sealed class ContainerItemAccess(ContainerBlockEntity owner, BlockFace?
         if (!simulate)
         {
             var rest = existing.Count - taken;
-            owner.Inventory.SetItem(index, rest > 0 ? new ItemStack(existing, rest) : null);
+            owner.Inventory[index] = rest > 0 ? new ItemStack(existing, rest) : null;
             gate.Changed = true;
         }
 
