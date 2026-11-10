@@ -169,6 +169,7 @@ public final class VanillaDumper {
         dumper.dumpBlastResistance();
         dumper.dumpBlockLootTables();
         dumper.dumpBlockTransforms();
+        dumpCopperWeathering(output);
         dumper.dumpMapColors();
         dumper.dumpWallShapeCovers();
         dumper.dumpEntities();
@@ -1457,6 +1458,29 @@ public final class VanillaDumper {
         json.put("mirrorLeftRight", transformed(stateIds, getId, mirror, Vanilla.get(mirrors, "LEFT_RIGHT")));
         json.put("mirrorFrontBack", transformed(stateIds, getId, mirror, Vanilla.get(mirrors, "FRONT_BACK")));
         Json.write(output.resolve("block_transforms.json"), json, false);
+    }
+
+    /** The aging enum and next block, absent from the scraping and wax-removal transformer data. */
+    static void dumpCopperWeathering(Path output) throws IOException {
+        var weathering = Vanilla.type("net.minecraft.world.level.block.WeatheringCopper");
+        var age = Vanilla.method("net.minecraft.world.level.block.ChangeOverTimeBlock", "getAge");
+        var next = Vanilla.method(weathering.getName(), "getNext", BLOCK);
+        var registry = Vanilla.get(REGISTRIES, "BLOCK");
+        var key = Vanilla.method(REGISTRY, "getKey", "java.lang.Object");
+        var entries = new TreeMap<String, Object>();
+        for (var block : (Iterable<?>)registry) {
+            if (!weathering.isInstance(block)) {
+                continue;
+            }
+
+            var values = new LinkedHashMap<String, Object>();
+            values.put("age", ((Enum<?>)Vanilla.call(age, block)).ordinal());
+            var following = (Optional<?>)Vanilla.call(next, null, block);
+            following.ifPresent(value -> values.put("next", Vanilla.call(key, registry, value).toString()));
+            entries.put(Vanilla.call(key, registry, block).toString(), values);
+        }
+
+        Json.write(output.resolve("copper_weathering.json"), entries, true);
     }
 
     private int[] transformed(Object stateIds, Method getId, Method transform, Object argument) {

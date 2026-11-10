@@ -8,9 +8,10 @@ short grass and ferns (see [plugin content](../plugin-content.md#saplings)). Cro
 meal does nothing to vanilla's other plants (stems, berries, mushrooms, moss, nylium, cocoa, water plants and the
 like).
 
-Random ticks sample the same sections and draw the same positions as vanilla's, but only saplings and the propagule
-do anything with them: leaves don't decay, ice and snow don't melt, copper doesn't weather, and so on. Lava's random
-tick draws its chances in vanilla's order but sets nothing on fire, since Obsidian has no fire spread or flammability.
+Random ticks sample the same sections and draw the same positions as vanilla's. Copper now weathers through all
+three age transitions, including connected doors and chests, with a captured neighborhood scan and random draws.
+Ice and snow still do not melt. Lava's random tick draws its chances in vanilla's order but sets nothing on fire,
+since Obsidian has no fire spread or flammability.
 Vanilla's chunk ticks also draw for rain and snow (`tickPrecipitation`, one time in 48 per random tick), which
 Obsidian neither draws nor does, so the level random and the position sequence part from vanilla's there.
 

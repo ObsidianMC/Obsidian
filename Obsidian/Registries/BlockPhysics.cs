@@ -654,6 +654,7 @@ internal enum BlockClassId
     WeatheringCopperStairBlock,
     ChestBlock,
     TrappedChestBlock,
+    WeatheringCopperChestBlock,
     WallBlock,
     DoorBlock,
     WeatheringCopperDoorBlock,
