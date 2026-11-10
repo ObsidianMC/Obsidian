@@ -58,7 +58,8 @@ internal sealed class DriedGhastBehavior : IRandomTickBehavior, IScheduledTickBe
     }
 
     // Vanilla's spawnGhastling: the block goes (its water stays), and a baby happy ghast stands at the bottom centre of
-    // its place, turned the way the block faced, with its spawn sound following it. Vanilla doesn't finalize its spawn.
+    // its place, turned the way the block faced, with its spawn sound following it. Vanilla doesn't finalize its spawn,
+    // and never finds the level refusing it; where Obsidian's does, the dried ghast goes back rather than being lost.
     private static void SpawnGhastling(AbstractLevel level, IBlockLevel blocks, Vector position, IBlock block)
     {
         blocks.RemoveBlock(position);
@@ -74,7 +75,10 @@ internal sealed class DriedGhastBehavior : IRandomTickBehavior, IScheduledTickBe
         ghastling.LookControl.SnapHeadYaw(yaw);
 
         if (!level.TrySpawnEntity(ghastling))
+        {
+            blocks.SetBlock(position, block);
             return;
+        }
 
         LevelSounds.PlayFrom(level, ghastling, "minecraft:entity.ghastling.spawn", SoundCategory.Blocks);
     }
