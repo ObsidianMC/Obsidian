@@ -135,14 +135,15 @@ public partial class UseItemOnPacket
                 {
                     execution = use.ForQueuedAction();
                     committed = execution.TryCommit(() =>
+                        Growth.IsValidBonemealTarget(execution.Level, execution.Position, execution.Block),
+                        consumeItem: true);
+                    if (committed)
                     {
-                        if (!Growth.IsValidBonemealTarget(execution.Level, execution.Position, execution.Block))
-                            return false;
-
+                        // Valid targets consume even when growth fails. Features can call plugins, so grow only
+                        // after the hand unlocks, while the tick lock still protects the validated target.
                         Growth.ApplyBonemeal(execution.Level, execution.Position, execution.Block,
                             execution.Level.GrowthRandom);
-                        return true;
-                    }, consumeItem: true);
+                    }
                 }
 
                 if (committed)

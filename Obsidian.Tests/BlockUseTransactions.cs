@@ -3,6 +3,8 @@ using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
 using Obsidian.API.Utilities;
+using Obsidian.API.World.Features;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Registries;
@@ -75,6 +77,55 @@ public sealed class BlockUseTransactions
         finally
         {
             AppContext.SetData(ProbeRelay.NeighborHookKey, null);
+        }
+    }
+
+    [Fact]
+    public async Task BoneMealFeaturesSeeTheConsumedItemAndCanChangeTheUnlockedHand()
+    {
+        await using var context = TestServerFactory.CreateServer($"bone-meal-feature-{Guid.NewGuid():N}");
+        var world = context.World;
+        WorldBlockEntities.AddEmptyChunk(world);
+        await world.GetBlockAsync(target);
+        await using var manager = BlockUpdates.CreatePluginManager(context);
+        var archive = Path.Join(Path.GetDirectoryName(world.PlayerDataPath)!, "growth.obby");
+        await File.WriteAllBytesAsync(archive, PluginLoading.ProbeArchive("1.0.0"));
+        Assert.NotNull(await manager.LoadPluginAsync(archive));
+        Assert.True(BlocksRegistry.TryGetPluginBlock("probe:sapling", out var sapling));
+        world.BlockUpdates.SetBlock(target + Vector.Down, BlocksRegistry.Dirt, Quiet);
+        world.BlockUpdates.SetBlock(target, sapling.DefaultState.WithProperty("stage", "1"), Quiet);
+        world.GrowthRandom = new LegacyRandomSource(4096);
+        var player = Player(context, "User");
+        var boneMeal = new ItemStack(ItemsRegistry.BoneMeal, 2);
+        player.Inventory.SetItem(player.CurrentHeldItemSlot, boneMeal);
+        var observedConsumed = false;
+        var changedHand = false;
+        AppContext.SetData(ProbePillarFeature.PlaceHookKey, (Action<FeatureContext>)(_ =>
+        {
+            observedConsumed = boneMeal.Count == 1;
+            if (player.Inventory.TryLock(out var inventoryLock))
+            {
+                using (inventoryLock)
+                    player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Diamond, 3));
+
+                changedHand = true;
+            }
+        }));
+        try
+        {
+            await BlockUpdates.UseOn(target, BlockFace.Up).HandleAsync(context.Server, player);
+            await world.RunQueuedEntityActionsAsync().WaitAsync(TimeSpan.FromSeconds(10));
+
+            Assert.True(observedConsumed);
+            Assert.True(changedHand);
+            Assert.Equal(1, boneMeal.Count);
+            Assert.Equal(ItemsRegistry.Diamond.Id, player.GetHeldItem()?.Holder.Id);
+            Assert.Equal(3, player.GetHeldItem()?.Count);
+            Assert.Equal(1, player.Statistics.Get("minecraft:bone_meal", "minecraft:used"));
+        }
+        finally
+        {
+            AppContext.SetData(ProbePillarFeature.PlaceHookKey, null);
         }
     }
 

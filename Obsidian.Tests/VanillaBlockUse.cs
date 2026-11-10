@@ -5,6 +5,7 @@ using Obsidian.API.Inventory;
 using Obsidian.Nbt;
 using Obsidian.API.Registries;
 using Obsidian.API.Utilities;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
@@ -199,6 +200,9 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         var packet = BlockUpdates.UseOn(target + use.Clicked, use.Face, new VectorF(0.5f, 0.5f, 0.5f));
         if (offhand)
             typeof(UseItemOnPacket).GetProperty(nameof(UseItemOnPacket.Hand))!.SetValue(packet, InteractionHand.OffHand);
+
+        if (use.Reference.TryGetProperty("randomSeed", out var seed))
+            world.GrowthRandom = new LegacyRandomSource(seed.GetInt64());
 
         var result = await packet.UseAsync(harness.Context.Server, user);
         await world.RunQueuedEntityActionsAsync();

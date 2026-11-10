@@ -195,6 +195,9 @@ public final class BlockUseFixtures {
             var advancement = prepareCriteria(level, user, input);
             var usedStack = user.getItemInHand(hand(input));
 
+            if (input.has("randomSeed"))
+                level.getRandom().setSeed(input.get("randomSeed").getAsLong());
+
             var result = use(level, user, target, input);
             if (advancement != null && result.consumesAction()) {
                 var clicked = target.offset(position(input.getAsJsonArray("clicked")));

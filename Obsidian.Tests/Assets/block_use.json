@@ -3193,6 +3193,39 @@
         "default_sign",
         "any_sign"
       ]
+    },
+    {
+      "name": "bone_meal_failed_growth",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:dirt"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_sapling"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:bone_meal",
+      "result": "success_server",
+      "changes": "",
+      "hand": "minecraft:bone_meal x1",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [
+        "1505 0,0,0 15"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,-3 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:bone_meal 1"
+      ],
+      "menu": null,
+      "randomSeed": 0
     }
   ],
   "version": "26.3"
