@@ -82,8 +82,17 @@ public final class MeltingWeatherFixtures {
         try {
             startServer();
             server.submit(MeltingWeatherFixtures::configure).join();
-            for (var element : root.getAsJsonArray("cases"))
-                capture(element.getAsJsonObject());
+            var selected = args.length > 1 ? Set.of(args[1].split("\\+")) : null;
+            var captured = 0;
+            for (var element : root.getAsJsonArray("cases")) {
+                var testCase = element.getAsJsonObject();
+                if (selected == null || selected.contains(testCase.get("name").getAsString())) {
+                    capture(testCase);
+                    captured++;
+                }
+            }
+            if (selected != null && captured != selected.size())
+                throw new IllegalArgumentException("Every selected case must exist and be named once.");
         } catch (Throwable e) {
             e.printStackTrace();
             System.out.flush();

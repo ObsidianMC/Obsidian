@@ -132,18 +132,22 @@ internal static class FixtureDumper
     }
 
     // An on-request probe: a dedicated server of its own, in a new normal world under the scratch directory.
-    internal static Task DumpMeltingWeatherAsync(VanillaServer server, string fixture)
+    internal static Task DumpMeltingWeatherAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null)
     {
-        var world = Path.Combine(server.ScratchDirectory, "melting-weather");
-        if (Directory.Exists(world))
-            Directory.Delete(world, recursive: true);
-
+        var world = Path.Combine(server.ScratchDirectory, $"melting-weather-{Guid.NewGuid():N}");
         Directory.CreateDirectory(world);
 
         // The probe finds the server in the shutdown hook vanilla's Main registers.
-        return VanillaServer.RunJavaAsync(world,
+        var arguments = new List<string>
+        {
             "--add-opens", "java.base/java.lang=ALL-UNNAMED",
-            "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("MeltingWeatherFixtures.java"), fixture);
+            "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("MeltingWeatherFixtures.java"), fixture
+        };
+        if (cases is not null)
+            arguments.Add(string.Join('+', cases));
+
+        return VanillaServer.RunJavaAsync(world, arguments.ToArray());
     }
 
     public static async Task DumpServerAsync(VanillaServer server, string output)

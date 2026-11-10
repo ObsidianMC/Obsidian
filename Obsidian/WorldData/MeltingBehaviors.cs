@@ -50,10 +50,6 @@ internal static partial class RandomTickBehaviors
 /// Vanilla's <c>FrostedIceBlock</c> overrides of <c>tick</c> and <c>onPlace</c>: frosted ice ages in light and melts at
 /// its last age, sooner when few frosted ice blocks surround it.
 /// </summary>
-/// <remarks>
-/// Vanilla's <c>neighborChanged</c> override, which melts frosted ice at once when a frosted ice neighbour goes and
-/// leaves it fewer than two, isn't implemented: Obsidian has no neighbour-changed hook for vanilla blocks yet.
-/// </remarks>
 internal sealed class FrostedIceBlockBehavior : IScheduledTickBehavior, IOnPlaceBehavior
 {
     // Vanilla's FrostedIceBlock.MAX_AGE and NEIGHBORS_TO_AGE.
@@ -100,6 +96,14 @@ internal sealed class FrostedIceBlockBehavior : IScheduledTickBehavior, IOnPlace
         }
 
         level.ScheduleTick(position, block, Between(random, 20, 40));
+    }
+
+    /// <summary>Collapses thin frost trails when another frosted block changes, regardless of light or age.</summary>
+    internal static void NeighborChanged(IBlockLevel level, Vector position, IBlock state, IBlock source)
+    {
+        // Vanilla tests the notifying block's old type; water or air at its former position loses that information.
+        if (source.Is(BlockIds.FrostedIce) && FewerNeighboursThan(level, position, 2))
+            Melting.Melt(level, position, state);
     }
 
     // Vanilla's FrostedIceBlock.tick brightness: the block light in the end, elsewhere the raw brightness with the

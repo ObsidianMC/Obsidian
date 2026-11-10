@@ -188,6 +188,8 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
     /// <inheritdoc/>
     public void NeighborChanged(Vector position, IBlock state, IBlock source, Vector sourcePosition)
     {
+        if (state.Is(BlockIds.FrostedIce))
+            FrostedIceBlockBehavior.NeighborChanged(this, position, state, source);
 
         this.RunHook(
             state,

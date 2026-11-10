@@ -1563,6 +1563,92 @@
       "changes": [],
       "blockTicks": [],
       "fluidTicks": []
+    },
+    {
+      "name": "review_frosted_pair_collapses",
+      "kind": "tick",
+      "biome": "minecraft:plains",
+      "seed": 1,
+      "setup": [
+        {"pos": [8, 64, 8], "state": "minecraft:frosted_ice[age=3]"},
+        {"pos": [9, 64, 8], "state": "minecraft:frosted_ice[age=0]"}
+      ],
+      "target": [8, 64, 8],
+      "skyDarken": 0,
+      "light": [
+        {"pos": [8, 64, 8], "block": 0, "sky": 14},
+        {"pos": [9, 64, 8], "block": 0, "sky": 14}
+      ],
+      "nextRandom": 431529176,
+      "changes": [
+        "8,64,8=minecraft:water[level=0]",
+        "9,64,8=minecraft:water[level=0]"
+      ],
+      "blockTicks": [],
+      "fluidTicks": [
+        "8,64,8=minecraft:water@5",
+        "9,64,8=minecraft:water@5"
+      ]
+    },
+    {
+      "name": "review_frosted_line_collapses",
+      "kind": "tick",
+      "biome": "minecraft:plains",
+      "seed": 1,
+      "setup": [
+        {"pos": [8, 64, 8], "state": "minecraft:frosted_ice[age=3]"},
+        {"pos": [9, 64, 8], "state": "minecraft:frosted_ice[age=0]"},
+        {"pos": [10, 64, 8], "state": "minecraft:frosted_ice[age=0]"}
+      ],
+      "target": [8, 64, 8],
+      "skyDarken": 0,
+      "light": [
+        {"pos": [8, 64, 8], "block": 0, "sky": 14},
+        {"pos": [9, 64, 8], "block": 0, "sky": 14},
+        {"pos": [10, 64, 8], "block": 0, "sky": 14}
+      ],
+      "nextRandom": 431529176,
+      "changes": [
+        "10,64,8=minecraft:water[level=0]",
+        "8,64,8=minecraft:water[level=0]",
+        "9,64,8=minecraft:water[level=0]"
+      ],
+      "blockTicks": [],
+      "fluidTicks": [
+        "10,64,8=minecraft:water@5",
+        "8,64,8=minecraft:water@5",
+        "9,64,8=minecraft:water@5"
+      ]
+    },
+    {
+      "name": "review_frosted_removed_neighbour",
+      "kind": "place",
+      "biome": "minecraft:plains",
+      "seed": 1,
+      "setup": [
+        {"pos": [8, 64, 8], "state": "minecraft:frosted_ice[age=3]"},
+        {"pos": [9, 64, 8], "state": "minecraft:frosted_ice[age=0]"},
+        {"pos": [10, 64, 8], "state": "minecraft:frosted_ice[age=0]"}
+      ],
+      "target": [8, 64, 8],
+      "place": "minecraft:air",
+      "skyDarken": 0,
+      "light": [
+        {"pos": [8, 64, 8], "block": 0, "sky": 14},
+        {"pos": [9, 64, 8], "block": 0, "sky": 14},
+        {"pos": [10, 64, 8], "block": 0, "sky": 14}
+      ],
+      "nextRandom": -1155869325,
+      "changes": [
+        "10,64,8=minecraft:water[level=0]",
+        "8,64,8=minecraft:air",
+        "9,64,8=minecraft:water[level=0]"
+      ],
+      "blockTicks": [],
+      "fluidTicks": [
+        "10,64,8=minecraft:water@5",
+        "9,64,8=minecraft:water@5"
+      ]
     }
   ]
 }
