@@ -122,11 +122,20 @@ internal sealed class LevelPortals(AbstractLevel level)
 
                 if (use is not null)
                 {
-                    return use.TryCommit(() =>
+                    lock (level.Fluids.TickLock)
                     {
-                        if (read.Any(pair => !level.BlockUpdates.GetBlock(pair.Key).IsSameState(pair.Value)))
+                        if (!use.TryCommit(() =>
+                        {
+                            if (read.Any(pair => !level.BlockUpdates.GetBlock(pair.Key).IsSameState(pair.Value)))
+                                return false;
+
+                            ItemDamage.ApplyIgniterCost(use, igniter!);
+                            return true;
+                        }))
                             return false;
 
+                        // A plugin portal block can create a plugin block entity. Its factory and the normal
+                        // write notifications run after the hand unlocks; the frame stays protected by the tick lock.
                         var portal = properties.PortalBlock.WithProperty("axis", frame.Axis);
                         foreach (var point in frame.Interior())
                         {
@@ -134,9 +143,8 @@ internal sealed class LevelPortals(AbstractLevel level)
                             PortalOwnership.Claim(level, point, type, portal);
                         }
 
-                        ItemDamage.ApplyIgniterCost(use, igniter!);
                         return true;
-                    });
+                    }
                 }
 
                 await this.FillAsync(frame, type, properties);
