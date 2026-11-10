@@ -186,7 +186,20 @@ public sealed class BlockUseTransactions
                     packet => packet.Position == target && packet.BlockId == BlocksRegistry.Dirt.GetHashCode());
                 Assert.Contains(client.SentPackets.OfType<BlockUpdatePacket>(),
                     packet => packet.Position == other && packet.BlockId == BlocksRegistry.Cobblestone.GetHashCode());
-                Assert.Null(world.ActiveBlockUse);
+
+                // A caller can recover: a later exchange consumes once and publishes its own visible effects.
+                notified.Clear();
+                client.ClearPackets();
+                var recovery = Read(context, player);
+                Assert.True(recovery.TryCommit(() =>
+                {
+                    world.BlockUpdates.SetBlock(target, BlocksRegistry.Stone);
+                    return true;
+                }, consumeItem: true));
+                Assert.Equal(fault == "effect" ? 0 : 1, player.GetHeldItem()?.Count ?? 0);
+                Assert.Contains(target, notified);
+                Assert.Contains(client.SentPackets.OfType<BlockUpdatePacket>(),
+                    packet => packet.Position == target && packet.BlockId == BlocksRegistry.Stone.GetHashCode());
             }
         }
         finally
