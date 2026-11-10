@@ -13417,6 +13417,917 @@
           "state": "minecraft:stone"
         }
       ]
+    },
+    {
+      "name": "chorus_plant_on_end_stone_stays",
+      "call": "tick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=false,west=false]"
+        }
+      ],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=false,west=false]"
+        }
+      ]
+    },
+    {
+      "name": "chorus_plant_without_support_breaks",
+      "call": "tick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=false,east=false,north=false,south=false,up=false,west=false]"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=false,east=false,north=false,south=false,up=false,west=false]",
+          "drops": true
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "chorus_plant_on_a_plant_stays",
+      "call": "tick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=false,west=false]"
+        }
+      ],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=false,west=false]"
+        }
+      ]
+    },
+    {
+      "name": "chorus_plant_branch_stays",
+      "call": "tick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=true,north=false,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=false,east=false,north=false,south=false,up=false,west=true]"
+        }
+      ],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=true,north=false,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=false,east=false,north=false,south=false,up=false,west=true]"
+        }
+      ]
+    },
+    {
+      "name": "chorus_plant_branch_tick",
+      "call": "tick",
+      "origin": [
+        9,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=true,north=false,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=false,east=false,north=false,south=false,up=false,west=true]"
+        }
+      ],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=true,north=false,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=false,east=false,north=false,south=false,up=false,west=true]"
+        }
+      ]
+    },
+    {
+      "name": "chorus_plant_branch_over_stone_stays",
+      "call": "tick",
+      "origin": [
+        9,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=true,north=false,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=false,east=false,north=false,south=false,up=false,west=true]"
+        },
+        {
+          "pos": [
+            9,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=true,north=false,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=false,east=false,north=false,south=false,up=false,west=true]"
+        }
+      ]
+    },
+    {
+      "name": "chorus_plant_branch_between_blocks_breaks",
+      "call": "tick",
+      "origin": [
+        9,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=true,north=false,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=false,east=false,north=false,south=false,up=false,west=true]"
+        },
+        {
+          "pos": [
+            9,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            9,
+            11,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=false,west=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=false,east=false,north=false,south=false,up=false,west=true]",
+          "drops": true
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            9,
+            11,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "chorus_plant_loses_its_support",
+      "call": "set",
+      "origin": [
+        8,
+        9,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=false,west=false]"
+        }
+      ],
+      "state": "minecraft:air",
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "type": "minecraft:chorus_plant",
+          "delay": 1
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=false,west=false]"
+        }
+      ]
+    },
+    {
+      "name": "chorus_plant_gains_a_neighbour",
+      "call": "set",
+      "origin": [
+        8,
+        10,
+        7
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=false,west=false]"
+        }
+      ],
+      "state": "minecraft:chorus_flower[age=0]",
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            10,
+            7
+          ],
+          "state": "minecraft:chorus_flower[age=0]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=true,south=false,up=false,west=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            7
+          ],
+          "state": "minecraft:chorus_flower[age=0]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=true,south=false,up=false,west=false]"
+        }
+      ]
+    },
+    {
+      "name": "chorus_plant_gains_a_plant_above",
+      "call": "set",
+      "origin": [
+        8,
+        11,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=false,west=false]"
+        }
+      ],
+      "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=false,west=false]",
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=false,west=false]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=true,west=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=false,west=false]"
+        }
+      ]
+    },
+    {
+      "name": "chorus_plant_stem_breaks_when_its_base_goes",
+      "call": "set",
+      "origin": [
+        8,
+        8,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=false,west=false]"
+        }
+      ],
+      "state": "minecraft:air",
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "type": "minecraft:chorus_plant",
+          "delay": 1
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=false,west=false]"
+        }
+      ]
     }
   ],
   "_notes": "Vanilla block routines, recorded by the asset generator's TickingBlockFixtures.java against a block view of the case's setup (air elsewhere, void air outside the build height of -64 to 319) in the overworld, with a legacy random seeded with seed (0 by default) as both the routine's random and the level's. call is randomTick (the origin's state, only when its isRandomlyTicking holds, which ticks records), tick (the origin's scheduled tick), set (Level.setBlock of state at the origin with UPDATE_ALL) or landing (a falling block of state settling at the origin, with the entityDrops rule and silent flag). Writes store the block and, as Level.setBlock does, run the new state's onPlace and then, unless UPDATE_KNOWN_SHAPE is set, the neighbours' shape updates; neighbour notifications are not run. draws lists each draw in order; writes the block changes with their flags; scheduled the block and fluid ticks scheduled with their delays (a block tick counts as pending for hasScheduledTick); events the level events; gameEvents the game events with the state they carry; entities the entities added, with a falling block's state, position and damage; destroyed the blocks destroyed and whether they drop; items the items a landing dropped. after holds the final state of every setup or written position."

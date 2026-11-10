@@ -102,6 +102,8 @@ internal static class TickBehaviors
     internal static IScheduledTickBehavior CoralFanBlock { get; } = new CoralPlantBehavior(onWall: false);
 
     internal static IScheduledTickBehavior CoralWallFanBlock { get; } = new CoralPlantBehavior(onWall: true);
+
+    internal static IScheduledTickBehavior ChorusPlantBlock { get; } = new ChorusPlantBehavior();
 }
 
 /// <summary>
@@ -155,6 +157,8 @@ internal static class ShapeUpdateBehaviors
     internal static IShapeUpdateBehavior CoralFanBlock { get; } = new CoralPlantBehavior(onWall: false);
 
     internal static IShapeUpdateBehavior CoralWallFanBlock { get; } = new CoralPlantBehavior(onWall: true);
+
+    internal static IShapeUpdateBehavior ChorusPlantBlock { get; } = new ChorusPlantBehavior();
 }
 
 /// <summary>

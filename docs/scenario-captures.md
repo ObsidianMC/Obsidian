@@ -201,7 +201,8 @@ replaces only what vanilla produced.
   growing each stage, into air, water sources and falling water, and the faces it skips; lit redstone ore going dark;
   nylium under blocks that do and don't let light down; dirt paths turning to dirt, and which new blocks above or
   beside them schedule that; coral blocks, plants, fans and wall fans dying dry or staying by water, scheduling their
-  death when placed or when a neighbour changes, and breaking when their support goes.
+  death when placed or when a neighbour changes, and breaking when their support goes; chorus plants staying, breaking
+  and connecting as their support and neighbours change.
   The replay runs each case
   through Obsidian's generated owners, or a live block change, in its own world, and compares everything but the game
   events. Obsidian destroys blocks in the tick's entity phase, so a case that destroys one runs the world tick before
