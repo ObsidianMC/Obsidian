@@ -83,15 +83,8 @@ internal static class FeatureHelpers
     /// </summary>
     public static void SetBrushableLootTable(IWorldGenLevel level, Vector position, string lootTable, long seed)
     {
-        var brushable = level.GetBlockEntity(position) as DataBlockEntity;
-        if (brushable?.Id != "minecraft:brushable_block")
-            return;
-
-        brushable.Set("LootTable", lootTable);
-        if (seed != 0L)
-            brushable.Set("LootTableSeed", seed);
-        else
-            brushable.Data.Remove("LootTableSeed");
+        if (level.GetBlockEntity(position) is BrushableBlockEntity brushable)
+            brushable.SetLootTable(lootTable, seed);
     }
 
     /// <summary>

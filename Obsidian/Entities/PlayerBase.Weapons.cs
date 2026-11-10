@@ -202,6 +202,11 @@ public partial class PlayerBase
         if (usingWeapon == null)
             return;
 
+        // Vanilla's stopUsingItem: the end of a use is heard, for items whose use_effects allow it. Only the brush
+        // emits it here so far (see known-gaps/brushing-and-armor-stands.md); a broken one is empty and has none.
+        if (usingWeapon.Is(ItemsRegistry.Brush) && usingWeapon.Count > 0 && Level is WorldData.AbstractLevel level)
+            level.EmitGameEvent(WorldData.MobGameEvent.ItemInteractFinish, Position, this);
+
         usingWeapon = null;
         weaponTicks = 0;
         spearContacts.Clear();
@@ -494,6 +499,12 @@ public partial class PlayerBase
         if (usingWeapon is not { } item)
             return;
 
+        if (IsSpentBrush(item))
+        {
+            await TickSpentBrushAsync();
+            return;
+        }
+
         var lostWeapon = !Alive
             || Respawning
             || GameMode == GameMode.Spectator
@@ -509,6 +520,12 @@ public partial class PlayerBase
         if (ItemOwners.IsBundle(item))
         {
             await TickBundleUseAsync(item);
+            return;
+        }
+
+        if (item.Is(ItemsRegistry.Brush))
+        {
+            await TickBrushingAsync(item);
             return;
         }
 

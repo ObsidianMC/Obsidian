@@ -93,6 +93,8 @@ internal static class TickBehaviors
 {
     internal static IScheduledTickBehavior SpeleothemBlock { get; } = new SulfurSpikeBehavior();
 
+    internal static IScheduledTickBehavior BrushableBlock { get; } = new Brushing.BlockBehavior();
+
     internal static IScheduledTickBehavior FarmlandBlock { get; } = new FarmlandBlockBehavior();
 
     internal static IScheduledTickBehavior LeavesBlock { get; } = new LeavesBlockBehavior();

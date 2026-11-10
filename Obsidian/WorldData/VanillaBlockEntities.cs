@@ -45,6 +45,7 @@ internal static class VanillaBlockEntities
         "minecraft:beacon" => new BeaconBlockEntity(),
         "minecraft:lectern" => new LecternBlockEntity(position),
         "minecraft:crafter" => new CrafterBlockEntity(position),
+        "minecraft:brushable_block" => new BrushableBlockEntity(),
         _ => null
     };
 
