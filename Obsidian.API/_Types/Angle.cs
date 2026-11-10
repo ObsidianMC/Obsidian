@@ -26,7 +26,15 @@ public struct Angle(byte value) : INetworkSerializable<Angle>, IEquatable<Angle>
 
     public readonly override int GetHashCode() => this.Value.GetHashCode();
 
-    public static byte NormalizeToByte(float value) => (byte)(value * 256f / 360f);
+    /// <summary>
+    /// Packs <paramref name="value"/> degrees into 256ths of a turn, as vanilla's <c>Mth.packDegrees</c> does: floored,
+    /// then wrapped into a byte, so -90 is 192 and 360 is 0.
+    /// </summary>
+    /// <remarks>
+    /// The value narrows through <see cref="int"/> to keep the wrap: since .NET 11, a float cast straight to a byte
+    /// saturates instead, which would turn every negative angle into 0.
+    /// </remarks>
+    public static byte NormalizeToByte(float value) => (byte)(int)MathF.Floor(value * 256f / 360f);
 
     private static float ClampDegrees(float degrees)
     {
