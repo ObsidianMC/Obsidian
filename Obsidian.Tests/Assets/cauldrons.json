@@ -1,0 +1,7501 @@
+{
+  "_notes": "Vanilla 26.3 cauldron uses, recorded by Obsidian.AssetGenerator/Java/CauldronFixtures.java (CaptureFixtures=cauldrons) on BlockUseFixtures' dedicated server in a flat world of air. Cases take block_use.json's inputs: blocks set around the target without updates, a player at 'player' (x, y, z, yaw, pitch) using the hand's item ('count' of it) on the clicked face through ServerPlayerGameMode.useItemOn ('rayUse' then uses the item itself when that passed), then the tick's block events. 'components' and 'offhandComponents' are SNBT component patches applied to each hand's stack, and 'carried' puts further stacks into inventory slots (vanilla's numbers, the hotbar being 0 to 8). Every case records block_use.json's outputs with checkWrites, checkEffects and checkInventory (result, changes, particles, soundDetails, the sounds, level events and block events a bystander above the target received, game events within 16, statistics, ordered writes with their flags, destroyed blocks, the 36 storage slots), awardedCriteria where it lists criteria, 'hand' and 'otherHand' (the used hand and the other one), and entities, each stack with the components it changes from its item's as SNBT, and 'userEffects': the sounds, level events and block events sent to the acting player's own client, in order.",
+  "target": [0, 64, 0],
+  "player": [0.5, 64, -2.5, 0, 30],
+  "cases": [
+    {
+      "name": "empty_water_bucket",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:water_bucket",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron[level=3]",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:water_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "empty_lava_bucket",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:lava_bucket",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:lava_cauldron",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty_lava 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty_lava"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:lava_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty_lava"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lava_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "empty_powder_snow_bucket",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:powder_snow_bucket",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:powder_snow_cauldron[level=3]",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty_powder_snow 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty_powder_snow"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:powder_snow_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty_powder_snow"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:powder_snow_cauldron[level=3]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water1_water_bucket",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=1]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:water_bucket",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron[level=3]",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:water_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water1_lava_bucket",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=1]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:lava_bucket",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:lava_cauldron",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty_lava 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty_lava"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:lava_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty_lava"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lava_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water1_powder_snow_bucket",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=1]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:powder_snow_bucket",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:powder_snow_cauldron[level=3]",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty_powder_snow 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty_powder_snow"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:powder_snow_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty_powder_snow"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:powder_snow_cauldron[level=3]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water3_water_bucket",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:water_bucket",
+      "count": 1,
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:water_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty"
+      ],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "water3_lava_bucket",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:lava_bucket",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:lava_cauldron",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty_lava 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty_lava"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:lava_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty_lava"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lava_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water3_powder_snow_bucket",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:powder_snow_bucket",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:powder_snow_cauldron[level=3]",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty_powder_snow 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty_powder_snow"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:powder_snow_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty_powder_snow"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:powder_snow_cauldron[level=3]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "lava_water_bucket",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lava_cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:water_bucket",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron[level=3]",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:water_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "lava_lava_bucket",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lava_cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:lava_bucket",
+      "count": 1,
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty_lava 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty_lava"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:lava_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty_lava"
+      ],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "lava_powder_snow_bucket",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lava_cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:powder_snow_bucket",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:powder_snow_cauldron[level=3]",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty_powder_snow 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty_powder_snow"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:powder_snow_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty_powder_snow"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:powder_snow_cauldron[level=3]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "snow2_water_bucket",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:powder_snow_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:water_bucket",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron[level=3]",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:water_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "snow2_lava_bucket",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:powder_snow_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:lava_bucket",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:lava_cauldron",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty_lava 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty_lava"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:lava_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty_lava"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lava_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "snow2_powder_snow_bucket",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:powder_snow_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:powder_snow_bucket",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:powder_snow_cauldron[level=3]",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty_powder_snow 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty_powder_snow"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:powder_snow_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty_powder_snow"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:powder_snow_cauldron[level=3]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "empty_lava_bucket_under_water",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:water"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:lava_bucket",
+      "count": 1,
+      "result": "consume",
+      "changes": "",
+      "hand": "minecraft:lava_bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:lava_bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "empty_lava_bucket_under_flowing_water",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:water[level=3]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:lava_bucket",
+      "count": 1,
+      "result": "consume",
+      "changes": "",
+      "hand": "minecraft:lava_bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:lava_bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "empty_lava_bucket_under_waterlogged_slab",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:stone_slab[waterlogged=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:lava_bucket",
+      "count": 1,
+      "result": "consume",
+      "changes": "",
+      "hand": "minecraft:lava_bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:lava_bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "empty_powder_snow_bucket_under_water",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:water"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:powder_snow_bucket",
+      "count": 1,
+      "result": "consume",
+      "changes": "",
+      "hand": "minecraft:powder_snow_bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:powder_snow_bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "empty_water_bucket_under_water",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:water"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:water_bucket",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron[level=3]",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:water_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water3_lava_bucket_under_water",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:water"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:lava_bucket",
+      "count": 1,
+      "result": "consume",
+      "changes": "",
+      "hand": "minecraft:lava_bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:lava_bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "lava_bucket_under_water",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lava_cauldron"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:water"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:bucket",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:cauldron",
+      "hand": "minecraft:lava_bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:lava_bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.fill_lava 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.fill_lava"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:use_cauldron 1",
+        "minecraft:used minecraft:bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.fill_lava"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "empty_lava_bucket_under_lava",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:lava"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:lava_bucket",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:lava_cauldron",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty_lava 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty_lava"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:lava_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty_lava"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lava_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water3_bucket",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:bucket",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:cauldron",
+      "hand": "minecraft:water_bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:water_bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.fill 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.fill"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:use_cauldron 1",
+        "minecraft:used minecraft:bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.fill"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water2_bucket",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:bucket",
+      "count": 1,
+      "rayUse": true,
+      "useOnResult": "pass",
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "lava_bucket",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lava_cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:bucket",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:cauldron",
+      "hand": "minecraft:lava_bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:lava_bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.fill_lava 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.fill_lava"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:use_cauldron 1",
+        "minecraft:used minecraft:bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.fill_lava"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "snow3_bucket",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:powder_snow_cauldron[level=3]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:bucket",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:cauldron",
+      "hand": "minecraft:powder_snow_bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:powder_snow_bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.fill_powder_snow 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.fill_powder_snow"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:use_cauldron 1",
+        "minecraft:used minecraft:bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.fill_powder_snow"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "snow1_bucket",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:powder_snow_cauldron[level=1]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:bucket",
+      "count": 1,
+      "rayUse": true,
+      "useOnResult": "pass",
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "empty_bucket",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:bucket",
+      "count": 1,
+      "rayUse": true,
+      "useOnResult": "pass",
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "water3_bucket_stacked",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:bucket",
+      "count": 3,
+      "result": "success",
+      "changes": "0,0,0=minecraft:cauldron",
+      "hand": "minecraft:bucket x2",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x2",
+        "minecraft:water_bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.fill 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.fill"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:use_cauldron 1",
+        "minecraft:used minecraft:bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.fill"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "lava_bucket_stacked",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lava_cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:bucket",
+      "count": 2,
+      "result": "success",
+      "changes": "0,0,0=minecraft:cauldron",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "minecraft:lava_bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.fill_lava 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.fill_lava"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:use_cauldron 1",
+        "minecraft:used minecraft:bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.fill_lava"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water3_bucket_full_inventory",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:bucket",
+      "count": 2,
+      "fullInventory": true,
+      "result": "success",
+      "changes": "0,0,0=minecraft:cauldron",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.fill 0,0,0 1.0"
+      ],
+      "entities": [
+        "item minecraft:water_bucket x1"
+      ],
+      "sounds": [
+        "minecraft:item.bucket.fill"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:use_cauldron 1",
+        "minecraft:used minecraft:bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.fill"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water3_bucket_creative",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:bucket",
+      "count": 1,
+      "gameMode": "creative",
+      "result": "success",
+      "changes": "0,0,0=minecraft:cauldron",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "minecraft:water_bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.fill 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.fill"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:use_cauldron 1",
+        "minecraft:used minecraft:bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.fill"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water3_bucket_creative_holding_one",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:bucket",
+      "count": 1,
+      "gameMode": "creative",
+      "carried": [
+        {
+          "slot": 20,
+          "item": "minecraft:water_bucket",
+          "count": 1
+        }
+      ],
+      "result": "success",
+      "changes": "0,0,0=minecraft:cauldron",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "minecraft:water_bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.fill 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.fill"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:use_cauldron 1",
+        "minecraft:used minecraft:bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.fill"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water3_bucket_offhand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": null,
+      "count": 1,
+      "offhand": "minecraft:bucket",
+      "handUsed": "offhand",
+      "result": "success",
+      "changes": "0,0,0=minecraft:cauldron",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "minecraft:water_bucket x1",
+      "inventory": [
+        "minecraft:water_bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.fill 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.fill"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:use_cauldron 1",
+        "minecraft:used minecraft:bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.fill"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water3_bucket_adventure",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:bucket",
+      "count": 1,
+      "gameMode": "adventure",
+      "result": "success",
+      "changes": "0,0,0=minecraft:cauldron",
+      "hand": "minecraft:water_bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:water_bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.fill 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.fill"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:use_cauldron 1",
+        "minecraft:used minecraft:bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.fill"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water3_bucket_sneaking",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:bucket",
+      "count": 1,
+      "sneaking": true,
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "water3_bucket_spectator",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:bucket",
+      "count": 1,
+      "gameMode": "spectator",
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "water3_bucket_criteria",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:bucket",
+      "count": 1,
+      "criteria": {
+        "filled_bucket": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {}
+        },
+        "used_on_cauldron": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:water_cauldron"
+              }
+            ]
+          }
+        },
+        "used_on_empty": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:cauldron"
+              }
+            ]
+          }
+        }
+      },
+      "awardedCriteria": [
+        "used_on_empty"
+      ],
+      "result": "success",
+      "changes": "0,0,0=minecraft:cauldron",
+      "hand": "minecraft:water_bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:water_bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.fill 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.fill"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:use_cauldron 1",
+        "minecraft:used minecraft:bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.fill"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "empty_water_bucket_criteria",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:water_bucket",
+      "count": 1,
+      "criteria": {
+        "used_on_empty": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:cauldron"
+              }
+            ]
+          }
+        },
+        "any_use_on_empty": {
+          "trigger": "minecraft:any_block_use",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:cauldron"
+              }
+            ]
+          }
+        }
+      },
+      "awardedCriteria": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron[level=3]",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:water_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "empty_water_bucket_creative",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:water_bucket",
+      "count": 1,
+      "gameMode": "creative",
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron[level=3]",
+      "hand": "minecraft:water_bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:water_bucket x1",
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:water_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "empty_lava_bucket_creative_holding_bucket",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:lava_bucket",
+      "count": 1,
+      "gameMode": "creative",
+      "carried": [
+        {
+          "slot": 3,
+          "item": "minecraft:bucket",
+          "count": 5
+        }
+      ],
+      "result": "success",
+      "changes": "0,0,0=minecraft:lava_cauldron",
+      "hand": "minecraft:lava_bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:lava_bucket x1",
+        "empty",
+        "empty",
+        "minecraft:bucket x5",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty_lava 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty_lava"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:lava_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty_lava"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lava_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "empty_water_bucket_offhand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": null,
+      "count": 1,
+      "offhand": "minecraft:water_bucket",
+      "offhandCount": 1,
+      "handUsed": "offhand",
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron[level=3]",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:water_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "empty_water_bucket_offhand_with_main_hand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stone",
+      "count": 1,
+      "offhand": "minecraft:water_bucket",
+      "offhandCount": 1,
+      "handUsed": "offhand",
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron[level=3]",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "minecraft:stone x1",
+      "inventory": [
+        "minecraft:stone x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:water_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "empty_water_bucket_adventure",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:water_bucket",
+      "count": 1,
+      "gameMode": "adventure",
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron[level=3]",
+      "hand": "minecraft:bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:water_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "empty_water_bucket_sneaking",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:water_bucket",
+      "count": 1,
+      "sneaking": true,
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:water_bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:water_bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "empty_water_bucket_stacked",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:water_bucket",
+      "count": 2,
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron[level=3]",
+      "hand": "minecraft:water_bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:water_bucket x1",
+        "minecraft:bucket x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bucket.empty"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:water_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "empty_water_bucket_stacked_full_inventory",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:water_bucket",
+      "count": 2,
+      "fullInventory": true,
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron[level=3]",
+      "hand": "minecraft:water_bucket x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:water_bucket x1",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bucket.empty 0,0,0 1.0"
+      ],
+      "entities": [
+        "item minecraft:bucket x1"
+      ],
+      "sounds": [
+        "minecraft:item.bucket.empty"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:fill_cauldron 1",
+        "minecraft:used minecraft:water_bucket 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bucket.empty"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "empty_water_bottle",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:potion",
+      "count": 1,
+      "components": "{\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron",
+      "hand": "minecraft:glass_bottle x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:glass_bottle x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bottle.empty 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bottle.empty"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:use_cauldron 1",
+        "minecraft:used minecraft:potion 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bottle.empty"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water1_water_bottle",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=1]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:potion",
+      "count": 1,
+      "components": "{\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron[level=2]",
+      "hand": "minecraft:glass_bottle x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:glass_bottle x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bottle.empty 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bottle.empty"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:use_cauldron 1",
+        "minecraft:used minecraft:air 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bottle.empty"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water2_water_bottle",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:potion",
+      "count": 1,
+      "components": "{\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron[level=3]",
+      "hand": "minecraft:glass_bottle x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:glass_bottle x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bottle.empty 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bottle.empty"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:use_cauldron 1",
+        "minecraft:used minecraft:air 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bottle.empty"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water3_water_bottle",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:potion",
+      "count": 1,
+      "components": "{\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "water1_water_bottle_stacked",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=1]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:potion",
+      "count": 2,
+      "components": "{\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron[level=2]",
+      "hand": "minecraft:potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+        "minecraft:glass_bottle x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bottle.empty 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bottle.empty"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:use_cauldron 1",
+        "minecraft:used minecraft:potion 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bottle.empty"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "empty_water_bottle_creative",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:potion",
+      "count": 1,
+      "components": "{\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+      "gameMode": "creative",
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron",
+      "hand": "minecraft:potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+        "minecraft:glass_bottle x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bottle.empty 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bottle.empty"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_place 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:use_cauldron 1",
+        "minecraft:used minecraft:potion 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bottle.empty"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "empty_awkward_potion",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:potion",
+      "count": 1,
+      "components": "{\"minecraft:potion_contents\":{potion:\"minecraft:awkward\"}}",
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:awkward\"}}",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:awkward\"}}",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "water1_awkward_potion",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=1]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:potion",
+      "count": 1,
+      "components": "{\"minecraft:potion_contents\":{potion:\"minecraft:awkward\"}}",
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:awkward\"}}",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:awkward\"}}",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "empty_potion_without_contents",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:potion",
+      "count": 1,
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:potion x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:potion x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "lava_water_bottle",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lava_cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:potion",
+      "count": 1,
+      "components": "{\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "snow1_water_bottle",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:powder_snow_cauldron[level=1]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:potion",
+      "count": 1,
+      "components": "{\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "water3_glass_bottle",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:glass_bottle",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron[level=2]",
+      "hand": "minecraft:potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bottle.fill 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bottle.fill"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none",
+        "minecraft:fluid_pickup 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:use_cauldron 1",
+        "minecraft:used minecraft:glass_bottle 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bottle.fill"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water1_glass_bottle",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=1]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:glass_bottle",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:cauldron",
+      "hand": "minecraft:potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bottle.fill 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bottle.fill"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none",
+        "minecraft:fluid_pickup 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:use_cauldron 1",
+        "minecraft:used minecraft:glass_bottle 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bottle.fill"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water2_glass_bottle_stacked",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:glass_bottle",
+      "count": 4,
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron",
+      "hand": "minecraft:glass_bottle x3",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:glass_bottle x3",
+        "minecraft:potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bottle.fill 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bottle.fill"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none",
+        "minecraft:fluid_pickup 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:use_cauldron 1",
+        "minecraft:used minecraft:glass_bottle 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bottle.fill"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water2_glass_bottle_full_inventory",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:glass_bottle",
+      "count": 4,
+      "fullInventory": true,
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron",
+      "hand": "minecraft:glass_bottle x3",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:glass_bottle x3",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bottle.fill 0,0,0 1.0"
+      ],
+      "entities": [
+        "item minecraft:potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}"
+      ],
+      "sounds": [
+        "minecraft:item.bottle.fill"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none",
+        "minecraft:fluid_pickup 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:use_cauldron 1",
+        "minecraft:used minecraft:glass_bottle 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bottle.fill"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water2_glass_bottle_creative",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:glass_bottle",
+      "count": 4,
+      "gameMode": "creative",
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron",
+      "hand": "minecraft:glass_bottle x4",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:glass_bottle x4",
+        "minecraft:potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bottle.fill 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bottle.fill"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none",
+        "minecraft:fluid_pickup 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:use_cauldron 1",
+        "minecraft:used minecraft:glass_bottle 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bottle.fill"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water2_glass_bottle_offhand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": null,
+      "count": 1,
+      "offhand": "minecraft:glass_bottle",
+      "handUsed": "offhand",
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron",
+      "hand": "minecraft:glass_bottle x1",
+      "otherHand": "minecraft:potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+      "inventory": [
+        "minecraft:potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bottle.fill 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.bottle.fill"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none",
+        "minecraft:fluid_pickup 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:use_cauldron 1",
+        "minecraft:used minecraft:glass_bottle 1"
+      ],
+      "userEffects": [
+        "sound minecraft:item.bottle.fill"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "empty_glass_bottle",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:glass_bottle",
+      "count": 1,
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:glass_bottle x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:glass_bottle x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "lava_glass_bottle",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lava_cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:glass_bottle",
+      "count": 1,
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:glass_bottle x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:glass_bottle x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "snow3_glass_bottle",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:powder_snow_cauldron[level=3]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:glass_bottle",
+      "count": 1,
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:glass_bottle x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:glass_bottle x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "water3_dyed_leather_helmet",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:leather_helmet",
+      "count": 1,
+      "components": "{\"minecraft:dyed_color\":16711680}",
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron[level=2]",
+      "hand": "minecraft:leather_helmet x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:leather_helmet x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:clean_armor 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water1_dyed_leather_chestplate",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=1]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:leather_chestplate",
+      "count": 1,
+      "components": "{\"minecraft:dyed_color\":16711680}",
+      "result": "success",
+      "changes": "0,0,0=minecraft:cauldron",
+      "hand": "minecraft:leather_chestplate x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:leather_chestplate x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:clean_armor 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water2_dyed_leather_boots_named",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:leather_boots",
+      "count": 1,
+      "components": "{\"minecraft:dyed_color\":3949738,\"minecraft:custom_name\":\"Cap\"}",
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron",
+      "hand": "minecraft:leather_boots x1 {\"minecraft:custom_name\":\"Cap\"}",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:leather_boots x1 {\"minecraft:custom_name\":\"Cap\"}",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:clean_armor 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water2_dyed_leather_horse_armor",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:leather_horse_armor",
+      "count": 1,
+      "components": "{\"minecraft:dyed_color\":16711680}",
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron",
+      "hand": "minecraft:leather_horse_armor x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:leather_horse_armor x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:clean_armor 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water2_dyed_wolf_armor",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:wolf_armor",
+      "count": 1,
+      "components": "{\"minecraft:dyed_color\":16711680}",
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron",
+      "hand": "minecraft:wolf_armor x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:wolf_armor x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:clean_armor 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water2_dyed_leggings_stacked",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:leather_leggings",
+      "count": 2,
+      "components": "{\"minecraft:dyed_color\":16711680}",
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron",
+      "hand": "minecraft:leather_leggings x2",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:leather_leggings x2",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:clean_armor 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water2_dyed_helmet_creative",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:leather_helmet",
+      "count": 1,
+      "components": "{\"minecraft:dyed_color\":16711680}",
+      "gameMode": "creative",
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron",
+      "hand": "minecraft:leather_helmet x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:leather_helmet x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:clean_armor 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water2_dyed_helmet_offhand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": null,
+      "count": 1,
+      "offhand": "minecraft:leather_helmet",
+      "offhandCount": 1,
+      "offhandComponents": "{\"minecraft:dyed_color\":16711680}",
+      "handUsed": "offhand",
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron",
+      "hand": "minecraft:leather_helmet x1",
+      "otherHand": "empty",
+      "inventory": [
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:clean_armor 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water2_undyed_leather_helmet",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:leather_helmet",
+      "count": 1,
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:leather_helmet x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:leather_helmet x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "lava_dyed_leather_helmet",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lava_cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:leather_helmet",
+      "count": 1,
+      "components": "{\"minecraft:dyed_color\":16711680}",
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:leather_helmet x1 {\"minecraft:dyed_color\":16711680}",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:leather_helmet x1 {\"minecraft:dyed_color\":16711680}",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "empty_dyed_leather_helmet",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:leather_helmet",
+      "count": 1,
+      "components": "{\"minecraft:dyed_color\":16711680}",
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:leather_helmet x1 {\"minecraft:dyed_color\":16711680}",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:leather_helmet x1 {\"minecraft:dyed_color\":16711680}",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "water3_banner_two_patterns",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:red_banner",
+      "count": 1,
+      "components": "{\"minecraft:banner_patterns\":[{pattern:\"minecraft:stripe_bottom\",color:\"red\"},{pattern:\"minecraft:creeper\",color:\"black\"}]}",
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron[level=2]",
+      "hand": "minecraft:red_banner x1 {\"minecraft:banner_patterns\":[{color:\"red\",pattern:\"minecraft:stripe_bottom\"}]}",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:red_banner x1 {\"minecraft:banner_patterns\":[{color:\"red\",pattern:\"minecraft:stripe_bottom\"}]}",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:clean_banner 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water1_banner_one_pattern",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=1]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:white_banner",
+      "count": 1,
+      "components": "{\"minecraft:banner_patterns\":[{pattern:\"minecraft:cross\",color:\"blue\"}]}",
+      "result": "success",
+      "changes": "0,0,0=minecraft:cauldron",
+      "hand": "minecraft:white_banner x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:white_banner x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:clean_banner 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water2_banner_stacked",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:black_banner",
+      "count": 3,
+      "components": "{\"minecraft:banner_patterns\":[{pattern:\"minecraft:stripe_bottom\",color:\"red\"},{pattern:\"minecraft:creeper\",color:\"black\"}]}",
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron",
+      "hand": "minecraft:black_banner x2 {\"minecraft:banner_patterns\":[{color:\"red\",pattern:\"minecraft:stripe_bottom\"},{color:\"black\",pattern:\"minecraft:creeper\"}]}",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:black_banner x2 {\"minecraft:banner_patterns\":[{color:\"red\",pattern:\"minecraft:stripe_bottom\"},{color:\"black\",pattern:\"minecraft:creeper\"}]}",
+        "minecraft:black_banner x1 {\"minecraft:banner_patterns\":[{color:\"red\",pattern:\"minecraft:stripe_bottom\"}]}",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:clean_banner 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water2_banner_stacked_full_inventory",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:black_banner",
+      "count": 3,
+      "components": "{\"minecraft:banner_patterns\":[{pattern:\"minecraft:stripe_bottom\",color:\"red\"},{pattern:\"minecraft:creeper\",color:\"black\"}]}",
+      "fullInventory": true,
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron",
+      "hand": "minecraft:black_banner x2 {\"minecraft:banner_patterns\":[{color:\"red\",pattern:\"minecraft:stripe_bottom\"},{color:\"black\",pattern:\"minecraft:creeper\"}]}",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:black_banner x2 {\"minecraft:banner_patterns\":[{color:\"red\",pattern:\"minecraft:stripe_bottom\"},{color:\"black\",pattern:\"minecraft:creeper\"}]}",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [
+        "item minecraft:black_banner x1 {\"minecraft:banner_patterns\":[{color:\"red\",pattern:\"minecraft:stripe_bottom\"}]}"
+      ],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:clean_banner 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water2_banner_creative",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:lime_banner",
+      "count": 1,
+      "components": "{\"minecraft:banner_patterns\":[{pattern:\"minecraft:cross\",color:\"blue\"}]}",
+      "gameMode": "creative",
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron",
+      "hand": "minecraft:lime_banner x1 {\"minecraft:banner_patterns\":[{color:\"blue\",pattern:\"minecraft:cross\"}]}",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:lime_banner x1 {\"minecraft:banner_patterns\":[{color:\"blue\",pattern:\"minecraft:cross\"}]}",
+        "minecraft:lime_banner x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:clean_banner 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water2_banner_offhand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": null,
+      "count": 1,
+      "offhand": "minecraft:blue_banner",
+      "offhandComponents": "{\"minecraft:banner_patterns\":[{pattern:\"minecraft:stripe_bottom\",color:\"red\"},{pattern:\"minecraft:creeper\",color:\"black\"}]}",
+      "handUsed": "offhand",
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron",
+      "hand": "minecraft:blue_banner x1 {\"minecraft:banner_patterns\":[{color:\"red\",pattern:\"minecraft:stripe_bottom\"},{color:\"black\",pattern:\"minecraft:creeper\"}]}",
+      "otherHand": "minecraft:blue_banner x1 {\"minecraft:banner_patterns\":[{color:\"red\",pattern:\"minecraft:stripe_bottom\"}]}",
+      "inventory": [
+        "minecraft:blue_banner x1 {\"minecraft:banner_patterns\":[{color:\"red\",pattern:\"minecraft:stripe_bottom\"}]}",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:clean_banner 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water2_banner_without_patterns",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:white_banner",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,-1=minecraft:white_wall_banner",
+      "hand": "empty",
+      "otherHand": "empty",
+      "inventory": [
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.wood.place 0,0,-1 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.wood.place"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_place 0,0,-1 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:white_banner 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:white_wall_banner",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "snow3_banner",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:powder_snow_cauldron[level=3]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:white_banner",
+      "count": 1,
+      "components": "{\"minecraft:banner_patterns\":[{pattern:\"minecraft:cross\",color:\"blue\"}]}",
+      "result": "success",
+      "changes": "0,0,-1=minecraft:white_wall_banner",
+      "hand": "empty",
+      "otherHand": "empty",
+      "inventory": [
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.wood.place 0,0,-1 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.wood.place"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_place 0,0,-1 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:white_banner 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:white_wall_banner",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water3_red_shulker_box",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=3]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:red_shulker_box",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron[level=2]",
+      "hand": "minecraft:shulker_box x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:shulker_box x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:clean_shulker_box 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water1_shulker_box_with_contents",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=1]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:purple_shulker_box",
+      "count": 1,
+      "components": "{\"minecraft:container\":[{slot:0,item:{id:\"minecraft:diamond\",count:3}}],\"minecraft:custom_name\":\"Loot\"}",
+      "result": "success",
+      "changes": "0,0,0=minecraft:cauldron",
+      "hand": "minecraft:shulker_box x1 {\"minecraft:container\":[{item:{count:3,id:\"minecraft:diamond\"},slot:0}],\"minecraft:custom_name\":\"Loot\"}",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:shulker_box x1 {\"minecraft:container\":[{item:{count:3,id:\"minecraft:diamond\"},slot:0}],\"minecraft:custom_name\":\"Loot\"}",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:clean_shulker_box 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water2_shulker_box_stacked",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:cyan_shulker_box",
+      "count": 2,
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron",
+      "hand": "minecraft:cyan_shulker_box x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:cyan_shulker_box x1",
+        "minecraft:shulker_box x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:clean_shulker_box 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water2_shulker_box_creative",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:cyan_shulker_box",
+      "count": 1,
+      "gameMode": "creative",
+      "result": "success",
+      "changes": "0,0,0=minecraft:water_cauldron",
+      "hand": "minecraft:cyan_shulker_box x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:cyan_shulker_box x1",
+        "minecraft:shulker_box x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:clean_shulker_box 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water2_plain_shulker_box",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:shulker_box",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,-1=minecraft:shulker_box[facing=north]",
+      "hand": "empty",
+      "otherHand": "empty",
+      "inventory": [
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.stone.place 0,0,-1 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.stone.place"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_place 0,0,-1 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:shulker_box 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:shulker_box[facing=north]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "lava_red_shulker_box",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lava_cauldron"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:red_shulker_box",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,-1=minecraft:red_shulker_box[facing=north]",
+      "hand": "empty",
+      "otherHand": "empty",
+      "inventory": [
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.stone.place 0,0,-1 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.stone.place"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_place 0,0,-1 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:red_shulker_box 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:red_shulker_box[facing=north]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "water2_empty_hand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": null,
+      "count": 1,
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "otherHand": "empty",
+      "inventory": [
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "water2_stick",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stick",
+      "count": 1,
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:stick x1",
+      "otherHand": "empty",
+      "inventory": [
+        "minecraft:stick x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    }
+  ],
+  "version": "26.3"
+}

@@ -37,6 +37,7 @@
 		<VanillaDumperInput Remove="Java\TickingBlockFixtures.java" />
 		<VanillaDumperInput Remove="Java\BlockUseInstrumentation.java" />
 		<VanillaDumperInput Remove="Java\WaxingBellsOreFixtures.java" />
+		<VanillaDumperInput Remove="Java\CauldronFixtures.java" />
 		<VanillaDumperInput Remove="Java\HatchingFixtures.java" />
 		<VanillaDumperInput Remove="Java\EyeblossomGhastPortalFixtures.java" />
 		<VanillaDumperInput Remove="Java\GrowingPlantTickFixtures.java" />
@@ -56,6 +57,7 @@
 		<None Update="Java\BlockUseFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\BlockUseInstrumentation.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\WaxingBellsOreFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\CauldronFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\HatchingFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\EyeblossomGhastPortalFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\GrowingPlantTickFixtures.java" CopyToOutputDirectory="PreserveNewest" />

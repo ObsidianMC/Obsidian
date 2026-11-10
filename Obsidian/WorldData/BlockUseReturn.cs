@@ -50,22 +50,25 @@ internal static class BlockUseReturn
     }
 
     /// <summary>
-    /// Vanilla's <c>ItemUtils.createFilledResult</c> with its creative limit: one of the used stack becomes
-    /// <paramref name="result"/>. Outside creative mode one is taken from the hand; an emptied hand holds the result,
-    /// and otherwise the result goes into the inventory like <see cref="Give"/>, dropping when it doesn't fit. In
-    /// creative mode the hand stays as it is, and the result goes into the inventory only when no storage slot holds
-    /// the same item already.
+    /// Vanilla's <c>ItemUtils.createFilledResult</c>: one of the used stack becomes <paramref name="result"/>. Outside
+    /// creative mode one is taken from the hand; an emptied hand holds the result, and otherwise the result goes into
+    /// the inventory like <see cref="Give"/>, dropping when it doesn't fit. In creative mode the hand stays as it is;
+    /// with <paramref name="limitCreative"/> (vanilla's default) the result goes into the inventory only when no
+    /// storage slot holds the same item already, and without it, always.
     /// </summary>
     /// <returns>
     /// The temporary result after routing, which vanilla's <c>filled_bucket</c> criterion reads: whole when it went
     /// into the hand, dropped, or wasn't needed in creative mode; empty when the inventory took it.
     /// </returns>
-    public static ItemStack Exchange(BlockUse use, ItemStack result)
+    public static ItemStack Exchange(BlockUse use, ItemStack result, bool limitCreative = true)
     {
         InsideCommit(use);
         var inventory = use.Player.Inventory;
         if (use.Player.GameMode == GameMode.Creative)
         {
+            if (!limitCreative)
+                return Give(use, result);
+
             var held = storageSlots.Any(slot => inventory.GetItem(slot) is ItemStack item && item.Equals(result));
             return held ? new ItemStack(result, result.Count) : Give(use, result);
         }
