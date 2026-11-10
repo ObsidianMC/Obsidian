@@ -10,10 +10,9 @@
 - **Stepped movement.** Vanilla sends living entities' per-tick positions between updates as stepped `VecDelta`s and
   `PositionPath`s. Obsidian sends one linear move per update, so a mob's path between updates is a straight line.
 - **Snow lifting a player.** Snow that thickens under an entity lifts it by the growth in the snow's height
-  (`Entity.LiftForBlockChange`), and a player is sent the new position as a teleport. Because moves during a teleport
-  are still applied (above), a move the client sent before it saw the lift puts the player back at the old height.
-  The lift doesn't look for a ceiling, and a rider and its vehicle are lifted independently; what vanilla does in
-  those cases isn't captured.
+  (`Entity.LiftForBlockChange`), and a player's new position is registered with the pending-teleport owner, so stale
+  client movement cannot undo the lift. The lift doesn't look for a ceiling, and a rider and its vehicle are lifted
+  independently; what vanilla does in those cases isn't captured.
 - **Other position writers racing travel.** Serverbound player movement commits, boat client-movement commits and
   player passenger positioning now recheck teleport state at commitment. This is not a guarantee for every entity
   position write. In particular:
