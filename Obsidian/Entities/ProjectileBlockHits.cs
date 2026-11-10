@@ -69,16 +69,20 @@ internal static class ProjectileBlockHits
     /// <paramref name="ownReaction"/> (the projectile's own block reaction, if it has one) runs, then the game event.
     /// Does nothing for a projectile that has already left <paramref name="level"/>.
     /// </summary>
+    /// <returns>
+    /// Whether the hit ran: false for a projectile no longer in the level, whose caller then skips what it does on any
+    /// hit (a pearl's teleport, an egg's chicks).
+    /// </returns>
     /// <param name="level">The level the projectile is ticking in.</param>
     /// <param name="projectile">The projectile, already moved to the hit.</param>
     /// <param name="owner">Who shot or threw it, if anyone.</param>
     /// <param name="hit">The block it hit.</param>
     /// <param name="ownReaction">What the projectile does next, before <c>projectile_land</c>.</param>
-    public static async ValueTask HitAsync(AbstractLevel level, Entity projectile, IEntity? owner,
+    public static async ValueTask<bool> HitAsync(AbstractLevel level, Entity projectile, IEntity? owner,
         ProjectileBlockHit hit, Func<ValueTask>? ownReaction = null)
     {
         if (!IsInLevel(level, projectile))
-            return;
+            return false;
 
         if (Loaded(level, hit.Block) is IBlock block)
             await ReactAsync(level, projectile, owner, hit, block);
@@ -88,6 +92,7 @@ internal static class ProjectileBlockHits
 
         var landed = Loaded(level, hit.Block);
         level.EmitGameEvent(MobGameEvent.ProjectileLand, (VectorD)hit.Block + 0.5, projectile, owner, landed);
+        return true;
     }
 
     /// <summary>

@@ -74,8 +74,9 @@ internal sealed class DragonFireball : Entity
 
         if (blockHit is { } blockCollision)
         {
-            await ProjectileBlockHits.HitAsync(level, this, owner, blockCollision);
-            await BreatheAsync();
+            if (await ProjectileBlockHits.HitAsync(level, this, owner, blockCollision))
+                await BreatheAsync();
+
             return;
         }
 

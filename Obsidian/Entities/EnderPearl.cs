@@ -174,8 +174,9 @@ public sealed partial class EnderPearl : Throwable
 
         if (blockHit is { } blockCollision)
         {
-            await ProjectileBlockHits.HitAsync(level, this, this.Owner, blockCollision);
-            await this.OnHitAsync(level, null);
+            if (await ProjectileBlockHits.HitAsync(level, this, this.Owner, blockCollision))
+                await this.OnHitAsync(level, null);
+
             return;
         }
 

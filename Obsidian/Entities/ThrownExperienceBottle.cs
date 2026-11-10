@@ -147,8 +147,9 @@ public sealed partial class ThrownExperienceBottle : Throwable
 
         if (blockHit is { } blockCollision)
         {
-            await ProjectileBlockHits.HitAsync(level, this, this.Owner, blockCollision);
-            await this.ShatterAsync(level);
+            if (await ProjectileBlockHits.HitAsync(level, this, this.Owner, blockCollision))
+                await this.ShatterAsync(level);
+
             return;
         }
 

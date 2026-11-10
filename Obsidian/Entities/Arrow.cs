@@ -429,8 +429,9 @@ public partial class Arrow : Entity
     {
         if (Type is EntityType.ShulkerBullet or EntityType.WitherSkull)
         {
-            await ProjectileBlockHits.HitAsync(level, this, Owner, hit, () => this.OnBlockHitAsync(level));
-            await OnImpactAsync(null, false);
+            if (await ProjectileBlockHits.HitAsync(level, this, Owner, hit, () => this.OnBlockHitAsync(level)))
+                await OnImpactAsync(null, false);
+
             return;
         }
 
@@ -466,7 +467,10 @@ public partial class Arrow : Entity
 
         Motion = VectorD.Zero;
         var sound = Type == EntityType.Trident ? "minecraft:item.trident.hit_ground" : "minecraft:entity.arrow.hit";
-        ProjectileBlockHits.PlaySound(level, Position, sound, 1, 1.2f / (Globals.Random.NextSingle() * 0.2f + 0.9f));
+        // Vanilla's playSound draws the pitch either way and sends nothing for a silent arrow.
+        var pitch = 1.2f / (Globals.Random.NextSingle() * 0.2f + 0.9f);
+        if (!this.Silent)
+            ProjectileBlockHits.PlaySound(level, Position, sound, 1, pitch);
 
         Crit = false;
         var packet = new SetEntityDataPacket { EntityId = EntityId, Entity = this };

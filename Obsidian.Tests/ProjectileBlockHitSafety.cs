@@ -71,10 +71,11 @@ public sealed class ProjectileBlockHitSafety
         world.BlockUpdates.SetBlock(target, targetBlock);
         world.BlockUpdates.SetBlock(unloaded, targetBlock);
 
-        // A projectile removed before its hit lands (by a plugin, say) hits nothing.
+        // A projectile removed before its hit lands (by a plugin, say) hits nothing, and says so, so that its caller
+        // skips what it does on any hit (a pearl's teleport, an egg's chicks).
         var removed = SpawnArrow(world, owner, falling: false);
         Assert.True(await world.DestroyEntityAsync(removed));
-        await ProjectileBlockHits.HitAsync(world, removed, owner, TopHit(target));
+        Assert.False(await ProjectileBlockHits.HitAsync(world, removed, owner, TopHit(target)));
         Assert.Equal("0", world.BlockUpdates.GetBlock(target).GetProperty("power"));
 
         // A hit whose block's chunk unloaded in the meantime leaves it alone, and doesn't load it again.

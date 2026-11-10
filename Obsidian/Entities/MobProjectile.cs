@@ -185,7 +185,9 @@ internal sealed class MobProjectile : Entity
     // Vanilla's onHitBlock through the shared hit path, then what the projectile does on any hit (its onHit).
     private async ValueTask HitBlockAsync(AbstractLevel level, MobTerrain terrain, ProjectileBlockHit hit)
     {
-        await ProjectileBlockHits.HitAsync(level, this, Owner, hit, () => this.OnBlockHitAsync(level, hit));
+        if (!await ProjectileBlockHits.HitAsync(level, this, Owner, hit, () => this.OnBlockHitAsync(level, hit)))
+            return;
+
         switch (Type)
         {
             case EntityType.SplashPotion:
