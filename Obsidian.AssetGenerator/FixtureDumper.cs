@@ -217,6 +217,12 @@ internal static class FixtureDumper
             cases is null ? "" : string.Join('+', cases));
     }
 
+    // An on-request probe: a dedicated server of its own, in a new flat world under the scratch directory. It shares
+    // block_use's observed copy of the vanilla jar for the ordered block writes.
+    internal static Task DumpProjectileHitsAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "projectile-hits", "ProjectileHitFixtures.java", cases);
+
     // On-request probes: a dedicated server of its own each, in a flat world in a temporary folder that is deleted
     // afterwards, so no capture world is left in the checkout.
     internal static Task DumpBrushingAsync(VanillaServer server, string fixture,

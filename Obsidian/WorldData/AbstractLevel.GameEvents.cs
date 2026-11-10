@@ -10,7 +10,7 @@ internal enum MobGameEvent
     Step, Land, Swim, ProjectileShoot, ProjectileLand, BlockPlace, BlockDestroy, BlockChange,
     EntityDamage, EntityDie, EntityInteract, NoteBlockPlay, JukeboxPlay, JukeboxStop, SculkSensorClick,
     BlockActivate, BlockDeactivate, BlockOpen, BlockClose, ContainerOpen, ContainerClose, Eat, FluidPickup,
-    FluidPlace, PrimeFuse, EntityPlace, ItemInteractFinish, ItemInteractStart, Equip, Unequip
+    FluidPlace, PrimeFuse, EntityPlace, ItemInteractFinish, ItemInteractStart, Equip, Unequip, Explode
 }
 
 internal static class MobGameEvents
@@ -92,6 +92,12 @@ public abstract partial class AbstractLevel
         return taken;
     }
 
+    /// <summary>
+    /// Observes each game event as it's queued for dispatch, before the tick delivers it: for parity replays that tick
+    /// the level, which leaves nothing for <see cref="TakeGameEvents"/>.
+    /// </summary>
+    internal Action<MobVibration>? GameEventQueued { get; set; }
+
     internal void EmitGameEvent(
         MobGameEvent kind,
         VectorD position,
@@ -100,9 +106,14 @@ public abstract partial class AbstractLevel
         IBlock? affectedBlock = null)
     {
         if (this.ActiveBlockUse is BlockUseEffects effects)
+        {
             effects.After(() => this.EmitGameEvent(kind, position, source, owner, affectedBlock));
-        else
-            mobGameEvents.Enqueue(new(kind, position, source, owner, affectedBlock));
+            return;
+        }
+
+        var vibration = new MobVibration(kind, position, source, owner, affectedBlock);
+        this.GameEventQueued?.Invoke(vibration);
+        mobGameEvents.Enqueue(vibration);
     }
 
     internal async ValueTask TickMobGameEventsAsync()
@@ -490,6 +501,7 @@ public abstract partial class AbstractLevel
         MobGameEvent.EntityDamage => 7,
         MobGameEvent.ProjectileShoot => 3,
         MobGameEvent.SculkSensorClick => 4,
+        MobGameEvent.Explode => 15,
         _ => 0
     };
 

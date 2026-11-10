@@ -36,6 +36,7 @@
 		                             Java\MeltingWeatherFixtures.java" />
 		<VanillaDumperInput Remove="Java\TickingBlockFixtures.java" />
 		<VanillaDumperInput Remove="Java\BlockUseInstrumentation.java" />
+		<VanillaDumperInput Remove="Java\ProjectileHitFixtures.java" />
 		<VanillaDumperInput Remove="Java\WaxingBellsOreFixtures.java" />
 		<VanillaDumperInput Remove="Java\HatchingFixtures.java" />
 		<VanillaDumperInput Remove="Java\EyeblossomGhastPortalFixtures.java" />
@@ -55,6 +56,7 @@
 		<None Update="Java\TickingBlockFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\BlockUseFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\BlockUseInstrumentation.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\ProjectileHitFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\WaxingBellsOreFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\HatchingFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\EyeblossomGhastPortalFixtures.java" CopyToOutputDirectory="PreserveNewest" />

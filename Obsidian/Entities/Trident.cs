@@ -45,6 +45,7 @@ public sealed partial class Trident : Arrow
         if (Level is Obsidian.WorldData.AbstractLevel level && !level.TryMoveEntity(this, Position, next))
             return;
         Position = next;
+        BoundingBox = Dimension.CreateBBFromPosition(Position);
         PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new Obsidian.Net.Packets.Play.Clientbound.TeleportEntityPacket
         { EntityId = EntityId, Position = Position, Delta = Motion, Yaw = Yaw, Pitch = Pitch, OnGround = false });
     }

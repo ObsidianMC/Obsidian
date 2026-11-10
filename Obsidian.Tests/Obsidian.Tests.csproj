@@ -34,6 +34,7 @@
 		<EmbeddedResource Include="Assets\block_use.json" />
 		<EmbeddedResource Include="Assets\brushing.json" />
 		<EmbeddedResource Include="Assets\armor_stand_use.json" />
+		<EmbeddedResource Include="Assets\projectile_block_hits.json" />
 		<EmbeddedResource Include="Assets\waxing_bells_redstone_ore.json" />
 		<EmbeddedResource Include="Assets\turtle_eggs.json" />
 		<EmbeddedResource Include="Assets\frogspawn.json" />
