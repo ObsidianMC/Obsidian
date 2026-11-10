@@ -1,0 +1,144 @@
+using Obsidian.API.Blocks;
+using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.WorldData.Features;
+using Obsidian.WorldData.Fluids;
+
+namespace Obsidian.WorldData;
+
+/// <summary>
+/// How live coral dies out of water, shared by vanilla's coral classes: a coral with no water touching it (and, for a
+/// plant or fan, not waterlogged) schedules its death 60 to 99 ticks later, drawing the delay from the level's random,
+/// and dies on that tick if it is still dry.
+/// </summary>
+internal static class Coral
+{
+    // Vanilla's 60 + random.nextInt(40): the draw is part of the level's random sequence.
+    private const int DeathDelay = 60;
+
+    private const int DeathDelaySpread = 40;
+
+    private static readonly BlockFace[] faces =
+        [BlockFace.Down, BlockFace.Up, BlockFace.North, BlockFace.South, BlockFace.West, BlockFace.East];
+
+    /// <summary>Vanilla's <c>scanForWater</c>: water (flowing, or a waterlogged block's) touches a face.</summary>
+    public static bool TouchesWater(IBlockLevel level, Vector position)
+    {
+        foreach (var face in faces)
+        {
+            if (FluidState.Of(level.GetBlock(position.Offset(face))).IsWater)
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>Schedules <paramref name="state"/>'s death, drawing its delay from <paramref name="random"/>.</summary>
+    public static void ScheduleDeath(IBlockLevel level, Vector position, IBlock state, IRandomSource random) =>
+        level.ScheduleTick(position, state, DeathDelay + random.NextInt(DeathDelaySpread));
+
+    /// <summary>
+    /// The death a neighbour's change schedules (vanilla's <c>updateShape</c>), drawn only while none is pending.
+    /// </summary>
+    /// <remarks>
+    /// Obsidian asks a block's shape update more than once for one change (the vanilla-ordered neighbour update and
+    /// the notification pipeline both run it, and support checks ask it again), where vanilla asks once. Guarding on
+    /// the pending tick keeps the level's random to vanilla's one draw per change; vanilla also draws, and discards
+    /// the delay, for a change while a death is already pending, which this skips.
+    /// </remarks>
+    public static void ScheduleDeathOnChange(IBlockLevel level, Vector position, IBlock state)
+    {
+        if (!level.HasScheduledTick(position, state))
+            ScheduleDeath(level, position, state, level.Random);
+    }
+
+    /// <summary>The dead coral of <paramref name="state"/>'s kind, in its default state.</summary>
+    public static IBlock Dead(IBlock state) =>
+        BlocksRegistry.Get(state.UnlocalizedName.Replace("minecraft:", "minecraft:dead_"));
+}
+
+/// <summary>Vanilla's <c>CoralBlock</c>: its <c>tick</c> and <c>updateShape</c> overrides.</summary>
+internal sealed class CoralBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior
+{
+    public void Tick(IBlockLevel level, Vector position, IBlock block, IRandomSource random)
+    {
+        if (!Coral.TouchesWater(level, position))
+            level.SetBlock(position, Coral.Dead(block), BlockUpdateFlags.Clients);
+    }
+
+    public IBlock? UpdateShape(
+        IBlockLevel level,
+        Vector position,
+        IBlock state,
+        BlockFace direction,
+        Vector neighborPosition,
+        IBlock neighbor)
+    {
+        if (!Coral.TouchesWater(level, position))
+            Coral.ScheduleDeathOnChange(level, position, state);
+
+        return null;
+    }
+}
+
+/// <summary>
+/// Vanilla's <c>CoralPlantBlock</c>, <c>CoralFanBlock</c> and <c>CoralWallFanBlock</c>: their <c>onPlace</c>,
+/// <c>tick</c> and <c>updateShape</c> overrides. A plant or fan stands on a sturdy floor; a wall fan hangs on the
+/// sturdy face it faces away from, and its dead form keeps its facing.
+/// </summary>
+internal sealed class CoralPlantBehavior(bool onWall) : IOnPlaceBehavior, IScheduledTickBehavior, IShapeUpdateBehavior
+{
+    public void OnPlace(IBlockLevel level, Vector position, IBlock state, IBlock oldState)
+    {
+        if (!IsWet(level, position, state))
+            Coral.ScheduleDeath(level, position, state, level.Random);
+    }
+
+    public void Tick(IBlockLevel level, Vector position, IBlock block, IRandomSource random)
+    {
+        if (IsWet(level, position, block))
+            return;
+
+        var dead = Coral.Dead(block).WithProperty("waterlogged", false);
+        if (onWall)
+            dead = dead.WithProperty("facing", block.GetProperty("facing")!);
+
+        level.SetBlock(position, dead, BlockUpdateFlags.Clients);
+    }
+
+    public IBlock? UpdateShape(
+        IBlockLevel level,
+        Vector position,
+        IBlock state,
+        BlockFace direction,
+        Vector neighborPosition,
+        IBlock neighbor)
+    {
+        // Losing its support breaks it before anything is drawn.
+        var survives = Survives(level, position, state);
+        if (direction == Support(state) && !survives)
+            return BlocksRegistry.Air;
+
+        // A coral without support is about to break: Obsidian's support check before the break asks every face's
+        // shape update, which mustn't draw. Vanilla draws here only for a coral placed without support and without
+        // updates, and changed beside it.
+        if (survives && !IsWet(level, position, state))
+            Coral.ScheduleDeathOnChange(level, position, state);
+
+        return null;
+    }
+
+    // Vanilla's BaseCoralPlantTypeBlock.scanForWater: waterlogged, or touching water.
+    private static bool IsWet(IBlockLevel level, Vector position, IBlock state) =>
+        state.GetProperty("waterlogged") == "true" || Coral.TouchesWater(level, position);
+
+    // The face its support is on: below a plant or fan, behind a wall fan.
+    private BlockFace Support(IBlock state) =>
+        onWall ? FeatureHelpers.ParseFace(state.GetProperty("facing")!).Opposite() : BlockFace.Down;
+
+    // Vanilla's canSurvive: the support's face toward the coral is sturdy.
+    private bool Survives(IBlockLevel level, Vector position, IBlock state)
+    {
+        var support = Support(state);
+        return level.IsFaceSturdy(position.Offset(support), support.Opposite());
+    }
+}

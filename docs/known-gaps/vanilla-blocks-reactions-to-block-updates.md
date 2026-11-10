@@ -20,7 +20,14 @@ entities inside them; none has a stepped-on reaction, though magma, turtle eggs 
 checks of their own. The [block interactions plan](../block-interactions-plan.md) lists what is missing, phase by
 phase. Some vanilla blocks' shape rules aren't modelled yet:
 a bell keeps its `single_wall` or `double_wall` attachment when a wall beside it is added or removed, and doesn't drop
-when it loses all support (vanilla's `BellBlock.updateShape`).
+when it loses all support (vanilla's `BellBlock.updateShape`). Dead coral plants and fans don't break when their
+support goes (vanilla's `BaseCoralPlantTypeBlock` and `BaseCoralWallFanBlock`).
+
+Obsidian asks a block's shape update more than once for one change: the vanilla-ordered neighbour update and the
+notification pipeline both run it, and the support check before a queued break asks it for every face. That's harmless
+for shape rules that only return a state, but live coral draws its death delay from the level's random there. Coral
+draws only when no death is pending and it still has its support, which matches vanilla's one draw per change except
+that vanilla also draws (and discards the delay) when a neighbour of a dry coral changes while its death is pending.
 
 Saved `block_ticks` and `fluid_ticks` lists are written in the order the ticks would run, where vanilla writes its
 priority queue's internal heap order. Both reload the list in file order, so after a save and reload Obsidian keeps

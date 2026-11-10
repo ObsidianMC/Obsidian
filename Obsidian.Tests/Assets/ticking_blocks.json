@@ -11898,6 +11898,1525 @@
           "state": "minecraft:stone"
         }
       ]
+    },
+    {
+      "name": "coral_block_dies_dry",
+      "call": "tick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:brain_coral_block"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:dead_brain_coral_block",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:dead_brain_coral_block"
+        }
+      ]
+    },
+    {
+      "name": "coral_block_lives_by_water",
+      "call": "tick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:tube_coral_block"
+        },
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:tube_coral_block"
+        },
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "coral_block_lives_by_a_waterlogged_block",
+      "call": "tick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:fire_coral_block"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:stone_slab[type=bottom,waterlogged=true]"
+        }
+      ],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:fire_coral_block"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:stone_slab[type=bottom,waterlogged=true]"
+        }
+      ]
+    },
+    {
+      "name": "coral_block_lives_by_flowing_water",
+      "call": "tick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:horn_coral_block"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:water[level=7]"
+        }
+      ],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:water[level=7]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:horn_coral_block"
+        }
+      ]
+    },
+    {
+      "name": "coral_block_dry_neighbour_changes",
+      "call": "set",
+      "origin": [
+        9,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:bubble_coral_block"
+        }
+      ],
+      "state": "minecraft:stone",
+      "seed": 1,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 25
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:stone",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "type": "minecraft:bubble_coral_block",
+          "delay": 85
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:bubble_coral_block"
+        },
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "coral_block_wet_neighbour_changes",
+      "call": "set",
+      "origin": [
+        9,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:bubble_coral_block"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "state": "minecraft:stone",
+      "seed": 1,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:stone",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:bubble_coral_block"
+        },
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "coral_block_loses_its_water",
+      "call": "set",
+      "origin": [
+        8,
+        11,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:brain_coral_block"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "state": "minecraft:air",
+      "seed": 3,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 14
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "type": "minecraft:brain_coral_block",
+          "delay": 74
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:brain_coral_block"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "coral_plant_dies_dry",
+      "call": "tick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:brain_coral[waterlogged=false]"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:dead_brain_coral[waterlogged=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:dead_brain_coral[waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "coral_plant_lives_waterlogged",
+      "call": "tick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:brain_coral[waterlogged=true]"
+        }
+      ],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:brain_coral[waterlogged=true]"
+        }
+      ]
+    },
+    {
+      "name": "coral_plant_lives_by_water",
+      "call": "tick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:brain_coral[waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            9
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:brain_coral[waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            9
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "coral_fan_dies_dry",
+      "call": "tick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:tube_coral_fan[waterlogged=false]"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:dead_tube_coral_fan[waterlogged=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:dead_tube_coral_fan[waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "coral_wall_fan_dies_dry",
+      "call": "tick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            9
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:horn_coral_wall_fan[facing=north,waterlogged=false]"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:dead_horn_coral_wall_fan[facing=north,waterlogged=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:dead_horn_coral_wall_fan[facing=north,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            9
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "coral_plant_placed_dry",
+      "call": "set",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "state": "minecraft:fire_coral[waterlogged=false]",
+      "seed": 5,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 7
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:fire_coral[waterlogged=false]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "type": "minecraft:fire_coral",
+          "delay": 67
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:fire_coral[waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "coral_plant_placed_waterlogged",
+      "call": "set",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "state": "minecraft:fire_coral[waterlogged=true]",
+      "seed": 5,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:fire_coral[waterlogged=true]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:fire_coral[waterlogged=true]"
+        }
+      ]
+    },
+    {
+      "name": "coral_fan_placed_dry",
+      "call": "set",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "state": "minecraft:bubble_coral_fan[waterlogged=false]",
+      "seed": 6,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 11
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:bubble_coral_fan[waterlogged=false]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "type": "minecraft:bubble_coral_fan",
+          "delay": 71
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:bubble_coral_fan[waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "coral_wall_fan_placed_dry",
+      "call": "set",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            7,
+            10,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "state": "minecraft:brain_coral_wall_fan[facing=east,waterlogged=false]",
+      "seed": 7,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 36
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:brain_coral_wall_fan[facing=east,waterlogged=false]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "type": "minecraft:brain_coral_wall_fan",
+          "delay": 96
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            7,
+            10,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:brain_coral_wall_fan[facing=east,waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "coral_fan_placed_next_to_water",
+      "call": "set",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "state": "minecraft:bubble_coral_fan[waterlogged=false]",
+      "seed": 6,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:bubble_coral_fan[waterlogged=false]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:bubble_coral_fan[waterlogged=false]"
+        },
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "coral_plant_dry_neighbour_changes",
+      "call": "set",
+      "origin": [
+        9,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:horn_coral[waterlogged=false]"
+        }
+      ],
+      "state": "minecraft:stone",
+      "seed": 8,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 4
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:stone",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "type": "minecraft:horn_coral",
+          "delay": 64
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:horn_coral[waterlogged=false]"
+        },
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "coral_plant_wet_neighbour_changes",
+      "call": "set",
+      "origin": [
+        9,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:horn_coral[waterlogged=true]"
+        }
+      ],
+      "state": "minecraft:stone",
+      "seed": 8,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:stone",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:horn_coral[waterlogged=true]"
+        },
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "coral_plant_loses_its_floor",
+      "call": "set",
+      "origin": [
+        8,
+        9,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:horn_coral[waterlogged=false]"
+        }
+      ],
+      "state": "minecraft:air",
+      "seed": 8,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:horn_coral[waterlogged=false]",
+          "drops": true
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "coral_wall_fan_loses_its_wall",
+      "call": "set",
+      "origin": [
+        7,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            7,
+            10,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:tube_coral_wall_fan[facing=east,waterlogged=false]"
+        }
+      ],
+      "state": "minecraft:air",
+      "seed": 9,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            7,
+            10,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:tube_coral_wall_fan[facing=east,waterlogged=false]",
+          "drops": true
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            7,
+            10,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "coral_wall_fan_dry_neighbour_changes",
+      "call": "set",
+      "origin": [
+        8,
+        11,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            7,
+            10,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:tube_coral_wall_fan[facing=east,waterlogged=false]"
+        }
+      ],
+      "state": "minecraft:stone",
+      "seed": 9,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 29
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:stone",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "type": "minecraft:tube_coral_wall_fan",
+          "delay": 89
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            7,
+            10,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:tube_coral_wall_fan[facing=east,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
     }
   ],
   "_notes": "Vanilla block routines, recorded by the asset generator's TickingBlockFixtures.java against a block view of the case's setup (air elsewhere, void air outside the build height of -64 to 319) in the overworld, with a legacy random seeded with seed (0 by default) as both the routine's random and the level's. call is randomTick (the origin's state, only when its isRandomlyTicking holds, which ticks records), tick (the origin's scheduled tick), set (Level.setBlock of state at the origin with UPDATE_ALL) or landing (a falling block of state settling at the origin, with the entityDrops rule and silent flag). Writes store the block and, as Level.setBlock does, run the new state's onPlace and then, unless UPDATE_KNOWN_SHAPE is set, the neighbours' shape updates; neighbour notifications are not run. draws lists each draw in order; writes the block changes with their flags; scheduled the block and fluid ticks scheduled with their delays (a block tick counts as pending for hasScheduledTick); events the level events; gameEvents the game events with the state they carry; entities the entities added, with a falling block's state, position and damage; destroyed the blocks destroyed and whether they drop; items the items a landing dropped. after holds the final state of every setup or written position."
