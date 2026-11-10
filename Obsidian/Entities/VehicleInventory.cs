@@ -80,7 +80,7 @@ internal sealed class VehicleInventory
         foreach (var name in new[] { "Items", "LootTable", "LootTableSeed" })
             tag.Remove(name);
 
-        using var held = this.Items.Lock();
+        using var held = InventorySnapshot.Lock(this.Items);
         lock (this.LootLock)
         {
             if (this.LootTable is not null)
@@ -92,18 +92,7 @@ internal sealed class VehicleInventory
                 return;
             }
 
-            var items = new NbtList(NbtTagType.Compound, "Items");
-            for (var slot = 0; slot < this.Items.Size; slot++)
-            {
-                if (this.Items[slot] is not { IsAir: false, Count: > 0 } item)
-                    continue;
-
-                var itemTag = item.ToNbt();
-                itemTag.Add(new NbtTag<byte>("Slot", (byte)slot));
-                items.Add(itemTag);
-            }
-
-            tag.Add(items);
+            tag.Add(InventorySnapshot.SaveItems(this.Items));
         }
     }
 
@@ -318,6 +307,9 @@ internal sealed class VehicleItemAccess(VehicleInventory inventory, VehicleEntit
 /// </summary>
 internal interface IVehicleContainer
 {
+    /// <summary>The inventory admitted before a host snapshot serializes this vehicle.</summary>
+    BaseContainer Inventory { get; }
+
     /// <summary>The way into its slots.</summary>
     IItemAccess ItemAccess { get; }
 

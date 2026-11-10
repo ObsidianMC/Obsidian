@@ -131,7 +131,7 @@ public abstract partial class AbstractLevel
                 if (removed is Region leaving && !this.TryCloseRegionToTravel(leaving))
                     return;
 
-                (removed as Region)?.Retire();
+                (removed as Region)?.SealForUnload();
             }
 
             // The region stops taking lookups and admissions in the same step as its final snapshot: a lookup from
@@ -144,7 +144,7 @@ public abstract partial class AbstractLevel
                     .ToArray();
                 try
                 {
-                    unloaded = await region.DetachForUnloadAsync(positions);
+                    unloaded = await region.DetachForUnloadAsync(positions, wholeRegion: true);
                 }
                 catch
                 {
@@ -157,6 +157,8 @@ public abstract partial class AbstractLevel
                 kept = unloaded.Failures.Count != 0;
                 if (kept)
                     this.KeepRegion(region);
+                else
+                    region.Retire();
             }
             else
             {

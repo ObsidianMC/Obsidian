@@ -195,7 +195,7 @@ internal sealed partial class BlockEntityComponents : IAsyncDisposable
                 for (var slot = 0; slot < inventory.Size && slot < contents.Value.Length; slot++)
                 {
                     var stack = contents.Value[slot];
-                    inventory.SetItem(slot, stack.IsAir || stack.Count <= 0 ? null : new ItemStack(stack, stack.Count));
+                    inventory[slot] = stack.IsAir || stack.Count <= 0 ? null : new ItemStack(stack, stack.Count);
                 }
             }
 
