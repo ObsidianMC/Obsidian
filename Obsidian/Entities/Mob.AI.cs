@@ -391,17 +391,31 @@ public partial class Mob
         if (Vehicle is not null)
             Motion = VectorD.Zero;
 
-        var position = Vehicle is null ? Travel() : Position;
+        var clientMob = this.Vehicle is null ? this as PluginMob : null;
+        var clientControlled = clientMob is not null && clientMob.ClientControl.ControlledBy(clientMob.Rider);
+        var clientMove = clientControlled ? clientMob!.ClientControl.AcceptedMove : null;
+        var position = Vehicle is null && !clientControlled ? Travel() : Position;
         LastPosition = oldPosition;
-        if (Level is AbstractLevel level && !level.TryMoveEntity(this, oldPosition, position))
+        if (clientControlled)
         {
-            Motion = VectorD.Zero;
-            (Navigator as Navigator)?.Stop();
-            return;
+            if (clientMove is not null && !clientMob!.ApplyClientMovement(clientMove))
+                return;
+            if (clientMove is null)
+                BoundingBox = Dimension.CreateBBFromPosition(Position);
+        }
+        else
+        {
+            if (Level is AbstractLevel level && !level.TryMoveEntity(this, oldPosition, position))
+            {
+                Motion = VectorD.Zero;
+                (Navigator as Navigator)?.Stop();
+                return;
+            }
+
+            Position = position;
+            BoundingBox = Dimension.CreateBBFromPosition(position);
         }
 
-        Position = position;
-        BoundingBox = Dimension.CreateBBFromPosition(position);
         PositionPassengers();
         if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
         SynchronizeMovement(oldPosition);

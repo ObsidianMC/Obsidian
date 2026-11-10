@@ -8,7 +8,8 @@ public partial class PlayerBase
 {
     // Protects serverbound player movement admission/commit and pending-teleport state. It does not cover every
     // Entity position writer (such as piston displacement); see docs/known-gaps/movement-and-swing-details.md.
-    // Chunk lookups, gameplay callbacks and awaits happen outside this lock.
+    // Chunk lookups, explicit gameplay callbacks and awaits happen outside this lock. Vehicle commits can still
+    // reach virtual Dimension and BoundingBox accessors.
     private readonly Lock teleportStateGate = new();
     private PendingTeleport? pendingTeleport;
     private long movementGeneration;
@@ -24,6 +25,8 @@ public partial class PlayerBase
     /// retained for plugins that already issue their own position packet and registers the current position.
     /// Setting this property and sending that packet are not atomic together: another teleport can intervene.
     /// TeleportAsync is the reliable way to register and send a server teleport.
+    /// Reusing the currently pending id throws: a confirmation carries only its id, so two pending uses of that id
+    /// cannot be distinguished. Plugins must choose fresh ids; -1 clears the pending registration.
     /// </summary>
     public int TeleportId
     {
@@ -36,11 +39,14 @@ public partial class PlayerBase
         {
             lock (this.teleportStateGate)
             {
+                if (this.pendingTeleport?.Id == value)
+                    throw new InvalidOperationException("The teleport id is already pending; choose a fresh id.");
+
                 this.movementGeneration++;
                 this.pendingTeleport = value == AcceptTeleportationPacket.NoTeleportAwaited
                     ? null
                     : new(value, this.Position, this.teleportClock, this.movementGeneration);
-                if (value >= 0)
+                if (value > this.teleportCounter)
                     this.teleportCounter = value;
             }
         }
@@ -124,6 +130,9 @@ public partial class PlayerBase
     {
         // Vanilla skips int.MaxValue: the counter runs 1..int.MaxValue-1, 0, 1...
         this.teleportCounter = this.teleportCounter >= int.MaxValue - 1 ? 0 : this.teleportCounter + 1;
+        // A plugin can register a lower id without rewinding the counter, including zero just before wrap.
+        if (this.pendingTeleport?.Id == this.teleportCounter)
+            this.teleportCounter = this.teleportCounter >= int.MaxValue - 1 ? 0 : this.teleportCounter + 1;
         this.pendingTeleport = this.Connection is null
             ? null
             : new(this.teleportCounter, this.Position, this.teleportClock, this.movementGeneration);
@@ -206,14 +215,18 @@ public partial class PlayerBase
             return this.movementGeneration;
     }
 
-    internal bool CanApplyVehicleMovement(long generation)
+    internal bool CanApplyVehicleMovement(Entity vehicle, long generation)
     {
         lock (this.teleportStateGate)
         {
             return generation == this.movementGeneration
-                && this.pendingTeleport is null && this.movementHolds == 0;
+                && this.pendingTeleport is null && this.movementHolds == 0
+                && this.ControlsVehicle(vehicle);
         }
     }
+
+    private bool ControlsVehicle(Entity vehicle) => this.Vehicle == vehicle && this.Level == vehicle.Level
+        && ReferenceEquals(vehicle.Passengers.FirstOrDefault(), this);
 
     internal bool PositionFromVehicle(Entity vehicle, VectorD position, long generation)
     {
@@ -234,19 +247,24 @@ public partial class PlayerBase
         }
     }
 
-    // The boat's owning-level transfer lock is already held. Keep validation and the synchronous transform commit
-    // together with player teleport admission; the transfer lock serializes a teleport of the boat itself.
-    internal void ApplyClientBoatMovement(Boat boat, VehicleMove move, long generation)
+    // The vehicle's owning-level transfer lock is held, so a riding change cannot separate control validation from
+    // commitment. The synchronous host commit still reaches virtual Dimension and BoundingBox accessors.
+    internal bool ApplyClientVehicleMovement(Entity vehicle, VehicleMove move, long generation)
     {
         lock (this.teleportStateGate)
         {
             if (generation != this.movementGeneration || this.pendingTeleport is not null
-                || this.movementHolds != 0 || this.Vehicle != boat || this.Level != boat.Level)
+                || this.movementHolds != 0 || !this.ControlsVehicle(vehicle))
             {
-                return;
+                return true;
             }
 
-            boat.CommitClientMovement(move);
+            return vehicle switch
+            {
+                Boat boat => boat.CommitClientMovement(move),
+                PluginMob mob => mob.CommitClientMovement(move),
+                _ => true
+            };
         }
     }
 

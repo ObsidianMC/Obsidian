@@ -221,13 +221,14 @@ public partial class Boat : VehicleEntity
             this.ClientControl.ApplyAcceptedTo(this, move);
     }
 
-    // Called only by ClientVehicleControl with the transfer lock and, for a connected rider, its teleport gate.
-    internal void CommitClientMovement(VehicleMove move)
+    // Called with the transfer lock and, for a connected rider, its teleport gate. SetPosition reaches the virtual
+    // Dimension and BoundingBox accessors; no asynchronous work is done here.
+    internal bool CommitClientMovement(VehicleMove move)
     {
         this.Yaw = move.Yaw;
         this.Pitch = move.Pitch;
         this.MovementFlags = move.OnGround ? MovementFlags.OnGround : MovementFlags.None;
-        this.SetPosition(move.Position);
+        return this.SetPosition(move.Position);
     }
 
     private void SetPaddleState(bool left, bool right)

@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
@@ -8,10 +10,14 @@ using Obsidian.Net.Packets.Configuration.Serverbound;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Registries;
+using Obsidian.Services;
+using Obsidian.Utilities.Collections;
 using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
 using System;
 using System.Linq;
+using System.Diagnostics.Metrics;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -268,6 +274,24 @@ public sealed class PendingTeleports
         await client.ConfirmTeleportAsync();
         boat.PositionPassengers();
         Assert.Equal(destination, player.Position);
+
+        var second = AddPlayer(context, "SecondRider");
+        Assert.True(second.Ride(boat));
+        await VehicleMove(boat.Position + new VectorD(0.5, 0, 0)).HandleAsync(context.Server, player);
+        boat.ClientControl.Tick(boat, new Entities.AI.MobTerrain(context.World), player, flying: false);
+        var taken = boat.ClientControl.AcceptedMove;
+        Assert.NotNull(taken);
+        var beforeSwap = boat.Position;
+        player.LeaveVehicle();
+        Assert.True(player.Ride(boat));
+        Assert.Same(second, boat.Passengers[0]);
+        boat.ApplyClientMovement(taken);
+        Assert.Equal(beforeSwap, boat.Position);
+
+        var drivenBySecond = beforeSwap + new VectorD(0.5, 0, 0);
+        await VehicleMove(drivenBySecond).HandleAsync(context.Server, second);
+        await boat.TickAsync();
+        Assert.Equal(drivenBySecond.X, boat.Position.X);
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
@@ -276,23 +300,37 @@ public sealed class PendingTeleports
         await using var context = Create();
         var watcher = AddPlayer(context, "PluginWatcher");
         var watching = (TestClient)watcher.Client;
-        int[] ids = [17, 0, -42, int.MinValue];
-        foreach (var id in ids)
+        var player = AddPlayer(context, "Plugin");
+        var client = (TestClient)player.Client;
+        await player.TeleportAsync(start);
+        Assert.Equal(1, client.SentPackets.OfType<PlayerPositionPacket>().Last().TeleportId);
+        await client.ConfirmTeleportAsync();
+        (int Id, int NextAutomatic)[] cases =
+        [
+            (0, 2),
+            (17, 18),
+            (0, 19),
+            (-42, 20),
+            (int.MinValue, 21),
+            (int.MaxValue - 2, int.MaxValue - 1)
+        ];
+        foreach (var row in cases)
         {
-            var player = AddPlayer(context, $"Plugin-{id}");
-            var client = (TestClient)player.Client;
             var destination = start + new VectorD(1, 0, 0);
             player.Position = destination;
-            player.TeleportId = id;
+            player.TeleportId = row.Id;
             await player.QueuePacketAsync(new PlayerPositionPacket
             {
-                TeleportId = id,
+                TeleportId = row.Id,
                 Position = destination,
                 Yaw = player.Yaw,
                 Pitch = player.Pitch
             });
             watching.ClearPackets();
 
+            // A second registration with the same pending id is indistinguishable from a late confirmation.
+            var reuse = Assert.Throws<InvalidOperationException>(() => player.TeleportId = row.Id);
+            Assert.Contains("already pending", reuse.Message);
             await Move(start).HandleAsync(context.Server, player);
             Assert.Equal(destination, player.Position);
             await client.ConfirmTeleportAsync();
@@ -303,7 +341,25 @@ public sealed class PendingTeleports
             Assert.Equal(next, player.Position);
             var broadcast = Assert.Single(watching.SentPackets.OfType<MoveEntityPosPacket>());
             Assert.Equal(new Vector(2048, 0, 0), broadcast.Delta);
+            await player.TeleportAsync(start);
+            Assert.Equal(row.NextAutomatic, client.SentPackets.OfType<PlayerPositionPacket>().Last().TeleportId);
+            await client.ConfirmTeleportAsync();
         }
+
+        // Zero registered just before wrap must not be reused by the automatic teleport replacing it.
+        player.TeleportId = 0;
+        var plugin = new PlayerPositionPacket { TeleportId = 0, Position = player.Position };
+        await player.QueuePacketAsync(plugin);
+        var replacement = start + new VectorD(2, 0, 0);
+        await player.TeleportAsync(replacement);
+        var automatic = client.SentPackets.OfType<PlayerPositionPacket>().Last();
+        Assert.Equal(1, automatic.TeleportId);
+        await client.ConfirmTeleportAsync(plugin);
+        await Move(start).HandleAsync(context.Server, player);
+        Assert.Equal(replacement, player.Position);
+        await client.ConfirmTeleportAsync(automatic);
+        await Move(start).HandleAsync(context.Server, player);
+        Assert.Equal(start, player.Position);
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
@@ -384,6 +440,12 @@ public sealed class PendingTeleports
         var watcher = AddPlayer(context, "DisconnectWatcher");
         var client = (TestClient)player.Client;
         var watching = (TestClient)watcher.Client;
+        using var metrics = new ServiceCollection().AddMetrics().BuildServiceProvider();
+        using var productionClient = new Client(
+            context.EventDispatcher, context.Server, NullLoggerFactory.Instance, context.UserCache,
+            new ServerMetrics(metrics.GetRequiredService<IMeterFactory>()), context.Provider,
+            new SimpleObjectPool<SocketAsyncEventArgs>(8));
+        typeof(Client).GetProperty(nameof(Client.Player))!.SetValue(productionClient, player);
         var queued = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         client.AfterQueue = packet =>
@@ -404,10 +466,11 @@ public sealed class PendingTeleports
                 .AsTask();
             Assert.False(confirmation.IsCompleted);
 
-            client.Dispose();
+            // Do not dispose the fake: removing the call from Client.Dispose must strand this confirmation.
+            productionClient.Dispose();
             await confirmation.WaitAsync(TimeSpan.FromSeconds(10));
 
-            Assert.False(client.Connected);
+            Assert.True(client.Connected);
             Assert.False(travel.IsCompleted);
             Assert.Equal(destination, player.Position);
             Assert.DoesNotContain(watching.SentPackets, IsPositionUpdate);

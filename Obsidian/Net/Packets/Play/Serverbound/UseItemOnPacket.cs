@@ -98,6 +98,12 @@ public partial class UseItemOnPacket
             usedItem = item is null ? null : new ItemStack(item, item.Count);
         }
 
+        if (!user.Alive || user.Respawning || user.HasPendingTeleport)
+        {
+            await this.RefuseAsync(user, level);
+            return null;
+        }
+
         // The inventory and world snapshots need no shared lock: exchanges validate both again at commitment.
         IBlockEntity? blockEntity;
         lock (level.Fluids.TickLock)
