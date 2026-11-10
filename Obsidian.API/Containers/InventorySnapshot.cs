@@ -14,9 +14,13 @@ internal sealed class InventorySnapshot : IDisposable
 {
     [ThreadStatic] private static InventorySnapshot? current;
 
+    internal static bool IsAdmitted => current is { preparing: false };
+
     private InventorySnapshot? previous;
     private bool preparing;
     private readonly Dictionary<ItemStack, (long Version, NbtCompound Data)> itemData =
+        new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<ItemStack, (long Version, byte[] Data)> networkItemData =
         new(ReferenceEqualityComparer.Instance);
     private readonly Dictionary<BaseContainer, long> revisions = new(ReferenceEqualityComparer.Instance);
     private readonly Dictionary<BaseContainer, NbtCompound[]> items = new(ReferenceEqualityComparer.Instance);
@@ -127,6 +131,25 @@ internal sealed class InventorySnapshot : IDisposable
             current.itemData[item] = (version, ComponentCopies.Nbt(data)!);
     }
 
+    // Equipment persists its existing wire format. Its component codecs are callbacks too: encode during
+    // preparation, then use only the immutable bytes and nonvirtual item version during host admission.
+    internal static ReadOnlyMemory<byte> NetworkItemData(ItemStack item, Func<ItemStack, byte[]> encode)
+    {
+        if (current is null)
+            return encode(item);
+
+        if (current.networkItemData.TryGetValue(item, out var saved) && saved.Version == item.Version)
+            return saved.Data;
+
+        if (!current.preparing)
+            throw new ChangedException();
+
+        var version = item.Version;
+        var data = encode(item);
+        current.networkItemData[item] = (version, data);
+        return data;
+    }
+
     internal bool TryEnter(out BaseContainer? busy)
     {
         busy = null;
@@ -169,6 +192,15 @@ internal sealed class InventorySnapshot : IDisposable
         }
 
         foreach (var (stack, saved) in this.itemData)
+        {
+            if (stack.Version == saved.Version)
+                continue;
+
+            this.Release();
+            return false;
+        }
+
+        foreach (var (stack, saved) in this.networkItemData)
         {
             if (stack.Version == saved.Version)
                 continue;

@@ -123,6 +123,9 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
         else if (this.UnmodeledComponents?.TryGetTag(type.Identifier, out var unmodeled) == true)
             saved = new PluginDataComponent(type.Type, type.Identifier, unmodeled).ToNbt();
 
+        if (saved is not null)
+            ComponentExecutionGuard.Check($"persistent decoder ({type.Identifier})");
+
         value = saved is not null ? type.Codec.Decode(saved) : default;
         return saved is not null;
     }
@@ -141,6 +144,7 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
         using var call = type.TryEnter()
             ?? throw new InvalidOperationException($"{type.Identifier}'s plugin is unloading.");
 
+        ComponentExecutionGuard.Check($"persistent encoder ({type.Identifier})");
         this[type.Type] = new PluginDataComponent(type.Type, type.Identifier, type.Codec.Encode(value));
         this.UnmodeledComponents?.Remove(type.Identifier);
     }

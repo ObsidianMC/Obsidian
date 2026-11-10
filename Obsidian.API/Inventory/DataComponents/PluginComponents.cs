@@ -136,6 +136,7 @@ public sealed record PluginDataComponent : DataComponent
         if (binding?.WriteNetwork is not Action<INbtTag, INetStreamWriter> write)
             return false;
 
+        ComponentExecutionGuard.Check($"network codec ({this.Identifier})");
         write(this.ToNbt(), writer);
         return true;
     }
@@ -150,6 +151,7 @@ public sealed record PluginDataComponent : DataComponent
             return false;
         }
 
+        ComponentExecutionGuard.Check($"hash codec ({this.Identifier})");
         hash = hashValue(this.ToNbt());
         return true;
     }

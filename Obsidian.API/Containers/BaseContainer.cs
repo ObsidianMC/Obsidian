@@ -432,6 +432,10 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     /// <returns>Whether this call retired it: false when it was already.</returns>
     internal bool TryRetire() => Interlocked.Exchange(ref this.retired, 1) == 0;
 
+    // Only the unload that successfully retired this inventory may give it back, before publishing any removal
+    // or notifying plugin code. No inventory contents change, and no inventory lock is acquired here.
+    internal void Unretire() => Volatile.Write(ref this.retired, 0);
+
     // Only the aborted break that acquired retirement may undo it, under the click lock.
     internal void CancelRetirement() => Volatile.Write(ref this.retired, 0);
 

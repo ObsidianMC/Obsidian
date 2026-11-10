@@ -1444,6 +1444,7 @@ public abstract partial class AbstractLevel : ILevel
                 LightLoaded = this.TrackPublishedChunk,
                 LightUnloaded = this.Lighting.Untrack,
                 BlockAccessUnloaded = this.Fluids.Untrack,
+                BlockAccessRestored = this.Fluids.RestoreTracking,
                 BlockEntityUnloaded = this.OnBlockEntityUnloaded,
                 EntitiesLoaded = this.QueueEntitySpawn,
                 SaveStructureStarts = this.Generator is IStructureStartStorage storage ? storage.SaveStructureStarts : null,

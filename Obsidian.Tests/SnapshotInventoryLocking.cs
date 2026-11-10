@@ -280,7 +280,7 @@ public sealed class SnapshotInventoryLocking
 
     // Inspect exactly what the completed operation wrote, before server disposal can save it again.
     // Read committed bytes through the owning file handle, then reload those exact NBT bytes in an isolated region.
-    internal static async Task<Chunk> ReloadDiskAsync(Region source)
+    internal static async Task<Chunk> ReloadDiskAsync(Region source, int x = 0, int z = 0)
     {
         var folder = Path.Join(Path.GetTempPath(), $"obsidian-snapshot-copy-{Guid.NewGuid():N}");
         try
@@ -289,7 +289,7 @@ public sealed class SnapshotInventoryLocking
             {
                 var destination = Path.Join(folder, name);
                 Directory.CreateDirectory(destination);
-                if (await sourceFile.GetChunkBytesAsync(0, 0) is not Memory<byte> bytes)
+                if (await sourceFile.GetChunkBytesAsync(x, z) is not Memory<byte> bytes)
                     continue;
 
                 await using var file = new RegionFile(Path.Join(destination, "r.0.0.mca"), NbtCompression.ZLib);
@@ -297,7 +297,7 @@ public sealed class SnapshotInventoryLocking
                 var compressed = file.Compress(bytes.Span);
                 try
                 {
-                    await file.SetChunkAsync(0, 0, compressed.Written.ToArray());
+                    await file.SetChunkAsync(x, z, compressed.Written.ToArray());
                 }
                 finally
                 {
@@ -307,7 +307,7 @@ public sealed class SnapshotInventoryLocking
 
             await using var disk = new Region(0, 0, folder);
             await disk.InitAsync();
-            return Assert.IsType<Chunk>(await disk.GetChunkAsync(0, 0));
+            return Assert.IsType<Chunk>(await disk.GetChunkAsync(x, z));
         }
         finally
         {

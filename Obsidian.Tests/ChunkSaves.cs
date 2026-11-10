@@ -841,9 +841,9 @@ public sealed class ChunkSaves
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => world.UnloadRegionAsync(region.X, region.Z));
 
-        // The region stays with the chunk that couldn't be taken, and both its entities; the other left with its save.
+        // The whole-region transaction keeps both chunks and their entities when either snapshot fails.
         Assert.Same(region, world.GetRegionForChunk(64, 64));
-        Assert.Null(region.GetLoadedChunk(0, 0));
+        Assert.Same(unloading, region.GetLoadedChunk(0, 0));
         Assert.Same(failing, region.GetLoadedChunk(1, 0));
         Assert.Same(saving, world.FindEntity(saving.Uuid));
         Assert.Same(entity, world.FindEntity(entity.Uuid));

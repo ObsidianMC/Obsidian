@@ -14,7 +14,8 @@ non-reentrant. Final host snapshot serialization reuses the inventories its expl
 preparation can read already captured inventory NBT without claiming ownership of another inventory.
 The rule governs host acquisition; virtual plugin inventory getters retain their previous tick/generator and
 own-inventory scope, and run before transfer, chunk entity locks and ambient host admission. The same applies to
-component Value/copy delegates reached by item NBT conversion; admission only sees fully prepared host NBT.
+component Value/copy delegates reached by item NBT conversion and equipment network codecs; admission only sees
+fully prepared host NBT and equipment bytes.
 
 An arrow means acquisition while holding the left side. `wait` includes synchronous and asynchronous waiting;
 `try` means `Wait(0)`, abandoning partial acquisitions on failure.
@@ -30,7 +31,7 @@ An arrow means acquisition while holding the left side. `wait` includes synchron
 | Furnace / campfire | Tick operations try their machine inventory and skip busy ticks. Campfire insertion tries hand then campfire and refuses before changing either if busy. Campfire update data tries once, retains its last complete client projection and queues another update if busy. |
 | Container item access | Under tick, `ContainerItemAccess.Enter` tries inventory; otherwise it waits. Vehicle access always tries. Protected `LockInventory` refuses under tick and forbids awaits/other locks in its scope. Loot preparation finishes outside tick/transfer/click locks, or is queued. |
 | Entity transfer | Pickup owns hand before waiting for transfer. Transfer precedes chunk `EntityLock` and grid locks. Never hold two levels' transfer locks, await, load chunks or invoke plugin code under transfer. |
-| Region snapshots | Generator -> tick -> each inventory (try, separately) captures virtual slots and converts their complete item NBT without transfer or ambient admission. Then transfer -> the captured inventory set (try), validating host content revisions and membership before retirement. Host-only hashing, retirement and serialization share the captured members and prepared NBT; entity serialization also takes chunk `EntityLock`. Failure takes no dirty marks and retires/removes nothing. |
+| Region snapshots | Generator -> tick -> each inventory (try, separately) captures virtual slots and converts their complete item NBT without transfer or ambient admission. Then transfer -> the captured inventory set (try), validating host content revisions and membership before retirement. Host-only hashing, retirement and serialization share the captured members, prepared NBT and equipment bytes; entity serialization also takes chunk `EntityLock`. Contention/validation failure takes no dirty marks and retires/removes nothing. Whole-region unload retains rollback ownership until all chunk snapshots succeed. |
 | Plugin preservation | Final plugin Save runs without tick or new inventory locks. Host preservation takes tick -> inventory admission (try), revalidates identity, freezes the inventory and saves its current host-owned contents. Fresh plugin fields are cached before admission can defer; virtual slot capture runs with tick and only its own inventory. A call inheriting tick, or a busy admission, queues preservation with an unloading hold released on execution or level disposal. |
 | Chunks / lighting / structures | Live writes take tick -> `Chunk.BlockLock`; runtime light uses tick -> propagation reader/writer lock. Chunk I/O and region lookup finish before write sections. Structure-state serializers may call plugins: they finish in their existing tick scope before snapshot admission adds transfer/inventory locks. |
 | Notification queue | Tick -> `BlockNotificationPipeline.sync` is a short blocking monitor. Drain releases `sync` before world reads, hooks and awaits; it adds no reverse tick/inventory edge. Placement's existing synchronous callbacks retain their existing lock scopes. |
@@ -50,7 +51,11 @@ encodes their item NBT there, including nested items and component Value/copy de
 into private host-owned tags before transfer, chunk entity locks or thread-static admission. Conversion failures
 therefore precede dirty marks and retirement. Preparation mode covers the initial slot reads too: a component
 copy or virtual getter cannot make an auxiliary base save wait while tick/current inventory are held. It then
-visits the captured block/entity serializers to encode stacks outside their Items lists too (e.g. lectern books, drops and projectiles). In this mode,
+visits the captured block/entity serializers to encode stacks outside their Items lists too (e.g. lectern books,
+drops and projectiles). Mob equipment keeps its existing `ObsidianEquipment` wire format: its full item bytes are
+prepared here as well, before `NetworkBuffer.WriteItemStack` can reach a plugin network writer under transfer.
+Both item NBT and equipment-byte caches validate the source stack's nonvirtual version; a replacement or mutation
+requires recapture. In this mode,
 known inventories return prepared NBT; an auxiliary base save may only try its own inventory and defers the attempt
 if busy. This thread-static preparation mode owns no inventory set and does not enforce admission on plugin code.
 After leaving it, final admission validates inventory/item versions and rechecks the serializers for replaced stack
@@ -93,8 +98,18 @@ point, preserving unload-failure cleanup without adding inventory/transfer locks
   not arbitrary plugin callbacks, generator gates or disk I/O. Eager saves make only one non-waiting attempt.
   A caller already owning tick/transfer cannot unwind its outer lock: a busy explicit snapshot throws without
   changing data, leaving it for a legal save; an eager attempt still skips it.
-- Unload retires all containers only after the entire set is admitted. A busy later container cannot leave earlier
-  containers retired. The final snapshot freezes their contents together with entity removal before detaching.
+- A chunk unload retires all its containers only after its entire set is admitted. A busy later container in that
+  chunk cannot leave earlier containers retired. The final snapshot freezes contents together with entity removal.
+- Whole-region unload first seals publication and structure notifications, without retiring resident chunks.
+  Its per-chunk generator locks can be plugin-defined; retaining earlier generator/inventory locks across another
+  chunk's callbacks/await would add prohibited lock scopes. Instead, snapshots stage privately until all chunks
+  succeed. No pending write, slot removal or unload callback is published before that point. If a later chunk times
+  out or fails preparation, rollback restores earlier chunks' inventory and block-entity retirement flags,
+  entity membership/grid and `EntitiesUnloaded`, owned chunk/entity attachment retirements, lighting and prior
+  fluid/block tick tracking, and dirty marks; reserved writes and private buffers are discarded. Generation
+  completion callbacks were never detached. The publication seal is then lifted. The original disk images remain
+  intact and all chunks can be edited and saved/unloaded again. The region itself retires only after every snapshot
+  succeeds. This is a save/unload-only transaction, with no inventory lock held across an await or new plugin scope.
 - Plugin preservation leaves a busy entity resident and its inventory unretired. Deferred work keeps its plugin
   alive, tries again on a later entity-action drain, revalidates identity, then closes retired windows. A successful
   final plugin Save is cached immediately, before a busy admission can defer it, so consuming the change signal
@@ -119,6 +134,16 @@ A replaced entity stack is detected before unload retirement and recaptured. It 
 cannot partially retire an unload or damage the prior disk save. A busy auxiliary-copy rendezvous proves that
 world writes finish while that inventory remains held, before the snapshot's outside-lock wait is released. Tests use explicit signals and bounded cleanup,
 not sleeps or statistical scheduling.
+
+`SnapshotInventoryRecovery` reloads mob equipment whose network writer enters a foreign transfer lock, and checks
+block writes, lighting, tick tracking and attachment writes after region/single-chunk admission timeouts. Its
+multi-chunk rollback test exhausts a later container after an earlier snapshot removed an item entity, then edits
+and reloads both inventories and that entity, proving the aborted snapshot neither published nor lost data.
+The whole test assembly enables `ComponentExecutionGuard`: plugin-supplied defensive copies, persistent/network
+codecs, hash codecs and custom component overrides throw before running under snapshot admission or transfer.
+Each test also retains violation notifications across its async work, so catching the exception cannot hide it.
+Built-in API copy/codec delegates are host code; nested plugin delegates retain their own guards. The guard is
+disabled in production and adds no locks. It does not remove the separate fallback/eviction boundaries below.
 
 ## Placement retry
 

@@ -31,11 +31,11 @@ internal static class BlockEntityLifecycle
             {
                 using (InventorySnapshot.Lock(container.Inventory))
                 {
-                    container.Inventory.TryRetire();
+                    if (container.Inventory.TryRetire())
+                        inventories.Add(container.Inventory);
+
                     entity.IsRemoved = true;
                 }
-
-                inventories.Add(container.Inventory);
             }
 
             entity.IsRemoved = true;
