@@ -2,6 +2,8 @@ using Obsidian.API.Plugins;
 using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
 using Obsidian.Nbt;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace Obsidian.API.BlockEntities;
@@ -150,6 +152,25 @@ public abstract partial class BlockEntity : IBlockEntity
     /// vanilla's block entity tickers.
     /// </summary>
     protected internal virtual ValueTask TickAsync() => ValueTask.CompletedTask;
+
+    // Whether each class overrides TickAsync, read once per class. Weakly keyed, so plugins' classes still unload.
+    private static readonly ConditionalWeakTable<Type, StrongBox<bool>> tickingClasses = new();
+
+    private bool? ticks;
+
+    /// <summary>
+    /// Whether the block entity's class overrides <see cref="TickAsync"/>: the level only ticks those. Read from the
+    /// class itself, so a new class that ticks is never left out.
+    /// </summary>
+    internal bool Ticks => this.ticks ??= tickingClasses.GetValue(this.GetType(), OverridesTick).Value;
+
+    private static StrongBox<bool> OverridesTick(Type type)
+    {
+        const BindingFlags instance = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        var tick = type.GetMethod(nameof(TickAsync), instance, Type.EmptyTypes);
+
+        return new StrongBox<bool>(tick is not null && tick.DeclaringType != typeof(BlockEntity));
+    }
 
     /// <summary>
     /// Runs once a client tick (20 a second) on the Obsidian client, like vanilla's client-side block entity tickers:

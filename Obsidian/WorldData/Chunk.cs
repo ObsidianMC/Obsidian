@@ -275,6 +275,45 @@ public sealed class Chunk : IChunk
     // means walking it, which the level and its spawner did for every chunk each tick.
     private bool mayHoldBlockEntities;
 
+    // The block entities whose classes tick (see TickingBlockEntities), and whether BlockEntities changed since.
+    private API.BlockEntities.BlockEntity[] tickers = [];
+    private int tickersStale;
+
+    /// <summary>
+    /// The block entities in <see cref="BlockEntities"/> whose classes tick (see <c>BlockEntity.Ticks</c>), as of the
+    /// last change made through the chunk's methods, in the dictionary's own order: the order the level ticked them
+    /// in when it walked the whole dictionary, which hoppers and redstone may have come to depend on.
+    /// </summary>
+    /// <remarks>
+    /// Only the level's tick calls it, which is the only caller that rebuilds the list; the chunk's methods may
+    /// change the dictionary from any thread meanwhile. A change that lands after a rebuild began marks the list
+    /// stale again, so the next tick picks it up. The list is a snapshot: a block entity in it may have been removed
+    /// or replaced since, which the caller checks before ticking it. A plugin changing the public dictionary directly
+    /// isn't seen until the next change made through the chunk.
+    /// </remarks>
+    internal API.BlockEntities.BlockEntity[] TickingBlockEntities()
+    {
+        if (Interlocked.Exchange(ref this.tickersStale, 0) == 0)
+            return this.tickers;
+
+        var tickers = new List<API.BlockEntities.BlockEntity>();
+        foreach (var (_, value) in this.BlockEntities)
+        {
+            if (value is API.BlockEntities.BlockEntity { Ticks: true } ticking)
+                tickers.Add(ticking);
+        }
+
+        this.tickers = [.. tickers];
+        return this.tickers;
+    }
+
+    // After the dictionary changed, so that a rebuild either sees the change or leaves the list stale.
+    private void BlockEntitiesChanged()
+    {
+        Volatile.Write(ref this.tickersStale, 1);
+        this.MarkUnsaved();
+    }
+
     // Whether a dictionary holds anything. The level asks this of every chunk each tick, and most are empty, when
     // ConcurrentDictionary.IsEmpty (and Count) takes all of the dictionary's locks; enumerating takes none.
     private static bool HasAny<TKey, TValue>(ConcurrentDictionary<TKey, TValue> dictionary) where TKey : notnull
@@ -556,7 +595,7 @@ public sealed class Chunk : IChunk
     {
         Volatile.Write(ref this.mayHoldBlockEntities, true);
         this.BlockEntities[this.BlockEntityKey(x, y, z)] = tileEntityData;
-        this.MarkUnsaved();
+        this.BlockEntitiesChanged();
     }
 
     /// <summary>
@@ -571,7 +610,7 @@ public sealed class Chunk : IChunk
         Volatile.Write(ref this.mayHoldBlockEntities, true);
         var stored = this.BlockEntities.GetOrAdd(this.BlockEntityKey(x, y, z), blockEntity);
         if (ReferenceEquals(stored, blockEntity))
-            this.MarkUnsaved();
+            this.BlockEntitiesChanged();
 
         return stored;
     }
@@ -579,7 +618,7 @@ public sealed class Chunk : IChunk
     public void RemoveBlockEntity(int x, int y, int z)
     {
         if (this.BlockEntities.TryRemove(this.BlockEntityKey(x, y, z), out _))
-            this.MarkUnsaved();
+            this.BlockEntitiesChanged();
     }
 
     /// <summary>
@@ -595,7 +634,7 @@ public sealed class Chunk : IChunk
         if (!this.BlockEntities.TryUpdate(key, replacement, current))
             return false;
 
-        this.MarkUnsaved();
+        this.BlockEntitiesChanged();
         return true;
     }
 
