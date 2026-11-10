@@ -10,7 +10,8 @@ internal enum MobGameEvent
     Step, Land, Swim, ProjectileShoot, ProjectileLand, BlockPlace, BlockDestroy, BlockChange,
     EntityDamage, EntityDie, EntityInteract, NoteBlockPlay, JukeboxPlay, JukeboxStop, SculkSensorClick,
     BlockActivate, BlockDeactivate, BlockOpen, BlockClose, ContainerOpen, ContainerClose, Eat, FluidPickup,
-    FluidPlace, PrimeFuse, EntityPlace, ItemInteractFinish, LightningStrike
+    FluidPlace, PrimeFuse, EntityPlace, ItemInteractFinish, ItemInteractStart, Equip, Unequip, Explode,
+    LightningStrike
 }
 
 internal static class MobGameEvents
@@ -93,10 +94,10 @@ public abstract partial class AbstractLevel
     }
 
     /// <summary>
-    /// Told of each game event as it's emitted, before the level dispatches it later in its tick. Parity replays that
-    /// run whole ticks compare these with vanilla's.
+    /// Observes each game event as it's queued for dispatch, before the tick delivers it: for parity replays that tick
+    /// the level, which leaves nothing for <see cref="TakeGameEvents"/>.
     /// </summary>
-    internal Action<MobVibration>? GameEventEmitted { get; set; }
+    internal Action<MobVibration>? GameEventQueued { get; set; }
 
     internal void EmitGameEvent(
         MobGameEvent kind,
@@ -112,7 +113,7 @@ public abstract partial class AbstractLevel
         }
 
         var vibration = new MobVibration(kind, position, source, owner, affectedBlock);
-        this.GameEventEmitted?.Invoke(vibration);
+        this.GameEventQueued?.Invoke(vibration);
         mobGameEvents.Enqueue(vibration);
     }
 
@@ -496,9 +497,12 @@ public abstract partial class AbstractLevel
         MobGameEvent.BlockPlace or MobGameEvent.FluidPlace => 13,
         MobGameEvent.EntityPlace or MobGameEvent.LightningStrike => 14,
         MobGameEvent.EntityInteract => 6,
+        MobGameEvent.Equip => 5,
+        MobGameEvent.Unequip => 4,
         MobGameEvent.EntityDamage => 7,
         MobGameEvent.ProjectileShoot => 3,
         MobGameEvent.SculkSensorClick => 4,
+        MobGameEvent.Explode => 15,
         _ => 0
     };
 

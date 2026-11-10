@@ -63,15 +63,74 @@ internal static class PluginBlockEntities
         BlockEntity blockEntity,
         PluginContainer plugin)
     {
+        // Placement can arrive with tick (and its hand) held. Final plugin saves may wait for inventory,
+        // so move the entire preservation outside those locks, retaining the unloading plugin until it finishes.
+        if (level.Fluids.TickLock.IsHeldByCurrentThread)
+        {
+            QueueKeep(level, chunk, blockEntity, plugin);
+            return null;
+        }
+
+        var position = blockEntity.BlockPosition;
+        if (!ReferenceEquals(chunk.GetBlockEntity(position.X, position.Y, position.Z), blockEntity))
+            return null;
+
+        // No new lock crosses plugin Save. The plugin is closing and the caller serializes it with level ticks.
+        var data = SavedData(blockEntity, plugin);
         lock (level.Fluids.TickLock)
-            return KeepCore(level, chunk, blockEntity, plugin);
+        {
+            var inventories = blockEntity is ContainerBlockEntity container
+                ? new[] { container.Inventory }
+                : Array.Empty<BaseContainer>();
+            if (!InventorySnapshot.TryCapture(inventories, out var admitted, out _))
+            {
+                QueueKeep(level, chunk, blockEntity, plugin);
+                return null;
+            }
+
+            using (admitted)
+            {
+                try
+                {
+                    using (admitted!.Prepare())
+                        BlockEntityNbt.Save(blockEntity);
+
+                    if (!admitted.TryEnter(out _))
+                    {
+                        QueueKeep(level, chunk, blockEntity, plugin);
+                        return null;
+                    }
+
+                    BlockEntityNbt.Save(blockEntity);
+                }
+                catch (Exception failure) when (failure is InventorySnapshot.BusyException
+                    or InventorySnapshot.ChangedException)
+                {
+                    QueueKeep(level, chunk, blockEntity, plugin);
+                    return null;
+                }
+
+                return KeepCore(level, chunk, blockEntity, data);
+            }
+        }
+    }
+
+    private static void QueueKeep(AbstractLevel level, Chunk chunk, BlockEntity entity, PluginContainer plugin)
+    {
+        var hold = plugin.HoldUnloading();
+        level.EnqueueEntityAction(async () =>
+        {
+            var retired = Keep(level, chunk, entity, plugin);
+            if (retired is not null)
+                await AbstractLevel.CloseWindowsAsync(retired, plugin);
+        }, hold);
     }
 
     private static BaseContainer? KeepCore(
         AbstractLevel level,
         Chunk chunk,
         BlockEntity blockEntity,
-        PluginContainer plugin)
+        NbtCompound? data)
     {
         var position = blockEntity.BlockPosition;
         if (!ReferenceEquals(chunk.GetBlockEntity(position.X, position.Y, position.Z), blockEntity))
@@ -82,7 +141,7 @@ internal static class PluginBlockEntities
         BaseContainer? retired = null;
         if (blockEntity is ContainerBlockEntity container)
         {
-            using (container.Inventory.Lock())
+            using (InventorySnapshot.Lock(container.Inventory))
             {
                 container.Inventory.TryRetire();
                 blockEntity.IsRemoved = true;
@@ -97,7 +156,7 @@ internal static class PluginBlockEntities
             BlockPosition = blockEntity.BlockPosition
         };
 
-        blockEntity.SavedData = SavedData(blockEntity, plugin);
+        blockEntity.SavedData = data;
         var saved = BlockEntityNbt.Save(blockEntity) ?? new NbtCompound();
         foreach (var name in new[] { "id", "x", "y", "z", "keepPacked" })
             saved.Remove(name);
@@ -153,7 +212,10 @@ internal static class PluginBlockEntities
 
         try
         {
-            return BlockEntityNbt.SaveData(blockEntity);
+            // TakeChange consumed the signal even if inventory admission must defer.
+            // Retain the last successful plugin fields before attempting host preservation.
+            blockEntity.SavedData = BlockEntityNbt.SaveData(blockEntity);
+            return blockEntity.SavedData;
         }
         catch (Exception)
         {

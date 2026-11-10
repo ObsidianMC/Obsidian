@@ -59,6 +59,12 @@ public class VanillaBlockContact
             });
     }
 
+    // Force the baby draw so accidental natural-spawn finalization fails this NBT-summon replay every time.
+    private sealed class BabySpawnRandom : Random
+    {
+        public override float NextSingle() => 0;
+    }
+
     private static JsonElement LoadFixture()
     {
         const string resource = "Obsidian.Tests.Assets.block_contact_scenarios.json";
@@ -175,6 +181,7 @@ public class VanillaBlockContact
         Entity entity = type switch
         {
             EntityType.Item => new ItemEntity { Level = world },
+            EntityType.Husk => new Husk { Level = world, Random = new BabySpawnRandom() },
             EntityType.ArmorStand => new ArmorStand { Level = world },
             EntityType.AreaEffectCloud => new AreaEffectCloud { Level = world },
             _ => EntitySpawner.Create(type, world),
@@ -193,6 +200,10 @@ public class VanillaBlockContact
 
         if (entity is Mob mob && entry.TryGetProperty("noAi", out var noAi) && noAi.GetBoolean())
             mob.MobBitMask |= MobBitmask.NoAi;
+
+        // /summon with the capture's NBT skips natural-spawn age, equipment and attribute randomization.
+        if (entity is Mob summonedMob)
+            summonedMob.InitializeAi(finalizeSpawn: false);
 
         world.SpawnEntity(entity);
         return entity;

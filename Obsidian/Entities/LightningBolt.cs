@@ -92,7 +92,7 @@ public sealed partial class LightningBolt : Entity
         {
             if (this.flashes == 0)
             {
-                await this.FireStrikeTriggersAsync(level);
+                this.FireStrikeTriggers(level);
                 await this.RemoveAsync();
             }
             else if (this.life < -this.BoltRandom.NextInt(10))
@@ -171,12 +171,12 @@ public sealed partial class LightningBolt : Entity
 
         this.hitEntities.UnionWith(struck);
         if (this.Cause is PlayerBase cause)
-            await LightningProgress.FireChanneledAsync(cause, struck);
+            LightningProgress.FireChanneled(cause, struck);
     }
 
     // When the bolt goes, players within 256 blocks have their lightning_strike trigger fired, with the living things
     // around it that it didn't strike.
-    private async ValueTask FireStrikeTriggersAsync(AbstractLevel level)
+    private void FireStrikeTriggers(AbstractLevel level)
     {
         var bystanders = this.EntitiesAround(WitnessReach)
             .Where(entity => IsAlive(entity) && !this.hitEntities.Contains(entity))
@@ -184,7 +184,7 @@ public sealed partial class LightningBolt : Entity
         foreach (var (_, player) in level.Players)
         {
             if (player is PlayerBase concrete && (concrete.Position - this.Position).Magnitude < TriggerDistance)
-                await LightningProgress.FireStrikeAsync(concrete, this, bystanders);
+                LightningProgress.FireStrike(concrete, this, bystanders);
         }
     }
 

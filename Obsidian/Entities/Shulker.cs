@@ -236,6 +236,22 @@ public sealed partial class ShulkerBullet : Arrow
 
     public override ValueTask DamageAsync(IEntity source, float amount = 1) => amount > 0 && source.Level == Level ? RemoveAsync() : default;
 
+    // Vanilla's ShulkerBullet.onHitBlock, after the block reacted: the bullet's hit sound.
+    protected override ValueTask OnBlockHitAsync(AbstractLevel level)
+    {
+        ProjectileBlockHits.PlaySound(level, Position, "minecraft:entity.shulker_bullet.hit", 1, 1);
+        return ValueTask.CompletedTask;
+    }
+
+    // Vanilla's ShulkerBullet.onHit: on any hit the bullet is destroyed, with an entity_damage game event.
+    protected override async ValueTask OnImpactAsync(IEntity? target, bool damaged)
+    {
+        if (Level is AbstractLevel level)
+            level.EmitGameEvent(MobGameEvent.EntityDamage, Position, this);
+
+        await RemoveAsync();
+    }
+
     internal override void WriteNbt(NbtCompound tag)
     {
         base.WriteNbt(tag);

@@ -77,6 +77,9 @@ public abstract partial class AbstractLevel
         ExplosionInteraction interaction,
         Func<Vector, IBlock, bool>? spares = null)
     {
+        // Vanilla's ServerExplosion.explode starts with the explode game event at the centre.
+        this.EmitGameEvent(MobGameEvent.Explode, center, source);
+
         // Capture the caller once, before awaited damage callbacks, rather than walking for each block drop.
         var spawner = PluginEntities.FindSpawner();
         var random = source is Mob mob ? mob.Random : Random.Shared;

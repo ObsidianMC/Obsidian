@@ -10,7 +10,9 @@ namespace Obsidian.Progress;
 /// set on fire and what it struck.
 /// </summary>
 /// <remarks>
-/// A condition this doesn't understand matches nothing, so a criterion is never granted for less than it asks.
+/// A condition this doesn't understand matches nothing, so a criterion is never granted for less than it asks. Both
+/// fire from the level's tick, so the event is matched at once and what it matched is granted in the server's
+/// background work (see <c>PlayerBase.QueueProgress</c>), which waits for neither the player's tick nor inventory.
 /// </remarks>
 internal static class LightningProgress
 {
@@ -22,8 +24,8 @@ internal static class LightningProgress
     /// living things around it that it didn't strike: a criterion's <c>lightning</c> condition tests the bolt, and its
     /// <c>bystander</c> condition any one of the bystanders.
     /// </summary>
-    internal static ValueTask FireStrikeAsync(PlayerBase player, LightningBolt bolt, IReadOnlyList<IEntity> bystanders) =>
-        player.FireProgressAsync(
+    internal static void FireStrike(PlayerBase player, LightningBolt bolt, IReadOnlyList<IEntity> bystanders) =>
+        player.QueueProgress(
             StrikeTrigger,
             conditions => MatchesStrike(player, conditions, bolt, bystanders));
 
@@ -31,8 +33,8 @@ internal static class LightningProgress
     /// Fires the <c>channeled_lightning</c> trigger of the player who called a bolt down, for the entities it struck this
     /// tick: each of a criterion's <c>victims</c> conditions must match one of them.
     /// </summary>
-    internal static ValueTask FireChanneledAsync(PlayerBase player, IReadOnlyList<IEntity> victims) =>
-        player.FireProgressAsync(
+    internal static void FireChanneled(PlayerBase player, IReadOnlyList<IEntity> victims) =>
+        player.QueueProgress(
             ChanneledTrigger,
             conditions => MatchesChanneled(player, conditions, victims));
 

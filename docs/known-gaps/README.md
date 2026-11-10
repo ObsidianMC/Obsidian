@@ -19,16 +19,20 @@ and where to start.
 - [26.3 blocks](26-3-blocks.md)
 - [Block item placement](block-item-placement.md)
 - [Block-use state validation](block-use-stale-state.md)
+- [Brushing and armor stands](brushing-and-armor-stands.md)
 - [Bubble columns started by water](bubble-columns-started-by-water.md)
 - [Comparators reading unopened loot containers](comparators-reading-unopened-loot-containers.md)
 - [Eyeblossoms, dried ghasts and portal piglins](eyeblossoms-dried-ghasts-and-portal-piglins.md)
+- [Player break effects](player-break-effects.md)
 - [Plant growth beyond saplings](plant-growth-beyond-saplings.md)
+- [Projectile block hits](projectile-block-hits.md)
 - [Recursive placement callbacks](recursive-placement-callbacks.md)
 - [Redstone](redstone.md)
 - [Saplings that 26.3 added](saplings-that-26-3-added.md)
 - [Sign interactions](sign-interactions.md)
 - [Tilling and other block transformers](tilling-and-other-block-transformers.md)
 - [Vanilla blocks' reactions to block updates](vanilla-blocks-reactions-to-block-updates.md)
+- [Waxing, bells and redstone ore](waxing-bells-and-redstone-ore.md)
 
 ## Items, crafting and trading
 

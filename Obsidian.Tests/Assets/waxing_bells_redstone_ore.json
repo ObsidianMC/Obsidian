@@ -1,0 +1,4959 @@
+{
+  "_notes": "Vanilla 26.3 honeycomb waxing, bell ringing and redstone ore lighting by a use, recorded by Obsidian.AssetGenerator/Java/WaxingBellsOreFixtures.java (CaptureFixtures=waxing_bells_ore) on BlockUseFixtures' dedicated server in a flat world of air. Cases take block_use.json's inputs: blocks set around the target without updates, a player at 'player' (x, y, z, yaw, pitch) using the hand's item (two of it unless 'count' says otherwise) on the clicked face through ServerPlayerGameMode.useItemOn, then the tick's block events. Every case records block_use.json's outputs with checkWrites and checkEffects (result, changes, hand, particles, soundDetails, entities, the sounds, level events and block events a bystander above the target received, game events within 16, statistics, ordered writes with their flags and destroyed blocks), awardedCriteria where it lists criteria, and 'userEffects': the sounds, level events and block events sent to the acting player's own client, in order.",
+  "target": [0, 64, 0],
+  "player": [0.5, 64, -2.5, 0, 30],
+  "cases": [
+    {
+      "name": "wax_copper_block",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_block"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_copper_block",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_copper_block",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_exposed_copper",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:exposed_copper"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_exposed_copper",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_exposed_copper",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_weathered_copper",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:weathered_copper"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_weathered_copper",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_weathered_copper",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_oxidized_copper",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oxidized_copper"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_oxidized_copper",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_oxidized_copper",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_chiseled_copper",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_copper"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_chiseled_copper",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_chiseled_copper",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_cut_copper",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cut_copper"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_cut_copper",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_cut_copper",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_cut_copper_slab",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cut_copper_slab[type=top]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_cut_copper_slab[type=top]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_cut_copper_slab[type=top]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_cut_copper_stairs",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cut_copper_stairs[facing=east,half=top]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_cut_copper_stairs[facing=east,half=top]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_cut_copper_stairs[facing=east,half=top]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_copper_grate",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_grate[waterlogged=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_copper_grate[waterlogged=true]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_copper_grate[waterlogged=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_copper_bulb",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_bulb[lit=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_copper_bulb[lit=true]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_copper_bulb[lit=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_copper_chain",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_chain[axis=x]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_copper_chain[axis=x]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_copper_chain[axis=x]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_copper_lantern",
+      "setup": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_lantern[hanging=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_copper_lantern[hanging=true]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_copper_lantern[hanging=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_lightning_rod",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lightning_rod[facing=east]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_lightning_rod[facing=east]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_lightning_rod[facing=east]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_copper_bars",
+      "setup": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_bars[east=true,west=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_copper_bars[east=true,west=true]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_copper_bars[east=true,west=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_copper_golem_statue",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_golem_statue[copper_golem_pose=star,facing=east]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_copper_golem_statue[copper_golem_pose=star,facing=east]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_copper_golem_statue[copper_golem_pose=star,facing=east]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_exposed_chiseled_copper",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:exposed_chiseled_copper"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_exposed_chiseled_copper",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_exposed_chiseled_copper",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_exposed_cut_copper",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:exposed_cut_copper"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_exposed_cut_copper",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_exposed_cut_copper",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_exposed_cut_copper_slab",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:exposed_cut_copper_slab[type=top]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_exposed_cut_copper_slab[type=top]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_exposed_cut_copper_slab[type=top]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_exposed_cut_copper_stairs",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:exposed_cut_copper_stairs[facing=east,half=top]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_exposed_cut_copper_stairs[facing=east,half=top]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_exposed_cut_copper_stairs[facing=east,half=top]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_exposed_copper_grate",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:exposed_copper_grate[waterlogged=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_exposed_copper_grate[waterlogged=true]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_exposed_copper_grate[waterlogged=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_exposed_copper_bulb",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:exposed_copper_bulb[lit=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_exposed_copper_bulb[lit=true]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_exposed_copper_bulb[lit=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_exposed_copper_chain",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:exposed_copper_chain[axis=x]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_exposed_copper_chain[axis=x]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_exposed_copper_chain[axis=x]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_exposed_copper_lantern",
+      "setup": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:exposed_copper_lantern[hanging=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_exposed_copper_lantern[hanging=true]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_exposed_copper_lantern[hanging=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_exposed_lightning_rod",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:exposed_lightning_rod[facing=east]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_exposed_lightning_rod[facing=east]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_exposed_lightning_rod[facing=east]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_exposed_copper_bars",
+      "setup": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:exposed_copper_bars[east=true,west=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_exposed_copper_bars[east=true,west=true]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_exposed_copper_bars[east=true,west=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_exposed_copper_golem_statue",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:exposed_copper_golem_statue[copper_golem_pose=star,facing=east]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_exposed_copper_golem_statue[copper_golem_pose=star,facing=east]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_exposed_copper_golem_statue[copper_golem_pose=star,facing=east]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_weathered_chiseled_copper",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:weathered_chiseled_copper"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_weathered_chiseled_copper",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_weathered_chiseled_copper",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_weathered_cut_copper",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:weathered_cut_copper"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_weathered_cut_copper",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_weathered_cut_copper",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_weathered_cut_copper_slab",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:weathered_cut_copper_slab[type=top]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_weathered_cut_copper_slab[type=top]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_weathered_cut_copper_slab[type=top]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_weathered_cut_copper_stairs",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:weathered_cut_copper_stairs[facing=east,half=top]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_weathered_cut_copper_stairs[facing=east,half=top]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_weathered_cut_copper_stairs[facing=east,half=top]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_weathered_copper_grate",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:weathered_copper_grate[waterlogged=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_weathered_copper_grate[waterlogged=true]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_weathered_copper_grate[waterlogged=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_weathered_copper_bulb",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:weathered_copper_bulb[lit=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_weathered_copper_bulb[lit=true]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_weathered_copper_bulb[lit=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_weathered_copper_chain",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:weathered_copper_chain[axis=x]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_weathered_copper_chain[axis=x]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_weathered_copper_chain[axis=x]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_weathered_copper_lantern",
+      "setup": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:weathered_copper_lantern[hanging=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_weathered_copper_lantern[hanging=true]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_weathered_copper_lantern[hanging=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_weathered_lightning_rod",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:weathered_lightning_rod[facing=east]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_weathered_lightning_rod[facing=east]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_weathered_lightning_rod[facing=east]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_weathered_copper_bars",
+      "setup": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:weathered_copper_bars[east=true,west=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_weathered_copper_bars[east=true,west=true]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_weathered_copper_bars[east=true,west=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_weathered_copper_golem_statue",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:weathered_copper_golem_statue[copper_golem_pose=star,facing=east]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_weathered_copper_golem_statue[copper_golem_pose=star,facing=east]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_weathered_copper_golem_statue[copper_golem_pose=star,facing=east]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_oxidized_chiseled_copper",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oxidized_chiseled_copper"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_oxidized_chiseled_copper",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_oxidized_chiseled_copper",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_oxidized_cut_copper",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oxidized_cut_copper"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_oxidized_cut_copper",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_oxidized_cut_copper",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_oxidized_cut_copper_slab",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oxidized_cut_copper_slab[type=top]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_oxidized_cut_copper_slab[type=top]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_oxidized_cut_copper_slab[type=top]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_oxidized_cut_copper_stairs",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oxidized_cut_copper_stairs[facing=east,half=top]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_oxidized_cut_copper_stairs[facing=east,half=top]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_oxidized_cut_copper_stairs[facing=east,half=top]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_oxidized_copper_grate",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oxidized_copper_grate[waterlogged=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_oxidized_copper_grate[waterlogged=true]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_oxidized_copper_grate[waterlogged=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_oxidized_copper_bulb",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oxidized_copper_bulb[lit=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_oxidized_copper_bulb[lit=true]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_oxidized_copper_bulb[lit=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_oxidized_copper_chain",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oxidized_copper_chain[axis=x]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_oxidized_copper_chain[axis=x]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_oxidized_copper_chain[axis=x]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_oxidized_copper_lantern",
+      "setup": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oxidized_copper_lantern[hanging=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_oxidized_copper_lantern[hanging=true]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_oxidized_copper_lantern[hanging=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_oxidized_lightning_rod",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oxidized_lightning_rod[facing=east]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_oxidized_lightning_rod[facing=east]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_oxidized_lightning_rod[facing=east]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_oxidized_copper_bars",
+      "setup": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oxidized_copper_bars[east=true,west=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_oxidized_copper_bars[east=true,west=true]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_oxidized_copper_bars[east=true,west=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_oxidized_copper_golem_statue",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oxidized_copper_golem_statue[copper_golem_pose=star,facing=east]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_oxidized_copper_golem_statue[copper_golem_pose=star,facing=east]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_oxidized_copper_golem_statue[copper_golem_pose=star,facing=east]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_copper_door",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_door[facing=east,hinge=right]"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:copper_door[facing=east,half=upper,hinge=right]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "sneaking": true,
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_copper_door[facing=east,hinge=right];0,1,0=minecraft:waxed_copper_door[facing=east,half=upper,hinge=right]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_copper_door[facing=east,hinge=right]",
+          "flags": 11
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:waxed_copper_door[facing=east,half=upper,hinge=right]",
+          "flags": 10
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_copper_trapdoor",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_trapdoor[facing=south,half=top,open=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "sneaking": true,
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_copper_trapdoor[facing=south,half=top,open=true]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_copper_trapdoor[facing=south,half=top,open=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_copper_chest",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_chest[facing=west]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "sneaking": true,
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_copper_chest[facing=west]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_copper_chest[facing=west]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_exposed_copper_door",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:exposed_copper_door[facing=east,hinge=right]"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:exposed_copper_door[facing=east,half=upper,hinge=right]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "sneaking": true,
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_exposed_copper_door[facing=east,hinge=right];0,1,0=minecraft:waxed_exposed_copper_door[facing=east,half=upper,hinge=right]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_exposed_copper_door[facing=east,hinge=right]",
+          "flags": 11
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:waxed_exposed_copper_door[facing=east,half=upper,hinge=right]",
+          "flags": 10
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_exposed_copper_trapdoor",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:exposed_copper_trapdoor[facing=south,half=top,open=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "sneaking": true,
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_exposed_copper_trapdoor[facing=south,half=top,open=true]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_exposed_copper_trapdoor[facing=south,half=top,open=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_exposed_copper_chest",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:exposed_copper_chest[facing=west]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "sneaking": true,
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_exposed_copper_chest[facing=west]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_exposed_copper_chest[facing=west]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_weathered_copper_door",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:weathered_copper_door[facing=east,hinge=right]"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:weathered_copper_door[facing=east,half=upper,hinge=right]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "sneaking": true,
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_weathered_copper_door[facing=east,hinge=right];0,1,0=minecraft:waxed_weathered_copper_door[facing=east,half=upper,hinge=right]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_weathered_copper_door[facing=east,hinge=right]",
+          "flags": 11
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:waxed_weathered_copper_door[facing=east,half=upper,hinge=right]",
+          "flags": 10
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_weathered_copper_trapdoor",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:weathered_copper_trapdoor[facing=south,half=top,open=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "sneaking": true,
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_weathered_copper_trapdoor[facing=south,half=top,open=true]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_weathered_copper_trapdoor[facing=south,half=top,open=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_weathered_copper_chest",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:weathered_copper_chest[facing=west]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "sneaking": true,
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_weathered_copper_chest[facing=west]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_weathered_copper_chest[facing=west]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_oxidized_copper_door",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oxidized_copper_door[facing=east,hinge=right]"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:oxidized_copper_door[facing=east,half=upper,hinge=right]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "sneaking": true,
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_oxidized_copper_door[facing=east,hinge=right];0,1,0=minecraft:waxed_oxidized_copper_door[facing=east,half=upper,hinge=right]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_oxidized_copper_door[facing=east,hinge=right]",
+          "flags": 11
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:waxed_oxidized_copper_door[facing=east,half=upper,hinge=right]",
+          "flags": 10
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_oxidized_copper_trapdoor",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oxidized_copper_trapdoor[facing=south,half=top,open=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "sneaking": true,
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_oxidized_copper_trapdoor[facing=south,half=top,open=true]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_oxidized_copper_trapdoor[facing=south,half=top,open=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_oxidized_copper_chest",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oxidized_copper_chest[facing=west]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "sneaking": true,
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_oxidized_copper_chest[facing=west]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_oxidized_copper_chest[facing=west]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_copper_door_upper_half",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_door[facing=east,hinge=right]"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:copper_door[facing=east,half=upper,hinge=right]"
+        }
+      ],
+      "clicked": [0, 1, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "sneaking": true,
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_copper_door[facing=east,hinge=right];0,1,0=minecraft:waxed_copper_door[facing=east,half=upper,hinge=right]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,1,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,1,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,1,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:waxed_copper_door[facing=east,half=upper,hinge=right]",
+          "flags": 11
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_copper_door[facing=east,hinge=right]",
+          "flags": 10
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_copper_door_opens_without_sneaking",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_door[facing=east,hinge=right]"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:copper_door[facing=east,half=upper,hinge=right]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:copper_door[facing=east,hinge=right,open=true];0,1,0=minecraft:copper_door[facing=east,half=upper,hinge=right,open=true]",
+      "hand": "minecraft:honeycomb x2",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.copper_door.open 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.copper_door.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_open 0,0,0 player"
+      ],
+      "stats": [],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_door[facing=east,hinge=right,open=true]",
+          "flags": 10
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:copper_door[facing=east,half=upper,hinge=right,open=true]",
+          "flags": 10
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_copper_trapdoor_opens_without_sneaking",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_trapdoor[facing=south,half=top]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:copper_trapdoor[facing=south,half=top,open=true]",
+      "hand": "minecraft:honeycomb x2",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.copper_trapdoor.open 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.copper_trapdoor.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_open 0,0,0 player"
+      ],
+      "stats": [],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_trapdoor[facing=south,half=top,open=true]",
+          "flags": 2
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_copper_chest_double_left",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_chest[type=left]"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:copper_chest[type=right]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "sneaking": true,
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_copper_chest[type=left];1,0,0=minecraft:waxed_copper_chest[type=right]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0",
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on",
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0",
+        "3003 1,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player",
+        "minecraft:block_change 1,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_copper_chest[type=left]",
+          "flags": 11
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:waxed_copper_chest[type=right]",
+          "flags": 10
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_weathered_copper_chest_double_right",
+      "setup": [
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:weathered_copper_chest[type=left]"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:weathered_copper_chest[type=right]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "sneaking": true,
+      "result": "success",
+      "changes": "-1,0,0=minecraft:waxed_weathered_copper_chest[type=left];0,0,0=minecraft:waxed_weathered_copper_chest[type=right]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0",
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on",
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0",
+        "3003 -1,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player",
+        "minecraft:block_change -1,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_weathered_copper_chest[type=right]",
+          "flags": 11
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:waxed_weathered_copper_chest[type=left]",
+          "flags": 10
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_cut_copper_stairs_waterlogged",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cut_copper_stairs[facing=west,shape=outer_left,waterlogged=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_cut_copper_stairs[facing=west,shape=outer_left,waterlogged=true]",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_cut_copper_stairs[facing=west,shape=outer_left,waterlogged=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_creative_keeps_honeycomb",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_block"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "gameMode": "creative",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_copper_block",
+      "hand": "minecraft:honeycomb x2",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_copper_block",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_adventure_refused",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_block"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "gameMode": "adventure",
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:honeycomb x2",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "wax_last_honeycomb",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_block"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_copper_block",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_copper_block",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_from_offhand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_block"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "offhand": "minecraft:honeycomb",
+      "handUsed": "offhand",
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_copper_block",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_copper_block",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_already_waxed",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_copper_block"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:honeycomb x2",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "wax_stone_nothing",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:stone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:honeycomb x2",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "wax_criteria",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_block"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "criteria": {
+        "item_old_block": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:copper_block"
+              }
+            ]
+          }
+        },
+        "item_new_block": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:waxed_copper_block"
+              }
+            ]
+          }
+        },
+        "item_two": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:match_tool",
+                "predicate": {
+                  "items": "minecraft:honeycomb",
+                  "count": 2
+                }
+              }
+            ]
+          }
+        },
+        "item_one": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:match_tool",
+                "predicate": {
+                  "items": "minecraft:honeycomb",
+                  "count": 1
+                }
+              }
+            ]
+          }
+        },
+        "any_old_block": {
+          "trigger": "minecraft:any_block_use",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:copper_block"
+              }
+            ]
+          }
+        },
+        "any_new_block": {
+          "trigger": "minecraft:any_block_use",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:waxed_copper_block"
+              }
+            ]
+          }
+        }
+      },
+      "awardedCriteria": [
+        "item_old_block",
+        "item_new_block",
+        "item_two",
+        "any_new_block"
+      ],
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_copper_block",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_copper_block",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "wax_criteria_location",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_block"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "criteria": {
+        "location_old_block": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:location_check",
+                "predicate": {
+                  "block": {
+                    "blocks": "minecraft:copper_block"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "location_new_block": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:location_check",
+                "predicate": {
+                  "block": {
+                    "blocks": "minecraft:waxed_copper_block"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "awardedCriteria": [
+        "location_old_block",
+        "location_new_block"
+      ],
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_copper_block",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_copper_block",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "bell_floor_north_face",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.bell.use 0,0,0 2.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.bell.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:bell 1 2 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:bell_ring 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.bell.use",
+        "block_event minecraft:bell 1 2 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "bell_floor_south_face",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "south",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.bell.use 0,0,0 2.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.bell.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:bell 1 3 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:bell_ring 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.bell.use",
+        "block_event minecraft:bell 1 3 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "bell_floor_east_face",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "east",
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "bell_floor_top_face",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "bell_floor_below_rim",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.5, 0.81, 0.0],
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.bell.use 0,0,0 2.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.bell.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:bell 1 2 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:bell_ring 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.bell.use",
+        "block_event minecraft:bell 1 2 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "bell_floor_above_rim",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.5, 0.82, 0.0],
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "bell_floor_facing_east_east_face",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell[facing=east]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "east",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.bell.use 0,0,0 2.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.bell.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:bell 1 5 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:bell_ring 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.bell.use",
+        "block_event minecraft:bell 1 5 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "bell_single_wall_east_face",
+      "setup": [
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell[attachment=single_wall]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "east",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.bell.use 0,0,0 2.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.bell.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:bell 1 5 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:bell_ring 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.bell.use",
+        "block_event minecraft:bell 1 5 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "bell_single_wall_west_face",
+      "setup": [
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell[attachment=single_wall]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "west",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.bell.use 0,0,0 2.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.bell.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:bell 1 4 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:bell_ring 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.bell.use",
+        "block_event minecraft:bell 1 4 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "bell_single_wall_south_face",
+      "setup": [
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell[attachment=single_wall]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "south",
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "bell_double_wall_north_face",
+      "setup": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell[attachment=double_wall,facing=east]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.bell.use 0,0,0 2.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.bell.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:bell 1 2 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:bell_ring 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.bell.use",
+        "block_event minecraft:bell 1 2 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "bell_double_wall_east_face",
+      "setup": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell[attachment=double_wall,facing=east]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "east",
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "bell_ceiling_west_face",
+      "setup": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell[attachment=ceiling]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "west",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.bell.use 0,0,0 2.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.bell.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:bell 1 4 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:bell_ring 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.bell.use",
+        "block_event minecraft:bell 1 4 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "bell_ceiling_north_face",
+      "setup": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell[attachment=ceiling]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.bell.use 0,0,0 2.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.bell.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:bell 1 2 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:bell_ring 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.bell.use",
+        "block_event minecraft:bell 1 2 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "bell_ceiling_bottom_face",
+      "setup": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell[attachment=ceiling]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "down",
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "bell_powered_rings",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell[powered=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.bell.use 0,0,0 2.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.bell.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:bell 1 2 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:bell_ring 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.bell.use",
+        "block_event minecraft:bell 1 2 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "bell_with_stone",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stone",
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:stone x2",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.bell.use 0,0,0 2.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.bell.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:bell 1 2 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:bell_ring 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.bell.use",
+        "block_event minecraft:bell 1 2 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "bell_with_stone_wrong_face",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "east",
+      "item": "minecraft:stone",
+      "result": "success",
+      "changes": "1,0,0=minecraft:stone",
+      "hand": "minecraft:stone x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.stone.place 1,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.stone.place"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_place 1,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:stone 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:stone",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "bell_sneaking_with_stone",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stone",
+      "sneaking": true,
+      "result": "success",
+      "changes": "0,0,-1=minecraft:stone",
+      "hand": "minecraft:stone x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.stone.place 0,0,-1 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.stone.place"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_place 0,0,-1 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:stone 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:stone",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "bell_sneaking_empty_hand",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "sneaking": true,
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.bell.use 0,0,0 2.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.bell.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:bell 1 2 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:bell_ring 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.bell.use",
+        "block_event minecraft:bell 1 2 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "bell_adventure",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "gameMode": "adventure",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.bell.use 0,0,0 2.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.bell.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:bell 1 2 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:bell_ring 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.bell.use",
+        "block_event minecraft:bell 1 2 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "bell_spectator",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "gameMode": "spectator",
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "bell_offhand_stone",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "offhand": "minecraft:stone",
+      "handUsed": "offhand",
+      "result": "success",
+      "changes": "0,0,-1=minecraft:stone",
+      "hand": "minecraft:stone x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.stone.place 0,0,-1 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.stone.place"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_place 0,0,-1 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:stone 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:stone",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "bell_criteria",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:bell"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stick",
+      "criteria": {
+        "default_bell": {
+          "trigger": "minecraft:default_block_use",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:bell"
+              }
+            ]
+          }
+        },
+        "item_bell": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:bell"
+              }
+            ]
+          }
+        },
+        "any_bell": {
+          "trigger": "minecraft:any_block_use",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:bell"
+              }
+            ]
+          }
+        }
+      },
+      "awardedCriteria": [
+        "default_bell",
+        "any_bell"
+      ],
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:stick x2",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.bell.use 0,0,0 2.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.bell.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:bell 1 2 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:bell_ring 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.bell.use",
+        "block_event minecraft:bell 1 2 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "ore_empty_hand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "0,0,0=minecraft:redstone_ore[lit=true]",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore[lit=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "deepslate_ore_empty_hand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:deepslate_redstone_ore"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "0,0,0=minecraft:deepslate_redstone_ore[lit=true]",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:deepslate_redstone_ore[lit=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "ore_already_lit",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore[lit=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "ore_with_stick",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stick",
+      "result": "success",
+      "changes": "0,0,0=minecraft:redstone_ore[lit=true]",
+      "hand": "minecraft:stick x2",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore[lit=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "ore_with_stone_on_top",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:stone",
+      "result": "success",
+      "changes": "0,0,0=minecraft:redstone_ore[lit=true];0,1,0=minecraft:stone",
+      "hand": "minecraft:stone x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.stone.place 0,1,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.stone.place"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_place 0,1,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:stone 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore[lit=true]",
+          "flags": 3
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:stone",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "ore_with_stone_blocked",
+      "setup": [
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stone",
+      "result": "success",
+      "changes": "0,0,0=minecraft:redstone_ore[lit=true]",
+      "hand": "minecraft:stone x2",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore[lit=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "ore_sneaking_with_stone",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stone",
+      "sneaking": true,
+      "result": "success",
+      "changes": "0,0,-1=minecraft:stone",
+      "hand": "minecraft:stone x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.stone.place 0,0,-1 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.stone.place"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_place 0,0,-1 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:stone 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:stone",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "ore_sneaking_empty_hand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "sneaking": true,
+      "result": "success",
+      "changes": "0,0,0=minecraft:redstone_ore[lit=true]",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore[lit=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "ore_adventure",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "gameMode": "adventure",
+      "result": "success",
+      "changes": "0,0,0=minecraft:redstone_ore[lit=true]",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore[lit=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "ore_adventure_with_stone",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stone",
+      "gameMode": "adventure",
+      "result": "pass",
+      "changes": "0,0,0=minecraft:redstone_ore[lit=true]",
+      "hand": "minecraft:stone x2",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore[lit=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "ore_creative_with_stone",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stone",
+      "gameMode": "creative",
+      "result": "success",
+      "changes": "0,0,-1=minecraft:stone;0,0,0=minecraft:redstone_ore[lit=true]",
+      "hand": "minecraft:stone x2",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.stone.place 0,0,-1 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.stone.place"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_place 0,0,-1 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:stone 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore[lit=true]",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:stone",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "ore_spectator",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "gameMode": "spectator",
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": []
+    },
+    {
+      "name": "ore_offhand_stick",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "offhand": "minecraft:stick",
+      "handUsed": "offhand",
+      "result": "success",
+      "changes": "0,0,0=minecraft:redstone_ore[lit=true]",
+      "hand": "minecraft:stick x2",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore[lit=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "ore_offhand_stone",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "offhand": "minecraft:stone",
+      "handUsed": "offhand",
+      "result": "success",
+      "changes": "0,0,-1=minecraft:stone;0,0,0=minecraft:redstone_ore[lit=true]",
+      "hand": "minecraft:stone x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.stone.place 0,0,-1 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.stone.place"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_place 0,0,-1 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:stone 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore[lit=true]",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:stone",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "ore_lit_beside_glass",
+      "setup": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:glass"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "0,0,0=minecraft:redstone_ore[lit=true]",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore[lit=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "ore_criteria",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stick",
+      "criteria": {
+        "item_lit": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:redstone_ore",
+                "properties": {
+                  "lit": "true"
+                }
+              }
+            ]
+          }
+        },
+        "item_dark": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:redstone_ore",
+                "properties": {
+                  "lit": "false"
+                }
+              }
+            ]
+          }
+        },
+        "item_stick": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:match_tool",
+                "predicate": {
+                  "items": "minecraft:stick"
+                }
+              }
+            ]
+          }
+        },
+        "default_ore": {
+          "trigger": "minecraft:default_block_use",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:redstone_ore"
+              }
+            ]
+          }
+        },
+        "any_lit": {
+          "trigger": "minecraft:any_block_use",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:redstone_ore",
+                "properties": {
+                  "lit": "true"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "awardedCriteria": [
+        "item_lit",
+        "item_stick",
+        "any_lit"
+      ],
+      "result": "success",
+      "changes": "0,0,0=minecraft:redstone_ore[lit=true]",
+      "hand": "minecraft:stick x2",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:redstone_ore[lit=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    }
+  ],
+  "version": "26.3"
+}

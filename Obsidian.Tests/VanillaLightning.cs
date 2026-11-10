@@ -145,7 +145,7 @@ public sealed class VanillaLightning(ITestOutputHelper output)
             if (InArea(position, origin))
                 writes.Add($"{Offset(position, origin)} {StateText(block)} flags {(int)flags}");
         };
-        level.GameEventEmitted = vibration => gameEvents.Add(GameEvent(vibration, origin));
+        level.GameEventQueued = vibration => gameEvents.Add(GameEvent(vibration, origin));
 
         level.GrowthRandom = new LegacyRandomSource(probe.GetProperty("seed").GetInt64());
         var bolt = new LightningBolt(new LegacyRandomSource(probe.GetProperty("boltSeed").GetInt64()))
@@ -183,11 +183,13 @@ public sealed class VanillaLightning(ITestOutputHelper output)
                 Compare(differences, $"tick {tick} {field}", Strings(checkpoint.GetProperty(field)), obsidian);
         }
 
+        // The level's tick matched the triggers; their grants run in the server's background work.
+        await replay.DrainGrantsAsync();
         var granted = Advancements.Where(listener.Player.ProgressAdvancements.IsDone).ToList();
         Compare(differences, "advancements", Strings(probe.GetProperty("advancements")), granted);
 
         level.Fluids.BlockStored = null;
-        level.GameEventEmitted = null;
+        level.GameEventQueued = null;
         await replay.ClearAsync(origin);
         return differences;
     }
@@ -635,6 +637,9 @@ public sealed class VanillaLightning(ITestOutputHelper output)
             foreach (var entity in EntitiesInChunk(this.Level, origin).ToList())
                 await entity.RemoveAsync();
         }
+
+        /// <summary>Lets the grants a level's tick queued in the server's background work finish.</summary>
+        public Task DrainGrantsAsync() => this.context.Server.BackgroundWork.DrainAsync();
 
         public async ValueTask DisposeAsync() => await this.context.DisposeAsync();
     }
