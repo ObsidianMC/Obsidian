@@ -46,8 +46,8 @@ internal sealed class NetherPortalRandomTick : IRandomTickBehavior
     }
 
     // Vanilla's EntityType.spawn for a STRUCTURE spawn: the piglin stands at the centre of the block above the floor,
-    // turned by a draw of the level's random, finalized, added and heard, then given its portal cooldown (and its
-    // vehicle's, though nothing rides here).
+    // turned by a draw of the level's random, finalized (which can add a chicken jockey it rides first), added and
+    // heard, then given its portal cooldown, and its vehicle too.
     private static void Spawn(AbstractLevel level, Vector position, IRandomSource random)
     {
         var piglin = (ZombifiedPiglin)EntitySpawner.CreateMob(level, EntityType.ZombifiedPiglin)!;
@@ -58,10 +58,15 @@ internal sealed class NetherPortalRandomTick : IRandomTickBehavior
         piglin.Pitch = 0;
         piglin.InitializeAi(finalizeSpawn: false);
         piglin.LookControl.SnapHeadYaw(yaw);
-        piglin.FinalizeSpawnFromLevel(random);
+        var jockey = piglin.FinalizeSpawnFromLevel(level, random);
+        if (jockey is not null && !level.TrySpawnEntity(jockey))
+            jockey = null;
 
         if (!level.TrySpawnEntity(piglin))
             return;
+
+        if (jockey is not null)
+            piglin.StartRiding(jockey);
 
         piglin.PlaySpawnAmbientSound(level);
         piglin.StartPortalCooldown();

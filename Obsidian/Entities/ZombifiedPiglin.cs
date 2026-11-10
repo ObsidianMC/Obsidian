@@ -1,4 +1,5 @@
 using Obsidian.API.Inventory;
+using Obsidian.API.Loot;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Entities.AI;
 using Obsidian.WorldData;
@@ -35,35 +36,29 @@ public sealed partial class ZombifiedPiglin : Zombie
 
     /// <summary>
     /// Vanilla's <c>finalizeSpawn</c> for a zombified piglin a portal spawns, which draws from the level's random
-    /// (<paramref name="random"/>) rather than the mob's own: the follow range's spawn bonus, left-handedness,
-    /// picking up loot, being a baby (and the chicken jockey chances), breaking doors, the golden spear or sword, the
-    /// weapon's enchantment chance and, at Halloween, a pumpkin. The draws and their order are vanilla's, because they're part
-    /// of the level's random sequence; the attribute bonuses after them come from the mob's own random, as vanilla's
-    /// <c>handleAttributes</c> does.
+    /// (<paramref name="random"/>) rather than the mob's own: the follow range's spawn bonus and left-handedness, picking
+    /// up loot, being a baby (and then riding a chicken nearby, or a new chicken jockey), breaking doors, the golden
+    /// spear or sword, the weapon's enchantment and, on Halloween, a pumpkin. The draws and their order are vanilla's,
+    /// because they're part of the level's random sequence; the attribute bonuses after them come from the mob's own
+    /// random, as vanilla's <c>handleAttributes</c> does.
     /// </summary>
-    /// <remarks>
-    /// Obsidian has no chicken jockeys and doesn't enchant spawned equipment yet: those draws are made and their
-    /// outcome left out.
-    /// </remarks>
-    internal void FinalizeSpawnFromLevel(IRandomSource random)
+    /// <returns>A new chicken the piglin rides, which the caller adds to the level before the piglin.</returns>
+    internal Chicken? FinalizeSpawnFromLevel(AbstractLevel level, IRandomSource random)
     {
         var special = SpecialDifficulty;
 
-        // Mob.finalizeSpawn: random.triangle(0, 0.11485) as a multiplier of the base follow range.
-        var followBonus = 0.11485000000000001 * (random.NextDouble() - random.NextDouble());
-        TryUpdateAttribute("minecraft:generic.follow_range", (float)(FollowRange * (1 + followBonus)));
-        if (random.NextFloat() < 0.05f)
-            MobBitMask |= MobBitmask.LeftHanded;
+        FinalizeMobSpawnFromLevel(random);
 
         // Zombie.finalizeSpawn.
         CanPickUpLoot = random.NextFloat() < 0.55f * special;
+        Chicken? jockey = null;
         if (random.NextFloat() < 0.05f)
         {
             IsBaby = true;
-
-            // An existing chicken to ride (none is looked for here), else a new one: Obsidian makes neither.
-            if (random.NextFloat() >= 0.05f)
-                _ = random.NextFloat() < 0.05f;
+            if (random.NextFloat() < 0.05f)
+                RideChickenNearby(level);
+            else if (random.NextFloat() < 0.05f)
+                jockey = NewChickenJockey(level, random);
         }
 
         CanBreakDoors = random.NextFloat() < special * 0.1f;
@@ -72,10 +67,12 @@ public sealed partial class ZombifiedPiglin : Zombie
         SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(weapon));
 
         // Mob.populateDefaultEquipmentEnchantments: the weapon's chance; the empty armour slots draw nothing.
-        _ = random.NextFloat() < 0.25f * special;
+        if (random.NextFloat() < 0.25f * special)
+            EnchantSpawnedWeapon(random, special);
 
         var bareHead = GetEquipment(EquipmentSlot.Helmet).IsAir;
-        if (bareHead && MobSpawner.IsHalloween(DateTime.Now) && random.NextFloat() < 0.25f)
+        var today = level.TimeProvider.GetLocalNow().DateTime;
+        if (bareHead && MobSpawner.IsHalloween(today) && random.NextFloat() < 0.25f)
         {
             var head = random.NextFloat() < 0.1f ? ItemsRegistry.JackOLantern : ItemsRegistry.CarvedPumpkin;
             SetEquipment(EquipmentSlot.Helmet, ItemsRegistry.GetSingleItem(head));
@@ -95,7 +92,67 @@ public sealed partial class ZombifiedPiglin : Zombie
             Health = health;
             CanBreakDoors = true;
         }
+
+        return jockey;
     }
+
+    // Vanilla's first jockey chance: the first chicken nobody rides within 5 blocks across and 3 up or down of the
+    // piglin's box becomes a jockey, and the piglin rides it. With none there, nothing happens.
+    private void RideChickenNearby(AbstractLevel level)
+    {
+        var box = Dimension.CreateBBFromPosition(Position);
+        var reach = new BoundingBox(box.Min - new VectorD(5, 3, 5), box.Max + new VectorD(5, 3, 5));
+        var chicken = level.GetNonPlayerEntitiesInRange(Position, 16)
+            .OfType<Chicken>()
+            .FirstOrDefault(chicken => chicken.Passengers.Count == 0
+                && reach.Intersects(chicken.Dimension.CreateBBFromPosition(chicken.Position)));
+        if (chicken is null)
+            return;
+
+        chicken.IsChickenJockey = true;
+        StartRiding(chicken);
+    }
+
+    // Vanilla's second jockey chance: a new chicken where the piglin stands, turned its way, finalized from the
+    // level's random, which the piglin rides.
+    private Chicken NewChickenJockey(AbstractLevel level, IRandomSource random)
+    {
+        var chicken = (Chicken)Factories.EntitySpawner.CreateMob(level, EntityType.Chicken)!;
+        chicken.EntityId = Server.GetNextEntityId();
+        chicken.Position = Position;
+        chicken.Yaw = Yaw;
+        chicken.Pitch = 0;
+        chicken.InitializeAi(finalizeSpawn: false);
+        chicken.FinalizeJockeySpawnFromLevel(random);
+        chicken.IsChickenJockey = true;
+        return chicken;
+    }
+
+    // Vanilla's enchantSpawnedEquipment through the mob_spawn_equipment provider (EnchantmentsByCostWithDifficulty,
+    // costs 5 to 5 + 17 x the special multiplier): a cost drawn between them, then the enchantments vanilla's
+    // selectEnchantment picks for it from the on_mob_spawn_equipment tag, in the tag's order.
+    private void EnchantSpawnedWeapon(IRandomSource random, float special)
+    {
+        const int MinimumCost = 5;
+        const int CostSpan = 17;
+
+        var maximumCost = MinimumCost + (int)(special * CostSpan);
+        var cost = random.NextInt(maximumCost - MinimumCost + 1) + MinimumCost;
+        var weapon = GetEquipment(EquipmentSlot.MainHand);
+        foreach (var (enchantment, enchantmentLevel) in EnchantmentHelper.SelectEnchantments(random, weapon, cost,
+            spawnEquipmentEnchantments.Value))
+        {
+            EnchantmentHelper.Enchant(weapon, enchantment, enchantmentLevel);
+        }
+
+        SetEquipment(EquipmentSlot.MainHand, weapon);
+    }
+
+    // The on_mob_spawn_equipment tag's enchantments, in the tag's order, which the weighted picks depend on.
+    private static readonly Lazy<EnchantmentDefinition[]> spawnEquipmentEnchantments = new(() =>
+        TagsRegistry.Enchantment.OnMobSpawnEquipment.Entries
+            .Select(id => EnchantmentsRegistry.All.First(enchantment => enchantment.Id == id))
+            .ToArray());
 
     /// <summary>
     /// The ambient sound vanilla's <c>EntityType.spawn</c> plays for a new mob: at its position, with its voice's

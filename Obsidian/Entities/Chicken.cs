@@ -23,6 +23,26 @@ public sealed partial class Chicken : FarmAnimal
             or ItemIds.PitcherPod;
     protected override void FinalizeSpawn() => Variant = GetFarmVariant();
 
+    // Vanilla's chicken sound variants, classic and picky, in registry order.
+    private const int SoundVariants = 2;
+
+    /// <summary>
+    /// Vanilla's <c>Chicken.finalizeSpawn</c> for a chicken jockey, drawing from the level's random
+    /// (<paramref name="random"/>) in vanilla's order: the variant, the sound variant, then <c>Mob</c>'s spawn draws.
+    /// </summary>
+    /// <remarks>
+    /// Vanilla picks the variant uniformly among the highest-priority variants whose biome condition holds; exactly one
+    /// chicken variant holds anywhere (cold, warm, or else temperate), so the draw is <c>nextInt(1)</c>. A jockey's
+    /// group has no one in it yet, so <c>AgeableMob</c> doesn't draw for a baby.
+    /// </remarks>
+    internal void FinalizeJockeySpawnFromLevel(API.World.Generator.RandomSources.IRandomSource random)
+    {
+        random.NextInt(1);
+        Variant = GetFarmVariant();
+        SoundVariant = random.NextInt(SoundVariants);
+        FinalizeMobSpawnFromLevel(random);
+    }
+
     // Vanilla's egg hatch: a chick takes the variant of its biome, as a spawned chicken does.
     internal void FinalizeHatchling() => Variant = GetFarmVariant();
 
