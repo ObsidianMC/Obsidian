@@ -1,4 +1,5 @@
-﻿using Obsidian.Entities.AI;
+﻿using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
@@ -35,13 +36,19 @@ public sealed partial class PrimedTnt : Entity
     /// primed TNT entity, with a little random nudge, that hisses as it's lit.
     /// </summary>
     /// <param name="fuse">The fuse, or <see langword="null"/> for vanilla's 80 ticks.</param>
+    /// <param name="random">
+    /// The random the TNT's push is drawn from: the level's, where the caller keeps vanilla's draws, or
+    /// <see langword="null"/> for any.
+    /// </param>
     /// <returns>The lit TNT, or <see langword="null"/> where <c>tnt_explodes</c> is off.</returns>
-    internal static PrimedTnt? Prime(AbstractLevel level, Vector position, IEntity? owner, int? fuse = null)
+    internal static PrimedTnt? Prime(AbstractLevel level, Vector position, IEntity? owner, int? fuse = null,
+        IRandomSource? random = null)
     {
         if (!level.LevelData.GetBooleanRule("tnt_explodes"))
             return null;
 
-        var angle = Random.Shared.NextDouble() * Math.PI * 2;
+        // Vanilla draws the push from the level's random; callers in a tick that matches vanilla's draws pass it.
+        var angle = (random?.NextDouble() ?? Random.Shared.NextDouble()) * Math.PI * 2;
         var tnt = new PrimedTnt
         {
             Level = level,

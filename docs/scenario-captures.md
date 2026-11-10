@@ -171,6 +171,25 @@ replaces only what vanilla produced.
   `UseItemOnPacket`. It compares kelp and vines without their random age (see
   [block item placement](known-gaps/block-item-placement.md)).
 
+- `fire_ticks.json` (`VanillaFire.ReplayFireReference`) records vanilla's fire from `Java/FireFixtures.java`
+  (`CaptureFixtures=fire`): `FireBlock.tick` on the block at the origin, or a block set there with `Level.setBlock`
+  so that its `onPlace` runs, on a bounded block view that runs what `LevelChunk.setBlockState` and `Level.setBlock`
+  run (block entity removal, `onPlace`, neighbour and shape updates). A case lists blocks relative to the origin, the
+  rain, difficulty, dimension type and biome, and the seeds to run it with; each run records every draw from the
+  level's random in order, the next int, the final state of each block it touched, the block ticks scheduled and the
+  entities added. The cases cover ageing, burning out with and without a sturdy floor or fuel, fire that can't
+  survive (vanilla carries on with the tick after putting it out, and ageing it places it again), spreading to wool
+  in every direction and into the floor, igniting the air around hay, rain with and without a roof, netherrack,
+  magma and the End's bedrock, jungle's faster burnout, soul fire spreading over soul soil, TNT and a lectern with a
+  book burning, placing fire and soul fire, and placing fire in a nether portal frame: in the lower and the upper
+  interior cell, along either axis, in an incomplete frame, and in the nether and the End (vanilla lights portals
+  from fire in the overworld and the nether only, before checking that the fire survives). The replay runs each
+  seed at its own spot in a level of the case's dimension (the overworld, or a nether or End dimension of the test
+  world), with a level random that records its draws, and places fire through `AbstractLevel.SetBlockAsync`, the
+  path fireballs, explosions and end crystals use. It compares blocks and dropped items once the levels have
+  ticked, as Obsidian removes fire a shape update destroys, drops a removed block entity's items, and lights a
+  portal around new fire later in that tick.
+
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.
 
@@ -195,6 +214,8 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=placement
 
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=fire
+
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur -p:CaptureCases=spike_shatters_after_falling+review_spike_pending_fall_keeps_frustum
 ```
 
@@ -210,6 +231,9 @@ For sulfur, `CaptureCases` accepts exact scenario names separated by `+`. It rep
 and skips the Java probes. Other scenarios retain their stored absolute times and are replayed independently.
 `SulfurFixtures.java` also accepts an optional second argument of exact `+`-separated probe names, when run directly
 with the vanilla server and libraries on the classpath, to re-record only new or changed Java cases.
+
+For `fire`, `CaptureCases` accepts exact `+`-separated case names in `fire_ticks.json` and records only those
+cases' runs; the others keep theirs.
 
 For `more_blocks`, `CaptureCases` accepts exact `+`-separated names in `more_blocks.json` and re-records only those
 Java probes. No RCON server is started and no other fixture is changed. Its source and the reusable runtime

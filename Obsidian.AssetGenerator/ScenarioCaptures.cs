@@ -29,6 +29,7 @@ internal static class ScenarioCaptures
     public const string Mining = "mining";
     public const string Placement = "placement";
     public const string CopperWeathering = "copper_weathering";
+    public const string Fire = "fire";
 
     private const string Symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -56,11 +57,11 @@ internal static class ScenarioCaptures
     };
 
     // The fixtures whose probes record only the cases asked for.
-    private static readonly string[] SelectableCases = [Redstone, Sulfur, MoreBlocks, StructurePieces];
+    private static readonly string[] SelectableCases = [Redstone, Sulfur, MoreBlocks, StructurePieces, Fire];
 
     public static readonly string[] All =
         [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps, Mining,
-            Placement, CopperWeathering];
+            Placement, CopperWeathering, Fire];
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -102,7 +103,7 @@ internal static class ScenarioCaptures
         if (cases is not null && (fixtures.Count != 1 || !SelectableCases.Any(fixtures.Contains)))
         {
             throw new ArgumentException(
-                "Case selection requires CaptureFixtures=redstone, sulfur, more_blocks or structure_pieces.");
+                "Case selection requires CaptureFixtures=redstone, sulfur, more_blocks, structure_pieces or fire.");
         }
 
         if (fixtures.Contains(CopperWeathering))
@@ -123,6 +124,13 @@ internal static class ScenarioCaptures
         if (fixtures.Contains(SavedHeightmaps))
         {
             await FixtureDumper.DumpSavedHeightmapsAsync(server, Path.Combine(assetsDirectory, "saved_heightmaps.json"));
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(Fire))
+        {
+            await FixtureDumper.DumpFireAsync(server, Path.Combine(assetsDirectory, "fire_ticks.json"), cases);
             if (fixtures.Count == 1)
                 return;
         }

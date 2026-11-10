@@ -34,6 +34,7 @@
 		<EmbeddedResource Include="Assets\saved_heightmaps.json" />
 		<EmbeddedResource Include="Assets\structure_pieces.json" />
 		<EmbeddedResource Include="Assets\redstone_scenarios.json" />
+		<EmbeddedResource Include="Assets\fire_ticks.json" />
 		<!-- A folder of files, embedded by their paths in it (VanillaWorldgenCaptures). -->
 		<EmbeddedResource Include="Assets\vanilla_worldgen_26.3\**\*.json">
 			<LogicalName>Obsidian.Tests.Assets.vanilla_worldgen_26.3/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
