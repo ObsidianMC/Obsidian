@@ -654,6 +654,9 @@ public abstract partial class AbstractLevel
             case DataBlockEntity { DropsItems: true } data:
                 this.DropSavedItems(data);
                 break;
+            case DataBlockEntity { Id: "minecraft:jukebox" } jukebox:
+                this.RemoveJukebox(jukebox);
+                break;
         }
     }
 

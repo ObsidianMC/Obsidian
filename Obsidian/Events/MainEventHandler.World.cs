@@ -118,9 +118,6 @@ public partial class MainEventHandler
 
         if (world is AbstractLevel gameEvents)
         {
-            if (block.Is(BlockIds.Jukebox))
-                gameEvents.StopJukebox(location);
-
             gameEvents.EmitGameEvent(MobGameEvent.BlockDestroy, (VectorD)location + 0.5, player,
                 affectedBlock: block);
         }
