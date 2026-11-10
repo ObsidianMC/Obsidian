@@ -230,7 +230,13 @@ internal sealed class FluidLevel
     {
         var block = this.GetBlock(position);
         var neighborPosition = position.Offset(direction);
-        this.ScheduleFluidShapeTick(position, block, neighbor);
+
+        // Kelp turning into its other part returns before vanilla schedules its water tick.
+        var converts = block.RegistryId is BlockIds.Kelp or BlockIds.KelpPlant
+            && GrowingPlantShapes.Converts(this.GetBlock, position, block, direction, neighbor);
+        if (!converts)
+            this.ScheduleFluidShapeTick(position, block, neighbor);
+
         var updated = this.access.Reactions?.UpdateShape(position, block, direction, neighborPosition, neighbor)
             ?? this.UpdateVanillaShape(block, position, direction, neighbor, shapes, scheduleFluidTick: false);
 

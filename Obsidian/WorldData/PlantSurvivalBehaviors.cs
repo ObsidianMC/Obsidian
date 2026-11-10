@@ -88,25 +88,24 @@ internal sealed class BambooStalkBlockBehavior : IScheduledTickBehavior, IShapeU
 }
 
 /// <summary>
-/// Delayed support checks for kelp heads and stems
+/// The shape updates and support checks of kelp and the cave, weeping and twisting vines, heads and bodies. Only kelp
+/// breaks when its support check finds it can't stay.
 /// </summary>
 internal sealed class KelpBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior
 {
-    /// <summary>Vanilla's <c>updateShape</c>: schedules a tick at delay 1 when the block can't survive, and keeps its state.</summary>
+    /// <summary>
+    /// Vanilla's <c>updateShape</c> (see <see cref="GrowingPlantShapes"/>): an update from the support side schedules
+    /// the support check a tick later when the plant can't stay, and a head or body turns into the plant's other part
+    /// when its plant ahead appears or goes. Other states are kept.
+    /// </summary>
     public IBlock? UpdateShape(IBlockLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
     {
-        if (state.RegistryId is not (BlockIds.Kelp or BlockIds.KelpPlant))
-            return state;
-
-        if (!BlockSurvival.KelpMayPlaceOn(level.GetBlock(position + Vector.Down)))
+        if (GrowingPlantShapes.NeedsSupportCheck(level.GetBlock, position, state, direction))
             level.ScheduleTick(position, state, 1);
 
-        if (state.RegistryId == BlockIds.Kelp
-            && direction == BlockFace.Up
-            && neighbor.RegistryId is BlockIds.Kelp or BlockIds.KelpPlant)
-                return BlocksRegistry.KelpPlant;
-
-        return state;
+        return GrowingPlantShapes.Converts(level.GetBlock, position, state, direction, neighbor)
+            ? GrowingPlantShapes.Convert(state, level.Random)
+            : state;
     }
 
     /// <summary>Vanilla's <c>tick</c>: a stalk that can't survive breaks and drops itself.</summary>
