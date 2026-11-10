@@ -11,7 +11,8 @@ namespace Obsidian.Progress;
 internal static class ProgressConditions
 {
     public static bool Match(IPlayer player, string trigger, JsonElement conditions, ItemStack? item,
-        IEntity? entity, IBlock? block, Vector? position, string? recipe, string? from, string? to, int? levels)
+        IEntity? entity, IBlock? block, Vector? position, string? recipe, string? from, string? to, int? levels,
+        string? lootTable = null)
     {
         foreach (var condition in conditions.EnumerateObject())
         {
@@ -29,6 +30,8 @@ internal static class ProgressConditions
                 "recipe_id" when trigger == "recipe_crafted" =>
                     recipe == AdvancementsRegistry.Qualify(condition.Value.GetString()!),
                 "recipes" when trigger is "recipe_unlocked" or "recipe_crafted" => Recipes(recipe, condition.Value),
+                "loot_tables" when trigger == "player_generates_container_loot" =>
+                    Identifiers(lootTable, condition.Value),
                 "from" when trigger == "changed_dimension" =>
                     from == AdvancementsRegistry.Qualify(condition.Value.GetString()!),
                 "to" when trigger == "changed_dimension" =>
@@ -60,6 +63,21 @@ internal static class ProgressConditions
             JsonValueKind.String => IsRecipe(recipe, recipes.GetString()!),
             JsonValueKind.Array => recipes.EnumerateArray()
                 .Any(entry => entry.ValueKind == JsonValueKind.String && IsRecipe(recipe, entry.GetString()!)),
+            _ => false
+        };
+    }
+
+    // A holder set of identifiers without tags (loot tables have none): one identifier or a list of them.
+    private static bool Identifiers(string? identifier, JsonElement identifiers)
+    {
+        if (identifier is null)
+            return false;
+
+        return identifiers.ValueKind switch
+        {
+            JsonValueKind.String => IsRecipe(identifier, identifiers.GetString()!),
+            JsonValueKind.Array => identifiers.EnumerateArray()
+                .Any(entry => entry.ValueKind == JsonValueKind.String && IsRecipe(identifier, entry.GetString()!)),
             _ => false
         };
     }

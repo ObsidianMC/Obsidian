@@ -330,6 +330,33 @@ internal sealed class MobTerrain(ILevel level) : IPathTerrain
         return null;
     }
 
+    /// <summary>
+    /// Like vanilla's <c>Level.clip</c> with collision shapes and no fluids: the first collision box the segment from
+    /// <paramref name="start"/> to <paramref name="end"/> crosses, or <c>null</c> when it crosses none before it ends
+    /// or reaches an unloaded chunk.
+    /// </summary>
+    public API.Blocks.BlockShapeHit? RaycastCollisions(VectorD start, VectorD end)
+    {
+        var direction = end - start;
+        if (!double.IsFinite(direction.X + direction.Y + direction.Z + start.X + start.Y + start.Z)
+            || direction.MagnitudeSquared() < 1e-12)
+        {
+            return null;
+        }
+
+        foreach (var cell in CellsAlong(start, end))
+        {
+            if (GetBlock(cell) is not IBlock block)
+                return null;
+
+            var boxes = BlockCollisionShapes.Get(level, cell, block);
+            if (BlockShapeRaycast.Clip(boxes, cell, VectorD.Zero, start, direction) is { } hit)
+                return hit.Hit;
+        }
+
+        return null;
+    }
+
     // The cells the segment from start to end passes through, in order, from start's to end's: a voxel walk that
     // skips none.
     internal static IEnumerable<Vector> CellsAlong(VectorD start, VectorD end)

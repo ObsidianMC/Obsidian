@@ -190,6 +190,14 @@ public partial class Extensions
     /// Reads a text component saved by vanilla's <c>ComponentSerialization.CODEC</c>: a plain string, a compound, or
     /// a list whose first component has the rest as extras.
     /// </summary>
+    // A text with nothing but its literal: no style, events, translation or children.
+    private static bool IsPlainText(ChatMessage? text) =>
+        text is { Text: not null, Translate: null, Keybind: null, Color: null, Bold: null, Italic: null,
+            Underlined: null, Strikethrough: null, Obfuscated: null, ShadowColor: null, Insertion: null,
+            ClickEvent: null, HoverEvent: null }
+        && text.Extra is not { Count: > 0 }
+        && text.With is not { Count: > 0 };
+
     internal static ChatMessage? TextFromNbt(this INbtTag tag) => tag switch
     {
         // An element of a list that mixes strings, compounds and lists, wrapped under an empty key, as vanilla saves
@@ -245,6 +253,9 @@ public partial class Extensions
                 or DataComponentType.OminousBottleAmplifier => new NbtTag<int>(name, number.Value),
             // Vanilla's Unit codec: an empty compound.
             SimpleDataComponent<bool> when component.Type == DataComponentType.Unbreakable => new NbtCompound(name),
+            // Vanilla's ComponentSerialization codec writes a plain, unstyled text as a bare string.
+            SimpleDataComponent<ChatMessage> text when IsPlainText(text.Value) =>
+                new NbtTag<string>(name, text.Value!.Text!),
             SimpleDataComponent<ChatMessage> text when text.Value is not null => text.Value.ToNbt(name),
             SimpleDataComponent<ImmutableArray<Enchantment>> enchantments =>
                 EnchantmentsToNbt(name, enchantments.Value),
