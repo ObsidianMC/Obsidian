@@ -90,6 +90,8 @@ internal static class TickBehaviors
 /// </summary>
 internal static class ShapeUpdateBehaviors
 {
+    internal static IShapeUpdateBehavior ObserverBlock { get; } = new Redstone.ObserverShapeBehavior();
+
     internal static IShapeUpdateBehavior FenceBlock { get; } = new FenceBlockBehavior();
 
     internal static IShapeUpdateBehavior NoteBlock { get; } = new NoteBlockBehavior();

@@ -56,6 +56,14 @@ Ordered by how much they should save for how little risk. "Measured" means the p
 
 ### 1. Stop notifying comparators around every container on every tick
 
+*Done. The defect below was real: an observer facing an idle chest pulsed every four ticks.*
+
+The revision gate covers item changes. Consumed plugin `SetChanged()` calls also notify comparators, since a
+container may expose saved machine state through `GetAnalogOutput` without changing slots. The inventory revision
+and the plugin's `SetChanged()` generation are acknowledged only after delivery; notification failures and bounded
+drain drops leave either kind of change pending for the next block entity tick. Item access, the block entity pass
+and save consumption skip the same already-delivered pair, keeping the earliest notification without extra drains.
+
 *From the code. Small change, no behaviour change intended.*
 
 `AbstractLevel.TickBlockEntitiesAsync` (`Obsidian/WorldData/AbstractLevel.BlockEntities.cs:262`) calls

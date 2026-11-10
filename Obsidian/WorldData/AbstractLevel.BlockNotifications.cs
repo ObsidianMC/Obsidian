@@ -160,27 +160,7 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateW
 
     async ValueTask IRedstoneLevel.NotifyComparatorsAroundAsync(Vector position)
     {
-        // Vanilla updateNeighbourForOutputSignal: a comparator beside the block hears of it, or one behind a conductor beside it.
-        IBlockChangeWorld world = this;
-        foreach (var direction in new[] { BlockFace.North, BlockFace.South, BlockFace.West, BlockFace.East })
-        {
-            var beside = position.Offset(direction);
-            var state = world.GetLoadedBlock(beside);
-            if (state is null)
-                continue;
-
-            if (state.Is(BlockIds.Comparator))
-            {
-                this.BlockNotifications.EnqueueNeighbor(beside, position);
-            }
-            else if (state.IsRedstoneConductor())
-            {
-                var behind = beside.Offset(direction);
-                if (world.GetLoadedBlock(behind) is IBlock comparator && comparator.Is(BlockIds.Comparator))
-                    this.BlockNotifications.EnqueueNeighbor(behind, position);
-            }
-        }
-
+        this.EnqueueComparatorsAround(position);
         await this.BlockNotifications.DrainAsync();
     }
 
@@ -219,6 +199,9 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateW
 
     ValueTask IRedstoneLevel.WriteAsync(Vector position, IBlock block, bool notifyNeighbors) =>
         this.WriteAsync(position, block, notifyNeighbors ? BlockUpdateFlags.All : ClientsOnly);
+
+    ValueTask IRedstoneLevel.RestoreBlockSilentlyAsync(Vector position, IBlock block) =>
+        this.WriteAsync(position, block, BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);
 
     IBlock? IBlockTickLevel.GetLoadedBlock(Vector position) => ((IBlockChangeWorld)this).GetLoadedBlock(position);
 

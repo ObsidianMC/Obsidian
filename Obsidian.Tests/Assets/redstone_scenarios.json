@@ -1,5 +1,5 @@
 {
- "_notes": "Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a headless vanilla server in a void world, whose game is frozen and stepped one tick at a time, with block states read with execute if block. Coordinates are absolute. Setup blocks are placed first, live, in order, with neighbor updates (/setblock). Each tick t from 1 to the scenario's ticks: its reloads (world saved and server restarted, which runs `ticks` game ticks of its own before the server is frozen again), actions, entity events (an armor stand standing in each contact cell until the next event) and arrows (flying straight into the face at the location, without gravity) happen first, at the previous game time, then the game advances one tick. Checkpoints hold the box after each tick: one string per (y, z) row, y then z ascending, with a character per x giving the block's palette index in 0-9a-zA-Z. Palette states are full states with every property, sorted by name.",
+ "_notes": "Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a headless vanilla server in a void world, whose game is frozen and stepped one tick at a time, with block states read with execute if block. Coordinates are absolute. Setup blocks are placed first, live, in order, with neighbor updates (/setblock). Each tick t from 1 to the scenario's ticks: its reloads (world saved and server restarted, which runs `ticks` game ticks of its own before the server is frozen again), actions, entity events (an armor stand standing in each contact cell until the next event) and arrows (flying straight into the face at the location, without gravity) happen first, at the previous game time, then the game advances one tick. Checkpoints hold the box after each tick: one string per (y, z) row, y then z ascending, with a character per x giving the block's palette index in 0-9a-zA-Z. Palette states are full states with every property, sorted by name. A setup placement's `items` are its block entity's items, placed with it as the /setblock's Items data. Scenarios marked `level` are replayed on a whole Obsidian level, because they need its block entities (containers and hoppers). A scenario naming an `item` also records in each checkpoint's `items` the total count of that item lying as item entities within two blocks of its box.",
  "version": "26.3",
  "scenarios": [
   {
@@ -18562,6 +18562,6744 @@
       "1111111",
       "1111111"
      ]
+    }
+   ]
+  },
+  {
+   "name": "observer_idle_containers",
+   "description": "Observers (facing west) watch a chest, a barrel, a hopper, a furnace and a dropper, each holding items that never move. Each observer pulses once for its placement, then stays off: a container's block entity ticking changes nothing an observer sees.",
+   "coverage": [
+    "observer_containers"
+   ],
+   "level": true,
+   "min": [
+    488,
+    64,
+    9
+   ],
+   "max": [
+    501,
+    64,
+    9
+   ],
+   "setup": [
+    {
+     "pos": [
+      488,
+      64,
+      9
+     ],
+     "state": "minecraft:chest[facing=north,type=single,waterlogged=false]",
+     "items": [
+      {
+       "slot": 0,
+       "id": "minecraft:stone",
+       "count": 5
+      }
+     ]
+    },
+    {
+     "pos": [
+      491,
+      64,
+      9
+     ],
+     "state": "minecraft:barrel[facing=up,open=false]",
+     "items": [
+      {
+       "slot": 0,
+       "id": "minecraft:stone",
+       "count": 5
+      }
+     ]
+    },
+    {
+     "pos": [
+      494,
+      64,
+      9
+     ],
+     "state": "minecraft:hopper[enabled=true,facing=down]",
+     "items": [
+      {
+       "slot": 0,
+       "id": "minecraft:stone",
+       "count": 3
+      }
+     ]
+    },
+    {
+     "pos": [
+      497,
+      64,
+      9
+     ],
+     "state": "minecraft:furnace[facing=north,lit=false]",
+     "items": [
+      {
+       "slot": 0,
+       "id": "minecraft:iron_ore",
+       "count": 1
+      }
+     ]
+    },
+    {
+     "pos": [
+      500,
+      64,
+      9
+     ],
+     "state": "minecraft:dropper[facing=up,triggered=false]",
+     "items": [
+      {
+       "slot": 4,
+       "id": "minecraft:stone",
+       "count": 2
+      }
+     ]
+    },
+    {
+     "pos": [
+      489,
+      64,
+      9
+     ],
+     "state": "minecraft:observer[facing=west,powered=false]"
+    },
+    {
+     "pos": [
+      492,
+      64,
+      9
+     ],
+     "state": "minecraft:observer[facing=west,powered=false]"
+    },
+    {
+     "pos": [
+      495,
+      64,
+      9
+     ],
+     "state": "minecraft:observer[facing=west,powered=false]"
+    },
+    {
+     "pos": [
+      498,
+      64,
+      9
+     ],
+     "state": "minecraft:observer[facing=west,powered=false]"
+    },
+    {
+     "pos": [
+      501,
+      64,
+      9
+     ],
+     "state": "minecraft:observer[facing=west,powered=false]"
+    }
+   ],
+   "actions": [],
+   "entities": [],
+   "arrows": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "palette": [
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:observer[facing=west,powered=false]",
+      "minecraft:air",
+      "minecraft:barrel[facing=up,open=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:furnace[facing=north,lit=false]",
+      "minecraft:dropper[facing=up,triggered=false]"
+     ],
+     "rows": [
+      "01231241251261"
+     ]
+    },
+    {
+     "tick": 1,
+     "palette": [
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:observer[facing=west,powered=false]",
+      "minecraft:air",
+      "minecraft:barrel[facing=up,open=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:furnace[facing=north,lit=false]",
+      "minecraft:dropper[facing=up,triggered=false]"
+     ],
+     "rows": [
+      "01231241251261"
+     ]
+    },
+    {
+     "tick": 2,
+     "palette": [
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:observer[facing=west,powered=true]",
+      "minecraft:air",
+      "minecraft:barrel[facing=up,open=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:furnace[facing=north,lit=false]",
+      "minecraft:dropper[facing=up,triggered=false]"
+     ],
+     "rows": [
+      "01231241251261"
+     ]
+    },
+    {
+     "tick": 3,
+     "palette": [
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:observer[facing=west,powered=true]",
+      "minecraft:air",
+      "minecraft:barrel[facing=up,open=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:furnace[facing=north,lit=false]",
+      "minecraft:dropper[facing=up,triggered=false]"
+     ],
+     "rows": [
+      "01231241251261"
+     ]
+    },
+    {
+     "tick": 4,
+     "palette": [
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:observer[facing=west,powered=false]",
+      "minecraft:air",
+      "minecraft:barrel[facing=up,open=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:furnace[facing=north,lit=false]",
+      "minecraft:dropper[facing=up,triggered=false]"
+     ],
+     "rows": [
+      "01231241251261"
+     ]
+    },
+    {
+     "tick": 5,
+     "palette": [
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:observer[facing=west,powered=false]",
+      "minecraft:air",
+      "minecraft:barrel[facing=up,open=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:furnace[facing=north,lit=false]",
+      "minecraft:dropper[facing=up,triggered=false]"
+     ],
+     "rows": [
+      "01231241251261"
+     ]
+    },
+    {
+     "tick": 6,
+     "palette": [
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:observer[facing=west,powered=false]",
+      "minecraft:air",
+      "minecraft:barrel[facing=up,open=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:furnace[facing=north,lit=false]",
+      "minecraft:dropper[facing=up,triggered=false]"
+     ],
+     "rows": [
+      "01231241251261"
+     ]
+    },
+    {
+     "tick": 7,
+     "palette": [
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:observer[facing=west,powered=false]",
+      "minecraft:air",
+      "minecraft:barrel[facing=up,open=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:furnace[facing=north,lit=false]",
+      "minecraft:dropper[facing=up,triggered=false]"
+     ],
+     "rows": [
+      "01231241251261"
+     ]
+    },
+    {
+     "tick": 8,
+     "palette": [
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:observer[facing=west,powered=false]",
+      "minecraft:air",
+      "minecraft:barrel[facing=up,open=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:furnace[facing=north,lit=false]",
+      "minecraft:dropper[facing=up,triggered=false]"
+     ],
+     "rows": [
+      "01231241251261"
+     ]
+    },
+    {
+     "tick": 9,
+     "palette": [
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:observer[facing=west,powered=false]",
+      "minecraft:air",
+      "minecraft:barrel[facing=up,open=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:furnace[facing=north,lit=false]",
+      "minecraft:dropper[facing=up,triggered=false]"
+     ],
+     "rows": [
+      "01231241251261"
+     ]
+    },
+    {
+     "tick": 10,
+     "palette": [
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:observer[facing=west,powered=false]",
+      "minecraft:air",
+      "minecraft:barrel[facing=up,open=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:furnace[facing=north,lit=false]",
+      "minecraft:dropper[facing=up,triggered=false]"
+     ],
+     "rows": [
+      "01231241251261"
+     ]
+    },
+    {
+     "tick": 11,
+     "palette": [
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:observer[facing=west,powered=false]",
+      "minecraft:air",
+      "minecraft:barrel[facing=up,open=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:furnace[facing=north,lit=false]",
+      "minecraft:dropper[facing=up,triggered=false]"
+     ],
+     "rows": [
+      "01231241251261"
+     ]
+    },
+    {
+     "tick": 12,
+     "palette": [
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:observer[facing=west,powered=false]",
+      "minecraft:air",
+      "minecraft:barrel[facing=up,open=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:furnace[facing=north,lit=false]",
+      "minecraft:dropper[facing=up,triggered=false]"
+     ],
+     "rows": [
+      "01231241251261"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "hopper_feeds_comparator",
+   "description": "A hopper (facing down) under a chest holding two stone is locked by a redstone block west of it, which is removed at tick 6. The hopper then pulls one stone at a time. A comparator east of the hopper reads it into a dust; observers north of the hopper and of the chest watch them, and see the hopper's lock change but not the items moving.",
+   "coverage": [
+    "container_comparators",
+    "observer_containers"
+   ],
+   "level": true,
+   "min": [
+    520,
+    63,
+    8
+   ],
+   "max": [
+    523,
+    65,
+    9
+   ],
+   "setup": [
+    {
+     "pos": [
+      521,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      522,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      523,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      520,
+      64,
+      9
+     ],
+     "state": "minecraft:redstone_block"
+    },
+    {
+     "pos": [
+      521,
+      64,
+      9
+     ],
+     "state": "minecraft:hopper[enabled=false,facing=down]"
+    },
+    {
+     "pos": [
+      521,
+      65,
+      9
+     ],
+     "state": "minecraft:chest[facing=north,type=single,waterlogged=false]",
+     "items": [
+      {
+       "slot": 0,
+       "id": "minecraft:stone",
+       "count": 2
+      }
+     ]
+    },
+    {
+     "pos": [
+      522,
+      64,
+      9
+     ],
+     "state": "minecraft:comparator[facing=west,mode=compare,powered=false]"
+    },
+    {
+     "pos": [
+      523,
+      64,
+      9
+     ],
+     "state": "minecraft:redstone_wire"
+    },
+    {
+     "pos": [
+      521,
+      64,
+      8
+     ],
+     "state": "minecraft:observer[facing=south,powered=false]"
+    },
+    {
+     "pos": [
+      521,
+      65,
+      8
+     ],
+     "state": "minecraft:observer[facing=south,powered=false]"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 6,
+     "pos": [
+      520,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    }
+   ],
+   "entities": [],
+   "arrows": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:redstone_block",
+      "minecraft:hopper[enabled=false,facing=down]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]"
+     ],
+     "rows": [
+      "0000",
+      "0111",
+      "0200",
+      "3456",
+      "0200",
+      "0700"
+     ]
+    },
+    {
+     "tick": 1,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:redstone_block",
+      "minecraft:hopper[enabled=false,facing=down]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]"
+     ],
+     "rows": [
+      "0000",
+      "0111",
+      "0200",
+      "3456",
+      "0200",
+      "0700"
+     ]
+    },
+    {
+     "tick": 2,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:observer[facing=south,powered=true]",
+      "minecraft:redstone_block",
+      "minecraft:hopper[enabled=false,facing=down]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]"
+     ],
+     "rows": [
+      "0000",
+      "0111",
+      "0200",
+      "3456",
+      "0200",
+      "0700"
+     ]
+    },
+    {
+     "tick": 3,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:observer[facing=south,powered=true]",
+      "minecraft:redstone_block",
+      "minecraft:hopper[enabled=false,facing=down]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]"
+     ],
+     "rows": [
+      "0000",
+      "0111",
+      "0200",
+      "3456",
+      "0200",
+      "0700"
+     ]
+    },
+    {
+     "tick": 4,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:redstone_block",
+      "minecraft:hopper[enabled=false,facing=down]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]"
+     ],
+     "rows": [
+      "0000",
+      "0111",
+      "0200",
+      "3456",
+      "0200",
+      "0700"
+     ]
+    },
+    {
+     "tick": 5,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:redstone_block",
+      "minecraft:hopper[enabled=false,facing=down]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]"
+     ],
+     "rows": [
+      "0000",
+      "0111",
+      "0200",
+      "3456",
+      "0200",
+      "0700"
+     ]
+    },
+    {
+     "tick": 6,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]"
+     ],
+     "rows": [
+      "0000",
+      "0111",
+      "0200",
+      "0345",
+      "0200",
+      "0600"
+     ]
+    },
+    {
+     "tick": 7,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:observer[facing=south,powered=true]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]"
+     ],
+     "rows": [
+      "0000",
+      "0111",
+      "0200",
+      "0345",
+      "0600",
+      "0700"
+     ]
+    },
+    {
+     "tick": 8,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:observer[facing=south,powered=true]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]"
+     ],
+     "rows": [
+      "0000",
+      "0111",
+      "0200",
+      "0345",
+      "0600",
+      "0700"
+     ]
+    },
+    {
+     "tick": 9,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]"
+     ],
+     "rows": [
+      "0000",
+      "0111",
+      "0200",
+      "0345",
+      "0200",
+      "0600"
+     ]
+    },
+    {
+     "tick": 10,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]"
+     ],
+     "rows": [
+      "0000",
+      "0111",
+      "0200",
+      "0345",
+      "0200",
+      "0600"
+     ]
+    },
+    {
+     "tick": 11,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]"
+     ],
+     "rows": [
+      "0000",
+      "0111",
+      "0200",
+      "0345",
+      "0200",
+      "0600"
+     ]
+    },
+    {
+     "tick": 12,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]"
+     ],
+     "rows": [
+      "0000",
+      "0111",
+      "0200",
+      "0345",
+      "0200",
+      "0600"
+     ]
+    },
+    {
+     "tick": 13,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]"
+     ],
+     "rows": [
+      "0000",
+      "0111",
+      "0200",
+      "0345",
+      "0200",
+      "0600"
+     ]
+    },
+    {
+     "tick": 14,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]"
+     ],
+     "rows": [
+      "0000",
+      "0111",
+      "0200",
+      "0345",
+      "0200",
+      "0600"
+     ]
+    },
+    {
+     "tick": 15,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]"
+     ],
+     "rows": [
+      "0000",
+      "0111",
+      "0200",
+      "0345",
+      "0200",
+      "0600"
+     ]
+    },
+    {
+     "tick": 16,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]"
+     ],
+     "rows": [
+      "0000",
+      "0111",
+      "0200",
+      "0345",
+      "0200",
+      "0600"
+     ]
+    },
+    {
+     "tick": 17,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]"
+     ],
+     "rows": [
+      "0000",
+      "0111",
+      "0200",
+      "0345",
+      "0200",
+      "0600"
+     ]
+    },
+    {
+     "tick": 18,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]"
+     ],
+     "rows": [
+      "0000",
+      "0111",
+      "0200",
+      "0345",
+      "0200",
+      "0600"
+     ]
+    },
+    {
+     "tick": 19,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]"
+     ],
+     "rows": [
+      "0000",
+      "0111",
+      "0200",
+      "0345",
+      "0200",
+      "0600"
+     ]
+    },
+    {
+     "tick": 20,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]"
+     ],
+     "rows": [
+      "0000",
+      "0111",
+      "0200",
+      "0345",
+      "0200",
+      "0600"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "double_chest_comparator",
+   "description": "A double chest (facing north) holds two stone in its east half, over a hopper locked by a redstone block until tick 3. A comparator west of the chest's west half reads the whole chest into a dust, and turns off once the hopper has emptied the east half. An observer north of the west half stays off.",
+   "coverage": [
+    "container_comparators",
+    "observer_containers"
+   ],
+   "level": true,
+   "min": [
+    551,
+    63,
+    8
+   ],
+   "max": [
+    555,
+    64,
+    9
+   ],
+   "setup": [
+    {
+     "pos": [
+      551,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      552,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      553,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      555,
+      63,
+      9
+     ],
+     "state": "minecraft:redstone_block"
+    },
+    {
+     "pos": [
+      554,
+      63,
+      9
+     ],
+     "state": "minecraft:hopper[enabled=false,facing=down]"
+    },
+    {
+     "pos": [
+      553,
+      64,
+      9
+     ],
+     "state": "minecraft:chest[facing=north,type=left,waterlogged=false]"
+    },
+    {
+     "pos": [
+      554,
+      64,
+      9
+     ],
+     "state": "minecraft:chest[facing=north,type=right,waterlogged=false]",
+     "items": [
+      {
+       "slot": 0,
+       "id": "minecraft:stone",
+       "count": 2
+      }
+     ]
+    },
+    {
+     "pos": [
+      552,
+      64,
+      9
+     ],
+     "state": "minecraft:comparator[facing=east,mode=compare,powered=false]"
+    },
+    {
+     "pos": [
+      551,
+      64,
+      9
+     ],
+     "state": "minecraft:redstone_wire"
+    },
+    {
+     "pos": [
+      553,
+      64,
+      8
+     ],
+     "state": "minecraft:observer[facing=south,powered=false]"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 3,
+     "pos": [
+      555,
+      63,
+      9
+     ],
+     "state": "minecraft:air"
+    }
+   ],
+   "entities": [],
+   "arrows": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:hopper[enabled=false,facing=down]",
+      "minecraft:redstone_block",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=false]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]"
+     ],
+     "rows": [
+      "00000",
+      "11123",
+      "00400",
+      "56780"
+     ]
+    },
+    {
+     "tick": 1,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:hopper[enabled=false,facing=down]",
+      "minecraft:redstone_block",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=false]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]"
+     ],
+     "rows": [
+      "00000",
+      "11123",
+      "00400",
+      "56780"
+     ]
+    },
+    {
+     "tick": 2,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:hopper[enabled=false,facing=down]",
+      "minecraft:redstone_block",
+      "minecraft:observer[facing=south,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]"
+     ],
+     "rows": [
+      "00000",
+      "11123",
+      "00400",
+      "56780"
+     ]
+    },
+    {
+     "tick": 3,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:observer[facing=south,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]"
+     ],
+     "rows": [
+      "00000",
+      "11120",
+      "00300",
+      "45670"
+     ]
+    },
+    {
+     "tick": 4,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]"
+     ],
+     "rows": [
+      "00000",
+      "11120",
+      "00300",
+      "45670"
+     ]
+    },
+    {
+     "tick": 5,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]"
+     ],
+     "rows": [
+      "00000",
+      "11120",
+      "00300",
+      "45670"
+     ]
+    },
+    {
+     "tick": 6,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]"
+     ],
+     "rows": [
+      "00000",
+      "11120",
+      "00300",
+      "45670"
+     ]
+    },
+    {
+     "tick": 7,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]"
+     ],
+     "rows": [
+      "00000",
+      "11120",
+      "00300",
+      "45670"
+     ]
+    },
+    {
+     "tick": 8,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]"
+     ],
+     "rows": [
+      "00000",
+      "11120",
+      "00300",
+      "45670"
+     ]
+    },
+    {
+     "tick": 9,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]"
+     ],
+     "rows": [
+      "00000",
+      "11120",
+      "00300",
+      "45670"
+     ]
+    },
+    {
+     "tick": 10,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]"
+     ],
+     "rows": [
+      "00000",
+      "11120",
+      "00300",
+      "45670"
+     ]
+    },
+    {
+     "tick": 11,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]"
+     ],
+     "rows": [
+      "00000",
+      "11120",
+      "00300",
+      "45670"
+     ]
+    },
+    {
+     "tick": 12,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]"
+     ],
+     "rows": [
+      "00000",
+      "11120",
+      "00300",
+      "45670"
+     ]
+    },
+    {
+     "tick": 13,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=false]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]"
+     ],
+     "rows": [
+      "00000",
+      "11120",
+      "00300",
+      "45670"
+     ]
+    },
+    {
+     "tick": 14,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=false]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]"
+     ],
+     "rows": [
+      "00000",
+      "11120",
+      "00300",
+      "45670"
+     ]
+    },
+    {
+     "tick": 15,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=false]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]"
+     ],
+     "rows": [
+      "00000",
+      "11120",
+      "00300",
+      "45670"
+     ]
+    },
+    {
+     "tick": 16,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:observer[facing=south,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=false]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]"
+     ],
+     "rows": [
+      "00000",
+      "11120",
+      "00300",
+      "45670"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "observer_watches_state_changes",
+   "description": "Three levers turn on at tick 5 and off at tick 10. The first feeds a repeater and the second a comparator, each watched by an observer beside it; the third feeds dust watched by an observer above it. Repeaters, comparators and dust change their state without updating that observer as a neighbour, so it sees the change through the shape update alone.",
+   "coverage": [
+    "observer_shape_updates"
+   ],
+   "min": [
+    584,
+    63,
+    9
+   ],
+   "max": [
+    586,
+    65,
+    15
+   ],
+   "setup": [
+    {
+     "pos": [
+      584,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      585,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      586,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      584,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      585,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      586,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      584,
+      63,
+      11
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      585,
+      63,
+      11
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      586,
+      63,
+      11
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      584,
+      63,
+      12
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      585,
+      63,
+      12
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      586,
+      63,
+      12
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      584,
+      63,
+      13
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      585,
+      63,
+      13
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      586,
+      63,
+      13
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      584,
+      63,
+      14
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      585,
+      63,
+      14
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      586,
+      63,
+      14
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      584,
+      63,
+      15
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      585,
+      63,
+      15
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      586,
+      63,
+      15
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      584,
+      64,
+      9
+     ],
+     "state": "minecraft:lever[face=floor,facing=east,powered=false]"
+    },
+    {
+     "pos": [
+      585,
+      64,
+      9
+     ],
+     "state": "minecraft:repeater[delay=1,facing=west,locked=false,powered=false]"
+    },
+    {
+     "pos": [
+      585,
+      64,
+      10
+     ],
+     "state": "minecraft:observer[facing=north,powered=false]"
+    },
+    {
+     "pos": [
+      584,
+      64,
+      12
+     ],
+     "state": "minecraft:lever[face=floor,facing=east,powered=false]"
+    },
+    {
+     "pos": [
+      585,
+      64,
+      12
+     ],
+     "state": "minecraft:comparator[facing=west,mode=compare,powered=false]"
+    },
+    {
+     "pos": [
+      585,
+      64,
+      13
+     ],
+     "state": "minecraft:observer[facing=north,powered=false]"
+    },
+    {
+     "pos": [
+      584,
+      64,
+      15
+     ],
+     "state": "minecraft:lever[face=floor,facing=east,powered=false]"
+    },
+    {
+     "pos": [
+      585,
+      64,
+      15
+     ],
+     "state": "minecraft:redstone_wire"
+    },
+    {
+     "pos": [
+      586,
+      64,
+      15
+     ],
+     "state": "minecraft:redstone_wire"
+    },
+    {
+     "pos": [
+      585,
+      65,
+      15
+     ],
+     "state": "minecraft:observer[facing=down,powered=false]"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 5,
+     "pos": [
+      584,
+      64,
+      9
+     ],
+     "state": "minecraft:lever[face=floor,facing=east,powered=true]"
+    },
+    {
+     "tick": 5,
+     "pos": [
+      584,
+      64,
+      12
+     ],
+     "state": "minecraft:lever[face=floor,facing=east,powered=true]"
+    },
+    {
+     "tick": 5,
+     "pos": [
+      584,
+      64,
+      15
+     ],
+     "state": "minecraft:lever[face=floor,facing=east,powered=true]"
+    },
+    {
+     "tick": 10,
+     "pos": [
+      584,
+      64,
+      9
+     ],
+     "state": "minecraft:lever[face=floor,facing=east,powered=false]"
+    },
+    {
+     "tick": 10,
+     "pos": [
+      584,
+      64,
+      12
+     ],
+     "state": "minecraft:lever[face=floor,facing=east,powered=false]"
+    },
+    {
+     "tick": 10,
+     "pos": [
+      584,
+      64,
+      15
+     ],
+     "state": "minecraft:lever[face=floor,facing=east,powered=false]"
+    }
+   ],
+   "entities": [],
+   "arrows": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:lever[face=floor,facing=east,powered=false]",
+      "minecraft:repeater[delay=1,facing=west,locked=false,powered=false]",
+      "minecraft:air",
+      "minecraft:observer[facing=north,powered=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:observer[facing=down,powered=false]"
+     ],
+     "rows": [
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "123",
+      "343",
+      "333",
+      "153",
+      "343",
+      "333",
+      "166",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "373"
+     ]
+    },
+    {
+     "tick": 1,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:lever[face=floor,facing=east,powered=false]",
+      "minecraft:repeater[delay=1,facing=west,locked=false,powered=false]",
+      "minecraft:air",
+      "minecraft:observer[facing=north,powered=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:observer[facing=down,powered=false]"
+     ],
+     "rows": [
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "123",
+      "343",
+      "333",
+      "153",
+      "343",
+      "333",
+      "166",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "373"
+     ]
+    },
+    {
+     "tick": 2,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:lever[face=floor,facing=east,powered=false]",
+      "minecraft:repeater[delay=1,facing=west,locked=false,powered=false]",
+      "minecraft:air",
+      "minecraft:observer[facing=north,powered=true]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:observer[facing=down,powered=true]"
+     ],
+     "rows": [
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "123",
+      "343",
+      "333",
+      "153",
+      "343",
+      "333",
+      "166",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "373"
+     ]
+    },
+    {
+     "tick": 3,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:lever[face=floor,facing=east,powered=false]",
+      "minecraft:repeater[delay=1,facing=west,locked=false,powered=false]",
+      "minecraft:air",
+      "minecraft:observer[facing=north,powered=true]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:observer[facing=down,powered=true]"
+     ],
+     "rows": [
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "123",
+      "343",
+      "333",
+      "153",
+      "343",
+      "333",
+      "166",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "373"
+     ]
+    },
+    {
+     "tick": 4,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:lever[face=floor,facing=east,powered=false]",
+      "minecraft:repeater[delay=1,facing=west,locked=false,powered=false]",
+      "minecraft:air",
+      "minecraft:observer[facing=north,powered=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:observer[facing=down,powered=false]"
+     ],
+     "rows": [
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "123",
+      "343",
+      "333",
+      "153",
+      "343",
+      "333",
+      "166",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "373"
+     ]
+    },
+    {
+     "tick": 5,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:lever[face=floor,facing=east,powered=true]",
+      "minecraft:repeater[delay=1,facing=west,locked=false,powered=false]",
+      "minecraft:air",
+      "minecraft:observer[facing=north,powered=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=15,south=none,west=side]",
+      "minecraft:redstone_wire[east=side,north=none,power=14,south=none,west=side]",
+      "minecraft:observer[facing=down,powered=false]"
+     ],
+     "rows": [
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "123",
+      "343",
+      "333",
+      "153",
+      "343",
+      "333",
+      "167",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "383"
+     ]
+    },
+    {
+     "tick": 6,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:lever[face=floor,facing=east,powered=true]",
+      "minecraft:repeater[delay=1,facing=west,locked=false,powered=true]",
+      "minecraft:air",
+      "minecraft:observer[facing=north,powered=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=15,south=none,west=side]",
+      "minecraft:redstone_wire[east=side,north=none,power=14,south=none,west=side]",
+      "minecraft:observer[facing=down,powered=true]"
+     ],
+     "rows": [
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "123",
+      "343",
+      "333",
+      "153",
+      "343",
+      "333",
+      "167",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "383"
+     ]
+    },
+    {
+     "tick": 7,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:lever[face=floor,facing=east,powered=true]",
+      "minecraft:repeater[delay=1,facing=west,locked=false,powered=true]",
+      "minecraft:air",
+      "minecraft:observer[facing=north,powered=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=15,south=none,west=side]",
+      "minecraft:redstone_wire[east=side,north=none,power=14,south=none,west=side]",
+      "minecraft:observer[facing=down,powered=true]"
+     ],
+     "rows": [
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "123",
+      "343",
+      "333",
+      "153",
+      "343",
+      "333",
+      "167",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "383"
+     ]
+    },
+    {
+     "tick": 8,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:lever[face=floor,facing=east,powered=true]",
+      "minecraft:repeater[delay=1,facing=west,locked=false,powered=true]",
+      "minecraft:air",
+      "minecraft:observer[facing=north,powered=true]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=15,south=none,west=side]",
+      "minecraft:redstone_wire[east=side,north=none,power=14,south=none,west=side]",
+      "minecraft:observer[facing=down,powered=false]"
+     ],
+     "rows": [
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "123",
+      "343",
+      "333",
+      "153",
+      "343",
+      "333",
+      "167",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "383"
+     ]
+    },
+    {
+     "tick": 9,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:lever[face=floor,facing=east,powered=true]",
+      "minecraft:repeater[delay=1,facing=west,locked=false,powered=true]",
+      "minecraft:air",
+      "minecraft:observer[facing=north,powered=true]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=15,south=none,west=side]",
+      "minecraft:redstone_wire[east=side,north=none,power=14,south=none,west=side]",
+      "minecraft:observer[facing=down,powered=false]"
+     ],
+     "rows": [
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "123",
+      "343",
+      "333",
+      "153",
+      "343",
+      "333",
+      "167",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "383"
+     ]
+    },
+    {
+     "tick": 10,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:lever[face=floor,facing=east,powered=false]",
+      "minecraft:repeater[delay=1,facing=west,locked=false,powered=true]",
+      "minecraft:air",
+      "minecraft:observer[facing=north,powered=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:observer[facing=down,powered=false]"
+     ],
+     "rows": [
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "123",
+      "343",
+      "333",
+      "153",
+      "343",
+      "333",
+      "166",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "373"
+     ]
+    },
+    {
+     "tick": 11,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:lever[face=floor,facing=east,powered=false]",
+      "minecraft:repeater[delay=1,facing=west,locked=false,powered=false]",
+      "minecraft:air",
+      "minecraft:observer[facing=north,powered=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:observer[facing=down,powered=true]"
+     ],
+     "rows": [
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "123",
+      "343",
+      "333",
+      "153",
+      "343",
+      "333",
+      "166",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "373"
+     ]
+    },
+    {
+     "tick": 12,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:lever[face=floor,facing=east,powered=false]",
+      "minecraft:repeater[delay=1,facing=west,locked=false,powered=false]",
+      "minecraft:air",
+      "minecraft:observer[facing=north,powered=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:observer[facing=down,powered=true]"
+     ],
+     "rows": [
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "123",
+      "343",
+      "333",
+      "153",
+      "343",
+      "333",
+      "166",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "373"
+     ]
+    },
+    {
+     "tick": 13,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:lever[face=floor,facing=east,powered=false]",
+      "minecraft:repeater[delay=1,facing=west,locked=false,powered=false]",
+      "minecraft:air",
+      "minecraft:observer[facing=north,powered=true]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:observer[facing=down,powered=false]"
+     ],
+     "rows": [
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "123",
+      "343",
+      "333",
+      "153",
+      "343",
+      "333",
+      "166",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "373"
+     ]
+    },
+    {
+     "tick": 14,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:lever[face=floor,facing=east,powered=false]",
+      "minecraft:repeater[delay=1,facing=west,locked=false,powered=false]",
+      "minecraft:air",
+      "minecraft:observer[facing=north,powered=true]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:observer[facing=down,powered=false]"
+     ],
+     "rows": [
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "123",
+      "343",
+      "333",
+      "153",
+      "343",
+      "333",
+      "166",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "373"
+     ]
+    },
+    {
+     "tick": 15,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:lever[face=floor,facing=east,powered=false]",
+      "minecraft:repeater[delay=1,facing=west,locked=false,powered=false]",
+      "minecraft:air",
+      "minecraft:observer[facing=north,powered=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:observer[facing=down,powered=false]"
+     ],
+     "rows": [
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "123",
+      "343",
+      "333",
+      "153",
+      "343",
+      "333",
+      "166",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "373"
+     ]
+    },
+    {
+     "tick": 16,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:lever[face=floor,facing=east,powered=false]",
+      "minecraft:repeater[delay=1,facing=west,locked=false,powered=false]",
+      "minecraft:air",
+      "minecraft:observer[facing=north,powered=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:observer[facing=down,powered=false]"
+     ],
+     "rows": [
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "000",
+      "123",
+      "343",
+      "333",
+      "153",
+      "343",
+      "333",
+      "166",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "333",
+      "373"
+     ]
+    }
+   ],
+   "level": true
+  },
+  {
+   "name": "comparator_through_conductor",
+   "description": "A comparator reads a chest holding one stone through the stone block between them, into a dust. A hopper under the chest is locked by a redstone block until tick 4, then pulls the stone, and the comparator turns off.",
+   "coverage": [
+    "container_comparators"
+   ],
+   "level": true,
+   "min": [
+    616,
+    64,
+    9
+   ],
+   "max": [
+    620,
+    65,
+    9
+   ],
+   "setup": [
+    {
+     "pos": [
+      619,
+      64,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      620,
+      64,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      616,
+      64,
+      9
+     ],
+     "state": "minecraft:redstone_block"
+    },
+    {
+     "pos": [
+      617,
+      64,
+      9
+     ],
+     "state": "minecraft:hopper[enabled=false,facing=down]"
+    },
+    {
+     "pos": [
+      617,
+      65,
+      9
+     ],
+     "state": "minecraft:chest[facing=north,type=single,waterlogged=false]",
+     "items": [
+      {
+       "slot": 0,
+       "id": "minecraft:stone",
+       "count": 1
+      }
+     ]
+    },
+    {
+     "pos": [
+      618,
+      65,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      619,
+      65,
+      9
+     ],
+     "state": "minecraft:comparator[facing=west,mode=compare,powered=false]"
+    },
+    {
+     "pos": [
+      620,
+      65,
+      9
+     ],
+     "state": "minecraft:redstone_wire"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 4,
+     "pos": [
+      616,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    }
+   ],
+   "entities": [],
+   "arrows": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "palette": [
+      "minecraft:redstone_block",
+      "minecraft:hopper[enabled=false,facing=down]",
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+     ],
+     "rows": [
+      "01233",
+      "24356"
+     ]
+    },
+    {
+     "tick": 1,
+     "palette": [
+      "minecraft:redstone_block",
+      "minecraft:hopper[enabled=false,facing=down]",
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+     ],
+     "rows": [
+      "01233",
+      "24356"
+     ]
+    },
+    {
+     "tick": 2,
+     "palette": [
+      "minecraft:redstone_block",
+      "minecraft:hopper[enabled=false,facing=down]",
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]"
+     ],
+     "rows": [
+      "01233",
+      "24356"
+     ]
+    },
+    {
+     "tick": 3,
+     "palette": [
+      "minecraft:redstone_block",
+      "minecraft:hopper[enabled=false,facing=down]",
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]"
+     ],
+     "rows": [
+      "01233",
+      "24356"
+     ]
+    },
+    {
+     "tick": 4,
+     "palette": [
+      "minecraft:air",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]"
+     ],
+     "rows": [
+      "01022",
+      "03245"
+     ]
+    },
+    {
+     "tick": 5,
+     "palette": [
+      "minecraft:air",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]"
+     ],
+     "rows": [
+      "01022",
+      "03245"
+     ]
+    },
+    {
+     "tick": 6,
+     "palette": [
+      "minecraft:air",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+     ],
+     "rows": [
+      "01022",
+      "03245"
+     ]
+    },
+    {
+     "tick": 7,
+     "palette": [
+      "minecraft:air",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+     ],
+     "rows": [
+      "01022",
+      "03245"
+     ]
+    },
+    {
+     "tick": 8,
+     "palette": [
+      "minecraft:air",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+     ],
+     "rows": [
+      "01022",
+      "03245"
+     ]
+    },
+    {
+     "tick": 9,
+     "palette": [
+      "minecraft:air",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+     ],
+     "rows": [
+      "01022",
+      "03245"
+     ]
+    },
+    {
+     "tick": 10,
+     "palette": [
+      "minecraft:air",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+     ],
+     "rows": [
+      "01022",
+      "03245"
+     ]
+    },
+    {
+     "tick": 11,
+     "palette": [
+      "minecraft:air",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+     ],
+     "rows": [
+      "01022",
+      "03245"
+     ]
+    },
+    {
+     "tick": 12,
+     "palette": [
+      "minecraft:air",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+     ],
+     "rows": [
+      "01022",
+      "03245"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "single_chest_obstruction",
+   "description": "A filled chest is obstructed and cleared above each half without moving items.",
+   "coverage": [
+    "container_comparators",
+    "chest_obstruction"
+   ],
+   "level": true,
+   "min": [
+    648,
+    63,
+    9
+   ],
+   "max": [
+    652,
+    65,
+    9
+   ],
+   "setup": [
+    {
+     "pos": [
+      648,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      649,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      650,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      651,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      652,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      650,
+      64,
+      9
+     ],
+     "state": "minecraft:chest[facing=north,type=single,waterlogged=false]",
+     "items": [
+      {
+       "slot": 0,
+       "id": "minecraft:stone",
+       "count": 64
+      }
+     ]
+    },
+    {
+     "pos": [
+      649,
+      64,
+      9
+     ],
+     "state": "minecraft:comparator[facing=east,mode=compare,powered=false]"
+    },
+    {
+     "pos": [
+      648,
+      64,
+      9
+     ],
+     "state": "minecraft:redstone_wire"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 6,
+     "pos": [
+      650,
+      65,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "tick": 12,
+     "pos": [
+      650,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    }
+   ],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=false]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12344",
+      "44444"
+     ]
+    },
+    {
+     "tick": 1,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=false]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12344",
+      "44444"
+     ]
+    },
+    {
+     "tick": 2,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12344",
+      "44444"
+     ]
+    },
+    {
+     "tick": 3,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12344",
+      "44444"
+     ]
+    },
+    {
+     "tick": 4,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12344",
+      "44444"
+     ]
+    },
+    {
+     "tick": 5,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12344",
+      "44444"
+     ]
+    },
+    {
+     "tick": 6,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12344",
+      "44044"
+     ]
+    },
+    {
+     "tick": 7,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12344",
+      "44044"
+     ]
+    },
+    {
+     "tick": 8,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12344",
+      "44044"
+     ]
+    },
+    {
+     "tick": 9,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12344",
+      "44044"
+     ]
+    },
+    {
+     "tick": 10,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12344",
+      "44044"
+     ]
+    },
+    {
+     "tick": 11,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12344",
+      "44044"
+     ]
+    },
+    {
+     "tick": 12,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12344",
+      "44444"
+     ]
+    },
+    {
+     "tick": 13,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12344",
+      "44444"
+     ]
+    },
+    {
+     "tick": 14,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12344",
+      "44444"
+     ]
+    },
+    {
+     "tick": 15,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12344",
+      "44444"
+     ]
+    },
+    {
+     "tick": 16,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12344",
+      "44444"
+     ]
+    },
+    {
+     "tick": 17,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12344",
+      "44444"
+     ]
+    },
+    {
+     "tick": 18,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12344",
+      "44444"
+     ]
+    }
+   ],
+   "entities": [],
+   "arrows": []
+  },
+  {
+   "name": "double_chest_obstruction",
+   "description": "A filled chest is obstructed and cleared above each half without moving items.",
+   "coverage": [
+    "container_comparators",
+    "chest_obstruction"
+   ],
+   "level": true,
+   "min": [
+    680,
+    63,
+    9
+   ],
+   "max": [
+    684,
+    65,
+    9
+   ],
+   "setup": [
+    {
+     "pos": [
+      680,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      681,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      682,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      683,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      684,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      682,
+      64,
+      9
+     ],
+     "state": "minecraft:chest[facing=north,type=left,waterlogged=false]",
+     "items": [
+      {
+       "slot": 0,
+       "id": "minecraft:stone",
+       "count": 64
+      }
+     ]
+    },
+    {
+     "pos": [
+      683,
+      64,
+      9
+     ],
+     "state": "minecraft:chest[facing=north,type=right,waterlogged=false]",
+     "items": [
+      {
+       "slot": 0,
+       "id": "minecraft:stone",
+       "count": 64
+      }
+     ]
+    },
+    {
+     "pos": [
+      681,
+      64,
+      9
+     ],
+     "state": "minecraft:comparator[facing=east,mode=compare,powered=false]"
+    },
+    {
+     "pos": [
+      680,
+      64,
+      9
+     ],
+     "state": "minecraft:redstone_wire"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 6,
+     "pos": [
+      682,
+      65,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "tick": 12,
+     "pos": [
+      682,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "tick": 18,
+     "pos": [
+      683,
+      65,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "tick": 24,
+     "pos": [
+      683,
+      65,
+      9
+     ],
+     "state": "minecraft:air"
+    }
+   ],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=false]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55555"
+     ]
+    },
+    {
+     "tick": 1,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=false]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55555"
+     ]
+    },
+    {
+     "tick": 2,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55555"
+     ]
+    },
+    {
+     "tick": 3,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55555"
+     ]
+    },
+    {
+     "tick": 4,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55555"
+     ]
+    },
+    {
+     "tick": 5,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55555"
+     ]
+    },
+    {
+     "tick": 6,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55055"
+     ]
+    },
+    {
+     "tick": 7,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55055"
+     ]
+    },
+    {
+     "tick": 8,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55055"
+     ]
+    },
+    {
+     "tick": 9,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55055"
+     ]
+    },
+    {
+     "tick": 10,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55055"
+     ]
+    },
+    {
+     "tick": 11,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55055"
+     ]
+    },
+    {
+     "tick": 12,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55555"
+     ]
+    },
+    {
+     "tick": 13,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55555"
+     ]
+    },
+    {
+     "tick": 14,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55555"
+     ]
+    },
+    {
+     "tick": 15,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55555"
+     ]
+    },
+    {
+     "tick": 16,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55555"
+     ]
+    },
+    {
+     "tick": 17,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55555"
+     ]
+    },
+    {
+     "tick": 18,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55505"
+     ]
+    },
+    {
+     "tick": 19,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55505"
+     ]
+    },
+    {
+     "tick": 20,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55505"
+     ]
+    },
+    {
+     "tick": 21,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55505"
+     ]
+    },
+    {
+     "tick": 22,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55505"
+     ]
+    },
+    {
+     "tick": 23,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55505"
+     ]
+    },
+    {
+     "tick": 24,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55555"
+     ]
+    },
+    {
+     "tick": 25,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55555"
+     ]
+    },
+    {
+     "tick": 26,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55555"
+     ]
+    },
+    {
+     "tick": 27,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55555"
+     ]
+    },
+    {
+     "tick": 28,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55555"
+     ]
+    },
+    {
+     "tick": 29,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55555"
+     ]
+    },
+    {
+     "tick": 30,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:comparator[facing=east,mode=compare,powered=true]",
+      "minecraft:chest[facing=north,type=left,waterlogged=false]",
+      "minecraft:chest[facing=north,type=right,waterlogged=false]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "00000",
+      "12345",
+      "55555"
+     ]
+    }
+   ],
+   "entities": [],
+   "arrows": []
+  },
+  {
+   "name": "piston_push_idle_observer",
+   "description": "An idle observer watches unchanged air while a piston moves it.",
+   "coverage": [
+    "piston_observer"
+   ],
+   "level": true,
+   "min": [
+    712,
+    63,
+    8
+   ],
+   "max": [
+    718,
+    64,
+    10
+   ],
+   "setup": [
+    {
+     "pos": [
+      712,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      713,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      714,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      715,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      716,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      717,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      718,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      712,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      713,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      714,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      715,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      716,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      717,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      718,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      712,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      713,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      714,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      715,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      716,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      717,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      718,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      714,
+      64,
+      9
+     ],
+     "state": "minecraft:piston[extended=false,facing=east]"
+    },
+    {
+     "pos": [
+      715,
+      64,
+      9
+     ],
+     "state": "minecraft:observer[facing=south,powered=false]"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 8,
+     "pos": [
+      713,
+      64,
+      9
+     ],
+     "state": "minecraft:redstone_block"
+    }
+   ],
+   "entities": [],
+   "arrows": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 1,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 2,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 3,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 4,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 5,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 6,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 7,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 8,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:moving_piston[facing=east,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234411",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 9,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:moving_piston[facing=east,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234411",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 10,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 11,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 12,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:observer[facing=south,powered=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 13,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:observer[facing=south,powered=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 14,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 15,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 16,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 17,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 18,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 19,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 20,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "sticky_piston_pull_idle_observer",
+   "description": "An idle observer watches unchanged air while a piston moves it.",
+   "coverage": [
+    "piston_observer"
+   ],
+   "level": true,
+   "min": [
+    744,
+    63,
+    8
+   ],
+   "max": [
+    750,
+    64,
+    10
+   ],
+   "setup": [
+    {
+     "pos": [
+      744,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      745,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      746,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      747,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      748,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      749,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      750,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      744,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      745,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      746,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      747,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      748,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      749,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      750,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      744,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      745,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      746,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      747,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      748,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      749,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      750,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      746,
+      64,
+      9
+     ],
+     "state": "minecraft:sticky_piston[extended=false,facing=east]"
+    },
+    {
+     "pos": [
+      747,
+      64,
+      9
+     ],
+     "state": "minecraft:observer[facing=south,powered=false]"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 8,
+     "pos": [
+      745,
+      64,
+      9
+     ],
+     "state": "minecraft:redstone_block"
+    },
+    {
+     "tick": 20,
+     "pos": [
+      745,
+      64,
+      9
+     ],
+     "state": "minecraft:air"
+    }
+   ],
+   "entities": [],
+   "arrows": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 1,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 2,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 3,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 4,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 5,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 6,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 7,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 8,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:sticky_piston[extended=true,facing=east]",
+      "minecraft:moving_piston[facing=east,type=sticky]",
+      "minecraft:moving_piston[facing=east,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 9,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:sticky_piston[extended=true,facing=east]",
+      "minecraft:moving_piston[facing=east,type=sticky]",
+      "minecraft:moving_piston[facing=east,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 10,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:sticky_piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=sticky]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 11,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:sticky_piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=sticky]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 12,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:sticky_piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=sticky]",
+      "minecraft:observer[facing=south,powered=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 13,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:sticky_piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=sticky]",
+      "minecraft:observer[facing=south,powered=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 14,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:sticky_piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=sticky]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 15,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:sticky_piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=sticky]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 16,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:sticky_piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=sticky]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 17,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:sticky_piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=sticky]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 18,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:sticky_piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=sticky]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 19,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:sticky_piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=sticky]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 20,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:moving_piston[facing=east,type=sticky]",
+      "minecraft:moving_piston[facing=east,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 21,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:moving_piston[facing=east,type=sticky]",
+      "minecraft:moving_piston[facing=east,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 22,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 23,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 24,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 25,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 26,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 27,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 28,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 29,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 30,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 31,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    },
+    {
+     "tick": 32,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:sticky_piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111111"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "piston_observer_faces_new_block",
+   "description": "A moved observer ends facing pre-existing stone.",
+   "coverage": [
+    "piston_observer"
+   ],
+   "level": true,
+   "min": [
+    776,
+    63,
+    8
+   ],
+   "max": [
+    782,
+    64,
+    10
+   ],
+   "setup": [
+    {
+     "pos": [
+      776,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      777,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      778,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      779,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      780,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      781,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      782,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      776,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      777,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      778,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      779,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      780,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      781,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      782,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      776,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      777,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      778,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      779,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      780,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      781,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      782,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      778,
+      64,
+      9
+     ],
+     "state": "minecraft:piston[extended=false,facing=east]"
+    },
+    {
+     "pos": [
+      779,
+      64,
+      9
+     ],
+     "state": "minecraft:observer[facing=south,powered=false]"
+    },
+    {
+     "pos": [
+      780,
+      64,
+      10
+     ],
+     "state": "minecraft:stone"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 8,
+     "pos": [
+      777,
+      64,
+      9
+     ],
+     "state": "minecraft:redstone_block"
+    }
+   ],
+   "entities": [],
+   "arrows": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 1,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 2,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 3,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 4,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 5,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 6,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 7,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 8,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:moving_piston[facing=east,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234411",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 9,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:moving_piston[facing=east,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234411",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 10,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 11,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 12,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:observer[facing=south,powered=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 13,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:observer[facing=south,powered=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 14,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 15,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 16,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 17,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 18,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 19,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 20,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:observer[facing=south,powered=false]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111011"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "piston_fence_derives_connections",
+   "description": "A piston moves a fence from air beside a pre-existing solid block; completion derives its connections.",
+   "coverage": [
+    "piston_shape_derivation"
+   ],
+   "level": true,
+   "min": [
+    808,
+    63,
+    8
+   ],
+   "max": [
+    814,
+    64,
+    10
+   ],
+   "setup": [
+    {
+     "pos": [
+      808,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      809,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      810,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      811,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      812,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      813,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      814,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      808,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      809,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      810,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      811,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      812,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      813,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      814,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      808,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      809,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      810,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      811,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      812,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      813,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      814,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      810,
+      64,
+      9
+     ],
+     "state": "minecraft:piston[extended=false,facing=east]"
+    },
+    {
+     "pos": [
+      811,
+      64,
+      9
+     ],
+     "state": "minecraft:oak_fence[west=true]"
+    },
+    {
+     "pos": [
+      812,
+      64,
+      10
+     ],
+     "state": "minecraft:stone"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 8,
+     "pos": [
+      809,
+      64,
+      9
+     ],
+     "state": "minecraft:redstone_block"
+    }
+   ],
+   "entities": [],
+   "arrows": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:oak_fence[east=false,north=false,south=false,waterlogged=false,west=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 1,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:oak_fence[east=false,north=false,south=false,waterlogged=false,west=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 2,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:oak_fence[east=false,north=false,south=false,waterlogged=false,west=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 3,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:oak_fence[east=false,north=false,south=false,waterlogged=false,west=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 4,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:oak_fence[east=false,north=false,south=false,waterlogged=false,west=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 5,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:oak_fence[east=false,north=false,south=false,waterlogged=false,west=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 6,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:oak_fence[east=false,north=false,south=false,waterlogged=false,west=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 7,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:oak_fence[east=false,north=false,south=false,waterlogged=false,west=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1123111",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 8,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:moving_piston[facing=east,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234411",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 9,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:moving_piston[facing=east,type=normal]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234411",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 10,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:oak_fence[east=false,north=false,south=true,waterlogged=false,west=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 11,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:oak_fence[east=false,north=false,south=true,waterlogged=false,west=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 12,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:oak_fence[east=false,north=false,south=true,waterlogged=false,west=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 13,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:oak_fence[east=false,north=false,south=true,waterlogged=false,west=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 14,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:oak_fence[east=false,north=false,south=true,waterlogged=false,west=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 15,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:oak_fence[east=false,north=false,south=true,waterlogged=false,west=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 16,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:oak_fence[east=false,north=false,south=true,waterlogged=false,west=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 17,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:oak_fence[east=false,north=false,south=true,waterlogged=false,west=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 18,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:oak_fence[east=false,north=false,south=true,waterlogged=false,west=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 19,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:oak_fence[east=false,north=false,south=true,waterlogged=false,west=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111011"
+     ]
+    },
+    {
+     "tick": 20,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:oak_fence[east=false,north=false,south=true,waterlogged=false,west=true]"
+     ],
+     "rows": [
+      "0000000",
+      "0000000",
+      "0000000",
+      "1111111",
+      "1234511",
+      "1111011"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "piston_pushes_carpet_off_support",
+   "description": "A piston pushes a wool carpet off its stone support over air; completion finds it can't survive there.",
+   "coverage": [
+    "piston_shape_derivation"
+   ],
+   "level": true,
+   "item": "minecraft:white_carpet",
+   "min": [
+    840,
+    62,
+    8
+   ],
+   "max": [
+    845,
+    64,
+    10
+   ],
+   "setup": [
+    {
+     "pos": [
+      840,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      841,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      842,
+      63,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      840,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      841,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      842,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      840,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      841,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      842,
+      63,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      843,
+      62,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      844,
+      62,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      845,
+      62,
+      8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      843,
+      62,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      844,
+      62,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      845,
+      62,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      843,
+      62,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      844,
+      62,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      845,
+      62,
+      10
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      841,
+      64,
+      9
+     ],
+     "state": "minecraft:piston[extended=false,facing=east]"
+    },
+    {
+     "pos": [
+      842,
+      64,
+      9
+     ],
+     "state": "minecraft:white_carpet"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 4,
+     "pos": [
+      840,
+      64,
+      9
+     ],
+     "state": "minecraft:redstone_block"
+    }
+   ],
+   "entities": [],
+   "arrows": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:white_carpet"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "023000",
+      "000000"
+     ],
+     "items": 0
+    },
+    {
+     "tick": 1,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:white_carpet"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "023000",
+      "000000"
+     ],
+     "items": 0
+    },
+    {
+     "tick": 2,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:white_carpet"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "023000",
+      "000000"
+     ],
+     "items": 0
+    },
+    {
+     "tick": 3,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:white_carpet"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "023000",
+      "000000"
+     ],
+     "items": 0
+    },
+    {
+     "tick": 4,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:moving_piston[facing=east,type=normal]"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "234400",
+      "000000"
+     ],
+     "items": 0
+    },
+    {
+     "tick": 5,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:moving_piston[facing=east,type=normal]"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "234400",
+      "000000"
+     ],
+     "items": 0
+    },
+    {
+     "tick": 6,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "234000",
+      "000000"
+     ],
+     "items": 1
+    },
+    {
+     "tick": 7,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "234000",
+      "000000"
+     ],
+     "items": 1
+    },
+    {
+     "tick": 8,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "234000",
+      "000000"
+     ],
+     "items": 1
+    },
+    {
+     "tick": 9,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "234000",
+      "000000"
+     ],
+     "items": 1
+    },
+    {
+     "tick": 10,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "234000",
+      "000000"
+     ],
+     "items": 1
+    },
+    {
+     "tick": 11,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "234000",
+      "000000"
+     ],
+     "items": 1
+    },
+    {
+     "tick": 12,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:redstone_block",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]"
+     ],
+     "rows": [
+      "000111",
+      "000111",
+      "000111",
+      "111000",
+      "111000",
+      "111000",
+      "000000",
+      "234000",
+      "000000"
+     ],
+     "items": 1
     }
    ]
   }

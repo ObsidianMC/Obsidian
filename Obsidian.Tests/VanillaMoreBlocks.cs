@@ -51,6 +51,30 @@ public sealed class VanillaMoreBlocks(ITestOutputHelper output)
 
         var origin = Position(probe.GetProperty("origin"));
         var kind = probe.GetProperty("kind").GetString();
+        if (kind == "observer_placement")
+        {
+            var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "ObserverPlacer",
+                Location(probe.GetProperty("player")));
+            player.GameMode = GameMode.Survival;
+            player.Yaw = probe.GetProperty("yaw").GetSingle();
+            player.Pitch = probe.GetProperty("pitch").GetSingle();
+            player.Sneaking = probe.GetProperty("sneaking").GetBoolean();
+            player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Observer, 2));
+            var clicked = origin + Position(probe.GetProperty("clicked"));
+            var cursor = probe.GetProperty("cursor");
+            var hit = new VectorF(cursor[0].GetSingle(), cursor[1].GetSingle(), cursor[2].GetSingle());
+            await BlockUpdates.UseOn(clicked, Face(probe.GetProperty("face").GetString()!), hit)
+                .HandleAsync(context.Server, player);
+
+            var placed = world.BlockUpdates.GetBlock(origin);
+            AssertState(probe.GetProperty("placed"), placed);
+            Assert.Equal(probe.GetProperty("scheduled").GetBoolean(),
+                world.BlockUpdates.HasScheduledTick(origin, placed));
+            Assert.Equal(probe.GetProperty("remaining").GetInt32(),
+                player.Inventory.GetItem(player.CurrentHeldItemSlot)?.Count ?? 0);
+            return;
+        }
+
         if (kind == "container_recheck")
         {
             await ReplayContainerRecheck(probe, context, origin);

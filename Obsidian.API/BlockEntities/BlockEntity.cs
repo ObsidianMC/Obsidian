@@ -41,6 +41,11 @@ public abstract partial class BlockEntity : IBlockEntity
     // 1 from SetChanged until the server took the change in (see TakeChange).
     private int changed;
 
+    // Monotonic SetChanged generation, independent of the pending-save flag.
+    private long changeRevision;
+
+    internal long ChangeRevision => Volatile.Read(ref this.changeRevision);
+
     /// <inheritdoc/>
     public string Id { get; internal set; } = string.Empty;
 
@@ -274,6 +279,7 @@ public abstract partial class BlockEntity : IBlockEntity
     /// </summary>
     public void SetChanged()
     {
+        Interlocked.Increment(ref this.changeRevision);
         if (Interlocked.Exchange(ref this.changed, 1) == 0)
             this.Host?.OnChanged(this);
     }

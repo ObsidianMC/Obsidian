@@ -95,6 +95,9 @@ public sealed class WorldCommandModule : CommandModuleBase
         if (mode == SetBlockMode.Destroy)
             level.DestroyBlock(pos, dropItems: true);
 
+        if (level is WorldData.AbstractLevel world)
+            world.PrepareObserverCommandPlacement(pos, state);
+
         await level.SetBlockAsync(pos, state, doBlockUpdate: true);
         await this.CommandContext.SuccessAsync($"Changed the block at {Format(pos)}");
     }
@@ -161,6 +164,9 @@ public sealed class WorldCommandModule : CommandModuleBase
 
                     if (mode == FillMode.Destroy)
                         level.DestroyBlock(position, dropItems: true);
+
+                    if (level is WorldData.AbstractLevel world)
+                        world.PrepareObserverCommandPlacement(position, target);
 
                     await level.SetBlockAsync(position, target, doBlockUpdate: true);
                     changed++;

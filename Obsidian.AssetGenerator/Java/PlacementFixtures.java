@@ -60,9 +60,13 @@ public final class PlacementFixtures {
 
         try {
             startServer();
-            var items = new JsonObject();
-            server.submit(() -> capture(root, items)).join();
-            root.add("items", items);
+            if (args.length > 1 && args[1].equals("--observers")) {
+                server.submit(() -> captureObservers(root, java.util.Set.of(args[2].split("\\+")))).join();
+            } else {
+                var items = new JsonObject();
+                server.submit(() -> capture(root, items)).join();
+                root.add("items", items);
+            }
         } catch (Throwable e) {
             e.printStackTrace();
             System.out.flush();
@@ -70,13 +74,55 @@ public final class PlacementFixtures {
         }
 
         root.addProperty("version", server.getServerVersion());
-        var gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-        Files.writeString(fixturePath, compact(gson.toJson(root)) + "\n", StandardCharsets.UTF_8);
+        var gson = new GsonBuilder().serializeNulls().setPrettyPrinting().disableHtmlEscaping().create();
+        var json = gson.toJson(root);
+        Files.writeString(fixturePath, args.length > 1 ? json + "\n" : compact(json) + "\n",
+            StandardCharsets.UTF_8);
         System.out.println("Wrote " + fixturePath);
         System.out.flush();
 
         // The world is thrown away, so skip the server's save on exit.
         Runtime.getRuntime().halt(0);
+    }
+
+    // Use a real level here: the bounded construction probe deliberately skips setBlock's shape and onPlace work.
+    private static void captureObservers(JsonObject root, java.util.Set<String> selected) {
+        var level = server.overworld();
+        var profile = new GameProfile(UUID.nameUUIDFromBytes("ObserverPlacer".getBytes(StandardCharsets.UTF_8)),
+            "ObserverPlacer");
+        var player = new ProbePlayer(server, level, profile);
+        int captured = 0;
+        for (var entry : root.getAsJsonArray("cases")) {
+            var probe = entry.getAsJsonObject();
+            if (!selected.contains(probe.get("name").getAsString())) {
+                continue;
+            }
+
+            var target = position(probe.getAsJsonArray("origin"));
+            for (int x = -1; x <= 1; x++) {
+                for (int z = -1; z <= 1; z++) {
+                    level.getChunk((target.getX() >> 4) + x, (target.getZ() >> 4) + z);
+                }
+            }
+
+            clear(level, target);
+            for (var value : probe.getAsJsonArray("setup")) {
+                var placement = value.getAsJsonObject();
+                level.setBlock(position(placement.getAsJsonArray("pos")),
+                    state(placement.get("state").getAsString()), QuietFlags);
+            }
+
+            var stack = new ItemStack(net.minecraft.world.item.Items.OBSERVER, 2);
+            use(level, player, probe.getAsJsonArray("player"), target, probe, stack);
+            probe.addProperty("placed", text(level.getBlockState(target)));
+            probe.addProperty("scheduled", level.getBlockTicks().hasScheduledTick(target, Blocks.OBSERVER));
+            probe.addProperty("remaining", stack.getCount());
+            captured++;
+        }
+
+        if (captured != selected.size()) {
+            throw new IllegalArgumentException("Every selected observer placement must exist once.");
+        }
     }
 
     private static void capture(JsonObject root, JsonObject items) {

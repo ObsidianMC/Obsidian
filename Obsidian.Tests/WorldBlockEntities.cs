@@ -28,6 +28,7 @@ using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.Utilities;
 using Obsidian.WorldData;
+using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.Features;
 using System;
 using System.Collections.Generic;
@@ -441,6 +442,146 @@ public sealed class WorldBlockEntities : IDisposable
 
         // The brew started: its 400 ticks count down from the next tick.
         Assert.Equal(400, stand.BrewTime);
+    }
+
+    [Fact]
+    public async Task PluginContainerPublishesMachineOutputWithoutMovingItems()
+    {
+        await using var context = TestServerFactory.CreateServer($"plugin-machine-{Guid.NewGuid():N}");
+        await BlockUpdates.AddChunksAsync(context.World);
+        using var simulation = context.World.AddChunkTicket(0, 0);
+        await using var manager = new PluginManager(
+            context.Server,
+            context.Provider,
+            context.EventDispatcher,
+            context.Provider.GetRequiredService<CommandHandler>(),
+            NullLogger<PluginManager>.Instance,
+            new ConfigurationBuilder().Build());
+        var path = Path.Join(this.folder, "machine.obby");
+        await File.WriteAllBytesAsync(path, PluginLoading.ProbeArchive("1.0.0"));
+        Assert.NotNull(await manager.LoadPluginAsync(path));
+        Assert.True(BlocksRegistry.TryGetPluginBlock("probe:machine", out var machineBlock));
+
+        var position = new Vector(4, 70, 4);
+        var comparator = BlocksRegistry.GetDefault(BlockIds.Comparator).WithProperty("facing", "west");
+        await context.World.SetBlockAsync(position, machineBlock.DefaultState, doBlockUpdate: true);
+        await context.World.SetBlockAsync(position + Vector.East, comparator, doBlockUpdate: true);
+        await context.World.SetBlockAsync(position + Vector.East * 2, BlocksRegistry.RedstoneWire,
+            doBlockUpdate: true);
+        for (var tick = 0; tick < 4; tick++)
+            await context.World.DoWorldTickAsync();
+
+        var machine = Assert.IsAssignableFrom<ContainerBlockEntity>(
+            await context.World.GetBlockEntityAsync(position));
+        var revision = machine.Inventory.Revision;
+        foreach (var output in new[] { 7, 0, 13 })
+        {
+            // The loaded plugin has its own assembly copy. Its public method changes a saved field and calls
+            // SetChanged; no slot or block state changes to accidentally wake the comparator.
+            machine.GetType().GetMethod(nameof(ProbeMachine.SetOutput))!.Invoke(machine, [output]);
+            await AssertPublishedOutputAsync(output);
+        }
+
+        // Lose delivery after SetChanged was consumed, with unchanged items. Filling the bounded drain ahead
+        // of the comparator prevents a retained queue entry from accidentally repairing a missing retry.
+        var blocker = position + Vector.South * 3;
+        await context.World.SetBlockAsync(blocker, BlocksRegistry.Dirt);
+        var deliveryFailure = new FailingNotification();
+        context.World.Neighbors.Register(BlockIds.Dirt, deliveryFailure);
+        foreach (var (throwFirst, output) in new[] { (false, 5), (true, 9) })
+        {
+            deliveryFailure.ThrowNext = throwFirst;
+            for (var work = 0; work <= BlockNotificationPipeline.MaxWorkPerDrain; work++)
+                context.World.BlockNotifications.EnqueueNeighbor(blocker, new Vector(work, 64, -20));
+
+            machine.GetType().GetMethod(nameof(ProbeMachine.SetOutput))!.Invoke(machine, [output]);
+            if (throwFirst)
+            {
+                Assert.Throws<InvalidOperationException>(() => context.World.TakeBlockEntityChanges());
+                await context.World.BlockNotifications.DrainAsync();
+            }
+            else
+            {
+                context.World.TakeBlockEntityChanges();
+            }
+
+            await AssertPublishedOutputAsync(output);
+        }
+
+        async Task AssertPublishedOutputAsync(int output)
+        {
+            for (var tick = 0; tick < 4; tick++)
+                await context.World.DoWorldTickAsync();
+
+            Assert.Equal(revision, machine.Inventory.Revision);
+            var dust = await context.World.GetBlockAsync(position + Vector.East * 2);
+            Assert.Equal(output.ToString(), dust!.GetProperty("power"));
+            Assert.Equal(output, machine.SavedData!.GetInt("output"));
+        }
+    }
+
+    private sealed class FailingNotification : INeighborChangedBehavior
+    {
+        internal bool ThrowNext { get; set; }
+
+        public ValueTask OnNeighborChangedAsync(NeighborChange change, IBlockChangeWorld world)
+        {
+            if (this.ThrowNext)
+            {
+                this.ThrowNext = false;
+                throw new InvalidOperationException("Injected notification failure");
+            }
+
+            return ValueTask.CompletedTask;
+        }
+    }
+
+    [Fact]
+    public async Task PluginSignalRefreshAndRebindingReachObservers()
+    {
+        await using var context = TestServerFactory.CreateServer($"plugin-observer-{Guid.NewGuid():N}");
+        await BlockUpdates.AddChunksAsync(context.World);
+        using var simulation = context.World.AddChunkTicket(0, 0);
+        await using var manager = new PluginManager(
+            context.Server,
+            context.Provider,
+            context.EventDispatcher,
+            context.Provider.GetRequiredService<CommandHandler>(),
+            NullLogger<PluginManager>.Instance,
+            new ConfigurationBuilder().Build());
+        var path = Path.Join(this.folder, "observer.obby");
+        await File.WriteAllBytesAsync(path, PluginLoading.ProbeArchive("1.0.0"));
+        var plugin = (await manager.LoadPluginAsync(path))!;
+        Assert.True(BlocksRegistry.TryGetPluginBlock("probe:relay", out var relay));
+
+        var position = new Vector(4, 70, 4);
+        var observerPosition = position + Vector.East;
+        var observer = BlocksRegistry.GetDefault(BlockIds.Observer).WithProperty("facing", "west");
+        await context.World.SetBlockAsync(position, relay.DefaultState, doBlockUpdate: true);
+        await context.World.SetBlockAsync(observerPosition, observer, doBlockUpdate: true);
+        for (var tick = 0; tick < 6; tick++)
+            await context.World.DoWorldTickAsync();
+
+        // No state writes: explicit refresh and both binding transitions must still send real shape updates.
+        context.World.BlockUpdates.RefreshBlocksOf([relay]);
+        await AssertPulseAsync();
+        await manager.UnloadPluginAsync(plugin);
+        await AssertPulseAsync();
+        Assert.NotNull(await manager.LoadPluginAsync(path));
+        await AssertPulseAsync();
+
+        async Task AssertPulseAsync()
+        {
+            var states = new List<string>();
+            for (var tick = 0; tick < 6; tick++)
+            {
+                await context.World.DoWorldTickAsync();
+                var state = await context.World.GetBlockAsync(observerPosition);
+                states.Add(state!.GetProperty("powered")!);
+            }
+
+            Assert.Equal(["false", "true", "true", "false", "false", "false"], states);
+        }
     }
 
     [Fact(DisplayName = "A plugin's container stops taking clicks as its plugin unloads, and comes back with its items",
@@ -1248,4 +1389,36 @@ public sealed class ProbePartsBehavior : IBlockBehavior
             context.ExtraDrops.Add(new ItemStack(ItemsRegistry.Diamond, 2));
         }
     }
+}
+
+/// <summary>A plugin machine whose saved analog output is independent of its slots.</summary>
+public sealed class ProbeMachine() : ContainerBlockEntity(new Container(9))
+{
+    public int Output { get; private set; }
+
+    public void SetOutput(int output)
+    {
+        this.Output = output;
+        this.SetChanged();
+    }
+
+    protected internal override void Save(NbtCompound tag)
+    {
+        base.Save(tag);
+        tag.Add(new NbtTag<int>("output", this.Output));
+    }
+
+    protected internal override void Load(NbtCompound tag)
+    {
+        base.Load(tag);
+        this.Output = tag.TryGetNumber<int>("output", out var output) ? output : 0;
+    }
+}
+
+public sealed class ProbeMachineBehavior : IBlockBehavior
+{
+    public bool HasAnalogOutput(IBlock state) => true;
+
+    public int GetAnalogOutput(SignalContext context) =>
+        context.Level.GetBlockEntity(context.Position) is ProbeMachine machine ? machine.Output : 0;
 }

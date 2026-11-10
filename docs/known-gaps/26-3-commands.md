@@ -30,6 +30,15 @@ within their limits, and distribution across targets.
   implemented. The other `/place` modes remain unsupported.
 - `/execute` retains its earlier supported context operations and conditions; storage callbacks (`store`), functions
   and the rest of vanilla's older execution branches are still absent.
+- `/setblock` and `/fill` place the requested state as given. Vanilla first derives it from its six neighbours
+  (`updateFromNeighbourShapes`), so here a fence, pane or wall placed beside a block doesn't connect and stairs don't
+  turn a corner until a neighbour updates them. The one derivation they do reproduce is the observer's: a placed
+  observer gets the shape reaction from the side it watches, so it pulses as in vanilla. Deriving every state needs
+  three things together, or it does damage: fall back to the requested state when derivation gives air (an
+  unsupported torch, flower or carpet, a lone door half); reapply the properties the command gave
+  (`oak_fence[east=true]` stays `east=true` with nothing to the east, a chest given as `left` stays `left` until its
+  partner arrives); and schedule fluid ticks from the candidate state, since the level's fluid scheduling reads the
+  position again and finds the block being replaced.
 
 Whitelist defaults to on for fresh installs, whose generated `server.json` sets it explicitly; an existing
 `server.json` without a `whitelist` entry keeps it off and gets a startup notice. An empty optional IP whitelist no

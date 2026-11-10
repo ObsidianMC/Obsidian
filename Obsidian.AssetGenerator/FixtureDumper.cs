@@ -28,19 +28,47 @@ internal static class FixtureDumper
             "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("HeightmapFixtures.java"), fixture);
     }
 
-    internal static Task DumpMoreBlocksAsync(VanillaServer server, string fixture,
+    internal static async Task DumpMoreBlocksAsync(VanillaServer server, string fixture,
         IReadOnlyCollection<string>? cases = null)
     {
+        var root = System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(fixture))!;
+        var selected = root["cases"]!.AsArray()
+            .Where(probe => cases is null || cases.Contains(probe!["name"]!.GetValue<string>()))
+            .ToArray();
+        if (cases is not null && selected.Length != cases.Count)
+            throw new ArgumentException("Every selected case must exist and be named once.");
+
+        var observers = selected
+            .Where(probe => probe!["kind"]!.GetValue<string>() == "observer_placement")
+            .Select(probe => probe!["name"]!.GetValue<string>())
+            .ToArray();
+        if (observers.Length > 0)
+        {
+            var world = Path.Combine(server.ScratchDirectory, $"observer-placement-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(world);
+            await VanillaServer.RunJavaAsync(world,
+                "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+                "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("PlacementFixtures.java"),
+                fixture, "--observers", string.Join('+', observers));
+        }
+
+        var bounded = selected
+            .Where(probe => probe!["kind"]!.GetValue<string>() != "observer_placement")
+            .Select(probe => probe!["name"]!.GetValue<string>())
+            .ToArray();
+        if (bounded.Length == 0 && observers.Length > 0)
+            return;
+
         var arguments = new List<string>
         {
             "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("MoreBlockFixtures.java"), fixture, "-"
         };
-        if (cases is not null)
+        if (cases is not null || observers.Length > 0)
         {
-            arguments.Add(string.Join('+', cases));
+            arguments.Add(string.Join('+', bounded));
         }
 
-        return VanillaServer.RunJavaAsync(server.ScratchDirectory, arguments.ToArray());
+        await VanillaServer.RunJavaAsync(server.ScratchDirectory, arguments.ToArray());
     }
 
     // An on-request gameplay probe: it does not regenerate unrelated assets or fixtures.
