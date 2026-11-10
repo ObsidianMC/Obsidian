@@ -56,6 +56,16 @@ internal static class CopperWaxing
         if (Waxed(use.Block) is not IBlock waxedState)
             return UseResult.Pass;
 
+        // Vanilla fires item_used_on_block from useOn before the write, so this one sees the unwaxed block and the world
+        // around it; the packet handler fires it again once the use succeeded. It's matched now and granted only once
+        // the wax commits, so a use the commit refuses grants nothing.
+        var player = use.Player;
+        var beforeWax = player.MatchProgress(
+            "item_used_on_block",
+            item: use.UsedItem,
+            block: use.Block,
+            position: use.Position);
+
         var level = use.Level;
         var committed = use.TryCommit(
             () => level.BlockUpdates.SetBlock(use.Position, waxedState, BlockUpdateFlags.AllImmediate),
@@ -63,12 +73,8 @@ internal static class CopperWaxing
         if (!committed)
             return UseResult.Fail;
 
-        // Vanilla fires item_used_on_block from useOn before the write, so this one sees the unwaxed block; the packet
-        // handler fires it again once the use succeeded.
-        await use.Player.FireProgressAsync("item_used_on_block", item: use.UsedItem, block: use.Block,
-            position: use.Position);
+        await player.GrantProgressAsync(beforeWax);
 
-        var player = use.Player;
         level.EmitGameEvent(MobGameEvent.BlockChange, use.Center, player, affectedBlock: waxedState);
         PlayEffects(level, use.Position, use.Position, player.EntityId);
 

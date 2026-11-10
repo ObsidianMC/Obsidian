@@ -3265,6 +3265,84 @@
       "destroyed": []
     },
     {
+      "name": "wax_criteria_location",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_block"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:honeycomb",
+      "criteria": {
+        "location_old_block": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:location_check",
+                "predicate": {
+                  "block": {
+                    "blocks": "minecraft:copper_block"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "location_new_block": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:location_check",
+                "predicate": {
+                  "block": {
+                    "blocks": "minecraft:waxed_copper_block"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "awardedCriteria": [
+        "location_old_block",
+        "location_new_block"
+      ],
+      "result": "success",
+      "changes": "0,0,0=minecraft:waxed_copper_block",
+      "hand": "minecraft:honeycomb x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.honeycomb.wax_on 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:waxed_copper_block",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
+    },
+    {
       "name": "bell_floor_north_face",
       "setup": [
         {

@@ -294,10 +294,11 @@ replaces only what vanilla produced.
   is unchanged; the source launcher compiles it from the same directory. Every case records what a `block_use` case
   records with `checkWrites` and `checkEffects`, plus `userEffects`: the sounds, level events and block events sent to
   the acting player's own client, in order. Vanilla leaves the user out of the waxing sound and particles its client
-  predicts, and sends it the bell's sound and block event. The 113 cases wax each of the 60 waxable blocks with
+  predicts, and sends it the bell's sound and block event. The 114 cases wax each of the 60 waxable blocks with
   non-default properties, both halves of a door and of a double copper chest (the other half takes the wax through its
   shape update), sneaking past and opening a door and trapdoor, creative, adventure, the last honeycomb, the off hand,
-  blocks that can't be waxed, and `item_used_on_block`, which vanilla fires before the write and again after it. Bells
+  blocks that can't be waxed, and `item_used_on_block`, which vanilla fires before the write and again after it (a
+  location check sees the unwaxed block the first time and the waxed one the second). Bells
   are rung on each face of each attachment, above and below the rim, powered, with an item (which isn't placed),
   sneaking, in adventure and spectator, and from the off hand. Redstone ore is used lit and unlit, with nothing, a
   stick, or a block item that can and can't be placed beside it, sneaking, in each game mode and from the off hand.
