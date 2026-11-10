@@ -67,7 +67,7 @@ internal sealed class TurtleEggBlockBehavior : IRandomTickBehavior, IOnPlaceBeha
     // shapes.
     private static void Crack(AbstractLevel level, Vector position, IBlock block, int hatch, float pitch)
     {
-        BlockSounds.Play(level, position, "minecraft:entity.turtle.egg_crack", SoundVolume, pitch);
+        LevelSounds.PlayAtBlock(level, position, "minecraft:entity.turtle.egg_crack", SoundVolume, pitch);
         level.BlockUpdates.SetBlock(position, block.WithProperty("hatch", hatch + 1), BlockUpdateFlags.Clients);
         level.EmitGameEvent(MobGameEvent.BlockChange, Center(position), affectedBlock: block);
     }
@@ -76,7 +76,7 @@ internal sealed class TurtleEggBlockBehavior : IRandomTickBehavior, IOnPlaceBeha
     // x as vanilla places them.
     private static void Hatch(AbstractLevel level, Vector position, IBlock block, float pitch)
     {
-        BlockSounds.Play(level, position, "minecraft:entity.turtle.egg_hatch", SoundVolume, pitch);
+        LevelSounds.PlayAtBlock(level, position, "minecraft:entity.turtle.egg_hatch", SoundVolume, pitch);
         level.BlockUpdates.RemoveBlock(position);
         level.EmitGameEvent(MobGameEvent.BlockDestroy, Center(position), affectedBlock: block);
 
