@@ -182,7 +182,7 @@ internal static class FixtureDumper
     }
 
     // An on-request probe: a dedicated server of its own, in a new flat world under the scratch directory.
-    internal static Task DumpBlockUseAsync(VanillaServer server, string fixture,
+    internal static async Task DumpBlockUseAsync(VanillaServer server, string fixture,
         IReadOnlyCollection<string>? cases = null)
     {
         var world = Path.Combine(server.ScratchDirectory, "block-use");
@@ -191,10 +191,17 @@ internal static class FixtureDumper
 
         Directory.CreateDirectory(world);
 
+        var observed = Path.Combine(world, "observed-classes");
+        await VanillaServer.RunJavaAsync(world,
+            "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("BlockUseInstrumentation.java"),
+            server.ClassPath[0], observed);
+        var observedJar = Path.Combine(observed, "vanilla-observed.jar");
+        var classPath = string.Join(Path.PathSeparator, new[] { observedJar }.Concat(server.ClassPath.Skip(1)));
+
         // The probe finds the server in the shutdown hook vanilla's Main registers.
-        return VanillaServer.RunJavaAsync(world,
+        await VanillaServer.RunJavaAsync(world,
             "--add-opens", "java.base/java.lang=ALL-UNNAMED",
-            "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("BlockUseFixtures.java"), fixture,
+            "-cp", classPath, Source("BlockUseFixtures.java"), fixture,
             cases is null ? "" : string.Join('+', cases));
     }
 

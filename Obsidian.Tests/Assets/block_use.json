@@ -3267,7 +3267,10 @@
         "gameEvents": [
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_chest_stone",
@@ -3292,7 +3295,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_chest_glass",
@@ -3338,7 +3344,10 @@
         "gameEvents": [
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_chest_bottom_slab",
@@ -3384,7 +3393,10 @@
         "gameEvents": [
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_chest_top_slab",
@@ -3430,7 +3442,10 @@
         "gameEvents": [
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_chest_double_slab",
@@ -3455,7 +3470,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_chest_stairs",
@@ -3501,7 +3519,10 @@
         "gameEvents": [
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_chest_chest",
@@ -3547,7 +3568,10 @@
         "gameEvents": [
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_chest_0",
@@ -3576,7 +3600,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_chest_1",
@@ -3605,7 +3632,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_chest_cat_false",
@@ -3655,7 +3685,10 @@
         "gameEvents": [
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_chest_cat_true",
@@ -3684,7 +3717,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_trapped_chest_air",
@@ -3726,7 +3762,10 @@
         "gameEvents": [
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_trapped_chest_stone",
@@ -3751,7 +3790,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_trapped_chest_glass",
@@ -3797,7 +3839,10 @@
         "gameEvents": [
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_trapped_chest_bottom_slab",
@@ -3843,7 +3888,10 @@
         "gameEvents": [
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_trapped_chest_top_slab",
@@ -3889,7 +3937,10 @@
         "gameEvents": [
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_trapped_chest_double_slab",
@@ -3914,7 +3965,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_trapped_chest_stairs",
@@ -3960,7 +4014,10 @@
         "gameEvents": [
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_trapped_chest_chest",
@@ -4006,7 +4063,10 @@
         "gameEvents": [
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_trapped_chest_0",
@@ -4035,7 +4095,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_trapped_chest_1",
@@ -4064,7 +4127,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_trapped_chest_cat_false",
@@ -4114,7 +4180,10 @@
         "gameEvents": [
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_trapped_chest_cat_true",
@@ -4143,7 +4212,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_copper_chest_air",
@@ -4185,7 +4257,10 @@
         "gameEvents": [
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_copper_chest_stone",
@@ -4210,7 +4285,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_copper_chest_glass",
@@ -4256,7 +4334,10 @@
         "gameEvents": [
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_copper_chest_bottom_slab",
@@ -4302,7 +4383,10 @@
         "gameEvents": [
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_copper_chest_top_slab",
@@ -4348,7 +4432,10 @@
         "gameEvents": [
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_copper_chest_double_slab",
@@ -4373,7 +4460,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_copper_chest_stairs",
@@ -4419,7 +4509,10 @@
         "gameEvents": [
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_copper_chest_chest",
@@ -4465,7 +4558,10 @@
         "gameEvents": [
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_copper_chest_0",
@@ -4494,7 +4590,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_copper_chest_1",
@@ -4523,7 +4622,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_copper_chest_cat_false",
@@ -4573,7 +4675,10 @@
         "gameEvents": [
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_copper_chest_cat_true",
@@ -4602,7 +4707,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_chest_cat_other_half",
@@ -4635,7 +4743,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "light_campfire_flint_and_steel",
@@ -4673,7 +4784,16 @@
       "stats": [
         "minecraft:used minecraft:flint_and_steel 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:campfire",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_campfire_fire_charge",
@@ -4711,7 +4831,16 @@
       "stats": [
         "minecraft:used minecraft:fire_charge 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:campfire",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_campfire_flint_and_steel_creative",
@@ -4750,7 +4879,16 @@
       "stats": [
         "minecraft:used minecraft:flint_and_steel 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:campfire",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_campfire_fire_charge_creative",
@@ -4789,7 +4927,16 @@
       "stats": [
         "minecraft:used minecraft:fire_charge 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:campfire",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_campfire_wet_flint_and_steel",
@@ -4823,7 +4970,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "light_campfire_wet_fire_charge",
@@ -4857,7 +5007,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "douse_campfire_shovel_up",
@@ -4891,7 +5044,16 @@
         "minecraft:block_change 0,0,0 player"
       ],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:campfire[lit=false]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "douse_campfire_shovel_north",
@@ -4925,7 +5087,16 @@
         "minecraft:block_change 0,0,0 player"
       ],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:campfire[lit=false]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "douse_campfire_shovel_down",
@@ -4959,7 +5130,16 @@
         "minecraft:block_change 0,0,0 player"
       ],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:campfire[lit=false]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_soul_campfire_flint_and_steel",
@@ -4997,7 +5177,16 @@
       "stats": [
         "minecraft:used minecraft:flint_and_steel 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:soul_campfire",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_soul_campfire_fire_charge",
@@ -5035,7 +5224,16 @@
       "stats": [
         "minecraft:used minecraft:fire_charge 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:soul_campfire",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_soul_campfire_flint_and_steel_creative",
@@ -5074,7 +5272,16 @@
       "stats": [
         "minecraft:used minecraft:flint_and_steel 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:soul_campfire",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_soul_campfire_fire_charge_creative",
@@ -5113,7 +5320,16 @@
       "stats": [
         "minecraft:used minecraft:fire_charge 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:soul_campfire",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_soul_campfire_wet_flint_and_steel",
@@ -5147,7 +5363,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "light_soul_campfire_wet_fire_charge",
@@ -5181,7 +5400,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "douse_soul_campfire_shovel_up",
@@ -5215,7 +5437,16 @@
         "minecraft:block_change 0,0,0 player"
       ],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:soul_campfire[lit=false]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "douse_soul_campfire_shovel_north",
@@ -5249,7 +5480,16 @@
         "minecraft:block_change 0,0,0 player"
       ],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:soul_campfire[lit=false]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "douse_soul_campfire_shovel_down",
@@ -5283,7 +5523,16 @@
         "minecraft:block_change 0,0,0 player"
       ],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:soul_campfire[lit=false]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_candle_flint_and_steel",
@@ -5321,7 +5570,16 @@
       "stats": [
         "minecraft:used minecraft:flint_and_steel 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:candle[lit=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_candle_fire_charge",
@@ -5359,7 +5617,16 @@
       "stats": [
         "minecraft:used minecraft:fire_charge 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:candle[lit=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_candle_flint_and_steel_creative",
@@ -5398,7 +5665,16 @@
       "stats": [
         "minecraft:used minecraft:flint_and_steel 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:candle[lit=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_candle_fire_charge_creative",
@@ -5437,7 +5713,16 @@
       "stats": [
         "minecraft:used minecraft:fire_charge 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:candle[lit=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_candle_wet_flint_and_steel",
@@ -5471,7 +5756,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "light_candle_wet_fire_charge",
@@ -5505,7 +5793,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "douse_candle_hand",
@@ -5539,7 +5830,16 @@
         "minecraft:block_change 0,0,0 player"
       ],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:candle",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "douse_candle_held",
@@ -5569,7 +5869,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "light_red_candle_flint_and_steel",
@@ -5607,7 +5910,16 @@
       "stats": [
         "minecraft:used minecraft:flint_and_steel 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:red_candle[lit=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_red_candle_fire_charge",
@@ -5645,7 +5957,16 @@
       "stats": [
         "minecraft:used minecraft:fire_charge 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:red_candle[lit=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_red_candle_flint_and_steel_creative",
@@ -5684,7 +6005,16 @@
       "stats": [
         "minecraft:used minecraft:flint_and_steel 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:red_candle[lit=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_red_candle_fire_charge_creative",
@@ -5723,7 +6053,16 @@
       "stats": [
         "minecraft:used minecraft:fire_charge 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:red_candle[lit=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_red_candle_wet_flint_and_steel",
@@ -5757,7 +6096,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "light_red_candle_wet_fire_charge",
@@ -5791,7 +6133,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "douse_red_candle_hand",
@@ -5825,7 +6170,16 @@
         "minecraft:block_change 0,0,0 player"
       ],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:red_candle",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "douse_red_candle_held",
@@ -5855,7 +6209,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "light_candle_cake_flint_and_steel",
@@ -5893,7 +6250,16 @@
       "stats": [
         "minecraft:used minecraft:flint_and_steel 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:candle_cake[lit=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_candle_cake_fire_charge",
@@ -5931,7 +6297,16 @@
       "stats": [
         "minecraft:used minecraft:fire_charge 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:candle_cake[lit=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_candle_cake_flint_and_steel_creative",
@@ -5970,7 +6345,16 @@
       "stats": [
         "minecraft:used minecraft:flint_and_steel 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:candle_cake[lit=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_candle_cake_fire_charge_creative",
@@ -6009,7 +6393,16 @@
       "stats": [
         "minecraft:used minecraft:fire_charge 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:candle_cake[lit=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "douse_candle_cake_hand_0.5",
@@ -6038,7 +6431,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "douse_candle_cake_hand_0.75",
@@ -6073,7 +6469,16 @@
         "minecraft:block_change 0,0,0 player"
       ],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:candle_cake",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_red_candle_cake_flint_and_steel",
@@ -6111,7 +6516,16 @@
       "stats": [
         "minecraft:used minecraft:flint_and_steel 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:red_candle_cake[lit=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_red_candle_cake_fire_charge",
@@ -6149,7 +6563,16 @@
       "stats": [
         "minecraft:used minecraft:fire_charge 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:red_candle_cake[lit=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_red_candle_cake_flint_and_steel_creative",
@@ -6188,7 +6611,16 @@
       "stats": [
         "minecraft:used minecraft:flint_and_steel 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:red_candle_cake[lit=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "light_red_candle_cake_fire_charge_creative",
@@ -6227,7 +6659,16 @@
       "stats": [
         "minecraft:used minecraft:fire_charge 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:red_candle_cake[lit=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "douse_red_candle_cake_hand_0.5",
@@ -6256,7 +6697,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "douse_red_candle_cake_hand_0.75",
@@ -6291,7 +6735,16 @@
         "minecraft:block_change 0,0,0 player"
       ],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:red_candle_cake",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_water_into_air",
@@ -6371,7 +6824,16 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:water",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_water_into_stone",
@@ -6455,7 +6917,16 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 2, 0],
+          "state": "minecraft:water",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_water_into_chest",
@@ -6539,7 +7010,16 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:chest[waterlogged=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_water_into_short_grass",
@@ -6623,7 +7103,16 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 2, 0],
+          "state": "minecraft:water",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_water_into_oak_sapling",
@@ -6707,7 +7196,16 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 2, 0],
+          "state": "minecraft:water",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_water_into_water",
@@ -6791,7 +7289,10 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "bucket_water_into_lava",
@@ -6875,7 +7376,16 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:water",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_water_clicked_oak_slab",
@@ -6955,7 +7465,16 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_slab[waterlogged=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_water_clicked_oak_slab_type_double",
@@ -7035,7 +7554,16 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:water",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_water_clicked_campfire",
@@ -7118,7 +7646,16 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:campfire[lit=false,waterlogged=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_water_clicked_soul_campfire",
@@ -7201,7 +7738,16 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:soul_campfire[lit=false,waterlogged=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_water_clicked_candle_lit_true",
@@ -7284,7 +7830,16 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:candle[waterlogged=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_water_clicked_candle_lit_true_candles_4",
@@ -7367,7 +7922,16 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:candle[candles=4,waterlogged=true]",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_water_clicked_oak_stairs",
@@ -7447,7 +8011,16 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_stairs[waterlogged=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_water_clicked_chest",
@@ -7542,7 +8115,10 @@
         "gameEvents": [
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "bucket_water_clicked_candle_cake_lit_true",
@@ -7622,7 +8198,16 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:water",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_water_creative",
@@ -7699,7 +8284,16 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:water",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_water_sneaking_slab",
@@ -7780,7 +8374,16 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:water",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_pickup_water",
@@ -7860,7 +8463,56 @@
       "stats": [
         "minecraft:used minecraft:bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "criteria": {
+        "filled_any": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {}
+        },
+        "filled_water": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:water_bucket"
+              ]
+            }
+          }
+        },
+        "filled_lava": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:lava_bucket"
+              ]
+            }
+          }
+        },
+        "filled_powder_snow": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:powder_snow_bucket"
+              ]
+            }
+          }
+        }
+      },
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:air",
+          "flags": 11
+        }
+      ],
+      "destroyed": [],
+      "awardedCriteria": [
+        "filled_any",
+        "filled_water"
+      ]
     },
     {
       "name": "bucket_pickup_water_level_1",
@@ -7932,7 +8584,47 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "criteria": {
+        "filled_any": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {}
+        },
+        "filled_water": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:water_bucket"
+              ]
+            }
+          }
+        },
+        "filled_lava": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:lava_bucket"
+              ]
+            }
+          }
+        },
+        "filled_powder_snow": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:powder_snow_bucket"
+              ]
+            }
+          }
+        }
+      },
+      "writes": [],
+      "destroyed": [],
+      "awardedCriteria": []
     },
     {
       "name": "bucket_pickup_water_level_8",
@@ -8004,7 +8696,47 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "criteria": {
+        "filled_any": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {}
+        },
+        "filled_water": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:water_bucket"
+              ]
+            }
+          }
+        },
+        "filled_lava": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:lava_bucket"
+              ]
+            }
+          }
+        },
+        "filled_powder_snow": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:powder_snow_bucket"
+              ]
+            }
+          }
+        }
+      },
+      "writes": [],
+      "destroyed": [],
+      "awardedCriteria": []
     },
     {
       "name": "bucket_lava_into_air",
@@ -8084,7 +8816,16 @@
       "stats": [
         "minecraft:used minecraft:lava_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:lava",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_lava_into_stone",
@@ -8168,7 +8909,16 @@
       "stats": [
         "minecraft:used minecraft:lava_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 2, 0],
+          "state": "minecraft:lava",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_lava_into_chest",
@@ -8252,7 +9002,16 @@
       "stats": [
         "minecraft:used minecraft:lava_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 2, 0],
+          "state": "minecraft:lava",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_lava_into_short_grass",
@@ -8336,7 +9095,16 @@
       "stats": [
         "minecraft:used minecraft:lava_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 2, 0],
+          "state": "minecraft:lava",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_lava_into_oak_sapling",
@@ -8420,7 +9188,16 @@
       "stats": [
         "minecraft:used minecraft:lava_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 2, 0],
+          "state": "minecraft:lava",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_lava_into_water",
@@ -8504,7 +9281,16 @@
       "stats": [
         "minecraft:used minecraft:lava_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:lava",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_lava_into_lava",
@@ -8588,7 +9374,10 @@
       "stats": [
         "minecraft:used minecraft:lava_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "bucket_lava_clicked_oak_slab",
@@ -8668,7 +9457,16 @@
       "stats": [
         "minecraft:used minecraft:lava_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:lava",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_lava_clicked_oak_slab_type_double",
@@ -8748,7 +9546,16 @@
       "stats": [
         "minecraft:used minecraft:lava_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:lava",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_lava_clicked_campfire",
@@ -8828,7 +9635,16 @@
       "stats": [
         "minecraft:used minecraft:lava_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:lava",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_lava_clicked_soul_campfire",
@@ -8908,7 +9724,16 @@
       "stats": [
         "minecraft:used minecraft:lava_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:lava",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_lava_clicked_candle_lit_true",
@@ -8988,7 +9813,16 @@
       "stats": [
         "minecraft:used minecraft:lava_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:lava",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_lava_clicked_candle_lit_true_candles_4",
@@ -9068,7 +9902,16 @@
       "stats": [
         "minecraft:used minecraft:lava_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:lava",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_lava_clicked_oak_stairs",
@@ -9148,7 +9991,16 @@
       "stats": [
         "minecraft:used minecraft:lava_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:lava",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_lava_clicked_chest",
@@ -9243,7 +10095,10 @@
         "gameEvents": [
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "bucket_lava_clicked_candle_cake_lit_true",
@@ -9323,7 +10178,16 @@
       "stats": [
         "minecraft:used minecraft:lava_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:lava",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_lava_creative",
@@ -9400,7 +10264,16 @@
       "stats": [
         "minecraft:used minecraft:lava_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:lava",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_lava_sneaking_slab",
@@ -9481,7 +10354,16 @@
       "stats": [
         "minecraft:used minecraft:lava_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:lava",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_pickup_lava",
@@ -9561,7 +10443,56 @@
       "stats": [
         "minecraft:used minecraft:bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "criteria": {
+        "filled_any": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {}
+        },
+        "filled_water": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:water_bucket"
+              ]
+            }
+          }
+        },
+        "filled_lava": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:lava_bucket"
+              ]
+            }
+          }
+        },
+        "filled_powder_snow": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:powder_snow_bucket"
+              ]
+            }
+          }
+        }
+      },
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:air",
+          "flags": 11
+        }
+      ],
+      "destroyed": [],
+      "awardedCriteria": [
+        "filled_any",
+        "filled_lava"
+      ]
     },
     {
       "name": "bucket_pickup_lava_level_1",
@@ -9633,7 +10564,47 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "criteria": {
+        "filled_any": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {}
+        },
+        "filled_water": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:water_bucket"
+              ]
+            }
+          }
+        },
+        "filled_lava": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:lava_bucket"
+              ]
+            }
+          }
+        },
+        "filled_powder_snow": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:powder_snow_bucket"
+              ]
+            }
+          }
+        }
+      },
+      "writes": [],
+      "destroyed": [],
+      "awardedCriteria": []
     },
     {
       "name": "bucket_pickup_lava_level_8",
@@ -9705,7 +10676,47 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "criteria": {
+        "filled_any": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {}
+        },
+        "filled_water": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:water_bucket"
+              ]
+            }
+          }
+        },
+        "filled_lava": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:lava_bucket"
+              ]
+            }
+          }
+        },
+        "filled_powder_snow": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:powder_snow_bucket"
+              ]
+            }
+          }
+        }
+      },
+      "writes": [],
+      "destroyed": [],
+      "awardedCriteria": []
     },
     {
       "name": "bucket_pickup_oak_slab_waterlogged_true",
@@ -9785,7 +10796,56 @@
       "stats": [
         "minecraft:used minecraft:bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "criteria": {
+        "filled_any": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {}
+        },
+        "filled_water": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:water_bucket"
+              ]
+            }
+          }
+        },
+        "filled_lava": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:lava_bucket"
+              ]
+            }
+          }
+        },
+        "filled_powder_snow": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:powder_snow_bucket"
+              ]
+            }
+          }
+        }
+      },
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_slab",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "awardedCriteria": [
+        "filled_any",
+        "filled_water"
+      ]
     },
     {
       "name": "bucket_pickup_campfire_waterlogged_true_lit_false",
@@ -9865,7 +10925,56 @@
       "stats": [
         "minecraft:used minecraft:bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "criteria": {
+        "filled_any": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {}
+        },
+        "filled_water": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:water_bucket"
+              ]
+            }
+          }
+        },
+        "filled_lava": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:lava_bucket"
+              ]
+            }
+          }
+        },
+        "filled_powder_snow": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:powder_snow_bucket"
+              ]
+            }
+          }
+        }
+      },
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:campfire[lit=false]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "awardedCriteria": [
+        "filled_any",
+        "filled_water"
+      ]
     },
     {
       "name": "bucket_pickup_candle_waterlogged_true",
@@ -9945,7 +11054,56 @@
       "stats": [
         "minecraft:used minecraft:bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "criteria": {
+        "filled_any": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {}
+        },
+        "filled_water": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:water_bucket"
+              ]
+            }
+          }
+        },
+        "filled_lava": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:lava_bucket"
+              ]
+            }
+          }
+        },
+        "filled_powder_snow": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:powder_snow_bucket"
+              ]
+            }
+          }
+        }
+      },
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:candle",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "awardedCriteria": [
+        "filled_any",
+        "filled_water"
+      ]
     },
     {
       "name": "bucket_pickup_seagrass",
@@ -10017,7 +11175,47 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "criteria": {
+        "filled_any": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {}
+        },
+        "filled_water": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:water_bucket"
+              ]
+            }
+          }
+        },
+        "filled_lava": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:lava_bucket"
+              ]
+            }
+          }
+        },
+        "filled_powder_snow": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:powder_snow_bucket"
+              ]
+            }
+          }
+        }
+      },
+      "writes": [],
+      "destroyed": [],
+      "awardedCriteria": []
     },
     {
       "name": "bucket_pickup_powder_snow",
@@ -10099,7 +11297,56 @@
       "stats": [
         "minecraft:used minecraft:bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "criteria": {
+        "filled_any": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {}
+        },
+        "filled_water": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:water_bucket"
+              ]
+            }
+          }
+        },
+        "filled_lava": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:lava_bucket"
+              ]
+            }
+          }
+        },
+        "filled_powder_snow": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:powder_snow_bucket"
+              ]
+            }
+          }
+        }
+      },
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:air",
+          "flags": 11
+        }
+      ],
+      "destroyed": [],
+      "awardedCriteria": [
+        "filled_any",
+        "filled_powder_snow"
+      ]
     },
     {
       "name": "bucket_pickup_stack_survival_false",
@@ -10177,7 +11424,55 @@
       "stats": [
         "minecraft:used minecraft:bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "criteria": {
+        "filled_any": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {}
+        },
+        "filled_water": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:water_bucket"
+              ]
+            }
+          }
+        },
+        "filled_lava": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:lava_bucket"
+              ]
+            }
+          }
+        },
+        "filled_powder_snow": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:powder_snow_bucket"
+              ]
+            }
+          }
+        }
+      },
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:air",
+          "flags": 11
+        }
+      ],
+      "destroyed": [],
+      "awardedCriteria": [
+        "filled_any"
+      ]
     },
     {
       "name": "bucket_pickup_stack_survival_true",
@@ -10257,7 +11552,56 @@
       "stats": [
         "minecraft:used minecraft:bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "criteria": {
+        "filled_any": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {}
+        },
+        "filled_water": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:water_bucket"
+              ]
+            }
+          }
+        },
+        "filled_lava": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:lava_bucket"
+              ]
+            }
+          }
+        },
+        "filled_powder_snow": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:powder_snow_bucket"
+              ]
+            }
+          }
+        }
+      },
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:air",
+          "flags": 11
+        }
+      ],
+      "destroyed": [],
+      "awardedCriteria": [
+        "filled_any",
+        "filled_water"
+      ]
     },
     {
       "name": "bucket_pickup_stack_creative_false",
@@ -10335,7 +11679,55 @@
       "stats": [
         "minecraft:used minecraft:bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "criteria": {
+        "filled_any": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {}
+        },
+        "filled_water": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:water_bucket"
+              ]
+            }
+          }
+        },
+        "filled_lava": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:lava_bucket"
+              ]
+            }
+          }
+        },
+        "filled_powder_snow": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:powder_snow_bucket"
+              ]
+            }
+          }
+        }
+      },
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:air",
+          "flags": 11
+        }
+      ],
+      "destroyed": [],
+      "awardedCriteria": [
+        "filled_any"
+      ]
     },
     {
       "name": "bucket_pickup_stack_creative_true",
@@ -10413,7 +11805,55 @@
       "stats": [
         "minecraft:used minecraft:bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "criteria": {
+        "filled_any": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {}
+        },
+        "filled_water": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:water_bucket"
+              ]
+            }
+          }
+        },
+        "filled_lava": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:lava_bucket"
+              ]
+            }
+          }
+        },
+        "filled_powder_snow": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:powder_snow_bucket"
+              ]
+            }
+          }
+        }
+      },
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:air",
+          "flags": 11
+        }
+      ],
+      "destroyed": [],
+      "awardedCriteria": [
+        "filled_any"
+      ]
     },
     {
       "name": "bucket_water_evaporates",
@@ -10490,7 +11930,10 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "bucket_water_evaporates_solid",
@@ -10571,7 +12014,10 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "bucket_use_on_only",
@@ -10597,7 +12043,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "bucket_water_replace_oak_sapling",
@@ -10682,7 +12131,27 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:water",
+          "flags": 11
+        }
+      ],
+      "destroyed": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:oak_sapling",
+          "drops": true
+        }
+      ]
     },
     {
       "name": "bucket_water_replace_torch",
@@ -10767,7 +12236,27 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:water",
+          "flags": 11
+        }
+      ],
+      "destroyed": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:torch",
+          "drops": true
+        }
+      ]
     },
     {
       "name": "bucket_lava_replace_oak_sapling",
@@ -10852,7 +12341,27 @@
       "stats": [
         "minecraft:used minecraft:lava_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:lava",
+          "flags": 11
+        }
+      ],
+      "destroyed": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:oak_sapling",
+          "drops": true
+        }
+      ]
     },
     {
       "name": "bucket_lava_replace_torch",
@@ -10937,7 +12446,27 @@
       "stats": [
         "minecraft:used minecraft:lava_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:lava",
+          "flags": 11
+        }
+      ],
+      "destroyed": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:torch",
+          "drops": true
+        }
+      ]
     },
     {
       "name": "bucket_water_repeat_6",
@@ -11017,7 +12546,10 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "bucket_water_repeat_7",
@@ -11097,7 +12629,16 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:water",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "blocked_double_chest_glass_0",
@@ -11151,7 +12692,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_chest_glass_1",
@@ -11205,7 +12749,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_chest_bottom_slab_0",
@@ -11259,7 +12806,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_chest_bottom_slab_1",
@@ -11313,7 +12863,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_chest_top_slab_0",
@@ -11367,7 +12920,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_chest_top_slab_1",
@@ -11421,7 +12977,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_chest_double_slab_0",
@@ -11450,7 +13009,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_chest_double_slab_1",
@@ -11479,7 +13041,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_chest_stairs_0",
@@ -11533,7 +13098,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_chest_stairs_1",
@@ -11587,7 +13155,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_chest_chest_0",
@@ -11641,7 +13212,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_chest_chest_1",
@@ -11695,7 +13269,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_trapped_chest_glass_0",
@@ -11749,7 +13326,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_trapped_chest_glass_1",
@@ -11803,7 +13383,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_trapped_chest_bottom_slab_0",
@@ -11857,7 +13440,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_trapped_chest_bottom_slab_1",
@@ -11911,7 +13497,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_trapped_chest_top_slab_0",
@@ -11965,7 +13554,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_trapped_chest_top_slab_1",
@@ -12019,7 +13611,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_trapped_chest_double_slab_0",
@@ -12048,7 +13643,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_trapped_chest_double_slab_1",
@@ -12077,7 +13675,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_trapped_chest_stairs_0",
@@ -12131,7 +13732,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_trapped_chest_stairs_1",
@@ -12185,7 +13789,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_trapped_chest_chest_0",
@@ -12239,7 +13846,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_trapped_chest_chest_1",
@@ -12293,7 +13903,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_copper_chest_glass_0",
@@ -12347,7 +13960,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_copper_chest_glass_1",
@@ -12401,7 +14017,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_copper_chest_bottom_slab_0",
@@ -12455,7 +14074,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_copper_chest_bottom_slab_1",
@@ -12509,7 +14131,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_copper_chest_top_slab_0",
@@ -12563,7 +14188,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_copper_chest_top_slab_1",
@@ -12617,7 +14245,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_copper_chest_double_slab_0",
@@ -12646,7 +14277,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_copper_chest_double_slab_1",
@@ -12675,7 +14309,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_copper_chest_stairs_0",
@@ -12729,7 +14366,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_copper_chest_stairs_1",
@@ -12783,7 +14423,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_copper_chest_chest_0",
@@ -12837,7 +14480,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "blocked_double_copper_chest_chest_1",
@@ -12891,7 +14537,10 @@
           "minecraft:container_close 1,0,0 player",
           "minecraft:container_close 0,0,0 player"
         ]
-      }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "light_already_lit_campfire_flint_and_steel",
@@ -12925,7 +14574,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "light_already_lit_campfire_fire_charge",
@@ -12959,7 +14611,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "light_already_lit_soul_campfire_flint_and_steel",
@@ -12993,7 +14648,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "light_already_lit_soul_campfire_fire_charge",
@@ -13027,7 +14685,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "light_already_lit_candle_flint_and_steel",
@@ -13061,7 +14722,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "light_already_lit_candle_fire_charge",
@@ -13095,7 +14759,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "light_already_lit_red_candle_flint_and_steel",
@@ -13129,7 +14796,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "light_already_lit_red_candle_fire_charge",
@@ -13163,7 +14833,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "light_already_lit_candle_cake_flint_and_steel",
@@ -13197,7 +14870,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "light_already_lit_candle_cake_fire_charge",
@@ -13231,7 +14907,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "light_already_lit_red_candle_cake_flint_and_steel",
@@ -13265,7 +14944,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "light_already_lit_red_candle_cake_fire_charge",
@@ -13299,7 +14981,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "douse_candle_creative",
@@ -13335,7 +15020,16 @@
         "minecraft:block_change 0,0,0 player"
       ],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:candle",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "douse_candle_cake_creative",
@@ -13371,7 +15065,16 @@
         "minecraft:block_change 0,0,0 player"
       ],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:candle_cake",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "douse_candle_adventure",
@@ -13401,7 +15104,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "douse_candle_cake_adventure",
@@ -13437,7 +15143,16 @@
         "minecraft:block_change 0,0,0 player"
       ],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:candle_cake",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_water_beside_farmland",
@@ -13513,7 +15228,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "bucket_water_beside_chest",
@@ -13597,7 +15315,16 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:chest[waterlogged=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_water_beside_oak_slab",
@@ -13681,7 +15408,16 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:oak_slab[waterlogged=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_lava_beside_farmland",
@@ -13757,7 +15493,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "bucket_lava_beside_chest",
@@ -13833,7 +15572,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "bucket_lava_beside_oak_slab",
@@ -13909,7 +15651,10 @@
       "blockEvents": [],
       "gameEvents": [],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "powder_snow_bucket_place_survival",
@@ -13944,7 +15689,16 @@
       "stats": [
         "minecraft:used minecraft:powder_snow_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:powder_snow",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "powder_snow_bucket_place_creative",
@@ -13979,7 +15733,16 @@
       "stats": [
         "minecraft:used minecraft:powder_snow_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:powder_snow",
+          "flags": 11
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_water_unlit_campfire",
@@ -14020,7 +15783,16 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:campfire[lit=false,waterlogged=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_water_unlit_candle",
@@ -14061,7 +15833,16 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:candle[waterlogged=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "douse_campfire_shovel_creative",
@@ -14096,7 +15877,16 @@
         "minecraft:block_change 0,0,0 player"
       ],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:campfire[lit=false]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     },
     {
       "name": "bucket_water_existing_seagrass",
@@ -14176,7 +15966,10 @@
       "stats": [
         "minecraft:used minecraft:water_bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": []
     },
     {
       "name": "bucket_pickup_unsupported_candle",
@@ -14257,7 +16050,67 @@
       "stats": [
         "minecraft:used minecraft:bucket 1"
       ],
-      "menu": null
+      "menu": null,
+      "checkWrites": true,
+      "criteria": {
+        "filled_any": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {}
+        },
+        "filled_water": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:water_bucket"
+              ]
+            }
+          }
+        },
+        "filled_lava": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:lava_bucket"
+              ]
+            }
+          }
+        },
+        "filled_powder_snow": {
+          "trigger": "minecraft:filled_bucket",
+          "conditions": {
+            "item": {
+              "items": [
+                "minecraft:powder_snow_bucket"
+              ]
+            }
+          }
+        }
+      },
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:candle",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "destroyed": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:candle",
+          "drops": true
+        }
+      ],
+      "awardedCriteria": [
+        "filled_any",
+        "filled_water"
+      ]
     }
   ],
   "version": "26.3"

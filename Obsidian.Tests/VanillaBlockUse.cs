@@ -248,22 +248,49 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         if (use.Reference.TryGetProperty("randomSeed", out var seed))
             world.GrowthRandom = new LegacyRandomSource(seed.GetInt64());
 
-        var result = await packet.UseAsync(harness.Context.Server, user);
-        var useOnResult = result;
-        if (use.Reference.TryGetProperty("rayUse", out _) && result is not UseResult.Fail
-            && result?.ConsumesAction() != true)
+        var writes = new List<string>();
+        var destroyed = new List<string>();
+        var writeDifferences = new List<string>();
+        if (use.Reference.TryGetProperty("writes", out var expectedWrites))
         {
-            var itemPacket = new UseItemPacket();
-            typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Hand))!.SetValue(itemPacket,
-                offhand ? InteractionHand.OffHand : InteractionHand.MainHand);
-            typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Yaw))!.SetValue(itemPacket, user.Yaw.Degrees);
-            typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Pitch))!.SetValue(itemPacket, user.Pitch.Degrees);
-            result = await itemPacket.UseAsync(harness.Context.Server, user);
+            var positions = expectedWrites.EnumerateArray()
+                .Select(write => target + Position(write.GetProperty("offset"))).ToHashSet();
+            world.Fluids.BlockStored = (position, block, flags) =>
+            {
+                writes.Add(Write(position, block, flags));
+                if (!positions.Contains(position))
+                    writeDifferences.Add($"Unexpected write outside the case: {Write(position, block, flags)}");
+            };
+            world.BlockDestroyed = (position, block, drops) =>
+                destroyed.Add(Destroyed(position, block, drops));
         }
 
-        await world.RunQueuedEntityActionsAsync();
-        await world.BlockNotifications.DrainAsync();
-        await world.ProcessBlockEventsAsync();
+        UseResult? result;
+        UseResult? useOnResult;
+        try
+        {
+            result = await packet.UseAsync(harness.Context.Server, user);
+            useOnResult = result;
+            if (use.Reference.TryGetProperty("rayUse", out _) && result is not UseResult.Fail
+                && result?.ConsumesAction() != true)
+            {
+                var itemPacket = new UseItemPacket();
+                typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Hand))!.SetValue(itemPacket,
+                    offhand ? InteractionHand.OffHand : InteractionHand.MainHand);
+                typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Yaw))!.SetValue(itemPacket, user.Yaw.Degrees);
+                typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Pitch))!.SetValue(itemPacket, user.Pitch.Degrees);
+                result = await itemPacket.UseAsync(harness.Context.Server, user);
+            }
+
+            await world.RunQueuedEntityActionsAsync();
+            await world.BlockNotifications.DrainAsync();
+            await world.ProcessBlockEventsAsync();
+        }
+        finally
+        {
+            world.Fluids.BlockStored = null;
+            world.BlockDestroyed = null;
+        }
 
         var effects = Record(harness, before);
         var menu = Menu(user);
@@ -284,6 +311,20 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         if (withoutAmbientSounds.Contains(use.Name))
             expected = ExpectSpawnEggAmbientSoundMissing(expected, outcome);
         var differences = Compare(expected, outcome).ToList();
+        differences.AddRange(writeDifferences);
+        if (use.Reference.TryGetProperty("writes", out expectedWrites))
+        {
+            var recorded = expectedWrites.EnumerateArray().Select(write => Write(
+                target + Position(write.GetProperty("offset")),
+                VanillaSulfurBlocks.ParseState(write.GetProperty("state").GetString()!),
+                (BlockUpdateFlags)write.GetProperty("flags").GetInt32())).ToArray();
+            differences.AddRange(CompareLists("ordered writes", recorded, writes.ToArray()));
+            var removed = use.Reference.GetProperty("destroyed").EnumerateArray().Select(block => Destroyed(
+                target + Position(block.GetProperty("offset")),
+                VanillaSulfurBlocks.ParseState(block.GetProperty("state").GetString()!),
+                block.GetProperty("drops").GetBoolean())).ToArray();
+            differences.AddRange(CompareLists("destroyed blocks", removed, destroyed.ToArray()));
+        }
         if (use.Reference.TryGetProperty("useOnResult", out var onResult) && onResult.GetString() != Name(useOnResult))
             differences.Add($"use-on result: expected {onResult.GetString()}, got {Name(useOnResult)}");
 
@@ -714,6 +755,12 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         var offset = position - target;
         return $"{offset.X},{offset.Y},{offset.Z}";
     }
+
+    private static string Write(Vector position, IBlock block, BlockUpdateFlags flags) =>
+        $"{Offset(position)}={Text(block)} flags {(int)flags}";
+
+    private static string Destroyed(Vector position, IBlock block, bool drops) =>
+        $"{Offset(position)}={Text(block)} drops {drops}";
 
     // The block and the properties it doesn't share with its default state, sorted by name like vanilla's.
     private static string Text(IBlock state)

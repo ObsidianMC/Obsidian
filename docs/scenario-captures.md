@@ -277,7 +277,10 @@ replaces only what vanilla produced.
   opened, what closing it changed and played. The replay drives `UseItemOnPacket` in one world, with full sky light
   as the capture's open sky has, runs the queued entity actions and the tick's block events, and checks swings from
   the result. The original 92 cases retain their captured bytes. Another 208 cases cover buckets (72), chest
-  obstructions (73) and lighting (63). The replay uses the capture's absolute coordinates: translating plant
+  obstructions (73) and lighting (63), including ordered block writes with every flag bit and successful block
+  destructions. These cases observe all writes, including positions absent from their setup; an unexpected position
+  fails the replay. The older 92 cases compare final block states only. Extending ordered-write checks to those
+  cases remains an open follow-up. The replay uses the capture's absolute coordinates: translating plant
   outlines changes their position-dependent offsets and can change a bucket ray hit. It also checks whether
   closing effects exist, rather than comparing them only when both sides happened to open a menu.
   `SpawnEggAmbientSoundMissing` explicitly asserts the sheep spawn egg's missing ambient sound; it fails if the
@@ -446,6 +449,9 @@ record sign text flags and editor, attack charge after a started and a refused s
 container close sources, and awarded advancement criteria. The fixture lists
 location predicate terms in Obsidian's existing format; the probe converts them to 26.3's `all_of` and `match_block`
 encoding before registering them with vanilla's advancement system.
+Criteria without a location predicate, including `filled_bucket` with item predicates, are registered unchanged.
+The pickup cases check both an unconditional criterion and the filled item's predicate: vanilla checks its
+temporary result after inventory insertion, which can have emptied that stack even though the inventory received it.
 
 New `block_use` probe inputs are optional, so existing cases record exactly their earlier fields:
 
@@ -464,6 +470,11 @@ New `block_use` probe inputs are optional, so existing cases record exactly thei
   alongside the existing sounds, level events, game events and statistics. The replay compares every added field.
   Candle smoke comes from client-local particles; campfire shovel dousing sends level event 1009. Neither sends
   a server particle packet. Random sound pitches are not fixture fields.
+- `checkWrites: true` records ordered `writes` (offset, state, all integer flag bits) and `destroyed` blocks
+  (offset, previous state, drops requested), from use through the block-event drain. The capture adds observation
+  callbacks to `LevelChunk` storage and successful `Level.destroyBlock` returns in an unsigned scratch copy of the
+  vanilla jar; the cached jar stays untouched. The observer does not replace block behavior or filter positions.
+  The replay uses `LevelFluids.BlockStored` and `AbstractLevel.BlockDestroyed` for the matching observations.
 
 For example, after adding a case, run
 `dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=block_use -p:CaptureCases=bucket_water_evaporates`.

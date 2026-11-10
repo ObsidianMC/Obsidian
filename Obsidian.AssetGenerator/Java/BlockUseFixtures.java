@@ -232,12 +232,15 @@ public final class BlockUseFixtures {
             if (input.has("randomSeed"))
                 level.getRandom().setSeed(input.get("randomSeed").getAsLong());
 
+            observeWrites(level, input);
             var result = use(level, user, target, input);
             if (advancement != null && result.consumesAction()) {
                 var clicked = target.offset(position(input.getAsJsonArray("clicked")));
                 net.minecraft.advancements.triggers.CriteriaTriggers.ANY_BLOCK_USE.trigger(user, clicked, usedStack);
             }
             runBlockEvents(level);
+            System.getProperties().remove("obsidian.blockUse.writes");
+            System.getProperties().remove("obsidian.blockUse.destroyed");
 
             if (advancement != null) {
                 var progress = user.getAdvancements().getOrStartProgress(advancement);
@@ -346,6 +349,9 @@ public final class BlockUseFixtures {
         // The fixture lists location terms directly; 26.3 encodes that conjunction as an all_of predicate.
         for (var criterion : criteria.entrySet()) {
             var conditions = criterion.getValue().getAsJsonObject().getAsJsonObject("conditions");
+            if (!conditions.has("location"))
+                continue;
+
             var conjunction = new JsonObject();
             conjunction.addProperty("type", "minecraft:all_of");
             for (var term : conditions.getAsJsonArray("location")) {
@@ -376,6 +382,45 @@ public final class BlockUseFixtures {
         register.setAccessible(true);
         register.invoke(user.getAdvancements(), holder);
         return holder;
+    }
+
+    // The scratch classes call these observers only after a changed state is stored, before its side effects.
+    private static void observeWrites(ServerLevel level, JsonObject input) throws Exception {
+        if (!input.has("checkWrites"))
+            return;
+
+        var parameters = new Class<?>[]{Object.class, Object.class, Object.class, int.class};
+        net.minecraft.world.level.chunk.LevelChunk.class.getDeclaredMethod("obsidianObserveBlockUse", parameters);
+        net.minecraft.world.level.Level.class.getDeclaredMethod("obsidianObserveBlockUse", parameters);
+        var writes = new JsonArray();
+        var destroyed = new JsonArray();
+        input.add("writes", writes);
+        input.add("destroyed", destroyed);
+        var thread = Thread.currentThread();
+        for (var kind : List.of("writes", "destroyed")) {
+            java.util.function.Consumer<Object[]> observer = values -> {
+                if (values[0] != level || Thread.currentThread() != thread)
+                    return;
+
+                var recorded = new JsonObject();
+                var pos = (BlockPos)values[1];
+                var relative = pos.subtract(origin);
+                var offset = new JsonArray();
+                offset.add(relative.getX());
+                offset.add(relative.getY());
+                offset.add(relative.getZ());
+                recorded.add("offset", offset);
+                recorded.addProperty("state", text((BlockState)values[2]));
+                if (kind.equals("writes")) {
+                    recorded.addProperty("flags", (Integer)values[3]);
+                    writes.add(recorded);
+                } else {
+                    recorded.addProperty("drops", (Integer)values[3] != 0);
+                    destroyed.add(recorded);
+                }
+            };
+            System.getProperties().put("obsidian.blockUse." + kind, observer);
+        }
     }
 
     // The case's game mode, sneaking and held item, with the user standing where the fixture says.
