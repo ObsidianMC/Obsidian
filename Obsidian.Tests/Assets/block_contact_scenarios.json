@@ -10807,6 +10807,2017 @@
    ]
   },
   {
+   "name": "oak_plate_entities_that_never_touch",
+   "coverage": [
+    "non_touching_entities",
+    "plate_counts_untouching"
+   ],
+   "min": [
+    558,
+    63,
+    40
+   ],
+   "max": [
+    562,
+    64,
+    41
+   ],
+   "ticks": 50,
+   "setup": [
+    {
+     "pos": [
+      558,
+      63,
+      40
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      558,
+      63,
+      41
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      559,
+      63,
+      40
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      559,
+      63,
+      41
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      560,
+      63,
+      40
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      560,
+      63,
+      41
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      561,
+      63,
+      40
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      561,
+      63,
+      41
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      562,
+      63,
+      40
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      562,
+      63,
+      41
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      560,
+      64,
+      40
+     ],
+     "state": "minecraft:oak_pressure_plate"
+    },
+    {
+     "pos": [
+      560,
+      64,
+      41
+     ],
+     "state": "minecraft:redstone_wire"
+    }
+   ],
+   "entities": [
+    {
+     "tick": 2,
+     "summon": "a",
+     "type": "minecraft:marker",
+     "pos": [
+      560.5,
+      64.0,
+      40.5
+     ]
+    },
+    {
+     "tick": 3,
+     "summon": "b",
+     "type": "minecraft:block_display",
+     "pos": [
+      560.5,
+      64.0,
+      40.5
+     ]
+    },
+    {
+     "tick": 4,
+     "summon": "c",
+     "type": "minecraft:interaction",
+     "pos": [
+      560.5,
+      64.0,
+      40.5
+     ]
+    },
+    {
+     "tick": 5,
+     "summon": "d",
+     "type": "minecraft:area_effect_cloud",
+     "pos": [
+      560.5,
+      64.0,
+      40.5
+     ]
+    },
+    {
+     "tick": 10,
+     "summon": "e",
+     "type": "minecraft:husk",
+     "pos": [
+      560.5,
+      64.0,
+      40.5
+     ],
+     "noAi": true,
+     "noGravity": true
+    },
+    {
+     "tick": 14,
+     "remove": "e"
+    }
+   ],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=false]",
+      "minecraft:redstone_wire[east=none,north=side,power=0,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {}
+    },
+    {
+     "tick": 1,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=false]",
+      "minecraft:redstone_wire[east=none,north=side,power=0,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {}
+    },
+    {
+     "tick": 2,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=false]",
+      "minecraft:redstone_wire[east=none,north=side,power=0,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 3,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=false]",
+      "minecraft:redstone_wire[east=none,north=side,power=0,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 4,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=false]",
+      "minecraft:redstone_wire[east=none,north=side,power=0,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 5,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=false]",
+      "minecraft:redstone_wire[east=none,north=side,power=0,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 6,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=false]",
+      "minecraft:redstone_wire[east=none,north=side,power=0,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 7,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=false]",
+      "minecraft:redstone_wire[east=none,north=side,power=0,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 8,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=false]",
+      "minecraft:redstone_wire[east=none,north=side,power=0,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 9,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=false]",
+      "minecraft:redstone_wire[east=none,north=side,power=0,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 10,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ],
+      "e": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 11,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ],
+      "e": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 12,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ],
+      "e": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 13,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ],
+      "e": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 14,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 15,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 16,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 17,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 18,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 19,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 20,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 21,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 22,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 23,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 24,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 25,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 26,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 27,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 28,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 29,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 30,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 31,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 32,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 33,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 34,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 35,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 36,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 37,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 38,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 39,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 40,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 41,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 42,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 43,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 44,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 45,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 46,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 47,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 48,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 49,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    },
+    {
+     "tick": 50,
+     "palette": [
+      "minecraft:stone",
+      "minecraft:air",
+      "minecraft:oak_pressure_plate[powered=true]",
+      "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]"
+     ],
+     "rows": [
+      "00000",
+      "00000",
+      "11211",
+      "11311"
+     ],
+     "entities": {
+      "a": [
+       560.5,
+       64,
+       40.5
+      ],
+      "b": [
+       560.5,
+       64,
+       40.5
+      ],
+      "c": [
+       560.5,
+       64,
+       40.5
+      ],
+      "d": [
+       560.5,
+       64,
+       40.5
+      ]
+     }
+    }
+   ]
+  },
+  {
    "name": "tripwire_hooked_walked_through",
    "coverage": [
     "tripwire_hooked",
