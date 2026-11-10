@@ -170,6 +170,8 @@ internal sealed class BubbleColumnBlockBehavior : IScheduledTickBehavior, IShape
 /// <summary>Vanilla's <c>SoulSandBlock</c>: the <c>tick</c> and <c>updateShape</c> that start a column above it.</summary>
 internal sealed class SoulSandBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior, IOnPlaceBehavior, IPostProcessBehavior
 {
+    public IShapeUpdateBehavior? SharedPassRule => null;
+
     public void Tick(IBlockLevel level, Vector position, IBlock block, IRandomSource random) =>
         BubbleColumns.TickSource(level, position, block);
 
@@ -190,6 +192,8 @@ internal sealed class SoulSandBlockBehavior : IScheduledTickBehavior, IShapeUpda
 /// <summary>Vanilla's <c>MagmaBlock</c>: the <c>tick</c> and <c>updateShape</c> that start a downward column above it.</summary>
 internal sealed class MagmaBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior, IOnPlaceBehavior, IPostProcessBehavior
 {
+    public IShapeUpdateBehavior? SharedPassRule => null;
+
     public void Tick(IBlockLevel level, Vector position, IBlock block, IRandomSource random) =>
         BubbleColumns.TickSource(level, position, block);
 

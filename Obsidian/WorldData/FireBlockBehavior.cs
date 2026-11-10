@@ -19,6 +19,8 @@ namespace Obsidian.WorldData;
 /// </remarks>
 internal sealed partial class FireBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior, IOnPlaceBehavior
 {
+    public IShapeUpdateBehavior? SharedPassRule => null;
+
     // Vanilla's FireBlock.MAX_AGE.
     private const int MaxAge = 15;
 

@@ -182,7 +182,8 @@ internal static class BlockSurvival
         below.IsFaceSturdy(BlockFace.Up) && !below.Is(BlockIds.MagmaBlock);
 
     /// <summary>
-    /// Vanilla <c>CactusBlock.canSurvive</c>, reading blocks through <paramref name="blocks"/> (worldgen or a live level).
+    /// Vanilla <c>CactusBlock.canSurvive</c>, reading blocks through <paramref name="blocks"/>
+    /// (worldgen or a live level).
     /// </summary>
     internal static bool CactusMayStay(BlockReader blocks, Vector position)
     {
@@ -205,7 +206,8 @@ internal static class BlockSurvival
         below.RegistryId is BlockIds.Cactus or BlockIds.Farmland || below.IsTopCenterSturdy();
 
     /// <summary>
-    /// Vanilla <c>SugarCaneBlock.canSurvive</c>, reading blocks through <paramref name="blocks"/> (worldgen or a live level).
+    /// Vanilla <c>SugarCaneBlock.canSurvive</c>, reading blocks through <paramref name="blocks"/>
+    /// (worldgen or a live level).
     /// </summary>
     internal static bool SugarCaneMayStay(BlockReader blocks, Vector position)
     {

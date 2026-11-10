@@ -18,6 +18,8 @@ namespace Obsidian.WorldData;
 /// </remarks>
 internal sealed partial class FarmlandBlockBehavior : IRandomTickBehavior, IScheduledTickBehavior, IShapeUpdateBehavior
 {
+    public IShapeUpdateBehavior? SharedPassRule => null;
+
     // Vanilla's FarmlandBlock.MAX_MOISTURE.
     private const int MaxMoisture = 7;
 

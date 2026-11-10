@@ -12,6 +12,8 @@ namespace Obsidian.WorldData;
 /// </summary>
 internal sealed class ChorusPlantBehavior : IScheduledTickBehavior, IShapeUpdateBehavior
 {
+    public IShapeUpdateBehavior? SharedPassRule => null;
+
     private static readonly WorldgenTags.BlockGroup supports = WorldgenTags.Blocks("supports_chorus_plant");
 
     // Vanilla's Direction.Plane.HORIZONTAL, the order canSurvive looks at the sides in.

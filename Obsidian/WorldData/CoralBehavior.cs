@@ -73,6 +73,8 @@ internal static class Coral
 /// <summary>Vanilla's <c>CoralBlock</c>: its <c>tick</c> and <c>updateShape</c> overrides.</summary>
 internal sealed class CoralBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior
 {
+    public IShapeUpdateBehavior? SharedPassRule => null;
+
     public void Tick(IBlockLevel level, Vector position, IBlock block, IRandomSource random)
     {
         if (!Coral.TouchesWater(level.AsShapeLevel(), position))
@@ -101,6 +103,8 @@ internal sealed class CoralBlockBehavior : IScheduledTickBehavior, IShapeUpdateB
 /// </summary>
 internal sealed class CoralPlantBehavior(bool onWall) : IOnPlaceBehavior, IScheduledTickBehavior, IShapeUpdateBehavior
 {
+    public IShapeUpdateBehavior? SharedPassRule => null;
+
     public void OnPlace(IBlockLevel level, Vector position, IBlock state, IBlock oldState)
     {
         var view = level.AsShapeLevel();

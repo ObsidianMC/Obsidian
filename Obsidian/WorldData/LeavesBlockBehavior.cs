@@ -13,6 +13,8 @@ namespace Obsidian.WorldData;
 /// </summary>
 internal sealed partial class LeavesBlockBehavior : IRandomTickBehavior, IScheduledTickBehavior, IShapeUpdateBehavior
 {
+    public IShapeUpdateBehavior? SharedPassRule => null;
+
     // Vanilla's LeavesBlock.DECAY_DISTANCE: the distance of leaves with no log within six blocks.
     private const int DecayDistance = 7;
 

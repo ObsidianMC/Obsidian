@@ -67,11 +67,12 @@ internal interface IShapeUpdateBehavior
 
     /// <summary>
     /// For a live owner, the rule the shared pass runs for its blocks (generation, chunk completion and placement's
-    /// derivation), or null to leave them alone there, as live owners are by default. The shared pass has no ticks of
-    /// its own to schedule and no random to draw from, so an owner whose rule does either names a rule that only
-    /// reshapes; one whose rule only reshapes can name itself.
+    /// derivation), or null to leave them alone there. Each live owner states its choice explicitly. Generation's
+    /// view has no block ticks or random, so owners generally name a reshape-only rule or themselves if they only
+    /// reshape. Bubble columns deliberately reuse their scheduling rule to preserve the old shared pass's behavior:
+    /// completion's fluid view forwards their checks to the chunk's saved ticks; generation's view ignores them.
     /// </summary>
-    IShapeUpdateBehavior? SharedPassRule => null;
+    IShapeUpdateBehavior? SharedPassRule { get; }
 
     /// <returns>The state the block becomes, or null to keep <paramref name="state"/>.</returns>
     IBlock? UpdateShape(

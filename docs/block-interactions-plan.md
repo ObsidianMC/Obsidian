@@ -309,8 +309,8 @@ narrow: the view also checks for a pending tick and hands out the live level's r
 draws its death delay from; it still has no way to write. Each member's `Reach` keeps the split between the two
 update engines as it was: live owners (coral, dirt paths and chorus plants among them) run first in both, and the
 former arms run only in the shared pass (`ShapeUpdater`). A live owner names what the shared pass runs for its blocks
-(`SharedPassRule`): fences, bars and bubble columns name their own rule, which only reshapes (the bubble column's
-check is scheduled in the region during completion, as before); speleothems and kelp name a rule that reshapes
+(`SharedPassRule`): fences and bars name their own reshape-only rule; bubble columns keep their scheduling rule
+so completion's fluid view saves the check in the chunk's ticks, as before. Speleothems and kelp name a rule that reshapes
 without scheduling their fall, break or support check, as their old shared copies did; other owners name none.
 Fences now refuse leaves by class on both paths, as vanilla's `isExceptionForConnection` does; the live rule used
 the `#leaves` tag, which differs only under a datapack that changes that tag. Plugin blocks keep the shared pass's

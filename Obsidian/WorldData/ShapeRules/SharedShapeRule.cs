@@ -9,6 +9,8 @@ internal abstract class SharedShapeRule : IShapeUpdateBehavior
 {
     public ShapeReach Reach => ShapeReach.SharedPass;
 
+    public IShapeUpdateBehavior? SharedPassRule => null;
+
     public abstract IBlock? UpdateShape(
         IShapeLevel level,
         Vector position,

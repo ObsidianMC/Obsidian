@@ -7,6 +7,8 @@ namespace Obsidian.WorldData;
 
 internal sealed class NoteBlockBehavior : IBlockBehavior, IShapeUpdateBehavior
 {
+    public IShapeUpdateBehavior? SharedPassRule => null;
+
     internal sealed record Instrument(string Sound, bool Above, bool Tunable, bool Custom);
 
     private sealed record Metadata(

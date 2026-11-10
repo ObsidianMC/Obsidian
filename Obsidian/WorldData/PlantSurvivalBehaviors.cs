@@ -10,6 +10,8 @@ namespace Obsidian.WorldData;
 /// </summary>
 internal sealed class SugarCaneBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior
 {
+    public IShapeUpdateBehavior? SharedPassRule => null;
+
     /// <summary>Vanilla's <c>updateShape</c>: schedules a tick at delay 1 when the block can't survive, and keeps its state.</summary>
     public IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
     {
@@ -30,6 +32,8 @@ internal sealed class SugarCaneBlockBehavior : IScheduledTickBehavior, IShapeUpd
 /// <summary>Vanilla <c>CactusBlock</c>: the same survival check and break as sugar cane, from its own class.</summary>
 internal sealed class CactusBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior
 {
+    public IShapeUpdateBehavior? SharedPassRule => null;
+
     /// <summary>Vanilla's <c>updateShape</c>: schedules a tick at delay 1 when the block can't survive, and keeps its state.</summary>
     public IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
     {
@@ -53,6 +57,8 @@ internal sealed class CactusBlockBehavior : IScheduledTickBehavior, IShapeUpdate
 /// </summary>
 internal sealed class BambooSaplingBlockBehavior : IShapeUpdateBehavior
 {
+    public IShapeUpdateBehavior? SharedPassRule => null;
+
     public IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
     {
         if (!BlockSurvival.BambooMayStay(new BlockReader(level), position))
@@ -70,6 +76,8 @@ internal sealed class BambooSaplingBlockBehavior : IShapeUpdateBehavior
 /// </summary>
 internal sealed class BambooStalkBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior
 {
+    public IShapeUpdateBehavior? SharedPassRule => null;
+
     /// <summary>Vanilla's <c>updateShape</c>: schedules a tick at delay 1 when the stalk can't survive, and keeps its state.</summary>
     public IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
     {

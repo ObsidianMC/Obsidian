@@ -82,13 +82,19 @@ internal static class ShapeUpdater
         if (level is IShapeLevel view)
             return rule.UpdateShape(view, position, state, direction, neighborPosition, neighbor) ?? state;
 
-        // Generation's view is reused rather than made per block. Rules don't call back into the shared pass, so
-        // binding it to the level for the one rule is safe, and it lets the level go afterwards.
+        // Reuse generation's view without retaining the level after a failure. Nested updates must restore the
+        // outer rule's level before it continues reading.
         var generation = generationView ??= new GenerationView();
+        var previousLevel = generation.Level;
         generation.Level = level;
-        var updated = rule.UpdateShape(generation, position, state, direction, neighborPosition, neighbor);
-        generation.Level = null;
-        return updated ?? state;
+        try
+        {
+            return rule.UpdateShape(generation, position, state, direction, neighborPosition, neighbor) ?? state;
+        }
+        finally
+        {
+            generation.Level = previousLevel;
+        }
     }
 
     /// <summary>

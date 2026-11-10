@@ -76,6 +76,8 @@ internal sealed class RedstoneObserver(IRedstoneLevel level)
 /// <summary>The observer's shape hook, shared by the fluid and block notification engines.</summary>
 internal sealed class ObserverShapeBehavior : IShapeUpdateBehavior
 {
+    public IShapeUpdateBehavior? SharedPassRule => null;
+
     public IBlock UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction,
         Vector neighborPosition, IBlock neighbor)
     {

@@ -10,6 +10,8 @@ namespace Obsidian.WorldData;
 /// <remarks>Not ported: <c>Block.pushEntitiesUp</c> when it turns to dirt, as for farmland.</remarks>
 internal sealed class PathBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior
 {
+    public IShapeUpdateBehavior? SharedPassRule => null;
+
     public IBlock? UpdateShape(
         IShapeLevel level,
         Vector position,
