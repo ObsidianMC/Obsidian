@@ -27,9 +27,10 @@ public sealed class VanillaGrowingPlantTicks(ITestOutputHelper output)
     private static readonly JsonElement fixture = LoadFixture();
 
     // Where the block notification pipeline, which repeats each write's shape updates after the fluid level's and
-    // drains in the middle of them, still parts from vanilla (see docs/known-gaps/plant-growth-beyond-saplings.md):
-    // it turns a head into its body first and stores it with every flag, or schedules kelp's water tick at a head the
-    // fluid level already turned back from a body. Each is expected exactly, so the replay fails once it's fixed.
+    // drains in the middle of them, still parts from vanilla (see
+    // docs/known-gaps/vanilla-blocks-reactions-to-block-updates.md): it turns a head into its body first and stores it
+    // with every flag, or schedules kelp's water tick at a head the fluid level already turned back from a body. Each
+    // is expected exactly, so the replay fails once it's fixed.
     private static readonly Dictionary<string, PipelineDifference> pipelineDifferences = new()
     {
         ["kelp_tip_broken_after_growing"] = new(ExtraWaterTick: new Vector(8, 64, 8)),

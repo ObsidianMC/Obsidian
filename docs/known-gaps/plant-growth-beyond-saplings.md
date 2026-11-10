@@ -26,15 +26,9 @@ Obsidian neither draws nor does, so the level random and the position sequence p
 
 Around the plants that grow:
 
-- **The block notification pipeline repeats shape updates.** Every write's shape updates run in the fluid level
-  (`FluidLevel.ExecuteShapeUpdate`), and again in `BlockNotificationPipeline`, which drains in the middle of the fluid
-  level's chain when a shape update stores a block. The pipeline then turns a head that grew into a one-block gap below
-  its plant into its body before the fluid level does, storing it with every flag where vanilla's shape update only
-  tells clients. It also schedules kelp's water tick at a head the fluid level has just turned back from a body, which
-  vanilla doesn't, because it reads the state after the conversion (`ShapeUpdater.ScheduleFluidTick`). The pipeline
-  shouldn't run vanilla blocks' shape updates (the owner hook and the fluid tick) for writes whose shape updates the
-  fluid level ran, or should run them after that chain, with the shape update's flags. `VanillaGrowingPlantTicks` lists
-  the six captured cases this changes.
+- **Shape updates run twice.** A head growing into a gap below its plant is stored with every flag, and kelp gets
+  a water tick vanilla doesn't schedule, in six captured cases; the cause and the cases are in
+  [vanilla blocks' reactions to block updates](vanilla-blocks-reactions-to-block-updates.md).
 - **Pitcher crops have no shape handler.** A lower half that loses its farmland or light, or a half whose other half
   the world removes, stays; vanilla's `PitcherCropBlock.updateShape` breaks it.
 - **Cave, weeping and twisting vines don't break when they lose their support.** Their shape update schedules the

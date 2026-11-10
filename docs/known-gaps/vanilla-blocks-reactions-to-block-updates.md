@@ -23,18 +23,32 @@ a bell keeps its `single_wall` or `double_wall` attachment when a wall beside it
 when it loses all support (vanilla's `BellBlock.updateShape`). Dead coral plants and fans don't break when their
 support goes (vanilla's `BaseCoralPlantTypeBlock` and `BaseCoralWallFanBlock`).
 
-Obsidian asks a block's shape update more than once for one change: the vanilla-ordered neighbour update and the
-notification pipeline both run it, and the support check before a queued break asks it for every face. That's harmless
-for shape rules that only return a state, but live coral draws its death delay from the level's random there. Coral
-draws only when no death is pending and it still has its support, which matches vanilla's one draw per change except
-that vanilla also draws (and discards the delay) when a neighbour of a dry coral changes while its death is pending.
-The `review_coral_dry_neighbour_changes_while_death_pending` case in `ticking_blocks.json` pins that missing second
-draw explicitly. Six cases also pin the notification pipeline storing the third shape write with flags 3 instead
-of vanilla's 2: `dripstone_grows_down_from_a_column`, `dripstone_grows_down_at_seven_long`,
-`dripstone_tip_added_below_a_column`, `dripstone_tip_removed_from_a_column`,
-`review_mixed_pointed_dripstone_body_sulfur_spike_down_tip_randomTick` and
-`review_mixed_sulfur_spike_body_pointed_dripstone_down_tip_randomTick`. The replay compares all bits and fails if
-these differences disappear, so fixing the shared pipeline requires removing the corresponding exceptions.
+Obsidian asks a block's shape update more than once for one change. The vanilla-ordered neighbour update in the fluid
+level (`FluidLevel.ExecuteShapeUpdate`) runs it, then the notification pipeline (`BlockNotificationPipeline`) runs it
+again, and the support check before a queued break asks it for every face. The pipeline drains as soon as a shape
+update stores a block, in the middle of the fluid level's chain, so it can reach a neighbour before the fluid level
+does, and it stores what it changes with every flag where vanilla's shape update passes on its own flags (2, not 3).
+When the fluid level got there first, the pipeline asks again of the state that update left, so whatever the second
+call does on its own (a random draw, a fluid tick) happens where vanilla never asked. Rules that only return a state
+are unaffected. The pipeline shouldn't run vanilla blocks' shape updates for writes whose shape updates the fluid level
+ran, or should run them after that chain with the shape update's flags. The captures that meet it pin each difference
+exactly, compare every flag bit, and fail when a difference disappears, so fixing the pipeline means removing these
+exceptions:
+
+- `ticking_blocks.json`: live coral draws its death delay from the level's random in its shape update. Coral draws
+  only when no death is pending and it still has its support, which matches vanilla's one draw per change except that
+  vanilla also draws (and discards the delay) when a neighbour of a dry coral changes while its death is pending;
+  `review_coral_dry_neighbour_changes_while_death_pending` pins that missing second draw. Six cases pin the third
+  shape write stored with flags 3: `dripstone_grows_down_from_a_column`, `dripstone_grows_down_at_seven_long`,
+  `dripstone_tip_added_below_a_column`, `dripstone_tip_removed_from_a_column`,
+  `review_mixed_pointed_dripstone_body_sulfur_spike_down_tip_randomTick` and
+  `review_mixed_sulfur_spike_body_pointed_dripstone_down_tip_randomTick`.
+- `growing_plant_ticks.json` (`pipelineDifferences` in `VanillaGrowingPlantTicks`): a head that grows into a
+  one-block gap below its own plant turns into its body in the pipeline first, stored with flags 3, in
+  `kelp_grows_into_gap`, `cave_vines_grows_into_gap`, `weeping_vines_grows_into_gap` and
+  `twisting_vines_grows_into_gap`. Kelp's water tick is scheduled again at a head the fluid level has just turned
+  back from a body (`ShapeUpdater.ScheduleFluidTick` reading the state after the conversion), where vanilla schedules
+  none, in `kelp_tip_broken_after_growing`, `kelp_plant_loses_its_head` and `kelp_grows_into_gap`.
 
 Mud drying into clay above dripping pointed dripstone and a dirt path turning into dirt do not lift entities
 standing on them onto the taller replacement block (vanilla's `Block.pushEntitiesUp`). Their bounded captures have

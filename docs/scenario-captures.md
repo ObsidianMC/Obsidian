@@ -246,7 +246,8 @@ replaces only what vanilla produced.
   `isRandomlyTicking`, then its generated owner), runs the actions, and compares the draws, the ordered writes and
   their neighbour, client and known-shape flags, the final blocks, that nothing else in the chunk around them changed,
   and the ticks pending in the chunk with their delays. Six cases list exactly where the block notification pipeline
-  still parts from vanilla (see [plant growth](known-gaps/plant-growth-beyond-saplings.md)).
+  still parts from vanilla (see
+  [reactions to block updates](known-gaps/vanilla-blocks-reactions-to-block-updates.md)).
 
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.
