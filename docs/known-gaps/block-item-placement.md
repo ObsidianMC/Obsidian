@@ -20,8 +20,16 @@ What isn't covered yet:
   flower bed or leaf litter used on one of its kind adds to it, a vine or glow lichen gains a face, a slab completes a
   slab, and snow layers stack. `UseItemOnPacket` only handles slabs this way; the block placements already add to a
   block they replace.
-- **Adventure mode.** Vanilla lets an adventure player place a block only on blocks the item's `can_place_on` allows.
-  Obsidian doesn't evaluate those predicates yet, so adventure players place blocks as survival players do.
+- **Adventure mode.** Block interactions and plugin item callbacks still run. Obsidian refuses vanilla item uses
+  on blocks and item placement until it evaluates the item's `can_place_on` predicates, including where those
+  predicates would permit the use.
+- **Bucket destinations and waterlogging.** Water and lava buckets bypass the replaceable-block check and can
+  overwrite a solid block or block entity beyond the clicked face. They also never waterlog the clicked block.
+  Vanilla accepts air, a block the fluid can replace, or a liquid container; it tries beyond the clicked block
+  when appropriate and refuses a solid destination. This predates PR #701 on 26.3.x. The next phase needs bucket
+  captures before changing this path.
+- **Ignition targets.** Flint and steel and fire charges do not light unlit campfires, candles or candle cakes.
+  This also predates PR #701 on 26.3.x; it belongs to phase 2's lighting batch in the block-interactions plan.
 - **Extending scaffolding.** Vanilla's `ScaffoldingBlockItem` places scaffolding along a scaffolding tower or bridge
   that's clicked. Obsidian places it where it was clicked, and refuses it where nothing would hold it.
 - **Random ages.** Kelp and weeping, twisting and cave vines take an age from the level's random, which Obsidian draws

@@ -22,6 +22,14 @@ namespace Obsidian.WorldData.Redstone;
 internal interface IPressurePlateWorld : IBlockChangeWorld
 {
     void SchedulePlateTick(Vector position, IBlock block, int delay);
+
+    /// <summary>
+    /// Vanilla's <c>block_activate</c> or <c>block_deactivate</c> game event from a plate pressed or released.
+    /// Worlds without listeners ignore it.
+    /// </summary>
+    void EmitGameEvent(MobGameEvent kind, Vector position)
+    {
+    }
 }
 
 internal sealed class PressurePlates
@@ -182,6 +190,7 @@ internal sealed class PressurePlates
                 {
                     this.world.SchedulePlateTick(position, state, WeightedDelay);
                     this.world.PlaySound(position, PlateSound(state, on: true));
+                    this.world.EmitGameEvent(MobGameEvent.BlockActivate, position);
                 }
             }
             else if (state.GetProperty("powered") != "true")
@@ -189,6 +198,7 @@ internal sealed class PressurePlates
                 await this.WriteAsync(position, state.WithProperty("powered", true));
                 this.world.SchedulePlateTick(position, state, PlateDelay);
                 this.world.PlaySound(position, PlateSound(state, on: true));
+                this.world.EmitGameEvent(MobGameEvent.BlockActivate, position);
             }
         }
     }
@@ -231,12 +241,14 @@ internal sealed class PressurePlates
             {
                 await this.WriteAsync(position, state.WithProperty("power", "0"));
                 this.world.PlaySound(position, PlateSound(state, on: false));
+                this.world.EmitGameEvent(MobGameEvent.BlockDeactivate, position);
             }
         }
         else if (state.GetProperty("powered") == "true")
         {
             await this.WriteAsync(position, state.WithProperty("powered", false));
             this.world.PlaySound(position, PlateSound(state, on: false));
+            this.world.EmitGameEvent(MobGameEvent.BlockDeactivate, position);
         }
     }
 

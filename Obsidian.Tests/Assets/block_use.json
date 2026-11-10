@@ -1,0 +1,3232 @@
+{
+  "_notes": "Vanilla 26.3 block use, recorded by Obsidian.AssetGenerator/Java/BlockUseFixtures.java (CaptureFixtures=block_use) on a dedicated server in a flat world of air. Each case's blocks are set around the target without updates; a player standing at 'player' (x, y, z, yaw, pitch) uses the main hand's item (two of it unless 'count' says otherwise, none when 'item' is absent) on the clicked block's face through ServerPlayerGameMode.useItemOn, in the case's game mode (survival by default), sneaking or not, with 'offhand' in the other hand. The area's chunks are forced, so pending block events then run as a tick would run them. Recorded: the result as the packet handler reads it (success swings for others, success_server also for the user, consume doesn't swing); every block within two of the target that changed (dx,dy,dz=state, with the properties that differ from the default); the main hand after; the entities that appeared (items as 'item <id> x<count>'); the sounds, level events ('type offset data') and block events ('block b0 b1 offset') a second player beside the target received; game events within 16 ('name offset source'); statistics awarded ('type value amount'); and the menu type opened. When a menu opened it is closed again, and 'closed' records what closing changed and played.",
+  "target": [0, 64, 0],
+  "player": [0.5, 64, -2.5, 0, 30],
+  "cases": [
+    {
+      "name": "oak_door_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_door"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:oak_door[half=upper]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "0,0,0=minecraft:oak_door[open=true];0,1,0=minecraft:oak_door[half=upper,open=true]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.wooden_door.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_open 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "oak_door_close",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_door[open=true]"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:oak_door[half=upper,open=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "0,0,0=minecraft:oak_door;0,1,0=minecraft:oak_door[half=upper]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.wooden_door.close"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_close 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "oak_door_sneaking_empty_hands",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_door"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:oak_door[half=upper]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "sneaking": true,
+      "result": "success",
+      "changes": "0,0,0=minecraft:oak_door[open=true];0,1,0=minecraft:oak_door[half=upper,open=true]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.wooden_door.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_open 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "oak_door_sneaking_with_item",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_door"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:oak_door[half=upper]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stone",
+      "sneaking": true,
+      "result": "success",
+      "changes": "0,0,-1=minecraft:stone",
+      "hand": "minecraft:stone x1",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.stone.place"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_place 0,0,-1 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:stone 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "oak_door_sneaking_with_offhand_item",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_door"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:oak_door[half=upper]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "sneaking": true,
+      "offhand": "minecraft:stone",
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "oak_door_with_item",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_door"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:oak_door[half=upper]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stone",
+      "result": "success",
+      "changes": "0,0,0=minecraft:oak_door[open=true];0,1,0=minecraft:oak_door[half=upper,open=true]",
+      "hand": "minecraft:stone x2",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.wooden_door.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_open 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "oak_door_adventure",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_door"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:oak_door[half=upper]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "gameMode": "adventure",
+      "result": "success",
+      "changes": "0,0,0=minecraft:oak_door[open=true];0,1,0=minecraft:oak_door[half=upper,open=true]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.wooden_door.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_open 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "oak_door_spectator",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_door"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:oak_door[half=upper]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "gameMode": "spectator",
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "iron_door_by_hand",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:iron_door"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:iron_door[half=upper]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "copper_door_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_door"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:copper_door[half=upper]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "0,0,0=minecraft:copper_door[open=true];0,1,0=minecraft:copper_door[half=upper,open=true]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.copper_door.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_open 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "oak_trapdoor_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_trapdoor"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "0,0,0=minecraft:oak_trapdoor[open=true]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.wooden_trapdoor.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_open 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "iron_trapdoor_by_hand",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:iron_trapdoor"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "oak_fence_gate_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_fence_gate"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "0,0,0=minecraft:oak_fence_gate[facing=south,open=true]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.fence_gate.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_open 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "lever_on",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lever[face=floor]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "result": "success",
+      "changes": "0,0,0=minecraft:lever[face=floor,powered=true]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.lever.click"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_activate 0,0,0 none"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "lever_off",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lever[face=floor,powered=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "result": "success",
+      "changes": "0,0,0=minecraft:lever[face=floor]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.lever.click"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_deactivate 0,0,0 none"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "lever_adventure",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lever[face=floor]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "gameMode": "adventure",
+      "result": "success",
+      "changes": "0,0,0=minecraft:lever[face=floor,powered=true]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.lever.click"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_activate 0,0,0 none"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "stone_button_press",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:stone_button[face=floor]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "result": "success",
+      "changes": "0,0,0=minecraft:stone_button[face=floor,powered=true]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.stone_button.click_on"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_activate 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "repeater_cycle",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:repeater"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "result": "success",
+      "changes": "0,0,0=minecraft:repeater[delay=2]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "repeater_adventure",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:repeater"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "gameMode": "adventure",
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "comparator_toggle",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:comparator"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "result": "success",
+      "changes": "0,0,0=minecraft:comparator[mode=subtract]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.comparator.click"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "daylight_detector_invert",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:daylight_detector"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "result": "success",
+      "changes": "0,0,0=minecraft:daylight_detector[inverted=true]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "note_block_tune",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:note_block"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "0,0,0=minecraft:note_block[note=1]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.note_block.harp"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:note_block 0 0 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:note_block_play 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:tune_noteblock 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "note_block_adventure",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:note_block"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "gameMode": "adventure",
+      "result": "success",
+      "changes": "0,0,0=minecraft:note_block[note=1]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.note_block.harp"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:note_block 0 0 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:note_block_play 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:tune_noteblock 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "jukebox_insert_disc",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jukebox"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:music_disc_cat",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:jukebox[has_record=true]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [
+        "1010 0,0,0 5"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none",
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:play_record 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "jukebox_adventure",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jukebox"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:music_disc_cat",
+      "count": 1,
+      "gameMode": "adventure",
+      "result": "success",
+      "changes": "0,0,0=minecraft:jukebox[has_record=true]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [
+        "1010 0,0,0 5"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none",
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:play_record 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "chest_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chest"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.chest.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:chest 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:open_chest 1"
+      ],
+      "menu": "minecraft:generic_9x3",
+      "closed": {
+        "changes": "",
+        "sounds": [
+          "minecraft:block.chest.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:chest 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "chest_with_item",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chest"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stone",
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:stone x2",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.chest.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:chest 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:open_chest 1"
+      ],
+      "menu": "minecraft:generic_9x3",
+      "closed": {
+        "changes": "",
+        "sounds": [
+          "minecraft:block.chest.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:chest 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "chest_sneaking_with_item",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chest"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stone",
+      "sneaking": true,
+      "result": "success",
+      "changes": "0,0,-1=minecraft:stone",
+      "hand": "minecraft:stone x1",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.stone.place"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_place 0,0,-1 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:stone 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "chest_spectator",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chest"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "gameMode": "spectator",
+      "result": "consume",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": "minecraft:generic_9x3",
+      "closed": {
+        "changes": "",
+        "sounds": [],
+        "levelEvents": [],
+        "blockEvents": [],
+        "gameEvents": []
+      }
+    },
+    {
+      "name": "trapped_chest_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:trapped_chest"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.chest.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:trapped_chest 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:trigger_trapped_chest 1"
+      ],
+      "menu": "minecraft:generic_9x3",
+      "closed": {
+        "changes": "",
+        "sounds": [
+          "minecraft:block.chest.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:trapped_chest 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "copper_chest_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_chest"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.copper_chest.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:copper_chest 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:open_chest 1"
+      ],
+      "menu": "minecraft:generic_9x3",
+      "closed": {
+        "changes": "",
+        "sounds": [
+          "minecraft:block.copper_chest.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:copper_chest 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "ender_chest_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:ender_chest"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.ender_chest.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:ender_chest 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:open_enderchest 1"
+      ],
+      "menu": "minecraft:generic_9x3",
+      "closed": {
+        "changes": "",
+        "sounds": [
+          "minecraft:block.ender_chest.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:ender_chest 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "ender_chest_blocked",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:ender_chest"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:stone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "barrel_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:barrel[facing=up]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "0,0,0=minecraft:barrel[facing=up,open=true]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.barrel.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:open_barrel 1"
+      ],
+      "menu": "minecraft:generic_9x3",
+      "closed": {
+        "changes": "0,0,0=minecraft:barrel[facing=up]",
+        "sounds": [
+          "minecraft:block.barrel.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "shulker_box_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:shulker_box"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shulker_box.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:shulker_box 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:open_shulker_box 1"
+      ],
+      "menu": "minecraft:shulker_box",
+      "closed": {
+        "changes": "",
+        "sounds": [
+          "minecraft:block.shulker_box.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:shulker_box 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "red_shulker_box_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:red_shulker_box"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shulker_box.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:red_shulker_box 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:open_shulker_box 1"
+      ],
+      "menu": "minecraft:shulker_box",
+      "closed": {
+        "changes": "",
+        "sounds": [
+          "minecraft:block.shulker_box.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:red_shulker_box 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "dispenser_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:dispenser"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [
+        "minecraft:custom minecraft:inspect_dispenser 1"
+      ],
+      "menu": "minecraft:generic_3x3",
+      "closed": {
+        "changes": "",
+        "sounds": [],
+        "levelEvents": [],
+        "blockEvents": [],
+        "gameEvents": []
+      }
+    },
+    {
+      "name": "dropper_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:dropper"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [
+        "minecraft:custom minecraft:inspect_dropper 1"
+      ],
+      "menu": "minecraft:generic_3x3",
+      "closed": {
+        "changes": "",
+        "sounds": [],
+        "levelEvents": [],
+        "blockEvents": [],
+        "gameEvents": []
+      }
+    },
+    {
+      "name": "hopper_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:hopper"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [
+        "minecraft:custom minecraft:inspect_hopper 1"
+      ],
+      "menu": "minecraft:hopper",
+      "closed": {
+        "changes": "",
+        "sounds": [],
+        "levelEvents": [],
+        "blockEvents": [],
+        "gameEvents": []
+      }
+    },
+    {
+      "name": "furnace_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:furnace"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [
+        "minecraft:custom minecraft:interact_with_furnace 1"
+      ],
+      "menu": "minecraft:furnace",
+      "closed": {
+        "changes": "",
+        "sounds": [],
+        "levelEvents": [],
+        "blockEvents": [],
+        "gameEvents": []
+      }
+    },
+    {
+      "name": "blast_furnace_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:blast_furnace"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [
+        "minecraft:custom minecraft:interact_with_blast_furnace 1"
+      ],
+      "menu": "minecraft:blast_furnace",
+      "closed": {
+        "changes": "",
+        "sounds": [],
+        "levelEvents": [],
+        "blockEvents": [],
+        "gameEvents": []
+      }
+    },
+    {
+      "name": "smoker_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:smoker"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [
+        "minecraft:custom minecraft:interact_with_smoker 1"
+      ],
+      "menu": "minecraft:smoker",
+      "closed": {
+        "changes": "",
+        "sounds": [],
+        "levelEvents": [],
+        "blockEvents": [],
+        "gameEvents": []
+      }
+    },
+    {
+      "name": "brewing_stand_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:brewing_stand"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [
+        "minecraft:custom minecraft:interact_with_brewingstand 1"
+      ],
+      "menu": "minecraft:brewing_stand",
+      "closed": {
+        "changes": "",
+        "sounds": [],
+        "levelEvents": [],
+        "blockEvents": [],
+        "gameEvents": []
+      }
+    },
+    {
+      "name": "crafting_table_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:crafting_table"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [
+        "minecraft:custom minecraft:interact_with_crafting_table 1"
+      ],
+      "menu": "minecraft:crafting",
+      "closed": {
+        "changes": "",
+        "sounds": [],
+        "levelEvents": [],
+        "blockEvents": [],
+        "gameEvents": []
+      }
+    },
+    {
+      "name": "anvil_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:anvil"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [
+        "minecraft:custom minecraft:interact_with_anvil 1"
+      ],
+      "menu": "minecraft:anvil",
+      "closed": {
+        "changes": "",
+        "sounds": [],
+        "levelEvents": [],
+        "blockEvents": [],
+        "gameEvents": []
+      }
+    },
+    {
+      "name": "grindstone_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:grindstone[face=floor]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [
+        "minecraft:custom minecraft:interact_with_grindstone 1"
+      ],
+      "menu": "minecraft:grindstone",
+      "closed": {
+        "changes": "",
+        "sounds": [],
+        "levelEvents": [],
+        "blockEvents": [],
+        "gameEvents": []
+      }
+    },
+    {
+      "name": "stonecutter_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:stonecutter"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [
+        "minecraft:custom minecraft:interact_with_stonecutter 1"
+      ],
+      "menu": "minecraft:stonecutter",
+      "closed": {
+        "changes": "",
+        "sounds": [],
+        "levelEvents": [],
+        "blockEvents": [],
+        "gameEvents": []
+      }
+    },
+    {
+      "name": "loom_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:loom"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [
+        "minecraft:custom minecraft:interact_with_loom 1"
+      ],
+      "menu": "minecraft:loom",
+      "closed": {
+        "changes": "",
+        "sounds": [],
+        "levelEvents": [],
+        "blockEvents": [],
+        "gameEvents": []
+      }
+    },
+    {
+      "name": "cartography_table_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cartography_table"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [
+        "minecraft:custom minecraft:interact_with_cartography_table 1"
+      ],
+      "menu": "minecraft:cartography_table",
+      "closed": {
+        "changes": "",
+        "sounds": [],
+        "levelEvents": [],
+        "blockEvents": [],
+        "gameEvents": []
+      }
+    },
+    {
+      "name": "smithing_table_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:smithing_table"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [
+        "minecraft:custom minecraft:interact_with_smithing_table 1"
+      ],
+      "menu": "minecraft:smithing",
+      "closed": {
+        "changes": "",
+        "sounds": [],
+        "levelEvents": [],
+        "blockEvents": [],
+        "gameEvents": []
+      }
+    },
+    {
+      "name": "enchanting_table_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:enchanting_table"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": "minecraft:enchantment",
+      "closed": {
+        "changes": "",
+        "sounds": [],
+        "levelEvents": [],
+        "blockEvents": [],
+        "gameEvents": []
+      }
+    },
+    {
+      "name": "beacon_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beacon"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [
+        "minecraft:custom minecraft:interact_with_beacon 1"
+      ],
+      "menu": "minecraft:beacon",
+      "closed": {
+        "changes": "",
+        "sounds": [],
+        "levelEvents": [],
+        "blockEvents": [],
+        "gameEvents": []
+      }
+    },
+    {
+      "name": "crafter_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:crafter"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": "minecraft:crafter_3x3",
+      "closed": {
+        "changes": "",
+        "sounds": [],
+        "levelEvents": [],
+        "blockEvents": [],
+        "gameEvents": []
+      }
+    },
+    {
+      "name": "lectern_place_book",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lectern"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:writable_book",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:lectern[has_book=true]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:item.book.put"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "lectern_empty_hand",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lectern"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "campfire_cook",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:campfire"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:beef",
+      "result": "success_server",
+      "changes": "",
+      "hand": "minecraft:beef x1",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:interact_with_campfire 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "composter_fill",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:composter"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:pumpkin_pie",
+      "result": "success",
+      "changes": "0,0,0=minecraft:composter[level=1]",
+      "hand": "minecraft:pumpkin_pie x1",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [
+        "1500 0,0,0 1"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:pumpkin_pie 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "composter_ready_empty_hand",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:composter[level=8]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "result": "success",
+      "changes": "0,0,0=minecraft:composter",
+      "hand": "empty",
+      "entities": [
+        "item minecraft:bone_meal x1"
+      ],
+      "sounds": [
+        "minecraft:block.composter.empty"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "bed_by_day",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:red_bed"
+        },
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:red_bed[part=head]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "result": "success_server",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "respawn_anchor_charge",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:respawn_anchor"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:glowstone",
+      "result": "success",
+      "changes": "0,0,0=minecraft:respawn_anchor[charges=1]",
+      "hand": "minecraft:glowstone x1",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.respawn_anchor.charge"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "oak_sign_dye",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_sign"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:red_dye",
+      "result": "success_server",
+      "changes": "",
+      "hand": "minecraft:red_dye x2",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "oak_sign_empty_hand",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_sign"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success_server",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "tnt_flint_and_steel",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:tnt"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:flint_and_steel",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:air",
+      "hand": "minecraft:flint_and_steel x1 damage=1",
+      "entities": [
+        "minecraft:tnt"
+      ],
+      "sounds": [
+        "minecraft:entity.tnt.primed"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:prime_fuse 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:flint_and_steel 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "fence_with_item",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_fence"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stone",
+      "result": "success",
+      "changes": "0,0,-1=minecraft:stone;0,0,0=minecraft:oak_fence[north=true]",
+      "hand": "minecraft:stone x1",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.stone.place"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_place 0,0,-1 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:stone 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "item_frame_on_stone",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:stone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:item_frame",
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:item_frame x1",
+      "entities": [
+        "minecraft:item_frame"
+      ],
+      "sounds": [
+        "minecraft:entity.item_frame.place"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:entity_place 0,0,-1 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:item_frame 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "item_frame_on_chest",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chest"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:item_frame",
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:item_frame x2",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.chest.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:chest 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:open_chest 1"
+      ],
+      "menu": "minecraft:generic_9x3",
+      "closed": {
+        "changes": "",
+        "sounds": [
+          "minecraft:block.chest.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:chest 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "minecart_on_rail",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:rail"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:minecart",
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:minecart x1",
+      "entities": [
+        "minecraft:minecart"
+      ],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:entity_place 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:minecart 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "spawn_egg_on_stone",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:stone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:sheep_spawn_egg",
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:sheep_spawn_egg x1",
+      "entities": [
+        "minecraft:sheep"
+      ],
+      "sounds": [
+        "minecraft:entity.sheep.ambient"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:entity_place 0,1,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:sheep_spawn_egg 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "end_crystal_on_obsidian",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:obsidian"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:end_crystal",
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:end_crystal x1",
+      "entities": [
+        "minecraft:end_crystal"
+      ],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:entity_place 0,1,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:end_crystal 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "flint_and_steel_on_stone",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:stone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:flint_and_steel",
+      "count": 1,
+      "result": "success",
+      "changes": "0,1,0=minecraft:fire",
+      "hand": "minecraft:flint_and_steel x1 damage=1",
+      "entities": [],
+      "sounds": [
+        "minecraft:item.flintandsteel.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_place 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:flint_and_steel 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "ender_eye_in_frame",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:end_portal_frame"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:ender_eye",
+      "result": "success",
+      "changes": "0,0,0=minecraft:end_portal_frame[eye=true]",
+      "hand": "minecraft:ender_eye x1",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [
+        "1503 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [
+        "minecraft:used minecraft:ender_eye 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "bone_meal_short_grass",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:grass_block"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:short_grass"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:bone_meal",
+      "result": "success_server",
+      "changes": "0,0,0=minecraft:tall_grass;0,1,0=minecraft:tall_grass[half=upper]",
+      "hand": "minecraft:bone_meal x1",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [
+        "1505 0,0,0 15"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,-3 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:bone_meal 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "axe_strips_log",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_log"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:iron_axe",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:stripped_oak_log",
+      "hand": "minecraft:iron_axe x1 damage=1",
+      "entities": [],
+      "sounds": [
+        "minecraft:item.axe.strip"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:iron_axe 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "shovel_makes_path",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:grass_block"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:iron_shovel",
+      "count": 1,
+      "result": "success",
+      "changes": "0,0,0=minecraft:dirt_path",
+      "hand": "minecraft:iron_shovel x1 damage=1",
+      "entities": [],
+      "sounds": [
+        "minecraft:item.shovel.flatten"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:iron_shovel 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "place_stone",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:stone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:stone",
+      "result": "success",
+      "changes": "0,1,0=minecraft:stone",
+      "hand": "minecraft:stone x1",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.stone.place"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_place 0,1,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:stone 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "place_stone_adventure",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:stone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:stone",
+      "gameMode": "adventure",
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:stone x2",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "place_stone_spectator",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:stone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:stone",
+      "gameMode": "spectator",
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:stone x2",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "empty_hand_on_stone",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:stone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "sign_text_dye",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_sign",
+          "text": "Hello"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkSign": true,
+      "item": "minecraft:red_dye",
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:red_dye x1",
+      "signColor": "red",
+      "signGlowing": false,
+      "signWaxed": false,
+      "editor": null,
+      "entities": [],
+      "sounds": [
+        "minecraft:item.dye.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:red_dye 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "sign_text_glow",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_sign",
+          "text": "Hello"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkSign": true,
+      "item": "minecraft:glow_ink_sac",
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:glow_ink_sac x1",
+      "signColor": "black",
+      "signGlowing": true,
+      "signWaxed": false,
+      "editor": null,
+      "entities": [],
+      "sounds": [
+        "minecraft:item.glow_ink_sac.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:glow_ink_sac 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "sign_honeycomb",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_sign",
+          "text": "Hello"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkSign": true,
+      "item": "minecraft:honeycomb",
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:honeycomb x1",
+      "signColor": "black",
+      "signGlowing": false,
+      "signWaxed": true,
+      "editor": null,
+      "entities": [],
+      "sounds": [
+        "minecraft:item.honeycomb.wax_on"
+      ],
+      "levelEvents": [
+        "3003 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:honeycomb 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "sign_empty_hand_edit",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_sign"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkSign": true,
+      "result": "success_server",
+      "changes": "",
+      "hand": "empty",
+      "signColor": "black",
+      "signGlowing": false,
+      "signWaxed": false,
+      "editor": "front",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "sign_offhand_empty",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_sign"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkSign": true,
+      "handUsed": "offhand",
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "signColor": "black",
+      "signGlowing": false,
+      "signWaxed": false,
+      "editor": null,
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "sign_offhand_dye",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_sign",
+          "text": "Hello"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkSign": true,
+      "offhand": "minecraft:red_dye",
+      "handUsed": "offhand",
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:red_dye x1",
+      "signColor": "red",
+      "signGlowing": false,
+      "signWaxed": false,
+      "editor": null,
+      "entities": [],
+      "sounds": [
+        "minecraft:item.dye.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:red_dye 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "hanging_sign_text_dye",
+      "setup": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_hanging_sign",
+          "text": "Hello"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkSign": true,
+      "item": "minecraft:red_dye",
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:red_dye x1",
+      "signColor": "red",
+      "signGlowing": false,
+      "signWaxed": false,
+      "editor": null,
+      "entities": [],
+      "sounds": [
+        "minecraft:item.dye.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:red_dye 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "hanging_sign_empty_hand",
+      "setup": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_hanging_sign"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkSign": true,
+      "result": "success_server",
+      "changes": "",
+      "hand": "empty",
+      "signColor": "black",
+      "signGlowing": false,
+      "signWaxed": false,
+      "editor": "front",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "use_swing_attack_strength",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_door"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:oak_door[half=upper]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "0,0,0=minecraft:oak_door[open=true];0,1,0=minecraft:oak_door[half=upper,open=true]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.wooden_door.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_open 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null,
+      "checkAttack": true,
+      "attackCharge": 0.1,
+      "blockedAttackCharge": 1.0
+    },
+    {
+      "name": "chest_close_sources",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chest"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.chest.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:chest 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:open_chest 1"
+      ],
+      "menu": "minecraft:generic_9x3",
+      "closed": {
+        "changes": "",
+        "sounds": [
+          "minecraft:block.chest.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:chest 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      },
+      "checkCloseSources": true,
+      "explicitCloseEvents": [
+        "minecraft:container_close 0,0,0 minecraft:player"
+      ],
+      "periodicCloseEvents": [
+        "minecraft:container_close 0,0,0 none"
+      ]
+    },
+    {
+      "name": "trigger_open_door",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_door"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:oak_door[half=upper]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "0,0,0=minecraft:oak_door[open=true];0,1,0=minecraft:oak_door[half=upper,open=true]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.wooden_door.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_open 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null,
+      "criteria": {
+        "default_open": {
+          "trigger": "minecraft:default_block_use",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:oak_door",
+                "properties": {
+                  "open": "true"
+                }
+              }
+            ]
+          }
+        },
+        "any_open": {
+          "trigger": "minecraft:any_block_use",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:oak_door",
+                "properties": {
+                  "open": "true"
+                }
+              }
+            ]
+          }
+        },
+        "default_closed": {
+          "trigger": "minecraft:default_block_use",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:oak_door",
+                "properties": {
+                  "open": "false"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "awardedCriteria": [
+        "default_open",
+        "any_open"
+      ]
+    },
+    {
+      "name": "trigger_dye_stack",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_sign",
+          "text": "Hello"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkSign": true,
+      "item": "minecraft:red_dye",
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:red_dye x1",
+      "signColor": "red",
+      "signGlowing": false,
+      "signWaxed": false,
+      "editor": null,
+      "entities": [],
+      "sounds": [
+        "minecraft:item.dye.use"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:red_dye 1"
+      ],
+      "menu": null,
+      "criteria": {
+        "item_before": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:match_tool",
+                "predicate": {
+                  "items": "minecraft:red_dye",
+                  "count": 2
+                }
+              }
+            ]
+          }
+        },
+        "item_after": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:match_tool",
+                "predicate": {
+                  "items": "minecraft:red_dye",
+                  "count": 1
+                }
+              }
+            ]
+          }
+        },
+        "any_after": {
+          "trigger": "minecraft:any_block_use",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:oak_sign"
+              },
+              {
+                "condition": "minecraft:match_tool",
+                "predicate": {
+                  "items": "minecraft:red_dye",
+                  "count": 1
+                }
+              }
+            ]
+          }
+        },
+        "any_before": {
+          "trigger": "minecraft:any_block_use",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:match_tool",
+                "predicate": {
+                  "items": "minecraft:red_dye",
+                  "count": 2
+                }
+              }
+            ]
+          }
+        }
+      },
+      "awardedCriteria": [
+        "item_before",
+        "any_after"
+      ]
+    },
+    {
+      "name": "trigger_sign_editor",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_sign"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkSign": true,
+      "result": "success_server",
+      "changes": "",
+      "hand": "empty",
+      "signColor": "black",
+      "signGlowing": false,
+      "signWaxed": false,
+      "editor": "front",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null,
+      "criteria": {
+        "default_sign": {
+          "trigger": "minecraft:default_block_use",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:oak_sign"
+              }
+            ]
+          }
+        },
+        "item_sign": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:oak_sign"
+              }
+            ]
+          }
+        },
+        "any_sign": {
+          "trigger": "minecraft:any_block_use",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:oak_sign"
+              }
+            ]
+          }
+        }
+      },
+      "awardedCriteria": [
+        "default_sign",
+        "any_sign"
+      ]
+    },
+    {
+      "name": "bone_meal_failed_growth",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:dirt"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_sapling"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:bone_meal",
+      "result": "success_server",
+      "changes": "",
+      "hand": "minecraft:bone_meal x1",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [
+        "1505 0,0,0 15"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,-3 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:bone_meal 1"
+      ],
+      "menu": null,
+      "randomSeed": 0
+    }
+  ],
+  "version": "26.3"
+}

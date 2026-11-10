@@ -46,6 +46,7 @@ public partial class Portals
 
         var frame = await PortalFrame.FindAsync(world.GetBlockAsync, new Vector(0, 64, 0), "x", world.MinY);
         Assert.True(frame!.Value.IsComplete);
+        player.FlushBlockAcknowledgement();
         Assert.Contains(((TestClient)player.Client).SentPackets, packet => packet is BlockChangedAckPacket);
         Assert.Contains(((TestClient)player.Client).SentPackets, packet => packet is SoundPacket
         {

@@ -1389,6 +1389,8 @@ public sealed class HelperGenerator : ILevelGenerator
 /// </summary>
 public sealed class ProbePillarFeature : ConfiguredFeatureBase
 {
+    public const string PlaceHookKey = "Obsidian.Tests.ProbePillarFeature.PlaceHook";
+
     public override string Type => "probe:pillar";
 
     public required SimpleBlockState State { get; init; }
@@ -1399,6 +1401,9 @@ public sealed class ProbePillarFeature : ConfiguredFeatureBase
 
     public override bool Place(FeatureContext context)
     {
+        if (AppContext.GetData(PlaceHookKey) is Action<FeatureContext> hook)
+            hook(context);
+
         var block = this.State.ToBlock();
         var height = this.Height.Sample(context.Random);
         var placed = false;

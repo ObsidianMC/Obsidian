@@ -43,6 +43,40 @@ public partial class PlayerBase
     internal bool HoldsAnotherPlayersGate => TickingPlayer is PlayerBase other && !ReferenceEquals(other, this);
 
     /// <summary>
+    /// Runs a queued block use under the gate leaving and saving share. A level action must not wait for the gate:
+    /// a player tick owning it may be waiting for the level. False leaves the action queued for a later drain.
+    /// A stopped player counts as handled, without invoking the action.
+    /// </summary>
+    internal async ValueTask<bool> TryRunBlockUseAsync(Func<ValueTask> use)
+    {
+        if (this.IsInOwnTick)
+        {
+            if (!this.stoppedTicking)
+                await use();
+
+            return true;
+        }
+
+        if (this.HoldsAnotherPlayersGate || !this.tickGate.Wait(0))
+            return false;
+
+        var previous = tickingPlayer.Value;
+        tickingPlayer.Value = this;
+        try
+        {
+            if (!this.stoppedTicking)
+                await use();
+
+            return true;
+        }
+        finally
+        {
+            tickingPlayer.Value = previous;
+            this.tickGate.Release();
+        }
+    }
+
+    /// <summary>
     /// Throws when the current flow holds another player's tick gate: waiting for this player's could wait for a flow
     /// that holds it and waits for the other's, as players in different levels tick at the same time. Every way of
     /// taking a player's tick gate checks it, so no flow ever holds two players' gates.

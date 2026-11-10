@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
@@ -179,7 +179,9 @@ public sealed class BlockUpdates : IDisposable
         var container = await this.LoadProbeAsync(manager);
 
         Assert.True(BlocksRegistry.TryGetPluginBlock("probe:relay", out var relay));
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Placer");
+        // Within reach of the blocks it clicks, as vanilla requires.
+        var standing = new VectorD(9.5, Ground + 1, 6.5);
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Placer", standing);
         player.GameMode = GameMode.Survival;
         player.Yaw = 90;
         player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(relay.Item!, 2));
@@ -201,6 +203,7 @@ public sealed class BlockUpdates : IDisposable
         // Clicking the ground's top places the block above it, facing the player (east, for a player facing west).
         var ground = new Vector(4, Ground, 4);
         var above = ground + Vector.Up;
+        player.Level.TryAddPlayer(player);
         await UseOn(ground, BlockFace.Up).HandleAsync(context.Server, player);
 
         Assert.Equal(1, events);
@@ -208,6 +211,7 @@ public sealed class BlockUpdates : IDisposable
         Assert.Equal(2, player.GetHeldItem()?.Count);
 
         cancel = false;
+        player.Level.TryAddPlayer(player);
         await UseOn(ground, BlockFace.Up).HandleAsync(context.Server, player);
 
         var placed = world.GetLoadedChunk(0, 0)!.GetBlock(above);
@@ -221,6 +225,7 @@ public sealed class BlockUpdates : IDisposable
         var filled = new Vector(6, Ground + 1, 6);
         meanwhile = () => world.SetBlockAsync(filled, BlocksRegistry.Stone);
         client.ClearPackets();
+        player.Level.TryAddPlayer(player);
         await UseOn(filled + Vector.Down, BlockFace.Up).HandleAsync(context.Server, player);
 
         Assert.True(world.GetLoadedChunk(0, 0)!.GetBlock(filled).Is(BlockIds.Stone));
@@ -235,6 +240,7 @@ public sealed class BlockUpdates : IDisposable
         var doorTop = door + Vector.Up;
         meanwhile = () => world.SetBlockAsync(doorTop, BlocksRegistry.Stone);
         player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Get("minecraft:oak_door"), 1));
+        player.Level.TryAddPlayer(player);
         await UseOn(door + Vector.Down, BlockFace.Up).HandleAsync(context.Server, player);
 
         Assert.True(world.GetLoadedChunk(0, 0)!.GetBlock(door).IsAir);
@@ -248,6 +254,7 @@ public sealed class BlockUpdates : IDisposable
         async Task<IBlock> PlaceVanillaAsync(string item, Vector clicked, BlockFace face)
         {
             player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Get(item), 1));
+            player.Level.TryAddPlayer(player);
             await UseOn(clicked, face).HandleAsync(context.Server, player);
             return world.GetLoadedChunk(0, 0)!.GetBlock(clicked + face.ToVector());
         }
@@ -272,13 +279,16 @@ public sealed class BlockUpdates : IDisposable
         await using var context = TestServerFactory.CreateServer($"vanilla-placement-{Guid.NewGuid():N}");
         var world = context.World;
         await AddChunksAsync(world);
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Facer");
+        // Within reach of the blocks it clicks, as vanilla requires.
+        var standing = new VectorD(5.5, Ground + 1, 6.5);
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Facer", standing);
         player.GameMode = GameMode.Survival;
         player.Yaw = 90;
 
         async Task<IBlock> PlaceAsync(string item, Vector spot)
         {
             player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Get(item), 1));
+            player.Level.TryAddPlayer(player);
             await UseOn(spot + Vector.Down, BlockFace.Up).HandleAsync(context.Server, player);
             return world.GetLoadedChunk(0, 0)!.GetBlock(spot);
         }
@@ -1009,7 +1019,8 @@ public sealed class BlockUpdates : IDisposable
 
     // A player using their main hand on the face of the block at position, at cursor on that block (0 to 1 on each
     // axis), or else at the middle of its top.
-    internal static UseItemOnPacket UseOn(Vector position, BlockFace face, VectorF? cursor = null)
+    internal static UseItemOnPacket UseOn(Vector position, BlockFace face, VectorF? cursor = null,
+        int sequence = 1, UseItemOnPacket? packet = null)
     {
         using var writer = new NetworkBuffer();
         writer.WriteVarInt((int)InteractionHand.MainHand);
@@ -1018,10 +1029,10 @@ public sealed class BlockUpdates : IDisposable
         writer.WriteAbsoluteFloatPositionF(cursor ?? new VectorF(0.5f, 1, 0.5f));
         writer.WriteBoolean(false);
         writer.WriteBoolean(false);
-        writer.WriteVarInt(1);
+        writer.WriteVarInt(sequence);
 
         using var reader = new NetworkBuffer(writer.AsSpan(0, writer.Size).ToArray());
-        var packet = new UseItemOnPacket();
+        packet ??= new UseItemOnPacket();
         packet.Populate(reader);
 
         return packet;
@@ -1093,6 +1104,7 @@ public sealed class BlockUpdates : IDisposable
 /// </summary>
 public sealed class ProbeRelay : IBlockBehavior
 {
+    public const string NeighborHookKey = "Obsidian.Tests.ProbeRelay.NeighborHook";
     public const string CallsKey = "Obsidian.Tests.ProbeRelay.Calls";
 
     private BlockType? type;
@@ -1133,6 +1145,9 @@ public sealed class ProbeRelay : IBlockBehavior
 
     public void NeighborChanged(NeighborChangedContext context)
     {
+        if (AppContext.GetData(NeighborHookKey) is Action<NeighborChangedContext> hook)
+            hook(context);
+
         Record($"neighbor {At(context.Position)} from {Short(context.SourceBlock)}");
 
         var power = context.Level.GetBestNeighborSignal(context.Position);

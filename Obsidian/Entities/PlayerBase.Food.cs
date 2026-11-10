@@ -2,6 +2,7 @@ using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData;
 using System.Text.Json;
 
 namespace Obsidian.Entities;
@@ -505,6 +506,12 @@ public partial class PlayerBase
         ApplyFoodEffects(item);
         this.Statistics.Increment(item.Holder.UnlocalizedName, type: "minecraft:used");
         await this.FireProgressAsync("consume_item", item: new ItemStack(item, item.Count));
+
+        // Vanilla's Consumable.onConsume: what's eaten is heard (drinks make a drink event, not modelled yet).
+        var drunk = item.Holder.Id is ItemIds.HoneyBottle or ItemIds.OminousBottle;
+        if (!drunk && this.Level is AbstractLevel level)
+            level.EmitGameEvent(MobGameEvent.Eat, this.Position, this);
+
         if (GameMode != GameMode.Creative)
         {
             Inventory.RemoveItem(eatingSlot, 1);

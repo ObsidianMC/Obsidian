@@ -114,6 +114,7 @@ public sealed class WorldBlockEntities : IDisposable
         using var useReader = new NetworkBuffer(useData.AsSpan(0, useData.Size).ToArray());
         var use = new UseItemOnPacket();
         use.Populate(useReader);
+        human.Level.TryAddPlayer(human);
         await use.HandleAsync(context.Server, human);
         Assert.Equal(hit.ClickedAt, AppContext.GetData(ProbePartsBehavior.UseKey));
 

@@ -184,6 +184,11 @@ public partial class BlocksGenerator
             if (type is null)
                 continue;
 
+            // A hook no block has an owner for means its class dump didn't reach the generator, and its getter
+            // would bind nothing.
+            if (!blocks.Any(block => block.OverrideClasses.ContainsKey(hook.Name)))
+                ctx.ReportDiagnostic(Diagnostic.Create(MissingOwnerDump, Location.None, hook.Name));
+
             blocksBuilder.Line()
                 .Line($"/// <summary>The behaviour supplied by the vanilla class that owns this block's {hook.Name} override, or null.</summary>")
                 .Line($"internal static {hook.Interface}? {hook.Method}(int registryId) => registryId switch")
@@ -212,13 +217,21 @@ public partial class BlocksGenerator
         new("tick", "TickBehaviors", "IScheduledTickBehavior", "GetTickBehavior"),
         new("updateShape", "ShapeUpdateBehaviors", "IShapeUpdateBehavior", "GetShapeUpdateBehavior"),
         new("entityInside", "EntityInsideBehaviors", "IEntityInsideBehavior", "GetEntityInsideBehavior"),
-        new("onPlace", "OnPlaceBehaviors", "IOnPlaceBehavior", "GetOnPlaceBehavior")
+        new("onPlace", "OnPlaceBehaviors", "IOnPlaceBehavior", "GetOnPlaceBehavior"),
+        new("useItemOn", "UseBehaviors", "IBlockUseBehavior", "GetUseItemOnBehavior"),
+        new("useWithoutItem", "UseBehaviors", "IBlockUseBehavior", "GetUseWithoutItemBehavior"),
+        new("attack", "AttackBehaviors", "IBlockAttackBehavior", "GetAttackBehavior")
     ];
 
     private static readonly DiagnosticDescriptor UnmatchedOwner = new("OBSGEN001",
         "Vanilla behavior owner has no Obsidian counterpart",
         "Vanilla {0} owner {1} has no member in Obsidian.WorldData.{2}; its blocks use the existing path",
         "Blocks", DiagnosticSeverity.Info, isEnabledByDefault: true);
+
+    private static readonly DiagnosticDescriptor MissingOwnerDump = new("OBSGEN002",
+        "Vanilla behavior owner dump is missing",
+        "No block has a vanilla {0} owner; its class dump is missing from the generator's additional files",
+        "Blocks", DiagnosticSeverity.Warning, isEnabledByDefault: true);
 
     private static string? OwnerMember(string? ownerClass)
     {

@@ -55,6 +55,7 @@ public sealed class VanillaMoreBlocks(ITestOutputHelper output)
         {
             var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "ObserverPlacer",
                 Location(probe.GetProperty("player")));
+            world.TryAddPlayer(player);
             player.GameMode = GameMode.Survival;
             player.Yaw = probe.GetProperty("yaw").GetSingle();
             player.Pitch = probe.GetProperty("pitch").GetSingle();
@@ -178,6 +179,7 @@ public sealed class VanillaMoreBlocks(ITestOutputHelper output)
             var item = ItemsRegistry.Get(probe.GetProperty("item").GetString()!);
             player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(item, 2));
             var side = Face(probe.GetProperty("face").GetString()!);
+            player.Level.TryAddPlayer(player);
             await BlockUpdates.UseOn(origin, side).HandleAsync(context.Server, player);
             await world.BlockNotifications.DrainAsync();
             Assert.Equal(probe.GetProperty("note").GetInt32(),

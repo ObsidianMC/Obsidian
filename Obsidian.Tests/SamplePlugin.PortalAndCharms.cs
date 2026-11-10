@@ -79,6 +79,7 @@ public sealed partial class SamplePlugin
 
         player.GameMode = GameMode.Survival;
         player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.AmethystShard, 2));
+        player.Level.TryAddPlayer(player);
         await BlockUpdates.UseOn(floor, BlockFace.Up).HandleAsync(context.Server, player);
 
         Assert.Equal(1, player.GetHeldItem()?.Count);

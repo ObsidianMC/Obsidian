@@ -6,7 +6,7 @@ using System.Diagnostics;
 //        Obsidian.AssetGenerator capture-worldgen <minecraft version> <cache directory> <scratch directory>
 //            <fixture directory> [--sections <patterns>] [--cases <patterns>] [--datapacks <directory>]
 //        Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory> <scratch directory>
-//            <test assets directory> [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+placement]
+//            <test assets directory> [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+placement+block_use]
 //            [case names]
 //
 // Downloads the vanilla server jar of the version, runs its data generators and the Java dumper against it, and writes
@@ -70,7 +70,7 @@ if (args.Length != 4)
     Console.Error.WriteLine("       Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory>");
     Console.Error.WriteLine("           <scratch directory> <test assets directory>");
     Console.Error.WriteLine("           [redstone+fluids+daylight+sulfur+more_blocks+" +
-        "structure_pieces+heightmaps+placement] [case names]");
+        "structure_pieces+heightmaps+placement+block_use] [case names]");
     return 1;
 }
 

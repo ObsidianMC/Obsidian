@@ -919,6 +919,35 @@ public final class VanillaDumper {
             BLOCK_POS,
             BLOCK_STATE,
             "boolean");
+
+        // The three ways a player uses a block: with the held item, with an empty hand, and by hitting it.
+        var player = "net.minecraft.world.entity.player.Player";
+        var hit = "net.minecraft.world.phys.BlockHitResult";
+        dumpBlockOverrideClasses(
+            "block_use_item_on_classes.json",
+            "useItemOn",
+            "net.minecraft.world.item.ItemStack",
+            BLOCK_STATE,
+            "net.minecraft.world.level.Level",
+            BLOCK_POS,
+            player,
+            "net.minecraft.world.InteractionHand",
+            hit);
+        dumpBlockOverrideClasses(
+            "block_use_without_item_classes.json",
+            "useWithoutItem",
+            BLOCK_STATE,
+            "net.minecraft.world.level.Level",
+            BLOCK_POS,
+            player,
+            hit);
+        dumpBlockOverrideClasses(
+            "block_attack_classes.json",
+            "attack",
+            BLOCK_STATE,
+            "net.minecraft.world.level.Level",
+            BLOCK_POS,
+            player);
     }
 
     /**

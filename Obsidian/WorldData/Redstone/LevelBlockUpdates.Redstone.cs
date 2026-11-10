@@ -70,7 +70,12 @@ internal sealed partial class LevelBlockUpdates
         using var host = PluginCall.EnterHost();
 
         lock (fluids.TickLock)
-            this.UpdateComparatorsAround(position, this.GetBlock(position));
+        {
+            if (level.ActiveBlockUse is BlockUseEffects effects)
+                effects.After(() => this.UpdateAnalogOutput(position));
+            else
+                this.UpdateComparatorsAround(position, this.GetBlock(position));
+        }
     }
 
     /// <summary>
@@ -214,7 +219,7 @@ internal sealed partial class LevelBlockUpdates
     /// Changes a block from a component, with vanilla's side effects as <paramref name="flags"/> ask.
     /// </summary>
     internal bool Set(Vector position, IBlock state, BlockUpdateFlags flags) =>
-        updates.SetBlockOutsideFluids(position, state, flags);
+        this.SetBlock(position, state, flags);
 
     /// <summary>
     /// Vanilla <c>Level.neighborChanged</c>: the block at <paramref name="position"/> alone hears of a change at
@@ -266,6 +271,12 @@ internal sealed partial class LevelBlockUpdates
         float pitch = 1,
         IPlayer? except = null)
     {
+        if (level.ActiveBlockUse is BlockUseEffects effects)
+        {
+            effects.After(() => this.PlaySound(position, sound, volume, pitch, except));
+            return;
+        }
+
         int[] excluded = except is null ? [] : [except.EntityId];
         var packet = new SoundPacket
         {

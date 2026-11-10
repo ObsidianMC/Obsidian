@@ -653,6 +653,7 @@ public partial class MainEventHandler
             BeaconContainer => TagsRegistry.Item.BeaconPaymentItems.Entries.Contains(item.Holder.Id),
             CrafterContainer crafter => !crafter.IsSlotDisabled(slot),
             LecternContainer => false,
+            Container { Type: InventoryType.ShulkerBox } => ItemOwners.FitsInContainerItems(item),
             MenuContainer menu => menu.MayPlace(slot, item),
             SmeltingContainer furnace when IsFurnace(furnace) => slot switch
             {

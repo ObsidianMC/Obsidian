@@ -15,8 +15,8 @@ public abstract partial class AbstractLevel
         if (remaining <= 0)
             return;
         playingJukeboxes[point] = remaining;
+        // Like vanilla's JukeboxSongPlayer, the song's game event comes from its tick, not as it starts.
         PacketBroadcaster.QueuePacketToLevelInRange(this, (VectorD)point, new LevelEventPacket(1010, point, song));
-        EmitGameEvent(MobGameEvent.JukeboxPlay, (VectorD)point + new VectorD(0.5, 0.5, 0.5));
     }
 
     internal void StopJukebox(Vector point)

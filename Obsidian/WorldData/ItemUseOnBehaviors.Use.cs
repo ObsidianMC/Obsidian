@@ -35,7 +35,7 @@ internal static partial class ItemUseOnBehaviors
         Vector position,
         BlockFace face)
     {
-        var identifier = Component(stack, DataComponentType.BlockTransformer, "block_transformer");
+        var identifier = Transformer(stack);
         if (identifier is null || HasBlockingIntent(player, slot))
             return false;
 

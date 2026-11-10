@@ -10,7 +10,7 @@ public abstract partial class AbstractLevel
     // BedBlock and RespawnAnchorBlock).
     private const float BadRespawnPointPower = 5;
 
-    private const int MaxAnchorCharges = 4;
+    internal const int MaxAnchorCharges = 4;
 
     // How many players were asleep at the last tick, to tell players when it changes (vanilla's SleepStatus).
     private int previousSleepers;

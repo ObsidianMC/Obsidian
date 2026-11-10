@@ -46,17 +46,16 @@ hand-written tests or none. And a few vanilla details below come from memory rat
 
 Four defects found on the way are worse than a missing feature, because the block looks like it works.
 
-1. **Ender chests lose items.** Opening one creates a new empty container instead of the player's saved
-   `EnderInventory` (`Obsidian/Events/MainEventHandler.cs:235`). Whatever goes in is gone when the window closes.
+1. **Fixed: ender chests lost items.** Opening one used to create a new empty container instead of the player's
+   saved `EnderInventory`. Ender chests now open that saved inventory and retain its items across windows.
 2. **Fixed: fire from fireballs, explosions and end crystals never spread or burned out.** Fire's first tick was
    scheduled by hand where a player lit it, where it spread and where lava lit it, and by nothing else. Fire now
    has vanilla's on-place behaviour (`OnPlaceBehaviors.FireBlock`), which schedules the tick for every placement
-   and draws its delay once from the level's random; the hand-written scheduling in `FireBlockBehavior` and
-   `AbstractLevel.Growth.cs` is gone. `UseItemOnPacket` still schedules once more after placing, which does nothing
-   (the tick is already scheduled) but draws from `Random.Shared`; that line can go. The `fire_ticks.json` capture
-   checks it.
-3. **Dispensers and droppers open as a 9×1 row** instead of 3×3 (`OpenScreenPacket.cs:27`), and shulker boxes open
-   with the generic chest menu, which lets players put shulker boxes inside them.
+   and draws its delay once from the level's random. The hand-written scheduling in `FireBlockBehavior`,
+   `AbstractLevel.Growth.cs` and `UseItemOnPacket` is gone. Hand ignition also leaves soul fire without a scheduled
+   tick. The `fire_ticks.json` and `block_use.json` captures check fire and block-use behavior.
+3. **Fixed: dispensers and droppers opened as a 9×1 row, and shulker boxes used the generic chest menu.**
+   Dispensers and droppers now use their 3×3 menu; shulker boxes use their own menu and refuse nested shulker boxes.
 4. **An observer facing a container pulsed forever.** Fixed: the block entity tick sent a neighbour update around
    every container every tick, and observers reacted to neighbour updates from the block they face. Containers now
    tell only comparators when their items change or a plugin consumes `SetChanged()` (performance item 1), and
@@ -67,7 +66,8 @@ Two more from the first audit were fixed by #695 before this plan started: unwax
 now open by hand, and nether wart only plants on blocks that support it.
 
 Also wrong, but less visible: turtle eggs hatch in a hard-coded window (15600 to 16560) where 26.3 reads
-`gameplay/turtle_egg_hatch_chance` from the timeline (21062 to 21905), and barrels never set their `open` state.
+`gameplay/turtle_egg_hatch_chance` from the timeline (21062 to 21905). **Fixed: barrels never set their `open`
+state.** It now follows their viewers.
 
 ## How blocks get their behaviour today
 
@@ -157,6 +157,8 @@ The foundation for sections 1 to 5 and 9.
    branches check today), spectator and adventure rules, the sneak bypass (`BypassesBlockUse`, which the door, music
    and menu branches replace with a blanket sneak check), the block's use, the item's use on the block, placement,
    the acknowledgement.
+   Adventure mode still runs block interactions and plugin item callbacks. Vanilla item uses and item placement
+   are refused until Obsidian evaluates `can_place_on`, including where that predicate would permit them.
 3. **One completion step** for what every interaction owes when it succeeds, driven by the result and by the
    behaviour: the `minecraft:used` statistic, custom statistics such as `interact_with_furnace` and `open_chest`,
    the `item_used_on_block` trigger, the game event, and the swing. This closes the "no statistic, no game event"
@@ -387,10 +389,10 @@ adds.
 
 | Line | Status | What's left |
 |---|---|---|
-| Wooden and copper doors and trapdoors, fence gates: open and close | Works | Feedback; sneaking with empty hands is refused; copper has no capture |
-| Levers | Works | Feedback |
-| Buttons | Works | Feedback; no capture of press and release |
-| Note blocks | Works | Custom player-head sounds; refused in adventure mode |
+| Wooden and copper doors and trapdoors, fence gates: open and close | Works | Captured (`block_use`) |
+| Levers | Works | Captured |
+| Buttons | Works | Press captured; the release isn't |
+| Note blocks | Works | Custom player-head sounds |
 | Repeaters, comparators, daylight detectors: toggle by hand | Works | Daylight detector's adventure rule unconfirmed |
 | Redstone ore lights up | Missing | Use and step-on; the random tick that turns lit ore off works (`ticking_blocks.json`) |
 | Bells ring | Missing | No activation at all; the block event queue already carries bell events |
@@ -401,14 +403,14 @@ adds.
 
 | Line | Status | What's left |
 |---|---|---|
-| Chests, double chests | Works | Obstruction is section 9's line; lock enforcement; feedback |
+| Chests, double chests | Works | Obstruction is section 9's line; lock enforcement |
 | Trapped chests | Partial | No redstone signal from viewers |
-| Ender chests | Partial | **Not the player's inventory: items are lost** (`Events/MainEventHandler.cs:235`); no sound |
-| Barrels | Partial | Never sets `open` |
-| Shulker boxes | Partial | Generic chest menu, so shulkers nest; no lid room check |
-| Hoppers | Works | Feedback |
-| Dispensers, droppers | Partial | 9×1 menu instead of 3×3 (`Net/Packets/Play/Clientbound/OpenScreenPacket.cs:27`) |
-| Furnaces, blast furnaces, smokers, brewing stands | Works | Feedback |
+| Ender chests | Works | Captured |
+| Barrels | Works | Captured |
+| Shulker boxes | Partial | No lid room check |
+| Hoppers | Works | |
+| Dispensers, droppers | Works | Captured |
+| Furnaces, blast furnaces, smokers, brewing stands | Works | |
 | Chiseled bookshelves | Missing | No use handler; saved books only drop on break |
 | Decorated pots | Partial | Break and save work; no insertion, wobble, hopper access or comparator |
 
@@ -418,13 +420,13 @@ adds.
 |---|---|---|
 | Crafting tables | Works | |
 | Enchanting tables | Works | No sound; offers not captured |
-| Anvils (all three), grindstones, stonecutters | Works | Feedback; results not captured |
+| Anvils (all three), grindstones, stonecutters | Works | Results not captured |
 | Smithing tables | Works | Trim material from a fixed list, not `provides_trim_material` |
 | Looms | Works | Built-in patterns only |
 | Cartography tables | Works | Capacity check stricter than vanilla |
-| Lecterns: books and pages | Works | Feedback |
+| Lecterns: books and pages | Works | |
 | Beacons | Works | No `construct_beacon`; pyramid measured at once |
-| Jukeboxes | Works | Comparator reads 0; refused in adventure mode |
+| Jukeboxes | Works | Comparator reads 0 |
 | End portal frames | Works | Portal-opening sound sent locally, not globally |
 | Respawn anchors: charge, set respawn | Works | Explodes next to water, unlike vanilla; no set-spawn sound |
 | Lodestones | Missing | The tracker component exists; nothing binds a compass |
@@ -597,5 +599,5 @@ To confirm by capture or by running a server before the work that depends on it:
   shrieker's darkness and cooldown rules.
 - Whether survival players may change a spawner with a spawn egg in 26.3, and whether creative mode consumes eyes of
   ender.
-- How 26.3 routes honeycomb waxing, and what the issue means by "vines trim" (stopping a growing vine head, or
-  shearing wall vines).
+- What the issue means by "vines trim" (stopping a growing vine head, or shearing wall vines). Honeycomb waxing is
+  settled: `HoneycombItem.useOn` (batch E).
