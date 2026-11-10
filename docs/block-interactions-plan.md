@@ -535,8 +535,8 @@ adds.
 | Fire | Works | Captured (`fire_ticks.json`). Fire lights a portal later in the tick than vanilla's; soul fire placed off a soul fire base isn't put out on placement (`BaseFireBlock.onPlace` is unbound); fire a shape update destroys goes later in the tick |
 | Lava, water | Works | Flow is captured; lava's ignition isn't |
 | Farmland: hydrate | Works | |
-| Turtle eggs: hatch | Partial | Wrong time window; `Random.Shared`; sand and red sand only |
-| Frogspawn | Partial | Only frogspawn a frog laid hatches |
+| Turtle eggs: hatch | Works | |
+| Frogspawn | Works | Frogspawn placed by `/place` or a live feature never hatches (no on-place) |
 | Sculk catalysts, pointed dripstone, amethyst buds | Partial | Pointed dripstone and amethyst buds work (`ticking_blocks.json`); mud-to-clay and path-to-dirt do not lift entities; sculk catalysts missing |
 | Trial spawners, vaults | Missing | |
 

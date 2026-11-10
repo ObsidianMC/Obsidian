@@ -89,7 +89,9 @@ internal static class WorldTimelines
         }
     }
 
-    private sealed record Track(string Modifier, Keyframe[] Keyframes)
+    // Constant is whether the track's ease is vanilla's EasingType.CONSTANT, which holds each keyframe's value until
+    // the next rather than blending towards it. Other eases are sampled linearly.
+    private sealed record Track(string Modifier, Keyframe[] Keyframes, bool Constant)
     {
         public static Track Read(JsonElement track)
         {
@@ -98,8 +100,11 @@ internal static class WorldTimelines
                 .EnumerateArray()
                 .Select(Keyframe.Read)
                 .ToArray();
+            var constant = track.TryGetProperty("ease", out var ease)
+                && ease.ValueKind == JsonValueKind.String
+                && ease.GetString() == "constant";
 
-            return new Track(modifier, keyframes);
+            return new Track(modifier, keyframes, constant);
         }
     }
 
@@ -180,7 +185,8 @@ internal static class WorldTimelines
             var frames = Frames(level, timeline, track);
             var from = frames.From.Number;
             var to = frames.To.Number;
-            var sampled = from + frames.Progress * (to - from);
+            var progress = track.Constant ? 0f : frames.Progress;
+            var sampled = from + progress * (to - from);
             value = track.Modifier switch
             {
                 "multiply" => value * sampled,

@@ -254,18 +254,13 @@ public sealed class Chunk : IChunk
     /// plugins' at (see AbstractLevel.RestoreKeptBlockEntities); -1 until it first did.
     /// </summary>
     internal int RestoredBlockEntityRevision { get; set; } = -1;
-    // Made when first used: few chunks hold eggs or frogspawn, and the level asks every chunk whether it does each tick.
+    // Made when first used: few chunks hold sniffer eggs, and the level asks every chunk whether it does each tick.
     private ConcurrentDictionary<Vector, int>? mobEggTicks;
-    private ConcurrentDictionary<Vector, int>? frogspawnTicks;
 
     internal ConcurrentDictionary<Vector, int> MobEggTicks => LazyInitializer.EnsureInitialized(ref this.mobEggTicks);
-    internal ConcurrentDictionary<Vector, int> FrogspawnTicks => LazyInitializer.EnsureInitialized(ref this.frogspawnTicks);
 
     /// <summary>Whether <see cref="MobEggTicks"/> holds any, read without locking (see <see cref="HasAny"/>).</summary>
     internal bool HasMobEggTicks => Volatile.Read(ref this.mobEggTicks) is { } ticks && HasAny(ticks);
-
-    /// <summary>Whether <see cref="FrogspawnTicks"/> holds any, read without locking (see <see cref="HasAny"/>).</summary>
-    internal bool HasFrogspawnTicks => Volatile.Read(ref this.frogspawnTicks) is { } ticks && HasAny(ticks);
 
     /// <summary>Whether <see cref="BlockEntities"/> holds any, read without locking (see <see cref="HasAny"/>).</summary>
     internal bool HasBlockEntities => Volatile.Read(ref this.mayHoldBlockEntities) && HasAny(this.BlockEntities);

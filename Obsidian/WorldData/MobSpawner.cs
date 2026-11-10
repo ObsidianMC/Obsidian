@@ -201,8 +201,6 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                         else if (data.Id == "minecraft:beehive") TickHive(data);
                     }
                 }
-
-                TickFrogspawn(concrete);
             }
             TickThunder(chunk);
             foreach (var category in spawnCategories)
