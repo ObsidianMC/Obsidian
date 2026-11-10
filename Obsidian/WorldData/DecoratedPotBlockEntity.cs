@@ -69,14 +69,23 @@ internal sealed class DecoratedPotBlockEntity : VanillaContainerBlockEntity
     }
 
     /// <summary>
-    /// Puts one of <paramref name="stack"/> in, when it fits. Call holding the inventory's lock.
+    /// Puts one of <paramref name="stack"/> in, when it fits. Call holding the inventory's lock, once the pot's loot
+    /// was rolled.
     /// </summary>
     /// <param name="stack">The stack one goes in from.</param>
     /// <param name="count">How many the pot holds after.</param>
-    /// <returns>False when it doesn't fit.</returns>
+    /// <returns>
+    /// False when it doesn't fit, or when the pot waits for a loot table, which keeps it from saving its item.
+    /// </returns>
     public bool TryPut(ItemStack stack, out int count)
     {
         count = 0;
+        lock (this.LootLock)
+        {
+            if (this.LootTable is not null)
+                return false;
+        }
+
         if (stack.Count <= 0 || !this.Accepts(stack))
             return false;
 

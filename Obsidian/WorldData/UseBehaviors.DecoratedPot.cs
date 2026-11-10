@@ -21,6 +21,12 @@ internal static partial class UseBehaviors
             if (use.BlockEntity is not DecoratedPotBlockEntity pot)
                 return UseResult.Pass;
 
+            // Vanilla's getTheItem rolls a pot's pending loot, without a player, before anything reads what it holds,
+            // even for an empty hand. Rolling may load chunks, so it runs here, holding no lock, and may wait for the
+            // pot's inventory; the commit refuses if a loot table is pending again by then.
+            if (HasPendingLoot(pot))
+                use.Level.UnpackLootTable(pot, opener: null);
+
             if (!use.HasItem || !pot.Accepts(use.Item!))
                 return UseResult.TryWithEmptyHand;
 
@@ -57,6 +63,12 @@ internal static partial class UseBehaviors
             use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center, use.Player);
 
             return ValueTask.FromResult(UseResult.Success);
+        }
+
+        private static bool HasPendingLoot(DecoratedPotBlockEntity pot)
+        {
+            lock (pot.LootLock)
+                return pot.LootTable is not null;
         }
 
         private sealed class Plume : ParticleData

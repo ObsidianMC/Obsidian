@@ -203,6 +203,54 @@ public sealed class ItemHoldingBlocks
         }
     }
 
+    /// <summary>A deposit into a pot still waiting for its loot table: by a player's hand, or through item access.</summary>
+    private sealed record LootDeposit(string Name, Func<RealServerContext, ServerPlayer, ItemStack, Task<bool>> Deposit);
+
+    [Fact]
+    public async Task DepositsIntoAnUnopenedLootPotSurviveAReload()
+    {
+        await using var context = await StartAsync();
+        var world = context.World;
+        var player = Player(context, "User");
+        LootDeposit[] deposits =
+        [
+            new("hand", async (context, player, stack) =>
+            {
+                player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(stack, 2));
+                var use = Read(context, player);
+                var result = await Behavior(use).UseItemOnAsync(use);
+                return result.ConsumesAction() && player.GetHeldItem()?.Count == 1;
+            }),
+            new("hopper", (context, _, stack) =>
+            {
+                var access = context.World.GetItemAccess(target, BlockFace.Up)!;
+                var rest = access.Insert(0, new ItemStack(stack, 1));
+                return Task.FromResult(rest is null);
+            })
+        ];
+
+        foreach (var deposit in deposits)
+        {
+            // What the table rolls for this seed, from a twin pot elsewhere: the deposit is that item, so it fits.
+            var rolled = RollPotLoot(world, target + new Vector(2, 0, 0));
+            await PrepareAsync(world, player, exchanges[0] with { Setup = PlaceLootPot, Held = () => null });
+            var pot = Assert.IsType<DecoratedPotBlockEntity>(world.GetResidentBlockEntity(target));
+
+            Assert.True(await deposit.Deposit(context, player, rolled), deposit.Name);
+            Assert.Null(pot.LootTable);
+            var held = pot.Inventory.GetItem(0)!;
+            Assert.Equal(rolled.Count + 1, held.Count);
+
+            // The saved pot holds what the live one does: its loot and the deposit.
+            var saved = BlockEntityNbt.Save(pot)!;
+            var reloaded = Assert.IsType<DecoratedPotBlockEntity>(
+                BlockEntityNbt.Load(saved, "minecraft:decorated_pot", target));
+            Assert.Null(reloaded.LootTable);
+            Assert.Equal(held, reloaded.Inventory.GetItem(0));
+            Assert.Equal(held.Count, reloaded.Inventory.GetItem(0)!.Count);
+        }
+    }
+
     [Fact]
     public void JukeboxesFromOlderObsidianWorldsKeepPlaying()
     {
@@ -287,6 +335,33 @@ public sealed class ItemHoldingBlocks
     }
 
     private static ItemStack Stack(string id, int count) => new(ItemsRegistry.Get(id), count);
+
+    // A trial chamber corridor's pot, waiting for its loot table with a fixed seed.
+    private const string PotLoot = "minecraft:pots/trial_chambers/corridor";
+
+    private const long PotLootSeed = 5;
+
+    private static void PlaceLootPot(WorldData.World world)
+    {
+        Place(world, "minecraft:decorated_pot");
+        var pot = (ContainerBlockEntity)world.GetResidentBlockEntity(target)!;
+        pot.LootTable = PotLoot;
+        pot.LootTableSeed = PotLootSeed;
+    }
+
+    // What the loot table gives a pot at position, rolled there.
+    private static ItemStack RollPotLoot(WorldData.World world, Vector position)
+    {
+        world.BlockUpdates.SetBlock(position, VanillaSulfurBlocks.ParseState("minecraft:decorated_pot"), Quiet);
+        var twin = (ContainerBlockEntity)world.GetResidentBlockEntity(position)!;
+        twin.LootTable = PotLoot;
+        twin.LootTableSeed = PotLootSeed;
+        world.UnpackLootTable(twin, opener: null);
+
+        var rolled = twin.Inventory.GetItem(0)!;
+        world.BlockUpdates.SetBlock(position, BlocksRegistry.Air, Quiet);
+        return new ItemStack(rolled, rolled.Count);
+    }
 
     private static IBlockUseBehavior Behavior(BlockUse use) =>
         BlocksRegistry.GetUseItemOnBehavior(use.Block.RegistryId)!;
