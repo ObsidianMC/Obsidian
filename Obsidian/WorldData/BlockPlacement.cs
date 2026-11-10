@@ -14,7 +14,8 @@ internal sealed class BlockPlacement(IPlayer player, int slot, ItemStack item)
     /// </summary>
     internal Action? Placed { get; init; }
 
-    internal IDisposable LockHand() => player.Inventory.Lock();
+    // Inventory hooks can await world writes while owning this inventory. Never wait for it under tick.
+    internal bool TryLockHand(out IDisposable? held) => player.Inventory.TryLock(out held);
 
     internal Prepared? Prepare(IBlock block, Vector position, ILogger logger)
     {

@@ -23,16 +23,20 @@ public abstract partial class AbstractLevel
     internal TimeProvider TimeProvider { get; set; } = TimeProvider.System;
 
     /// <summary>
-    /// Where random ticks pick their next block from (vanilla's <c>randValue</c>), which moves on once for each block
-    /// they pick.
+    /// Where random ticks and the precipitation pass pick their next block from (vanilla's <c>randValue</c>), which
+    /// moves on once for each block they pick. Tests set it to replay vanilla's picks.
     /// </summary>
-    internal int RandomTickValue => this.randomTickValue;
+    internal int RandomTickValue
+    {
+        get => this.randomTickValue;
+        set => this.randomTickValue = value;
+    }
 
     /// <summary>
-    /// Random-ticks the chunks that tick, like vanilla's <c>ServerLevel.tickChunk</c>: the game rule's number of
-    /// blocks in each section that holds a block or fluid that random-ticks, of which the plants that grow on random
-    /// ticks grow (see <see cref="Growth"/>), plugin blocks that random-tick run their hook and lava draws its fire's
-    /// chances.
+    /// Random-ticks the chunks that tick, like vanilla's <c>ServerLevel.tickChunk</c>: the precipitation pass's
+    /// chances (see <see cref="TickPrecipitation"/>), then the game rule's number of blocks in each section that holds
+    /// a block or fluid that random-ticks, of which the plants that grow on random ticks grow (see
+    /// <see cref="Growth"/>), plugin blocks that random-tick run their hook and lava draws its fire's chances.
     /// </summary>
     /// <remarks>
     /// Each chunk ticks under the level's <see cref="Fluids.LevelFluids.TickLock"/>, which players' block writes take
@@ -111,11 +115,20 @@ public abstract partial class AbstractLevel
         }
     }
 
-    // Vanilla's tickChunk for blocks: each section that holds something that random-ticks gets the speed's blocks,
-    // from the position sequence, and both the block and the fluid of the state read there tick. Sections without
-    // one draw no position, as in vanilla, which keeps the sequence vanilla's.
+    // Vanilla's tickChunk for blocks: first the precipitation pass, then each section that holds something that
+    // random-ticks gets the speed's blocks, from the position sequence, and both the block and the fluid of the state
+    // read there tick. Sections without one draw no position, as in vanilla, which keeps the sequence vanilla's.
     private void TickChunkBlocks(Chunk chunk, int speed, List<VectorD> players)
     {
+        // Vanilla's tickChunk draws nextInt(48) from the level random once per random tick of speed, before any
+        // section, and runs the precipitation pass when it comes up 0. It has to match, draw for draw, because the
+        // random ticks after it share the random and the position sequence.
+        for (var draw = 0; draw < speed; draw++)
+        {
+            if (this.GrowthRandom.NextInt(48) == 0)
+                this.TickPrecipitation(chunk);
+        }
+
         var sections = chunk.Sections;
         for (var index = 0; index < sections.Length; index++)
         {
@@ -124,12 +137,7 @@ public abstract partial class AbstractLevel
 
             for (var tick = 0; tick < speed; tick++)
             {
-                // Vanilla's getBlockRandomPos: x, z and y from a linear congruential sequence.
-                this.randomTickValue = this.randomTickValue * 3 + 1013904223;
-                var bits = this.randomTickValue >> 2;
-                var x = bits & 15;
-                var y = bits >> 16 & 15;
-                var z = bits >> 8 & 15;
+                var (x, y, z) = this.NextRandomTickOffset();
 
                 // Vanilla only ticks a state whose isRandomlyTicking holds (a grown crop or non-decaying leaves
                 // don't), and most picks land on stone, air or water, so the state is checked before its block and

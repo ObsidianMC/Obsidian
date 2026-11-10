@@ -408,6 +408,14 @@ internal static class LevelEnvironment
         && level.LevelData.Raining
         && level.LevelData.Thundering;
 
+    /// <summary>
+    /// Whether it's raining in the level as vanilla's <c>Level.isRaining</c> decides: where weather can happen, while
+    /// it rains.
+    /// </summary>
+    public static bool IsRaining(this ILevel level) =>
+        level.CanHaveWeather()
+        && level.LevelData.Raining;
+
     // Vanilla's Level.canHaveWeather: a sky without a ceiling, outside the end.
     private static bool CanHaveWeather(this ILevel level) =>
         level.DimensionType.Element.HasSkylight

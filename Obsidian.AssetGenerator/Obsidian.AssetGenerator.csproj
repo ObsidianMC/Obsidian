@@ -32,10 +32,12 @@
 		<VanillaDumperInput Include="Java\**\*.java;Java\**\*.json"
 		                    Exclude="Java\SulfurFixtures.java;Java\MoreBlockFixtures.java;Java\HeightmapFixtures.java;
 		                             Java\PlacementFixtures.java;Java\CopperWeatheringFixtures.java;
-		                             Java\FireFixtures.java;Java\BlockUseFixtures.java" />
+		                             Java\FireFixtures.java;Java\BlockUseFixtures.java;
+		                             Java\MeltingWeatherFixtures.java" />
 		<VanillaDumperInput Remove="Java\TickingBlockFixtures.java" />
 		<VanillaDumperInput Remove="Java\HatchingFixtures.java" />
 		<VanillaDumperInput Remove="Java\EyeblossomGhastPortalFixtures.java" />
+		<VanillaDumperInput Remove="Java\GrowingPlantTickFixtures.java" />
 
 		<None Update="@(VanillaDumperInput)" CopyToOutputDirectory="PreserveNewest" />
 		<!-- Gameplay probes run only through their requested CaptureFixtures entry. -->
@@ -49,6 +51,8 @@
 		<None Update="Java\BlockUseFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\HatchingFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\EyeblossomGhastPortalFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\GrowingPlantTickFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\MeltingWeatherFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 
 		<!-- On-request captures (CaptureVanillaWorldgen); not asset inputs, so editing them doesn't regenerate the assets. -->
 		<None Update="Captures\**\*.java" CopyToOutputDirectory="PreserveNewest" />

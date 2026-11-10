@@ -761,7 +761,13 @@ public abstract partial class AbstractLevel : ILevel
             if (!this.Fluids.IsResident(c) || c is Chunk { EntitiesUnloaded: true })
                 return false;
 
-            using var handLock = placement?.LockHand();
+            // One attempt: a busy hand refuses placement, and the packet path repairs the client's prediction.
+            // Waiting or retrying under tick would deadlock an inventory hook that writes to this level.
+            IDisposable? held = null;
+            if (placement is not null && !placement.TryLockHand(out held))
+                return false;
+
+            using var handLock = held;
             var old = c.GetBlock(x, y, z);
             if (canReplace is not null && !canReplace(old))
                 return false;
