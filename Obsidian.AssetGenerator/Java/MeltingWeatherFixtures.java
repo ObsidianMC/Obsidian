@@ -37,8 +37,8 @@ import net.minecraft.world.ticks.ScheduledTick;
 
 /**
  * Records ice, frosted ice and snow layers melting, and the precipitation pass of the chunk tick (snow building up,
- * water freezing, cauldrons filling), on a headless dedicated server of its own in a normal overworld (sea level 63,
- * which the snow line is measured from) whose game is frozen.
+ * water freezing, cauldrons filling), on a frozen headless dedicated server. The driver groups normal (sea level 63)
+ * and flat (sea level -63) overworld cases into separate server runs.
  *
  * <p>Every case uses the three by three chunks around chunk (0, 0), which are cleared first. Biomes are filled over
  * those chunks with the case's biome, and its blocks are set without updates. The probe then waits for the light
@@ -56,7 +56,9 @@ import net.minecraft.world.ticks.ScheduledTick;
  *
  * <p>Each case records the blocks that changed (absolute positions, full states), the block and fluid ticks scheduled
  * in the nine chunks with their delays, the level random's next {@code nextInt()} (which shows the draws made) and,
- * for precipitation, {@code randValue} afterwards.
+ * for precipitation, {@code randValue} afterwards. Optional biome borders record native full-resolution samples and
+ * their world seed. Optional unticked armor stands record exact positions after snow grows; their construction runs
+ * before the action's level random is seeded.
  */
 public final class MeltingWeatherFixtures {
     // Set without neighbor or shape updates, drops or onPlace, like the replay's setup.
@@ -133,7 +135,9 @@ public final class MeltingWeatherFixtures {
     }
 
     private static void prepare(ServerLevel level, JsonObject testCase) {
-        clear(level);
+        var entireHeight = level.dimension() == Level.NETHER
+            && testCase.get("kind").getAsString().equals("precipitation");
+        clear(level, entireHeight);
         fillBiome(level, testCase);
 
         var positions = written.get(level.dimension());
@@ -167,9 +171,9 @@ public final class MeltingWeatherFixtures {
     }
 
     // The first time a level is used, everything above the cases' floor goes; after that, what earlier cases wrote.
-    private static void clear(ServerLevel level) {
+    private static void clear(ServerLevel level, boolean entireHeight) {
         var positions = written.get(level.dimension());
-        if (positions == null) {
+        if (positions == null || entireHeight) {
             positions = new HashSet<>();
             written.put(level.dimension(), positions);
             loadArea(level);
@@ -179,6 +183,10 @@ public final class MeltingWeatherFixtures {
             if (level.getSeaLevel() == -63)
                 bottom = level.getMinY();
             var top = level.dimension() == Level.NETHER ? 120 : 260;
+            if (entireHeight) {
+                bottom = level.getMinY();
+                top = level.getMaxY() - 1;
+            }
             for (var x = MinBlock; x <= MaxBlock; x++) {
                 for (var z = MinBlock; z <= MaxBlock; z++) {
                     for (var y = bottom; y <= top; y++)
@@ -366,6 +374,19 @@ public final class MeltingWeatherFixtures {
         level.getRandom().setSeed(testCase.get("seed").getAsLong());
         setRandValue(level, testCase.get("randValue").getAsInt());
 
+        var actors = new ArrayList<net.minecraft.world.entity.decoration.ArmorStand>();
+        if (testCase.has("entities")) {
+            for (var element : testCase.getAsJsonArray("entities")) {
+                var pos = element.getAsJsonObject().getAsJsonArray("pos");
+                var actor = new net.minecraft.world.entity.decoration.ArmorStand(level,
+                    pos.get(0).getAsDouble(), pos.get(1).getAsDouble(), pos.get(2).getAsDouble());
+                level.addFreshEntity(actor);
+                actors.add(actor);
+            }
+        }
+
+        // Constructors may draw, so seed the action after every actor has been installed.
+        level.getRandom().setSeed(testCase.get("seed").getAsLong());
         var chunk = level.getChunk(0, 0);
         var speed = testCase.get("speed").getAsInt();
         var ticks = testCase.get("ticks").getAsInt();
@@ -374,6 +395,18 @@ public final class MeltingWeatherFixtures {
 
         testCase.addProperty("nextRandom", level.getRandom().nextInt());
         testCase.addProperty("randValueAfter", randValue(level));
+        if (testCase.has("entities")) {
+            var positions = new JsonArray();
+            for (var actor : actors) {
+                var pos = new JsonArray();
+                pos.add(actor.getX());
+                pos.add(actor.getY());
+                pos.add(actor.getZ());
+                positions.add(pos);
+                actor.discard();
+            }
+            testCase.add("entityPositions", positions);
+        }
         testCase.add("changes", changes(level, before));
         testCase.add("blockTicks", blockTicks(level));
         testCase.add("fluidTicks", fluidTicks(level));

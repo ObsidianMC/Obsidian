@@ -10,7 +10,8 @@ internal sealed partial class MobSpawner
 
     /// <summary>
     /// Natural mob spawns and precipitation request full-resolution biomes in 26.3. Probability during population
-    /// uses the raw quart biome instead. Read stored sections, including adjacent chunks, without recursively loading terrain.
+    /// uses the raw quart biome instead. Read stored sections, including adjacent chunks, without recursively
+    /// loading terrain.
     /// </summary>
     internal static BiomeCodec SpawnBiomeAt(long zoomSeed, Func<int, int, IChunk?> loadedChunk,
         IChunk fallback, int x, int y, int z)

@@ -1,5 +1,5 @@
 {
-  "_notes": "Vanilla ice, frosted ice and snow layers melting, and the chunk tick's precipitation pass, recorded by the asset generator's capture-scenarios (Java/MeltingWeatherFixtures.java, CaptureFixtures=melting_weather) on a headless dedicated server of its own in a normal overworld (sea level 63) whose game is frozen. Each case runs in the nine chunks around chunk (0, 0), cleared first, with the case's biome filled over them and its blocks set without updates; light is what vanilla's light engine computed for them, recorded as the replay's input. random_tick and tick run the target state's randomTick or scheduled tick with the level random seeded with the case's seed; place sets the case's place state at the target with every update. precipitation runs ServerLevel.tickChunk on chunk (0, 0) ticks times at speed, with the level random seeded and randValue set. A precipitation layer is one state over the nine chunks or a tile of palette symbols (row z modulo the rows, column x modulo the row's length, from absolute coordinates); its light is a hexadecimal digit per column of chunk (0, 0), z * 16 + x. Frosted ice cases keep every neighbour of a melting block with at least two frosted ice neighbours, so vanilla's neighborChanged melts nothing (Obsidian has no neighbour-changed hook for it yet). Outputs: changes (absolute positions that changed, full states with every property), the block and fluid ticks scheduled in the nine chunks with their delays, the level random's next nextInt(), the sky darkening, and for precipitation randValue afterwards.",
+  "_notes": "Vanilla ice, frosted ice and snow melting, precipitation, biome borders, flat snow lines and snow lifting entities, captured with Java/MeltingWeatherFixtures.java through CaptureFixtures=melting_weather and optional exact CaptureCases names. Original cases use a normal overworld (sea level 63); generator=flat selects a separate flat overworld (sea level -63). The frozen server clears nine chunks around (0,0), fills stored quart biomes and sets blocks without updates. Precipitation in the nether clears its entire build height, removing unrelated terrain and the ceiling. Vanilla-computed light is replay input. random_tick and tick run the target native routine with the seeded level random; place writes with all updates. precipitation runs ServerLevel.tickChunk on (0,0), ticks times at speed, with the level random seeded and randValue set. Layers cover nine chunks uniformly or with a repeating palette tile. biomeBorder chooses its other biome at or above a quart coordinate on x, y or z; biomeSeed and biomeSamples record the native full-resolution selection. entities installs unticked armor stands at the supplied double positions before seeding; entityPositions records their exact positions after the action. Outputs also include full changed states, scheduled block/fluid ticks and delays, nextRandom, skyDarken and randValueAfter. Flat terrain below the usual probe floor is cleared so unrelated grass cannot add random ticks. The original 39 cases retain their captured definitions and outputs unchanged.",
   "version": "26.3",
   "cases": [
     {
@@ -6139,10 +6139,10 @@
       "kind": "precipitation",
       "biome": "minecraft:plains",
       "biomeBorder": {"axis": "x", "quart": 0, "other": "minecraft:desert"},
-      "seed": 1,
-      "randValue": 0,
-      "speed": 3,
-      "ticks": 400,
+      "seed": 0,
+      "randValue": 1093687691,
+      "speed": 1,
+      "ticks": 1,
       "raining": true,
       "layers": [
         {"y": 64, "state": "minecraft:cauldron"}
@@ -6414,8 +6414,8 @@
         {"pos": [14, 65, 15], "biome": "minecraft:desert"},
         {"pos": [15, 65, 15], "biome": "minecraft:desert"}
       ],
-      "nextRandom": 504489741,
-      "randValueAfter": 1909195,
+      "nextRandom": 1033096058,
+      "randValueAfter": 0,
       "changes": [],
       "blockTicks": [],
       "fluidTicks": []
@@ -6425,10 +6425,10 @@
       "kind": "precipitation",
       "biome": "minecraft:plains",
       "biomeBorder": {"axis": "x", "quart": 4, "other": "minecraft:desert"},
-      "seed": 1,
-      "randValue": 0,
-      "speed": 3,
-      "ticks": 400,
+      "seed": 0,
+      "randValue": 1093687711,
+      "speed": 1,
+      "ticks": 1,
       "raining": true,
       "layers": [
         {"y": 64, "state": "minecraft:cauldron"}
@@ -6700,12 +6700,9 @@
         {"pos": [14, 65, 15], "biome": "minecraft:plains"},
         {"pos": [15, 65, 15], "biome": "minecraft:plains"}
       ],
-      "nextRandom": -1889957033,
-      "randValueAfter": 1019631808,
-      "changes": [
-        "3,64,5=minecraft:water_cauldron[level=1]",
-        "7,64,12=minecraft:water_cauldron[level=1]"
-      ],
+      "nextRandom": -723955400,
+      "randValueAfter": 60,
+      "changes": [],
       "blockTicks": [],
       "fluidTicks": []
     },
@@ -6714,10 +6711,10 @@
       "kind": "precipitation",
       "biome": "minecraft:plains",
       "biomeBorder": {"axis": "z", "quart": 0, "other": "minecraft:desert"},
-      "seed": 1,
-      "randValue": 0,
-      "speed": 3,
-      "ticks": 400,
+      "seed": 0,
+      "randValue": 1093687691,
+      "speed": 1,
+      "ticks": 1,
       "raining": true,
       "layers": [
         {"y": 63, "state": "minecraft:cauldron"}
@@ -6989,8 +6986,8 @@
         {"pos": [14, 64, 15], "biome": "minecraft:desert"},
         {"pos": [15, 64, 15], "biome": "minecraft:desert"}
       ],
-      "nextRandom": 504489741,
-      "randValueAfter": 1909195,
+      "nextRandom": 1033096058,
+      "randValueAfter": 0,
       "changes": [],
       "blockTicks": [],
       "fluidTicks": []
@@ -7000,10 +6997,10 @@
       "kind": "precipitation",
       "biome": "minecraft:plains",
       "biomeBorder": {"axis": "z", "quart": 4, "other": "minecraft:desert"},
-      "seed": 1,
-      "randValue": 0,
-      "speed": 3,
-      "ticks": 400,
+      "seed": 0,
+      "randValue": 1093692483,
+      "speed": 1,
+      "ticks": 1,
       "raining": true,
       "layers": [
         {"y": 63, "state": "minecraft:cauldron"}
@@ -7275,12 +7272,9 @@
         {"pos": [14, 64, 15], "biome": "minecraft:plains"},
         {"pos": [15, 64, 15], "biome": "minecraft:plains"}
       ],
-      "nextRandom": -1683322850,
-      "randValueAfter": 1019631808,
-      "changes": [
-        "3,63,5=minecraft:water_cauldron[level=1]",
-        "7,63,12=minecraft:water_cauldron[level=1]"
-      ],
+      "nextRandom": -723955400,
+      "randValueAfter": 14376,
+      "changes": [],
       "blockTicks": [],
       "fluidTicks": []
     },
@@ -7367,6 +7361,222 @@
       "changes": [],
       "blockTicks": [],
       "fluidTicks": []
+    },
+    {
+      "name": "review_snow_lifts_entities_1_limit_8",
+      "kind": "precipitation",
+      "biome": "minecraft:snowy_plains",
+      "seed": 0,
+      "randValue": 0,
+      "speed": 1,
+      "ticks": 1,
+      "raining": true,
+      "maxSnowAccumulationHeight": 8,
+      "layers": [
+        {"y": 63, "state": "minecraft:stone"},
+        {"y": 64, "state": "minecraft:snow[layers=1]"}
+      ],
+      "entities": [
+        {"pos": [7.5, 64.0, 12.5]},
+        {"pos": [7.5, 65, 12.5]},
+        {"pos": [8.5, 64.0, 12.5]},
+        {"pos": [8.125, 64.0, 12.5]},
+        {"pos": [7.5, 62.5, 12.5]}
+      ],
+      "skyDarken": 3,
+      "light": [
+        {"y": 62, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"},
+        {"y": 63, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"},
+        {"y": 64, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+        {"y": 65, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+        {"y": 66, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+        {"y": 67, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}
+      ],
+      "nextRandom": -723955400,
+      "randValueAfter": -239350404,
+      "entityPositions": [
+        [7.5, 64.125, 12.5],
+        [7.5, 65.0, 12.5],
+        [8.5, 64.0, 12.5],
+        [8.125, 64.125, 12.5],
+        [7.5, 62.5, 12.5]
+      ],
+      "changes": [
+        "7,64,12=minecraft:snow[layers=2]"
+      ],
+      "blockTicks": [],
+      "fluidTicks": []
+    },
+    {
+      "name": "review_snow_lifts_entities_2_limit_8",
+      "kind": "precipitation",
+      "biome": "minecraft:snowy_plains",
+      "seed": 0,
+      "randValue": 0,
+      "speed": 1,
+      "ticks": 1,
+      "raining": true,
+      "maxSnowAccumulationHeight": 8,
+      "layers": [
+        {"y": 63, "state": "minecraft:stone"},
+        {"y": 64, "state": "minecraft:snow[layers=2]"}
+      ],
+      "entities": [
+        {"pos": [7.5, 64.125, 12.5]},
+        {"pos": [7.5, 65, 12.5]},
+        {"pos": [8.5, 64.125, 12.5]},
+        {"pos": [8.125, 64.125, 12.5]},
+        {"pos": [7.5, 62.5, 12.5]}
+      ],
+      "skyDarken": 3,
+      "light": [
+        {"y": 62, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"},
+        {"y": 63, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"},
+        {"y": 64, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+        {"y": 65, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+        {"y": 66, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+        {"y": 67, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}
+      ],
+      "nextRandom": -723955400,
+      "randValueAfter": -239350404,
+      "entityPositions": [
+        [7.5, 64.25, 12.5],
+        [7.5, 65.0, 12.5],
+        [8.5, 64.125, 12.5],
+        [8.125, 64.25, 12.5],
+        [7.5, 62.5, 12.5]
+      ],
+      "changes": [
+        "7,64,12=minecraft:snow[layers=3]"
+      ],
+      "blockTicks": [],
+      "fluidTicks": []
+    },
+    {
+      "name": "review_snow_lifts_entities_7_limit_8",
+      "kind": "precipitation",
+      "biome": "minecraft:snowy_plains",
+      "seed": 0,
+      "randValue": 0,
+      "speed": 1,
+      "ticks": 1,
+      "raining": true,
+      "maxSnowAccumulationHeight": 8,
+      "layers": [
+        {"y": 63, "state": "minecraft:stone"},
+        {"y": 64, "state": "minecraft:snow[layers=7]"}
+      ],
+      "entities": [
+        {"pos": [7.5, 64.75, 12.5]},
+        {"pos": [7.5, 65, 12.5]},
+        {"pos": [8.5, 64.75, 12.5]},
+        {"pos": [8.125, 64.75, 12.5]},
+        {"pos": [7.5, 62.5, 12.5]}
+      ],
+      "skyDarken": 3,
+      "light": [
+        {"y": 62, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"},
+        {"y": 63, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"},
+        {"y": 64, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+        {"y": 65, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+        {"y": 66, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+        {"y": 67, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}
+      ],
+      "nextRandom": -723955400,
+      "randValueAfter": -239350404,
+      "entityPositions": [
+        [7.5, 64.875, 12.5],
+        [7.5, 65.0, 12.5],
+        [8.5, 64.75, 12.5],
+        [8.125, 64.875, 12.5],
+        [7.5, 62.5, 12.5]
+      ],
+      "changes": [
+        "7,64,12=minecraft:snow[layers=8]"
+      ],
+      "blockTicks": [],
+      "fluidTicks": []
+    },
+    {
+      "name": "review_snow_lifts_entities_2_limit_2",
+      "kind": "precipitation",
+      "biome": "minecraft:snowy_plains",
+      "seed": 0,
+      "randValue": 0,
+      "speed": 1,
+      "ticks": 1,
+      "raining": true,
+      "maxSnowAccumulationHeight": 2,
+      "layers": [
+        {"y": 63, "state": "minecraft:stone"},
+        {"y": 64, "state": "minecraft:snow[layers=2]"}
+      ],
+      "entities": [
+        {"pos": [7.5, 64.125, 12.5]},
+        {"pos": [7.5, 65, 12.5]},
+        {"pos": [8.5, 64.125, 12.5]},
+        {"pos": [8.125, 64.125, 12.5]},
+        {"pos": [7.5, 62.5, 12.5]}
+      ],
+      "skyDarken": 3,
+      "light": [
+        {"y": 62, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"},
+        {"y": 63, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"},
+        {"y": 64, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+        {"y": 65, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+        {"y": 66, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+        {"y": 67, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}
+      ],
+      "nextRandom": -723955400,
+      "randValueAfter": -239350404,
+      "entityPositions": [
+        [7.5, 64.125, 12.5],
+        [7.5, 65.0, 12.5],
+        [8.5, 64.125, 12.5],
+        [8.125, 64.125, 12.5],
+        [7.5, 62.5, 12.5]
+      ],
+      "changes": [],
+      "blockTicks": [],
+      "fluidTicks": []
+    },
+    {
+      "name": "review_nether_precipitation_ticks_its_level",
+      "kind": "precipitation",
+      "dimension": "nether",
+      "biome": "minecraft:snowy_plains",
+      "seed": 0,
+      "randValue": 0,
+      "speed": 1,
+      "ticks": 1,
+      "raining": false,
+      "layers": [
+        {
+          "y": 63,
+          "tile": [
+            "sw"
+          ],
+          "palette": {"w": "minecraft:water", "s": "minecraft:stone"}
+        }
+      ],
+      "skyDarken": 11,
+      "light": [
+        {"y": 62, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"},
+        {"y": 63, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"},
+        {"y": 64, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"},
+        {"y": 65, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"},
+        {"y": 66, "block": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "sky": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"}
+      ],
+      "nextRandom": -723955400,
+      "randValueAfter": -239350404,
+      "changes": [
+        "7,63,12=minecraft:ice"
+      ],
+      "blockTicks": [],
+      "fluidTicks": [
+        "7,63,11=minecraft:water@5",
+        "7,63,13=minecraft:water@5"
+      ]
     }
   ]
 }

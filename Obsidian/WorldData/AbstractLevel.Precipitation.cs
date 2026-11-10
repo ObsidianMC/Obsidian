@@ -53,7 +53,8 @@ public abstract partial class AbstractLevel
     /// </summary>
     /// <remarks>
     /// Biomes use the same seed-dependent lookup as natural spawning, including neighbouring chunks. The level's
-    /// writes notify neighbours, so water beside new ice schedules its flow. Growing snow doesn't push entities up yet.
+    /// writes notify neighbours, so water beside new ice schedules its flow. Growing snow lifts intersecting entities
+    /// before storing the thicker layer.
     /// </remarks>
     private void TickPrecipitation(Chunk chunk)
     {
@@ -77,7 +78,7 @@ public abstract partial class AbstractLevel
 
         var maxSnow = this.LevelData.GetIntegerRule("max_snow_accumulation_height", 1);
         if (maxSnow > 0 && this.ShouldSnow(chunk, biome, top))
-            SettleSnow(blocks, top, maxSnow);
+            this.SettleSnow(blocks, top, maxSnow);
 
         var precipitation = this.PrecipitationAt(biome, below);
         if (precipitation != Precipitation.None)
@@ -125,7 +126,7 @@ public abstract partial class AbstractLevel
     }
 
     // A first layer of snow, or one more on the snow there, up to the game rule's height and a full block.
-    private static void SettleSnow(LevelBlockUpdates blocks, Vector position, int maxSnow)
+    private void SettleSnow(LevelBlockUpdates blocks, Vector position, int maxSnow)
     {
         var state = blocks.GetBlock(position);
         if (!state.Is(BlockIds.Snow))
@@ -136,7 +137,11 @@ public abstract partial class AbstractLevel
 
         var layers = int.Parse(state.GetProperty("layers")!);
         if (layers < Math.Min(maxSnow, 8))
+        {
+            // Snow's collision top is one layer below its visual top, including the empty first layer.
+            this.LiftEntitiesForSurfaceRise(position, (layers - 1) / 8.0, layers / 8.0);
             blocks.SetBlock(position, state.WithProperty("layers", layers + 1));
+        }
     }
 
     // Vanilla's Biome.getPrecipitationAt: none in a biome without it, snow where it's cold, rain elsewhere.

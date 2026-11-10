@@ -106,7 +106,8 @@ internal static class ScenarioCaptures
         if (cases is not null && (fixtures.Count != 1 || !SelectableCases.Any(fixtures.Contains)))
         {
             throw new ArgumentException(
-                "Case selection requires CaptureFixtures=redstone, sulfur, more_blocks, structure_pieces, fire or melting_weather.");
+                "Case selection requires CaptureFixtures=redstone, sulfur, more_blocks, "
+                + "structure_pieces, fire or melting_weather.");
         }
 
         if (fixtures.Contains(CopperWeathering))

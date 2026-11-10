@@ -5,6 +5,8 @@ using Obsidian.API.Configuration;
 using Obsidian.API.Registries;
 using Obsidian.ChunkData;
 using Obsidian.Registries;
+using Obsidian.Entities;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Tests.Fakes;
 using Obsidian.Tests.Utilities;
 using Obsidian.WorldData;
@@ -50,6 +52,7 @@ public sealed class VanillaMeltingWeather(ITestOutputHelper output)
     {
         await using var context = TestServerFactory.CreateServer($"melting-weather-{Guid.NewGuid():N}");
         var level = await PrepareAsync(context, probe);
+        var actors = await PrepareActorsAsync(level, probe);
         var kind = probe.GetProperty("kind").GetString();
         var region = kind == "precipitation" ? PrecipitationRegion(probe) : TargetRegion(probe);
         var before = region.ToDictionary(position => position, level.BlockUpdates.GetBlock);
@@ -72,7 +75,20 @@ public sealed class VanillaMeltingWeather(ITestOutputHelper output)
                 var chunk = level.GetLoadedChunk(position.X >> 4, position.Z >> 4)!;
                 var actual = level.BiomeAt(chunk, position.X, position.Y, position.Z);
                 if (actual.Name != sample.GetProperty("biome").GetString())
-                    failures.Add($"Biome at {position}: expected {sample.GetProperty("biome")}, got {actual.Name}");
+                {
+                    failures.Add($"Biome at {position}: expected {sample.GetProperty("biome")}, "
+                        + $"got {actual.Name}");
+                }
+            }
+        }
+
+        if (probe.TryGetProperty("entityPositions", out var positions))
+        {
+            for (var index = 0; index < actors.Count; index++)
+            {
+                var expected = EntityPosition(positions[index]);
+                if (actors[index].Position != expected)
+                    failures.Add($"Entity {index}: expected {expected}, got {actors[index].Position}");
             }
         }
 
@@ -247,12 +263,69 @@ public sealed class VanillaMeltingWeather(ITestOutputHelper output)
 
         var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Watcher", new VectorD(8, 250, 8));
         player.GameMode = GameMode.Survival;
-        Assert.True(world.TryAddPlayer(player));
-        world.SnapshotPlayers();
+        player.Level = level;
+        Assert.True(level.TryAddPlayer(player));
+        level.SnapshotPlayers();
 
         var ticks = probe.GetProperty("ticks").GetInt32();
         for (var tick = 0; tick < ticks; tick++)
-            world.TickRandomBlocks();
+            level.TickRandomBlocks();
+    }
+
+    private static async Task<List<Entity>> PrepareActorsAsync(AbstractLevel level, JsonElement probe)
+    {
+        var actors = new List<Entity>();
+        if (!probe.TryGetProperty("entities", out var entities))
+            return actors;
+
+        foreach (var input in entities.EnumerateArray())
+        {
+            var actor = new ArmorStand
+            {
+                EntityId = 1000 + actors.Count,
+                Level = level,
+                Type = EntityType.ArmorStand
+            };
+            await actor.UpdatePositionAsync(EntityPosition(input.GetProperty("pos")), MovementFlags.OnGround);
+            Assert.True(level.TryAddEntity(actor));
+            actors.Add(actor);
+        }
+
+        return actors;
+    }
+
+    // Client correction is Obsidian-specific; the amount comes from the native entity capture used by the replay.
+    [Fact]
+    public async Task SnowLiftCorrectsConnectedPlayerAndObserver()
+    {
+        using var stream = Assembly.GetExecutingAssembly()
+            .GetManifestResourceStream("Obsidian.Tests.Assets.melting_weather.json")!;
+        using var document = JsonDocument.Parse(stream);
+        var probe = document.RootElement.GetProperty("cases").EnumerateArray()
+            .Single(row => row.GetProperty("name").GetString() == "review_snow_lifts_entities_2_limit_8");
+        await using var context = TestServerFactory.CreateServer($"snow-lift-packets-{Guid.NewGuid():N}");
+        var level = await PrepareAsync(context, probe);
+        var initial = EntityPosition(probe.GetProperty("entities")[0].GetProperty("pos"));
+        var expected = EntityPosition(probe.GetProperty("entityPositions")[0]);
+        var standing = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Standing", initial);
+        var observer = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Observer",
+            initial + new VectorD(2, 1, 0));
+        await standing.UpdatePositionAsync(initial, MovementFlags.OnGround);
+        Assert.True(level.TryAddPlayer(standing));
+        Assert.True(level.TryAddPlayer(observer));
+
+        level.GrowthRandom.SetSeed(probe.GetProperty("seed").GetInt64());
+        RunPrecipitation(context, level, probe);
+
+        Assert.Equal(expected, standing.Position);
+        Assert.Equal(expected.Y, standing.BoundingBox.Min.Y);
+        var ownPackets = ((TestClient)standing.Client).SentPackets;
+        var correction = Assert.Single(ownPackets.OfType<PlayerPositionPacket>());
+        Assert.Equal(expected, correction.Position);
+        Assert.Equal(standing.TeleportId, correction.TeleportId);
+        var seen = ((TestClient)observer.Client).SentPackets.OfType<EntityPositionSyncPacket>()
+            .Where(packet => packet.EntityId == standing.EntityId);
+        Assert.Equal(expected, Assert.Single(seen).Position);
     }
 
     private static void CompareChanges(
@@ -425,6 +498,9 @@ public sealed class VanillaMeltingWeather(ITestOutputHelper output)
     private static string Format(IBlock state) =>
         state.UnlocalizedName + "["
         + string.Join(',', state.GetProperties().Select(pair => $"{pair.Key}={pair.Value}")) + "]";
+
+    private static VectorD EntityPosition(JsonElement array) =>
+        new(array[0].GetDouble(), array[1].GetDouble(), array[2].GetDouble());
 
     private static Vector Position(JsonElement array) =>
         new(array[0].GetInt32(), array[1].GetInt32(), array[2].GetInt32());
