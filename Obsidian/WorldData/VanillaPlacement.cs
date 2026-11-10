@@ -119,12 +119,14 @@ internal static class VanillaPlacement
             var lower = state.GetProperty("half") == "lower";
             if (direction.IsVertical() && lower == (direction == BlockFace.Up))
             {
-                var otherHalf = neighbor.RegistryId == state.RegistryId
-                    && neighbor.GetProperty("half") != state.GetProperty("half");
+                // Any door is a partner, as in vanilla's instanceof check: a copper door's upper half takes the lower
+                // half's new kind when it weathers or is waxed.
+                var otherHalf = IsDoor(neighbor) && neighbor.GetProperty("half") != state.GetProperty("half");
                 return otherHalf ? neighbor.WithProperty("half", lower ? "lower" : "upper") : BlocksRegistry.Air;
             }
 
-            var unsupported = lower && direction == BlockFace.Down && !neighbor.HasFullTopCollisionFace();
+            // Vanilla DoorBlock.canSurvive: the block below has a sturdy top face.
+            var unsupported = lower && direction == BlockFace.Down && !neighbor.IsFaceSturdy(BlockFace.Up);
             return unsupported ? BlocksRegistry.Air : state;
         }
 

@@ -35,19 +35,6 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
 
     private static readonly JsonElement fixture = LoadFixture();
 
-    // The notification pipeline repeats shape dispatch after the fluid level, storing the third write with
-    // UPDATE_ALL instead of UPDATE_CLIENTS. Keep the complete expected flag value: no bits are masked.
-    // These entries must fail when the duplicate dispatch is fixed (see the block-update known gaps).
-    private static readonly Dictionary<string, int> pipelineDifferences = new()
-    {
-        ["dripstone_grows_down_from_a_column"] = 2,
-        ["dripstone_grows_down_at_seven_long"] = 2,
-        ["dripstone_tip_added_below_a_column"] = 2,
-        ["dripstone_tip_removed_from_a_column"] = 2,
-        ["review_mixed_pointed_dripstone_body_sulfur_spike_down_tip_randomTick"] = 2,
-        ["review_mixed_sulfur_spike_body_pointed_dripstone_down_tip_randomTick"] = 2,
-    };
-
     // The bounded vanilla destroyBlock override records drops intent but suppresses resource creation. These two
     // replays actually spawn one item, consuming exactly these five level-random doubles during deferred removal.
     // Check that difference explicitly, including the item count; never swap out the recording random.
@@ -56,8 +43,6 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
 
     private static readonly double[] deferredItemDraws =
         [0.730967787376657, 0.24053641567148587, 0.6374174253501083, 0.5504370051176339, 0.5975452777972018];
-
-    private const string PendingCoralDifference = "review_coral_dry_neighbour_changes_while_death_pending";
 
     /// <summary>
     /// Each case runs through Obsidian's dispatch (the owner the generator binds the block's class to, or a live
@@ -269,14 +254,6 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
     private static void CompareDraws(List<string> differences, JsonElement probe, List<Draw> actual)
     {
         var draws = probe.GetProperty("draws").EnumerateArray().Select(Draw.Parse).ToList();
-        if (Name(probe) == PendingCoralDifference)
-        {
-            // Vanilla draws 28 and attempts another schedule; Obsidian skips that draw while death is pending.
-            // Assert the capture's discarded draw too, so this exception cannot hide a changed fixture.
-            Assert.Equal(new Draw("nextInt", 40, "28"), draws[1]);
-            draws.RemoveAt(1);
-        }
-
         if (deferredLootDifferences.Contains(Name(probe)))
         {
             draws.AddRange(deferredItemDraws.Select(value =>
@@ -394,12 +371,6 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
             Position(write.GetProperty("pos")),
             VanillaSulfurBlocks.ParseState(write.GetProperty("state").GetString()!),
             (BlockUpdateFlags)write.GetProperty("flags").GetInt32())).ToList();
-        if (pipelineDifferences.TryGetValue(Name(probe), out var index))
-        {
-            Assert.Equal(BlockUpdateFlags.Clients, vanilla[index].Flags);
-            vanilla[index] = vanilla[index] with { Flags = BlockUpdateFlags.All };
-        }
-
         ExpectSequence(differences, "writes", vanilla.Select(write => write.ToString()),
             actual.Select(write => write.ToString()));
     }

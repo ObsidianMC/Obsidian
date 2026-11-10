@@ -9,6 +9,11 @@ namespace Obsidian.WorldData.BlockNotifications;
 /// <c>neighborChanged</c> reactions. Work is queued in FIFO order, coalesced while pending, and drained in a bounded loop, so
 /// nothing recurses. Callers queue after committing a change; the drain runs now or at the level's next drain point.
 /// </summary>
+/// <remarks>
+/// A live level queues its changes with <see cref="BlockUpdateFlags.KnownShape"/>: its fluid level's vanilla-ordered
+/// updater has already run their shape updates (see <c>AbstractLevel.NotifyBlockChange</c>), so there the pipeline runs
+/// only placement and neighbor reactions. Shape steps run where the pipeline is the only engine.
+/// </remarks>
 internal sealed class BlockNotificationPipeline
 {
     /// <summary>
