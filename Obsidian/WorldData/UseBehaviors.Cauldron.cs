@@ -151,8 +151,9 @@ internal static partial class UseBehaviors
             if (cauldron == Cauldron.Water && Level(use.Block) == MaxLevel)
                 return ValueTask.FromResult(UseResult.TryWithEmptyHand);
 
+            // Vanilla's PotionContents.is(WATER): plain water, without custom effects.
             var potion = use.Item!.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents);
-            if (potion?.Potion != Potion.Water)
+            if (potion?.Potion != Potion.Water || !potion.CustomEffects.IsDefaultOrEmpty)
                 return ValueTask.FromResult(UseResult.TryWithEmptyHand);
 
             var filled = cauldron == Cauldron.Empty

@@ -25,4 +25,8 @@ drips (`ticking_blocks.json`). What's left:
   clips the north wall and fails (`fail`). The replay pins the three cases (`water2_bucket`, `snow1_bucket`,
   `empty_bucket`) and fails once they match. This affects every use aimed by the look, not only cauldrons.
 
+- **Effect encoding.** A water bottle with a custom effect is refused, as vanilla's is, but Obsidian writes the effect
+  without the default `show_icon` vanilla's codec adds, so `empty_water_bottle_custom_effect` and
+  `water1_water_bottle_custom_effect` pin the hand and inventory. The gap is in item encoding, not cauldrons.
+
 Not compared by the capture: sound pitches and seeds.

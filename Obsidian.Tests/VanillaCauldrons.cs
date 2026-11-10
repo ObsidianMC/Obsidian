@@ -48,6 +48,13 @@ public sealed class VanillaCauldrons(ITestOutputHelper output)
 
     private static readonly Vector target = new(0, 64, 0);
 
+    // Obsidian's form of the custom effect water bottle the pinned cases hold, and the inventory holding just it.
+    private const string CustomEffectPotion =
+        "minecraft:potion x1 {\"minecraft:potion_contents\": {custom_effects: [{duration: 200, id: \"minecraft:speed\"}], potion: \"minecraft:water\"}}";
+
+    private static readonly string CustomEffectPotionInventory =
+        CustomEffectPotion + string.Concat(Enumerable.Repeat(", empty", 35));
+
     // Known differences, by case and field: what Obsidian records instead of vanilla's value. Each fails once Obsidian
     // matches vanilla or changes, so it can be removed (known-gaps/cauldrons.md). An empty bucket that doesn't fill
     // goes on to its own use, aimed by the player's look: Obsidian holds a player's pitch in 256ths of a turn, so the
@@ -57,7 +64,14 @@ public sealed class VanillaCauldrons(ITestOutputHelper output)
     {
         [("water2_bucket", "result")] = "fail",
         [("snow1_bucket", "result")] = "fail",
-        [("empty_bucket", "result")] = "fail"
+        [("empty_bucket", "result")] = "fail",
+
+        // A water bottle with a custom effect stays in the hand, as vanilla's does, but Obsidian writes its effect
+        // without the default show_icon that vanilla's codec adds (an item encoding gap, not a cauldron one).
+        [("empty_water_bottle_custom_effect", "hand")] = CustomEffectPotion,
+        [("empty_water_bottle_custom_effect", "inventory")] = CustomEffectPotionInventory,
+        [("water1_water_bottle_custom_effect", "hand")] = CustomEffectPotion,
+        [("water1_water_bottle_custom_effect", "inventory")] = CustomEffectPotionInventory
     };
 
     /// <summary>The shared world and players, and the rotation the capture's player looked with.</summary>
@@ -183,7 +197,7 @@ public sealed class VanillaCauldrons(ITestOutputHelper output)
         var destroyed = new List<string>();
         world.Fluids.BlockStored = (position, block, flags) => writes.Add(Write(position, block, flags));
         world.BlockDestroyed = (position, block, drops) => destroyed.Add(Destroyed(position, block, drops));
-        UseResult? result;
+        (UseResult? UseOn, UseResult? Final) result;
         try
         {
             result = await UseAsync(harness, use);
@@ -197,13 +211,16 @@ public sealed class VanillaCauldrons(ITestOutputHelper output)
             world.BlockDestroyed = null;
         }
 
-        var actual = Observe(harness, use, result, before, statistics, writes, destroyed);
+        var actual = Observe(harness, use, result.Final, before, statistics, writes, destroyed);
+        if (use.TryGetProperty("useOnResult", out _))
+            actual["use on result"] = Name(result.UseOn);
+
         return Compare(Name(use), Expected(use), actual);
     }
 
     // The use-item-on packet, then, for a case with rayUse whose block use passed, the item's own use, as the client
-    // sends it, with the rotation it looks with.
-    private static async Task<UseResult?> UseAsync(Harness harness, JsonElement use)
+    // sends it, with the rotation it looks with. Returns the block use's result and the final one.
+    private static async Task<(UseResult? UseOn, UseResult? Final)> UseAsync(Harness harness, JsonElement use)
     {
         var server = harness.Context.Server;
         var user = harness.User;
@@ -219,13 +236,14 @@ public sealed class VanillaCauldrons(ITestOutputHelper output)
         var result = await packet.UseAsync(server, user);
         var passed = result is not UseResult.Fail && result?.ConsumesAction() != true;
         if (!use.TryGetProperty("rayUse", out _) || !passed)
-            return result;
+            return (result, result);
 
         var itemPacket = new UseItemPacket();
         typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Hand))!.SetValue(itemPacket, hand);
         typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Yaw))!.SetValue(itemPacket, harness.Yaw);
         typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Pitch))!.SetValue(itemPacket, harness.Pitch);
-        return await itemPacket.UseAsync(server, user);
+        var final = await itemPacket.UseAsync(server, user);
+        return (result, final);
     }
 
     // The capture's starting inventory: nothing but each hand's stack with its components, stone in every other
@@ -311,6 +329,10 @@ public sealed class VanillaCauldrons(ITestOutputHelper output)
 
         if (use.TryGetProperty("awardedCriteria", out var criteria))
             expected["criteria"] = Set(Strings(criteria));
+
+        // A case that goes on to the item's own use records the block use's result too.
+        if (use.TryGetProperty("useOnResult", out var useOn))
+            expected["use on result"] = useOn.GetString()!;
 
         return expected;
     }
