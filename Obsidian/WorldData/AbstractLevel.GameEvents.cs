@@ -79,9 +79,6 @@ public abstract partial class AbstractLevel
     void IRedstoneLevel.EmitGameEvent(MobGameEvent kind, Vector position, IEntity? source) =>
         this.EmitGameEvent(kind, (VectorD)position + new VectorD(0.5, 0.5, 0.5), source);
 
-    void IPressurePlateWorld.EmitGameEvent(MobGameEvent kind, Vector position) =>
-        this.EmitGameEvent(kind, (VectorD)position + new VectorD(0.5, 0.5, 0.5));
-
     /// <summary>
     /// Takes the game events emitted since the level last dispatched them, in order, without dispatching them. Parity
     /// replays compare these with vanilla's.
