@@ -118,8 +118,9 @@ replaces only what vanilla produced.
   The two `observer_player_faces_*` cases instead run `PlacementFixtures.java` on a real dedicated server's level
   through `ServerPlayerGameMode.useItemOn`. Both facing air and facing stone, placement consumes one item and
   schedules no observer tick. Their replay drives `UseItemOnPacket` and checks the state, scheduled tick and hand.
-  Command placement's initial pulse remains covered by `redstone_scenarios.json`: command block inputs derive
-  their state with shape updates before placement, unlike block items.
+  Command placement's initial pulse remains covered by `redstone_scenarios.json`. Vanilla command inputs derive
+  their state from all six neighbours before placement, unlike block items. Obsidian's `/setblock` and `/fill`
+  only give a placed observer its shape reaction; they do not generally derive command inputs' states.
 
 - `structure_pieces.json` (`VanillaStructureSaves.StartsSaveLikeVanilla`) holds what vanilla 26.3 saves of
   structure starts (`StructureStart.createTag`), from `Java/StructurePieceFixtures.java`, which runs a dedicated

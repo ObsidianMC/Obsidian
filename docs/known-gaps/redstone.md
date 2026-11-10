@@ -4,8 +4,9 @@
 **Status:** open. Dust, torches, repeaters, comparators, levers, buttons, pressure plates, the block of redstone and
 the redstone lamp work (see [plugin content](../plugin-content.md#redstone)); the rest of vanilla's redstone doesn't.
 
-- **Consumers.** Doors, trapdoors and fence gates, pistons, note blocks, powered, activator and detector rails, TNT,
-  bells and copper bulbs don't react to power. Hoppers lock, droppers and dispensers fire, and crafters craft (see
+- **Consumers.** Doors, trapdoors and fence gates, note blocks, powered, activator and detector rails, TNT,
+  bells and copper bulbs don't react to power. Pistons extend and retract, hoppers lock, droppers and dispensers
+  fire, and crafters craft (see
   [item access](item-access-beyond-containers.md)).
 - **Sources.** Daylight detectors, target blocks, trapped chests, tripwire hooks, detector rails,
   lightning rods and sculk sensors give no power (a lectern pulses as its page turns), though dust connects to them as to any signal source.
@@ -30,6 +31,12 @@ the redstone lamp work (see [plugin content](../plugin-content.md#redstone)); th
   reads the block still at the destination, the moving piston, and finds no fluid. That only shows once the block
   is dried properly, and in a move cut short (vanilla's `finalTick`, from the jar), which keeps the water, so vanilla
   lets it flow and Obsidian leaves it still until a neighbour updates it.
+- **Piston completion.** A cut-short source piston should place air in vanilla; Obsidian instead places its moved
+  state. Completion also omits vanilla's final neighbour notification to the placed block, so an isolated rail
+  pushed over air stays unsupported until something else updates it. Dead coral plants and fans can be moved and
+  derive to air in vanilla, but Obsidian's shape rules have no case for them. When a completed move derives to air,
+  destruction replaces the block and notifies neighbours before broadcasting the break effect and spawning its
+  drop; vanilla broadcasts the effect and spawns the drop before replacement and notifications.
 - **Game events.** Levers, buttons and pressure plates don't emit vanilla's `block_activate` and `block_deactivate`
   vibrations.
 - **Experiments.** The `redstone_experiments` feature's wire evaluator and update orientations aren't modelled.

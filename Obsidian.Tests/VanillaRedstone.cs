@@ -262,9 +262,9 @@ public class VanillaRedstone
         public ValueTask DisposeAsync() => this.context.DisposeAsync();
 
         private static bool Overlaps(BoundingBox box, VectorD from, VectorD to) =>
-            box.Min.X <= to.X && box.Max.X >= from.X
-            && box.Min.Y <= to.Y && box.Max.Y >= from.Y
-            && box.Min.Z <= to.Z && box.Max.Z >= from.Z;
+            box.Min.X < to.X && box.Max.X > from.X
+            && box.Min.Y < to.Y && box.Max.Y > from.Y
+            && box.Min.Z < to.Z && box.Max.Z > from.Z;
 
         // The fixture's level boxes are disjoint and farther apart than redstone reaches. Keep their terrain
         // and server across cases; a player above each box keeps it ticking without replacing shared chunks.

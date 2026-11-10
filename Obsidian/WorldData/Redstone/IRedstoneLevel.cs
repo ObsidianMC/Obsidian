@@ -31,6 +31,9 @@ internal interface IRedstoneLevel : IBlockChangeWorld
     /// </summary>
     ValueTask WriteAsync(Vector position, IBlock block, bool notifyNeighbors);
 
+    /// <summary>Restores a block internally, without client, neighbor, shape or placement notifications.</summary>
+    ValueTask RestoreBlockSilentlyAsync(Vector position, IBlock block);
+
     /// <summary>Whether the <c>tnt_explodes</c> rule lets TNT be primed.</summary>
     bool TntExplodes { get; }
 

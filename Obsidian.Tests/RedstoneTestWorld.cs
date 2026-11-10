@@ -384,6 +384,12 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
             this.Commit(position, block);
     }
 
+    ValueTask IRedstoneLevel.RestoreBlockSilentlyAsync(Vector position, IBlock block)
+    {
+        this.Commit(position, block);
+        return ValueTask.CompletedTask;
+    }
+
     bool IBlockTickLevel.IsChunkLoaded(long key) => this.chunks.ContainsKey(key);
 
     bool IBlockTickLevel.IsChunkSimulated(long key) => this.chunks.ContainsKey(key);

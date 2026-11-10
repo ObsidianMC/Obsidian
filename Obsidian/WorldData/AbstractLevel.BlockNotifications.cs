@@ -200,6 +200,9 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateW
     ValueTask IRedstoneLevel.WriteAsync(Vector position, IBlock block, bool notifyNeighbors) =>
         this.WriteAsync(position, block, notifyNeighbors ? BlockUpdateFlags.All : ClientsOnly);
 
+    ValueTask IRedstoneLevel.RestoreBlockSilentlyAsync(Vector position, IBlock block) =>
+        this.WriteAsync(position, block, BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);
+
     IBlock? IBlockTickLevel.GetLoadedBlock(Vector position) => ((IBlockChangeWorld)this).GetLoadedBlock(position);
 
     bool IBlockTickLevel.IsChunkLoaded(long key)

@@ -115,7 +115,8 @@ internal sealed class MovingPistonBlockEntity : BlockEntity
 
     /// <summary>
     /// Vanilla <c>finalTick</c>: cuts the move short and places the block the piston stands for now, as another piston
-    /// event does to a block still moving.
+    /// event does to a block still moving. For a source piston vanilla places air instead; Obsidian does not yet
+    /// reproduce that source-piston case.
     /// </summary>
     internal ValueTask FinishAsync(IRedstoneLevel level) => this.PlaceMovedStateAsync(level, completedMove: false);
 
@@ -141,7 +142,7 @@ internal sealed class MovingPistonBlockEntity : BlockEntity
         {
             // Like vanilla, the moved state is installed first and then broken, so it drops as itself (a carpet
             // pushed over air), as captured in piston_pushes_carpet_off_support.
-            await level.WriteAsync(position, this.movedState, notifyNeighbors: false);
+            await level.RestoreBlockSilentlyAsync(position, this.movedState);
             await level.DestroyBlockNowAsync(position, this.movedState, playEffect: true);
             return;
         }
