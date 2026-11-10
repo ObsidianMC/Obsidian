@@ -223,7 +223,10 @@ public sealed class BlockUseSafety
             new VectorD(10, 64, 10));
         world.TryAddPlayer(watcher);
 
-        foreach (var interference in new[] { "none", "hand", "block", "death", "disconnect", "removed", "stopped" })
+        foreach (var interference in new[]
+        {
+            "none", "two_items", "hand", "block", "death", "disconnect", "removed", "stopped"
+        })
         {
             var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "User",
                 new VectorD(8.5, 64, 10.5));
@@ -235,7 +238,8 @@ public sealed class BlockUseSafety
                 BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);
             world.BlockUpdates.SetBlock(target, BlocksRegistry.Wheat,
                 BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);
-            player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.BoneMeal, 1));
+            var count = interference == "two_items" ? 2 : 1;
+            player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.BoneMeal, count));
             var before = player.Statistics.Get("minecraft:bone_meal", "minecraft:used");
             client.ClearPackets();
             world.TakeGameEvents();
@@ -263,11 +267,16 @@ public sealed class BlockUseSafety
 
             await world.RunQueuedEntityActionsAsync();
 
-            var committed = interference == "none" ? 1 : 0;
+            var committed = interference switch
+            {
+                "none" => 1,
+                "two_items" => 2,
+                _ => 0
+            };
             Assert.Equal(before + committed, player.Statistics.Get("minecraft:bone_meal", "minecraft:used"));
             Assert.Equal(committed, world.TakeGameEvents().Count(e => e.Kind == MobGameEvent.ItemInteractFinish));
             Assert.Equal(3, client.SentPackets.OfType<BlockChangedAckPacket>().Count());
-            if (interference == "none")
+            if (interference is "none" or "two_items")
                 Assert.Null(player.GetHeldItem());
             if (interference == "hand")
                 Assert.Equal(2, player.GetHeldItem()?.Count);

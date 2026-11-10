@@ -129,23 +129,32 @@ public partial class UseItemOnPacket
             var handled = await use.Player.TryRunBlockUseAsync(async () =>
             {
                 ran = true;
-                var committed = use.TryCommit(() =>
+                BlockUse execution;
+                bool committed;
+                lock (use.Level.Fluids.TickLock)
                 {
-                    if (!Growth.IsValidBonemealTarget(use.Level, use.Position, use.Block))
-                        return false;
+                    execution = use.ForQueuedAction();
+                    committed = execution.TryCommit(() =>
+                    {
+                        if (!Growth.IsValidBonemealTarget(execution.Level, execution.Position, execution.Block))
+                            return false;
 
-                    Growth.ApplyBonemeal(use.Level, use.Position, use.Block, use.Level.GrowthRandom);
-                    return true;
-                }, consumeItem: true);
-                if (committed)
-                {
-                    use.Level.BroadcastLevelEvent(Growth.BoneMealEvent, use.Position, Growth.BoneMealParticles);
-                    use.Level.EmitGameEvent(MobGameEvent.ItemInteractFinish, use.Player.Position, use.Player);
-                    use.Player.Statistics.Increment(use.Item!.Holder.UnlocalizedName, type: "minecraft:used");
-                    await FireAsync(use, "item_used_on_block");
+                        Growth.ApplyBonemeal(execution.Level, execution.Position, execution.Block,
+                            execution.Level.GrowthRandom);
+                        return true;
+                    }, consumeItem: true);
                 }
 
-                await this.CompleteAsync(use, committed ? UseResult.SuccessServer : UseResult.Fail);
+                if (committed)
+                {
+                    execution.Level.BroadcastLevelEvent(Growth.BoneMealEvent, execution.Position, Growth.BoneMealParticles);
+                    execution.Level.EmitGameEvent(MobGameEvent.ItemInteractFinish, execution.Player.Position,
+                        execution.Player);
+                    execution.Player.Statistics.Increment(execution.Item!.Holder.UnlocalizedName, type: "minecraft:used");
+                    await FireAsync(execution, "item_used_on_block");
+                }
+
+                await this.CompleteAsync(execution, committed ? UseResult.SuccessServer : UseResult.Fail);
             });
             if (!handled)
                 use.Level.EnqueueEntityAction(CompleteQueuedUseAsync);

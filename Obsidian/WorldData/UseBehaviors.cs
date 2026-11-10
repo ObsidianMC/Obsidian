@@ -108,6 +108,29 @@ internal sealed class BlockUse
         && ReferenceEquals(resident, this.Player);
 
     /// <summary>
+    /// A queued action starts against the state earlier actions left, under the level tick lock. The original
+    /// hand reference and component snapshot remain required; the count is sampled for this action and checked
+    /// again under the inventory lock by TryCommit.
+    /// </summary>
+    internal BlockUse ForQueuedAction() => new()
+    {
+        Server = this.Server,
+        Level = this.Level,
+        Player = this.Player,
+        Position = this.Position,
+        Block = this.Level.BlockUpdates.GetBlock(this.Position),
+        BlockEntity = this.Level.GetResidentBlockEntity(this.Position),
+        Face = this.Face,
+        Cursor = this.Cursor,
+        Hand = this.Hand,
+        HandSlot = this.HandSlot,
+        Item = this.Item,
+        UsedItem = this.UsedItem is null ? null : new ItemStack(this.UsedItem, this.Item?.Count ?? 0),
+        Sequence = this.Sequence,
+        AwardsItemUse = this.AwardsItemUse
+    };
+
+    /// <summary>
     /// Commits a synchronous destination change and its hand exchange together. The tick lock comes first, then
     /// the hand and destination inventories. Busy inventories refuse the click rather than waiting under the tick
     /// lock. A state-only write scope suppresses external effects, including the normal block notifications.
