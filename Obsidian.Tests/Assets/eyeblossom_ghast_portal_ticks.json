@@ -17712,8 +17712,4227 @@
           "state": "minecraft:obsidian"
         }
       ]
+    },
+    {
+      "name": "eyeblossom_wave_across_two_sections",
+      "call": "randomTick",
+      "setup": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:closed_eyeblossom"
+        },
+        {
+          "pos": [
+            -2,
+            61,
+            1
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            -2,
+            62,
+            1
+          ],
+          "state": "minecraft:closed_eyeblossom"
+        },
+        {
+          "pos": [
+            -1,
+            64,
+            -1
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            -1,
+            65,
+            -1
+          ],
+          "state": "minecraft:closed_eyeblossom"
+        },
+        {
+          "pos": [
+            2,
+            62,
+            0
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            2,
+            63,
+            0
+          ],
+          "state": "minecraft:closed_eyeblossom"
+        },
+        {
+          "pos": [
+            1,
+            65,
+            2
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            1,
+            66,
+            2
+          ],
+          "state": "minecraft:closed_eyeblossom"
+        }
+      ],
+      "origin": [
+        0,
+        64,
+        0
+      ],
+      "dayTime": 13000,
+      "seed": 26,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.7318635901975455
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.5450924574643284
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.9344432061493757
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.7276366308093113
+        },
+        {
+          "call": "nextInt",
+          "bound": 10,
+          "value": 3
+        },
+        {
+          "call": "nextInt",
+          "bound": 16,
+          "value": 7
+        },
+        {
+          "call": "nextInt",
+          "bound": 12,
+          "value": 1
+        },
+        {
+          "call": "nextInt",
+          "bound": 16,
+          "value": 4
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:open_eyeblossom",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            -1,
+            65,
+            -1
+          ],
+          "type": "minecraft:closed_eyeblossom",
+          "delay": 11
+        },
+        {
+          "pos": [
+            -2,
+            62,
+            1
+          ],
+          "type": "minecraft:closed_eyeblossom",
+          "delay": 22
+        },
+        {
+          "pos": [
+            2,
+            63,
+            0
+          ],
+          "type": "minecraft:closed_eyeblossom",
+          "delay": 12
+        },
+        {
+          "pos": [
+            1,
+            66,
+            2
+          ],
+          "type": "minecraft:closed_eyeblossom",
+          "delay": 19
+        }
+      ],
+      "events": [],
+      "gameEvents": [
+        {
+          "type": "minecraft:block_change",
+          "pos": [
+            0.5,
+            64.5,
+            0.5
+          ],
+          "state": "minecraft:closed_eyeblossom"
+        }
+      ],
+      "sounds": [
+        {
+          "sound": "minecraft:block.eyeblossom.open_long",
+          "source": "block",
+          "volume": 1.0,
+          "pitch": 1.0,
+          "pos": [
+            0.5,
+            64.5,
+            0.5
+          ]
+        }
+      ],
+      "particles": [
+        {
+          "type": "minecraft:trail",
+          "pos": [
+            0.5,
+            64.5,
+            0.5
+          ],
+          "count": 1,
+          "dist": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "speed": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "overrideLimiter": false,
+          "alwaysShow": false,
+          "target": [
+            0.5555477565428377,
+            66.88297015296043,
+            0.7804172772892315
+          ],
+          "color": 16545810,
+          "duration": 24
+        }
+      ],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            -2,
+            61,
+            1
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            2,
+            62,
+            0
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            -2,
+            62,
+            1
+          ],
+          "state": "minecraft:closed_eyeblossom"
+        },
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            2,
+            63,
+            0
+          ],
+          "state": "minecraft:closed_eyeblossom"
+        },
+        {
+          "pos": [
+            -1,
+            64,
+            -1
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:open_eyeblossom"
+        },
+        {
+          "pos": [
+            -1,
+            65,
+            -1
+          ],
+          "state": "minecraft:closed_eyeblossom"
+        },
+        {
+          "pos": [
+            1,
+            65,
+            2
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            1,
+            66,
+            2
+          ],
+          "state": "minecraft:closed_eyeblossom"
+        }
+      ]
+    },
+    {
+      "name": "eyeblossom_wave_across_negative_sections",
+      "call": "randomTick",
+      "setup": [
+        {
+          "pos": [
+            0,
+            -17,
+            0
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            0,
+            -16,
+            0
+          ],
+          "state": "minecraft:closed_eyeblossom"
+        },
+        {
+          "pos": [
+            -2,
+            -19,
+            1
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            -2,
+            -18,
+            1
+          ],
+          "state": "minecraft:closed_eyeblossom"
+        },
+        {
+          "pos": [
+            -1,
+            -16,
+            -1
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            -1,
+            -15,
+            -1
+          ],
+          "state": "minecraft:closed_eyeblossom"
+        },
+        {
+          "pos": [
+            2,
+            -18,
+            0
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            2,
+            -17,
+            0
+          ],
+          "state": "minecraft:closed_eyeblossom"
+        },
+        {
+          "pos": [
+            1,
+            -15,
+            2
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            1,
+            -14,
+            2
+          ],
+          "state": "minecraft:closed_eyeblossom"
+        }
+      ],
+      "origin": [
+        0,
+        -16,
+        0
+      ],
+      "dayTime": 13000,
+      "seed": 27,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.7317740084253406
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.7146368532850442
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.5047406370101457
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.5099166667500274
+        },
+        {
+          "call": "nextInt",
+          "bound": 10,
+          "value": 4
+        },
+        {
+          "call": "nextInt",
+          "bound": 16,
+          "value": 6
+        },
+        {
+          "call": "nextInt",
+          "bound": 12,
+          "value": 9
+        },
+        {
+          "call": "nextInt",
+          "bound": 16,
+          "value": 2
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            0,
+            -16,
+            0
+          ],
+          "state": "minecraft:open_eyeblossom",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            -1,
+            -15,
+            -1
+          ],
+          "type": "minecraft:closed_eyeblossom",
+          "delay": 12
+        },
+        {
+          "pos": [
+            -2,
+            -18,
+            1
+          ],
+          "type": "minecraft:closed_eyeblossom",
+          "delay": 21
+        },
+        {
+          "pos": [
+            2,
+            -17,
+            0
+          ],
+          "type": "minecraft:closed_eyeblossom",
+          "delay": 20
+        },
+        {
+          "pos": [
+            1,
+            -14,
+            2
+          ],
+          "type": "minecraft:closed_eyeblossom",
+          "delay": 17
+        }
+      ],
+      "events": [],
+      "gameEvents": [
+        {
+          "type": "minecraft:block_change",
+          "pos": [
+            0.5,
+            -15.5,
+            0.5
+          ],
+          "state": "minecraft:closed_eyeblossom"
+        }
+      ],
+      "sounds": [
+        {
+          "sound": "minecraft:block.eyeblossom.open_long",
+          "source": "block",
+          "volume": 1.0,
+          "pitch": 1.0,
+          "pos": [
+            0.5,
+            -15.5,
+            0.5
+          ]
+        }
+      ],
+      "particles": [
+        {
+          "type": "minecraft:trail",
+          "pos": [
+            0.5,
+            -15.5,
+            0.5
+          ],
+          "count": 1,
+          "dist": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "speed": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "overrideLimiter": false,
+          "alwaysShow": false,
+          "target": [
+            0.7643840971267206,
+            -13.646499593909512,
+            0.5122150923528996
+          ],
+          "color": 16545810,
+          "duration": 24
+        }
+      ],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            -2,
+            -19,
+            1
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            2,
+            -18,
+            0
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            -2,
+            -18,
+            1
+          ],
+          "state": "minecraft:closed_eyeblossom"
+        },
+        {
+          "pos": [
+            0,
+            -17,
+            0
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            2,
+            -17,
+            0
+          ],
+          "state": "minecraft:closed_eyeblossom"
+        },
+        {
+          "pos": [
+            -1,
+            -16,
+            -1
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            0,
+            -16,
+            0
+          ],
+          "state": "minecraft:open_eyeblossom"
+        },
+        {
+          "pos": [
+            -1,
+            -15,
+            -1
+          ],
+          "state": "minecraft:closed_eyeblossom"
+        },
+        {
+          "pos": [
+            1,
+            -15,
+            2
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            1,
+            -14,
+            2
+          ],
+          "state": "minecraft:closed_eyeblossom"
+        }
+      ]
+    },
+    {
+      "name": "dried_ghast_becomes_ghastling_facing_west",
+      "call": "tick",
+      "setup": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:dried_ghast[facing=west,hydration=3,waterlogged=true]"
+        }
+      ],
+      "origin": [
+        0,
+        64,
+        0
+      ],
+      "seed": 56,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:water[level=0]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "sounds": [
+        {
+          "sound": "minecraft:entity.ghastling.spawn",
+          "source": "block",
+          "volume": 1.0,
+          "pitch": 1.0,
+          "entity": "minecraft:happy_ghast"
+        }
+      ],
+      "particles": [],
+      "entities": [
+        {
+          "type": "minecraft:happy_ghast",
+          "pos": [
+            0.5,
+            64.0,
+            0.5
+          ],
+          "yaw": 90.0,
+          "headYaw": 90.0,
+          "pitch": 0.0,
+          "portalCooldown": 0,
+          "age": -24000,
+          "baby": true,
+          "mainHand": "minecraft:air",
+          "enchanted": false,
+          "leftHanded": false,
+          "canPickUpLoot": false,
+          "vehicle": null
+        }
+      ],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "portal_spawns_a_baby_looking_for_a_chicken",
+      "call": "randomTick",
+      "setup": [
+        {
+          "pos": [
+            -1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            -1,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            -1,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        }
+      ],
+      "origin": [
+        0,
+        67,
+        0
+      ],
+      "seed": 161485,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 2000,
+          "value": 1
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.53328043
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.7600917753557084
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.1966520302809206
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.32227385
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.32910848
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.027071595
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.011697054
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.36537844
+        },
+        {
+          "call": "nextInt",
+          "bound": 20,
+          "value": 11
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.2809499
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "sounds": [
+        {
+          "sound": "minecraft:entity.zombified_piglin.ambient",
+          "source": "hostile",
+          "volume": 1.0,
+          "pitch": null,
+          "pos": [
+            0.5,
+            65.0,
+            0.5
+          ]
+        }
+      ],
+      "particles": [],
+      "entities": [
+        {
+          "type": "minecraft:zombified_piglin",
+          "pos": [
+            0.5,
+            65.0,
+            0.5
+          ],
+          "yaw": -168.01904,
+          "headYaw": -168.01904,
+          "pitch": 0.0,
+          "portalCooldown": 300,
+          "baby": true,
+          "mainHand": "minecraft:golden_sword",
+          "enchanted": false,
+          "leftHanded": false,
+          "canPickUpLoot": false,
+          "vehicle": null
+        }
+      ],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            -1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        }
+      ]
+    },
+    {
+      "name": "portal_spawns_a_chicken_jockey",
+      "call": "randomTick",
+      "setup": [
+        {
+          "pos": [
+            -1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            -1,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            -1,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        }
+      ],
+      "origin": [
+        0,
+        67,
+        0
+      ],
+      "seed": 567128,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 2000,
+          "value": 0
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.18139088
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.3827568736462129
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.03166917845967898
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.90378344
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.68092513
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.01332283
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.46674854
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.018963933
+        },
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 2,
+          "value": 0
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.7345250728932585
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.6769122125889492
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.18868572
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.9645302
+        },
+        {
+          "call": "nextInt",
+          "bound": 20,
+          "value": 10
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.377595
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "sounds": [
+        {
+          "sound": "minecraft:entity.zombified_piglin.ambient",
+          "source": "hostile",
+          "volume": 1.0,
+          "pitch": null,
+          "pos": [
+            0.5,
+            65.0,
+            0.5
+          ]
+        }
+      ],
+      "particles": [],
+      "entities": [
+        {
+          "type": "minecraft:chicken",
+          "pos": [
+            0.5,
+            65.0,
+            0.5
+          ],
+          "yaw": 65.30072,
+          "headYaw": null,
+          "pitch": 0.0,
+          "portalCooldown": 300,
+          "variant": "minecraft:temperate",
+          "soundVariant": "minecraft:classic",
+          "jockey": true,
+          "age": 0,
+          "baby": false,
+          "mainHand": "minecraft:air",
+          "enchanted": false,
+          "leftHanded": false,
+          "canPickUpLoot": false,
+          "vehicle": null
+        },
+        {
+          "type": "minecraft:zombified_piglin",
+          "pos": [
+            0.5,
+            65.0,
+            0.5
+          ],
+          "yaw": 65.30072,
+          "headYaw": 65.30072,
+          "pitch": 0.0,
+          "portalCooldown": 300,
+          "baby": true,
+          "mainHand": "minecraft:golden_sword",
+          "enchanted": false,
+          "leftHanded": false,
+          "canPickUpLoot": false,
+          "vehicle": "minecraft:chicken"
+        }
+      ],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            -1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        }
+      ]
+    },
+    {
+      "name": "portal_spawns_with_an_enchanted_weapon",
+      "call": "randomTick",
+      "setup": [
+        {
+          "pos": [
+            -1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            -1,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            -1,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        }
+      ],
+      "origin": [
+        0,
+        67,
+        0
+      ],
+      "seed": 9203,
+      "difficulty": "hard",
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 2000,
+          "value": 2
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.4330362
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.24392075836261273
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.5654604425178663
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.92048055
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.20444876
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.9965701
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.17432213
+        },
+        {
+          "call": "nextInt",
+          "bound": 20,
+          "value": 8
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.01704979
+        },
+        {
+          "call": "nextInt",
+          "bound": 3,
+          "value": 1
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 5
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 0
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.935052
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.11529666
+        },
+        {
+          "call": "nextInt",
+          "bound": 34,
+          "value": 22
+        },
+        {
+          "call": "nextInt",
+          "bound": 50,
+          "value": 7
+        },
+        {
+          "call": "nextInt",
+          "bound": 29,
+          "value": 18
+        },
+        {
+          "call": "nextInt",
+          "bound": 50,
+          "value": 7
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "sounds": [
+        {
+          "sound": "minecraft:entity.zombified_piglin.ambient",
+          "source": "hostile",
+          "volume": 1.0,
+          "pitch": null,
+          "pos": [
+            0.5,
+            65.0,
+            0.5
+          ]
+        }
+      ],
+      "particles": [],
+      "entities": [
+        {
+          "type": "minecraft:zombified_piglin",
+          "pos": [
+            0.5,
+            65.0,
+            0.5
+          ],
+          "yaw": 155.89304,
+          "headYaw": 155.89304,
+          "pitch": 0.0,
+          "portalCooldown": 300,
+          "baby": false,
+          "mainHand": "minecraft:golden_sword",
+          "enchanted": true,
+          "leftHanded": false,
+          "canPickUpLoot": false,
+          "enchantments": [
+            "minecraft:knockback 1",
+            "minecraft:bane_of_arthropods 1"
+          ],
+          "vehicle": null
+        }
+      ],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            -1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        }
+      ]
+    },
+    {
+      "name": "portal_spawns_on_halloween_with_a_carved_pumpkin",
+      "call": "randomTick",
+      "setup": [
+        {
+          "pos": [
+            -1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            -1,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            -1,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        }
+      ],
+      "origin": [
+        0,
+        67,
+        0
+      ],
+      "seed": 4947,
+      "date": "2026-10-31",
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 2000,
+          "value": 1
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.3922398
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.1586413391619682
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.49929775442253765
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.36225086
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.8396321
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.3886512
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.30697298
+        },
+        {
+          "call": "nextInt",
+          "bound": 20,
+          "value": 2
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.70439065
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.075425506
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.5780986
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "sounds": [
+        {
+          "sound": "minecraft:entity.zombified_piglin.ambient",
+          "source": "hostile",
+          "volume": 1.0,
+          "pitch": null,
+          "pos": [
+            0.5,
+            65.0,
+            0.5
+          ]
+        }
+      ],
+      "particles": [],
+      "entities": [
+        {
+          "type": "minecraft:zombified_piglin",
+          "pos": [
+            0.5,
+            65.0,
+            0.5
+          ],
+          "yaw": 141.20633,
+          "headYaw": 141.20633,
+          "pitch": 0.0,
+          "portalCooldown": 300,
+          "baby": false,
+          "mainHand": "minecraft:golden_sword",
+          "enchanted": false,
+          "leftHanded": false,
+          "canPickUpLoot": false,
+          "head": "minecraft:carved_pumpkin",
+          "vehicle": null
+        }
+      ],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            -1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        }
+      ]
+    },
+    {
+      "name": "portal_spawns_on_halloween_with_a_jack_o_lantern",
+      "call": "randomTick",
+      "setup": [
+        {
+          "pos": [
+            -1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            -1,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            -1,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        }
+      ],
+      "origin": [
+        0,
+        67,
+        0
+      ],
+      "seed": 70505,
+      "date": "2026-10-31",
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 2000,
+          "value": 1
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.70069885
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.7306618986070889
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.5647341085930824
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.22988844
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.88921654
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.7374604
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.8220415
+        },
+        {
+          "call": "nextInt",
+          "bound": 20,
+          "value": 14
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.12168914
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.029366374
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.08149636
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "sounds": [
+        {
+          "sound": "minecraft:entity.zombified_piglin.ambient",
+          "source": "hostile",
+          "volume": 1.0,
+          "pitch": null,
+          "pos": [
+            0.5,
+            65.0,
+            0.5
+          ]
+        }
+      ],
+      "particles": [],
+      "entities": [
+        {
+          "type": "minecraft:zombified_piglin",
+          "pos": [
+            0.5,
+            65.0,
+            0.5
+          ],
+          "yaw": -107.74841,
+          "headYaw": -107.74841,
+          "pitch": 0.0,
+          "portalCooldown": 300,
+          "baby": false,
+          "mainHand": "minecraft:golden_sword",
+          "enchanted": false,
+          "leftHanded": false,
+          "canPickUpLoot": false,
+          "head": "minecraft:jack_o_lantern",
+          "vehicle": null
+        }
+      ],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            -1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        }
+      ]
+    },
+    {
+      "name": "portal_spawns_on_halloween_bare_headed",
+      "call": "randomTick",
+      "setup": [
+        {
+          "pos": [
+            -1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            -1,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            -1,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        }
+      ],
+      "origin": [
+        0,
+        67,
+        0
+      ],
+      "seed": 2399,
+      "date": "2026-10-31",
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 2000,
+          "value": 0
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.85411257
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.6133667699845169
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.3197062131634506
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.3317505
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.6398893
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.47469598
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.71631163
+        },
+        {
+          "call": "nextInt",
+          "bound": 20,
+          "value": 15
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.8425137
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.61761224
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "sounds": [
+        {
+          "sound": "minecraft:entity.zombified_piglin.ambient",
+          "source": "hostile",
+          "volume": 1.0,
+          "pitch": null,
+          "pos": [
+            0.5,
+            65.0,
+            0.5
+          ]
+        }
+      ],
+      "particles": [],
+      "entities": [
+        {
+          "type": "minecraft:zombified_piglin",
+          "pos": [
+            0.5,
+            65.0,
+            0.5
+          ],
+          "yaw": -52.51947,
+          "headYaw": -52.51947,
+          "pitch": 0.0,
+          "portalCooldown": 300,
+          "baby": false,
+          "mainHand": "minecraft:golden_sword",
+          "enchanted": false,
+          "leftHanded": false,
+          "canPickUpLoot": false,
+          "vehicle": null
+        }
+      ],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            -1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        }
+      ]
+    },
+    {
+      "name": "portal_spawns_the_day_before_halloween",
+      "call": "randomTick",
+      "setup": [
+        {
+          "pos": [
+            -1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            -1,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            -1,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        }
+      ],
+      "origin": [
+        0,
+        67,
+        0
+      ],
+      "seed": 4947,
+      "date": "2026-10-30",
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 2000,
+          "value": 1
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.3922398
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.1586413391619682
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.49929775442253765
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.36225086
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.8396321
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.3886512
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.30697298
+        },
+        {
+          "call": "nextInt",
+          "bound": 20,
+          "value": 2
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.70439065
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "sounds": [
+        {
+          "sound": "minecraft:entity.zombified_piglin.ambient",
+          "source": "hostile",
+          "volume": 1.0,
+          "pitch": null,
+          "pos": [
+            0.5,
+            65.0,
+            0.5
+          ]
+        }
+      ],
+      "particles": [],
+      "entities": [
+        {
+          "type": "minecraft:zombified_piglin",
+          "pos": [
+            0.5,
+            65.0,
+            0.5
+          ],
+          "yaw": 141.20633,
+          "headYaw": 141.20633,
+          "pitch": 0.0,
+          "portalCooldown": 300,
+          "baby": false,
+          "mainHand": "minecraft:golden_sword",
+          "enchanted": false,
+          "leftHanded": false,
+          "canPickUpLoot": false,
+          "vehicle": null
+        }
+      ],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            -1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        }
+      ]
+    },
+    {
+      "name": "portal_spawns_the_day_after_halloween",
+      "call": "randomTick",
+      "setup": [
+        {
+          "pos": [
+            -1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            -1,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            -1,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        }
+      ],
+      "origin": [
+        0,
+        67,
+        0
+      ],
+      "seed": 4947,
+      "date": "2026-11-01",
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 2000,
+          "value": 1
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.3922398
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.1586413391619682
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.49929775442253765
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.36225086
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.8396321
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.3886512
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.30697298
+        },
+        {
+          "call": "nextInt",
+          "bound": 20,
+          "value": 2
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.70439065
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "sounds": [
+        {
+          "sound": "minecraft:entity.zombified_piglin.ambient",
+          "source": "hostile",
+          "volume": 1.0,
+          "pitch": null,
+          "pos": [
+            0.5,
+            65.0,
+            0.5
+          ]
+        }
+      ],
+      "particles": [],
+      "entities": [
+        {
+          "type": "minecraft:zombified_piglin",
+          "pos": [
+            0.5,
+            65.0,
+            0.5
+          ],
+          "yaw": 141.20633,
+          "headYaw": 141.20633,
+          "pitch": 0.0,
+          "portalCooldown": 300,
+          "baby": false,
+          "mainHand": "minecraft:golden_sword",
+          "enchanted": false,
+          "leftHanded": false,
+          "canPickUpLoot": false,
+          "vehicle": null
+        }
+      ],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            -1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            64,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            65,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            65,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            66,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            66,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            1,
+            67,
+            0
+          ],
+          "state": "minecraft:nether_portal[axis=x]"
+        },
+        {
+          "pos": [
+            2,
+            67,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            -1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            0,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            1,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        },
+        {
+          "pos": [
+            2,
+            68,
+            0
+          ],
+          "state": "minecraft:obsidian"
+        }
+      ]
     }
   ],
-  "_notes": "Vanilla eyeblossom, potted eyeblossom, dried ghast and nether portal routines, recorded by the asset generator's EyeblossomGhastPortalFixtures.java against a block view of the case's setup (air elsewhere, void air outside the build height of -64 to 319), with a legacy random seeded with seed (0 by default) as both the routine's random and the level's. call is randomTick (the origin's state, only when its isRandomlyTicking holds, which ticks records), tick (the origin's scheduled tick) or set (Level.setBlock of state at the origin with UPDATE_ALL). dimension (minecraft:overworld by default) gives the dimension type's attributes and its timelines, sampled with every clock at dayTime (0 by default); biomes add nothing. difficulty (normal by default), spawnMobs and spawnMonsters (true by default) are the level's; playerNear (true by default) answers anyPlayerCloseEnoughForSpawning. The level's game time is 20, chunks have no inhabited time, and getCurrentDifficultyAt is the DifficultyInstance of the difficulty at that game time. Writes store the block and, as Level.setBlock does, run the new state's onPlace and then, unless UPDATE_KNOWN_SHAPE is set, the neighbours' shape updates; neighbour notifications are not run. draws lists each draw in order; writes the block changes with their flags; scheduled the block and fluid ticks scheduled with their delays (a block tick counts as pending for hasScheduledTick, as do the case's pending ticks); events the level events; gameEvents the game events with the state they carry; sounds every sound with its position (or the entity it follows), source, volume and pitch (null when the pitch comes from a mob's own random, as a mob's ambient sound's does); particles the particles sent; entities the entities added, with their rotation, age, portal cooldown, main hand and spawn flags; destroyed the blocks destroyed and whether they drop. after holds the final state of every setup or written position. The neighbour scan an eyeblossom makes reads the view through chunk sections, so it visits blocks in vanilla's section order.",
-  "version": "26.3"
+  "_notes": "Vanilla eyeblossom, potted eyeblossom, dried ghast and nether portal routines, recorded by the asset generator's EyeblossomGhastPortalFixtures.java against a block view of the case's setup (air elsewhere, void air outside the build height of -64 to 319), with a legacy random seeded with seed (0 by default) as both the routine's random and the level's. call is randomTick (the origin's state, only when its isRandomlyTicking holds, which ticks records), tick (the origin's scheduled tick) or set (Level.setBlock of state at the origin with UPDATE_ALL). dimension (minecraft:overworld by default) gives the dimension type's attributes and its timelines, sampled with every clock at dayTime (0 by default); biomes add no attributes. difficulty (normal by default), spawnMobs and spawnMonsters (true by default) are the level's; playerNear (true by default) answers anyPlayerCloseEnoughForSpawning. The level's game time is 20, chunks have no inhabited time, and getCurrentDifficultyAt is the DifficultyInstance of the difficulty at that game time. Writes store the block and, as Level.setBlock does, run the new state's onPlace and then, unless UPDATE_KNOWN_SHAPE is set, the neighbours' shape updates; neighbour notifications are not run. draws lists each draw in order; writes the block changes with their flags; scheduled the block and fluid ticks scheduled with their delays (a block tick counts as pending for hasScheduledTick, as do the case's pending ticks); events the level events; gameEvents the game events with the state they carry; sounds every sound with its position (or the entity it follows), source, volume and pitch (null when the pitch comes from a mob's own random, as a mob's ambient sound's does); particles the particles sent; entities the entities added, with their rotation, age, portal cooldown, main hand and spawn flags; destroyed the blocks destroyed and whether they drop. after holds the final state of every setup or written position. The neighbour scan an eyeblossom makes reads the view through chunk sections, so it visits blocks in vanilla's section order. The level holds vanilla's registries with their tags, as a server loads them from the vanilla pack, and every position is in plains. A case's date (capturedOn, the local date of the first capture, by default) is the day vanilla's SpecialDates sees: the probe moves vanilla's HALLOWEEN constant by as many days as the date is from the real one, so vanilla's own comparison answers as on that date. A mob's entry also has its head item when it wears one and its weapon's enchantments when enchanted; a chicken's has its variant, sound variant and jockey flag, and a jockey chicken's head yaw is null: vanilla's LivingEntity constructor draws it from Math.random() and nothing sets it later.",
+  "version": "26.3",
+  "capturedOn": "2026-11-09"
 }

@@ -14,7 +14,23 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.time.LocalDate;
+import java.time.Month;
+import java.time.MonthDay;
+import java.time.temporal.ChronoUnit;
+import net.minecraft.core.Registry;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.resources.RegistryDataLoader;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.repository.ServerPacksSource;
+import net.minecraft.server.packs.resources.MultiPackResourceManager;
+import net.minecraft.util.SpecialDates;
+import net.minecraft.world.level.entity.EntityTypeTest;
+import net.minecraft.world.entity.animal.chicken.Chicken;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
@@ -72,8 +88,9 @@ public final class EyeblossomGhastPortalFixtures {
         + "the case's setup (air elsewhere, void air outside the build height of -64 to 319), with a legacy random "
         + "seeded with seed (0 by default) as both the routine's random and the level's. call is randomTick (the "
         + "origin's state, only when its isRandomlyTicking holds, which ticks records), tick (the origin's scheduled "
-        + "tick) or set (Level.setBlock of state at the origin with UPDATE_ALL). dimension (minecraft:overworld by default) gives the dimension type's attributes and its "
-        + "timelines, sampled with every clock at dayTime (0 by default); biomes add nothing. difficulty (normal by "
+        + "tick) or set (Level.setBlock of state at the origin with UPDATE_ALL). dimension (minecraft:overworld by "
+        + "default) gives the dimension type's attributes and its timelines, sampled with every clock at dayTime (0 "
+        + "by default); biomes add no attributes. difficulty (normal by "
         + "default), spawnMobs and spawnMonsters (true by default) are the level's; playerNear (true by default) "
         + "answers anyPlayerCloseEnoughForSpawning. The level's game time is 20, chunks have no inhabited time, and "
         + "getCurrentDifficultyAt is the DifficultyInstance of the difficulty at that game time. Writes store the "
@@ -86,7 +103,18 @@ public final class EyeblossomGhastPortalFixtures {
         + "as a mob's ambient sound's does); particles the particles sent; entities the entities added, with their "
         + "rotation, age, portal cooldown, main hand and spawn flags; destroyed the blocks destroyed and whether "
         + "they drop. after holds the final state of every setup or written position. The neighbour scan an "
-        + "eyeblossom makes reads the view through chunk sections, so it visits blocks in vanilla's section order.";
+        + "eyeblossom makes reads the view through chunk sections, so it visits blocks in vanilla's section order. "
+        + "The level holds vanilla's registries with their tags, as a server loads them from the vanilla pack, and "
+        + "every position is in plains. A case's date (capturedOn, the local date of the first capture, by default) "
+        + "is the day vanilla's SpecialDates sees: the probe moves vanilla's HALLOWEEN constant by as many days as "
+        + "the date is from the real one, so vanilla's own comparison answers as on that date. A mob's entry also has "
+        + "its head item when it wears one and its weapon's enchantments when enchanted; a chicken's has its variant, "
+        + "sound variant and jockey flag, and a jockey chicken's head yaw is null: vanilla's LivingEntity constructor "
+        + "draws it from Math.random() and nothing sets it later.";
+
+    private static LocalDate capturedOn;
+
+    private static RegistryAccess registries;
 
     private static final List<String> OUTPUTS = List.of(
         "ticks", "draws", "writes", "scheduled", "events", "gameEvents", "sounds", "particles",
@@ -98,6 +126,15 @@ public final class EyeblossomGhastPortalFixtures {
         var root = JsonParser.parseString(Files.readString(path)).getAsJsonObject();
         root.addProperty("_notes", NOTES);
         root.addProperty("version", version);
+
+        // The local date the cases without a date of their own run on: the day of the first capture, kept for later
+        // recordings of a few cases, so every case sees the same day.
+        if (!root.has("capturedOn")) {
+            root.addProperty("capturedOn", LocalDate.now().toString());
+        }
+
+        capturedOn = LocalDate.parse(root.get("capturedOn").getAsString());
+        registries = loadRegistries();
 
         var selected = arguments.length > 1 ? Set.of(arguments[1].split("\\+")) : null;
         var captured = 0;
@@ -123,6 +160,9 @@ public final class EyeblossomGhastPortalFixtures {
         for (var key : OUTPUTS) {
             input.remove(key);
         }
+
+        var date = input.has("date") ? LocalDate.parse(input.get("date").getAsString()) : capturedOn;
+        runOn(date);
 
         var seed = input.has("seed") ? input.get("seed").getAsLong() : 0L;
         var random = new RecordingRandom(seed);
@@ -238,6 +278,51 @@ public final class EyeblossomGhastPortalFixtures {
                     result.add(lookup.getOrThrow(key));
                 }
             }
+        }
+    }
+
+    // Vanilla's built-in and data pack registries with their tags, as a server loads them from the vanilla pack:
+    // spawning a chicken or enchanting a weapon reads variants, enchantments and tags from them.
+    @SuppressWarnings("unchecked")
+    private static RegistryAccess loadRegistries() {
+        var pack = ServerPacksSource.createVanillaPackSource().fullResources();
+        var resources = new MultiPackResourceManager(PackType.SERVER_DATA, List.of(pack));
+        var loadPendingTags = Vanilla.method("net.minecraft.tags.TagLoader", "loadPendingTags",
+            "net.minecraft.server.packs.resources.ResourceManager", "net.minecraft.core.Registry");
+        var all = new ArrayList<Registry<?>>();
+        BuiltInRegistries.REGISTRY.forEach(all::add);
+        for (var registry : List.copyOf(all)) {
+            var pending = (Optional<Registry.PendingTags<?>>)Vanilla.call(loadPendingTags, null, resources, registry);
+            pending.ifPresent(Registry.PendingTags::apply);
+        }
+
+        var lookups = new ArrayList<HolderLookup.RegistryLookup<?>>();
+        all.forEach(lookups::add);
+        var loaded = RegistryDataLoader.load(resources, lookups, RegistryDataLoader.WORLD_REGISTRIES, Runnable::run)
+            .join();
+        loaded.registries().forEach(entry -> all.add(entry.value()));
+        return new RegistryAccess.ImmutableRegistryAccess(all);
+    }
+
+    // Makes vanilla's SpecialDates.isHalloween answer as it would on date: it compares today's local date with its
+    // HALLOWEEN constant, so the probe moves the constant by as many days as date is from today. The comparison, and
+    // the code reading it, stay vanilla's.
+    private static void runOn(LocalDate date) throws Exception {
+        SpecialDates.isHalloween();
+        var today = LocalDate.now();
+        var halloween = LocalDate.of(date.getYear(), Month.OCTOBER, 31);
+        var shifted = today.plusDays(ChronoUnit.DAYS.between(date, halloween));
+        var field = SpecialDates.class.getField("HALLOWEEN");
+        var unsafeField = Class.forName("sun.misc.Unsafe").getDeclaredField("theUnsafe");
+        unsafeField.setAccessible(true);
+        var unsafe = unsafeField.get(null);
+        var type = unsafe.getClass();
+        var base = type.getMethod("staticFieldBase", Field.class).invoke(unsafe, field);
+        var offset = (long)type.getMethod("staticFieldOffset", Field.class).invoke(unsafe, field);
+        type.getMethod("putObject", Object.class, long.class, Object.class)
+            .invoke(unsafe, base, offset, MonthDay.from(shifted));
+        if (SpecialDates.isHalloween() != MonthDay.from(date).equals(MonthDay.of(Month.OCTOBER, 31))) {
+            throw new IllegalStateException("Could not move vanilla's Halloween to " + date);
         }
     }
 
@@ -505,6 +590,9 @@ public final class EyeblossomGhastPortalFixtures {
                 .set(server, new net.minecraft.util.debug.ServerDebugSubscribers(server));
             field(ServerLevel.class, "server").set(level, server);
 
+            // Vanilla's registries, which chicken variants and spawn enchantments read.
+            field(net.minecraft.world.level.Level.class, "registryAccess").set(level, registries);
+
             // Sound seeds come from the level's own generator, not its random: give it one apart from the recorder.
             field(net.minecraft.world.level.Level.class, "soundSeedGenerator").set(level, RandomSource.create(0));
             return level;
@@ -733,13 +821,31 @@ public final class EyeblossomGhastPortalFixtures {
             return List.of();
         }
 
+        @Override public <T extends Entity> List<T> getEntities(EntityTypeTest<Entity, T> type, AABB box,
+            java.util.function.Predicate<? super T> predicate) {
+            return List.of();
+        }
+
+        // Every position is in plains, whose chickens are the temperate ones.
+        @Override public Holder<Biome> getBiome(BlockPos pos) {
+            return registries.lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.PLAINS);
+        }
+
         @Override public boolean addFreshEntity(Entity entity) {
             added.add(entity);
             return true;
         }
 
+        // A chicken's sound variant, which vanilla keeps private.
+        private static String soundVariant(Chicken chicken) throws Exception {
+            var getter = Chicken.class.getDeclaredMethod("getSoundVariant");
+            getter.setAccessible(true);
+            var variant = (Holder<?>)getter.invoke(chicken);
+            return variant.unwrapKey().orElseThrow().identifier().toString();
+        }
+
         // The entities added, read once the routine is done.
-        JsonArray entities() {
+        JsonArray entities() throws Exception {
             var result = new JsonArray();
             for (var entity : added) {
                 var recorded = new JsonObject();
@@ -747,9 +853,23 @@ public final class EyeblossomGhastPortalFixtures {
                 var position = entity.position();
                 recorded.add("pos", coordinates(position.x, position.y, position.z));
                 recorded.addProperty("yaw", entity.getYRot());
-                recorded.addProperty("headYaw", entity.getYHeadRot());
+                // A jockey chicken keeps the head turn LivingEntity's constructor drew from Math.random() (in
+                // radians, so 0 to 2pi degrees), which nothing sets later: it can't be reproduced, so it's null.
+                if (entity instanceof Chicken jockey && jockey.isChickenJockey()) {
+                    recorded.add("headYaw", JsonNull.INSTANCE);
+                } else {
+                    recorded.addProperty("headYaw", entity.getYHeadRot());
+                }
+
                 recorded.addProperty("pitch", entity.getXRot());
                 recorded.addProperty("portalCooldown", entity.getPortalCooldown());
+                if (entity instanceof Chicken chicken) {
+                    recorded.addProperty("variant", chicken.getVariant().unwrapKey().orElseThrow().identifier()
+                        .toString());
+                    recorded.addProperty("soundVariant", soundVariant(chicken));
+                    recorded.addProperty("jockey", chicken.isChickenJockey());
+                }
+
                 if (entity instanceof AgeableMob ageable) {
                     recorded.addProperty("age", ageable.getAge());
                 }
@@ -761,6 +881,21 @@ public final class EyeblossomGhastPortalFixtures {
                     recorded.addProperty("enchanted", held.isEnchanted());
                     recorded.addProperty("leftHanded", mob.isLeftHanded());
                     recorded.addProperty("canPickUpLoot", mob.canPickUpLoot());
+                    var head = mob.getItemBySlot(EquipmentSlot.HEAD);
+                    if (!head.isEmpty()) {
+                        recorded.addProperty("head", BuiltInRegistries.ITEM.getKey(head.getItem()).toString());
+                    }
+
+                    if (held.isEnchanted()) {
+                        var enchantments = new JsonArray();
+                        for (var entry : held.getEnchantments().entrySet()) {
+                            var enchantment = entry.getKey().unwrapKey().orElseThrow().identifier().toString();
+                            enchantments.add(enchantment + " " + entry.getIntValue());
+                        }
+
+                        recorded.add("enchantments", enchantments);
+                    }
+
                     recorded.addProperty("vehicle", entity.getVehicle() == null ? null
                         : BuiltInRegistries.ENTITY_TYPE.getKey(entity.getVehicle().getType()).toString());
                 }
