@@ -5,16 +5,19 @@ using Obsidian.API.Registries;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Redstone;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace Obsidian.Tests;
 
 /// <summary>
-/// The level ticks only the block entities whose classes tick, from a list each chunk keeps beside its block entities
-/// (see <see cref="Chunk.TickingBlockEntities"/>). These guard what that list risks: a block entity ticked from before
-/// it was placed until after it's gone, and the upkeep every block entity still gets each tick.
+/// The level's block entity pass ticks only the block entities whose classes tick (<c>BlockEntity.Ticks</c>), and
+/// keeps up the others only when they have something to do, in one walk over each chunk's block entities in their
+/// order. These guard what that risks: a block entity ticked when it shouldn't be or not ticked when it should, and
+/// the upkeep of those that don't tick happening where it did in the walk.
 /// </summary>
 public sealed class TickingBlockEntities
 {
@@ -64,16 +67,40 @@ public sealed class TickingBlockEntities
         Assert.Equal(spent + 2, reloaded.CookingSpent);
     }
 
-    [Fact(DisplayName = "A block entity another one's tick removes in the same pass isn't ticked",
+    [Fact(DisplayName = "A block entity a plugin puts in a chunk's dictionary directly ticks in place of the one there",
         Timeout = TestServerFactory.TestTimeout)]
-    public async Task BlockEntityRemovedDuringThePassIsNotTicked()
+    public async Task BlockEntityPutInTheDictionaryDirectlyTicks()
     {
-        await using var context = await OpenAsync("ticking-removed");
+        await using var context = await OpenAsync("ticking-direct");
+        var world = context.World;
+        var chunk = Assert.IsType<Chunk>(world.GetLoadedChunk(0, 0));
+        var furnace = await PlaceFurnaceAsync(world);
+        await TickAsync(world, 1);
+
+        // Like a plugin writing the public dictionary: no level or chunk method hears of it.
+        var key = chunk.BlockEntities.Single(entry => ReferenceEquals(entry.Value, furnace)).Key;
+        var replacement = Assert.IsType<FurnaceBlockEntity>(BlockEntityNbt.Create(furnace.Id, machine));
+        Fill(replacement);
+        chunk.BlockEntities[key] = replacement;
+
+        var spent = furnace.CookingSpent;
+        await TickAsync(world, 2);
+
+        Assert.Equal(spent, furnace.CookingSpent);
+        Assert.Equal(2, replacement.CookingSpent);
+    }
+
+    [Fact(DisplayName = "A block entity another one's tick replaces in the same pass isn't ticked",
+        Timeout = TestServerFactory.TestTimeout)]
+    public async Task BlockEntityReplacedDuringThePassIsNotTicked()
+    {
+        await using var context = await OpenAsync("ticking-replaced");
         var world = context.World;
         var first = machine;
         var second = machine + Vector.East * 2;
 
-        // Two breakers, each removing the other on its tick: whichever ticks first, the other never does.
+        // Two breakers, each replacing the other on its tick without marking it removed: whichever ticks first, the
+        // other never does.
         await PlaceBreakerAsync(world, first, second);
         await PlaceBreakerAsync(world, second, first);
         await TickAsync(world, 3);
@@ -84,27 +111,55 @@ public sealed class TickingBlockEntities
         Assert.NotEqual(firstTicked, secondTicked);
     }
 
-    [Fact(DisplayName = "A container that doesn't tick still tells its comparator of items moved without a block update",
+    [Fact(DisplayName = "A container that doesn't tick tells its comparator where it is in the pass, before later ticks",
         Timeout = TestServerFactory.TestTimeout)]
-    public async Task IdleContainerTellsItsComparator()
+    public async Task IdleContainerTellsItsComparatorInOrder()
     {
         await using var context = await OpenAsync("ticking-idle-container");
         var world = context.World;
-        var comparator = BlocksRegistry.GetDefault(BlockIds.Comparator).WithProperty("facing", "west");
-        var dust = machine + Vector.East * 2;
+        var chunk = Assert.IsType<Chunk>(world.GetLoadedChunk(0, 0));
+        var chestAt = machine + Vector.Up;
+        var dust = chestAt + Vector.East * 2;
 
-        var chest = await PlaceAsync<ContainerBlockEntity>(world, machine, BlocksRegistry.Chest);
-        await world.SetBlockAsync(machine + Vector.East, comparator, doBlockUpdate: true);
-        await world.SetBlockAsync(dust, BlocksRegistry.RedstoneWire, doBlockUpdate: true);
-        await TickAsync(world, 4);
-
-        Assert.Equal("0", world.BlockUpdates.GetBlock(dust).GetProperty("power"));
+        var chest = await PlaceAsync<ContainerBlockEntity>(world, chestAt, BlocksRegistry.Chest);
+        await PlaceComparatorAsync(world, chestAt);
 
         // Like a player's click: the items change outside the level's tick, with no block update.
         chest.Inventory.SetItem(0, new ItemStack(ItemsRegistry.Stone, 64));
         await TickAsync(world, 4);
 
-        Assert.Equal("1", world.BlockUpdates.GetBlock(dust).GetProperty("power"));
+        Assert.Equal("1", Power(world, dust));
+
+        chest.Inventory.SetItem(0, null);
+        await TickAsync(world, 4);
+
+        Assert.Equal("0", Power(world, dust));
+
+        // A hopper under the chest, after it in the chunk's block entities, pulls from it.
+        var hopper = await PlaceAsync<ContainerBlockEntity>(world, machine, BlocksRegistry.Hopper);
+        await TickAsync(world, 2);
+        var order = chunk.BlockEntities.Select(entry => entry.Value).ToList();
+
+        Assert.True(order.IndexOf(chest) < order.IndexOf(hopper));
+
+        // An item put in outside the tick: the chest's place in the pass comes first, so its comparator hears of the
+        // item and schedules its update before the hopper takes it.
+        chest.Inventory.SetItem(0, new ItemStack(ItemsRegistry.Stone, 1));
+        await TickAsync(world, 1);
+
+        Assert.True(hopper.Inventory[0]?.Is(ItemsRegistry.Stone));
+
+        // Another while the hopper waits out its cooldown: the update already scheduled reads it, two ticks after
+        // the first item. Had the chest been kept up after the hopper, nothing would have been scheduled for the
+        // first, and the dust would light a tick later.
+        chest.Inventory.SetItem(0, new ItemStack(ItemsRegistry.Stone, 1));
+        await TickAsync(world, 1);
+
+        Assert.Equal("0", Power(world, dust));
+
+        await TickAsync(world, 1);
+
+        Assert.Equal("1", Power(world, dust));
     }
 
     // A server whose nine chunks around the origin have a stone floor, the middle one block-ticking under a ticket.
@@ -128,11 +183,32 @@ public sealed class TickingBlockEntities
     private static async Task<FurnaceBlockEntity> PlaceFurnaceAsync(World world)
     {
         var furnace = await PlaceAsync<FurnaceBlockEntity>(world, machine, BlocksRegistry.Furnace);
-        furnace.Inventory.SetItem(0, new ItemStack(ItemsRegistry.RawIron, 2));
-        furnace.Inventory.SetItem(1, new ItemStack(ItemsRegistry.Coal, 1));
+        Fill(furnace);
 
         return furnace;
     }
+
+    private static void Fill(FurnaceBlockEntity furnace)
+    {
+        furnace.Inventory.SetItem(0, new ItemStack(ItemsRegistry.RawIron, 2));
+        furnace.Inventory.SetItem(1, new ItemStack(ItemsRegistry.Coal, 1));
+    }
+
+    // A comparator reading the container at position from the east, on stone, and dust beyond it.
+    private static async Task PlaceComparatorAsync(World world, Vector position)
+    {
+        var comparator = BlocksRegistry.GetDefault(BlockIds.Comparator).WithProperty("facing", "west");
+        var reading = position + Vector.East;
+        var dust = reading + Vector.East;
+
+        await world.SetBlockAsync(reading + Vector.Down, BlocksRegistry.Stone);
+        await world.SetBlockAsync(dust + Vector.Down, BlocksRegistry.Stone);
+        await world.SetBlockAsync(reading, comparator, doBlockUpdate: true);
+        await world.SetBlockAsync(dust, BlocksRegistry.RedstoneWire, doBlockUpdate: true);
+        await TickAsync(world, 4);
+    }
+
+    private static string? Power(World world, Vector dust) => world.BlockUpdates.GetBlock(dust).GetProperty("power");
 
     private static async Task PlaceBreakerAsync(World world, Vector position, Vector other)
     {
@@ -157,8 +233,9 @@ public sealed class TickingBlockEntities
     }
 
     /// <summary>
-    /// Removes the block entity at <see cref="Other"/> on its tick, and marks that it ticked with a gold block above
-    /// itself.
+    /// On its tick, marks that it ticked with a gold block above itself, and replaces the block entity at
+    /// <see cref="Other"/> with a sign's through <c>IRedstoneLevel.SetBlockEntityAt</c>, which doesn't mark the one
+    /// replaced removed.
     /// </summary>
     private sealed class Breaker : BlockEntity
     {
@@ -166,8 +243,11 @@ public sealed class TickingBlockEntities
 
         protected internal override async ValueTask TickAsync()
         {
-            await this.Level!.SetBlockAsync(this.BlockPosition + Vector.Up, BlocksRegistry.GoldBlock);
-            await this.Level.SetBlockAsync(this.Other, BlocksRegistry.Air);
+            var level = this.Level!;
+            await level.SetBlockAsync(this.BlockPosition + Vector.Up, BlocksRegistry.GoldBlock);
+
+            var sign = BlockEntityNbt.Create(this.Id, this.Other);
+            ((IRedstoneLevel)level).SetBlockEntityAt(this.Other, sign);
         }
     }
 
