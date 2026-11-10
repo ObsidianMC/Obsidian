@@ -680,6 +680,12 @@ public abstract partial class AbstractLevel : ILevel
 
     internal void BroadcastBlockChange(IBlock block, Vector location)
     {
+        if (this.ActiveBlockUse is BlockUseEffects effects)
+        {
+            effects.After(() => this.BroadcastBlockChange(block, location));
+            return;
+        }
+
         this.PacketBroadcaster.BroadcastTo(new BlockUpdatePacket(location, block.GetHashCode()), PlayersInRange(location));
     }
 
@@ -688,6 +694,12 @@ public abstract partial class AbstractLevel : ILevel
     /// </summary>
     internal void BroadcastLevelEvent(int type, Vector location, int data)
     {
+        if (this.ActiveBlockUse is BlockUseEffects effects)
+        {
+            effects.After(() => this.BroadcastLevelEvent(type, location, data));
+            return;
+        }
+
         this.PacketBroadcaster.BroadcastTo(new LevelEventPacket(type, location, data), PlayersInRange(location));
     }
 
@@ -1020,6 +1032,9 @@ public abstract partial class AbstractLevel : ILevel
     /// with. Called under the simulation gate.
     /// </summary>
     /// <param name="timings">The tick's timings, which time the actions apart from the spawns; none outside a tick.</param>
+    /// <summary>Runs the entity actions queued so far, as the level's tick does.</summary>
+    internal Task RunQueuedEntityActionsAsync() => this.RunEntityActionsAsync();
+
     private async Task RunEntityActionsAsync(TickTimings? timings = null)
     {
         var simulationCount = simulationActions.Count;
@@ -1963,7 +1978,10 @@ public abstract partial class AbstractLevel : ILevel
         }
         if (!TryAddEntity(entity, hostOwned))
             return false;
-        entity.SpawnEntity();
+        if (this.ActiveBlockUse is BlockUseEffects effects)
+            effects.After(() => entity.SpawnEntity());
+        else
+            entity.SpawnEntity();
         return true;
     }
 

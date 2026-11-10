@@ -171,6 +171,7 @@ public sealed class PluginMobs
                 RegistryId = definition.Id
             });
             player.Inventory.SetItem(player.CurrentHeldItemSlot, egg);
+            player.Level.TryAddPlayer(player);
             await BlockUpdates.UseOn(clicked, BlockFace.Up).HandleAsync(context.Server, player);
             var spawned = Assert.Single(world.GetEntitiesInRange((VectorD)clicked, 2).OfType<PluginMob>());
             Assert.Equal(new VectorD(4.5, height, 4.5), spawned.Position);

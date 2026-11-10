@@ -1,41 +1,24 @@
-﻿using Obsidian.API.Blocks;
-using Obsidian.API.Events;
-using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
-using Obsidian.API.Inventory.DataComponents;
-using Obsidian.WorldData;
-using Obsidian.WorldData.Redstone;
-using Obsidian.Entities.AI;
+using Obsidian.Entities;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
+using Obsidian.WorldData;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
+/// <summary>
+/// A player's right click on a block. Like vanilla's <c>ServerPlayerGameMode.useItemOn</c>, the block's own use comes
+/// first (bound per block from the vanilla class that declares it, see <see cref="UseBehaviors"/>), then the held
+/// item's use on the block, then placement; one step then awards what a successful use owes and answers the client.
+/// </summary>
 public partial class UseItemOnPacket
 {
-    /// <summary>
-    /// Whether sneaking with an item in either hand skips using the block there: the item is placed instead, as in
-    /// vanilla. Sneaking with empty hands still uses the block.
-    /// </summary>
-    internal static bool BypassesBlockUse(bool sneaking, ItemStack? mainHand, ItemStack? offHand) =>
-        sneaking && (mainHand is { Count: > 0 } || offHand is { Count: > 0 });
+    private const int OffhandSlot = 45;
 
-    // Blocks whose screen opens through the interact event when used without sneaking. Vanilla has no tag for these.
-    private static readonly HashSet<int> interactableBlocks =
-    [
-        BlockIds.Chest, BlockIds.EnderChest, BlockIds.TrappedChest, BlockIds.Anvil, BlockIds.ChippedAnvil,
-        BlockIds.DamagedAnvil, BlockIds.Hopper, BlockIds.Smoker, BlockIds.Furnace, BlockIds.CraftingTable,
-        BlockIds.Barrel, BlockIds.BlastFurnace, BlockIds.Grindstone, BlockIds.BrewingStand, BlockIds.EnchantingTable,
-        BlockIds.SmithingTable, BlockIds.Stonecutter, BlockIds.Loom, BlockIds.CartographyTable, BlockIds.Dispenser,
-        BlockIds.Dropper, BlockIds.Beacon, BlockIds.Lectern, BlockIds.Crafter,
-        // Like ChestBlock.useWithoutItem, copper chests consume normal use before an axe can scrape them.
-        .. TagsRegistry.Block.CopperChests.Entries,
-        .. TagsRegistry.Block.ShulkerBoxes.Entries
-    ];
-
-    // The vanilla block classes that implement GameMasterBlock, whose items (GameMasterBlockItem) only creative
-    // operators place.
-    private static readonly HashSet<string> gameMasterBlocks =
-        ["CommandBlock", "StructureBlock", "JigsawBlock", "TestBlock", "TestInstanceBlock"];
+    // Vanilla's handleUseItemOn: how far past the block the clicked point may be, on any axis, before the click is
+    // refused as impossible.
+    private const double CursorLimit = 1.0000001;
 
     [Field(0), ActualType(typeof(int)), VarLength]
     public InteractionHand Hand { get; private set; } // Hand it was placed from. 0 = Main, 1 = Off
@@ -58,6 +41,13 @@ public partial class UseItemOnPacket
     [Field(8), VarLength]
     public int Sequence { get; private set; }
 
+    /// <summary>
+    /// Whether sneaking with an item in either hand skips using the block there: the item is used or placed instead,
+    /// as in vanilla. Sneaking with empty hands still uses the block.
+    /// </summary>
+    internal static bool BypassesBlockUse(bool sneaking, ItemStack? mainHand, ItemStack? offHand) =>
+        sneaking && (mainHand is { Count: > 0 } || offHand is { Count: > 0 });
+
     public override void Populate(INetStreamReader reader)
     {
         this.Hand = reader.ReadVarInt<InteractionHand>();
@@ -69,648 +59,249 @@ public partial class UseItemOnPacket
         this.Sequence = reader.ReadVarInt();
     }
 
-    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player) =>
+        await this.UseAsync(server, player);
+
+    /// <summary>Handles the click and returns how it went, or null when it was refused before any use.</summary>
+    internal async ValueTask<UseResult?> UseAsync(IServer server, IClientPlayer player)
     {
-        var handSlot = Hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
-        var bucket = player.Inventory.GetItem(handSlot);
-        if (await TryPlaceEndCrystalAsync(player, handSlot, bucket))
-            return;
-        if (bucket is
-            {
-                Count: > 0,
-                Holder.Id: ItemIds.AxolotlBucket or ItemIds.TadpoleBucket or ItemIds.CodBucket
-                    or ItemIds.SalmonBucket or ItemIds.TropicalFishBucket or ItemIds.PufferfishBucket
-            }
-            && player.Health > 0
-            && player.GameMode != GameMode.Spectator)
+        if (player is not Player user || user.Level is not AbstractLevel level)
+            return null;
+
+        // Acknowledgements belong to received sequences, not to completions that may be deferred.
+        user.QueueBlockAcknowledgement(this.Sequence);
+
+        if (!user.Alive || user.Respawning)
         {
-            var destination = Position + Face.ToVector();
-            if ((player.Position - (VectorD)destination).MagnitudeSquared() > 36 || player.Level is not Obsidian.WorldData.AbstractLevel bucketLevel || bucketLevel.IsOutsideBuildHeight(destination.Y))
-                return;
-            var terrain = new Obsidian.Entities.AI.MobTerrain(bucketLevel);
-            var existing = terrain.GetBlock(destination);
-            if (existing == null || !existing.IsAir && !existing.Is(BlockIds.Water))
-                return;
-            var type = bucket.Holder.Id switch
-            {
-                ItemIds.AxolotlBucket => EntityType.Axolotl,
-                ItemIds.TadpoleBucket => EntityType.Tadpole,
-                ItemIds.CodBucket => EntityType.Cod,
-                ItemIds.SalmonBucket => EntityType.Salmon,
-                ItemIds.TropicalFishBucket => EntityType.TropicalFish,
-                _ => EntityType.Pufferfish
-            };
-            var mob = Obsidian.Entities.Factories.EntitySpawner.CreateMob(bucketLevel, type)!;
-            mob.EntityId = Server.GetNextEntityId();
-            mob.Position = (VectorD)destination + new VectorD(0.5f, 0, 0.5f);
-            if (!terrain.IsFree(mob.Dimension.CreateBBFromPosition(mob.Position)))
-                return;
-            await bucketLevel.SetBlockAsync(destination, BlocksRegistry.Water, true);
-            mob.InitializeAi();
-            var saved = Obsidian.Entities.EntityNbt.Save(mob)!;
-            if (bucket.GetComponent<Obsidian.API.Inventory.DataComponents.BucketEntityDataComponent>(DataComponentType.BucketEntityData) is { } component)
-            {
-                foreach (var (name, value) in component.Value)
-                {
-                    if (name is not ("id" or "UUID" or "Pos" or "Motion" or "Rotation"))
-                    {
-                        saved.Remove(name);
-                        saved.Add(name, value);
-                    }
-                }
-            }
-
-            saved.Remove("FromBucket");
-            saved.Add(new Obsidian.Nbt.NbtTag<bool>("FromBucket", true));
-            mob.ReadSave(saved);
-            mob.PersistenceRequired = true;
-            bucketLevel.SpawnEntity(mob);
-            if (player.GameMode != GameMode.Creative)
-            {
-                player.Inventory.SetItem(handSlot, ItemsRegistry.GetSingleItem(ItemsRegistry.Bucket));
-                await player.Client.QueuePacketAsync(new ContainerSetSlotPacket { ContainerId = 0, Slot = (short)handSlot, SlotData = player.Inventory.GetItem(handSlot) });
-            }
-            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = Sequence });
-            return;
-        }
-        var currentItem = bucket;
-        var progressItem = bucket is not null ? new ItemStack(bucket, bucket.Count) : null;
-        var position = this.Position;
-
-        var b = await player.Level.GetBlockAsync(position);
-
-        if (b is null)
-            return;
-
-        if (await TryUseMusicBlockAsync(player, handSlot, bucket, b))
-            return;
-
-        if (player.Level is AbstractLevel cookingLevel
-            && await cookingLevel.UseCampfireAsync(player, position, handSlot))
-        {
-            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
-            return;
+            await this.RefuseAsync(user, level);
+            return null;
         }
 
-        // Like vanilla's, a plugin's block reacts to being used before the item does, unless the player sneaks.
-        if (!player.Sneaking && Plugins.ItemBehaviors.CanUseItems(player))
+        // Like vanilla's handleUseItemOn, a click out of reach, beyond the clicked block or outside the build height
+        // is acknowledged and otherwise ignored.
+        var block = this.InReach(user) && !level.IsOutsideBuildHeight(this.Position.Y)
+            ? await level.GetBlockAsync(this.Position)
+            : null;
+        if (block is null || !user.Alive || user.Respawning)
         {
-            var usedBlock = await Plugins.BlockBehaviors.UseAsync(new BlockUseContext
-            {
-                Player = player,
-                Position = position,
-                Block = b,
-                Face = this.Face,
-                Hand = this.Hand,
-                ClickedAt = this.Cursor
-            });
-
-            if (usedBlock)
-            {
-                player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
-                return;
-            }
+            await this.RefuseAsync(user, level);
+            return null;
         }
 
-        // Vanilla's composter: a compostable item goes in from the held hand, and bone meal comes out when it's ready.
-        if (!player.Sneaking
-            && player.Level is AbstractLevel composterLevel
-            && await composterLevel.UseComposterAsync(player, position, b, handSlot))
+        int handSlot;
+        ItemStack? item;
+        ItemStack? usedItem;
+        using (await user.Inventory.LockAsync())
         {
-            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
-            return;
+            handSlot = this.Hand == InteractionHand.OffHand ? OffhandSlot : user.CurrentHeldItemSlot;
+            item = user.Inventory.GetItem(handSlot);
+            usedItem = item is null ? null : new ItemStack(item, item.Count);
         }
 
-        // Vanilla's redstone components react to being used with the main hand: levers, buttons, repeaters,
-        // comparators and daylight detectors. Sneaking with an item in either hand places the item instead.
-        var bypassesUse = BypassesBlockUse(
-            player.Sneaking,
-            player.Inventory.GetItem(player.CurrentHeldItemSlot),
-            player.Inventory.GetItem(45));
-        if (!bypassesUse
-            && this.Hand == InteractionHand.MainHand
-            && player.GameMode != GameMode.Spectator
-            && player.Level is AbstractLevel redstoneLevel
-            && await redstoneLevel.UseRedstoneAsync(position, player, player.GameMode != GameMode.Adventure))
+        // The inventory and world snapshots need no shared lock: exchanges validate both again at commitment.
+        IBlockEntity? blockEntity;
+        lock (level.Fluids.TickLock)
         {
-            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
-            return;
+            block = level.BlockUpdates.GetBlock(this.Position);
+            blockEntity = level.GetResidentBlockEntity(this.Position);
         }
 
-        // Beds and respawn anchors, which explode where their environment attributes say they don't work.
-        if (!player.Sneaking
-            && player.GameMode != GameMode.Spectator
-            && player.Level is AbstractLevel useLevel
-            && (await useLevel.UseBedAsync(player, position, b)
-                || await useLevel.UseRespawnAnchorAsync(player, position, b, handSlot)))
+        var use = new BlockUse
         {
-            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
-            return;
-        }
-
-        // Doors, trapdoors and fence gates open and close by hand, in adventure mode too.
-        if (!player.Sneaking
-            && player.GameMode != GameMode.Spectator
-            && player.Level is AbstractLevel doorLevel)
-        {
-            string? sound;
-            lock (doorLevel.Fluids.TickLock)
-                sound = VanillaPlacement.Use(doorLevel.BlockUpdates, position, b, player);
-
-            if (sound is not null)
-            {
-                // Vanilla's setOpen plays with the acting player as the source, so their own client plays it and nobody else's.
-                doorLevel.PacketBroadcaster.BroadcastToLevelInRange(doorLevel, position, new SoundPacket
-                {
-                    SoundLocation = sound,
-                    SoundPosition = new SoundPosition(position.X + 0.5, position.Y + 0.5, position.Z + 0.5),
-                    Category = SoundCategory.Blocks,
-                    Volume = 1,
-                    Pitch = 0.9f + Random.Shared.NextSingle() * 0.1f,
-                    Seed = Random.Shared.NextInt64()
-                }, player.EntityId);
-                player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
-                return;
-            }
-        }
-
-        // Signs take dyes, ink, glow ink and honeycomb, and open to be written on otherwise.
-        if (player.GameMode != GameMode.Spectator
-            && (!player.Sneaking || currentItem is not { Count: > 0 })
-            && Signs.IsSign(b))
-        {
-            var (used, consume) = Signs.Use(player.Level, position, b, player, currentItem);
-            if (used)
-            {
-                if (consume && currentItem is { Count: > 0 } && player.GameMode != GameMode.Creative)
-                {
-                    player.Inventory.RemoveItem(handSlot, 1);
-                    await ((Entities.PlayerBase)player).SyncInventorySlotAsync(handSlot);
-                }
-
-                player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
-                return;
-            }
-        }
-
-        // Like vanilla's TntBlock.useItemOn, flint and steel or a fire charge lights TNT.
-        if (!player.Sneaking
-            && b.RegistryId == BlockIds.Tnt
-            && currentItem is { Count: > 0, Holder.Id: ItemIds.FlintAndSteel or ItemIds.FireCharge }
-            && player.GameMode is GameMode.Survival or GameMode.Creative
-            && player.Level is AbstractLevel tntLevel
-            && tntLevel.LevelData.GetBooleanRule("tnt_explodes"))
-        {
-            await tntLevel.SetBlockAsync(position, BlocksRegistry.Air, true);
-            Entities.PrimedTnt.Prime(tntLevel, position, player);
-            await this.ConsumePortalItemAsync(player, currentItem);
-            player.Statistics.Increment(currentItem.Holder.UnlocalizedName, type: "minecraft:used");
-            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
-            return;
-        }
-
-        // Like vanilla's FenceBlock, using a fence ties the mobs the player leads to it, whatever the player holds.
-        if (player.GameMode != GameMode.Spectator
-            && player.Level is AbstractLevel fenceLevel
-            && Entities.LeashKnot.IsFence(b)
-            && Entities.LeashKnot.TiePlayerMobs(fenceLevel, player, position))
-        {
-            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
-            return;
-        }
-
-        // Like vanilla's HangingEntityItem.useOn: item frames and paintings hang in front of the face used.
-        if (currentItem is { Count: > 0, Holder.Id: ItemIds.ItemFrame or ItemIds.GlowItemFrame or ItemIds.Painting }
-            && player.GameMode is GameMode.Survival or GameMode.Creative
-            && (player.Sneaking || !interactableBlocks.Contains(b.RegistryId))
-            && player.Level is AbstractLevel hangLevel
-            && player is Entities.PlayerBase hanger)
-        {
-            var hangAt = position + this.Face.ToVector();
-            Entities.HangingEntity? hanging = currentItem.Holder.Id switch
-            {
-                ItemIds.Painting => await Entities.Painting.CreateAsync(hangLevel, hangAt, this.Face),
-                ItemIds.GlowItemFrame => new Entities.GlowItemFrame { Level = hangLevel },
-                _ => new Entities.ItemFrame { Level = hangLevel }
-            };
-
-            if (hanging is Entities.ItemFrame frame)
-                frame.Hang(hangAt, this.Face);
-
-            if (hanging is not null && await Entities.HangingEntity.PlaceAsync(hanging, hangLevel, hanger, handSlot))
-                player.Statistics.Increment(currentItem.Holder.UnlocalizedName, type: "minecraft:used");
-
-            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
-            return;
-        }
-
-        if (interactableBlocks.Contains(b.RegistryId) && !player.Sneaking)
-        {
-            await server.EventDispatcher.ExecuteEventAsync(new PlayerInteractEventArgs(player, server)
-            {
-                Item = currentItem,
-                Block = b,
-                BlockLocation = this.Position,
-                Hand = this.Hand,
-            });
-
-            return;
-        }
-
-        // Like vanilla, the block reacts first (above); then the item does, here a plugin's item.
-        if (currentItem is { Count: > 0 } && Plugins.ItemBehaviors.CanUseItems(player))
-        {
-            var used = await Plugins.ItemBehaviors.UseOnBlockAsync(new ItemUseOnBlockContext
-            {
-                Player = player,
-                Stack = currentItem,
-                Hand = this.Hand,
-                Position = position,
-                Face = this.Face,
-                Block = b,
-                ClickedAt = this.Cursor
-            });
-
-            if (used)
-            {
-                await player.FireProgressAsync("item_used_on_block",
-                    item: progressItem, block: b, position: this.Position);
-
-                player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
-                return;
-            }
-        }
-
-        if (await this.TryPlaceMinecartAsync(player, handSlot, currentItem, b))
-            return;
-
-        if (await this.TryUseSpawnEggAsync(player, handSlot, currentItem, b))
-            return;
-
-        if (player.Level is AbstractLevel level && currentItem is { Count: > 0 } &&
-            (currentItem.Holder.Id is ItemIds.EnderEye or ItemIds.FlintAndSteel or ItemIds.FireCharge
-                || level.Portals.HasIgniter(currentItem)))
-        {
-            var used = false;
-            if (player.GameMode != GameMode.Spectator && (uint)this.Face <= (uint)BlockFace.East)
-            {
-                if (currentItem.Is(ItemsRegistry.EnderEye))
-                {
-                    used = await level.Portals.TryInsertEyeAsync(position);
-                }
-                else if (player.GameMode != GameMode.Adventure)
-                {
-                    var firePosition = position + this.Face.ToVector();
-                    var existing = await level.GetBlockAsync(firePosition);
-                    if (existing is { IsAir: true } && !level.IsOutsideBuildHeight(firePosition.Y))
-                    {
-                        used = await level.Portals.TryIgniteAsync(firePosition, igniter: currentItem);
-                        // Vanilla's BaseFireBlock.canBePlacedAt: an empty space that fire would survive in.
-                        if (!used
-                            && currentItem.Holder.Id is ItemIds.FlintAndSteel or ItemIds.FireCharge
-                            && FireBlockBehavior.CanBePlaced(level.BlockUpdates, firePosition))
-                        {
-                            var fire = FireBlockBehavior.StateFor(level.BlockUpdates, firePosition);
-
-                            await level.SetBlockAsync(firePosition, fire, true);
-                            // Vanilla's FireBlock.onPlace: the fire's first tick, 30 + random(10) ticks on.
-                            level.ScheduleBlockTick(firePosition, fire, 30 + Random.Shared.Next(10));
-                            used = true;
-                        }
-                    }
-                }
-            }
-            if (used)
-            {
-                if (currentItem.Holder.Id is ItemIds.FlintAndSteel or ItemIds.FireCharge)
-                {
-                    var soundPosition = position + this.Face.ToVector();
-                    level.PacketBroadcaster.BroadcastToLevelInRange(level, soundPosition, new SoundPacket
-                    {
-                        SoundLocation = currentItem.Is(ItemsRegistry.FlintAndSteel)
-                            ? "minecraft:item.flintandsteel.use" : "minecraft:item.firecharge.use",
-                        SoundPosition = new SoundPosition(soundPosition.X + 0.5, soundPosition.Y + 0.5, soundPosition.Z + 0.5),
-                        Category = SoundCategory.Blocks,
-                        Volume = 1,
-                        Pitch = currentItem.Is(ItemsRegistry.FlintAndSteel)
-                            ? 0.8f + Random.Shared.NextSingle() * 0.4f
-                            : 0.8f + (Random.Shared.NextSingle() - Random.Shared.NextSingle()) * 0.2f,
-                        Seed = Random.Shared.NextInt64()
-                    });
-                }
-                player.Statistics.Increment(currentItem.Holder.UnlocalizedName, type: "minecraft:used");
-                await player.FireProgressAsync("item_used_on_block",
-                    item: progressItem, block: b, position: this.Position);
-
-                await this.ConsumePortalItemAsync(player, currentItem);
-            }
-            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
-            return;
-        }
-
-        // Like vanilla's BoneMealItem.useOn: bone meal grows a block that takes it, and is used up unless the player
-        // is in creative mode, on the level's tick (see UseBoneMeal). Adventure mode can't use items on blocks.
-        if (player.Level is AbstractLevel growLevel
-            && currentItem is { Count: > 0, Holder.Id: ItemIds.BoneMeal }
-            && player.GameMode is GameMode.Survival or GameMode.Creative
-            && growLevel.UseBoneMeal(position, player, handSlot))
-        {
-            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
-            return;
-        }
-
-        // 26.3 Item.useOn delegates to the stack's block_transformer component, after the block and plugin use.
-        if (player.Level is AbstractLevel useOnLevel
-            && currentItem is { Count: > 0 }
-            && player.GameMode is GameMode.Survival or GameMode.Creative
-            && await ItemUseOnBehaviors.UseOnAsync(useOnLevel, player, currentItem, handSlot, position, this.Face))
-        {
-            player.Statistics.Increment(currentItem.Holder.UnlocalizedName, type: "minecraft:used");
-            await player.FireProgressAsync("item_used_on_block",
-                item: progressItem, block: b, position: this.Position);
-
-            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
-            return;
-        }
-
-        player.StartEating(Hand);
-
-        if (currentItem is null || player.Level is not AbstractLevel placeLevel)
-            return;
-
-        // Vanilla's ServerPlayerGameMode.useItemOn: a spectator's use opens a container at most, and places nothing.
-        if (player.GameMode == GameMode.Spectator)
-        {
-            await this.RejectPlacementAsync(player, handSlot);
-            return;
-        }
-
-        IBlock block;
-        if (currentItem.Holder.Block is BlockType pluginBlock)
-        {
-            // A plugin's block item places its block, for players that may use items.
-            if (currentItem.Count <= 0 || !Plugins.ItemBehaviors.CanUseItems(player))
-                return;
-
-            block = pluginBlock.DefaultState;
-        }
-        else if (currentItem.Is(ItemsRegistry.WaterBucket))
-        {
-            block = BlocksRegistry.Water;
-        }
-        else if (currentItem.Is(ItemsRegistry.LavaBucket))
-        {
-            block = BlocksRegistry.Lava;
-        }
-        else if (!VanillaRedstone.TryGetPlacedBlock(currentItem.Holder, out var placed)
-            && !BlocksRegistry.TryGetBlock(currentItem.Holder, out placed))
-        {
-            // The item isn't a block, or it's a plugin's item without one, which does what its behaviour does.
-            return;
-        }
-        else
-        {
-            block = placed;
-        }
-
-        // Like vanilla's BlockPlaceContext: a block goes into a clicked block it can replace (tall grass, say, but not
-        // a block of its own kind), and otherwise next to it on the clicked face, where there must be room. Buckets
-        // pour next to the clicked block.
-        var pouring = block.Is(BlockIds.Water) || block.Is(BlockIds.Lava);
-        var upperHit = this.Cursor.Y > 0.5;
-        var replacesClicked = !pouring && (b.CanBeReplaced() && b.RegistryId != block.RegistryId
-            || VanillaPlacement.SlabCanBeReplaced(b, block, true, this.Face, upperHit));
-        if (!replacesClicked)
-            position += this.Face.ToVector();
-
-        var target = await placeLevel.GetBlockAsync(position);
-        if (placeLevel.IsOutsideBuildHeight(position.Y) || !pouring && target?.CanBeReplaced() != true
-            && (target is null || !VanillaPlacement.SlabCanBeReplaced(target, block, replacesClicked, this.Face, upperHit)))
-        {
-            await this.RejectPlacementAsync(player, handSlot);
-            return;
-        }
-
-        var context = new BlockPlaceContext
-        {
-            Level = placeLevel.BlockUpdates,
-            Player = player,
-            Hand = this.Hand,
-            Item = currentItem,
+            Server = server,
+            Level = level,
+            Player = user,
+            Position = this.Position,
             Block = block,
-            Position = position,
-            ClickedPosition = this.Position,
-            ClickedFace = this.Face,
-            ClickedAt = this.Cursor,
-            ReplacesClicked = replacesClicked,
-            HorizontalDirection = PlacementDirections.Horizontal(player.Yaw.Degrees),
-            NearestLookDirection = PlacementDirections.Nearest(player.Yaw.Degrees, player.Pitch.Degrees)
-        };
-
-        // Like the block's other hooks, while the level's block updates wait, so what it reads stays as it read.
-        IBlock? state;
-        lock (placeLevel.Fluids.TickLock)
-            state = pouring ? block : GetPlacementState(context, placeLevel);
-
-        if (state is null)
-        {
-            await this.RejectPlacementAsync(player, handSlot);
-            return;
-        }
-
-        block = state;
-
-        // Vanilla's BlockItem.canPlace also requires Level.isUnobstructed for the final state, so a slab that merges into
-        // a double slab is checked as the double: the block's collision shape can't overlap a mob or player (say, the
-        // placing player's own feet when they look down and place under themselves).
-        if (!pouring && !IsUnobstructed(placeLevel, position, block))
-        {
-            await this.RejectPlacementAsync(player, handSlot);
-            return;
-        }
-
-        // Like vanilla's buckets, water poured where it evaporates (the nether) hisses instead of being placed.
-        if (block.Is(BlockIds.Water) && placeLevel.Evaporates(player, position))
-        {
-            player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
-            return;
-        }
-
-        var placing = new BlockPlaceEventArgs(server, player, block, position, placeLevel, this.Hand)
-        {
+            BlockEntity = blockEntity,
+            Face = this.Face,
+            Cursor = this.Cursor,
+            Hand = this.Hand,
+            HandSlot = handSlot,
+            Item = item,
+            UsedItem = usedItem,
             Sequence = this.Sequence
         };
 
-        await server.EventDispatcher.ExecuteEventAsync(placing);
-        if (placing.IsCancelled)
-        {
-            await this.RejectPlacementAsync(player, handSlot);
-            return;
-        }
+        var result = await this.UseBlockAsync(use);
+        if (!use.CompletionDeferred)
+            await CompleteAsync(use, result);
 
-        // What the placed item holds goes to its block entity, like a shulker box's items.
-        // A door's upper half or a bed's head goes in the same step as the block, so nothing fills its place between.
-        var placement = new BlockPlacement(player, handSlot, currentItem)
-        {
-            Placed = () => VanillaPlacement.OnPlacedByPlayer(placeLevel.BlockUpdates, position, block)
-        };
+        return result;
+    }
 
-        // The event's handlers may have filled the target (or a second half's place) or changed the player's hand while
-        // it ran: all are checked again in the same step as the block is placed, and the item is only used once it is.
-        var stored = await placeLevel.TrySetBlockAsync(
-            position,
-            block,
-            BlockUpdateFlags.All,
-            current => (pouring || current.CanBeReplaced()
-                    || VanillaPlacement.SlabCanBeReplaced(current, block, replacesClicked, this.Face, upperHit))
-                && VanillaPlacement.SecondHalfFits(placeLevel.BlockUpdates, position, block)
-                && ReferenceEquals(player.Inventory.GetItem(handSlot), currentItem)
-                && currentItem.Count > 0,
-            placement);
+    // Vanilla's Player.isWithinBlockInteractionRange with a block of leeway, and the clicked point no farther than a
+    // block from the clicked block's center.
+    private bool InReach(PlayerBase player)
+    {
+        var range = PlayerBase.BlockInteractionRange(player) + 1;
+        var eye = PlayerBase.EyePosition(player);
+        var min = (VectorD)this.Position;
+        var dx = Math.Max(Math.Max(min.X - eye.X, eye.X - (min.X + 1)), 0);
+        var dy = Math.Max(Math.Max(min.Y - eye.Y, eye.Y - (min.Y + 1)), 0);
+        var dz = Math.Max(Math.Max(min.Z - eye.Z, eye.Z - (min.Z + 1)), 0);
+        if (dx * dx + dy * dy + dz * dz >= range * range)
+            return false;
 
-        if (!stored)
-        {
-            await this.RejectPlacementAsync(player, handSlot);
-            return;
-        }
-
-        player.Statistics.Increment(currentItem.Holder.UnlocalizedName, type: "minecraft:used");
-        await player.FireProgressAsync("placed_block",
-            item: progressItem, block: block, position: position);
-        await player.FireProgressAsync("item_used_on_block",
-            item: progressItem, block: b, position: this.Position);
-
-        if (!pouring)
-            BlockSoundPlayback.Play(placeLevel, block, position, breaking: false, player.EntityId);
-
-        Signs.OnPlacedByPlayer(placeLevel, position, block, player);
-
-        var center = (VectorD)position + new VectorD(0.5, 0.5, 0.5);
-        placeLevel.EmitGameEvent(MobGameEvent.BlockPlace, center, player, affectedBlock: block);
-        player.Client.SendPacket(new BlockChangedAckPacket
-        {
-            SequenceID = Sequence
-        });
+        return Math.Abs(this.Cursor.X - 0.5) < CursorLimit
+            && Math.Abs(this.Cursor.Y - 0.5) < CursorLimit
+            && Math.Abs(this.Cursor.Z - 0.5) < CursorLimit;
     }
 
     /// <summary>
-    /// Vanilla <c>BlockItem.getPlacementState</c> and <c>canPlace</c>: what the item places where the context says,
-    /// or null where vanilla refuses it. A plugin's block decides for itself; a vanilla item's own rules come first
-    /// (blocks only creative operators place, torches and signs that go on a wall or stand), then the block's class
-    /// decides, and the state must survive there.
+    /// Vanilla's <c>ServerPlayerGameMode.useItemOn</c>: a spectator only opens menus; otherwise the block is used
+    /// with the item, then without it (main hand only), unless the player sneaks with something in hand; then the
+    /// item is used on the block.
     /// </summary>
-    internal static IBlock? GetPlacementState(BlockPlaceContext context, AbstractLevel level)
+    private async ValueTask<UseResult> UseBlockAsync(BlockUse use)
     {
-        IBlock? GetState(BlockPlaceContext placing) =>
-            Plugins.BlockBehaviors.GetStateForPlacement(placing, level.Logger);
+        var player = use.Player;
+        if (player.GameMode == GameMode.Spectator)
+            return await SpectateAsync(use);
 
-        var item = context.Item;
-        if (item.Holder.Block is BlockType)
-            return GetState(context);
-
-        // Vanilla GameMasterBlockItem: command, structure, jigsaw and test blocks, for creative operators only.
-        var gameMaster = gameMasterBlocks.Contains(context.Block.BlockClass());
-        if (gameMaster && !Entities.CommandBlockMinecart.CanEdit(context.Player))
-            return null;
-
-        if (StandingAndWallItems.TryGet(item.Holder, out var attachment))
-            return StandingAndWallItems.Place(context, attachment, GetState);
-
-        // Vanilla ScaffoldingBlockItem: scaffolding goes nowhere it would fall straight away, and needn't survive.
-        var scaffolding = context.Block.Is(BlockIds.Scaffolding);
-        if (scaffolding
-            && !context.Level.GetBlock(context.Position).Is(BlockIds.Scaffolding)
-            && WorldData.Placement.BlockPlacements.ScaffoldingDistance(context.Level, context.Position) == 7)
+        var bypass = BypassesBlockUse(player.Sneaking, player.Inventory.GetItem(player.CurrentHeldItemSlot),
+            player.Inventory.GetItem(OffhandSlot));
+        if (!bypass)
         {
-            return null;
-        }
+            var withItem = await UseWithItemAsync(use);
+            if (withItem == UseResult.Fail)
+                return withItem;
 
-        var state = GetState(context);
-        if (state is null || scaffolding)
-            return state;
-
-        return PlacementSurvival.CanSurvive(context.Level, state, context.Position) ? state : null;
-    }
-
-    // Vanilla's Level.isUnobstructed: an entity that blocks building can't be inside the block's collision shape.
-    private static bool IsUnobstructed(AbstractLevel level, Vector position, IBlock block)
-    {
-        var shapes = BlockCollisionShapes.Get(level, position, block);
-        if (shapes.Count == 0)
-            return true;
-
-        var offset = (VectorD)position;
-        foreach (var entity in level.GetEntitiesInRange(offset + new VectorD(0.5, 0.5, 0.5), 4))
-        {
-            if (!BlocksBuilding(entity))
-                continue;
-
-            var bounds = entity.Dimension.CreateBBFromPosition(entity.Position);
-            foreach (var shape in shapes)
+            if (withItem.ConsumesAction())
             {
-                if (MobTerrain.Overlaps(shape.OffsetBy(offset), bounds))
-                    return false;
+                await FireAsync(use, "item_used_on_block");
+                return withItem;
+            }
+
+            var withoutItem = withItem == UseResult.TryWithEmptyHand && use.Hand == InteractionHand.MainHand
+                ? await UseWithoutItemAsync(use)
+                : UseResult.Pass;
+            if (withoutItem == UseResult.Fail)
+                return withoutItem;
+
+            if (withoutItem.ConsumesAction())
+            {
+                var current = await use.Level.GetBlockAsync(use.Position);
+                await player.FireProgressAsync("default_block_use", block: current, position: use.Position);
+                return withoutItem;
             }
         }
 
-        return true;
-    }
+        if (!use.HasItem || player.IsOnCooldown(use.Item))
+            return UseResult.Pass;
 
-    // Vanilla's Entity.blocksBuilding: living entities (players but spectators, mobs, armor stands), boats and
-    // minecarts. Items, projectiles and the like don't keep a block from going where they are.
-    private static bool BlocksBuilding(IEntity entity) => entity switch
-    {
-        IPlayer player => player.GameMode != GameMode.Spectator,
-        Entities.Living or Entities.VehicleEntity => true,
-        _ => false
-    };
-
-    // A placement that didn't happen: the player's client, which predicted it, gets the block and the item back.
-    private async ValueTask RejectPlacementAsync(IClientPlayer player, int handSlot)
-    {
-        player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
-
-        var target = this.Position + this.Face.ToVector();
-        foreach (var position in new[] { this.Position, target })
+        var itemResult = await this.UseItemAsync(use);
+        if (itemResult.ConsumesAction() && !use.CompletionDeferred)
         {
-            if (await player.Level.GetBlockAsync(position) is IBlock block)
-                player.Client.SendPacket(new BlockUpdatePacket(position, block.GetHashCode()));
+            if (use.AwardsItemUse)
+                player.Statistics.Increment(use.Item!.Holder.UnlocalizedName, type: "minecraft:used");
+
+            await FireAsync(use, "item_used_on_block");
         }
 
-        await player.SendInventorySlotAsync(handSlot);
+        return itemResult;
     }
 
-    private async ValueTask ConsumePortalItemAsync(IClientPlayer player, ItemStack item)
+    // The block's use with the held item: a plugin's block decides for itself, a vanilla block by its class.
+    private static async ValueTask<UseResult> UseWithItemAsync(BlockUse use)
     {
-        var slot = this.Hand == InteractionHand.MainHand ? player.CurrentHeldItemSlot : (short)45;
-        if (item.Is(ItemsRegistry.EnderEye) || player.GameMode != GameMode.Creative)
+        if (Plugins.ItemBehaviors.CanUseItems(use.Player))
         {
-            if (!item.Is(ItemsRegistry.FlintAndSteel))
+            var used = await Plugins.BlockBehaviors.UseAsync(new BlockUseContext
             {
-                player.Inventory.RemoveItem(slot, 1);
-            }
-            else if (!item.Unbreakable && ShouldDamageTool(item))
-            {
-                var damage = ComponentBuilder.Damage with { Value = item.Damage + 1 };
-                item[DataComponentType.Damage] = damage;
-                var maxDamage = item.GetComponent<SimpleDataComponent<int>>(DataComponentType.MaxDamage)?.Value ?? item.Holder.MaxDamage;
-                if (damage.Value >= maxDamage)
-                    player.Inventory.RemoveItem(slot, 1);
-            }
+                Player = use.Player,
+                Position = use.Position,
+                Block = use.Block,
+                Face = use.Face,
+                Hand = use.Hand,
+                ClickedAt = use.Cursor
+            });
+
+            if (used)
+                return UseResult.Success;
         }
-        await player.Client.QueuePacketAsync(new ContainerSetSlotPacket
-        {
-            Slot = slot,
-            StateId = player.Inventory.StateId++,
-            SlotData = player.Inventory.GetItem(slot)
-        });
+
+        var behavior = BlocksRegistry.GetUseItemOnBehavior(use.Block.RegistryId);
+        if (!use.CanCommit)
+            return UseResult.Fail;
+
+        if (behavior is null)
+            return UseResult.TryWithEmptyHand;
+
+        return await behavior.UseItemOnAsync(use);
     }
 
-    internal static bool ShouldDamageTool(ItemStack item)
+    // The block's use regardless of the held item.
+    private static ValueTask<UseResult> UseWithoutItemAsync(BlockUse use)
     {
-        var enchantments = item.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(
-            DataComponentType.Enchantments)?.Value;
-        var unbreaking = enchantments?.FirstOrDefault(enchantment => enchantment.Id == EnchantmentsRegistry.Unbreaking.Id).Level ?? 0;
-        return Globals.Random.NextDouble() < 1.0 / (Math.Max(0, unbreaking) + 1.0);
+        var behavior = BlocksRegistry.GetUseWithoutItemBehavior(use.Block.RegistryId);
+        if (!use.CanCommit)
+            return ValueTask.FromResult(UseResult.Fail);
+
+        if (behavior is null)
+            return ValueTask.FromResult(UseResult.Pass);
+
+        return behavior.UseWithoutItemAsync(use);
+    }
+
+    // Vanilla's spectators: a block with a menu opens it, and nothing else happens.
+    private static async ValueTask<UseResult> SpectateAsync(BlockUse use)
+    {
+        var behavior = BlocksRegistry.GetUseWithoutItemBehavior(use.Block.RegistryId);
+        if (behavior is not IBlockMenu { OpensForSpectators: true })
+        {
+            use.ResyncHand = true;
+            return UseResult.Pass;
+        }
+
+        await BlockMenus.RequestAsync(use);
+        return UseResult.Consume;
+    }
+
+    /// <summary>
+    /// What every use owes once it's done, like vanilla's <c>handleUseItemOn</c>: the <c>any_block_use</c> trigger
+    /// and the arm's swing when it consumed the click, then the clicked block and the one beside it, which the
+    /// client may have predicted wrongly. Received sequences are acknowledged once per player tick.
+    /// </summary>
+    private static async ValueTask CompleteAsync(BlockUse use, UseResult result)
+    {
+        var player = use.Player;
+        if (result.ConsumesAction())
+        {
+            var current = await use.Level.GetBlockAsync(use.Position);
+            await player.FireProgressAsync("any_block_use", item: use.Item, block: current, position: use.Position);
+        }
+
+        if (result.Swings())
+            player.SwingForUse(use.Hand, use.Item, includeSelf: result == UseResult.SuccessServer);
+
+        ResendBlocks(use.Level, player, use.Position, use.Face);
+        if (use.ResyncHand || !result.ConsumesAction())
+            await player.SyncInventorySlotAsync(use.HandSlot);
+    }
+
+    private static async ValueTask FireAsync(BlockUse use, string trigger)
+    {
+        var current = await use.Level.GetBlockAsync(use.Position);
+        await use.Player.FireProgressAsync(trigger, item: use.UsedItem, block: current, position: use.Position);
+    }
+
+    // Refusals repair the client's prediction before acknowledging, including reach and lifecycle refusals.
+    private async ValueTask RefuseAsync(Player player, AbstractLevel level)
+    {
+        ResendBlocks(level, player, this.Position, this.Face);
+        var slot = this.Hand == InteractionHand.OffHand ? OffhandSlot : player.CurrentHeldItemSlot;
+        await player.SyncInventorySlotAsync(slot);
+    }
+
+    // Read only loaded state: an impossible click must not load distant chunks just to correct its prediction.
+    private static void ResendBlocks(AbstractLevel level, Player player, Vector clicked, BlockFace face)
+    {
+        var beside = clicked + face.ToVector();
+        foreach (var position in new[] { clicked, beside })
+        {
+            var block = level.GameEventBlock(position) ?? BlocksRegistry.Air;
+            player.Client.SendPacket(new BlockUpdatePacket(position, block.GetHashCode()));
+        }
     }
 }

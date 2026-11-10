@@ -10,40 +10,6 @@ namespace Obsidian.Events;
 public partial class MainEventHandler
 {
     /// <summary>
-    /// A player using a lectern, like vanilla's <c>LecternBlock.useItemOn</c>: one with a book opens it; an empty one
-    /// takes the written or writable book the player holds.
-    /// </summary>
-    /// <returns>A placeholder for the lectern's own container to open, or null when it doesn't open.</returns>
-    private static async ValueTask<BaseContainer?> LecternUseAsync(IPlayer player, ItemStack? item, InteractionHand hand, Vector position)
-    {
-        if (player.Level is not AbstractLevel level || await level.GetOrCreateBlockEntityAsync(position) is not LecternBlockEntity lectern)
-            return null;
-
-        if (lectern.Lectern.Book is not null)
-            return new LecternContainer();
-
-        if (item is not { Count: > 0 } || !TagsRegistry.Item.LecternBooks.Entries.Contains(item.Holder.Id))
-            return null;
-
-        lectern.PlaceBook(item);
-
-        // Like vanilla's consumeAndReturn, creative players keep theirs.
-        if (player.GameMode != GameMode.Creative)
-        {
-            var slot = hand == InteractionHand.OffHand ? OffhandSlot : player.CurrentHeldItemSlot;
-            player.Inventory.RemoveItem(slot, 1);
-            await player.QueuePacketAsync(new ContainerSetSlotPacket
-            {
-                ContainerId = 0,
-                Slot = (short)slot,
-                SlotData = player.Inventory.GetItem(slot)
-            });
-        }
-
-        return null;
-    }
-
-    /// <summary>
     /// The data slots of the player's open beacon, lectern or crafter: a beacon's levels and powers (effect ids plus
     /// one, 0 for none), a lectern's page, a crafter's slot states (1 for disabled) and whether it's powered.
     /// </summary>

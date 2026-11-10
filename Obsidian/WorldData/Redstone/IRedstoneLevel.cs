@@ -43,6 +43,14 @@ internal interface IRedstoneLevel : IBlockChangeWorld
     /// <summary>Vanilla <c>levelEvent</c>: a sound or particles players near <paramref name="position"/> see.</summary>
     void BroadcastLevelEvent(int type, Vector position, int data);
 
+    /// <summary>
+    /// Vanilla <c>gameEvent</c> at the center of the block at <paramref name="position"/>, which sculk sensors and
+    /// wardens hear. Worlds without listeners ignore it.
+    /// </summary>
+    void EmitGameEvent(MobGameEvent kind, Vector position, IEntity? source)
+    {
+    }
+
     /// <summary>Queues a validated, coalesced event for the shared block-event phase.</summary>
     void QueueBlockEvent(Vector position, int blockId, int type, int data, Func<ValueTask<bool>> trigger);
 

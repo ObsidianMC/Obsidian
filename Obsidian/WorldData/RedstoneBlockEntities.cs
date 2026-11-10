@@ -300,9 +300,6 @@ internal sealed class LecternBlockEntity : VanillaContainerBlockEntity
         this.Lectern.Page = 0;
         this.SetChanged();
         this.SetHasBook(true);
-
-        if (this.Level is AbstractLevel level)
-            level.BlockUpdates.PlaySound(this.BlockPosition, "minecraft:item.book.put");
     }
 
     /// <summary>

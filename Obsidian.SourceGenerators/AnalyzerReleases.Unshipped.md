@@ -15,3 +15,4 @@ OBSPK001 | Packets | Warning | PacketSerializationGenerator
 OBSPL001 | PluginContent | Error | PluginContentGenerator
 OBSPL002 | PluginContent | Error | PluginContentGenerator
 OBSGEN001 | Blocks | Info | BlocksGenerator
+OBSGEN002 | Blocks | Warning | BlocksGenerator

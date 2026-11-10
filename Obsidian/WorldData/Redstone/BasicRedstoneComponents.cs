@@ -133,6 +133,7 @@ internal static class BasicRedstoneComponents
             var on = state.GetProperty("powered") != "true";
             await SetMountedStateAsync(level, position, state.WithProperty("powered", on));
             level.PlaySound(position, "minecraft:block.lever.click", 0.3f, on ? 0.6f : 0.5f, player);
+            EmitLeverEvent(level, position, on);
             return true;
         }
 
@@ -174,6 +175,7 @@ internal static class BasicRedstoneComponents
             var on = state.GetProperty("powered") != "true";
             await SetMountedStateAsync(level, position, state.WithProperty("powered", on));
             level.PlaySound(position, "minecraft:block.lever.click", 0.3f, on ? 0.6f : 0.5f);
+            EmitLeverEvent(level, position, on);
             return true;
         }
 
@@ -184,6 +186,13 @@ internal static class BasicRedstoneComponents
         }
 
         return false;
+    }
+
+    // Vanilla's LeverBlock.pull: the game event has no source entity, whoever pulled it.
+    private static void EmitLeverEvent(IRedstoneLevel level, Vector position, bool on)
+    {
+        var kind = on ? MobGameEvent.BlockActivate : MobGameEvent.BlockDeactivate;
+        level.EmitGameEvent(kind, position, null);
     }
 
     /// <summary>
@@ -324,6 +333,7 @@ internal static class BasicRedstoneComponents
         var powered = state.WithProperty("powered", true);
         await SetMountedStateAsync(level, position, powered);
         level.PlaySound(position, ButtonSound(state, on: true), except: player);
+        level.EmitGameEvent(MobGameEvent.BlockActivate, position, player);
         if (ButtonDelay(state.RegistryId) is { } delay)
             level.ScheduleBlockTick(position, powered, delay);
     }
@@ -345,6 +355,7 @@ internal static class BasicRedstoneComponents
 
         await SetMountedStateAsync(level, position, state.WithProperty("powered", false));
         level.PlaySound(position, ButtonSound(state, on: false));
+        level.EmitGameEvent(MobGameEvent.BlockDeactivate, position, null);
     }
 
     /// <summary>

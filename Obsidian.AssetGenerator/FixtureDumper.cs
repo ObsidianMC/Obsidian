@@ -90,6 +90,20 @@ internal static class FixtureDumper
         return VanillaServer.RunJavaAsync(server.ScratchDirectory, arguments.ToArray());
     }
 
+    // An on-request gameplay probe: vanilla's block ticks, block changes and landings against each case's block view.
+    internal static Task DumpTickingBlocksAsync(
+        VanillaServer server, string fixture, IReadOnlyCollection<string>? cases = null)
+    {
+        var arguments = new List<string>
+        {
+            "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("TickingBlockFixtures.java"), fixture
+        };
+        if (cases is not null)
+            arguments.Add(string.Join('+', cases));
+
+        return VanillaServer.RunJavaAsync(server.ScratchDirectory, arguments.ToArray());
+    }
+
     internal static Task DumpSulfurAsync(VanillaServer server, string fixture) =>
         VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
             Source("SulfurFixtures.java"), fixture);
@@ -129,6 +143,23 @@ internal static class FixtureDumper
         return VanillaServer.RunJavaAsync(world,
             "--add-opens", "java.base/java.lang=ALL-UNNAMED",
             "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("PlacementFixtures.java"), fixture);
+    }
+
+    // An on-request probe: a dedicated server of its own, in a new flat world under the scratch directory.
+    internal static Task DumpBlockUseAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null)
+    {
+        var world = Path.Combine(server.ScratchDirectory, "block-use");
+        if (Directory.Exists(world))
+            Directory.Delete(world, recursive: true);
+
+        Directory.CreateDirectory(world);
+
+        // The probe finds the server in the shutdown hook vanilla's Main registers.
+        return VanillaServer.RunJavaAsync(world,
+            "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+            "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("BlockUseFixtures.java"), fixture,
+            cases is null ? "" : string.Join('+', cases));
     }
 
     // An on-request probe: a dedicated server of its own, in a new normal world under the scratch directory.

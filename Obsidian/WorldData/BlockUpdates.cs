@@ -67,7 +67,12 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
         using var host = PluginCall.EnterHost();
 
         lock (fluids.TickLock)
+        {
+            if (level.ActiveBlockUse is BlockUseEffects effects)
+                return effects.SetBlock(position, block, flags);
+
             return updates.SetBlockOutsideFluids(position, block, flags);
+        }
     }
 
     /// <inheritdoc/>
@@ -100,7 +105,12 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
         using var host = PluginCall.EnterHost();
 
         lock (fluids.TickLock)
-            updates.UpdateNeighborsAt(position, source);
+        {
+            if (level.ActiveBlockUse is BlockUseEffects effects)
+                effects.After(() => this.UpdateNeighbors(position, source));
+            else
+                updates.UpdateNeighborsAt(position, source);
+        }
     }
 
     /// <summary>
@@ -227,13 +237,7 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
             return vanilla;
         // A vanilla class's updateShape override, found from the class that declares it.
         if (BlocksRegistry.GetShapeUpdateBehavior(state.RegistryId) is IShapeUpdateBehavior owner)
-        {
-            // The shared declaration also owns dripstone, whose shape rules still use the generic pass.
-            if (owner is SulfurSpikeBehavior && !state.Is(BlockIds.SulfurSpike))
-                return null;
-
             return owner.UpdateShape(this, position, state, direction, neighborPosition, neighbor) ?? state;
-        }
 
         if (!BlockBehaviors.TryEnter(state, out var behavior, out var call))
             return null;

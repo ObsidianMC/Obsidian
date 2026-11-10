@@ -189,6 +189,46 @@ replaces only what vanilla produced.
   path fireballs, explosions and end crystals use. It compares blocks and dropped items once the levels have
   ticked, as Obsidian removes fire a shape update destroys, drops a removed block entity's items, and lights a
   portal around new fire later in that tick.
+- `ticking_blocks.json` (`VanillaTickingBlocks.ReplayTickingBlockReference`) records single block routines from
+  `Java/TickingBlockFixtures.java`, against a bounded block view of the case's setup with a seeded, recording random
+  as both the routine's and the level's: a random tick (only of a state that random-ticks), a scheduled tick, a
+  `Level.setBlock` with its on-place and neighbour shape updates (not neighbour notifications), or a falling block's
+  landing. Each case records the draws, block writes, scheduled block and fluid ticks with their delays, level events,
+  game events, the entities added (a falling block's state and stalactite damage) and the blocks destroyed. The cases
+  cover pointed dripstone growing (the block and water source above, column length, stalagmite search), dripping
+  water and lava into each kind of cauldron or drying mud into clay, a waterlogged block counting as water (above
+  the column, ahead of the tip and as a floor), falling and breaking when the support goes,
+  thickness along a column, landing, and cauldrons taking the drip; budding amethyst starting a bud on each face and
+  growing each stage, into air, water sources and falling water, and the faces it skips; lit redstone ore going dark;
+  nylium under blocks that do and don't let light down; dirt paths turning to dirt, and which new blocks above or
+  beside them schedule that; coral blocks, plants, fans and wall fans dying dry or staying by water, scheduling their
+  death when placed or when a neighbour changes, and breaking when their support goes; chorus plants staying, breaking
+  and connecting as their support and neighbours change. The replay runs each case through Obsidian's generated
+  owners, or a live block change, in its own world, and compares everything but the game events. Obsidian destroys
+  blocks in the tick's entity phase, so a case that destroys one runs the world tick before comparing, keeping the
+  recording random active. Ordered writes compare every flag bit; destruction compares state and drops intent;
+  falling entities compare type, position, state, damage enablement, damage per distance and maximum damage. The
+  replay rejects unexpected entities and writes outside the case and scans the loaded chunks for unexpected blocks.
+  Explicit expected differences pin six third-write flag changes from the duplicate shape-update pipeline, the
+  skipped pending-coral draw, and the two stalagmite cases' resource-spawn draws (the bounded probe suppresses loot).
+  Each exception fails when it disappears. The `review_*` cases also cover mud in the nether, mixed sulfur/dripstone
+  columns (growth and native `findTip`, including opposite-direction tips), and independent drops/silence landings.
+  An optional `dimension` supplies that dimension type's environment attributes; optional `actions` are subsequent
+  `UPDATE_ALL` writes. `findTip` takes `maxLength` and `includeMerged` and records the returned position or null.
+
+- `block_use.json` (`VanillaBlockUse.ReplayBlockUseReference`) records what using a block does, from
+  `Java/BlockUseFixtures.java`. Like the placement probe it runs a dedicated server of its own in a flat world of air,
+  and each case uses its main hand's item through `ServerPlayerGameMode.useItemOn`; the area's chunks are forced, so
+  block events run as a tick runs them. A case names its blocks, the clicked face, the item and count, the off hand,
+  the game mode and sneaking. It records the result (which decides the swing), the blocks that changed, the hand,
+  the entities that appeared, the sounds, level events and block events a second player beside the target received,
+  the game events within 16 blocks (with their source), the statistics awarded and the menu opened, and when a menu
+  opened, what closing it changed and played. The replay drives `UseItemOnPacket` in one world, with full sky light
+  as the capture's open sky has, runs the queued entity actions and the tick's block events, and checks swings from
+  the result. The 92 cases cover the dispatcher, sign applications and editing, advancement context, use swing charge and
+  container close sources; mob ambient sounds aren't compared (see
+  [mob ambient sounds](known-gaps/mob-ambient-sounds.md)).
+
 
 - `melting_weather.json` (`VanillaMeltingWeather.ReplayMeltingAndWeatherReference`) records ice, frosted ice and
   snow layers melting and the chunk tick's precipitation pass, from `Java/MeltingWeatherFixtures.java`. The probe runs
@@ -234,6 +274,10 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=fire
 
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=ticking_blocks
+
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=block_use
+
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=melting_weather
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur -p:CaptureCases=spike_shatters_after_falling+review_spike_pending_fall_keeps_frustum
@@ -255,12 +299,26 @@ with the vanilla server and libraries on the classpath, to re-record only new or
 For `fire`, `CaptureCases` accepts exact `+`-separated case names in `fire_ticks.json` and records only those
 cases' runs; the others keep theirs.
 
+For `ticking_blocks`, `CaptureCases` accepts exact `+`-separated names and records only those Java cases. For example,
+`dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=ticking_blocks -p:CaptureCases=review_dripstone_mud_in_nether`.
+Append new inputs, select only their names, and verify existing case text is unchanged. The Java probe accepts the
+same selection as its second argument when run directly with the cached server and libraries on its classpath.
+`scheduled` records scheduling attempts: the first request per position/type remains pending, even when later
+attempts use another delay. The pending-coral case records delays 85 and 88, but only the first is pending.
+
 For `more_blocks`, `CaptureCases` accepts exact `+`-separated names in `more_blocks.json` and re-records only those
 Java probes. No RCON server is started and no other fixture is changed. Its source and the reusable runtime
 instrument dumper are separate so editing these probes does not regenerate unrelated assets.
 
 The `placement` capture takes about 10 seconds after the server starts and re-records every item; to add a context,
-add it to `contexts` and capture again.
+add it to `contexts` and capture again. For `block_use`, add inputs to `cases` and use `CaptureCases` with exact
+`+`-separated names to record only the added cases. A setup's `text` seeds both sign faces, and `handUsed: offhand`
+selects the other hand. An optional `randomSeed` seeds the level random immediately before use; the failed-growth
+case verifies that a valid bone-meal target consumes the item even when its growth chance fails. Optional checks
+record sign text flags and editor, attack charge after a started and a refused swing, explicit and periodic
+container close sources, and awarded advancement criteria. The fixture lists
+location predicate terms in Obsidian's existing format; the probe converts them to 26.3's `all_of` and `match_block`
+encoding before registering them with vanilla's advancement system.
 
 For `melting_weather`, `CaptureCases` accepts exact `+`-separated case names and records only those, leaving the
 other cases unchanged. For example, add a case's inputs to `cases` and capture it with
@@ -278,7 +336,8 @@ other dumpers, so editing it regenerates the assets once.
 
 The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory>
 <scratch directory> <test assets directory>
-[redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+heightmaps+saved_heightmaps+mining+placement+copper_weathering+fire+melting_weather]
+[redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+heightmaps+saved_heightmaps+mining+placement+
+copper_weathering+fire+ticking_blocks+block_use+melting_weather]
 [case names]`.
 
 ## How it captures

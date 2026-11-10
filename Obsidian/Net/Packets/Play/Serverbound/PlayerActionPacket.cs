@@ -1,9 +1,10 @@
-﻿using Obsidian.API.Events;
+using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.Serialization.Attributes;
+using Obsidian.WorldData;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
@@ -41,14 +42,25 @@ public partial class PlayerActionPacket
             await player.StabAsync();
             return;
         }
+        if (player is PlayerBase actor
+            && Status is PlayerActionStatus.StartedDigging or PlayerActionStatus.FinishedDigging
+                or PlayerActionStatus.ChangeDestroyDirection or PlayerActionStatus.CancelledDigging)
+        {
+            actor.QueueBlockAcknowledgement(this.Sequence);
+        }
+
         if (await player.Level.GetBlockAsync(Position) is not IBlock block)
             return;
 
+        // Like vanilla's ServerPlayerGameMode, a survival player starting to hit a block attacks it (a note block
+        // plays), through the behaviour of the vanilla class that declares the block's attack.
         if (Status == PlayerActionStatus.StartedDigging
-            && block.Is(BlockIds.NoteBlock)
-            && player.Level is Obsidian.WorldData.AbstractLevel notes)
+            && player.GameMode == GameMode.Survival
+            && player is PlayerBase attacker
+            && attacker.Level is Obsidian.WorldData.AbstractLevel attacked
+            && BlocksRegistry.GetAttackBehavior(block.RegistryId) is IBlockAttackBehavior attack)
         {
-            notes.PlayNoteBlock(Position, player);
+            await attack.AttackAsync(attacked, Position, block, attacker);
         }
 
         if (Status == PlayerActionStatus.FinishedDigging || await this.BreaksAtOnceAsync(player, block))
@@ -105,10 +117,8 @@ public partial class PlayerActionPacket
             case PlayerActionStatus.StartedDigging:
             case PlayerActionStatus.ChangeDestroyDirection:
             case PlayerActionStatus.CancelledDigging:
-                player.Client.SendPacket(new BlockChangedAckPacket
-                {
-                    SequenceID = this.Sequence
-                });
+                if (player is not PlayerBase)
+                    player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
                 break;
             case PlayerActionStatus.FinishedDigging:
                 {

@@ -21,7 +21,8 @@ internal static class VanillaBlockEntities
         "minecraft:chest" or "minecraft:trapped_chest" => Chest(new Container { Title = "Chest" }, position),
         "minecraft:piston" => new Pistons.MovingPistonBlockEntity { BlockPosition = position },
         "minecraft:barrel" => Chest(new Container { Title = "Barrel" }, position),
-        "minecraft:shulker_box" => new ShulkerBoxBlockEntity(new Container
+        // The shulker box menu, which takes no shulker boxes.
+        "minecraft:shulker_box" => new ShulkerBoxBlockEntity(new Container(InventoryType.ShulkerBox)
         {
             Title = "Shulker Box",
             BlockPosition = position
@@ -30,8 +31,9 @@ internal static class VanillaBlockEntities
             // Like vanilla, its items stay in the box, which drops as an item holding them.
             DropsContents = false
         },
-        "minecraft:dispenser" => Chest(new Container(9) { Title = "Dispenser" }, position),
-        "minecraft:dropper" => Chest(new Container(9) { Title = "Dropper" }, position),
+        // The ids give them vanilla's 3×3 menu (see OpenScreenPacket).
+        "minecraft:dispenser" => Chest(new Container(9) { Title = "Dispenser", Id = "dispenser" }, position),
+        "minecraft:dropper" => Chest(new Container(9) { Title = "Dropper", Id = "dropper" }, position),
         "minecraft:hopper" => new HopperBlockEntity(position),
         "minecraft:furnace" => Smelting(InventoryType.Furnace, "furnace", "Furnace", position),
         "minecraft:blast_furnace" => Smelting(InventoryType.BlastFurnace, "blast_furnace", "Blast Furnace", position),

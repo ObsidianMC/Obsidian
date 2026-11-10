@@ -104,6 +104,7 @@ public sealed class VanillaBlockPlacement(ITestOutputHelper output)
         player.Yaw = -90;
         player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Get("minecraft:red_bed"), 1));
 
+        player.Level.TryAddPlayer(player);
         await BlockUpdates.UseOn(foot + Vector.Down, BlockFace.Up).HandleAsync(context.Server, player);
 
         Assert.True(chunk.GetBlock(foot.X, foot.Y, foot.Z).IsAir);
@@ -129,6 +130,7 @@ public sealed class VanillaBlockPlacement(ITestOutputHelper output)
 
         // The player uses it, and every block update it caused runs.
         var packet = BlockUpdates.UseOn(target + setting.Clicked, setting.Face, setting.Cursor);
+        player.Level.TryAddPlayer(player);
         await packet.HandleAsync(context.Server, player);
         await world.BlockNotifications.DrainAsync();
         ((TestClient)player.Client).ClearPackets();

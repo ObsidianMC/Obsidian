@@ -1,6 +1,7 @@
 using Obsidian.API.Blocks;
 using Obsidian.API.World;
 using Obsidian.API.Inventory;
+using Obsidian.Net.Packets.Play.Serverbound;
 using System.Threading;
 
 namespace Obsidian.WorldData.Portals;
@@ -67,12 +68,12 @@ internal sealed class LevelPortals(AbstractLevel level)
     }
 
     public async ValueTask<bool> TryIgniteAsync(
-        Vector position, PortalType? type = null, ItemStack? igniter = null)
+        Vector position, PortalType? type = null, ItemStack? igniter = null, BlockUse? use = null)
     {
         await this.changes.WaitAsync();
         try
         {
-            return await this.TryIgniteCoreAsync(position, type, igniter);
+            return await this.TryIgniteCoreAsync(position, type, igniter, use: use);
         }
         finally
         {
@@ -81,7 +82,8 @@ internal sealed class LevelPortals(AbstractLevel level)
     }
 
     private async ValueTask<bool> TryIgniteCoreAsync(
-        Vector position, PortalType? requested = null, ItemStack? igniter = null, bool fire = false)
+        Vector position, PortalType? requested = null, ItemStack? igniter = null, bool fire = false,
+        BlockUse? use = null)
     {
         foreach (var type in requested is not null ? new[] { requested } : PortalTypesRegistry.ActiveTypes())
         {
@@ -104,9 +106,47 @@ internal sealed class LevelPortals(AbstractLevel level)
 
             foreach (var axis in new[] { "x", "z" })
             {
-                var shape = await PortalFrame.FindAsync(level.GetBlockAsync, position, axis, level.MinY, properties);
+                var read = new Dictionary<Vector, IBlock>();
+                async ValueTask<IBlock?> ReadAsync(Vector point)
+                {
+                    var state = await level.GetBlockAsync(point);
+                    if (state is not null)
+                        read[point] = state;
+
+                    return state;
+                }
+
+                var shape = await PortalFrame.FindAsync(ReadAsync, position, axis, level.MinY, properties);
                 if (shape is not PortalFrame frame || frame.PortalBlocks != 0)
                     continue;
+
+                if (use is not null)
+                {
+                    lock (level.Fluids.TickLock)
+                    {
+                        var committed = use.TryCommit(() =>
+                        {
+                            if (read.Any(pair => !level.BlockUpdates.GetBlock(pair.Key).IsSameState(pair.Value)))
+                                return false;
+
+                            ItemDamage.ApplyIgniterCost(use, igniter!);
+                            return true;
+                        });
+                        if (!committed)
+                            return false;
+
+                        // A plugin portal block can create a plugin block entity. Its factory and the normal
+                        // write notifications run after the hand unlocks; the frame stays protected by the tick lock.
+                        var portal = properties.PortalBlock.WithProperty("axis", frame.Axis);
+                        foreach (var point in frame.Interior())
+                        {
+                            level.BlockUpdates.SetBlock(point, portal, BlockUpdateFlags.Clients);
+                            PortalOwnership.Claim(level, point, type, portal);
+                        }
+
+                        return true;
+                    }
+                }
 
                 await this.FillAsync(frame, type, properties);
                 return true;
@@ -169,7 +209,7 @@ internal sealed class LevelPortals(AbstractLevel level)
         return false;
     }
 
-    public async ValueTask<bool> TryInsertEyeAsync(Vector position)
+    public async ValueTask<bool> TryInsertEyeAsync(Vector position, BlockUse? use = null)
     {
         await this.changes.WaitAsync();
         try
@@ -177,7 +217,17 @@ internal sealed class LevelPortals(AbstractLevel level)
             var frame = await level.GetBlockAsync(position);
             if (frame?.RegistryId != BlockIds.EndPortalFrame || frame.GetProperty("eye") != "false")
                 return false;
-            await level.SetBlockAsync(position, frame.WithProperty("eye", true), true);
+            if (use is not null)
+            {
+                if (!use.TryCommit(() => level.BlockUpdates.SetBlock(position, frame.WithProperty("eye", true)),
+                    consumeItem: true))
+                    return false;
+            }
+            else
+            {
+                await level.SetBlockAsync(position, frame.WithProperty("eye", true), true);
+            }
+
             level.BroadcastLevelEvent(1503, position, 0);
             // Each of the twelve positions in a ring can be the final frame filled.
             foreach (var (offset, _) in EndPortalFrames.Ring(Vector.Zero))

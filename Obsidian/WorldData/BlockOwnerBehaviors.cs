@@ -35,6 +35,12 @@ internal static class OnPlaceBehaviors
 
     internal static IOnPlaceBehavior FireBlock { get; } = new FireBlockBehavior();
 
+    internal static IOnPlaceBehavior CoralPlantBlock { get; } = new CoralPlantBehavior(onWall: false);
+
+    internal static IOnPlaceBehavior CoralFanBlock { get; } = new CoralPlantBehavior(onWall: false);
+
+    internal static IOnPlaceBehavior CoralWallFanBlock { get; } = new CoralPlantBehavior(onWall: true);
+
     internal static IOnPlaceBehavior FrostedIceBlock { get; } = new FrostedIceBlockBehavior();
 }
 
@@ -87,6 +93,20 @@ internal static class TickBehaviors
 
     internal static IScheduledTickBehavior ComposterBlock { get; } = new ComposterBlockBehavior();
 
+    internal static IScheduledTickBehavior AbstractCauldronBlock { get; } = new CauldronDripTick();
+
+    internal static IScheduledTickBehavior PathBlock { get; } = new PathBlockBehavior();
+
+    internal static IScheduledTickBehavior CoralBlock { get; } = new CoralBlockBehavior();
+
+    internal static IScheduledTickBehavior CoralPlantBlock { get; } = new CoralPlantBehavior(onWall: false);
+
+    internal static IScheduledTickBehavior CoralFanBlock { get; } = new CoralPlantBehavior(onWall: false);
+
+    internal static IScheduledTickBehavior CoralWallFanBlock { get; } = new CoralPlantBehavior(onWall: true);
+
+    internal static IScheduledTickBehavior ChorusPlantBlock { get; } = new ChorusPlantBehavior();
+
     internal static IScheduledTickBehavior FrostedIceBlock { get; } = new FrostedIceBlockBehavior();
 }
 
@@ -131,6 +151,18 @@ internal static class ShapeUpdateBehaviors
     internal static IShapeUpdateBehavior GrowingPlantBodyBlock { get; } = new KelpBlockBehavior();
 
     internal static IShapeUpdateBehavior IronBarsBlock { get; } = new IronBarsShapeUpdateBehavior();
+
+    internal static IShapeUpdateBehavior PathBlock { get; } = new PathBlockBehavior();
+
+    internal static IShapeUpdateBehavior CoralBlock { get; } = new CoralBlockBehavior();
+
+    internal static IShapeUpdateBehavior CoralPlantBlock { get; } = new CoralPlantBehavior(onWall: false);
+
+    internal static IShapeUpdateBehavior CoralFanBlock { get; } = new CoralPlantBehavior(onWall: false);
+
+    internal static IShapeUpdateBehavior CoralWallFanBlock { get; } = new CoralPlantBehavior(onWall: true);
+
+    internal static IShapeUpdateBehavior ChorusPlantBlock { get; } = new ChorusPlantBehavior();
 }
 
 /// <summary>

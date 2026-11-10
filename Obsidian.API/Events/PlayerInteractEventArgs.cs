@@ -26,6 +26,9 @@ public sealed class PlayerInteractEventArgs : PlayerEventArgs, ICancellable
 
     public InteractionHand Hand { get; init; }
 
+    /// <summary>An insertion asks plugins for permission without requesting the block's menu.</summary>
+    internal bool OpensBlockMenu { get; init; } = true;
+
     /// <inheritdoc />
     public bool IsCancelled { get; private set; }
 
