@@ -98,6 +98,8 @@ internal static class LevelEnvironment
 
     private const string MonstersBurnAttribute = "minecraft:gameplay/monsters_burn";
 
+    private const string TurtleEggHatchChanceAttribute = "minecraft:gameplay/turtle_egg_hatch_chance";
+
     /// <summary>
     /// The boolean gameplay attributes the server applies, with vanilla's defaults (EnvironmentAttributes). All but
     /// <see cref="FastLava"/> apply where they're asked about, with the biome's values there.
@@ -347,6 +349,28 @@ internal static class LevelEnvironment
             burn = map.Apply(MonstersBurnAttribute, burn);
 
         return WorldTimelines.Apply(level, MonstersBurnAttribute, burn);
+    }
+
+    /// <summary>
+    /// The chance that a turtle egg's random tick at <paramref name="position"/> moves it towards hatching: vanilla's
+    /// <c>minecraft:gameplay/turtle_egg_hatch_chance</c>. It starts at 0.002, then the dimension type's map applies,
+    /// then the biome's there, then the level's timelines: the day timeline raises it to 1 from day time 21062 until
+    /// 21905, just before dawn. Vanilla's types and biomes don't set it.
+    /// </summary>
+    public static float TurtleEggHatchChance(this ILevel level, Vector position)
+    {
+        var chance = 0.002f;
+
+        if (attributeMaps.TryGetValue(level.DimensionType.Element, out var typeMap))
+            chance = typeMap.Apply(TurtleEggHatchChanceAttribute, chance);
+
+        if (BiomeAt(level, position) is BiomeCodec biome && attributeMaps.TryGetValue(biome.Element, out var biomeMap))
+            chance = biomeMap.Apply(TurtleEggHatchChanceAttribute, chance);
+
+        chance = WorldTimelines.Apply(level, TurtleEggHatchChanceAttribute, chance);
+
+        // The attribute's range, which vanilla holds every sample to.
+        return Math.Clamp(chance, 0f, 1f);
     }
 
     /// <summary>

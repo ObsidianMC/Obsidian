@@ -34,7 +34,9 @@
 		                             Java\PlacementFixtures.java;Java\CopperWeatheringFixtures.java;
 		                             Java\FireFixtures.java;Java\BlockUseFixtures.java" />
 		<VanillaDumperInput Remove="Java\TickingBlockFixtures.java" />
+		<VanillaDumperInput Remove="Java\HatchingFixtures.java" />
 		<VanillaDumperInput Remove="Java\EyeblossomGhastPortalFixtures.java" />
+
 		<None Update="@(VanillaDumperInput)" CopyToOutputDirectory="PreserveNewest" />
 		<!-- Gameplay probes run only through their requested CaptureFixtures entry. -->
 		<None Update="Java\MoreBlockFixtures.java" CopyToOutputDirectory="PreserveNewest" />
@@ -45,7 +47,9 @@
 		<None Update="Java\FireFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\TickingBlockFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\BlockUseFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\HatchingFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\EyeblossomGhastPortalFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+
 		<!-- On-request captures (CaptureVanillaWorldgen); not asset inputs, so editing them doesn't regenerate the assets. -->
 		<None Update="Captures\**\*.java" CopyToOutputDirectory="PreserveNewest" />
 		<UpToDateCheckOutput Include="$(VanillaAssetsDirectory)collision_shapes.json" />

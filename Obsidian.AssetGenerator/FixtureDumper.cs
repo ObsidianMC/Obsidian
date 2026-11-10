@@ -104,6 +104,16 @@ internal static class FixtureDumper
         return VanillaServer.RunJavaAsync(server.ScratchDirectory, arguments.ToArray());
     }
 
+    // An on-request gameplay probe: turtle eggs' random tick and placement, with a seeded random.
+    internal static Task DumpTurtleEggsAsync(VanillaServer server, string fixture) =>
+        VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
+            Source("HatchingFixtures.java"), fixture);
+
+    // An on-request gameplay probe: frogspawn's placement and hatch tick, with a seeded random.
+    internal static Task DumpFrogspawnAsync(VanillaServer server, string fixture) =>
+        VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
+            Source("HatchingFixtures.java"), fixture);
+
     // An on-request gameplay probe: eyeblossoms, potted eyeblossoms, dried ghasts and nether portals ticking against
     // each case's block view.
     internal static Task DumpEyeblossomGhastPortalAsync(
