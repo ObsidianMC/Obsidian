@@ -59,7 +59,8 @@ Four defects found on the way are worse than a missing feature, because the bloc
 4. **An observer facing a container pulsed forever.** Fixed: the block entity tick sent a neighbour update around
    every container every tick, and observers reacted to neighbour updates from the block they face. Containers now
    tell only comparators when their items change or a plugin consumes `SetChanged()` (performance item 1), and
-   observers react through the generated shape owner shared by both update engines.
+   observers react through the generated shape owner, which a block change runs once, in the fluid level's
+   vanilla-ordered updater.
    Captured in `redstone_scenarios.json`.
 
 Two more from the first audit were fixed by #695 before this plan started: unwaxed copper doors and trapdoors

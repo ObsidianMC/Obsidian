@@ -9,8 +9,9 @@ replaces only what vanilla produced.
   id and count) go into its block entity, as the `/setblock`'s `Items` data. Scenarios marked `level` need block
   entities (containers and hoppers), so the replay runs them on one shared test server and reuses loaded chunks,
   with a player beside each disjoint box, instead of on the redstone test world; they can't use reloads, entities
-  or arrows. `observer_watches_state_changes` also uses the whole level so both update engines deliver shape
-  work for the same changes; its recorded pulses guard scheduled-tick deduplication. The chest obstruction cases
+  or arrows. `observer_watches_state_changes` also uses the whole level, where the fluid level's updater delivers
+  shape work and the notification pipeline the neighbour reactions; its recorded pulses guard scheduled-tick
+  deduplication. The chest obstruction cases
   retain vanilla's stale comparator output when a solid block is placed
   above the chest and removed, including above either half of a double chest, without moving items.
   The `piston_*observer` / `piston_observer_*` and `sticky_piston_pull_idle_observer` cases record pulses after a
@@ -213,10 +214,9 @@ replaces only what vanilla produced.
   recording random active. Ordered writes compare every flag bit; destruction compares state and drops intent;
   falling entities compare type, position, state, damage enablement, damage per distance and maximum damage. The
   replay rejects unexpected entities and writes outside the case and scans the loaded chunks for unexpected blocks.
-  Explicit expected differences pin six third-write flag changes from the duplicate shape-update pipeline, the
-  skipped pending-coral draw, and the two stalagmite cases' resource-spawn draws (the bounded probe suppresses loot).
-  Each exception fails when it disappears. The `review_*` cases also cover mud in the nether, mixed sulfur/dripstone
-  columns (growth and native `findTip`, including opposite-direction tips), and independent drops/silence landings.
+  An explicit expected difference pins the two stalagmite cases' resource-spawn draws (the bounded probe
+  suppresses loot); it fails when it disappears. The `review_*` cases also cover mud in the nether, mixed
+  sulfur/dripstone columns (growth and native `findTip`, including opposite-direction tips), and independent drops/silence landings.
   An optional `dimension` supplies that dimension type's environment attributes; optional `actions` are subsequent
   `UPDATE_ALL` writes. `findTip` takes `maxLength` and `includeMerged` and records the returned position or null.
 
