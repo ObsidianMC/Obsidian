@@ -56,16 +56,9 @@ public sealed class VanillaCauldrons(ITestOutputHelper output)
         CustomEffectPotion + string.Concat(Enumerable.Repeat(", empty", 35));
 
     // Known differences, by case and field: what Obsidian records instead of vanilla's value. Each fails once Obsidian
-    // matches vanilla or changes, so it can be removed (known-gaps/cauldrons.md). An empty bucket that doesn't fill
-    // goes on to its own use, aimed by the player's look: Obsidian holds a player's pitch in 256ths of a turn, so the
-    // capture's 30 degrees becomes 29.53 and the ray clips the cauldron's north wall, where vanilla's passes between
-    // its legs and misses.
+    // matches vanilla or changes, so it can be removed (known-gaps/cauldrons.md).
     private static readonly Dictionary<(string Case, string Field), string> knownDifferences = new()
     {
-        [("water2_bucket", "result")] = "fail",
-        [("snow1_bucket", "result")] = "fail",
-        [("empty_bucket", "result")] = "fail",
-
         // A water bottle with a custom effect stays in the hand, as vanilla's does, but Obsidian writes its effect
         // without the default show_icon that vanilla's codec adds (an item encoding gap, not a cauldron one).
         [("empty_water_bottle_custom_effect", "hand")] = CustomEffectPotion,
