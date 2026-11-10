@@ -532,7 +532,7 @@ adds.
 | Grass, mycelium: spread | Works | |
 | Copper: oxidize | Works | Captured random draws, all 13 owners, connected doors/chests and retained block entities |
 | Leaves: decay | Works | |
-| Ice, snow layers: melt | Missing | No weather pass either |
+| Ice, snow layers: melt | Works | Captured melting, sparse frost collapse, biome borders, flat snow lines and entity lifting (`melting_weather.json`) |
 | Fire | Works | Captured (`fire_ticks.json`). Fire lights a portal later in the tick than vanilla's; soul fire placed off a soul fire base isn't put out on placement (`BaseFireBlock.onPlace` is unbound); fire a shape update destroys goes later in the tick |
 | Lava, water | Works | Flow is captured; lava's ignition isn't |
 | Farmland: hydrate | Works | |
@@ -576,7 +576,7 @@ Statements the code contradicts, to correct in phase 0.
   read 0".
 - **`docs/known-gaps/plant-growth-beyond-saplings.md`:** "only saplings and the propagule do anything", "crops don't
   grow on random ticks", "leaves don't decay", and its "Where to start". Still
-  true: ice, snow, copper, weather, bone meal on other plants.
+  true: copper, bone meal on other plants.
 - **`docs/known-gaps/vanilla-blocks-reactions-to-block-updates.md`:** doors, trapdoors, rails and TNT "aren't
   modelled"; scheduled ticks of other vanilla blocks "do nothing"; "only pressure plates and wooden buttons react to
   entities inside them"; its "Where to start".

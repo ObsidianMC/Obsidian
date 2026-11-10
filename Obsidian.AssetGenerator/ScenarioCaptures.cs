@@ -36,6 +36,8 @@ internal static class ScenarioCaptures
     public const string Frogspawn = "frogspawn";
     public const string GrowingPlantTicks = "growing_plant_ticks";
 
+    public const string MeltingWeather = "melting_weather";
+
     private const string Symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     // Scenario entities and arrows carry this tag, so they can be removed again.
@@ -63,13 +65,12 @@ internal static class ScenarioCaptures
 
     // The fixtures whose probes record only the cases asked for.
     private static readonly string[] SelectableCases =
-        [Redstone, Sulfur, MoreBlocks, StructurePieces, Fire, TickingBlocks, BlockUse];
-
+        [Redstone, Sulfur, MoreBlocks, StructurePieces, Fire, TickingBlocks, BlockUse, MeltingWeather];
 
     public static readonly string[] All =
         [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps, Mining,
             Placement, CopperWeathering, Fire, TickingBlocks, BlockUse, TurtleEggs, Frogspawn,
-            GrowingPlantTicks];
+            GrowingPlantTicks, MeltingWeather];
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -112,8 +113,7 @@ internal static class ScenarioCaptures
         {
             throw new ArgumentException(
                 "Case selection requires CaptureFixtures=redstone, sulfur, more_blocks, structure_pieces, "
-                + "fire, ticking_blocks or block_use.");
-
+                + "fire, ticking_blocks, block_use or melting_weather.");
         }
 
         if (fixtures.Contains(CopperWeathering))
@@ -143,6 +143,14 @@ internal static class ScenarioCaptures
         {
             await FixtureDumper.DumpBlockUseAsync(server, Path.Combine(assetsDirectory, "block_use.json"), cases);
 
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(MeltingWeather))
+        {
+            var path = Path.Combine(assetsDirectory, "melting_weather.json");
+            await FixtureDumper.DumpMeltingWeatherAsync(server, path, cases);
             if (fixtures.Count == 1)
                 return;
         }

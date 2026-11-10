@@ -17,12 +17,16 @@ brings a stem to age 7 runs the stem's random tick, and the pitcher crop's bone 
 are there to share in `GrowingPlantRandomTicks.cs`.
 
 Random ticks sample the same sections and draw the same positions as vanilla's. Copper now weathers through all
-three age transitions, including connected doors and chests, with a captured neighborhood scan and random draws. A
-block whose vanilla random tick Obsidian doesn't have draws nothing: ice and snow still don't melt, and so on. Lava's
-random tick draws its chances in vanilla's order and sets fire to the blocks vanilla's lava ignites; fire then ticks,
-spreads and burns out with vanilla's draws (see `fire_ticks.json` in [scenario captures](../scenario-captures.md)).
-Vanilla's chunk ticks also draw for rain and snow (`tickPrecipitation`, one time in 48 per random tick), which
-Obsidian neither draws nor does, so the level random and the position sequence part from vanilla's there.
+three age transitions, including connected doors and chests, with a captured neighborhood scan and random draws.
+Ice, frosted ice and snow layers melt, and the chunk tick draws for rain and snow as vanilla's does
+(`tickPrecipitation`, one time in 48 per random tick): snow settles and builds up, water freezes and cauldrons fill,
+replayed from vanilla in `melting_weather.json`. Lava's random tick draws its chances in vanilla's order and sets
+fire to the blocks vanilla's lava ignites; fire then ticks, spreads and burns out with vanilla's draws (see
+`fire_ticks.json` in [scenario captures](../scenario-captures.md)).
+
+Weather still switches immediately. Vanilla's precipitation pass tests rain strength above 0.2 while weather fades
+in and out, so transition ticks can differ. The level's growth/precipitation random is not shared with mob spawning
+and thunder as in vanilla: only the draw order inside one chunk's tick matches.
 
 Around the plants that grow:
 

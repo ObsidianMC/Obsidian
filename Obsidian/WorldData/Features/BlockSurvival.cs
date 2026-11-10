@@ -279,7 +279,8 @@ internal static class BlockSurvival
     }
 
     /// <remarks>
-    /// The "full top collision face" check uses the sturdy top face, which matches for full and partial blocks alike.
+    /// Vanilla tests the top face of the collision shape, not the sturdy face: leaves hold snow though they support
+    /// nothing.
     /// </remarks>
     private static bool SnowLayerCanSurvive(IWorldGenLevel level, Vector position)
     {
@@ -290,7 +291,7 @@ internal static class BlockSurvival
         if (snowLayerCanSurviveOn.Contains(below))
             return true;
 
-        return below.IsFaceSturdy(BlockFace.Up) || below.Is(BlockIds.Snow) && below.GetProperty("layers") == "8";
+        return below.HasFullTopCollisionFace() || below.Is(BlockIds.Snow) && below.GetProperty("layers") == "8";
     }
 
     private static bool PointedDripstoneCanSurvive(IBlock block, IWorldGenLevel level, Vector position)

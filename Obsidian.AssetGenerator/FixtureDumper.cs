@@ -177,6 +177,32 @@ internal static class FixtureDumper
             cases is null ? "" : string.Join('+', cases));
     }
 
+    // An on-request probe: a dedicated server of its own, in a new normal world under the scratch directory.
+    internal static async Task DumpMeltingWeatherAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null)
+    {
+        using var document = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(fixture));
+        var selected = document.RootElement.GetProperty("cases").EnumerateArray()
+            .Where(probe => cases is null || cases.Contains(probe.GetProperty("name").GetString()!))
+            .ToArray();
+        if (cases is not null && selected.Length != cases.Count)
+            throw new ArgumentException("Every selected case must exist and be named once.");
+
+        // Flat and noise generators supply different sea levels. Each group gets its own native server/world.
+        var groups = selected.GroupBy(probe => probe.TryGetProperty("generator", out var generator)
+            ? generator.GetString()! : "normal");
+        foreach (var group in groups)
+        {
+            var world = Path.Combine(server.ScratchDirectory, $"melting-weather-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(world);
+            var names = string.Join('+', group.Select(probe => probe.GetProperty("name").GetString()));
+            await VanillaServer.RunJavaAsync(world,
+                "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+                "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("MeltingWeatherFixtures.java"),
+                fixture, names, group.Key);
+        }
+    }
+
     public static async Task DumpServerAsync(VanillaServer server, string output)
     {
         var classpath = string.Join(Path.PathSeparator, server.ClassPath);
