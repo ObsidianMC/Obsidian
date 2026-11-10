@@ -1,8 +1,10 @@
 # Player break effects
 
 
-**Status:** open. Found by the `block_use` captures that break a block after using it (`destroy`); both are named
-expected differences in `VanillaBlockUse`, which fail once Obsidian matches vanilla.
+**Status:** open. Found by the `block_use` captures that break a block after using it (`breakAfterUse`); both are
+named expected differences in `VanillaBlockUse`, pinned to their exact cases, which fail once Obsidian matches
+vanilla: `BreakSoundForLevelEvent2001` (the six `*_destroy*` cases) and `DestroyEventAfterRemoval`
+(`jukebox_destroy_with_disc`).
 
 - **Level event 2001.** A player breaking a block sends the players around it the block's break sound
   (`BlockSoundPlayback`), where vanilla's `playerWillDestroy` sends level event 2001 with the state, whose clients
