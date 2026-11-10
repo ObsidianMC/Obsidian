@@ -71,7 +71,7 @@ public partial class UseItemOnPacket
         // Acknowledgements belong to received sequences, not to completions that may be deferred.
         user.QueueBlockAcknowledgement(this.Sequence);
 
-        if (!user.Alive || user.Respawning)
+        if (!user.Alive || user.Respawning || user.HasPendingTeleport)
         {
             await this.RefuseAsync(user, level);
             return null;
@@ -82,7 +82,7 @@ public partial class UseItemOnPacket
         var block = this.InReach(user) && !level.IsOutsideBuildHeight(this.Position.Y)
             ? await level.GetBlockAsync(this.Position)
             : null;
-        if (block is null || !user.Alive || user.Respawning)
+        if (block is null || !user.Alive || user.Respawning || user.HasPendingTeleport)
         {
             await this.RefuseAsync(user, level);
             return null;
@@ -96,6 +96,12 @@ public partial class UseItemOnPacket
             handSlot = this.Hand == InteractionHand.OffHand ? OffhandSlot : user.CurrentHeldItemSlot;
             item = user.Inventory.GetItem(handSlot);
             usedItem = item is null ? null : new ItemStack(item, item.Count);
+        }
+
+        if (!user.Alive || user.Respawning || user.HasPendingTeleport)
+        {
+            await this.RefuseAsync(user, level);
+            return null;
         }
 
         // The inventory and world snapshots need no shared lock: exchanges validate both again at commitment.

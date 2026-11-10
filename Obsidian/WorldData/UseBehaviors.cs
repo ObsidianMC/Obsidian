@@ -104,6 +104,7 @@ internal sealed class BlockUse
     public bool CompletionDeferred { get; set; }
 
     public bool CanCommit => this.Player.Connected && this.Player.Alive && !this.Player.Respawning
+        && !this.Player.HasPendingTeleport
         && this.Player.Level == this.Level
         && this.Level.Players.TryGetValue(this.Player.Uuid, out var resident)
         && ReferenceEquals(resident, this.Player);

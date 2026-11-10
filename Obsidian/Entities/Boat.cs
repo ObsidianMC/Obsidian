@@ -182,13 +182,8 @@ public partial class Boat : VehicleEntity
                 return;
             }
 
-            if (this.ClientControl.Accepted is VehicleMove move)
-            {
-                this.Yaw = move.Yaw;
-                this.Pitch = move.Pitch;
-                this.MovementFlags = move.OnGround ? MovementFlags.OnGround : MovementFlags.None;
-                this.SetPosition(move.Position);
-            }
+            if (this.ClientControl.AcceptedMove is ClientVehicleControl.QueuedMove move)
+                this.ApplyClientMovement(move);
 
             // Like vanilla's server, which doesn't simulate a boat its controller's client moves.
             this.Motion = VectorD.Zero;
@@ -217,6 +212,23 @@ public partial class Boat : VehicleEntity
             this.PushAndPickUp(controller);
 
         this.FinishTick(oldPosition);
+    }
+
+    // Use the same transfer lock as boat travel, then revalidate the accepted move at its commit.
+    internal void ApplyClientMovement(ClientVehicleControl.QueuedMove move)
+    {
+        using (this.EnterOwningLevel(out _))
+            this.ClientControl.ApplyAcceptedTo(this, move);
+    }
+
+    // Called with the transfer lock and, for a connected rider, its teleport gate. SetPosition reaches the virtual
+    // Dimension and BoundingBox accessors; no asynchronous work is done here.
+    internal bool CommitClientMovement(VehicleMove move)
+    {
+        this.Yaw = move.Yaw;
+        this.Pitch = move.Pitch;
+        this.MovementFlags = move.OnGround ? MovementFlags.OnGround : MovementFlags.None;
+        return this.SetPosition(move.Position);
     }
 
     private void SetPaddleState(bool left, bool right)

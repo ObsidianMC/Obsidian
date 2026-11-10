@@ -1147,7 +1147,10 @@ public sealed partial class Server : IServer, IPluginScopedServer
         return this.ForEachConnectionAsync(client =>
         {
             if (client.Connected && client.State == ClientState.Play && client.Player is Player player)
+            {
+                player.TickTeleportClock();
                 player.FlushBlockAcknowledgement();
+            }
 
             return sendKeepAlive ? SendKeepAliveAsync(client) : ValueTask.CompletedTask;
         }, this.keepAliveFailures);

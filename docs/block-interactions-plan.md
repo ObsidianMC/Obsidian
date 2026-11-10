@@ -302,6 +302,34 @@ which never dispatches a generated owner's `UpdateShape`, so an observer placed 
 reaction. Worldgen reaches owners only through post-processing (`IPostProcessBehavior`, which soul sand and magma
 implement). The shared view in step 2 is where that is fixed.
 
+Done. Every arm of the switch is now a member of `ShapeUpdateBehaviors` named after its declaring class, in
+`WorldData/ShapeRules`, and the rules take one read-only view (`IShapeLevel`) that the live level, the notification
+pipeline, the fluid engine and generation all supply. Step 2's "return a state and schedule ticks" turned out too
+narrow: the view also checks for a pending tick and hands out the live level's random, which coral's rule (#708)
+draws its death delay from; it still has no way to write. Each member's `Reach` keeps the split between the two
+update engines as it was: live owners (coral, dirt paths and chorus plants among them) run first in both, and the
+former arms run only in the shared pass (`ShapeUpdater`). A live owner names what the shared pass runs for its blocks
+(`SharedPassRule`): fences and bars name their own reshape-only rule; bubble columns keep their scheduling rule
+so completion's fluid view saves the check in the chunk's ticks, as before. Speleothems and kelp name a rule that reshapes
+without scheduling their fall, break or support check, as their old shared copies did; other owners name none.
+Fences now refuse leaves by class on both paths, as vanilla's `isExceptionForConnection` does; the live rule used
+the `#leaves` tag, which differs only under a datapack that changes that tag. Plugin blocks keep the shared pass's
+`snowy` fallback.
+
+Blocks whose shared-pass rule changed: grindstones and nether wart gained a rule (both captured in
+`more_blocks.json`); torchflower crops gained one that has no effect yet; kelp_plant and the cave, weeping and
+twisting vines, heads and bodies, are now bound to the kelp shared rule, which leaves them as they are. The
+`more_blocks` shape replay also runs each case through the shared pass as generation reads it, wherever that pass
+has a rule for the block. The generator now binds 55 of the 108 declaring classes; the 53 still without a rule
+(dead coral among them; live coral has one since #708) are listed in
+[known gaps](known-gaps/vanilla-blocks-reactions-to-block-updates.md#shape-rules-not-implemented-yet).
+
+The observer gap is still open. Generation's shape pass has no block ticks to schedule, so an observer placed by a
+template needs a tick executor during generation (or ticks saved with the chunk) before running its rule there
+helps; leaves and soul sand would then schedule ticks in generated chunks too. Owners other than those five stay
+out of generation until that is designed. (`IPostProcessBehavior` was meant to give soul sand and magma their
+post-processing reaction, but 26.3's dump names neither class as declaring `updateShape`, so neither binds.)
+
 ### Phase 5: ticking (L)
 
 Section 8 is 20 of 31 working. The pattern for most of what's left is one `RandomTickBehaviors` or `TickBehaviors`
@@ -523,7 +551,7 @@ adds.
 
 | Line | Status | What's left |
 |---|---|---|
-| Furnaces, blast furnaces, smokers | Works | No recipe unlock on taking the result |
+| Furnaces, blast furnaces, smokers | Works | The recipe book holds no cooking displays, so clients aren't shown the recipes taking a result unlocks; experience draws and the crafted statistic (see `known-gaps/workstation-details.md`) |
 | Brewing stands, campfires | Works | |
 | Crops | Works | Stems and the pitcher crop captured (`growing_plant_ticks.json`); bone meal doesn't grow them |
 | Saplings | Works | Poplar doesn't grow |

@@ -117,7 +117,8 @@ internal sealed class FakeWorldManager(IWorld defaultWorld, bool worldsLoaded = 
 internal static class TestWorldFactory
 {
     /// <param name="generator">The world's generator; an empty world's by default.</param>
-    public static World Create(string name, ILevelGenerator? generator = null)
+    /// <param name="folder">Where the world keeps its files; <c>worlds/&lt;name&gt;</c> by default.</param>
+    public static World Create(string name, ILevelGenerator? generator = null, string? folder = null)
     {
         var configuration = new ServerConfiguration { SpawnChunkRadius = 0, TimeTickSpeedMultiplier = 1 };
         var world = new World(
@@ -129,6 +130,9 @@ internal static class TestWorldFactory
             generator ?? new EmptyWorldGenerator(),
             name,
             "test-seed");
+
+        if (folder is not null)
+            world.UseFolder(folder);
 
         world.Initialize(new DimensionCodec
         {

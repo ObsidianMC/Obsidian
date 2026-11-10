@@ -17738,6 +17738,186 @@
       "ticks": []
     },
     {
+      "name": "grindstone_shape_wall_support_gone",
+      "kind": "shape",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:grindstone[face=wall,facing=north]"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            1
+          ],
+          "state": "minecraft:air"
+        }
+      ],
+      "direction": "south",
+      "updated": "minecraft:grindstone[face=wall,facing=north]",
+      "ticks": []
+    },
+    {
+      "name": "grindstone_shape_floor_support_gone",
+      "kind": "shape",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:grindstone[face=floor,facing=north]"
+        },
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:air"
+        }
+      ],
+      "direction": "down",
+      "updated": "minecraft:grindstone[face=floor,facing=north]",
+      "ticks": []
+    },
+    {
+      "name": "grindstone_shape_ceiling_support_gone",
+      "kind": "shape",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:grindstone[face=ceiling,facing=north]"
+        },
+        {
+          "pos": [
+            0,
+            73,
+            0
+          ],
+          "state": "minecraft:air"
+        }
+      ],
+      "direction": "up",
+      "updated": "minecraft:grindstone[face=ceiling,facing=north]",
+      "ticks": []
+    },
+    {
+      "name": "oak_button_shape_wall_support_gone",
+      "kind": "shape",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:oak_button[face=wall,facing=north]"
+        },
+        {
+          "pos": [
+            0,
+            72,
+            1
+          ],
+          "state": "minecraft:air"
+        }
+      ],
+      "direction": "south",
+      "updated": "minecraft:air",
+      "ticks": []
+    },
+    {
+      "name": "nether_wart_shape_on_air",
+      "kind": "shape",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:nether_wart"
+        },
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:air"
+        }
+      ],
+      "direction": "down",
+      "updated": "minecraft:air",
+      "ticks": []
+    },
+    {
+      "name": "nether_wart_shape_on_soul_sand",
+      "kind": "shape",
+      "origin": [
+        0,
+        72,
+        0
+      ],
+      "setup": [
+        {
+          "pos": [
+            0,
+            72,
+            0
+          ],
+          "state": "minecraft:nether_wart"
+        },
+        {
+          "pos": [
+            0,
+            71,
+            0
+          ],
+          "state": "minecraft:soul_sand"
+        }
+      ],
+      "direction": "down",
+      "updated": "minecraft:nether_wart[age=0]",
+      "ticks": []
+    },
+    {
       "name": "poplar_fence_place_glass",
       "kind": "placement",
       "origin": [

@@ -136,41 +136,74 @@ public sealed partial class LevelTransfers
         Assert.True(source.TryAddEntity(cow));
 
         // The target's tick reaches a chunk management tick, at which its chunk management unloads its idle chunk (not
-        // the spawn chunk): that waits at the target's gate, which the target's tick holds until the cow arrives.
+        // the spawn chunk): that waits at the target's gate, held until the test has checked the cow's arrival.
         target.LevelData.GameTime = 20 * 30 - 1;
-        var targetTicks = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var arrived = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var managementStarted = new TaskCompletionSource<Task>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseTarget = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         Task? management = null;
         target.EnqueueEntityAction(async () =>
         {
             using (ExecutionContext.SuppressFlow())
-                management = Task.Run(target.ManageChunksAsync);
+            {
+                management = Task.Run(() =>
+                {
+                    var pass = target.ManageChunksAsync();
+                    managementStarted.TrySetResult(pass);
+                    return pass;
+                });
+            }
 
-            targetTicks.TrySetResult();
-            await arrived.Task.WaitAsync(TickWait);
+            await releaseTarget.Task.WaitAsync(TickWait);
         });
 
         // A plugin in the source's tick, meanwhile, awaits sending the cow to an ungenerated chunk of the target.
         Exception? travel = null;
-        var managementWaited = false;
         source.EnqueueEntityAction(async () =>
         {
-            await targetTicks.Task.WaitAsync(TickWait);
+            // ManageChunksAsync has run up to its first unfinished await, rather than merely being queued.
+            await managementStarted.Task.WaitAsync(TickWait);
             var sent = cow.TeleportAsync(target, Ungenerated).AsTask();
             travel = await Record.ExceptionAsync(() => sent.WaitAsync(TimeSpan.FromSeconds(5)));
-            managementWaited = management is { IsCompleted: false };
-            arrived.TrySetResult();
         });
 
         var targetTick = Task.Run(target.DoWorldTickAsync);
-        await source.DoWorldTickAsync().WaitAsync(TimeSpan.FromSeconds(20));
-        await targetTick.WaitAsync(TickWait);
+        try
+        {
+            await source.DoWorldTickAsync().WaitAsync(TimeSpan.FromSeconds(20));
+            var pass = await managementStarted.Task.WaitAsync(TickWait);
 
-        Assert.Null(travel);
-        Assert.True(managementWaited, "The target's chunk management didn't wait at its gate.");
-        Assert.True(target.GetLoadedChunk(UngeneratedChunk, UngeneratedChunk) is { IsGenerated: true });
-        Assert.Same(cow, target.FindEntity(cow.Uuid));
-        await management!.WaitAsync(TickWait);
+            Assert.Null(travel);
+            Assert.True(target.GetLoadedChunk(1, 0) is { IsGenerated: true },
+                "Chunk management unloaded an idle chunk while the target's tick held its gate.");
+            Assert.False(pass.IsCompleted, "The target's chunk management didn't wait at its gate.");
+            Assert.True(target.GetLoadedChunk(UngeneratedChunk, UngeneratedChunk) is { IsGenerated: true },
+                "Travel did not generate the destination chunk.");
+            Assert.Equal(Ungenerated, cow.Position);
+            Assert.Same(cow, target.FindEntity(cow.Uuid));
+            Assert.Null(source.FindEntity(cow.Uuid));
+        }
+        finally
+        {
+            // Once the gate opens, management may legitimately save and unload the cow's idle destination chunk.
+            releaseTarget.TrySetResult();
+            await targetTick.WaitAsync(TickWait);
+            if (management is not null)
+                await management.WaitAsync(TickWait);
+        }
+
+        Assert.Null(target.GetLoadedChunk(1, 0));
+
+        // The first pass's live enumeration may have passed the destination before travel generated it. A fresh pass
+        // includes it either way: unloading an arrived entity is safe only if reloading restores it with its chunk.
+        await target.ManageChunksAsync().WaitAsync(TickWait);
+        Assert.Null(target.GetLoadedChunk(UngeneratedChunk, UngeneratedChunk));
+        Assert.Null(target.FindEntity(cow.Uuid));
+        Assert.True(await target.GetChunkAsync(UngeneratedChunk, UngeneratedChunk, scheduleGeneration: false)
+            is { IsGenerated: true });
+        await target.DoWorldTickAsync().WaitAsync(TickWait);
+
+        var restored = Assert.IsType<Cow>(target.FindEntity(cow.Uuid));
+        Assert.Equal(Ungenerated, restored.Position);
     }
 
     private static Task GrantRootAsync(PlayerBase player) => player.Advancements.GrantAsync(RootAdvancement).AsTask();

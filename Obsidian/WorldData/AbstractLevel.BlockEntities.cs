@@ -180,12 +180,6 @@ public abstract partial class AbstractLevel
     internal void QueueBlockEntityRemoval(BlockEntity removed) =>
         this.EnqueueEntityAction(() => this.RunBlockEntityRemovalAsync(removed, onLevelTick: true));
 
-    /// <summary>
-    /// Ticks the block entities of the chunks that tick, like vanilla's block entity tickers: those whose block still
-    /// has their type, after the pending <see cref="BlockEntity.OnLoad"/> calls. Then runs the level's tickers (see
-    /// <see cref="AddTicker"/>), takes in the changes block entities announced (see
-    /// <see cref="BlockEntity.SetChanged"/>) and sends the updates they asked for.
-    /// </summary>
     // The level's generated chunks, listed once in a tick: its eggs and its block entities each go over them all.
     private (long Tick, List<Chunk> Chunks)? generatedChunks;
 
@@ -212,6 +206,14 @@ public abstract partial class AbstractLevel
         return chunks;
     }
 
+    /// <summary>
+    /// Ticks the block entities of the chunks that tick, like vanilla's block entity tickers: those whose classes
+    /// tick (see <c>BlockEntity.Ticks</c>) and whose block still has their type, after the pending
+    /// <see cref="BlockEntity.OnLoad"/> calls. The others get their upkeep in the same walk, at their place in it
+    /// (see <see cref="KeepUpIdleBlockEntity"/>). Then runs the level's tickers (see <see cref="AddTicker"/>), takes
+    /// in the changes block entities announced (see <see cref="BlockEntity.SetChanged"/>) and sends the updates they
+    /// asked for.
+    /// </summary>
     internal async ValueTask TickBlockEntitiesAsync()
     {
         var revision = BlockEntityTypesRegistry.Revision;
@@ -232,43 +234,27 @@ public abstract partial class AbstractLevel
                 continue;
 
             // Read in place: copying the values takes all the dictionary's locks, which chunk loading contends for.
+            // Read live, it never reaches one that an earlier tick removed or replaced.
             foreach (var (_, value) in chunk.BlockEntities)
             {
                 if (value is not BlockEntity blockEntity)
                     continue;
 
-                var position = blockEntity.BlockPosition;
-                var type = chunk.GetBlock(position.X, position.Y, position.Z).BlockEntityType();
+                if (!blockEntity.Ticks)
+                {
+                    this.KeepUpIdleBlockEntity(chunk, blockEntity);
+                    continue;
+                }
 
-                if (blockEntity.IsRemoved || !string.Equals(type, blockEntity.Id, StringComparison.OrdinalIgnoreCase))
+                if (!IsInPlace(chunk, blockEntity))
                     continue;
 
                 this.AttachBlockEntity(blockEntity);
                 this.RunLoad(blockEntity);
                 await this.TickBlockEntityAsync(blockEntity);
 
-                // A plugin's container is saved as of its last change, which players make by moving its items. Its
-                // own changes made without the inventory's lock are heard here too.
-                if (blockEntity is ContainerBlockEntity { SavesOnAnyThread: false } container)
-                {
-                    var items = container.Inventory.Revision;
-                    if (items != container.SavedRevision)
-                        container.SetChanged();
-
-                    if (items != container.NotifiedRevision)
-                        this.QueueItemsChanged(container);
-                }
-
-                // Comparators hear of items that moved since they last did: changes made outside the level's tick, like
-                // players' clicks, and the container's own tick. Changes made through item access are told at the end
-                // of this tick (FlushItemAccessChangesAsync). An unchanged container tells nobody.
-                if (blockEntity is ContainerBlockEntity watched
-                    && (watched.Inventory.Revision != watched.ComparatorRevision
-                        || (!watched.SavesOnAnyThread
-                            && watched.ChangeRevision != watched.ComparatorChangeRevision)))
-                {
-                    this.UpdateComparatorsOf(watched);
-                }
+                if (blockEntity is ContainerBlockEntity container)
+                    this.KeepUpContainer(container, container.Inventory.Revision);
             }
         }
 
@@ -279,6 +265,93 @@ public abstract partial class AbstractLevel
         this.TakeBlockEntityChanges();
         this.SendBlockEntityUpdates();
     }
+
+    /// <summary>
+    /// The block entity pass's upkeep of a block entity whose class doesn't tick: it's placed if it wasn't yet and its
+    /// pending <see cref="BlockEntity.OnLoad"/> runs, and a container is kept up with its items (see
+    /// <see cref="KeepUpContainer"/>), as one that ticks is after its tick. Most have nothing to do, which costs a
+    /// few field reads; only one that has is checked against its block.
+    /// </summary>
+    private void KeepUpIdleBlockEntity(Chunk chunk, BlockEntity blockEntity)
+    {
+        var container = blockEntity as ContainerBlockEntity;
+        var placing = blockEntity.Host is null || blockEntity.LoadPending;
+
+        // Read once: a container's revision scans every one of its slots.
+        var items = container?.Inventory.Revision ?? 0;
+        var containerChanged = container is not null
+            && (ItemsUnheard(container, items) || ComparatorsBehind(container, items));
+
+        if (!placing && !containerChanged)
+            return;
+
+        if (!IsInPlace(chunk, blockEntity))
+            return;
+
+        this.AttachBlockEntity(blockEntity);
+        this.RunLoad(blockEntity);
+
+        if (container is not null)
+            this.KeepUpContainer(container, items);
+    }
+
+    /// <summary>
+    /// Whether a block entity the pass reached is still live: not removed, and its block still has its type.
+    /// </summary>
+    /// <remarks>
+    /// It doesn't check that the block entity is still the one stored at its position: the pass reads it from the
+    /// chunk's dictionary and checks it with no await in between, so nothing can have replaced it. An await between
+    /// the read and this check would need that comparison back, since a replacement doesn't always mark the old one
+    /// removed (IRedstoneLevel.SetBlockEntityAt doesn't).
+    /// </remarks>
+    private static bool IsInPlace(Chunk chunk, BlockEntity blockEntity)
+    {
+        if (blockEntity.IsRemoved)
+            return false;
+
+        var position = blockEntity.BlockPosition;
+        var type = chunk.GetBlock(position.X, position.Y, position.Z).BlockEntityType();
+
+        return string.Equals(type, blockEntity.Id, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Keeps a container in a ticking chunk up with its items on each block entity pass, whether or not it ticks: a
+    /// plugin's container saves and hears of changes made without the inventory's lock, and comparators hear of
+    /// items that moved since they last did.
+    /// </summary>
+    /// <param name="container">The container.</param>
+    /// <param name="items">Its inventory's revision, read once for the pass.</param>
+    private void KeepUpContainer(ContainerBlockEntity container, long items)
+    {
+        // A plugin's container is saved as of its last change, which players make by moving its items. Its own
+        // changes made without the inventory's lock are heard here too.
+        if (!container.SavesOnAnyThread)
+        {
+            if (items != container.SavedRevision)
+                container.SetChanged();
+
+            if (items != container.NotifiedRevision)
+                this.QueueItemsChanged(container);
+        }
+
+        // Comparators hear of items that moved since they last did: changes made outside the level's tick, like
+        // players' clicks, and the container's own tick. Changes made through item access are told at the end of
+        // this tick (FlushItemAccessChangesAsync). An unchanged container tells nobody.
+        if (ComparatorsBehind(container, items))
+            this.UpdateComparatorsOf(container);
+    }
+
+    // Whether a plugin's container has items, as of revision items, it wasn't saved or told with (see KeepUpContainer).
+    private static bool ItemsUnheard(ContainerBlockEntity container, long items) =>
+        !container.SavesOnAnyThread
+        && (items != container.SavedRevision || items != container.NotifiedRevision);
+
+    // Whether comparators haven't heard of a container's items as of revision items, or of a plugin container's
+    // announced change.
+    private static bool ComparatorsBehind(ContainerBlockEntity container, long items) =>
+        items != container.ComparatorRevision
+        || (!container.SavesOnAnyThread && container.ChangeRevision != container.ComparatorChangeRevision);
 
     /// <summary>
     /// Queues a container's <see cref="ContainerBlockEntity.OnItemsChanged"/> to the end of the block entity tick,
@@ -569,7 +642,7 @@ public abstract partial class AbstractLevel
                 {
                     int experience;
                     using (furnace.Inventory.Lock())
-                        experience = furnace.TakeExperience(this.CookingRecipes, Globals.Random.NextSingle);
+                        experience = furnace.TakeExperience(this.CookingRecipes, this.CookingExperienceRandom);
 
                     this.DropCookingExperience((VectorD)furnace.BlockPosition, experience);
                 }

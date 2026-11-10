@@ -6,7 +6,9 @@ using Obsidian.API.Registries;
 using Obsidian.ChunkData;
 using Obsidian.Registries;
 using Obsidian.Entities;
+using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Tests.Fakes;
 using Obsidian.Tests.Utilities;
 using Obsidian.WorldData;
@@ -313,19 +315,51 @@ public sealed class VanillaMeltingWeather(ITestOutputHelper output)
         await standing.UpdatePositionAsync(initial, MovementFlags.OnGround);
         Assert.True(level.TryAddPlayer(standing));
         Assert.True(level.TryAddPlayer(observer));
+        var motion = new VectorD(0.1, -0.2, 0.3);
+        standing.Motion = motion;
+
+        // A lift replaces an unconfirmed plugin correction using the owner's next id, not another random draw.
+        var client = (TestClient)standing.Client;
+        var previous = new PlayerPositionPacket { TeleportId = 999, Position = initial, Delta = motion };
+        standing.TeleportId = previous.TeleportId;
+        await client.QueuePacketAsync(previous);
+        client.ClearPackets();
 
         level.GrowthRandom.SetSeed(probe.GetProperty("seed").GetInt64());
         RunPrecipitation(context, level, probe);
 
         Assert.Equal(expected, standing.Position);
         Assert.Equal(expected.Y, standing.BoundingBox.Min.Y);
-        var ownPackets = ((TestClient)standing.Client).SentPackets;
-        var correction = Assert.Single(ownPackets.OfType<PlayerPositionPacket>());
+        Assert.Equal(motion, standing.Motion);
+        var correction = Assert.Single(client.SentPackets.OfType<PlayerPositionPacket>());
         Assert.Equal(expected, correction.Position);
+        Assert.Equal(motion, correction.Delta);
+        Assert.Equal(1000, correction.TeleportId);
         Assert.Equal(standing.TeleportId, correction.TeleportId);
-        var seen = ((TestClient)observer.Client).SentPackets.OfType<EntityPositionSyncPacket>()
+        var watching = (TestClient)observer.Client;
+        var seen = watching.SentPackets.OfType<EntityPositionSyncPacket>()
             .Where(packet => packet.EntityId == standing.EntityId);
         Assert.Equal(expected, Assert.Single(seen).Position);
+
+        // A move sent before the client saw the lift cannot undo it or reach the observer.
+        watching.ClearPackets();
+        await client.ConfirmTeleportAsync(previous);
+        using var buffer = new NetworkBuffer();
+        VectorD.Write(initial, buffer);
+        buffer.WriteByte((byte)MovementFlags.OnGround);
+        buffer.Offset = 0;
+        var stale = new MovePlayerPosPacket();
+        stale.Populate(buffer);
+        await stale.HandleAsync(context.Server, standing);
+
+        Assert.Equal(expected, standing.Position);
+        Assert.Equal(expected.Y, standing.BoundingBox.Min.Y);
+        Assert.DoesNotContain(watching.SentPackets,
+            packet => packet is MoveEntityPosPacket or MoveEntityPosRotPacket or EntityPositionSyncPacket);
+
+        await client.ConfirmTeleportAsync(correction);
+        await stale.HandleAsync(context.Server, standing);
+        Assert.Equal(initial, standing.Position);
     }
 
     private static void CompareChanges(

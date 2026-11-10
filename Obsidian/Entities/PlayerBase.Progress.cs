@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Obsidian.API.Advancements;
 using Obsidian.API.Inventory;
 using Obsidian.API.Loot;
@@ -5,6 +6,7 @@ using Obsidian.API.Progress;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Progress;
+using Obsidian.WorldData;
 using System.IO;
 using System.Text.Json;
 
@@ -24,7 +26,17 @@ public partial class PlayerBase
     private bool progressSleeping;
     private bool progressDead;
     private readonly HashSet<string> unlockedRecipes = [];
-    private readonly ConcurrentQueue<string> craftedRecipes = new();
+
+    // Recipes the player is given or crafted, given out under the tick gate by the player's progress tick, or by their
+    // leave before the final save. Nothing is queued once the leave has given out the last of them (recipeEventsClosed),
+    // which recipeEventsSync keeps atomic with queueing; it's never held across an await.
+    private readonly ConcurrentQueue<RecipeEvent> recipeEvents = new();
+    private readonly object recipeEventsSync = new();
+    private bool recipeEventsClosed;
+
+    // A recipe the player is given (Unlocks: recorded as known, firing recipe_unlocked if it wasn't) or crafted
+    // (firing recipe_crafted).
+    private readonly record struct RecipeEvent(string Recipe, bool Unlocks);
 
     /// <summary>Applies criteria and all their rewards as one player state change, unless the player left.</summary>
     /// <exception cref="InvalidOperationException">The current flow holds another player's tick gate.</exception>
@@ -49,7 +61,7 @@ public partial class PlayerBase
     internal void RecordProgressCraft(string identifier, ItemStack result)
     {
         this.Statistics.Increment(result.Holder.UnlocalizedName, result.Count, "minecraft:crafted");
-        this.craftedRecipes.Enqueue(AdvancementsRegistry.Qualify(identifier));
+        this.TryQueueRecipeEvents([new RecipeEvent(AdvancementsRegistry.Qualify(identifier), Unlocks: false)]);
     }
 
     private string ProgressPath(string folder, Guid uuid)
@@ -99,8 +111,7 @@ public partial class PlayerBase
 
         this.progressDead = false;
 
-        while (this.craftedRecipes.TryDequeue(out var recipe))
-            await this.FireProgressAsync("recipe_crafted", recipe: recipe);
+        await this.GiveQueuedRecipesAsync();
 
         await this.FireProgressAsync("tick");
         if (this.Level.LevelData.GameTime % 20 == 0)
@@ -142,10 +153,7 @@ public partial class PlayerBase
         IBlock? block = null, Vector? position = null, string? recipe = null, string? from = null,
         string? to = null, int? levels = null)
     {
-        ValueTask Fire() => this.ProgressAdvancements.FireAsync(
-            $"minecraft:{trigger}",
-            conditions => ProgressConditions.Match(
-                this, trigger, conditions, item, entity, block, position, recipe, from, to, levels));
+        ValueTask Fire() => this.FireProgressNowAsync(trigger, item, entity, block, position, recipe, from, to, levels);
 
         // Gameplay firing a trigger for this player from another's tick (a hit landing in it, say) can't wait for this
         // player's gate. The event is matched now, as it is (the killer's position and dimension, say), and what it
@@ -166,6 +174,15 @@ public partial class PlayerBase
 
         return DeferredInventoryWork.RunOrDeferAsync(Fire);
     }
+
+    // Fires the trigger at once, for a flow that holds no inventory lock: one under the player's own tick gate, say.
+    private ValueTask FireProgressNowAsync(string trigger, ItemStack? item = null, IEntity? entity = null,
+        IBlock? block = null, Vector? position = null, string? recipe = null, string? from = null,
+        string? to = null, int? levels = null) =>
+        this.ProgressAdvancements.FireAsync(
+            $"minecraft:{trigger}",
+            conditions => ProgressConditions.Match(
+                this, trigger, conditions, item, entity, block, position, recipe, from, to, levels));
 
     private async Task GrantMatchedAsync(List<(string Advancement, string Criterion)> matched)
     {
@@ -319,14 +336,127 @@ public partial class PlayerBase
             ItemEntity.DropHostOwned(this, item);
     }
 
+    /// <summary>
+    /// Takes what <paramref name="machine"/> cooked for the player taking its result (vanilla's
+    /// <c>awardUsedRecipesAndPopExperience</c>), and queues the recipes for the player's next progress tick: in
+    /// vanilla's order, those they don't know join their book, each firing <c>recipe_unlocked</c>, and then
+    /// <c>recipe_crafted</c> fires for every one. The caller holds the machine's inventory lock and drops the
+    /// returned experience.
+    /// </summary>
+    /// <returns>
+    /// The recipes taken, with their experience; null, taking nothing, once the player has left, so that the machine
+    /// keeps them for whoever takes its result next.
+    /// </returns>
+    internal List<FurnaceBlockEntity.CookedRecipe>? TakeCookedRecipes(
+        FurnaceBlockEntity machine,
+        RecipeSet recipes,
+        Func<float> random)
+    {
+        lock (this.recipeEventsSync)
+        {
+            if (this.recipeEventsClosed)
+                return null;
+
+            var cooked = machine.TakeCookedRecipes(recipes, random);
+            var identifiers = cooked.Select(recipe => AdvancementsRegistry.Qualify(recipe.Recipe.Identifier)).ToList();
+            foreach (var identifier in identifiers)
+                this.recipeEvents.Enqueue(new RecipeEvent(identifier, Unlocks: true));
+
+            foreach (var identifier in identifiers)
+                this.recipeEvents.Enqueue(new RecipeEvent(identifier, Unlocks: false));
+
+            return cooked;
+        }
+    }
+
+    // False once the player has left: what they crafted then is never fired.
+    private bool TryQueueRecipeEvents(IEnumerable<RecipeEvent> events)
+    {
+        lock (this.recipeEventsSync)
+        {
+            if (this.recipeEventsClosed)
+                return false;
+
+            foreach (var recipeEvent in events)
+                this.recipeEvents.Enqueue(recipeEvent);
+
+            return true;
+        }
+    }
+
+    // Under the tick gate. Each recipe is handled on its own: one that throws is logged and the rest are still given,
+    // and none leaves the queue before it was handled, so a save that runs after it sees it given.
+    private async ValueTask GiveQueuedRecipesAsync()
+    {
+        while (this.recipeEvents.TryPeek(out var next))
+        {
+            try
+            {
+                if (next.Unlocks)
+                    await this.UnlockProgressRecipeAsync(next.Recipe);
+                else
+                    await this.FireProgressNowAsync("recipe_crafted", recipe: next.Recipe);
+            }
+            catch (Exception exception)
+            {
+                RecipeEventFailed(this.Logger, exception, next.Recipe);
+            }
+            finally
+            {
+                this.recipeEvents.TryDequeue(out _);
+            }
+        }
+    }
+
+    // Under the tick gate, as the player leaves: gives out what's queued, then closes the queue once it's empty, so
+    // that nothing queued afterwards waits for a tick that won't come.
+    private async ValueTask GiveQueuedRecipesAndCloseAsync()
+    {
+        while (true)
+        {
+            await this.GiveQueuedRecipesAsync();
+            lock (this.recipeEventsSync)
+            {
+                if (this.recipeEvents.IsEmpty)
+                {
+                    this.recipeEventsClosed = true;
+                    return;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Adds the recipe to the player's book, if the server has it and they don't know it yet, and fires
+    /// <c>recipe_unlocked</c> for it at once. Call it under the player's tick gate, as advancement rewards and the
+    /// player's progress tick do, so that a save sees the recipe known together with what the trigger met. If the
+    /// trigger throws, the recipe is forgotten again, so it's never known without its trigger having fired.
+    /// </summary>
     internal async ValueTask UnlockProgressRecipeAsync(string identifier)
+    {
+        if (!await this.AddKnownRecipeAsync(identifier))
+            return;
+
+        try
+        {
+            await this.FireProgressNowAsync("recipe_unlocked", recipe: identifier);
+        }
+        catch
+        {
+            this.unlockedRecipes.Remove(identifier);
+            throw;
+        }
+    }
+
+    // Records the recipe as known and shows it in the book; false when the server doesn't have it or it's known.
+    private async ValueTask<bool> AddKnownRecipeAsync(string identifier)
     {
         var recipes = Events.MainEventHandler.PlayerRecipes(this);
         if ((!recipes.Recipes.ContainsKey(identifier)
                 && !recipes.Recipes.ContainsKey(identifier.TrimResourceTag(keepUnderscores: true)))
             || !this.unlockedRecipes.Add(identifier))
         {
-            return;
+            return false;
         }
 
         // Obsidian currently exposes every crafting recipe. A reward still explicitly adds its display and
@@ -338,6 +468,9 @@ public partial class PlayerBase
         if (entries.Length > 0)
             await this.QueuePacketAsync(new RecipeBookAddPacket(entries, replace: false));
 
-        await this.FireProgressAsync("recipe_unlocked", recipe: identifier);
+        return true;
     }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Giving the recipe {Recipe} failed")]
+    private static partial void RecipeEventFailed(ILogger logger, Exception exception, string recipe);
 }

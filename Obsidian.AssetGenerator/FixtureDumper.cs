@@ -135,6 +135,11 @@ internal static class FixtureDumper
         VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
             Source("GrowingPlantTickFixtures.java"), fixture);
 
+    // An on-request gameplay probe: what cooking machines give a player taking their result, or drop when broken.
+    internal static Task DumpFurnaceResultsAsync(VanillaServer server, string fixture) =>
+        VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
+            Source("FurnaceFixtures.java"), fixture);
+
     internal static Task DumpSulfurAsync(VanillaServer server, string fixture) =>
         VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
             Source("SulfurFixtures.java"), fixture);

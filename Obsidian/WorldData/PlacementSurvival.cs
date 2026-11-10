@@ -94,11 +94,11 @@ internal static class PlacementSurvival
             case "CocoaBlock":
                 return BlockSurvival.JungleLogs.Contains(level.GetBlock(position.Offset(Facing(state))));
             case "SugarCaneBlock":
-                return BlockSurvival.SugarCaneMayStay(level.GetBlock, position);
+                return BlockSurvival.SugarCaneMayStay(new BlockReader(level.AsShapeLevel()), position);
             case "CactusBlock":
-                return BlockSurvival.CactusMayStay(level.GetBlock, position);
+                return BlockSurvival.CactusMayStay(new BlockReader(level.AsShapeLevel()), position);
             case "BambooStalkBlock" or "BambooSaplingBlock":
-                return BlockSurvival.BambooMayStay(level.GetBlock, position);
+                return BlockSurvival.BambooMayStay(new BlockReader(level.AsShapeLevel()), position);
             case "MushroomBlock":
                 return state.CanSurvive(new View(level), position, RawBrightness(level, position));
             default:

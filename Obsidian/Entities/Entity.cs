@@ -367,6 +367,12 @@ public partial class Entity : IEquatable<Entity>, IEntity
 
     public virtual async ValueTask UpdateAsync(VectorD position, MovementFlags movementFlags)
     {
+        this.BroadcastMovement(position, movementFlags);
+        await this.UpdatePositionAsync(position, movementFlags);
+    }
+
+    private protected void BroadcastMovement(VectorD position, MovementFlags movementFlags)
+    {
         // Moved when the move shows on the client: when its delta, in 1/4096 blocks, isn't zero.
         var delta = MoveDelta(Position, position);
         var isNewLocation = delta != Vector.Zero;
@@ -386,11 +392,15 @@ public partial class Entity : IEquatable<Entity>, IEntity
                 OnGround = movementFlags.HasFlag(MovementFlags.OnGround)
             }, EntityId);
         }
-
-        await UpdatePositionAsync(position, movementFlags);
     }
 
     public virtual async ValueTask UpdateAsync(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags)
+    {
+        this.BroadcastMovement(position, yaw, pitch, movementFlags);
+        await this.UpdatePositionAsync(position, yaw, pitch, movementFlags);
+    }
+
+    private protected void BroadcastMovement(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags)
     {
         // Moved when the move shows on the client: when its delta, in 1/4096 blocks, isn't zero.
         var delta = MoveDelta(Position, position);
@@ -439,8 +449,6 @@ public partial class Entity : IEquatable<Entity>, IEntity
             this.SetRotation(yaw, pitch, movementFlags);
             this.SetHeadRotation(yaw);
         }
-
-        await UpdatePositionAsync(position, yaw, pitch, movementFlags);
     }
 
     public virtual ValueTask UpdateAsync(Angle yaw, Angle pitch, MovementFlags movementFlags)

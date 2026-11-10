@@ -12,6 +12,9 @@ using Obsidian.Commands.Framework;
 using Obsidian.Entities;
 using Obsidian.Events;
 using Obsidian.Hosting;
+using Obsidian.Net;
+using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Services;
 using Obsidian.Utilities.Mojang;
 using Obsidian.WorldData;
@@ -52,19 +55,23 @@ internal sealed class TestClient(IServer server, bool connected = true) : IClien
         return true;
     }
 
-    public ReadOnlySpan<byte> SetSharedKeyAndDecodeVerifyToken(ReadOnlySpan<byte> sharedKey, ReadOnlySpan<byte> verifyToken) => verifyToken;
+    public ReadOnlySpan<byte> SetSharedKeyAndDecodeVerifyToken(
+        ReadOnlySpan<byte> sharedKey, ReadOnlySpan<byte> verifyToken) => verifyToken;
 
     public ValueTask DisconnectAsync(ChatMessage reason)
     {
-        this.Connected = false;
+        this.Dispose();
         return default;
     }
 
     public ValueTask QueuePacketAsync(IClientboundPacket packet)
     {
         this.packets.Add(packet);
-        return default;
+        return this.AfterQueue?.Invoke(packet) ?? default;
     }
+
+    // Tests can stop a travel after its position packet was received, without timers or production callbacks.
+    internal Func<IClientboundPacket, ValueTask>? AfterQueue { get; set; }
 
     public void SetState(ClientState state) => this.State = state;
 
@@ -80,7 +87,29 @@ internal sealed class TestClient(IServer server, bool connected = true) : IClien
 
     public void ClearPackets() => this.packets.Clear();
 
-    public void Dispose() => this.Connected = false;
+    // A 26.3 client confirms with its resolved position and rotation, not just the id. Tests can hold an older
+    // packet to simulate a delayed confirmation, or omit it to confirm the latest one received.
+    public ValueTask ConfirmTeleportAsync(PlayerPositionPacket? teleport = null, VectorD? position = null)
+    {
+        teleport ??= this.packets.OfType<PlayerPositionPacket>().Last();
+        using var buffer = new NetworkBuffer();
+        buffer.WriteVarInt(teleport.TeleportId);
+        VectorD.Write(position ?? teleport.Position, buffer);
+        buffer.WriteSingle(teleport.Yaw);
+        buffer.WriteSingle(teleport.Pitch);
+        buffer.Offset = 0;
+
+        var confirmation = new AcceptTeleportationPacket();
+        confirmation.Populate(buffer);
+        return confirmation.HandleAsync(this.Server, (IClientPlayer)this.Player!);
+    }
+
+    public void Dispose()
+    {
+        this.Connected = false;
+        if (this.Player is PlayerBase player)
+            player.StopTeleportWaits();
+    }
 }
 
 internal sealed class RecordingPacketBroadcaster : IPacketBroadcaster
@@ -111,18 +140,22 @@ internal sealed class RecordingPacketBroadcaster : IPacketBroadcaster
     public void BroadcastToLevel(ILevel toLevel, IClientboundPacket packet, params int[] excludedIds) =>
         this.Deliver(toLevel.Players.Values.OfType<IClientPlayer>(), packet, excludedIds: excludedIds);
 
-    public void BroadcastToLevelInRange(ILevel level, VectorD location, IClientboundPacket packet, params int[] excludedIds)
+    public void BroadcastToLevelInRange(
+        ILevel level, VectorD location, IClientboundPacket packet, params int[] excludedIds)
     {
         if (level is not AbstractLevel concrete)
             return;
 
-        this.Deliver(concrete.GetPlayersInRange(location, concrete.Configuration.EntityBroadcastRangePercentage).OfType<IClientPlayer>(), packet, excludedIds: excludedIds);
+        var players = concrete.GetPlayersInRange(location, concrete.Configuration.EntityBroadcastRangePercentage)
+            .OfType<IClientPlayer>();
+        this.Deliver(players, packet, excludedIds: excludedIds);
     }
 
     public void QueuePacketTo(IClientboundPacket packet, params int[] ids) =>
         this.Deliver(this.Server?.OnlinePlayers.Values.OfType<IClientPlayer>() ?? [], packet, includedIds: ids);
 
-    public void QueuePacketTo(IClientboundPacket packet, int priority, params int[] ids) => this.QueuePacketTo(packet, ids);
+    public void QueuePacketTo(IClientboundPacket packet, int priority, params int[] ids) =>
+        this.QueuePacketTo(packet, ids);
 
     public void QueuePacketToLevel(ILevel toLevel, IClientboundPacket packet, params int[] excludedIds) =>
         this.Deliver(toLevel.Players.Values.OfType<IClientPlayer>(), packet, excludedIds: excludedIds);
@@ -155,7 +188,9 @@ internal sealed class RecordingPacketBroadcaster : IPacketBroadcaster
     public void QueuePacket(IClientboundPacket packet, int priority, params int[] excludedIds) =>
         this.QueuePacket(packet, excludedIds);
 
-    private void Deliver(IEnumerable<IClientPlayer> players, IClientboundPacket packet, int[]? includedIds = null, int[]? excludedIds = null)
+    private void Deliver(
+        IEnumerable<IClientPlayer> players, IClientboundPacket packet,
+        int[]? includedIds = null, int[]? excludedIds = null)
     {
         foreach (var player in players)
         {
@@ -171,12 +206,13 @@ internal sealed class RecordingPacketBroadcaster : IPacketBroadcaster
 
 internal sealed class FakeUserCache : IUserCache
 {
-    public ValueTask<CachedProfile?> GetCachedUserFromNameAsync(string username) => ValueTask.FromResult<CachedProfile?>(new CachedProfile
-    {
-        Name = username,
-        Uuid = Guid.NewGuid(),
-        ExpiresOn = DateTimeOffset.MaxValue
-    });
+    public ValueTask<CachedProfile?> GetCachedUserFromNameAsync(string username) =>
+        ValueTask.FromResult<CachedProfile?>(new CachedProfile
+        {
+            Name = username,
+            Uuid = Guid.NewGuid(),
+            ExpiresOn = DateTimeOffset.MaxValue
+        });
 
     public ValueTask<CachedProfile> GetCachedUserFromUuidAsync(Guid uuid) => ValueTask.FromResult(new CachedProfile
     {
@@ -185,7 +221,8 @@ internal sealed class FakeUserCache : IUserCache
         ExpiresOn = DateTimeOffset.MaxValue
     });
 
-    public Task<MojangProfile?> HasJoinedAsync(string username, string serverId) => Task.FromResult<MojangProfile?>(null);
+    public Task<MojangProfile?> HasJoinedAsync(string username, string serverId) =>
+        Task.FromResult<MojangProfile?>(null);
 
     /// <summary>
     /// Whether the cache was saved.
@@ -307,7 +344,10 @@ internal static class TestServerFactory
             MaxBufferSize = 8192
         };
 
-        typeof(Server).GetProperty(nameof(Server.Connections))!.SetValue(server, new ConcurrentDictionary<int, IClient>());
+        typeof(Server).GetProperty(nameof(Server.Connections))!
+            .SetValue(server, new ConcurrentDictionary<int, IClient>());
+        typeof(Server).GetProperty(nameof(Server.ScoreboardManager))!
+            .SetValue(server, new ScoreboardManager(server, loggerFactory));
 
         broadcaster.Server = server;
         eventDispatcher.RegisterEvents();
@@ -348,13 +388,19 @@ internal static class TestServerFactory
 
         await player.UpdatePlayerInfoAsync();
         await player.SendPlayerInfoAsync();
-        await server.EventDispatcher.ExecuteEventAsync(new Obsidian.API.Events.PlayerJoinEventArgs(player, server, DateTimeOffset.UtcNow));
+        var joined = new Obsidian.API.Events.PlayerJoinEventArgs(player, server, DateTimeOffset.UtcNow);
+        await server.EventDispatcher.ExecuteEventAsync(joined);
+
+        if (player.HasPendingTeleport)
+            await ((TestClient)player.Client).ConfirmTeleportAsync();
 
         // A real client reports its position right after joining, which is when it starts seeing the players around it.
         await player.UpdateAsync(player.Position, MovementFlags.OnGround);
     }
 
-    private static World CreateWorld(string name, ServerConfiguration configuration, IPacketBroadcaster broadcaster, IEventDispatcher eventDispatcher)
+    private static World CreateWorld(
+        string name, ServerConfiguration configuration,
+        IPacketBroadcaster broadcaster, IEventDispatcher eventDispatcher)
     {
         var world = new World(
             NullLogger<World>.Instance,
@@ -373,7 +419,10 @@ internal static class TestServerFactory
             Element = new Obsidian.API.Registry.Codecs.Dimensions.DimensionElement
             {
                 MonsterSpawnBlockLightLimit = 0,
-                MonsterSpawnLightLevel = new Obsidian.API.Registry.Codecs.Dimensions.MonsterSpawnLightLevel { IntValue = 0 },
+                MonsterSpawnLightLevel = new Obsidian.API.Registry.Codecs.Dimensions.MonsterSpawnLightLevel
+                {
+                    IntValue = 0
+                },
                 PiglinSafe = false,
                 AmbientLight = 0,
                 HasSkylight = true,

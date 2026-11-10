@@ -26,15 +26,28 @@ public partial class PlayerBase
     internal static PlayerBase? TickingPlayer => tickingPlayer.Value;
 
     /// <summary>
-    /// Waits for the player's current tick, grant or save and closes ticks and grants: they're leaving. Never call
-    /// it from a flow that already owns the player's tick gate.
+    /// Waits for the player's current tick, grant or save and closes ticks and grants: they're leaving. Recipes they
+    /// were given or crafted since their last tick are given out first, under the gate, so the leave's save has them.
+    /// Never call it from a flow that already owns the player's tick gate.
     /// </summary>
     internal async Task StopTickingAsync()
     {
         this.ThrowIfInAnotherPlayersTick("Stopping the ticks");
         await this.tickGate.WaitAsync();
-        this.stoppedTicking = true;
-        this.tickGate.Release();
+        var previous = tickingPlayer.Value;
+        tickingPlayer.Value = this;
+
+        try
+        {
+            if (!this.stoppedTicking)
+                await this.GiveQueuedRecipesAndCloseAsync();
+        }
+        finally
+        {
+            this.stoppedTicking = true;
+            tickingPlayer.Value = previous;
+            this.tickGate.Release();
+        }
     }
 
     /// <summary>
