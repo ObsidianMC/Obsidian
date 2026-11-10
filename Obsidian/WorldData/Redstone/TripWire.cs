@@ -1,3 +1,4 @@
+using Obsidian.Entities;
 using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.BlockTicks;
 using Obsidian.WorldData.Features;
@@ -16,8 +17,9 @@ internal static class TripWireBlocks
     // Vanilla TripWireHookBlock.calculateState scans up to 41 blocks along the hook's facing for the other hook.
     public const int ScanLength = 41;
 
-    // Vanilla TripWireBlock: a powered wire rechecks its entities after 10 ticks.
+    // Vanilla TripWireBlock: a powered wire rechecks its entities after 10 ticks, and one just released after 1.
     public const int PoweredTicks = 10;
+    public const int ReleasedTicks = 1;
 
     // Vanilla TripWireBlock shapes: attached is a 1/16 to 2.5/16 band; detached is the bottom 8/16.
     public const double AttachedMinY = 1d / 16d;
@@ -211,16 +213,15 @@ internal sealed class TripWireHook(IRedstoneLevel level) : IRedstoneBehavior, IN
 }
 
 /// <summary>
-/// The tripwire (vanilla <c>TripWireBlock</c>). Entities that touch an unpowered wire power it, and the wire then powers the hooks along
-/// its line. A powered wire rechecks its entities every 10 ticks and releases when none are touching it.
+/// The tripwire (vanilla <c>TripWireBlock</c>). An entity inside an unpowered wire powers it, and the wire then powers the hooks along
+/// its line. A powered wire rechecks the entities in its shape every 10 ticks and releases when none are there.
 /// </summary>
 /// <remarks>
-/// Entity contact is taken from the entity positions at the level's detection pass, as pressure plates are. Vanilla checks on entity
-/// movement, so a contact can be seen up to one tick later here. Shears disarming (vanilla <c>playerWillDestroy</c>) is not implemented.
+/// The entity contact pass (<see cref="EntityContactPass"/>) runs <see cref="EntityInsideAsync"/> for each entity straight after its
+/// tick, as vanilla's movement does. Shears disarming (vanilla <c>playerWillDestroy</c>) is not implemented.
 /// </remarks>
 internal sealed class TripWire(IRedstoneLevel level, TripWireHook hook) : INeighborChangedBehavior, IPlacementBehavior, IRemovalBehavior
 {
-    private HashSet<Vector> contacts = [];
 
     /// <summary>
     /// Registers the wire and the hook with the level's behavior sets and block ticks, and returns the wire, which runs entity detection.
@@ -245,65 +246,23 @@ internal sealed class TripWire(IRedstoneLevel level, TripWireHook hook) : INeigh
     }
 
     /// <summary>
-    /// Runs one detection pass over the entities that tick this level tick.
+    /// Vanilla <c>entityInside</c>, for an entity whose box is inside the wire's cell: one that meets the wire's shape
+    /// (vanilla's <c>getEntityInsideCollisionShape</c> is the shape) powers an unpowered wire, unless a check is
+    /// pending, as one is for a tick after a release.
     /// </summary>
-    public ValueTask UpdateAsync(IEnumerable<IEntity> entities) => this.ApplyContactsAsync(this.ContactsOf(entities));
-
-    /// <summary>
-    /// The tripwire cells that a non-spectator entity touches, using the wire's shape for its attachment.
-    /// </summary>
-    internal List<Vector> ContactsOf(IEnumerable<IEntity> entities)
+    public ValueTask EntityInsideAsync(Vector position, IBlock state, Entity entity)
     {
-        var found = new HashSet<Vector>();
-        foreach (var entity in entities)
-        {
-            if (entity is IPlayer { GameMode: GameMode.Spectator })
-                continue;
+        if (TripWireBlocks.Flag(state, "powered") || !MeetsShape(position, state, entity))
+            return ValueTask.CompletedTask;
 
-            var box = entity.Dimension.CreateBBFromPosition(entity.Position);
-            for (var x = (int)Math.Floor(box.Min.X); x <= (int)Math.Floor(box.Max.X - 1e-7); x++)
-            {
-                for (var z = (int)Math.Floor(box.Min.Z); z <= (int)Math.Floor(box.Max.Z - 1e-7); z++)
-                {
-                    for (var y = (int)Math.Floor(box.Min.Y); y <= (int)Math.Floor(box.Max.Y - 1e-7); y++)
-                    {
-                        var cell = new Vector(x, y, z);
-                        var state = level.GetLoadedBlock(cell);
-                        if (!TripWireBlocks.IsWire(state))
-                            continue;
+        if (level.IsBlockTickScheduled(position, state.UnlocalizedName))
+            return ValueTask.CompletedTask;
 
-                        var attached = TripWireBlocks.Flag(state!, "attached");
-                        var minY = attached ? TripWireBlocks.AttachedMinY : 0;
-                        var maxY = attached ? TripWireBlocks.AttachedMaxY : TripWireBlocks.DetachedMaxY;
-                        if (box.Min.Y < y + maxY && box.Max.Y > y + minY)
-                            found.Add(cell);
-                    }
-                }
-            }
-        }
-
-        return found.ToList();
+        return this.CheckPressedAsync(position, !EntityContactPass.IgnoresBlockTriggers(entity));
     }
 
     /// <summary>
-    /// Applies one pass: unpowered wires that are touched become powered (vanilla <c>entityInside</c>). The entity set is kept for the
-    /// recheck tick.
-    /// </summary>
-    internal async ValueTask ApplyContactsAsync(IEnumerable<Vector> touched)
-    {
-        this.contacts = touched.ToHashSet();
-        foreach (var position in this.contacts.OrderBy(p => p.X).ThenBy(p => p.Y).ThenBy(p => p.Z))
-        {
-            var state = level.GetLoadedBlock(position);
-            if (!TripWireBlocks.IsWire(state) || TripWireBlocks.Flag(state!, "powered"))
-                continue;
-
-            await this.UpdateSourceAsync(position, state!, true);
-        }
-    }
-
-    /// <summary>
-    /// Recheck tick (vanilla <c>tick</c>): a powered wire looks at the entities still touching it.
+    /// Recheck tick (vanilla <c>tick</c>): a powered wire looks for entities in its shape's bounds.
     /// </summary>
     internal async ValueTask TickAsync(Vector position)
     {
@@ -311,22 +270,45 @@ internal sealed class TripWire(IRedstoneLevel level, TripWireHook hook) : INeigh
         if (!TripWireBlocks.IsWire(state) || !TripWireBlocks.Flag(state!, "powered"))
             return;
 
-        await this.UpdateSourceAsync(position, state!, this.contacts.Contains(position));
+        var (minY, maxY) = ShapeHeight(state!);
+        var min = new VectorD(position.X, position.Y + minY, position.Z);
+        var max = new VectorD(position.X + 1, position.Y + maxY, position.Z + 1);
+        var pressed = level.EntitiesIn(min, max).Any(entity => !EntityContactPass.IgnoresBlockTriggers(entity));
+        await this.CheckPressedAsync(position, pressed);
     }
 
-    // Vanilla updateSource: a change of the powered state is committed (with neighbor updates), then the line is updated. A powered wire
-    // schedules its recheck whether or not the state changed.
-    private async ValueTask UpdateSourceAsync(Vector position, IBlock state, bool powered)
+    // Vanilla checkPressed: a change of the powered state is committed (with neighbor updates), then the line is updated. A
+    // pressed wire checks again in 10 ticks; one just released checks again in 1, which keeps it from being pressed in
+    // between.
+    private async ValueTask CheckPressedAsync(Vector position, bool pressed)
     {
-        if (TripWireBlocks.Flag(state, "powered") != powered)
+        if (level.GetLoadedBlock(position) is not IBlock state || !TripWireBlocks.IsWire(state))
+            return;
+
+        var wasPressed = TripWireBlocks.Flag(state, "powered");
+        if (wasPressed != pressed)
         {
-            state = state.WithProperty("powered", TripWireHook.Bool(powered));
+            state = state.WithProperty("powered", TripWireHook.Bool(pressed));
             await level.SetBlockAsync(position, state);
             await this.UpdateLineAsync(position, state);
         }
 
-        if (powered)
+        if (pressed)
             level.ScheduleBlockTick(position, state, TripWireBlocks.PoweredTicks);
+        else if (wasPressed)
+            level.ScheduleBlockTick(position, state, TripWireBlocks.ReleasedTicks);
+    }
+
+    // Vanilla TripWireBlock shapes: the attached band, or the detached bottom half, across the whole cell.
+    private static (double Min, double Max) ShapeHeight(IBlock state) => TripWireBlocks.Flag(state, "attached")
+        ? (TripWireBlocks.AttachedMinY, TripWireBlocks.AttachedMaxY)
+        : (0, TripWireBlocks.DetachedMaxY);
+
+    private static bool MeetsShape(Vector position, IBlock state, Entity entity)
+    {
+        var box = entity.Dimension.CreateBBFromPosition(entity.Position);
+        var (minY, maxY) = ShapeHeight(state);
+        return box.Min.Y < position.Y + maxY && box.Max.Y > position.Y + minY;
     }
 
     // Vanilla placement and removal: the hooks at the ends of the line are recalculated from this wire.

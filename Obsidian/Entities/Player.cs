@@ -242,12 +242,20 @@ public sealed partial class Player : PlayerBase, IClientPlayer
             }
         }
 
-        if (this.pendingChunks.Count == 0 || !await this.chunkUpdates.WaitAsync(0))
+        if (!await this.chunkUpdates.WaitAsync(0))
             return;
 
         try
         {
-            await this.SendReadyChunksAsync();
+            if (this.chunksStopped)
+                return;
+
+            // Passenger positioning can move the player without a player movement packet. Refresh here too,
+            // but never wait for a teleport or level transfer and hold up the other players' chunk sends.
+            if (this.chunkCacheCenter != this.Position.ToChunkCoord())
+                await this.UpdateChunksUnderLockAsync(unloadAll: false);
+            else if (this.pendingChunks.Count > 0)
+                await this.SendReadyChunksAsync();
         }
         catch (OperationCanceledException)
         {

@@ -34,6 +34,8 @@ internal sealed class Assets
                 ["tick"] = files.GetJsonFromArray("block_tick_classes"),
                 ["updateShape"] = files.GetJsonFromArray("block_update_shape_classes"),
                 ["entityInside"] = files.GetJsonFromArray("block_entity_inside_classes"),
+                ["stepOn"] = files.GetJsonFromArray("block_step_on_classes"),
+                ["fallOn"] = files.GetJsonFromArray("block_fall_on_classes"),
                 ["onPlace"] = files.GetJsonFromArray("block_on_place_classes"),
                 ["useItemOn"] = files.GetJsonFromArray("block_use_item_on_classes"),
                 ["useWithoutItem"] = files.GetJsonFromArray("block_use_without_item_classes"),

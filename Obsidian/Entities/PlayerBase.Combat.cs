@@ -424,6 +424,7 @@ public partial class PlayerBase
         if (!supported) return;
         var floor = terrain.GetBlock((Vector)(Position - new VectorD(0, 0.2, 0)).Floor());
         var distance = FallDistance;
+        this.RecordLanding(distance);
         if (distance >= 2)
             this.Statistics.Increment("minecraft:fall_one_cm", Centimetres(distance));
 
