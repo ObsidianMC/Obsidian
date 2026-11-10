@@ -86,6 +86,8 @@ internal static class TickBehaviors
     internal static IScheduledTickBehavior ComposterBlock { get; } = new ComposterBlockBehavior();
 
     internal static IScheduledTickBehavior AbstractCauldronBlock { get; } = new CauldronDripTick();
+
+    internal static IScheduledTickBehavior PathBlock { get; } = new PathBlockBehavior();
 }
 
 /// <summary>
@@ -129,6 +131,8 @@ internal static class ShapeUpdateBehaviors
     internal static IShapeUpdateBehavior GrowingPlantBodyBlock { get; } = new KelpBlockBehavior();
 
     internal static IShapeUpdateBehavior IronBarsBlock { get; } = new IronBarsShapeUpdateBehavior();
+
+    internal static IShapeUpdateBehavior PathBlock { get; } = new PathBlockBehavior();
 }
 
 /// <summary>
