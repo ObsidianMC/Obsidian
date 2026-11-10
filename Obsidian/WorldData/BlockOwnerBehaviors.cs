@@ -106,6 +106,8 @@ internal static class TickBehaviors
     internal static IScheduledTickBehavior ChorusPlantBlock { get; } = new ChorusPlantBehavior();
 
     internal static IScheduledTickBehavior EyeblossomBlock { get; } = new EyeblossomBehavior();
+
+    internal static IScheduledTickBehavior DriedGhastBlock { get; } = new DriedGhastBehavior();
 }
 
 /// <summary>
