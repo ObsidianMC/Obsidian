@@ -24,11 +24,9 @@ internal static class NeighborShapeDerivation
         {
             var neighborPosition = position.Offset(direction);
             var neighbor = world.GetLoadedBlock(neighborPosition) ?? BlocksRegistry.VoidAir;
-            var brightness = state.BlockClass() == "MushroomBlock" ? world.GetRawBrightness(position) : 15;
             ShapeUpdater.ScheduleFluidTick(view, state, position, neighbor);
             state = world.UpdateShape(position, state, direction, neighborPosition, neighbor)
-                ?? ShapeUpdater.UpdateShape(view, state, position, direction, neighbor,
-                    brightness, scheduleFluidTick: false);
+                ?? ShapeUpdater.UpdateShape(view, state, position, direction, neighbor, scheduleFluidTick: false);
         }
 
         return state;

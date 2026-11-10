@@ -9,6 +9,7 @@ using Obsidian.API.Inventory;
 using Obsidian.WorldData;
 using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.Features;
+using Obsidian.WorldData.Features.Tree;
 using System;
 using System.Linq;
 using System.Text.Json;
@@ -31,6 +32,20 @@ public sealed class VanillaMoreBlocks(ITestOutputHelper output)
         Assert.Equal(ServerConstants.ProtocolDescription, root.GetProperty("version").GetString());
         await FixtureCases.AssertAllAsync(cases, probe => probe.GetProperty("name").GetString()!, Replay);
         output.WriteLine($"Replayed {cases.Length} construction and music cases.");
+    }
+
+    // The case through the shared shape pass as generation reads it, where that pass has a rule for the block: the
+    // rules generation shares with the live level (fences, stairs, survival) must give vanilla's state there too.
+    private static void AssertSharedPass(JsonElement probe, AbstractLevel world, Vector origin, BlockFace side)
+    {
+        var state = world.BlockUpdates.GetBlock(origin);
+        if (ShapeDispatch.SharedRule(state.RegistryId) is null)
+            return;
+
+        var neighbor = world.BlockUpdates.GetBlock(origin.Offset(side));
+        var shaped = ShapeUpdater.UpdateShape(new LiveFeatureLevel(world), state, origin, side, neighbor,
+            scheduleFluidTick: false);
+        AssertState(probe.GetProperty("updated"), shaped);
     }
 
     private static async Task Replay(JsonElement probe)
@@ -130,9 +145,17 @@ public sealed class VanillaMoreBlocks(ITestOutputHelper output)
         {
             var side = Face(probe.GetProperty("direction").GetString()!);
             var neighbor = origin.Offset(side);
+            AssertSharedPass(probe, world, origin, side);
+
             world.BlockNotifications.Enqueue(new BlockChange(neighbor, BlocksRegistry.Air,
                 world.BlockUpdates.GetBlock(neighbor)), BlockUpdateFlags.SkipOnPlace);
             await world.BlockNotifications.DrainAsync();
+            if (probe.GetProperty("updated").GetString() == "minecraft:air")
+            {
+                // The pipeline queues a block a shape update breaks for the level's tick, which removes it.
+                await world.DoWorldTickAsync();
+            }
+
             AssertState(probe.GetProperty("updated"), world.BlockUpdates.GetBlock(origin));
             var chunk = Assert.IsType<Chunk>(await world.GetChunkAsync(origin.X >> 4, origin.Z >> 4));
             var ticks = chunk.BlockTicks.Pack().Where(tick => tick.Position == origin)

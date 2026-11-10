@@ -12,13 +12,15 @@ namespace Obsidian.WorldData;
 /// </summary>
 internal sealed class ChorusPlantBehavior : IScheduledTickBehavior, IShapeUpdateBehavior
 {
+    public IShapeUpdateBehavior? SharedPassRule => null;
+
     private static readonly WorldgenTags.BlockGroup supports = WorldgenTags.Blocks("supports_chorus_plant");
 
     // Vanilla's Direction.Plane.HORIZONTAL, the order canSurvive looks at the sides in.
     private static readonly BlockFace[] sides = [BlockFace.North, BlockFace.East, BlockFace.South, BlockFace.West];
 
     public IBlock? UpdateShape(
-        IBlockLevel level,
+        IShapeLevel level,
         Vector position,
         IBlock state,
         BlockFace direction,
@@ -39,13 +41,13 @@ internal sealed class ChorusPlantBehavior : IScheduledTickBehavior, IShapeUpdate
 
     public void Tick(IBlockLevel level, Vector position, IBlock block, IRandomSource random)
     {
-        if (!CanSurvive(level, position))
+        if (!CanSurvive(level.AsShapeLevel(), position))
             level.DestroyBlock(position, dropItems: true);
     }
 
     // Vanilla's ChorusPlantBlock.canSurvive: a plant with a block both above and below can't branch sideways; a branch
     // holds on to a plant beside it that stands on a plant or its support; otherwise it needs a plant or support below.
-    private static bool CanSurvive(IBlockLevel level, Vector position)
+    private static bool CanSurvive(IShapeLevel level, Vector position)
     {
         var below = level.GetBlock(position + Vector.Down);
         var aboveAndBelow = !level.GetBlock(position + Vector.Up).IsAir && !below.IsAir;

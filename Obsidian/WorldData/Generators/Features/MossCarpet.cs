@@ -9,7 +9,7 @@ internal sealed partial class FeatureRegistry
     private static void PlaceMossCarpet(IWorldGenLevel level, Vector position)
     {
         var carpet = BlocksRegistry.PaleMossCarpet;
-        var baseState = UpdateMossCarpet(carpet, level, position);
+        var baseState = UpdateMossCarpet(carpet, new BlockReader(level), position);
         level.SetBlock(position, baseState);
 
         var above = position + Vector.Up;
@@ -21,7 +21,7 @@ internal sealed partial class FeatureRegistry
             return;
         }
 
-        var topper = UpdateMossCarpet(carpet.WithProperty("bottom", false), level, above);
+        var topper = UpdateMossCarpet(carpet.WithProperty("bottom", false), new BlockReader(level), above);
         var hasSide = false;
 
         foreach (var face in FeatureHelpers.Horizontal)
@@ -49,12 +49,12 @@ internal sealed partial class FeatureRegistry
         }
 
         level.SetBlock(above, topper);
-        level.SetBlock(position, UpdateMossCarpet(baseState, level, position));
+        level.SetBlock(position, UpdateMossCarpet(baseState, new BlockReader(level), position));
     }
 
     // placeAt forces a low side at each supporting face, then joins it to the carpet above or below.
     private static IBlock UpdateMossCarpet(
-        IBlock state, IWorldGenLevel level, Vector position, bool forceSides = true)
+        IBlock state, BlockReader level, Vector position, bool forceSides = true)
     {
         var above = level.GetBlock(position + Vector.Up);
         var below = level.GetBlock(position + Vector.Down);
@@ -91,13 +91,16 @@ internal sealed partial class FeatureRegistry
         return state;
     }
 
-    /// <summary>Tree edge updates may connect a carpet placed by an earlier tree to the new trunk.</summary>
-    internal static IBlock UpdateMossCarpetShape(IBlock state, IWorldGenLevel level, Vector position)
+    /// <summary>
+    /// Vanilla <c>MossyCarpetBlock.updateShape</c>, which placement shares: tree edge updates may connect a carpet
+    /// placed by an earlier tree to the new trunk.
+    /// </summary>
+    internal static IBlock UpdateMossCarpetShape(IBlock state, IShapeLevel level, Vector position)
     {
         if (!state.CanSurvive(level, position))
             return BlocksRegistry.Air;
 
-        var updated = UpdateMossCarpet(state, level, position, forceSides: false);
+        var updated = UpdateMossCarpet(state, new BlockReader(level), position, forceSides: false);
         var hasFaces = updated.GetProperty("bottom") == "true" || FeatureHelpers.Horizontal.Any(face =>
             updated.GetProperty(face.ToString().ToLowerInvariant()) != "none");
 

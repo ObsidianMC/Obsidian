@@ -172,7 +172,9 @@ internal static class SulfurGas
 
 internal sealed class PotentSulfurBlockBehavior : IShapeUpdateBehavior, IOnPlaceBehavior, IBlockBehavior
 {
-    internal static IBlock Validate(IBlockLevel level, Vector position, IBlock state)
+    public IShapeUpdateBehavior? SharedPassRule => null;
+
+    internal static IBlock Validate(IShapeLevel level, Vector position, IBlock state)
     {
         if (!SulfurGas.IsSourceWater(level.GetBlock(position + Vector.Up)))
             return state.WithProperty("potent_sulfur_state", "dry");
@@ -201,10 +203,10 @@ internal sealed class PotentSulfurBlockBehavior : IShapeUpdateBehavior, IOnPlace
     }
 
     public IBlock? GetStateForPlacement(BlockPlaceContext context) =>
-        Validate(context.Level, context.Position, context.Block);
+        Validate(context.Level.AsShapeLevel(), context.Position, context.Block);
 
     public IBlock? UpdateShape(
-        IBlockLevel level,
+        IShapeLevel level,
         Vector position,
         IBlock state,
         BlockFace direction,

@@ -13,7 +13,8 @@ namespace Obsidian.WorldData;
 /// A live level's block ticks, and how plugin blocks, vanilla's redstone components and vanilla's falling blocks
 /// react to block updates: plugin blocks run their behaviour's hooks (see <see cref="IBlockBehavior"/>), redstone
 /// components their rules (see <see cref="Redstone.RedstoneRegistration"/>), and falling blocks schedule the tick they fall on.
-/// It's the <see cref="IBlockLevel"/> those hooks get.
+/// It's the <see cref="IBlockLevel"/> those hooks get, and the <see cref="IShapeLevel"/> vanilla's live shape owners
+/// read.
 /// </summary>
 /// <remarks>
 /// Everything here runs under the level's tick lock (<see cref="LevelFluids.TickLock"/>), which the
@@ -21,7 +22,7 @@ namespace Obsidian.WorldData;
 /// runs the updates.
 /// </remarks>
 internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids fluids, FluidLevel updates)
-    : IBlockReactions, IBlockLevel
+    : IBlockReactions, IBlockLevel, IShapeLevel
 {
     // Vanilla FallingBlock.getDelayAfterPlace: falling blocks check below them this many ticks after they're placed or
     // a neighbour changes.
@@ -60,6 +61,9 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
     /// <inheritdoc/>
     public bool IsFaceSturdy(Vector position, BlockFace face, SupportType support = SupportType.Full) =>
         level.IsFaceSturdy(position, face, support);
+
+    /// <inheritdoc/>
+    public int GetRawBrightness(Vector position) => fluids.GetRawBrightness(position);
 
     /// <inheritdoc/>
     public bool SetBlock(Vector position, IBlock block, BlockUpdateFlags flags = BlockUpdateFlags.All)
@@ -235,8 +239,9 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
 
         if (VanillaPlacement.UpdateShape(state, direction, neighbor) is IBlock vanilla)
             return vanilla;
-        // A vanilla class's updateShape override, found from the class that declares it.
-        if (BlocksRegistry.GetShapeUpdateBehavior(state.RegistryId) is IShapeUpdateBehavior owner)
+        // A vanilla class's updateShape override, found from the class that declares it. Rules only the shared pass
+        // runs are left to the caller's fallback (ShapeUpdater).
+        if (ShapeDispatch.LiveOwner(state.RegistryId) is IShapeUpdateBehavior owner)
             return owner.UpdateShape(this, position, state, direction, neighborPosition, neighbor) ?? state;
 
         if (!BlockBehaviors.TryEnter(state, out var behavior, out var call))

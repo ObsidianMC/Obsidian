@@ -79,7 +79,7 @@ internal static class BubbleColumns
     }
 
     /// <summary>Vanilla's soul sand and magma <c>updateShape</c>: water arriving above them is checked a moment later.</summary>
-    internal static void ScheduleWaterAbove(IBlockLevel level, Vector position, IBlock state, BlockFace direction, IBlock neighbor)
+    internal static void ScheduleWaterAbove(IShapeLevel level, Vector position, IBlock state, BlockFace direction, IBlock neighbor)
     {
         if (direction == BlockFace.Up && neighbor.Is(BlockIds.Water))
             level.ScheduleTick(position, state, SourceCheckDelay);
@@ -109,7 +109,7 @@ internal static class BubbleColumns
     }
 
     /// <summary>Vanilla's <c>BubbleColumnBlock.updateShape</c>: a column that can't stay, or is above the water it can't hold, is checked a tick later.</summary>
-    internal static void ScheduleColumnCheck(IBlockLevel level, Vector position, IBlock state, BlockFace direction, IBlock neighbor)
+    internal static void ScheduleColumnCheck(IShapeLevel level, Vector position, IBlock state, BlockFace direction, IBlock neighbor)
     {
         var below = level.GetBlock(position + Vector.Down);
         var canSurvive = below is not null && CanSurvive(below);
@@ -128,6 +128,12 @@ internal static class BubbleColumns
 /// </summary>
 internal sealed class BubbleColumnBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior, IEntityInsideBehavior
 {
+    /// <summary>
+    /// The shared pass runs this same rule: chunk completion schedules the column's check in the region, as the
+    /// shared pass's copy of the rule always did, and generation's other passes have no ticks to schedule.
+    /// </summary>
+    public IShapeUpdateBehavior? SharedPassRule => this;
+
     /// <summary>Vanilla's <c>BubbleColumnBlock.tick</c>: updates the column from the block below.</summary>
     public void Tick(IBlockLevel level, Vector position, IBlock block, IRandomSource random)
     {
@@ -136,7 +142,7 @@ internal sealed class BubbleColumnBlockBehavior : IScheduledTickBehavior, IShape
     }
 
     /// <summary>Vanilla's <c>BubbleColumnBlock.updateShape</c>: the state is kept, and a check is scheduled when needed.</summary>
-    public IBlock? UpdateShape(IBlockLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
+    public IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
     {
         BubbleColumns.ScheduleColumnCheck(level, position, state, direction, neighbor);
         return null;
@@ -164,6 +170,8 @@ internal sealed class BubbleColumnBlockBehavior : IScheduledTickBehavior, IShape
 /// <summary>Vanilla's <c>SoulSandBlock</c>: the <c>tick</c> and <c>updateShape</c> that start a column above it.</summary>
 internal sealed class SoulSandBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior, IOnPlaceBehavior, IPostProcessBehavior
 {
+    public IShapeUpdateBehavior? SharedPassRule => null;
+
     public void Tick(IBlockLevel level, Vector position, IBlock block, IRandomSource random) =>
         BubbleColumns.TickSource(level, position, block);
 
@@ -171,7 +179,7 @@ internal sealed class SoulSandBlockBehavior : IScheduledTickBehavior, IShapeUpda
     public void OnPlace(IBlockLevel level, Vector position, IBlock state, IBlock oldState) =>
         level.ScheduleTick(position, state, 20);
 
-    public IBlock? UpdateShape(IBlockLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
+    public IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
     {
         BubbleColumns.ScheduleWaterAbove(level, position, state, direction, neighbor);
         return null;
@@ -184,6 +192,8 @@ internal sealed class SoulSandBlockBehavior : IScheduledTickBehavior, IShapeUpda
 /// <summary>Vanilla's <c>MagmaBlock</c>: the <c>tick</c> and <c>updateShape</c> that start a downward column above it.</summary>
 internal sealed class MagmaBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior, IOnPlaceBehavior, IPostProcessBehavior
 {
+    public IShapeUpdateBehavior? SharedPassRule => null;
+
     public void Tick(IBlockLevel level, Vector position, IBlock block, IRandomSource random) =>
         BubbleColumns.TickSource(level, position, block);
 
@@ -191,7 +201,7 @@ internal sealed class MagmaBlockBehavior : IScheduledTickBehavior, IShapeUpdateB
     public void OnPlace(IBlockLevel level, Vector position, IBlock state, IBlock oldState) =>
         level.ScheduleTick(position, state, 20);
 
-    public IBlock? UpdateShape(IBlockLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
+    public IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
     {
         BubbleColumns.ScheduleWaterAbove(level, position, state, direction, neighbor);
         return null;
