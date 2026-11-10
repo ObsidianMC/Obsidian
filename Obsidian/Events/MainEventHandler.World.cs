@@ -41,7 +41,7 @@ public partial class MainEventHandler
             return;
 
         var current = await world.GetBlockAsync(location) ?? BlocksRegistry.Air;
-        if (args.IsCancelled || current.GetHashCode() != block.GetHashCode())
+        if (args.IsCancelled || !current.IsSameState(block))
         {
             await RestoreBreakAsync(player, world, location, current);
             return;
@@ -72,7 +72,7 @@ public partial class MainEventHandler
         {
             var original = block;
             if (!await potLevel.TrySetBlockAsync(location, cracked, BlockUpdateFlags.None,
-                state => state.GetHashCode() == original.GetHashCode()))
+                state => state.IsSameState(original)))
             {
                 current = await world.GetBlockAsync(location) ?? BlocksRegistry.Air;
                 await RestoreBreakAsync(player, world, location, current);
@@ -102,7 +102,7 @@ public partial class MainEventHandler
         if (world is AbstractLevel concreteWorld)
         {
             var changed = await concreteWorld.TrySetBlockAsync(location, BlocksRegistry.Air, BlockUpdateFlags.All,
-                state => state.GetHashCode() == block.GetHashCode()
+                state => state.IsSameState(block)
                     && (blockEntity.Source is null || parts.DropPosition != location
                         || ReferenceEquals(concreteWorld.GetResidentBlockEntity(location), blockEntity.Source)));
             if (!changed)

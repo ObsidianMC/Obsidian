@@ -228,10 +228,6 @@ internal static class CombatItems
         item.GetComponent<SimpleDataComponent<int>>(DataComponentType.MaxDamage)?.Value ?? item.Holder.MaxDamage;
 
     /// <summary>
-    /// How much breaking <paramref name="block"/> wears <paramref name="tool"/>, like vanilla's <c>Item.mineBlock</c>:
-    /// its tool component's damage per block, or 0 for a block that breaks instantly or an item that isn't a tool.
-    /// </summary>
-    /// <summary>
     /// Whether <paramref name="item"/> has a <c>tool</c> component, which vanilla's <c>Item.mineBlock</c> asks: such an
     /// item counts as used for every block a player mines with it, worn or not. Item classes that override
     /// <c>mineBlock</c> (shears) aren't modelled.
@@ -247,6 +243,10 @@ internal static class CombatItems
         return Component(item, "tool").ValueKind == JsonValueKind.Object;
     }
 
+    /// <summary>
+    /// How much breaking <paramref name="block"/> wears <paramref name="tool"/>, like vanilla's <c>Item.mineBlock</c>:
+    /// its tool component's damage per block, or 0 for a block that breaks instantly or an item that isn't a tool.
+    /// </summary>
     internal static int ToolDamage(ItemStack? tool, IBlock block)
     {
         if (tool is not { Count: > 0 }
