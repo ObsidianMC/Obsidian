@@ -192,6 +192,11 @@ internal static class FixtureDumper
         IReadOnlyCollection<string>? cases = null) =>
         RunObservedProbeAsync(server, fixture, "waxing-bells-ore", "WaxingBellsOreFixtures.java", cases);
 
+    // An on-request probe like DumpWaxingBellsOreAsync's: cauldrons filled, emptied and washing items.
+    internal static Task DumpCauldronsAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "cauldrons", "CauldronFixtures.java", cases);
+
     // Runs a probe on an observed copy of the vanilla jar, which records ordered block writes, in a new world folder
     // named worldName under the scratch directory.
     private static async Task RunObservedProbeAsync(VanillaServer server, string fixture, string worldName,
