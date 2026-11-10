@@ -76,6 +76,7 @@ public sealed partial class ZombifiedPiglin : Zombie
         {
             var head = random.NextFloat() < 0.1f ? ItemsRegistry.JackOLantern : ItemsRegistry.CarvedPumpkin;
             SetEquipment(EquipmentSlot.Helmet, ItemsRegistry.GetSingleItem(head));
+            SetEquipmentDropChance(EquipmentSlot.Helmet, 0);
         }
 
         // Zombie.handleAttributes, from the mob's own random; a zombified piglin never calls reinforcements.
@@ -96,15 +97,17 @@ public sealed partial class ZombifiedPiglin : Zombie
         return jockey;
     }
 
-    // Vanilla's first jockey chance: the first chicken nobody rides within 5 blocks across and 3 up or down of the
-    // piglin's box becomes a jockey, and the piglin rides it. With none there, nothing happens.
+    // Vanilla takes the first eligible chicken in the entity query, without a draw or nearest-distance sort:
+    // alive, carrying nobody and riding nothing, within 5 blocks across and 3 up or down of the piglin's box.
+    // A successful first jockey roll with no eligible chicken does not try the second roll.
     private void RideChickenNearby(AbstractLevel level)
     {
         var box = Dimension.CreateBBFromPosition(Position);
         var reach = new BoundingBox(box.Min - new VectorD(5, 3, 5), box.Max + new VectorD(5, 3, 5));
         var chicken = level.GetNonPlayerEntitiesInRange(Position, 16)
             .OfType<Chicken>()
-            .FirstOrDefault(chicken => chicken.Passengers.Count == 0
+            .FirstOrDefault(chicken => chicken.Alive && !chicken.IsRemoved
+                && chicken.Passengers.Count == 0 && chicken.Vehicle is null
                 && reach.Intersects(chicken.Dimension.CreateBBFromPosition(chicken.Position)));
         if (chicken is null)
             return;

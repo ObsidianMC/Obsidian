@@ -53,6 +53,8 @@ import net.minecraft.world.clock.ClockInstance;
 import net.minecraft.world.clock.ClockManager;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.block.Block;
@@ -79,8 +81,8 @@ import net.minecraft.world.ticks.TickPriority;
  * explicitly supplied block view, with a seeded random that records every draw, and records what it did.
  *
  * Usage: EyeblossomGhastPortalFixtures <fixture.json> [name+name...]. Each case's inputs (call, setup, origin, state,
- * seed, pending, dimension, dayTime, difficulty, spawnMobs, spawnMonsters, playerNear) are kept; everything else is
- * replaced. With names, only those cases are recorded.
+ * seed, pending, dimension, dayTime, difficulty, spawnMobs, spawnMonsters, playerNear, chickens) are kept;
+ * everything else is replaced. With names, only those cases are recorded.
  */
 public final class EyeblossomGhastPortalFixtures {
     private static final String NOTES = "Vanilla eyeblossom, potted eyeblossom, dried ghast and nether portal "
@@ -110,7 +112,10 @@ public final class EyeblossomGhastPortalFixtures {
         + "the date is from the real one, so vanilla's own comparison answers as on that date. A mob's entry also has "
         + "its head item when it wears one and its weapon's enchantments when enchanted; a chicken's has its variant, "
         + "sound variant and jockey flag, and a jockey chicken's head yaw is null: vanilla's LivingEntity constructor "
-        + "draws it from Math.random() and nothing sets it later.";
+        + "draws it from Math.random() and nothing sets it later. Optional chickens supplies existing chickens in "
+        + "query order, with pos and optional alive=false, riding=true (an oak boat) or passenger=true (an armor "
+        + "stand). They are not ticked or included in entities; chickensAfter records their jockey flag, portal "
+        + "cooldown and passenger types after the routine. Equipment drop chances are not recorded.";
 
     private static LocalDate capturedOn;
 
@@ -118,7 +123,7 @@ public final class EyeblossomGhastPortalFixtures {
 
     private static final List<String> OUTPUTS = List.of(
         "ticks", "draws", "writes", "scheduled", "events", "gameEvents", "sounds", "particles",
-        "entities", "destroyed", "after");
+        "entities", "destroyed", "after", "chickensAfter");
 
     public static void main(String[] arguments) throws Exception {
         var version = VanillaDumper.bootstrap();
@@ -168,6 +173,7 @@ public final class EyeblossomGhastPortalFixtures {
         var random = new RecordingRandom(seed);
         var level = ProbeLevel.allocate(random);
         configure(input, level);
+        addChickens(input, level);
 
         var touched = new LinkedHashSet<BlockPos>();
         for (var placement : input.getAsJsonArray("setup")) {
@@ -209,6 +215,10 @@ public final class EyeblossomGhastPortalFixtures {
         input.add("sounds", level.sounds);
         input.add("particles", level.particles);
         input.add("entities", level.entities());
+        if (input.has("chickens")) {
+            input.add("chickensAfter", level.chickensAfter());
+        }
+
         input.add("destroyed", level.destroyed);
 
         for (var write : level.writes) {
@@ -223,6 +233,42 @@ public final class EyeblossomGhastPortalFixtures {
             .sorted(order)
             .forEach(pos -> after.add(placement(pos, level.getBlockState(pos))));
         input.add("after", after);
+    }
+
+    // Existing chickens, kept apart from additions so the capture retains the routine's add order.
+    private static void addChickens(JsonObject input, ProbeLevel level) {
+        if (!input.has("chickens")) {
+            return;
+        }
+
+        for (var entry : input.getAsJsonArray("chickens")) {
+            var setup = entry.getAsJsonObject();
+            var pos = setup.getAsJsonArray("pos");
+            var chicken = new Chicken(EntityTypes.CHICKEN, level);
+            chicken.setPos(pos.get(0).getAsDouble(), pos.get(1).getAsDouble(), pos.get(2).getAsDouble());
+            level.existing.add(chicken);
+            if (setup.has("riding") && setup.get("riding").getAsBoolean()) {
+                var boat = EntityTypes.OAK_BOAT.create(level, EntitySpawnReason.COMMAND);
+                boat.setPos(chicken.position());
+                level.existing.add(boat);
+                if (!chicken.startRiding(boat, true, false)) {
+                    throw new IllegalStateException("Could not put chicken in boat");
+                }
+            }
+
+            if (setup.has("passenger") && setup.get("passenger").getAsBoolean()) {
+                var rider = EntityTypes.ARMOR_STAND.create(level, EntitySpawnReason.COMMAND);
+                rider.setPos(chicken.position());
+                level.existing.add(rider);
+                if (!rider.startRiding(chicken, true, false)) {
+                    throw new IllegalStateException("Could not put passenger on chicken");
+                }
+            }
+
+            if (setup.has("alive") && !setup.get("alive").getAsBoolean()) {
+                chicken.setHealth(0);
+            }
+        }
     }
 
     // The case's dimension type (its attributes, then its timelines at dayTime), difficulty, rules and players.
@@ -541,6 +587,7 @@ public final class EyeblossomGhastPortalFixtures {
         JsonArray sounds;
         JsonArray particles;
         List<Entity> added;
+        List<Entity> existing;
         JsonArray destroyed;
         RandomSource tickRandom;
         GameRules rules;
@@ -567,6 +614,7 @@ public final class EyeblossomGhastPortalFixtures {
             level.sounds = new JsonArray();
             level.particles = new JsonArray();
             level.added = new ArrayList<>();
+            level.existing = new ArrayList<>();
             level.destroyed = new JsonArray();
             level.tickRandom = random;
             level.rules = new GameRules(
@@ -815,15 +863,48 @@ public final class EyeblossomGhastPortalFixtures {
             return 1;
         }
 
-        // No entities stand in the view, so the ones the routines look for (a zombie's chicken to ride) find none.
+        // Query the supplied entities in list order, applying vanilla's type, bounds and predicate checks.
         @Override public List<Entity> getEntities(Entity except, AABB box,
             java.util.function.Predicate<? super Entity> predicate) {
-            return List.of();
+            return existing.stream()
+                .filter(entity -> entity != except && box.intersects(entity.getBoundingBox()))
+                .filter(predicate)
+                .toList();
         }
 
         @Override public <T extends Entity> List<T> getEntities(EntityTypeTest<Entity, T> type, AABB box,
             java.util.function.Predicate<? super T> predicate) {
-            return List.of();
+            var result = new ArrayList<T>();
+            for (var entity : existing) {
+                var candidate = type.tryCast(entity);
+                if (candidate != null && box.intersects(entity.getBoundingBox()) && predicate.test(candidate)) {
+                    result.add(candidate);
+                }
+            }
+
+            return result;
+        }
+
+        JsonArray chickensAfter() {
+            var result = new JsonArray();
+            for (var entity : existing) {
+                if (!(entity instanceof Chicken chicken)) {
+                    continue;
+                }
+
+                var recorded = new JsonObject();
+                recorded.addProperty("jockey", chicken.isChickenJockey());
+                recorded.addProperty("portalCooldown", chicken.getPortalCooldown());
+                var passengers = new JsonArray();
+                for (var passenger : chicken.getPassengers()) {
+                    passengers.add(BuiltInRegistries.ENTITY_TYPE.getKey(passenger.getType()).toString());
+                }
+
+                recorded.add("passengers", passengers);
+                result.add(recorded);
+            }
+
+            return result;
         }
 
         // Every position is in plains, whose chickens are the temperate ones.

@@ -29,14 +29,15 @@ become ghastlings, and nether portals spawn zombified piglins, all checked again
   jockey chances (a new jockey chicken's variant, sound variant, follow range and handedness), breaking doors, the
   spear or sword, the weapon's enchantment chance and the enchantments themselves, and the Halloween pumpkin. What
   vanilla draws from the mob's own random can't match: the attribute bonuses of `handleAttributes`, the spawn ambient
-  sound's pitch, and the head turn a new jockey chicken keeps from its constructor (`Math.random()`). A baby that
-  finds a chicken nearby rides it, as vanilla's does, but no capture has a chicken there (the probe's view holds no
-  entities).
+  sound's pitch, and the head turn a new jockey chicken keeps from its constructor (`Math.random()`). Existing-chicken
+  captures cover a living, unoccupied chicken, a dying chicken, one in a boat, one carrying a passenger, and choosing
+  the first eligible chicken rather than the nearest. A successful first jockey roll with no eligible chicken does
+  not try the second roll; a separate case captures a failed first roll followed by a new jockey chicken.
 - **Halloween.** Pumpkins go on piglins on October 31st of the server's local date, read through the level's
   `TimeProvider`, as vanilla's `SpecialDates` reads the JVM's. Vanilla's probe can't set the JVM's clock, so the
   Halloween cases move vanilla's `SpecialDates.HALLOWEEN` constant by as many days as the case's date is from the real
-  one; vanilla's own comparison and the draws after it run unchanged. The pumpkin's zero drop chance isn't modelled
-  (Obsidian's mobs drop no equipment by chance yet).
+  one; vanilla's own comparison and the draws after it run unchanged. The Halloween helmet's drop chance is zero.
+  Equipment drop chances are not recorded by this fixture, so the Halloween captures do not check that value.
 - **Bats, found alongside.** 26.3's `Bat.checkBatSpawnRules` has no Halloween season any more (Obsidian's has been
   removed), but it also asks for a position below the world surface heightmap, where Obsidian asks for below sea level,
   and a floor in `#bats_spawnable_on`, which Obsidian doesn't check.

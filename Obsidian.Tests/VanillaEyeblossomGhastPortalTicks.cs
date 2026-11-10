@@ -15,6 +15,7 @@ using Obsidian.API.Registries;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.ChunkData;
 using Obsidian.Entities;
+using Obsidian.Entities.Factories;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
@@ -109,6 +110,9 @@ public sealed class VanillaEyeblossomGhastPortalTicks(ITestOutputHelper output)
             world.BlockUpdates.ScheduleTick(Position(tick.GetProperty("pos")), block, delay);
         }
 
+        var existing = AddChickens(probe, world);
+        client.ClearPackets();
+
         var seed = probe.TryGetProperty("seed", out var given) ? given.GetInt64() : 0;
         var random = new RecordingRandom(seed);
         world.GrowthRandom = random;
@@ -156,7 +160,9 @@ public sealed class VanillaEyeblossomGhastPortalTicks(ITestOutputHelper output)
         CompareSounds(differences, spawn, client.SentPackets.ToList(), world);
         CompareParticles(differences, probe, client.SentPackets.OfType<LevelParticlesPacket>().ToList());
         CompareGameEvents(differences, probe, gameEvents);
-        CompareEntities(differences, spawn, world);
+        CompareEntities(differences, spawn, world, existing);
+        CompareEntityAddOrder(differences, spawn, client);
+        CompareChickens(differences, probe, existing.OfType<Chicken>().ToList());
 
         if (differences.Count > 0)
             throw new Xunit.Sdk.XunitException(string.Join("\n", differences));
@@ -209,6 +215,48 @@ public sealed class VanillaEyeblossomGhastPortalTicks(ITestOutputHelper output)
 
     private static bool Flag(JsonElement probe, string name) =>
         !probe.TryGetProperty(name, out var value) || value.GetBoolean();
+
+    private static List<Entity> AddChickens(JsonElement probe, WorldData.World world)
+    {
+        var existing = new List<Entity>();
+        if (!probe.TryGetProperty("chickens", out var chickens))
+            return existing;
+
+        foreach (var setup in chickens.EnumerateArray())
+        {
+            var pos = setup.GetProperty("pos");
+            var position = new VectorD(pos[0].GetDouble(), pos[1].GetDouble(), pos[2].GetDouble());
+            var chicken = (Chicken)Add(EntityType.Chicken, position);
+            chicken.InitializeAi(finalizeSpawn: false);
+            if (setup.TryGetProperty("riding", out var riding) && riding.GetBoolean())
+            {
+                var boat = Add(EntityType.OakBoat, position);
+                Assert.True(chicken.Ride(boat, force: true));
+            }
+
+            if (setup.TryGetProperty("passenger", out var passenger) && passenger.GetBoolean())
+            {
+                var rider = Add(EntityType.ArmorStand, position);
+                Assert.True(rider.Ride(chicken, force: true));
+            }
+
+            if (setup.TryGetProperty("alive", out var alive) && !alive.GetBoolean())
+                chicken.Health = 0;
+        }
+
+        return existing;
+
+        Entity Add(EntityType type, VectorD position)
+        {
+            var entity = EntitySpawner.Create(type, world);
+            entity.Type = type;
+            entity.EntityId = Server.GetNextEntityId();
+            entity.Position = position;
+            Assert.True(world.TryAddEntity(entity));
+            existing.Add(entity);
+            return entity;
+        }
+    }
 
     private static IEnumerable<JsonElement> Pending(JsonElement probe) =>
         probe.TryGetProperty("pending", out var pending) ? pending.EnumerateArray() : [];
@@ -502,7 +550,11 @@ public sealed class VanillaEyeblossomGhastPortalTicks(ITestOutputHelper output)
     // Every captured entity field, and no entity vanilla didn't add. Rotations are compared as clients get them, in
     // 256ths of a turn. A head yaw vanilla records as null is the Math.random() radians a jockey chicken keeps from its
     // constructor (0 to 2pi degrees, so 0 to 4 256ths); Obsidian's must lie there too.
-    private static void CompareEntities(List<string> differences, JsonElement probe, WorldData.World world)
+    private static void CompareEntities(
+        List<string> differences,
+        JsonElement probe,
+        WorldData.World world,
+        List<Entity> existing)
     {
         var recorded = probe.GetProperty("entities").EnumerateArray().ToList();
         var randomHeads = recorded
@@ -514,10 +566,53 @@ public sealed class VanillaEyeblossomGhastPortalTicks(ITestOutputHelper output)
         var vanilla = recorded.Select(entity => Describe(entity)).Order(StringComparer.Ordinal);
         var obsidian = world.GetNonPlayerEntitiesInRange(VectorD.Zero, float.MaxValue)
             .OfType<Entity>()
+            .Except(existing)
             .Select(entity => Describe(entity, randomHeads.Contains(EntityName(entity.Type))))
             .Order(StringComparer.Ordinal);
 
         ExpectSequence(differences, "entities", vanilla, obsidian);
+    }
+
+    // TrySpawnEntity sends its add packet immediately after the level accepts the entity. Compare that sequence,
+    // independently of both the unordered state comparison and entity IDs (the piglin is constructed first).
+    private static void CompareEntityAddOrder(List<string> differences, JsonElement probe, TestClient client)
+    {
+        var recorded = probe.GetProperty("entities");
+        if (recorded.GetArrayLength() <= 1)
+            return;
+
+        var vanilla = recorded.EnumerateArray()
+            .Select(entity => $"{entity.GetProperty("type").GetString()} at {Vec(entity.GetProperty("pos"))}");
+        var obsidian = client.SentPackets
+            .OfType<BundledPacket>()
+            .SelectMany(bundle => bundle.Packets)
+            .OfType<AddEntityPacket>()
+            .Select(packet => $"{EntityName((EntityType)packet.Type)} at {Vec(packet.Position)}");
+
+        ExpectSequence(differences, "entity add order", vanilla, obsidian);
+    }
+
+    private static void CompareChickens(List<string> differences, JsonElement probe, List<Chicken> chickens)
+    {
+        if (!probe.TryGetProperty("chickensAfter", out var recorded))
+            return;
+
+        var vanilla = recorded.EnumerateArray().Select(chicken =>
+        {
+            var passengers = chicken.GetProperty("passengers").EnumerateArray()
+                .Select(passenger => passenger.GetString());
+            return $"jockey {chicken.GetProperty("jockey").GetBoolean()} "
+                + $"cooldown {chicken.GetProperty("portalCooldown").GetInt32()} "
+                + $"passengers {string.Join(", ", passengers)}";
+        });
+        var obsidian = chickens.Select(chicken =>
+        {
+            var passengers = chicken.Passengers.Select(passenger => EntityName(passenger.Type));
+            return $"jockey {chicken.IsChickenJockey} cooldown {chicken.PortalCooldownTicks} "
+                + $"passengers {string.Join(", ", passengers)}";
+        });
+
+        ExpectSequence(differences, "existing chickens", vanilla, obsidian);
     }
 
     private static string Describe(JsonElement entity)

@@ -246,7 +246,14 @@ replaces only what vanilla produced.
   through Obsidian's generated owners, or a live block change, in its own world with a listener beside the origin (or,
   without `playerNear`, more than 128 blocks away), and compares all of it: draws, writes with every flag bit, blocks
   (and none outside the case), pending ticks, level events, the sound and particle packets the listener gets, game
-  events, entities in any order (rotations as clients get them, in 256ths of a turn) and destroyed blocks. Where
+  events, entities in any order (rotations as clients get them, in 256ths of a turn), their add order when more than
+  one is spawned (through the listener's add packets), and destroyed blocks. Optional `chickens` supplies existing
+  chickens in query order, each with `pos` and optional `alive: false`, `riding: true` (in an oak boat) or
+  `passenger: true` (an armor stand). `chickensAfter` records their jockey flags, portal cooldowns and passengers;
+  setup entities are excluded from the spawned-entity comparison. Six cases cover riding an eligible chicken,
+  each exclusion, skipping an ineligible first candidate and choosing the first eligible rather than the nearest,
+  and a failed first jockey roll followed by a successful second roll. A successful first roll with no eligible
+  chicken never tries the second roll. Equipment drop chances are not captured. Where
   vanilla records a mob voice's pitch as null, Obsidian's must lie in the voice's range, and where it records a jockey
   chicken's head turn as null, Obsidian's must lie in vanilla's 0 to 2pi degrees. Three cases are pinned as expected
   differences, each failing when it disappears: over glowstone, glass and a bottom slab Obsidian's spawner floor rule
