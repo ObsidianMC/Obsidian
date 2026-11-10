@@ -17,8 +17,9 @@ by `brushing.json` and `armor_stand_use.json` (see [scenario captures](../scenar
 - **A busy inventory skips a stroke.** A stroke changes the block and wears the brush under the level's tick lock
   with the player's inventory tried, never waited for (see [inventory and world locking](inventory-world-locking.md)).
   When the inventory is busy (a click being applied at that moment), the whole stroke is skipped, sound included,
-  and the next one ten ticks later tries again. Vanilla has no such case. The same applies when the block's loot table
-  changed between rolling it (outside the locks, since a plugin's table could load chunks) and the stroke.
+  and the next one ten ticks later tries again. Vanilla has no such case. The same applies when, between rolling the
+  block's loot (outside the locks, since a plugin's table could load chunks) and the stroke, the table changed, the
+  block or its block entity was replaced, or the brush's count or components changed.
 - **Another brush in the same hand.** Vanilla's `updatingUsingItem` keeps a use going when the hand holds another stack
   of the same item, so swapping one brush for another mid-brush carries on with the new one. Obsidian's held use
   follows the stack it started with and stops when it's replaced. Not captured.

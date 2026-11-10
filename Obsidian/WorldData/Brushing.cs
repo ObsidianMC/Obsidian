@@ -37,8 +37,10 @@ internal static class Brushing
         _ => null
     };
 
-    /// <summary>A loot table rolled ahead of a stroke, outside the level's locks.</summary>
-    private sealed record Rolled(string Table, long Seed, ItemStack? Item);
+    /// <summary>
+    /// A loot table rolled ahead of a stroke, outside the level's locks, for one block entity in one block state.
+    /// </summary>
+    private sealed record Rolled(BrushableBlockEntity Target, IBlock State, string Table, long Seed, ItemStack? Item);
 
     /// <summary>What a stroke does outside the level's locks once it has changed the world.</summary>
     private sealed class Stroke
@@ -69,13 +71,28 @@ internal static class Brushing
     /// The block, its block entity and the brush change together under the level's tick lock, with the player's
     /// inventory tried, not waited for: a busy inventory, a brush no longer in its slot, or a player who can't act
     /// (gone, dead, elsewhere or being teleported) skips the stroke without changing anything, and the next one ten
-    /// ticks later tries again. Loot is rolled before the locks; a table changed meanwhile skips the stroke too.
+    /// ticks later tries again. So does a brush whose count or components changed since the stroke began, which the
+    /// loot's own functions could do. Loot is rolled before the locks; a table changed meanwhile, or a block or block
+    /// entity that isn't the one it was rolled for, skips the stroke too.
     /// Sounds, the item, the level event, the slot and the triggers go out once the locks are released.
     /// </remarks>
     internal static async ValueTask StrokeAsync(AbstractLevel level, PlayerBase player, ItemStack brush, int slot,
         BlockShapeHit hit)
     {
-        var rolled = Roll(level, level.GetResidentBlockEntity(hit.Position) as BrushableBlockEntity, player, brush);
+        // The brush as the stroke begins, read under the inventory's lock, tried like the commit's.
+        if (!player.Inventory.TryLock(out var snapshotLock))
+            return;
+
+        ItemStack expected;
+        using (snapshotLock)
+        {
+            if (!ReferenceEquals(player.Inventory.GetItem(slot), brush) || brush.Count <= 0)
+                return;
+
+            expected = new ItemStack(brush, brush.Count);
+        }
+
+        var rolled = Roll(level, hit.Position, player, brush);
 
         Stroke? stroke = null;
         lock (level.Fluids.TickLock)
@@ -87,7 +104,7 @@ internal static class Brushing
             using (handLock)
             {
                 var held = slot == 45 || slot == player.CurrentHeldItemSlot;
-                if (!held || !ReferenceEquals(player.Inventory.GetItem(slot), brush))
+                if (!held || !SameBrush(player.Inventory.GetItem(slot), brush, expected))
                     return;
 
                 using (effects = new BlockUseEffects(level))
@@ -103,6 +120,13 @@ internal static class Brushing
             await PublishAsync(level, player, slot, stroke);
     }
 
+    // The slot still holds the stack the stroke began with, with the same count and components.
+    private static bool SameBrush(ItemStack? current, ItemStack brush, ItemStack expected) =>
+        ReferenceEquals(current, brush)
+        && brush.Count > 0
+        && brush.Count == expected.Count
+        && brush.Equals(expected);
+
     // The player can still change this level.
     private static bool CanAct(PlayerBase player, AbstractLevel level) =>
         player.Connected && player.Alive && !player.Respawning && !player.HasPendingTeleport
@@ -110,9 +134,16 @@ internal static class Brushing
 
     // Vanilla's unpackLootTable roll: the table with the block entity's seed (or the level's sequence for no seed),
     // from the block's center, for the player with the brush. Only the first item is kept, as vanilla keeps it.
-    private static Rolled? Roll(AbstractLevel level, BrushableBlockEntity? brushable, PlayerBase player,
-        ItemStack brush)
+    private static Rolled? Roll(AbstractLevel level, Vector position, PlayerBase player, ItemStack brush)
     {
+        IBlock state;
+        BrushableBlockEntity? brushable;
+        lock (level.Fluids.TickLock)
+        {
+            state = level.BlockUpdates.GetBlock(position);
+            brushable = level.GetResidentBlockEntity(position) as BrushableBlockEntity;
+        }
+
         if (brushable?.LootTable is not string name)
             return null;
 
@@ -135,7 +166,7 @@ internal static class Brushing
             });
         }
 
-        return new Rolled(name, seed, items.Count > 0 ? items[0] : null);
+        return new Rolled(brushable, state, name, seed, items.Count > 0 ? items[0] : null);
     }
 
     // The stroke's changes, under the tick lock and the player's inventory lock, with the level's block
@@ -150,11 +181,8 @@ internal static class Brushing
 
         // The table was rolled for what the block entity held when the stroke began.
         var pending = brushable?.LootTable;
-        if (pending is not null && (rolled is null || rolled.Table != pending
-            || rolled.Seed != brushable!.LootTableSeed))
-        {
+        if (pending is not null && !RolledFor(rolled, brushable!, state, pending))
             return null;
-        }
 
         var stroke = new Stroke
         {
@@ -187,6 +215,14 @@ internal static class Brushing
 
         return stroke;
     }
+
+    // The prepared roll is the one for this block entity, in this state, with its table and seed unchanged.
+    private static bool RolledFor(Rolled? rolled, BrushableBlockEntity brushable, IBlock state, string table) =>
+        rolled is not null
+        && ReferenceEquals(rolled.Target, brushable)
+        && rolled.State.IsSameState(state)
+        && rolled.Table == table
+        && rolled.Seed == brushable.LootTableSeed;
 
     // Vanilla's brushingCompleted and dropContent, then the brush's wear: the item pops out of the brushed face (the
     // top without one), the level event plays, the block becomes sand or gravel, and the brush takes one damage.
