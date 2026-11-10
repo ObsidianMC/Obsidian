@@ -185,7 +185,7 @@ internal sealed class AttachedStemShapeRule : SharedShapeRule
         if (direction == FeatureHelpers.ParseFace(state.GetProperty("facing")) && !IsFruit(state, neighbor))
             return BlockStateProperties.GetState(StemFor(state)).WithProperty("age", 7);
 
-        return state.CanSurvive(Generation(level), position) ? state : BlocksRegistry.Air;
+        return state.CanSurvive(level, position) ? state : BlocksRegistry.Air;
     }
 
     private static bool IsFruit(IBlock stem, IBlock neighbor) =>
@@ -208,7 +208,7 @@ internal sealed class SurvivalShapeRule : SharedShapeRule
         var brightness = state.RegistryId is BlockIds.BrownMushroom or BlockIds.RedMushroom
             ? level.GetRawBrightness(position)
             : 15;
-        return state.CanSurvive(Generation(level), position, brightness) ? state : BlocksRegistry.Air;
+        return state.CanSurvive(level, position, brightness) ? state : BlocksRegistry.Air;
     }
 }
 
@@ -221,7 +221,7 @@ internal sealed class HangingMossShapeRule : SharedShapeRule
     public override IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction,
         Vector neighborPosition, IBlock neighbor)
     {
-        if (direction == BlockFace.Up && !state.CanSurvive(Generation(level), position))
+        if (direction == BlockFace.Up && !state.CanSurvive(level, position))
             return BlocksRegistry.Air;
 
         return state.WithProperty("tip", level.GetBlock(position + Vector.Down).RegistryId != state.RegistryId);
@@ -235,5 +235,5 @@ internal sealed class MossyCarpetShapeRule : SharedShapeRule
 {
     public override IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction,
         Vector neighborPosition, IBlock neighbor) =>
-        Generators.Features.FeatureRegistry.UpdateMossCarpetShape(state, Generation(level), position);
+        Generators.Features.FeatureRegistry.UpdateMossCarpetShape(state, level, position);
 }

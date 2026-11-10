@@ -100,7 +100,7 @@ internal sealed class DoublePlantShapeRule : SharedShapeRule
         if (vertical && isLower == (direction == BlockFace.Up) && !partnerStillThere)
             return BlocksRegistry.Air;
 
-        if (isLower && direction == BlockFace.Down && !state.CanSurvive(Generation(level), position))
+        if (isLower && direction == BlockFace.Down && !state.CanSurvive(level, position))
             return BlocksRegistry.Air;
 
         return state;

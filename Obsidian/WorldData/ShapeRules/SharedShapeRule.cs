@@ -1,5 +1,3 @@
-using Obsidian.API.World.Features.Trees;
-
 namespace Obsidian.WorldData.ShapeRules;
 
 /// <summary>
@@ -18,15 +16,6 @@ internal abstract class SharedShapeRule : IShapeUpdateBehavior
         BlockFace direction,
         Vector neighborPosition,
         IBlock neighbor);
-
-    /// <summary>
-    /// The level the shared pass reads, for the survival checks generation shares
-    /// (<see cref="Features.BlockSurvival"/>). The shared pass only hands its rules views of a generation-shaped level,
-    /// so this always succeeds there.
-    /// </summary>
-    protected static IWorldGenLevel Generation(IShapeLevel level) =>
-        level as IWorldGenLevel
-            ?? throw new InvalidOperationException("Shared shape rules run on the shared pass's views only.");
 
     protected static bool IsHorizontal(BlockFace face) => face is not (BlockFace.Up or BlockFace.Down);
 

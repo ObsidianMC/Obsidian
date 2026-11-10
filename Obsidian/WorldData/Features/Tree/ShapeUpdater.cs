@@ -1,5 +1,4 @@
 using Obsidian.API.Blocks;
-using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.World.Features.Trees;
 using Obsidian.API.World.Generator.RandomSources;
 
@@ -117,58 +116,30 @@ internal static class ShapeUpdater
     /// <summary>
     /// A generating level as shape rules read it. Generation's shape pass has no block ticks: scheduling one does
     /// nothing and none reads as scheduled, and rules don't draw from its random, which decides what generates.
-    /// Rules that share generation's survival checks read it as the <see cref="IWorldGenLevel"/> it wraps.
     /// </summary>
-    private sealed class GenerationView(IWorldGenLevel level) : IShapeLevel, IWorldGenLevel
+    private sealed class GenerationView(IWorldGenLevel level) : IShapeLevel
     {
-        public long Seed => level.Seed;
-
-        public int MinY => level.MinY;
-
-        public int Height => level.Height;
-
-        public int SeaLevel => level.SeaLevel;
-
-        public int UnlitBrightness => level.UnlitBrightness;
-
         public IRandomSource Random =>
             throw new NotSupportedException("Shape rules don't draw from generation's random.");
 
         public IBlock GetBlock(Vector position) => level.GetBlock(position);
 
-        public int GetStateId(Vector position) => level.GetStateId(position);
-
         public bool IsFaceSturdy(Vector position, BlockFace face, SupportType support = SupportType.Full) =>
             ShapeViews.IsFaceSturdy(level.GetBlock(position), face, support);
 
+        public IBlockEntity? GetBlockEntity(Vector position) => level.GetBlockEntity(position);
+
         public int GetRawBrightness(Vector position) => 15;
 
-        public void ScheduleTick(Vector position, IBlock block, int delay, TickPriority priority = TickPriority.Normal)
+        public void ScheduleTick(
+            Vector position,
+            IBlock block,
+            int delay,
+            TickPriority priority = TickPriority.Normal)
         {
         }
 
         public bool HasScheduledTick(Vector position, IBlock block) => false;
-
-        public bool SetBlock(Vector position, IBlock block) => level.SetBlock(position, block);
-
-        public bool EnsureCanWrite(Vector position) => level.EnsureCanWrite(position);
-
-        public int GetHeight(HeightmapType type, int x, int z) => level.GetHeight(type, x, z);
-
-        public BiomeCodec GetBiome(Vector position) => level.GetBiome(position);
-
-        public void SetBlockEntity(Vector position, IBlockEntity blockEntity) =>
-            level.SetBlockEntity(position, blockEntity);
-
-        public IBlockEntity? GetBlockEntity(Vector position) => level.GetBlockEntity(position);
-
-        public void AddEntity(GeneratedEntity entity) => level.AddEntity(entity);
-
-        public void MarkForPostProcessing(Vector position) => level.MarkForPostProcessing(position);
-
-        public void ScheduleFluidTick(Vector position) => level.ScheduleFluidTick(position);
-
-        public bool IsOutsideBuildHeight(int y) => level.IsOutsideBuildHeight(y);
     }
 }
 
