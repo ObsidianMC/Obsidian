@@ -114,6 +114,34 @@ Rides with: plan phase 1, before the new behaviours are added, so they're bound 
 
 ### 3. One pass for entities touching blocks
 
+*Done. About three times faster, and it no longer allocates; plates and tripwires now fire when vanilla's do.*
+
+`EntityContactPass` (`WorldData/EntityContacts.cs`) runs for each entity straight after its tick. It reads each
+touched cell once and checks `ContactFlags`, a byte per block state built from the generated owners of
+`entityInside`, `stepOn` and `fallOn`; a cell without a flag costs that array read. Flagged cells go to the owner
+bound by block id (plates, tripwire, buttons, detector rails and bubble columns today), or to a plugin block's
+behaviour. The pass stays synchronous until a behaviour doesn't finish at once, reads chunks straight from the
+level's regions (`GetRegionForChunk`'s per-thread cache allocates a record whenever the region changes, which going
+from entity to entity does), and keeps no state between entities. Plates and tripwires count the entities on them
+when an entity is inside an unpressed one and on their scheduled checks, as vanilla's do, so the two passes after
+the entity loop are gone.
+
+Same harness as the re-runnable block probe below, in a temporary level that is deleted afterwards: 400 armor stands
+standing on stone over 25 chunks, then the same with four pressed oak plates under four of them. One operation is
+the contact work of one level tick for all of them, not their own ticks. Before is `51062463a` (the plugin pass per
+entity, then the plate and tripwire passes over a fresh snapshot); after is this change. Runs made on 2026-11-09 on
+the machine described below; ranges are over three runs.
+
+| Case | Before (ns/op) | After (ns/op) | Before (B/op) | After (B/op) |
+|---|---:|---:|---:|---:|
+| 400 entities on stone | 69,437 to 73,970 | 22,857 to 23,257 | 42,928 | 0 |
+| 400 entities, 4 plates | 76,587 to 79,994 | 25,310 to 25,761 | 43,192 | 0 |
+
+`RedstoneBehaviors.ContactFor` is gone with the passes it served; the probe's `ContactFlags/air` row reads the flag
+instead (1.8 to 2.2 ns, 0 B).
+
+The original proposal follows.
+
 *From the code. Changes when plates and tripwires fire, towards vanilla's timing.*
 
 Three separate passes walk the blocks each entity touches. The first runs straight after each entity's own tick;

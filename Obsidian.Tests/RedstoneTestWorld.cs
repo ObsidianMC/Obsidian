@@ -26,10 +26,15 @@ namespace Obsidian.Tests;
 /// <summary>An arrow that enters <see cref="Block"/> at <see cref="Location"/> through <see cref="Face"/>.</summary>
 public sealed record ArrowHit(Vector Block, VectorD Location, BlockFace Face);
 
-internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, IBlockTickLevel, IBlockLevel,
-    IShapeLevel
+internal sealed class RedstoneTestWorld : IRedstoneLevel, IBlockTickLevel, IBlockLevel, IShapeLevel, IContactLevel
 {
     private readonly Dictionary<long, Chunk> chunks = [];
+    private readonly RedstoneContacts contacts;
+    private readonly EntityContactPass contactPass;
+
+    // The armor stands standing in the contact cells, and the cells they stand in.
+    private readonly List<Obsidian.Entities.ArmorStand> stands = [];
+    private IReadOnlyList<Vector> standCells = [];
     private readonly Queue<Func<ValueTask>> simulation = new();
     private readonly BlockEventQueue blockEvents = new();
 
@@ -42,6 +47,8 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
         this.Engine = install.Engine;
         this.Tripwires = install.Tripwires;
         this.Targets = install.Targets;
+        this.contacts = install.Contacts;
+        this.contactPass = new EntityContactPass(this);
         this.Pipeline = new BlockNotificationPipeline(this, this.Neighbors);
     }
 
@@ -78,15 +85,20 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
     /// they queued.
     /// </summary>
     /// <param name="contacts">
-    /// The cells that entities touch during this tick (the level's entity pass). They are applied after the block ticks, as the
-    /// game step does, so a tripwire scheduled by a contact counts its delay from this tick.
+    /// The cells that entities stand in during this tick: an armor stand in each, as the capture summons, touches the blocks
+    /// around it through the level's entity contact pass after the block ticks, so a tripwire scheduled by a contact counts
+    /// its delay from this tick.
     /// </param>
     /// <param name="arrowHits">Arrows that enter a block during this tick, applied after <paramref name="contacts"/>.</param>
     public async ValueTask Advance(IReadOnlyList<Vector>? contacts = null, IReadOnlyList<ArrowHit>? arrowHits = null)
     {
         this.BlockTicks.Tick();
         if (contacts is not null)
-            await this.Tripwires.ApplyContactsAsync(contacts);
+        {
+            this.StandIn(contacts);
+            foreach (var stand in this.stands)
+                await this.contactPass.TouchAsync(stand);
+        }
 
         foreach (var hit in arrowHits ?? [])
             await this.Targets.HitAsync(hit.Block, hit.Location, hit.Face, TargetBlock.ArrowPulseTicks);
@@ -105,6 +117,43 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
 
         await this.Pipeline.DrainAsync();
     }
+
+    // Keeps one armor stand standing in each contact cell, as the capture's summons do, among the world's entities.
+    private void StandIn(IReadOnlyList<Vector> cells)
+    {
+        if (ReferenceEquals(cells, this.standCells))
+            return;
+
+        foreach (var stand in this.stands)
+            this.Entities.Remove(stand);
+
+        this.stands.Clear();
+        foreach (var cell in cells)
+        {
+            var stand = new Obsidian.Entities.ArmorStand
+            {
+                Level = null!,
+                EntityId = Obsidian.Server.GetNextEntityId(),
+                Position = new VectorD(cell.X + 0.5, cell.Y, cell.Z + 0.5),
+                MovementFlags = MovementFlags.OnGround,
+            };
+            this.stands.Add(stand);
+            this.Entities.Add(stand);
+        }
+
+        this.standCells = cells;
+    }
+
+    IBlockLevel IContactLevel.Blocks => this;
+
+    ILevel IContactLevel.Level => throw new NotSupportedException("The test world has no plugin blocks.");
+
+    RedstoneContacts IContactLevel.Redstone => this.contacts;
+
+    Microsoft.Extensions.Logging.ILogger IContactLevel.Logger => Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
+
+    Chunk? IContactLevel.GetContactChunk(int chunkX, int chunkZ) =>
+        this.chunks.GetValueOrDefault(NumericsHelper.IntsToLong(chunkX, chunkZ));
 
     public NeighborBehaviors Neighbors { get; }
 
@@ -290,12 +339,6 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
         await this.Pipeline.DrainAsync();
     }
 
-    /// <summary>Plate release ticks scheduled through the world, as (position, block, delay).</summary>
-    public List<(Vector Position, string Block, int Delay)> ScheduledPlateTicks { get; } = [];
-
-    void IPressurePlateWorld.SchedulePlateTick(Vector position, IBlock block, int delay) =>
-        this.ScheduledPlateTicks.Add((position, block.UnlocalizedName, delay));
-
     public long GameTime => this.BlockTicks.GameTime;
 
     long IRedstoneLevel.GameTime => this.GameTime;
@@ -371,7 +414,7 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
 
     IEnumerable<IEntity> IRedstoneLevel.EntitiesIn(VectorD min, VectorD max) => this.Entities.Where(entity =>
     {
-        var box = entity.BoundingBox;
+        var box = entity is Obsidian.Entities.Entity concrete ? concrete.CurrentBox : entity.BoundingBox;
         return box.Min.X < max.X && box.Max.X > min.X
             && box.Min.Y < max.Y && box.Max.Y > min.Y
             && box.Min.Z < max.Z && box.Max.Z > min.Z;

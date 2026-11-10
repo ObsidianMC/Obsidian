@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net10.0</TargetFramework>
+		<TargetFramework>net11.0</TargetFramework>
 		<EnablePreviewFeatures>True</EnablePreviewFeatures>
 		<Nullable>annotations</Nullable>
 		<AssemblyName>Obsidian.API</AssemblyName>
@@ -89,14 +89,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- The host supplies API dependencies; mods compile against them but don't publish their runtime assets. -->
+		<!-- The host supplies API dependencies; mods compile against them but don't publish their runtime assets.
+		     Dependency injection and logging abstractions are part of the .NET 11 shared framework. -->
 		<PackageReference Include="CommunityToolkit.HighPerformance" Version="8.4.0" ExcludeAssets="runtime" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0">
-			<ExcludeAssets>runtime</ExcludeAssets>
-		</PackageReference>
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0">
-			<ExcludeAssets>runtime</ExcludeAssets>
-		</PackageReference>
 		<PackageReference Include="SharpNoise" Version="0.12.1.1">
 			<ExcludeAssets>runtime</ExcludeAssets>
 		</PackageReference>

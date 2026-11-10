@@ -454,8 +454,7 @@ public abstract partial class AbstractLevel : ILevel
         this.RedstoneRules = new RedstoneBehaviors(new PluginRedstoneBehavior(this));
         this.BlockNotifications = new BlockNotificationPipeline(this, this.Neighbors);
         this.RedstoneInstall = RedstoneRegistration.Install(this, this.BlockUpdates.Ticks, this.Neighbors, this.RedstoneRules, position => this.PlayNoteBlock(position));
-        this.Plates = new PressurePlates(this);
-        this.Plates.RegisterTicks(this.BlockUpdates.Ticks, this);
+        this.EntityContacts = new EntityContactPass(this);
         this.Lighting = new RuntimeLightEngine(
             this.Fluids.TickLock, () => this.DimensionType?.Element.HasSkylight ?? true);
         this.Portals = new LevelPortals(this);
@@ -1123,7 +1122,18 @@ public abstract partial class AbstractLevel : ILevel
                 {
                     this.tickingEntity = entity;
                     await entity.TickAsync();
-                    await this.TouchPluginBlocksAsync(entity);
+
+                    // Like vanilla's entity movement, the blocks it touches react now, before the next entity ticks;
+                    // as in vanilla, only where entities tick (players everywhere), and not once its tick removed it
+                    // (an arrow despawning, a projectile breaking: removal takes it out of the level's grid) or moved
+                    // it to another level.
+                    if (entity is Entity toucher
+                        && entity.Level == this
+                        && (entity is IPlayer || toucher.Grid == this.EntityGrid && this.IsMobTicking(entity.Position)))
+                    {
+                        await this.EntityContacts.TouchAsync(toucher);
+                    }
+
                     if (entity is Entity concrete && entity is not IPlayer && entity.Level == this)
                         await concrete.TickEntityPortalAsync();
                     timings.LapEntity(entity.GetType());
@@ -1134,11 +1144,6 @@ public abstract partial class AbstractLevel : ILevel
                 claimed?.ReleaseTick(this);
             }
         }
-        // Like vanilla's entity movement, the redstone that entities touch reacts once they've all ticked: pressure plates,
-        // then tripwires, on the entities' current positions.
-        var movers = this.SnapshotEntities().ToList();
-        await this.Plates.UpdateAsync(movers);
-        await this.RedstoneInstall.Tripwires.UpdateAsync(movers);
         timings.Lap("entities");
 
         TickStage = "sleeping";
@@ -1270,7 +1275,7 @@ public abstract partial class AbstractLevel : ILevel
     /// The level's entities in entity id order, each once, even while crossing a region boundary. Taken once per tick,
     /// so entities spawned during the tick wait for the next one. Valid until the next call.
     /// </summary>
-    private List<IEntity> SnapshotEntities()
+    internal List<IEntity> SnapshotEntities()
     {
         this.entitySnapshot.Clear();
         this.entitySnapshotIds.Clear();

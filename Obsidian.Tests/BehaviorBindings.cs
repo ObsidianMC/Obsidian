@@ -65,19 +65,14 @@ public class BehaviorBindings
         var connectedBirch = BlocksRegistry.BirchFence.WithProperty("west", true);
 
         bindings.Register("FenceBlock", behavior);
-        bindings.RegisterContact("FenceBlock", behavior);
 
         Assert.Same(behavior, bindings.For(BlocksRegistry.OakFence));
         Assert.Same(behavior, bindings.For(connectedBirch));
-        Assert.Same(behavior, bindings.ContactFor(BlocksRegistry.BirchFence));
         Assert.NotSame(behavior, bindings.For(BlocksRegistry.Stone));
-        Assert.Null(bindings.ContactFor(BlocksRegistry.Stone));
 
-        // A duplicate must neither replace the signal behavior nor the contact behavior.
+        // A duplicate must not replace the signal behavior.
         Assert.Throws<InvalidOperationException>(() => bindings.Register("FenceBlock", rejected));
-        Assert.Throws<InvalidOperationException>(() => bindings.RegisterContact("FenceBlock", rejected));
         Assert.Same(behavior, bindings.For(BlocksRegistry.OakFence));
-        Assert.Same(behavior, bindings.ContactFor(BlocksRegistry.OakFence));
     }
 
     [Fact]
@@ -114,17 +109,14 @@ public class BehaviorBindings
         Assert.Same(specific, removed);
 
         Assert.Same(fallback, redstone.For(state));
-        Assert.Null(redstone.ContactFor(state));
         Assert.Equal("Block", state.BlockClass());
         Assert.Equal(BlockClassId.Block, state.ClassId());
         Assert.False(state.IsSignalSource());
 
         // A later generic class registration still applies to plugin blocks and precedes the fallback.
         redstone.Register("Block", specific);
-        redstone.RegisterContact("Block", specific);
 
         Assert.Same(specific, redstone.For(state));
-        Assert.Same(specific, redstone.ContactFor(state));
 
         var generic = new NeighborBehaviors();
 
@@ -218,7 +210,7 @@ public class BehaviorBindings
     }
 
     private sealed class Behavior : INeighborChangedBehavior, IPlacementBehavior, IRemovalBehavior,
-        IRedstoneBehavior, IRedstoneContact
+        IRedstoneBehavior
     {
         public ValueTask OnNeighborChangedAsync(NeighborChange change, IBlockChangeWorld world) =>
             ValueTask.CompletedTask;
@@ -226,8 +218,5 @@ public class BehaviorBindings
         public ValueTask OnPlacedAsync(BlockChange change, IBlockChangeWorld world) => ValueTask.CompletedTask;
 
         public ValueTask OnRemovedAsync(BlockChange change, IBlockChangeWorld world) => ValueTask.CompletedTask;
-
-        public ValueTask EntityInsideAsync(IRedstoneLevel level, Vector position, IBlock state) =>
-            ValueTask.CompletedTask;
     }
 }

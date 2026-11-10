@@ -130,7 +130,13 @@ A block's `Behavior` gets vanilla's block hooks; each defaults to doing nothing:
 - `RandomTick`: a random tick, like vanilla's `randomTick`, for blocks registered with `RandomlyTicks = true`. Random
   ticks reach sections near players like vanilla's (see [Saplings](#saplings)): at the default speed, each block
   about once every 68 seconds.
-- `EntityInsideAsync` and `SteppedOnAsync`: each tick an entity's box overlaps the block, or the entity stands on it.
+- `EntityInsideAsync` and `SteppedOnAsync`: each tick an entity's box overlaps the block, or the entity stands on it,
+  straight after the entity's own tick, the block it stands on first, then those it's in (x, then y, then z). Like
+  vanilla's, only entities that move through the world touch blocks: living entities, items, experience orbs,
+  falling blocks, TNT, projectiles, boats, minecarts and end crystals, but not spectators, armor stands without
+  gravity, markers, displays or hanging entities; a dead mob still stands on blocks but is in none, and entities
+  where entities don't tick (out of players' simulation distance) touch nothing. The block stood on is the one 0.2
+  below the feet, in the column of the block holding the entity up when it stands across several.
 
 The hooks with a `Level` run synchronously while the level's block updates wait for them, like vanilla's: read and
 change blocks through that `IBlockLevel` (`GetBlock`, `IsFaceSturdy`, `SetBlock`, `RemoveBlock`, `DestroyBlock`,
@@ -283,7 +289,7 @@ repeaters (delays of 1 to 4 redstone ticks, and locking), comparators (comparing
 container contents without rolling pending loot, cakes, cauldrons, beehives, end portal frames,
 respawn anchors and item frames, behind a conductor too),
 levers, buttons (pressed by players and wind charges, and wooden ones by arrows), pressure plates (entities on them;
-wooden ones feel any entity, stone ones mobs and players, weighted ones count them), the block of redstone and the
+wooden ones feel any entity, stone ones living entities, weighted ones count them), the block of redstone and the
 redstone lamp. Players place them as vanilla does: facing and attached from where they click and look, where they can
 stay. Those that lose their support pop off, dropping their loot. A comparator's output is saved in its block
 entity, and vanilla saves' scheduled ticks of these blocks run. Doors, trapdoors, fence gates, pistons, rails, TNT,
@@ -4498,7 +4504,7 @@ project uses the Razor SDK, and its components inherit `ModComponent` (set once 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk.Razor">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <!-- A mod has no web assets: its output is what its archive holds. -->
     <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
   </PropertyGroup>

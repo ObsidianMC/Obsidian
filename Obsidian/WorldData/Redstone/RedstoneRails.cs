@@ -243,7 +243,7 @@ internal sealed class RedstonePoweredRail(IRedstoneLevel level, RedstoneEngine e
 /// block below, until a check 20 ticks after the last minecart left; comparators read how full a container minecart is,
 /// or a command block minecart's successes.
 /// </summary>
-internal sealed class RedstoneDetectorRail : RedstoneRail, IRedstoneContact
+internal sealed class RedstoneDetectorRail : RedstoneRail
 {
     public const int BlockId = BlockIds.DetectorRail;
 
@@ -256,15 +256,15 @@ internal sealed class RedstoneDetectorRail : RedstoneRail, IRedstoneContact
     {
     }
 
-    public static void Register(IRedstoneLevel level, RedstoneEngine engine, LevelBlockTicks ticks, RedstoneBehaviors redstone, NeighborBehaviors neighbors)
+    public static RedstoneDetectorRail Register(IRedstoneLevel level, RedstoneEngine engine, LevelBlockTicks ticks, RedstoneBehaviors redstone, NeighborBehaviors neighbors)
     {
         var rail = new RedstoneDetectorRail(level, engine);
         neighbors.Register(BlockId, rail);
         neighbors.RegisterPlaced(BlockId, rail);
         neighbors.RegisterRemoved(BlockId, rail);
         redstone.Register(BlocksRegistry.GetDefault(BlockId).BlockClass(), rail.power);
-        redstone.RegisterContact(BlocksRegistry.GetDefault(BlockId).BlockClass(), rail);
         ticks.Register(BlockId, (position, _) => level.EnqueueSimulation(() => rail.TickAsync(position)));
+        return rail;
     }
 
     /// <summary>
@@ -301,8 +301,8 @@ internal sealed class RedstoneDetectorRail : RedstoneRail, IRedstoneContact
             await this.CheckPressedAsync(position, placed);
     }
 
-    // Vanilla's entityInside: a minecart on the rail presses it.
-    public async ValueTask EntityInsideAsync(IRedstoneLevel level, Vector position, IBlock state)
+    /// <summary>Vanilla's <c>entityInside</c>: any entity inside an unpowered rail has it look for minecarts on it.</summary>
+    public async ValueTask EntityInsideAsync(Vector position, IBlock state)
     {
         if (!Rails.IsPowered(state))
             await this.CheckPressedAsync(position, state);
@@ -369,11 +369,11 @@ internal sealed class RedstoneDetectorRail : RedstoneRail, IRedstoneContact
 
 /// <summary>
 /// Registers the rails' reactions: the plain, powered and activator rails' placement, neighbour and removal reactions,
-/// and the detector rail's power, tick and entity contact.
+/// and the detector rail's power and tick. Returns the detector rail, which entities press.
 /// </summary>
 internal static class RedstoneRails
 {
-    public static void Register(IRedstoneLevel level, RedstoneEngine engine, LevelBlockTicks ticks, RedstoneBehaviors redstone, NeighborBehaviors neighbors)
+    public static RedstoneDetectorRail Register(IRedstoneLevel level, RedstoneEngine engine, LevelBlockTicks ticks, RedstoneBehaviors redstone, NeighborBehaviors neighbors)
     {
         var plain = new RedstoneRail(level, engine);
         neighbors.Register(BlockIds.Rail, plain);
@@ -389,7 +389,7 @@ internal static class RedstoneRails
             neighbors.RegisterRemoved(id, powered);
         }
 
-        RedstoneDetectorRail.Register(level, engine, ticks, redstone, neighbors);
+        return RedstoneDetectorRail.Register(level, engine, ticks, redstone, neighbors);
     }
 }
 

@@ -57,8 +57,6 @@ internal static class BasicRedstoneComponents
         foreach (var id in TagsRegistry.Block.PressurePlates.Entries)
             neighbors.RegisterRemoved(id, plateRemoval);
 
-        redstone.RegisterContact(BlocksRegistry.GetDefault(BlockIds.StoneButton).BlockClass(), new ButtonContact());
-
         var lamp = new EngineRedstoneLamp(level, engine);
         neighbors.Register(BlockIds.RedstoneLamp, lamp);
         foreach (var id in new[]
@@ -366,19 +364,17 @@ internal static class BasicRedstoneComponents
     }
 
     /// <summary>
-    /// Vanilla <c>ButtonBlock.entityInside</c>: an unpressed wooden button is pressed while an arrow is in it. Stone buttons ignore arrows.
+    /// Vanilla <c>ButtonBlock.entityInside</c>, for any entity inside a button: an unpressed wooden button is pressed while
+    /// an arrow is in it. Stone buttons ignore arrows.
     /// </summary>
-    private sealed class ButtonContact : IRedstoneContact
+    internal static async ValueTask PressedByArrowInsideAsync(IRedstoneLevel level, Vector position, IBlock state)
     {
-        public async ValueTask EntityInsideAsync(IRedstoneLevel level, Vector position, IBlock state)
-        {
-            if (!PressedByArrows(state) || state.GetProperty("powered") == "true")
-                return;
+        if (!PressedByArrows(state) || state.GetProperty("powered") == "true")
+            return;
 
-            // Vanilla's checkPressed credits the arrow with the press.
-            if (ArrowInside(level, position, state) is IEntity arrow)
-                await PressButtonAsync(level, position, state, player: null, source: arrow);
-        }
+        // Vanilla's checkPressed credits the arrow with the press.
+        if (ArrowInside(level, position, state) is IEntity arrow)
+            await PressButtonAsync(level, position, state, player: null, source: arrow);
     }
 
     /// <summary>

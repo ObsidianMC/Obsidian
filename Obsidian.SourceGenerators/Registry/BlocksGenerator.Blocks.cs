@@ -217,6 +217,8 @@ public partial class BlocksGenerator
         new("tick", "TickBehaviors", "IScheduledTickBehavior", "GetTickBehavior"),
         new("updateShape", "ShapeUpdateBehaviors", "IShapeUpdateBehavior", "GetShapeUpdateBehavior"),
         new("entityInside", "EntityInsideBehaviors", "IEntityInsideBehavior", "GetEntityInsideBehavior"),
+        new("stepOn", "StepOnBehaviors", "IStepOnBehavior", "GetStepOnBehavior"),
+        new("fallOn", "FallOnBehaviors", "IFallOnBehavior", "GetFallOnBehavior"),
         new("onPlace", "OnPlaceBehaviors", "IOnPlaceBehavior", "GetOnPlaceBehavior"),
         new("useItemOn", "UseBehaviors", "IBlockUseBehavior", "GetUseItemOnBehavior"),
         new("useWithoutItem", "UseBehaviors", "IBlockUseBehavior", "GetUseWithoutItemBehavior"),
