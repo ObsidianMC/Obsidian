@@ -279,9 +279,9 @@ replaces only what vanilla produced.
   the game events within 16 blocks (with their source), the statistics awarded and the menu opened, and when a menu
   opened, what closing it changed and played. The replay drives `UseItemOnPacket` in one world, with full sky light
   as the capture's open sky has, runs the queued entity actions and the tick's block events, and checks swings from
-  the result. The original 92 cases retain their captured bytes. Another 281 cases cover buckets (72), chest
-  obstructions (73), lighting (63) and the blocks that hold items (73: flower pots, chiseled bookshelves, decorated
-  pots, lodestone compasses and jukeboxes), including ordered block writes with every flag bit and successful block
+  the result. The original 92 cases retain their captured bytes. Another 285 cases cover buckets (72), chest
+  obstructions (73), lighting (63) and the blocks that hold items (77: flower pots, chiseled bookshelves, decorated
+  pots, including ones still waiting for their loot table, lodestone compasses and jukeboxes), including ordered block writes with every flag bit and successful block
   destructions. These cases observe all writes, including positions absent from their setup; an unexpected position
   fails the replay. The older 92 cases compare final block states only. Extending ordered-write checks to those
   cases remains an open follow-up. The replay uses the capture's absolute coordinates: translating plant
