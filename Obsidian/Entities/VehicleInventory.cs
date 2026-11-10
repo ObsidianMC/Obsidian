@@ -92,18 +92,7 @@ internal sealed class VehicleInventory
                 return;
             }
 
-            var items = new NbtList(NbtTagType.Compound, "Items");
-            for (var slot = 0; slot < this.Items.Size; slot++)
-            {
-                if (InventorySnapshot.GetItem(this.Items, slot) is not { IsAir: false, Count: > 0 } item)
-                    continue;
-
-                var itemTag = item.ToNbt();
-                itemTag.Add(new NbtTag<byte>("Slot", (byte)slot));
-                items.Add(itemTag);
-            }
-
-            tag.Add(items);
+            tag.Add(InventorySnapshot.SaveItems(this.Items));
         }
     }
 

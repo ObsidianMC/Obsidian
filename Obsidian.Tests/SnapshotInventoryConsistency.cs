@@ -306,9 +306,12 @@ public sealed class SnapshotInventoryConsistency
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task InventoryEditAfterCaptureIsIncludedInTheFinalUnload(bool pluginStorage)
+    [InlineData(false, false, false)]
+    [InlineData(true, false, false)]
+    [InlineData(true, true, false)]
+    [InlineData(true, false, true)]
+    public async Task InventoryEditAfterCaptureIsIncludedInTheFinalUnload(
+        bool pluginStorage, bool mutateInPlace, bool pluginScope)
     {
         await using var context = TestServerFactory.CreateServer($"snapshot-revision-{Guid.NewGuid():N}");
         var world = context.World;
@@ -316,11 +319,12 @@ public sealed class SnapshotInventoryConsistency
         await world.GetBlockAsync(position);
         BaseContainer inventory = pluginStorage ? new OpaqueInventory() : new Container(9);
         inventory[0] = new ItemStack(ItemsRegistry.Diamond, 3);
-        chunk.SetBlockEntity(position.X, position.Y, position.Z, new ContainerBlockEntity(inventory)
+        var container = new WritableContainer(inventory)
         {
             Id = "probe:edited",
             BlockPosition = position
-        });
+        };
+        chunk.SetBlockEntity(position.X, position.Y, position.Z, container);
         var captured = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var edited = new ManualResetEventSlim();
         var region = (Region)world.LoadRegionByChunk(0, 0);
@@ -333,8 +337,18 @@ public sealed class SnapshotInventoryConsistency
         var editing = Task.Run(async () =>
         {
             await captured.Task.WaitAsync(timeout);
-            using (await inventory.LockAsync())
-                inventory[0] = new ItemStack(ItemsRegistry.Diamond, 5);
+            IDisposable held = pluginScope
+                ? Assert.IsAssignableFrom<IDisposable>(container.BeginInventoryEdit())
+                : await inventory.LockAsync();
+            using (held)
+            {
+                if (pluginScope)
+                    inventory.SetItem(0, new ItemStack(ItemsRegistry.Diamond, 5));
+                else if (mutateInPlace)
+                    inventory[0]!.Count = 5;
+                else
+                    inventory[0] = new ItemStack(ItemsRegistry.Diamond, 5);
+            }
 
             edited.Set();
         });
@@ -410,6 +424,11 @@ public sealed class SnapshotInventoryConsistency
     private sealed class AuxiliaryContainer() : ContainerBlockEntity(new Container(9))
     {
         internal void Capture() => base.Save(new NbtCompound());
+    }
+
+    private sealed class WritableContainer(BaseContainer inventory) : ContainerBlockEntity(inventory)
+    {
+        internal IDisposable? BeginInventoryEdit() => this.LockInventory();
     }
 
     // A plugin may implement its slots and public revision without writing BaseContainer's host storage.

@@ -594,7 +594,7 @@ public partial class MainEventHandler
                 continue;
 
             remaining -= count - existing;
-            container.SetItem(slot, new ItemStack(carried, count));
+            container[slot] = new ItemStack(carried, count);
         }
 
         if (remaining > 0)
@@ -859,7 +859,7 @@ public partial class MainEventHandler
             }
             else if (carried.Count <= SlotLimit(player, container, slot, carried))
             {
-                container.SetItem(slot, carried);
+                container[slot] = carried;
                 player.CarriedItem = item;
             }
         }
@@ -887,7 +887,7 @@ public partial class MainEventHandler
         if (moved <= 0 || existing > 0 && target != carried)
             return;
 
-        container.SetItem(slot, new ItemStack(carried, existing + moved));
+        container[slot] = new ItemStack(carried, existing + moved);
         carried.Count -= moved;
 
         if (carried.Count == 0)
@@ -940,14 +940,14 @@ public partial class MainEventHandler
         {
             if (source.Count > limit)
             {
-                container.SetItem(slot, new ItemStack(source, limit));
+                container[slot] = new ItemStack(source, limit);
                 source.Count -= limit;
                 inventory.SetItem(sourceSlot, source);
             }
             else
             {
                 inventory.RemoveItem(sourceSlot);
-                container.SetItem(slot, source);
+                container[slot] = source;
             }
 
             return;
@@ -958,7 +958,7 @@ public partial class MainEventHandler
 
         if (source.Count > limit)
         {
-            container.SetItem(slot, new ItemStack(source, limit));
+            container[slot] = new ItemStack(source, limit);
             source.Count -= limit;
             inventory.SetItem(sourceSlot, source);
 
@@ -968,7 +968,7 @@ public partial class MainEventHandler
         else
         {
             inventory.SetItem(sourceSlot, item);
-            container.SetItem(slot, source);
+            container[slot] = source;
         }
     }
 

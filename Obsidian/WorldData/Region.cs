@@ -1582,7 +1582,8 @@ public partial class Region : IRegion
     {
         var canWait = !this.FluidTickLock.IsHeldByCurrentThread
             && !EntityTransferLock.IsAnyHeldByCurrentThread;
-        while (true)
+        const int attempts = 8;
+        for (var attempt = 0; attempt < attempts; attempt++)
         {
             var (taken, busy, retry) = await this.TrySnapshotChunkAsync(save, unloading, saveEntities, waitForLock);
             if (taken || (!retry && busy is null) || !waitForLock)
@@ -1599,14 +1600,27 @@ public partial class Region : IRegion
             this.InventorySnapshotDeferred?.Invoke();
             if (busy is not null)
             {
-                using (await busy.LockAsync())
+                using var availability = new CancellationTokenSource(TimeSpan.FromMilliseconds(250));
+                try
                 {
+                    using (await BaseContainer.LockAllAsync(busy.LockParts, availability.Token))
+                    {
+                    }
+                }
+                catch (OperationCanceledException) when (availability.IsCancellationRequested)
+                {
+                    // A hook may own the inventory for longer than one wait. The next bounded attempt rechecks it.
                 }
             }
 
             // A virtual read or public membership edit can invalidate an otherwise available capture.
             await Task.Yield();
         }
+
+        // Every failed attempt left marks, retirement and disk contents untouched. The caller can report the
+        // failure and retry a later save/unload; persistent plugin mutations must not trap saves or shutdown.
+        throw new TimeoutException(
+            $"Chunk ({save.X}, {save.Z}) did not reach a stable inventory snapshot after {attempts} attempts.");
     }
 
     private async Task<(bool Taken, BaseContainer? Busy, bool Retry)> TrySnapshotChunkAsync(
@@ -1662,22 +1676,44 @@ public partial class Region : IRegion
                         return (false, busy, false);
 
                     using var snapshot = captured;
+                    try
+                    {
+                        using (captured!.Prepare())
+                            ReadSavedMembers(blockEntities, levelEntities);
+                    }
+                    catch (InventorySnapshot.BusyException busyInventory)
+                    {
+                        return (false, busyInventory.Inventory, false);
+                    }
+
                     using var transfers = this.EntityTransfers.Enter();
                     this.BeforeInventorySnapshot?.Invoke();
                     // Public position/dictionary setters do not participate in transfer. In particular, virtual
                     // getters above may publish a container or move a vehicle. Retry before any retirement/marks.
                     var sameBlocks = blockEntries is null
-                        ? blockEntities.ToHashSet().SetEquals(current.GetBlockEntities())
+                        ? blockEntities.ToHashSet<IBlockEntity>(ReferenceEqualityComparer.Instance)
+                            .SetEquals(current.GetBlockEntities())
                         : current is Chunk resident && blockEntries.Length == resident.BlockEntities.Count
                             && blockEntries.All(entry => resident.BlockEntities.TryGetValue(entry.Key, out var value)
                                 && ReferenceEquals(entry.Value, value));
-                    var sameEntities = levelEntities.ToHashSet()
+                    var sameEntities = levelEntities.ToHashSet<Entity>(ReferenceEqualityComparer.Instance)
                         .SetEquals(this.SnapshotEntities(current, unloading || saveEntities));
                     if (!sameBlocks || !sameEntities)
                         return (false, null, true);
 
                     if (!captured!.TryEnter(out busy))
-                        return (false, busy, false);
+                        return (false, busy, true);
+
+                    try
+                    {
+                        // Catch a replaced entity/record stack before any retirement or dirty marks. Inventory
+                        // and source versions were just validated; these serializers can only read prepared NBT.
+                        ReadSavedMembers(blockEntities, levelEntities);
+                    }
+                    catch (InventorySnapshot.ChangedException)
+                    {
+                        return (false, null, true);
+                    }
 
                     // Hashing, retirement and serialization use exactly the members and virtual slot values
                     // captured above. No plugin getter, callback or await runs under this host admission.
@@ -1761,6 +1797,15 @@ public partial class Region : IRegion
         {
             writer?.Dispose();
         }
+    }
+
+    private static void ReadSavedMembers(IBlockEntity[] blockEntities, Entity[] entities)
+    {
+        foreach (var blockEntity in blockEntities)
+            BlockEntityNbt.Save(blockEntity);
+
+        foreach (var entity in entities)
+            EntityNbt.Save(entity);
     }
 
     // Freeze membership before virtual inventory reads; validate it again before admission. The captured arrays

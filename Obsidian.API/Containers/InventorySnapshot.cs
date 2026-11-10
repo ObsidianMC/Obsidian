@@ -1,4 +1,7 @@
 using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
+using Obsidian.API.Utilities;
+using Obsidian.Nbt;
 using System.Threading;
 
 namespace Obsidian.API;
@@ -12,14 +15,16 @@ internal sealed class InventorySnapshot : IDisposable
     [ThreadStatic] private static InventorySnapshot? current;
 
     private InventorySnapshot? previous;
-    private readonly Dictionary<BaseContainer, Revision> revisions = [];
-    private readonly Dictionary<BaseContainer, ItemStack?[]> items = [];
+    private bool preparing;
+    private readonly Dictionary<ItemStack, (long Version, NbtCompound Data)> itemData =
+        new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<BaseContainer, long> revisions = new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<BaseContainer, NbtCompound[]> items = new(ReferenceEqualityComparer.Instance);
     private readonly List<IDisposable> held = [];
+    private readonly List<(BaseContainer Inventory, ItemStack Stack, long Version)> sources = [];
 
-    private readonly record struct Revision(long Items, long Transactions);
-
-    // Call without transfer/chunk entity locks or an ambient snapshot. A virtual getter retains only its own
-    // inventory lock and the caller's existing tick/generator scope, never another container's admission.
+    // Call without transfer/chunk entity locks or an admitted snapshot. Preparation holds only the current
+    // inventory and the caller's existing tick/generator scope; auxiliary host reads must try, never wait.
     internal static bool TryCapture(
         IEnumerable<BaseContainer> inventories,
         out InventorySnapshot? snapshot,
@@ -28,57 +33,98 @@ internal sealed class InventorySnapshot : IDisposable
         var capture = new InventorySnapshot();
         snapshot = null;
         busy = null;
-        foreach (var inventory in inventories.Distinct())
+        using var preparation = capture.Prepare();
+        try
         {
-            if (!inventory.TryLock(out var handle))
+            foreach (var inventory in inventories.Distinct<BaseContainer>(ReferenceEqualityComparer.Instance))
             {
-                busy = inventory;
-                return false;
-            }
-
-            using var captured = handle;
-            var parts = inventory.LockParts.Distinct().ToArray();
-            var before = parts.Select(part => new Revision(part.EngineRevision, part.TransactionVersion)).ToArray();
-            var contents = new ItemStack?[inventory.Size];
-            for (var slot = 0; slot < contents.Length; slot++)
-            {
-                var item = inventory.GetItem(slot);
-                contents[slot] = item is null ? null : new ItemStack(item, item.Count);
-            }
-
-            for (var index = 0; index < parts.Length; index++)
-            {
-                var part = parts[index];
-                var revision = before[index];
-                var overlaps = capture.revisions.TryGetValue(part, out var earlier);
-                // Shared parts may have only our own new capture transaction since their previous read.
-                if (part.EngineRevision != revision.Items || part.TransactionVersion != revision.Transactions
-                    || overlaps && (earlier.Items != revision.Items
-                        || earlier.Transactions + 1 != revision.Transactions))
+                if (!inventory.TryLock(out var handle))
                 {
                     busy = inventory;
                     return false;
                 }
 
-                capture.revisions[part] = revision;
+                using var captured = handle;
+                var parts = inventory.LockParts.Distinct<BaseContainer>(ReferenceEqualityComparer.Instance).ToArray();
+                var before = parts.Select(part => part.EngineRevision).ToArray();
+                var contents = new List<NbtCompound>();
+                for (var slot = 0; slot < inventory.Size; slot++)
+                {
+                    var item = inventory.GetItem(slot);
+                    if (item is null)
+                        continue;
+
+                    capture.sources.Add((inventory, item, item.Version));
+                    if (item.IsAir || item.Count <= 0)
+                        continue;
+
+                    // Value getters and nested item conversion can run plugin copy delegates. Finish all of it
+                    // while only this inventory is owned, before transfer or ambient host admission.
+                    var saved = item.ToNbt();
+                    saved.Add(new NbtTag<byte>("Slot", (byte)slot));
+                    contents.Add(ComponentCopies.Nbt(saved)!);
+                }
+
+                for (var index = 0; index < parts.Length; index++)
+                {
+                    var part = parts[index];
+                    var revision = before[index];
+                    if (part.EngineRevision != revision
+                        || capture.revisions.TryGetValue(part, out var earlier) && earlier != revision)
+                    {
+                        busy = inventory;
+                        return false;
+                    }
+
+                    capture.revisions[part] = revision;
+                }
+
+                capture.items.Add(inventory, contents.ToArray());
             }
 
-            capture.items.Add(inventory, contents);
+            snapshot = capture;
+            return true;
         }
-
-        snapshot = capture;
-        return true;
+        catch (BusyException blocked)
+        {
+            busy = blocked.Inventory;
+            return false;
+        }
     }
 
-    internal static bool TryEnter(
-        IEnumerable<BaseContainer> inventories,
-        out InventorySnapshot? snapshot,
-        out BaseContainer? busy)
+    // Additional block/entity stacks (records, dropped items, projectiles) are encoded without transfer or
+    // admission. Known inventories read their prepared NBT; an auxiliary host save can only try another lock.
+    internal InventorySnapshot Prepare()
     {
-        if (!TryCapture(inventories, out snapshot, out busy))
+        this.preparing = true;
+        this.previous = current;
+        current = this;
+        return this;
+    }
+
+    internal static bool TryGetItemData(ItemStack item, string name, out NbtCompound? data)
+    {
+        data = null;
+        if (current is null)
             return false;
 
-        return snapshot!.TryEnter(out busy);
+        if (current.itemData.TryGetValue(item, out var saved) && saved.Version == item.Version)
+        {
+            data = ComponentCopies.Nbt(saved.Data)!;
+            data.Name = name;
+            return true;
+        }
+
+        if (current.preparing)
+            return false;
+
+        throw new ChangedException();
+    }
+
+    internal static void RecordItemData(ItemStack item, long version, NbtCompound data)
+    {
+        if (current is { preparing: true })
+            current.itemData[item] = (version, ComponentCopies.Nbt(data)!);
     }
 
     internal bool TryEnter(out BaseContainer? busy)
@@ -96,7 +142,7 @@ internal sealed class InventorySnapshot : IDisposable
                 }
 
                 this.held.Add(new LockRelease(part.TransactionLock));
-                if (part.EngineRevision != revision.Items || part.TransactionVersion != revision.Transactions)
+                if (part.EngineRevision != revision)
                 {
                     this.Release();
                     busy = part;
@@ -110,6 +156,27 @@ internal sealed class InventorySnapshot : IDisposable
             throw;
         }
 
+        // A plugin getter may return a stack outside the base slots. Its nonvirtual item version still
+        // detects in-place count/component changes without calling plugin code under transfer/admission.
+        foreach (var source in this.sources)
+        {
+            if (source.Stack.Version == source.Version)
+                continue;
+
+            this.Release();
+            busy = source.Inventory;
+            return false;
+        }
+
+        foreach (var (stack, saved) in this.itemData)
+        {
+            if (stack.Version == saved.Version)
+                continue;
+
+            this.Release();
+            return false;
+        }
+
         this.previous = current;
         current = this;
         return true;
@@ -121,23 +188,67 @@ internal sealed class InventorySnapshot : IDisposable
         if (current is null)
             return inventory.Lock();
 
+        if (current.preparing)
+        {
+            if (current.items.ContainsKey(inventory))
+                return Reused.Instance;
+
+            if (!inventory.TryLock(out var handle))
+                throw new BusyException(inventory);
+
+            return handle;
+        }
+
         if (!inventory.LockParts.All(current.revisions.ContainsKey))
             throw new InvalidOperationException("A snapshot reached an inventory it did not admit.");
 
         return Reused.Instance;
     }
 
-    internal static ItemStack? GetItem(BaseContainer inventory, int slot) => current is null
-        ? inventory.GetItem(slot)
-        : current.items[inventory][slot];
+    // The admitted path only copies host-owned NBT; it must never reach component Value/copy delegates.
+    internal static NbtList SaveItems(BaseContainer inventory)
+    {
+        var saved = new NbtList(NbtTagType.Compound, "Items");
+        if (current is not null && current.items.TryGetValue(inventory, out var prepared))
+        {
+            foreach (var item in prepared)
+                saved.Add(ComponentCopies.Nbt(item)!);
+
+            return saved;
+        }
+
+        if (current is { preparing: false })
+            throw new ChangedException();
+
+        for (var slot = 0; slot < inventory.Size; slot++)
+        {
+            var item = inventory.GetItem(slot);
+            if (item is null || item.IsAir || item.Count <= 0)
+                continue;
+
+            var tag = item.ToNbt();
+            tag.Add(new NbtTag<byte>("Slot", (byte)slot));
+            saved.Add(tag);
+        }
+
+        return saved;
+    }
 
     public void Dispose()
     {
         if (ReferenceEquals(current, this))
             current = this.previous;
 
+        this.preparing = false;
         this.Release();
     }
+
+    internal sealed class BusyException(BaseContainer inventory) : Exception("A snapshot inventory is busy.")
+    {
+        internal BaseContainer Inventory => inventory;
+    }
+
+    internal sealed class ChangedException() : Exception("An item changed after snapshot preparation.");
 
     private void Release()
     {

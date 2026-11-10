@@ -10,9 +10,11 @@ follow-up removes the snapshot wait edges and adds one bounded placement retry.
 locks, try every required inventory; on contention release everything and defer or retry without those locks.**
 Release inventory after a retry's availability wait, before re-entering tick. Several inventories acquired by waiting
 belong to one ranked set; separate nested acquisitions do not inherit that ordering. Ordinary inventory locks are
-non-reentrant. Host snapshot serialization alone reuses the inventories its explicit admission already owns.
+non-reentrant. Final host snapshot serialization reuses the inventories its explicit admission already owns;
+preparation can read already captured inventory NBT without claiming ownership of another inventory.
 The rule governs host acquisition; virtual plugin inventory getters retain their previous tick/generator and
-own-inventory scope, and run before transfer, chunk entity locks and ambient host admission.
+own-inventory scope, and run before transfer, chunk entity locks and ambient host admission. The same applies to
+component Value/copy delegates reached by item NBT conversion; admission only sees fully prepared host NBT.
 
 An arrow means acquisition while holding the left side. `wait` includes synchronous and asynchronous waiting;
 `try` means `Wait(0)`, abandoning partial acquisitions on failure.
@@ -28,7 +30,7 @@ An arrow means acquisition while holding the left side. `wait` includes synchron
 | Furnace / campfire | Tick operations try their machine inventory and skip busy ticks. Campfire insertion tries hand then campfire and refuses before changing either if busy. Campfire update data tries once, retains its last complete client projection and queues another update if busy. |
 | Container item access | Under tick, `ContainerItemAccess.Enter` tries inventory; otherwise it waits. Vehicle access always tries. Protected `LockInventory` refuses under tick and forbids awaits/other locks in its scope. Loot preparation finishes outside tick/transfer/click locks, or is queued. |
 | Entity transfer | Pickup owns hand before waiting for transfer. Transfer precedes chunk `EntityLock` and grid locks. Never hold two levels' transfer locks, await, load chunks or invoke plugin code under transfer. |
-| Region snapshots | Generator -> tick -> each inventory (try, separately) captures virtual slots without transfer or ambient admission. Then transfer -> the captured inventory set (try), validating host revisions, intervening transactions and membership before retirement. Hashing, retirement and serialization share the captured members and slots; entity serialization also takes chunk `EntityLock`. Failure takes no dirty marks and retires/removes nothing. |
+| Region snapshots | Generator -> tick -> each inventory (try, separately) captures virtual slots and converts their complete item NBT without transfer or ambient admission. Then transfer -> the captured inventory set (try), validating host content revisions and membership before retirement. Host-only hashing, retirement and serialization share the captured members and prepared NBT; entity serialization also takes chunk `EntityLock`. Failure takes no dirty marks and retires/removes nothing. |
 | Plugin preservation | Final plugin Save runs without tick or new inventory locks. Host preservation takes tick -> inventory admission (try), revalidates identity, freezes the inventory and saves its current host-owned contents. Fresh plugin fields are cached before admission can defer; virtual slot capture runs with tick and only its own inventory. A call inheriting tick, or a busy admission, queues preservation with an unloading hold released on execution or level disposal. |
 | Chunks / lighting / structures | Live writes take tick -> `Chunk.BlockLock`; runtime light uses tick -> propagation reader/writer lock. Chunk I/O and region lookup finish before write sections. Structure-state serializers may call plugins: they finish in their existing tick scope before snapshot admission adds transfer/inventory locks. |
 | Notification queue | Tick -> `BlockNotificationPipeline.sync` is a short blocking monitor. Drain releases `sync` before world reads, hooks and awaits; it adds no reverse tick/inventory edge. Placement's existing synchronous callbacks retain their existing lock scopes. |
@@ -42,12 +44,28 @@ for vehicle inventory. The bounded rendezvous test failed on the original code w
 `save=False, window=False, pickup=False`; cleanup released the test-held hand and joined all pending operations.
 After the fix the snapshot abandons inventory admission, freeing transfer for pickup and the window to finish.
 
-`InventorySnapshot` first captures each container's virtual slot reads separately under a tried inventory lock,
-without transfer, chunk entity locks or a thread-static admission. It then tries the full captured inventory set
-and validates the host revisions and transaction stamps. A transaction invalidates preparation even for a plugin
-whose virtual slots/revision use its own storage; final validation never dispatches to that virtual revision getter.
-Only host serializers run inside that synchronous admission: they read the captured slots and reuse admitted locks. No plugin Save override, virtual slot getter, structure serializer or await
-runs in the admitted scope. This is save work only, not a new lock per block entity per tick.
+`InventorySnapshot` first reads each container's virtual slots separately under a tried inventory lock, and fully
+encodes their item NBT there, including nested items and component Value/copy delegates. It canonicalizes that NBT
+into private host-owned tags before transfer, chunk entity locks or thread-static admission. Conversion failures
+therefore precede dirty marks and retirement. Preparation mode covers the initial slot reads too: a component
+copy or virtual getter cannot make an auxiliary base save wait while tick/current inventory are held. It then
+visits the captured block/entity serializers to encode stacks outside their Items lists too (e.g. lectern books, drops and projectiles). In this mode,
+known inventories return prepared NBT; an auxiliary base save may only try its own inventory and defers the attempt
+if busy. This thread-static preparation mode owns no inventory set and does not enforce admission on plugin code.
+After leaving it, final admission validates inventory/item versions and rechecks the serializers for replaced stack
+references before retirement. A new or changed source retries before any dirty marks. Final item ToNbt calls only
+copy the privately prepared host NBT, so component delegates cannot run through a different serializer under transfer.
+Machine counters and other live host fields are still saved under the final inventory/loot locks.
+Inside admission, host serializers copy prepared NBT and hash host-owned data; they never convert captured stacks
+or reach a component delegate. The same prepared item path serves block containers, vehicles and preservation.
+No plugin Save override, virtual inventory getter, component Value/copy delegate, structure serializer or await runs
+in the admitted scope. This is save work only, not a new lock per block entity per tick.
+
+Admission validates host content revisions and the nonvirtual versions of every returned stack, never
+lock-acquisition counts: a read-only base container save of an earlier member does not invalidate it. Engine indexer writes also record a content change when a custom SetItem
+override stores slots outside the base array. The protected inventory scope already compares public revisions;
+it publishes an actual change to the host stamp before releasing its existing lock, including direct custom SetItem
+writes. Its read-only use adds no stamp. Final validation never dispatches to a plugin's virtual Revision getter.
 
 Block and vehicle membership is captured once before virtual reads and validated again after them, before dirty
 marks or retirement. Public plugin dictionary and position setters do not obey transfer locking. If preparation
@@ -66,8 +84,12 @@ point, preserving unload-failure cleanup without adding inventory/transfer locks
 - An eager save skips the **whole chunk**, retaining its unsaved state and entities for a later save.
 - An explicit save or unload releases generator, tick, transfer and inventory locks, awaits the busy inventory's
   availability, releases it, then retries admission against current chunk and entity membership. It reports success
-  only after admitting and serializing the same captured members and validated slot values. A changed revision
-  or intervening transaction invalidates preparation and retries outside the locks, yielding between attempts.
+  only after admitting and serializing the same captured members and validated item NBT. A content revision or
+  membership change retries outside the locks, yielding between attempts. Explicit saves/unloads make at most
+  **eight attempts**, each availability wait capped at **250 ms** (at most two seconds of inventory waiting).
+  Exhaustion throws `TimeoutException` before taking marks, retiring inventories or reserving writes: the chunk
+  remains resident, the prior disk image stays intact, and a later save/unload can retry. This bounds retry work,
+  not arbitrary plugin callbacks, generator gates or disk I/O. Eager saves make only one non-waiting attempt.
   A caller already owning tick/transfer cannot unwind its outer lock: a busy explicit snapshot throws without
   changing data, leaving it for a legal save; an eager attempt still skips it.
 - Unload retires all containers only after the entire set is admitted. A busy later container cannot leave earlier
@@ -75,7 +97,7 @@ point, preserving unload-failure cleanup without adding inventory/transfer locks
 - Plugin preservation leaves a busy entity resident and its inventory unretired. Deferred work keeps its plugin
   alive, tries again on a later entity-action drain, revalidates identity, then closes retired windows. A successful
   final plugin Save is cached immediately, before a busy admission can defer it, so consuming the change signal
-  cannot lose plugin fields. It runs outside tick; validated host slots overlay its contents under admission.
+  cannot lose plugin fields. It runs outside tick; validated, prepared item NBT overlays its contents under admission.
   Placement's late-unloading preservation defers the entire operation. Queued leases are owned by the level:
   disposal releases undrained work after its final save, including failure paths and enqueue/disposal races,
   and drops the queued plugin delegate so it cannot retain an unloaded context.
@@ -87,7 +109,14 @@ load those exact NBT bytes through a separate region. They verify final item ide
 stacks for the vehicle cycle, vanilla and plugin-style container snapshots, unload retirement, preservation, and
 campfire projection. `SnapshotInventoryConsistency` additionally covers deferred plugin fields, disposal leases,
 late vehicle/container membership, virtual getters reaching a foreign transfer or auxiliary inventory, changed
-capture revisions (including opaque plugin inventory transactions), and structures dirtied after preliminary marks. Tests use explicit signals and bounded cleanup,
+capture revisions (including engine indexer writes to plugin storage), and structures dirtied after preliminary marks.
+`SnapshotInventoryPreparation` keeps nested read-only callbacks and a real read-only transaction after capture
+active until save/unload/eager completion, checks
+bounded failure and recovery under persistent mutation, and reloads component-bearing containers/vehicles after
+copy delegates enter a foreign transfer or save another inventory, including lectern books and dropped items.
+A replaced entity stack is detected before unload retirement and recaptured. It also checks that a throwing copy delegate
+cannot partially retire an unload or damage the prior disk save. A busy auxiliary-copy rendezvous proves that
+world writes finish while that inventory remains held, before the snapshot's outside-lock wait is released. Tests use explicit signals and bounded cleanup,
 not sleeps or statistical scheduling.
 
 ## Placement retry
@@ -109,13 +138,22 @@ prediction; the player can click again. There is no spin or unbounded retry.
 - Failed-travel fallback (`Entity.KeepWhereItLeft -> Region.TryKeepUnplaced`) also serializes an entity under
   transfer/chunk EntityLock. For a container vehicle that still waits for inventory. It needs deferred fallback
   admission retaining the departure's chunk pin and arrival ownership: simply returning false on contention would
-  discard an entity that neither level accepted. This is separate from recurring region snapshots. The generic
+  discard an entity that neither level accepted. Item-bearing entities there can also reach component copy
+  delegates under transfer: these fallback serializers do not enter regular snapshot preparation. This is separate
+  from recurring region snapshots. The generic
   `Region.Evict(keepSaved: true)` serializer has the same boundary; its normal plugin-unload caller only keeps
   plugin-owned entity types (built-in vehicles spawned by a plugin use `keepSaved: false`).
 - Factory preparation still calls `BlockEntityComponents.ApplyContainer` on an unpublished inventory under tick
   and hand. Normally uncontended, a plugin factory publishing/reusing an inventory can make it block. Moving
   factory/component preparation requires managing plugin effects and lifetime; skipping transferred contents
   would lose items. Creation/loading and factory update-data callbacks need the same separate design.
+- Host content revision tracking observes base mutations, engine indexer writes, and changes reported by the
+  protected inventory scope.
+  Returned stacks' nonvirtual versions also catch count/component changes to objects outside base storage.
+  A plugin that replaces its own backing slots directly while bypassing those mutation paths and the protected
+  inventory scope cannot be validated by a
+  host-only snapshot through its arbitrary virtual Revision getter. Such custom writers need an explicit host
+  mutation notification design; lock acquisition itself is not a safe substitute for a content change.
 - Standalone container Save/SnapshotContents APIs still block outside host admission. Plugins must not call those
   APIs while owning tick/transfer or an inventory they acquire themselves. Arbitrary plugin block/shape/neighbor
   callbacks and structure serializers retain their existing tick scope and may have their own lock orders; this

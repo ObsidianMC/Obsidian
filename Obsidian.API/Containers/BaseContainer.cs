@@ -43,12 +43,6 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     // The stamp of the last time a slot was set (see MarkChanged); the stacks keep their own (see Revision).
     private long slotsChanged;
 
-    // Snapshot preparation cannot call a plugin's virtual Revision under transfer. Count intervening transactions
-    // as well as host slot changes, including transactions on plugin-defined storage.
-    private long transactionVersion;
-
-    internal long TransactionVersion => Volatile.Read(ref this.transactionVersion);
-
     // 1 once the container is retired (see IsRetired).
     private int retired;
 
@@ -88,7 +82,19 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         }
     }
 
-    public ItemStack? this[int index] { get => this.GetItem(index); set => this.SetItem(index, value); }
+    public ItemStack? this[int index]
+    {
+        get => this.GetItem(index);
+        set
+        {
+            var revision = Volatile.Read(ref this.slotsChanged);
+            this.SetItem(index, value);
+            // Overrides may keep slots outside the base array. An engine write through the indexer still
+            // invalidates prepared snapshots; taking/releasing a read-only lock must never do so.
+            if (Volatile.Read(ref this.slotsChanged) == revision)
+                this.MarkChanged();
+        }
+    }
 
     public ReadOnlySpan<ItemStack?> this[Range range] => this.GetItems().AsSpan(range);
 
@@ -116,14 +122,14 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
                     continue;
 
                 invItem.Count += item.Count;
-                this.SetItem(i, invItem);
+                this[i] = invItem;
 
                 return i;
             }
 
             if (invItem == null)
             {
-                this.SetItem(i, item);
+                this[i] = item;
 
                 return i;
             }
@@ -145,7 +151,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         if (this.GetItem(slot) == null)
             return false;
 
-        this.SetItem(slot, null);
+        this[slot] = null;
 
         return true;
     }
@@ -158,7 +164,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
             return false;
 
         item.Count -= amount;
-        this.SetItem(slot, item.Count <= 0 ? null : item);
+        this[slot] = item.Count <= 0 ? null : item;
 
         return true;
     }
@@ -365,11 +371,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
                 this.owner = owner;
         }
 
-        public void CaptureRevision()
-        {
-            Interlocked.Increment(ref this.part.transactionVersion);
-            this.revision = this.owner is not null ? this.part.EngineRevision : 0;
-        }
+        public void CaptureRevision() => this.revision = this.owner is not null ? this.part.EngineRevision : 0;
 
         public void Dispose()
         {

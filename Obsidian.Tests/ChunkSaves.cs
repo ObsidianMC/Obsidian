@@ -13,6 +13,7 @@ using Obsidian.WorldData;
 using Obsidian.WorldData.BlockTicks;
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -94,7 +95,7 @@ public sealed class ChunkSaves
         try
         {
             // Observe persisted payloads rather than preparatory structure serialization.
-            var written = new List<(int X, int Z)>();
+            var written = new ConcurrentQueue<(int X, int Z)>();
             var region = new Region(0, 0, folder);
 
             await using (region)
@@ -103,7 +104,7 @@ public sealed class ChunkSaves
                 region.ChunkFile.Observe = change =>
                 {
                     if (change.Step == RegionFile.Step.PayloadWritten)
-                        written.Add((change.ChunkX, change.ChunkZ));
+                        written.Enqueue((change.ChunkX, change.ChunkZ));
 
                     return default;
                 };
@@ -146,7 +147,7 @@ public sealed class ChunkSaves
         var folder = Path.Join(Path.GetTempPath(), $"obsidian-chunk-saves-{Guid.NewGuid():N}");
         try
         {
-            var written = new List<(int X, int Z)>();
+            var written = new ConcurrentQueue<(int X, int Z)>();
             var scheduler = new BlockTickScheduler();
             var region = new Region(0, 0, folder)
             {
@@ -160,7 +161,7 @@ public sealed class ChunkSaves
                 region.ChunkFile.Observe = change =>
                 {
                     if (change.Step == RegionFile.Step.PayloadWritten)
-                        written.Add((change.ChunkX, change.ChunkZ));
+                        written.Enqueue((change.ChunkX, change.ChunkZ));
 
                     return default;
                 };

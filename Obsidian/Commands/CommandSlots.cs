@@ -420,7 +420,7 @@ internal static class CommandSlots
 
         return new Slot(owner ?? inventory, () => inventory.GetItem(slot), stack =>
         {
-            inventory.SetItem(slot, stack);
+            inventory[slot] = stack;
             return true;
         }, sync);
     }

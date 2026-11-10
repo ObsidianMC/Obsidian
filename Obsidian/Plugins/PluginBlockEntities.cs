@@ -82,14 +82,36 @@ internal static class PluginBlockEntities
             var inventories = blockEntity is ContainerBlockEntity container
                 ? new[] { container.Inventory }
                 : Array.Empty<BaseContainer>();
-            if (!InventorySnapshot.TryEnter(inventories, out var admitted, out _))
+            if (!InventorySnapshot.TryCapture(inventories, out var admitted, out _))
             {
                 QueueKeep(level, chunk, blockEntity, plugin);
                 return null;
             }
 
             using (admitted)
+            {
+                try
+                {
+                    using (admitted!.Prepare())
+                        BlockEntityNbt.Save(blockEntity);
+
+                    if (!admitted.TryEnter(out _))
+                    {
+                        QueueKeep(level, chunk, blockEntity, plugin);
+                        return null;
+                    }
+
+                    BlockEntityNbt.Save(blockEntity);
+                }
+                catch (Exception failure) when (failure is InventorySnapshot.BusyException
+                    or InventorySnapshot.ChangedException)
+                {
+                    QueueKeep(level, chunk, blockEntity, plugin);
+                    return null;
+                }
+
                 return KeepCore(level, chunk, blockEntity, data);
+            }
         }
     }
 
