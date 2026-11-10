@@ -217,30 +217,37 @@ replaces only what vanilla produced.
   records eyeblossoms, potted eyeblossoms, dried ghasts and nether portals from
   `Java/EyeblossomGhastPortalFixtures.java` (`CaptureFixtures=eyeblossom_ghast_portal`): a random tick, a scheduled
   tick or a `Level.setBlock` against a bounded block view of the case's setup, with a seeded, recording random as both
-  the routine's and the level's. A case can also give block ticks already `pending`, the `dimension` (whose
-  attributes and timelines the view samples with every clock at `dayTime`), the `difficulty`, the `spawnMobs` and
-  `spawnMonsters` rules and whether a player is near (`playerNear`). Each case records the draws, the ordered writes
-  with their flags, scheduled block and fluid ticks with their delays, level events, game events, sounds (position or
-  followed entity, source, volume and pitch, which is null where a mob's own random draws it), particles (a trail's
-  target, colour and duration) and the entities added (type, position, rotations, portal cooldown, age, and a mob's
-  baby flag, main hand, enchantment, handedness, loot pickup and vehicle). The view reads the eyeblossom's neighbour
-  scan through chunk sections, so it keeps vanilla's section order. The cases cover eyeblossoms turning by night and
-  by day on random and scheduled ticks, at the keyframes either side of dusk and dawn, on a later day, never in the
-  nether or the End, and the wave of neighbours they schedule across chunk and section borders (out of range, other
-  states and pots skipped); potted eyeblossoms turning, staying, and other potted plants not ticking; dried ghasts
-  asking for their tick (wet, drying, already pending, pending elsewhere), hydrating, drying, becoming a ghastling in
-  each facing and beside other blocks, and placed dry or in water; portals spawning a zombified piglin on each
-  difficulty (draws 0, 1 and 2 against easy, normal and hard), not drawing at all when peaceful, in the nether or the
-  End or without either spawning rule, drawing but not spawning without a player near or over air, glowstone, glass
-  or a bottom slab, spawning over magma, as a baby, with a golden spear, left-handed and from the portal's bottom
-  block. The replay runs each case through Obsidian's generated owners, or a live block change, in its own world with
-  a listener near (or, without `playerNear`, more than 128 blocks away), and compares all of it: draws, writes with
-  every flag bit, blocks (and none outside the case), pending ticks, level events, the sound and particle packets the
-  listener gets, game events, entities (rotations as clients get them, in 256ths of a turn) and destroyed blocks. A
-  mob voice's pitch must lie in the voice's range. Three cases are pinned as expected differences, each failing when
-  it disappears: over glowstone, glass and a bottom slab Obsidian's spawner floor rule lets the piglin spawn, so they
-  must match the obsidian-floor case with the same seed (see
-  [the known gaps](known-gaps/eyeblossoms-dried-ghasts-and-portal-piglins.md)).
+  the routine's and the level's. A case can also give block ticks already `pending`, the `dimension` (whose attributes
+  and timelines the view samples with every clock at `dayTime`), the `difficulty`, the `spawnMobs` and `spawnMonsters`
+  rules and whether a player is near (`playerNear`). Each case records the draws, the ordered writes with their flags,
+  scheduled block and fluid ticks with their delays, level events, game events, sounds (position or followed entity,
+  source, volume and pitch, which is null where a mob's own random draws it), particles (a trail's target, colour and
+  duration) and the entities added (type, position, rotations, portal cooldown, age, and a mob's baby flag, main hand,
+  enchantment, handedness, loot pickup and vehicle). The view reads the eyeblossom's neighbour scan through chunk
+  sections, so it keeps vanilla's section order. The cases cover eyeblossoms turning by night and by day on random and
+  scheduled ticks, at the keyframes either side of dusk and dawn, on a later day, never in the nether or the End, and
+  the wave of neighbours they schedule across chunk and section borders (out of range, other states and pots skipped);
+  potted eyeblossoms turning, staying, and other potted plants not ticking; dried ghasts asking for their tick (wet,
+  drying, already pending, pending elsewhere), hydrating, drying, becoming a ghastling in each facing and beside other
+  blocks, and placed dry or in water; portals spawning a zombified piglin on each difficulty (draws 0, 1 and 2 against
+  easy, normal and hard), not drawing at all when peaceful, in the nether or the End or without either spawning rule,
+  drawing but not spawning without a player near or over air, glowstone, glass or a bottom slab, spawning over magma,
+  as a baby, as a baby looking for a chicken to ride, on a new chicken jockey, with a golden spear, with an enchanted
+  weapon, left-handed and from the portal's bottom block, and on Halloween (with a carved pumpkin, a jack o'lantern or
+  neither) and the days either side of it. Eyeblossom waves also cross a section border with flowers on both sides, at
+  y 63/64 and at -17/-16. The level holds vanilla's registries with their tags and is plains everywhere. A case's
+  `date` is the local date vanilla sees (the fixture's `capturedOn` otherwise): the probe can't set the JVM's clock,
+  so it moves vanilla's `SpecialDates.HALLOWEEN` constant by as many days as the date is from the real one, and
+  vanilla's own comparison runs unchanged; the replay gives the level a clock on that date. The replay runs each case
+  through Obsidian's generated owners, or a live block change, in its own world with a listener beside the origin (or,
+  without `playerNear`, more than 128 blocks away), and compares all of it: draws, writes with every flag bit, blocks
+  (and none outside the case), pending ticks, level events, the sound and particle packets the listener gets, game
+  events, entities in any order (rotations as clients get them, in 256ths of a turn) and destroyed blocks. Where
+  vanilla records a mob voice's pitch as null, Obsidian's must lie in the voice's range, and where it records a jockey
+  chicken's head turn as null, Obsidian's must lie in vanilla's 0 to 2pi degrees. Three cases are pinned as expected
+  differences, each failing when it disappears: over glowstone, glass and a bottom slab Obsidian's spawner floor rule
+  lets the piglin spawn, so they must match the obsidian-floor case with the same seed (see [the known
+  gaps](known-gaps/eyeblossoms-dried-ghasts-and-portal-piglins.md)).
   An optional `dimension` supplies that dimension type's environment attributes; optional `actions` are subsequent
   `UPDATE_ALL` writes. `findTip` takes `maxLength` and `includeMerged` and records the returned position or null.
 

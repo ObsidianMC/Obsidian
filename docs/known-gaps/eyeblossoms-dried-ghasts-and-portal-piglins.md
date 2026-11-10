@@ -24,10 +24,25 @@ become ghastlings, and nether portals spawn zombified piglins, all checked again
 - **Players close enough to spawn.** `MobSpawner.IsCloseEnoughForSpawning` takes a player 128 blocks across from a
   chunk's centre as close enough; vanilla's `playerIsCloseEnoughForSpawning` asks for less than 128, and only of
   chunks within a player's simulation distance.
-- **What the piglin's spawn leaves out.** The draws are vanilla's, but a baby that vanilla would sit on a chicken (a
-  5% chance of a 5% chance) rides nothing, a weapon whose enchantment chance comes up isn't enchanted (it can only on
-  hard in a world old or inhabited enough), and the attribute bonuses vanilla draws from the mob's own random come from
-  Obsidian's. The spawn ambient sound's pitch is drawn from the mob's own random, as vanilla's is, so it can't match.
+- **What the piglin's spawn can't match.** Every draw vanilla takes from the level's random is Obsidian's too, in
+  vanilla's order, and captured: the yaw, the follow range bonus, handedness, loot pickup, being a baby, both chicken
+  jockey chances (a new jockey chicken's variant, sound variant, follow range and handedness), breaking doors, the
+  spear or sword, the weapon's enchantment chance and the enchantments themselves, and the Halloween pumpkin. What
+  vanilla draws from the mob's own random can't match: the attribute bonuses of `handleAttributes`, the spawn ambient
+  sound's pitch, and the head turn a new jockey chicken keeps from its constructor (`Math.random()`). A baby that
+  finds a chicken nearby rides it, as vanilla's does, but no capture has a chicken there (the probe's view holds no
+  entities).
+- **Halloween.** Pumpkins go on piglins on October 31st of the server's local date, read through the level's
+  `TimeProvider`, as vanilla's `SpecialDates` reads the JVM's. Vanilla's probe can't set the JVM's clock, so the
+  Halloween cases move vanilla's `SpecialDates.HALLOWEEN` constant by as many days as the case's date is from the real
+  one; vanilla's own comparison and the draws after it run unchanged. The pumpkin's zero drop chance isn't modelled
+  (Obsidian's mobs drop no equipment by chance yet).
+- **Bats, found alongside.** 26.3's `Bat.checkBatSpawnRules` has no Halloween season any more (Obsidian's has been
+  removed), but it also asks for a position below the world surface heightmap, where Obsidian asks for below sea level,
+  and a floor in `#bats_spawnable_on`, which Obsidian doesn't check.
+
+Portal cooldowns are saved: every entity writes and reads vanilla's `PortalCooldown`, so a piglin reloaded beside its
+portal still waits.
 
 **Where to start:** the floor rule is `MobSpawner.IsSpawnableFloor` (`Obsidian/WorldData/MobSpawner.cs`); give it
 vanilla's per-block `isValidSpawn` (dumping each state's answer for each mob from the jar would do) and remove the
