@@ -20,7 +20,8 @@ public sealed partial class ArmorStand : Living
     private static readonly VectorF defaultLeftLeg = new(-1, 0, -1);
     private static readonly VectorF defaultRightLeg = new(1, 0, 1);
 
-    // The slots in vanilla's order (EquipmentSlot.values()), with their saved names.
+    // Every slot in vanilla's order (EquipmentSlot.values()), with its saved name. Vanilla's living equipment codec
+    // saves them all, the body and saddle too, though a player's use never fills those on a stand.
     private static readonly (EquipmentSlot Slot, string Name)[] savedSlots =
     [
         (EquipmentSlot.MainHand, "mainhand"),
@@ -28,7 +29,9 @@ public sealed partial class ArmorStand : Living
         (EquipmentSlot.Boots, "feet"),
         (EquipmentSlot.Leggings, "legs"),
         (EquipmentSlot.Chestplate, "chest"),
-        (EquipmentSlot.Helmet, "head")
+        (EquipmentSlot.Helmet, "head"),
+        (EquipmentSlot.Body, "body"),
+        (EquipmentSlot.Saddle, "saddle")
     ];
 
     // Changed on the level's tick under its tick lock; saves and players starting to see the stand read it too.

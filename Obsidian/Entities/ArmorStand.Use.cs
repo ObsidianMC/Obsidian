@@ -57,10 +57,11 @@ public sealed partial class ArmorStand
     /// <summary>
     /// Vanilla's <c>ArmorStand.interact</c> through <c>Player.interactOn</c>: the held item goes to its own slot,
     /// swapping with what is there, and an empty hand takes the item of the slot clicked. Runs on the level's tick.
-    /// The stand and the hand change together under the tick lock with the inventory tried, not waited for: a busy
-    /// inventory, a hand that changed since the click, a player who left, died, changed level or is being teleported,
-    /// or a stand that is gone refuses the use without changing anything. Sounds, game events and packets go out
-    /// once the locks are released.
+    /// The stand and the hand change together under the tick lock with the inventory tried, not waited for, then the
+    /// level's transfer lock, which removing the stand takes too, so the stand stays in the level from the check to
+    /// the exchange. A busy inventory, a hand that changed since the click, a player who left, died, changed level
+    /// or is being teleported, or a stand that is gone refuses the use without changing anything. Sounds, game events
+    /// and packets go out once the locks are released.
     /// </summary>
     /// <returns>
     /// Whether the use is done with; false lets the held item's own use on a living entity run, as vanilla's
@@ -77,38 +78,7 @@ public sealed partial class ArmorStand
         if (this.Marker || use.Item?.Is(ItemsRegistry.NameTag) == true || this.Level is not AbstractLevel level)
             return false;
 
-        Exchange? exchange = null;
-        ItemStack? previous = null;
-        var refused = false;
-        lock (level.Fluids.TickLock)
-        {
-            if (!this.CanCommit(use, level) || !player.Inventory.TryLock(out var handLock))
-            {
-                refused = true;
-            }
-            else
-            {
-                using (handLock)
-                {
-                    var held = player.Inventory.GetItem(use.HandSlot);
-                    if (!SameHand(held, use))
-                    {
-                        refused = true;
-                    }
-                    else
-                    {
-                        var creative = player.GameMode == GameMode.Creative;
-                        exchange = this.Decide(held ?? ItemStack.Air, use.ClickedHeight, creative);
-                        if (exchange is not null)
-                        {
-                            previous = this.GetEquipment(exchange.Slot);
-                            this.Apply(exchange, player, use.HandSlot, held);
-                        }
-                    }
-                }
-            }
-        }
-
+        var refused = !this.TryCommit(use, level, out var exchange, out var previous);
         if (refused || exchange is null)
         {
             await player.SyncInventorySlotAsync(use.HandSlot);
@@ -124,9 +94,39 @@ public sealed partial class ArmorStand
         return true;
     }
 
-    // The click still stands: the player can act here, still holds the slot they clicked with, and the stand is
-    // still alive in this level.
-    private bool CanCommit(ArmorStandUse use, AbstractLevel level)
+    // The exchange under the tick lock, the player's inventory (tried) and the level's transfer lock, in that order.
+    // False refuses the use; true with no exchange is a use that changes nothing.
+    private bool TryCommit(ArmorStandUse use, AbstractLevel level, out Exchange? exchange, out ItemStack? previous)
+    {
+        exchange = null;
+        previous = null;
+        var player = use.Player;
+        lock (level.Fluids.TickLock)
+        {
+            if (!CanAct(use, level) || !player.Inventory.TryLock(out var handLock))
+                return false;
+
+            using (handLock)
+            using (level.TransferLock.Enter())
+            {
+                var held = player.Inventory.GetItem(use.HandSlot);
+                if (!this.IsResident(level) || !SameHand(held, use))
+                    return false;
+
+                var creative = player.GameMode == GameMode.Creative;
+                exchange = this.Decide(held ?? ItemStack.Air, use.ClickedHeight, creative);
+                if (exchange is null)
+                    return true;
+
+                previous = this.GetEquipment(exchange.Slot);
+                this.Apply(exchange, player, use.HandSlot, held);
+                return true;
+            }
+        }
+    }
+
+    // The click still stands for the player: they can act here and still hold the slot they clicked with.
+    private static bool CanAct(ArmorStandUse use, AbstractLevel level)
     {
         var player = use.Player;
         if (!player.Connected || !player.Alive || player.Respawning || player.HasPendingTeleport
@@ -135,9 +135,12 @@ public sealed partial class ArmorStand
             return false;
         }
 
-        if (use.Hand == InteractionHand.MainHand && player.CurrentHeldItemSlot != use.HandSlot)
-            return false;
+        return use.Hand != InteractionHand.MainHand || player.CurrentHeldItemSlot == use.HandSlot;
+    }
 
+    // The stand is alive and still in this level's regions; called under the level's transfer lock.
+    private bool IsResident(AbstractLevel level)
+    {
         if (!this.Alive || !ReferenceEquals(this.Level, level))
             return false;
 
