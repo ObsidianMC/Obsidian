@@ -33,9 +33,9 @@ namespace Obsidian.Tests;
 /// </summary>
 public sealed class VanillaEyeblossomGhastPortalTicks(ITestOutputHelper output)
 {
-    // Where the listener stands: near every case's blocks, or, for a case with no player near, more than 128 blocks
-    // from the centre of the chunk the cases use.
-    private static readonly VectorD nearListener = new(4, 70, 4);
+    // Where the listener stands: this far from the case's origin, within range of its sounds and particles, or, for a
+    // case with no player near, more than 128 blocks from the centre of the chunk the cases use.
+    private static readonly VectorD nearListener = new(4, 6, 4);
 
     private static readonly VectorD farListener = new(4, 70, 300);
 
@@ -86,7 +86,7 @@ public sealed class VanillaEyeblossomGhastPortalTicks(ITestOutputHelper output)
         // A player with the nine chunks, who gets the packets sent there (queued ones go to the server's players).
         var near = !probe.TryGetProperty("playerNear", out var playerNear) || playerNear.GetBoolean();
         var listener = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Listener",
-            near ? nearListener : farListener);
+            near ? (VectorD)Position(probe.GetProperty("origin")) + nearListener : farListener);
         world.Players.TryAdd(listener.Uuid, listener);
         context.Server.OnlinePlayers.TryAdd(listener.Uuid, listener);
         foreach (var chunk in Chunks(world))
@@ -193,6 +193,18 @@ public sealed class VanillaEyeblossomGhastPortalTicks(ITestOutputHelper output)
         var dayTime = probe.TryGetProperty("dayTime", out var time) ? time.GetInt64() : 0;
         foreach (var clock in world.LevelData.WorldClocks.States.Values)
             clock.TotalTicks = dayTime;
+
+        // The local date vanilla saw: the case's own, or the day the fixture was first captured.
+        var date = probe.TryGetProperty("date", out var day) ? day : fixture.GetProperty("capturedOn");
+        world.TimeProvider = new FixedDate(DateOnly.Parse(date.GetString()!, CultureInfo.InvariantCulture));
+    }
+
+    /// <summary>A clock that reads noon of <paramref name="date"/>, in a local time zone of UTC.</summary>
+    private sealed class FixedDate(DateOnly date) : TimeProvider
+    {
+        public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.Utc;
+
+        public override DateTimeOffset GetUtcNow() => new(date.ToDateTime(new TimeOnly(12, 0)), TimeSpan.Zero);
     }
 
     private static bool Flag(JsonElement probe, string name) =>
@@ -364,6 +376,9 @@ public sealed class VanillaEyeblossomGhastPortalTicks(ITestOutputHelper output)
     {
         var babyVoice = probe.GetProperty("entities").EnumerateArray()
             .Any(entity => entity.TryGetProperty("baby", out var baby) && baby.GetBoolean());
+        var voices = probe.GetProperty("sounds").EnumerateArray()
+            .Select(sound => sound.GetProperty("pitch").ValueKind == JsonValueKind.Null)
+            .ToList();
         var vanilla = probe.GetProperty("sounds").EnumerateArray().Select(sound =>
         {
             var pitch = sound.GetProperty("pitch");
@@ -382,16 +397,18 @@ public sealed class VanillaEyeblossomGhastPortalTicks(ITestOutputHelper output)
             {
                 case SoundPacket sound:
                     var position = sound.SoundPosition;
+                    var positionalPitch = Pitch(sound.Pitch, IsVoice(voices, obsidian.Count), babyVoice);
                     obsidian.Add($"{sound.SoundLocation} {CategoryName(sound.Category)} at "
                         + $"{position.X},{position.Y},{position.Z} volume {Number(sound.Volume)} "
-                        + $"pitch {Pitch(sound.Pitch, babyVoice)}");
+                        + $"pitch {positionalPitch}");
                     break;
                 case SoundEntityPacket sound:
                     var source = world.GetNonPlayerEntitiesInRange(VectorD.Zero, float.MaxValue)
                         .FirstOrDefault(entity => entity.EntityId == sound.EntityId);
+                    var entityPitch = Pitch(sound.Pitch, IsVoice(voices, obsidian.Count), babyVoice);
                     obsidian.Add($"{sound.SoundLocation} {CategoryName(sound.Category)} from "
                         + $"{EntityName(source?.Type)} volume {Number(sound.Volume)} "
-                        + $"pitch {Pitch(sound.Pitch, babyVoice)}");
+                        + $"pitch {entityPitch}");
                     break;
             }
         }
@@ -399,13 +416,15 @@ public sealed class VanillaEyeblossomGhastPortalTicks(ITestOutputHelper output)
         ExpectSequence(differences, "sounds", vanilla, obsidian);
     }
 
-    // Obsidian's pitch as the comparison reads it: within the voice's range it may be any value there, but must still
-    // be exactly vanilla's when vanilla's is fixed (1.0 for every fixed pitch these routines use).
-    private static string Pitch(float pitch, bool baby)
+    // Whether vanilla's sound at the same place in the sequence is a mob's voice, whose pitch it doesn't record.
+    private static bool IsVoice(List<bool> voices, int index) => index < voices.Count && voices[index];
+
+    // Obsidian's pitch as the comparison reads it: where vanilla's sound is a mob's voice, any pitch in the voice's
+    // range reads as the voice; otherwise the pitch must be vanilla's exactly.
+    private static string Pitch(float pitch, bool voice, bool baby)
     {
-        var voice = baby ? 1.5f : 1f;
-        var fixedPitch = pitch == 1f;
-        if (!fixedPitch && pitch > voice - 0.2f && pitch < voice + 0.2f)
+        var centre = baby ? 1.5f : 1f;
+        if (voice && pitch > centre - 0.2f && pitch < centre + 0.2f)
             return "voice";
 
         return Number(pitch);
@@ -481,56 +500,108 @@ public sealed class VanillaEyeblossomGhastPortalTicks(ITestOutputHelper output)
         vibration.AffectedBlock?.StateId().ToString(CultureInfo.InvariantCulture));
 
     // Every captured entity field, and no entity vanilla didn't add. Rotations are compared as clients get them, in
-    // 256ths of a turn.
+    // 256ths of a turn. A head yaw vanilla records as null is the Math.random() radians a jockey chicken keeps from its
+    // constructor (0 to 2pi degrees, so 0 to 4 256ths); Obsidian's must lie there too.
     private static void CompareEntities(List<string> differences, JsonElement probe, WorldData.World world)
     {
-        var vanilla = probe.GetProperty("entities").EnumerateArray().Select(entity =>
-        {
-            var position = entity.GetProperty("pos");
-            var mob = entity.TryGetProperty("baby", out var baby)
-                ? $" baby {baby.GetBoolean()} hand {entity.GetProperty("mainHand").GetString()} enchanted "
-                    + $"{entity.GetProperty("enchanted").GetBoolean()} "
-                    + $"left {entity.GetProperty("leftHanded").GetBoolean()} "
-                    + $"loot {entity.GetProperty("canPickUpLoot").GetBoolean()} "
-                    + $"vehicle {entity.GetProperty("vehicle").GetString() ?? "none"}"
-                : "";
-            var age = entity.TryGetProperty("age", out var given) ? $" age {given.GetInt32()}" : "";
-            return $"{entity.GetProperty("type").GetString()} at "
-                + $"{Vec(new VectorD(position[0].GetDouble(), position[1].GetDouble(), position[2].GetDouble()))} "
-                + $"yaw {Turn(entity.GetProperty("yaw").GetSingle())} "
-                + $"head {Turn(entity.GetProperty("headYaw").GetSingle())} "
-                + $"pitch {Turn(entity.GetProperty("pitch").GetSingle())} "
-                + $"cooldown {entity.GetProperty("portalCooldown").GetInt32()}{age}{mob}";
-        });
+        var recorded = probe.GetProperty("entities").EnumerateArray().ToList();
+        var randomHeads = recorded
+            .Where(entity => entity.GetProperty("headYaw").ValueKind == JsonValueKind.Null)
+            .Select(entity => entity.GetProperty("type").GetString()!)
+            .ToHashSet();
 
+        // In no particular order: the order the level lists its entities isn't vanilla's add order.
+        var vanilla = recorded.Select(entity => Describe(entity)).Order(StringComparer.Ordinal);
         var obsidian = world.GetNonPlayerEntitiesInRange(VectorD.Zero, float.MaxValue)
             .OfType<Entity>()
-            .Select(Describe);
+            .Select(entity => Describe(entity, randomHeads.Contains(EntityName(entity.Type))))
+            .Order(StringComparer.Ordinal);
 
         ExpectSequence(differences, "entities", vanilla, obsidian);
     }
 
-    private static string Describe(Entity entity)
+    private static string Describe(JsonElement entity)
     {
+        var position = entity.GetProperty("pos");
+        var headYaw = entity.GetProperty("headYaw");
+        var head = headYaw.ValueKind == JsonValueKind.Null ? "random" : Turn(headYaw.GetSingle()).ToString();
+        var chicken = entity.TryGetProperty("variant", out var variant)
+            ? $" variant {variant.GetString()} sound {entity.GetProperty("soundVariant").GetString()} "
+                + $"jockey {entity.GetProperty("jockey").GetBoolean()}"
+            : "";
+        var age = entity.TryGetProperty("age", out var given) ? $" age {given.GetInt32()}" : "";
+        var mob = "";
+        if (entity.TryGetProperty("baby", out var baby))
+        {
+            var enchantments = entity.TryGetProperty("enchantments", out var list)
+                ? list.EnumerateArray().Select(enchantment => enchantment.GetString()!)
+                : [];
+            var helmet = entity.TryGetProperty("head", out var worn) ? worn.GetString()! : "none";
+            mob = Mob(baby.GetBoolean(), entity.GetProperty("mainHand").GetString()!,
+                entity.GetProperty("enchanted").GetBoolean(), enchantments, helmet,
+                entity.GetProperty("leftHanded").GetBoolean(), entity.GetProperty("canPickUpLoot").GetBoolean(),
+                entity.GetProperty("vehicle").GetString() ?? "none");
+        }
+
+        return $"{entity.GetProperty("type").GetString()} at "
+            + $"{Vec(new VectorD(position[0].GetDouble(), position[1].GetDouble(), position[2].GetDouble()))} "
+            + $"yaw {Turn(entity.GetProperty("yaw").GetSingle())} head {head} "
+            + $"pitch {Turn(entity.GetProperty("pitch").GetSingle())} "
+            + $"cooldown {entity.GetProperty("portalCooldown").GetInt32()}{chicken}{age}{mob}";
+    }
+
+    private static string Describe(Entity entity, bool randomHead)
+    {
+        var headYaw = entity is Mob looking ? looking.LookControl.HeadYaw.Value : entity.Yaw.Value;
+        var head = randomHead && headYaw <= Turn(MathF.Tau) ? "random" : headYaw.ToString();
+        var chicken = entity is Chicken bird
+            ? $" variant {ChickenVariants[bird.Variant]} sound {ChickenSounds[bird.SoundVariant]} "
+                + $"jockey {bird.IsChickenJockey}"
+            : "";
         var age = entity is AgeableMob ageable ? $" age {ageable.Age}" : "";
         var mob = "";
         if (entity is Mob living)
         {
             var hand = living.GetEquipment(EquipmentSlot.MainHand);
-            var item = hand.IsAir ? "minecraft:air" : hand.Holder.UnlocalizedName;
-            var enchantments = hand.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(
-                DataComponentType.Enchantments);
-            var enchanted = enchantments?.Value.Length > 0;
-            var baby = living is IAgeable { IsBaby: true };
-            var left = living.MobBitMask.HasFlag(MobBitmask.LeftHanded);
-            mob = $" baby {baby} hand {item} enchanted {enchanted} left {left} loot {living.CanPickUpLoot} "
-                + $"vehicle {(entity.Vehicle is null ? "none" : EntityName(entity.Vehicle.Type))}";
+            var helmet = living.GetEquipment(EquipmentSlot.Helmet);
+            var enchantments = (hand.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(
+                DataComponentType.Enchantments)?.Value ?? [])
+                .Select(enchantment => $"{EnchantmentName(enchantment.Id)} {enchantment.Level}")
+                .ToList();
+            mob = Mob(living is IAgeable { IsBaby: true }, ItemName(hand), enchantments.Count > 0, enchantments,
+                helmet.IsAir ? "none" : ItemName(helmet), living.MobBitMask.HasFlag(MobBitmask.LeftHanded),
+                living.CanPickUpLoot, entity.Vehicle is null ? "none" : EntityName(entity.Vehicle.Type));
         }
 
-        var head = entity is Mob looking ? looking.LookControl.HeadYaw.Value : entity.Yaw.Value;
         return $"{EntityName(entity.Type)} at {Vec(entity.Position)} yaw {entity.Yaw.Value} head {head} "
-            + $"pitch {entity.Pitch.Value} cooldown {entity.PortalCooldownTicks}{age}{mob}";
+            + $"pitch {entity.Pitch.Value} cooldown {entity.PortalCooldownTicks}{chicken}{age}{mob}";
     }
+
+    // A mob's fields; the enchantments sorted, as a stack's enchantments have no order that matters.
+    private static string Mob(
+        bool baby,
+        string hand,
+        bool enchanted,
+        IEnumerable<string> enchantments,
+        string helmet,
+        bool left,
+        bool loot,
+        string vehicle)
+    {
+        var sorted = string.Join(", ", enchantments.Order(StringComparer.Ordinal));
+        return $" baby {baby} hand {hand} enchanted {enchanted} [{sorted}] helmet {helmet} left {left} loot {loot} "
+            + $"vehicle {vehicle}";
+    }
+
+    private static string EnchantmentName(int id) =>
+        EnchantmentsRegistry.All.First(enchantment => enchantment.Id == id).Identifier;
+
+    private static string ItemName(ItemStack stack) => stack.IsAir ? "minecraft:air" : stack.Holder.UnlocalizedName;
+
+    // Vanilla's chicken variants and sound variants in registry order, which Obsidian's indices follow.
+    private static readonly string[] ChickenVariants = ["minecraft:cold", "minecraft:temperate", "minecraft:warm"];
+
+    private static readonly string[] ChickenSounds = ["minecraft:classic", "minecraft:picky"];
 
     private static int Turn(float degrees) => ((Angle)degrees).Value;
 
